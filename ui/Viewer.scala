@@ -14,7 +14,7 @@ object Viewer extends SimpleSwingApplication {
 
   override def startup(args: Array[String]) = {
     // TODO parametric from args
-    val g = Graph.load("dat/test.map")
+    //val g = Graph.load("dat/test.map")
     super.startup(args)
   }
 
