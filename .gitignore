@@ -1,0 +1,5 @@
+.build
+*.swp
+.scala_dependencies
+*.osm
+*.map
