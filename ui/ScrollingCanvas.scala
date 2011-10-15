@@ -11,12 +11,12 @@ abstract class ScrollingCanvas extends Component {
   background = Color.LIGHT_GRAY
 
   // this defines the current viewing window
-  private var zoom = 1.0
-  private var x_off, y_off = 0.0
+  protected var zoom = 1.0
+  protected var x_off, y_off = 0.0
 
   // this defines controls
-  private var key_speed = 10
-  private var zoom_step = 0.1
+  protected var key_speed = 10
+  protected var zoom_step = 0.1
 
   // translate between screen and map coordinate systems
   // define (x_off, y_off) to be the top-left corner of the screen
@@ -26,8 +26,8 @@ abstract class ScrollingCanvas extends Component {
   def map_to_screen_y(y: Double) = (y - y_off) * zoom
 
   // react to mouse events, tracking various parameters
-  private var mouse_at_x, mouse_at_y = 0.0
-  private var click_x, click_y = 0.0
+  protected var mouse_at_x, mouse_at_y = 0.0
+  protected var click_x, click_y = 0.0
   listenTo(mouse.moves)
   listenTo(mouse.clicks)
   listenTo(mouse.wheel)
@@ -122,20 +122,13 @@ abstract class ScrollingCanvas extends Component {
     g2d.transform(transform)
 
     // TODO antialias cfg
-    // TODO what type does it want?
-    /*
-    if (true) {
-      g2d.setRenderingHints(
-        RenderingHints.KEY_ANTIALIASING,
-        RenderingHints.VALUE_ANTIALIASING_ON
-      )
-    } else {
-      g2d.setRenderingHints(
-        RenderingHints.KEY_ANTIALIASING,
-        RenderingHints.VALUE_ANTIALIASING_OFF
-      )
-    }
-    */
+    // ew, clunky old java crap.
+    val antialiasing = new java.util.HashMap[Any,Any]()
+    antialiasing.put(
+      RenderingHints.KEY_ANTIALIASING,
+      RenderingHints.VALUE_ANTIALIAS_ON
+    )
+    g2d.setRenderingHints(antialiasing)
 
     // do the actual work
     render_canvas(g2d)

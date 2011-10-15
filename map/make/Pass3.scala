@@ -19,11 +19,11 @@ class Pass3(old_graph: PreGraph2) {
 
       // pre-compute lines constituting the edges
       for (e <- r.pos_lanes) {
-        e.lines = for ((from, to) <- r.points zip r.points.tail)
+        e.lines = for ((from, to) <- r.pairs_of_points)
                   yield shift_line(e.lane_offset, from, to)
       }
       for (e <- r.neg_lanes) {
-        e.lines = for ((from, to) <- r.points zip r.points.tail)
+        e.lines = for ((from, to) <- r.pairs_of_points)
                   yield shift_line(e.lane_offset, to, from)
         // TODO inefficient just because i wanted a two-liner?
         e.lines = e.lines.reverse

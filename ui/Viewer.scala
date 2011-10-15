@@ -12,12 +12,6 @@ object Viewer extends SimpleSwingApplication {
     "tertiary", "primary", "service"
   )
 
-  override def startup(args: Array[String]) = {
-    // TODO parametric from args
-    //val g = Graph.load("dat/test.map")
-    super.startup(args)
-  }
-
   def top = new MainFrame {
     title = "Road Rage Map Viewer"
     preferredSize = new Dimension(800, 600)
@@ -79,8 +73,8 @@ object Viewer extends SimpleSwingApplication {
     }
 
     contents = new BoxPanel(Orientation.Vertical) {
-      contents += new Button("blah")
-      contents += new Label("blah blah")
+      // TODO parametric from args
+      contents += new MapCanvas(Graph.load("dat/test.map"))
       border = Swing.EmptyBorder(30, 30, 10, 30)
     }
   }

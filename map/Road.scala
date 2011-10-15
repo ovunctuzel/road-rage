@@ -15,6 +15,10 @@ class Road(val id: Int, val points: List[Coordinate], val name: String,
   var neg_lanes = new MutableList[Edge]
 
   def is_oneway = pos_lanes.length == 0 || neg_lanes.length == 0
+  // TODO assert is_oneway, maybe. or maybe even case class...
+  def oneway_lanes = if (pos_lanes.length == 0) neg_lanes else pos_lanes
+
+  def num_lanes = pos_lanes.length + neg_lanes.length
 
   def to_xml = <road name={name} type={road_type} osmid={osm_id.toString}
                      v1={v1.id.toString} v2={v2.id.toString} id={id.toString}>
@@ -54,4 +58,6 @@ class Road(val id: Int, val points: List[Coordinate], val name: String,
 
   // TODO maybe the order matters, or maybe acos' range takes of it?
   def angle_to(r: Road) = (new Line(v1, v2)).angle_to(new Line(r.v1, r.v2))
+
+  def pairs_of_points = points zip points.tail
 }
