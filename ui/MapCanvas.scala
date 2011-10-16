@@ -77,6 +77,7 @@ class MapCanvas(g: Graph) extends ScrollingCanvas {
     g2d.setStroke(lane_stroke)
     for (l <- fg_lines if l.line.intersects(window)) {
       g2d.draw(l.line)
+      g2d.fill(l.arrow)
     }
 
     // and the third layer (dashed center lines)
@@ -131,16 +132,16 @@ object GeomFactory {
     val mid = line.midpt
     val theta = line.angle
     val x = mid.x + (height * math.cos(theta))
-    val y = mid.y - (height * math.sin(theta))  // y inversion
+    val y = mid.y + (height * math.sin(theta))
 
     // Perpendiculous!
     val theta_perp1 = theta + (math.Pi / 2)
-    val cos_perp1 = +width * math.cos(theta_perp1)
-    val sin_perp1 = -width * math.sin(theta_perp1)
+    val cos_perp1 = width * math.cos(theta_perp1)
+    val sin_perp1 = width * math.sin(theta_perp1)
 
     val theta_perp2 = theta - (math.Pi / 2)
-    val cos_perp2 = +width * math.cos(theta_perp2)
-    val sin_perp2 = -width * math.sin(theta_perp2)
+    val cos_perp2 = width * math.cos(theta_perp2)
+    val sin_perp2 = width * math.sin(theta_perp2)
 
     val arrow = new Path2D.Double()
     arrow.moveTo(x, y)

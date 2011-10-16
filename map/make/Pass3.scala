@@ -141,37 +141,19 @@ class Pass3(old_graph: PreGraph2) {
   }
 
   private def shift_line(l: Int, pt1: Coordinate, pt2: Coordinate): Line = {
+    // This used to be much more complex, generating two lines and seeing which
+    // one was 'less' wrong from a point we projected. Apparently it's MUCH
+    // simpler than that.
+
     val width = 0.5   // TODO maplane-width cfg
 
-    // draw lines parallel to center using the perpendicular bisector
-    // TODO i dont remember why its counter clockwise here
-    val theta_counter = math.atan2(pt2.y - pt1.y, pt2.x - pt1.x) + (math.Pi / 2)
-    val dx = l * width * math.cos(theta_counter)
-    val dy = l * width * math.sin(theta_counter)
-
-    // + and - for lanes are arbitrary; make things work here
-    val line1 = new Line(pt1.x + dx, pt1.y + dy, pt2.x + dx, pt2.y + dy)
-    val line2 = new Line(pt1.x - dx, pt1.y - dy, pt2.x - dx, pt2.y - dy)
-
-    // calculate the midpoint of the center road line, turn clockwise 90
-    // degrees, and project a point out. We should hit the midpoint of one of
-    // these lines -- or hopefully get close.
+    // just move in the direction of the road (as given by the ordering of the
+    // points) plus 90 degrees clockwise
     val road_line = new Line(pt1.x, pt1.y, pt2.x, pt2.y)
-    val mid_road = road_line.midpt
-    val theta = theta_counter + math.Pi
-    val projected_pt = new Coordinate(
-      mid_road.x + (l * width * math.cos(theta)),
-      mid_road.y - (l * width * math.sin(theta))    // y inversion
-    )
+    val theta = road_line.angle + (math.Pi / 2)
+    val dx = l * width * math.cos(theta)
+    val dy = l * width * math.sin(theta)
 
-    val error1 = line1.midpt.difference(projected_pt)
-    val error2 = line2.midpt.difference(projected_pt)
-
-    // TODO sometimes the mid point is exactly the projected point. when does it
-    // actually differ?
-    //println(error1 + " vs " + error2);
-    
-    // TODO why error and not exactly mid1 or mid2 == projected_pt?
-    return if (error1 < error2) line1 else line2
+    return new Line(pt1.x + dx, pt1.y + dy, pt2.x + dx, pt2.y + dy)
   }
 }
