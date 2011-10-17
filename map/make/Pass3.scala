@@ -70,10 +70,14 @@ class Pass3(old_graph: PreGraph2) {
     val outgoing_roads = roads filter (_.outgoing_lanes(v).length != 0)
 
     // TODO do we need equality on roads? go by id.
-    for ((r1, r2) <- incoming_roads zip outgoing_roads if r1 != r2) {
+    // this is a Cartesian product.
+    for (r1 <- incoming_roads; r2 <- outgoing_roads if r1 != r2) {
       // analysis is often based on the angle between the parts of the edge's
       // lines that meet
+      // the order of r1 vs r2 should not matter
       val angle_btwn = r1.angle_to(r2)
+
+      println("  from " + r1 + "  to " + r2 + " is " + angle_btwn.toDegrees)
 
       val from_edges = r1.incoming_lanes(v)  
       val to_edges = r2.outgoing_lanes(v)  

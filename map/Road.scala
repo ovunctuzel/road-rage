@@ -24,6 +24,8 @@ class Road(val id: Int, val points: List[Coordinate], val name: String,
                      v1={v1.id.toString} v2={v2.id.toString} id={id.toString}>
                  {points.map(pt => pt.to_xml)}
                </road>
+
+  override def toString = "Road " + id + ": " + name
   
   // TODO overload equality better? also, bizarre unreachable code bugs.
   def incoming_lanes(v: Vertex): MutableList[Edge] = {
@@ -56,8 +58,27 @@ class Road(val id: Int, val points: List[Coordinate], val name: String,
     }*/
   }
 
+  // by v1
+  def first_line = new Line(points.head, points.tail.head)
+  // by v2
+  def last_line = new Line(points.last, points.dropRight(1).last)
+
   // TODO maybe the order matters, or maybe acos' range takes of it?
-  def angle_to(r: Road) = (new Line(v1, v2)).angle_to(new Line(r.v1, r.v2))
+  def angle_to(r: Road): Double = {
+    // find the vertex in common.
+    if (v1 == r.v1) {
+      return first_line.angle_to(r.first_line)
+    } else if (v1 == r.v2) {
+      return first_line.angle_to(r.last_line)
+    } else if (v2 == r.v1) {
+      return last_line.angle_to(r.first_line)
+    } else if (v2 == r.v2) {
+      return last_line.angle_to(r.last_line)
+    } else {
+      throw new Exception("roads dont meet up") // TODO
+    }
+  }
+    
 
   def pairs_of_points = points zip points.tail
 }
