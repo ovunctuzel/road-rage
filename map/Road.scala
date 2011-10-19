@@ -25,7 +25,7 @@ class Road(val id: Int, val points: List[Coordinate], val name: String,
                  {points.map(pt => pt.to_xml)}
                </road>
 
-  override def toString = "Road " + id + ": " + name
+  override def toString = name + " [R" + id + "]"
   
   // TODO overload equality better? also, bizarre unreachable code bugs.
   def incoming_lanes(v: Vertex): MutableList[Edge] = {
@@ -58,25 +58,40 @@ class Road(val id: Int, val points: List[Coordinate], val name: String,
     }*/
   }
 
-  // by v1
+  // by v1: 0..1
   def first_line = new Line(points.head, points.tail.head)
-  // by v2
-  def last_line = new Line(points.last, points.dropRight(1).last)
+  // by v2: -2..-1
+  def last_line = new Line(points.dropRight(1).last, points.last)
 
-  // TODO maybe the order matters, or maybe acos' range takes of it?
+  // clockwise is > 0, counter-clockwise is < 0
   def angle_to(r: Road): Double = {
-    // find the vertex in common.
+    var from_angle = 0.0
+    var to_angle = 0.0
+
+    // find the vertex in common to determine ordering
     if (v1 == r.v1) {
-      return first_line.angle_to(r.first_line)
+      from_angle = first_line.angle
+      to_angle   = r.first_line.angle
     } else if (v1 == r.v2) {
-      return first_line.angle_to(r.last_line)
+      from_angle = first_line.angle
+      to_angle   = r.last_line.angle
     } else if (v2 == r.v1) {
-      return last_line.angle_to(r.first_line)
+      from_angle = last_line.angle
+      to_angle   = r.first_line.angle
     } else if (v2 == r.v2) {
-      return last_line.angle_to(r.last_line)
+      from_angle = last_line.angle
+      to_angle   = r.last_line.angle
     } else {
       throw new Exception("roads dont meet up") // TODO
     }
+
+    println("rotate from " + from_angle.toDegrees + " to " + to_angle.toDegrees)
+
+    // which way is the shortest rotation?
+    // can we just use dot product after making vectors from the two angles?
+    val l1 = new Line(0, 0, math.cos(from_angle), math.sin(from_angle))
+    val l2 = new Line(0, 0, math.cos(to_angle), math.sin(to_angle))
+    return l1.angle_to(l2)
   }
     
 

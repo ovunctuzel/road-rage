@@ -72,6 +72,13 @@ class Pass3(old_graph: PreGraph2) {
     // TODO do we need equality on roads? go by id.
     // this is a Cartesian product.
     for (r1 <- incoming_roads; r2 <- outgoing_roads if r1 != r2) {
+      // we don't want the angle between directed roads... we want the angle to
+      // rotate from r1 (the last line before the common vert) to r2 (the first
+      // line after the common vert)
+      // if it's clockwise, that's a right turn.
+      // counterclockwise is left.
+      // (smallest angle of rotation between two angles)
+
       // analysis is often based on the angle between the parts of the edge's
       // lines that meet
       // the order of r1 vs r2 should not matter
@@ -124,15 +131,21 @@ class Pass3(old_graph: PreGraph2) {
           //v.turns += many_sourced map new Turn(from_edges.head, TurnType.CROSS, _)
           //v.turns += (from_edges.tail zip regulars) map turn_factory(TurnType.CROSS)
         }
-      // TODO the trig is wrong, and the only one lane part is wrong.
-      } else if (angle_btwn < math.Pi / 2) {
+      } else if (angle_btwn < 0) {      // negative rotation means counterclockwise
         // leftmost = highest lane-num
         v.turns += new Turn(from_edges.last, TurnType.LEFT, to_edges.last)
-      } else if (angle_btwn >= math.Pi / 2) {
+      } else {
         // rightmost = lowest lane-num
         v.turns += new Turn(from_edges.head, TurnType.RIGHT, to_edges.head)
       }
     }
+
+    /*
+    println("angle 1 is " + (new Line(0, 0, +10, +10)).angle.toDegrees)
+    println("angle 2 is " + (new Line(0, 0, -10, +10)).angle.toDegrees)
+    println("angle 3 is " + (new Line(0, 0, +10, -10)).angle.toDegrees)
+    println("angle 4 is " + (new Line(0, 0, -10, -10)).angle.toDegrees)
+    */
 
     // sanity check; make sure every edge is connected
     /*for (incoming <- in_edges if v.turns_to(incoming).length == 0) {

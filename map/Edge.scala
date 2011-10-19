@@ -28,8 +28,8 @@ class Line(val x1: Double, val y1: Double, val x2: Double, val y2: Double) {
   def this(pt1: Coordinate, pt2: Coordinate) = this(pt1.x, pt1.y, pt2.x, pt2.y)
   def this(v1: Vertex, v2: Vertex) = this(v1.location, v2.location)
 
-  // TODO doubt the order here, and also the response. but it looks good.
-  def angle = math.atan2(y2 - y1, x2 - x1)
+  // recall y inversion
+  def angle = math.atan2(y1 - y2, x2 - x1)
 
   def midpt = new Coordinate((x1 + x2) / 2, (y1 + y2) / 2)
 

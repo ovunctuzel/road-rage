@@ -17,6 +17,32 @@ class Pass1(fn: String) {
 
   val graph = new PreGraph1()
 
+  // if an osm node mentions these, it's not an edge we care about.
+  val ignore_me = Set(
+    "boundary",   // edge of a city
+    "railway",    // tracks would be too easy
+    "amenity",    // no stops on this trip
+    "aeroway",    // we're not cl0ud
+    "landuse",    // we don't want to use it
+    "natural",    // naturally useless to us
+    "waterway",   // we don't swim
+    "building",   // we try not to drive through these
+    "foot",       // we don't have feet
+    "man_made",   // man-made things tend to suck
+    "crossing",   // TODO dunno?
+    "area",       // these, according to a forgotten old comment, are weird
+    "path", "cycleway", "footway", "bridleway", "steps", "pedestrian",
+    "bus_guideway"
+    // TODO cemeteries in Houston, real roads in BTR, alleys in ATX...
+    // they all cause problems when they have no name.
+    // "service"
+  )
+
+  // according to http://wiki.openstreetmap.org/wiki/Key:oneway
+  val forced_oneways = Set("motorway", "motorway_link", "trunk")
+
+
+
   def run(): PreGraph1 = {
     // fill out graph with roads and collect all info
     match_events( new XMLEventReader( Source.fromFile(fn) ) )
@@ -28,29 +54,6 @@ class Pass1(fn: String) {
   }
 
   def match_events(event_reader: XMLEventReader) = {
-    val ignore_me = Set(
-      "boundary",   // edge of a city
-      "railway",    // tracks would be too easy
-      "amenity",    // no stops on this trip
-      "aeroway",    // we're not cl0ud
-      "landuse",    // we don't want to use it
-      "natural",    // naturally useless to us
-      "waterway",   // we don't swim
-      "building",   // we try not to drive through these
-      "foot",       // we don't have feet
-      "man_made",   // man-made things tend to suck
-      "crossing",   // TODO dunno?
-      "area",       // these, according to a forgotten old comment, are weird
-      "path", "cycleway", "footway", "bridleway", "steps", "pedestrian",
-      "bus_guideway"
-      // TODO cemeteries in Houston, real roads in BTR, alleys in ATX...
-      // they all cause problems when they have no name.
-      // "service"
-    )
-
-    // according to http://wiki.openstreetmap.org/wiki/Key:oneway
-    val forced_oneways = Set("motorway", "motorway_link", "trunk")
-
     // per way, we accumulate:
     // TODO i cant leave these uninitialized or set them to _
     var name: String = ""
