@@ -10,6 +10,13 @@ class Pass3(old_graph: PreGraph2) {
   println("Multiplying and directing " + old_graph.edges.length + " edges")
   val graph = new PreGraph3(old_graph)
   val roads_per_vert = new HashMap[Vertex, MutableSet[Road]] with MultiMap[Vertex, Road]
+  // for tarjan's
+  val visited = new HashSet[Vertex]
+  // TODO or operate on a wrapper structure.
+  val v_idx = new HashMap[Vertex, Integer]
+  val v_low = new HashMap[Vertex, Integer]
+  val v_stack = new Stack[Vertex]
+  var dfs = 0   // counter numbering
 
   def run(): PreGraph3 = {
     // TODO two loops (make edge, process it). meh?
@@ -45,6 +52,15 @@ class Pass3(old_graph: PreGraph2) {
     // look at the vertex an edge hits, then find the perpendicular(ish) road
     // and trim everything back. but everything? not quite, cause you could have
     // a |--- situation.
+
+    // finally, use Tarjan's to locate all SCC's in the graph. ideally we'd just
+    // have one, but crappy graphs, weird reality, and poor turn heuristics mean
+    // we'll have disconnected portions.
+    for (v <- graph.vertices) {
+      if (!visited(v)) {
+        tarjan(v);
+      }
+    }
 
     return graph
   }
@@ -172,5 +188,29 @@ class Pass3(old_graph: PreGraph2) {
     val dy = l * width * math.sin(theta)
 
     return new Line(pt1.x + dx, pt1.y + dy, pt2.x + dx, pt2.y + dy)
+  }
+
+  // flood from v
+  private def tarjan(v: Vertex) {
+    visited += v
+    v_idx(v) = dfs
+    dfs += 1
+    stack.push(v)
+
+    for (next <- v.out_verts) {
+      if (!visited(next)) {
+        tarjan(next)
+        v_low(v) = math.min(v_low(v), v_low(next))
+      } else if (v_stack.contains(next)) {
+        // here's a back-edge
+        v_low(v) = math.min(v_low(v), v_idx(next))
+      }
+    }
+
+    // are we a 'root'?
+    if (v_low(v) == v_idx(v)) {
+      // pop stack and stop when we hit v
+      // these all make an scc
+    }
   }
 }

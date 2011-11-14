@@ -10,6 +10,9 @@ class Vertex(val location: Coordinate, val id: Int) {
   def turns_from(from: Edge): List[Turn] = turns.toList.filter(_.from == from)
   def turns_to(to: Edge): List[Turn] = turns.toList.filter(_.to == to)
 
+  def in_verts = // TODO set of from.road foreach turns
+  def out_verts = // TODO set of to.road foreach turns
+
   def to_xml = <vertex id={id.toString} x={location.x.toString}
                        y={location.y.toString}>
                  {turns.map(t => t.to_xml)}
