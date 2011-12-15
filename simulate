@@ -2,4 +2,4 @@
 
 . common.sh
 
-scala $RUN_OPTS ui.Viewer $2
+scala $RUN_OPTS ui.Viewer $@

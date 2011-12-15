@@ -2,4 +2,4 @@
 
 . common.sh
 
-scala $RUN_OPTS map.make.Builder $2 $3
+scala $RUN_OPTS map.make.Builder $@

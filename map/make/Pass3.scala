@@ -89,22 +89,17 @@ class Pass3(old_graph: PreGraph2) {
     // TODO do we need equality on roads? go by id.
     // this is a Cartesian product.
     for (r1 <- incoming_roads; r2 <- outgoing_roads if r1 != r2) {
-      // we don't want the angle between directed roads... we want the angle to
-      // rotate from r1 (the last line before the common vert) to r2 (the first
-      // line after the common vert)
-      // if it's clockwise, that's a right turn.
-      // counterclockwise is left.
-      // (using the smallest angle of rotation between two angles)
-
-      // analysis is often based on the angle between the parts of the edge's
-      // lines that meet
-      // the order of r1 vs r2 should not matter (TODO verify)
-      val angle_btwn = r1.angle_to(r2)  // TODO so 'angle_btwn'?
-
       val from_edges = r1.incoming_lanes(v)  
       val to_edges = r2.outgoing_lanes(v)  
 
-      if (r1.osm_id == r2.osm_id || angle_btwn <= cross_thresshold) {
+      // we want the angle to go from a 'from' edge to a 'to' edge
+      val from_angle = from_edges.head.last_line.angle
+      val to_angle = to_edges.head.first_line.angle
+
+      // smallest angle of rotation, from "Agony" on gamedev TODO cite
+      val angle_btwn = ((from_angle - to_angle + 3 * (math.Pi)) % (2 * math.Pi)) - math.Pi
+
+      if (r1.osm_id == r2.osm_id || math.abs(angle_btwn) <= cross_thresshold) {
         // a crossing!
         // essentially zip the from's to the to's, but handle merging:
         // x -> x + n, make the n leftmost lead to the leftmost
@@ -146,7 +141,7 @@ class Pass3(old_graph: PreGraph2) {
           //v.turns += many_sourced map new Turn(from_edges.head, TurnType.CROSS, _)
           //v.turns += (from_edges.tail zip regulars) map turn_factory(TurnType.CROSS)
         }
-      } else if (angle_btwn < 0) {      // negative rotation means counterclockwise
+      } else if (angle_btwn < 0) {
         // leftmost = highest lane-num
         v.turns += new Turn(from_edges.last, TurnType.LEFT, to_edges.last)
       } else {
@@ -154,13 +149,6 @@ class Pass3(old_graph: PreGraph2) {
         v.turns += new Turn(from_edges.head, TurnType.RIGHT, to_edges.head)
       }
     }
-
-    /*
-    println("angle 1 is " + (new Line(0, 0, +10, +10)).angle.toDegrees)
-    println("angle 2 is " + (new Line(0, 0, -10, +10)).angle.toDegrees)
-    println("angle 3 is " + (new Line(0, 0, +10, -10)).angle.toDegrees)
-    println("angle 4 is " + (new Line(0, 0, -10, -10)).angle.toDegrees)
-    */
 
     // sanity check; make sure every edge is connected
     /*for (incoming <- in_edges if v.turns_to(incoming).length == 0) {
@@ -182,7 +170,8 @@ class Pass3(old_graph: PreGraph2) {
     // just move in the direction of the road (as given by the ordering of the
     // points) plus 90 degrees clockwise
     val road_line = new Line(pt1.x, pt1.y, pt2.x, pt2.y)
-    val theta = road_line.angle + (math.Pi / 2)
+    // TODO why does the angle() that respects inversion fail?
+    val theta = road_line.broken_angle + (math.Pi / 2)
     val dx = l * width * math.cos(theta)
     val dy = l * width * math.sin(theta)
 

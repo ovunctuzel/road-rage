@@ -2,10 +2,9 @@
 
 ### Map building ###
 
-- improve turn heuristics
-- trim edge lines back
-
 - tarjan's scc removal
+
+- trim edge lines back, deal with densely clustered line segments
 - cul-de-sac handling in p2
 - pregraph3 vs final graph structure?
 - whats the purpose of phase 2 now?
@@ -24,3 +23,4 @@
 - reduce more vars to vals
 - improve build system (dont recompile)
 - hierarchial logging
+- Edges as subclasses for direxn might be nice

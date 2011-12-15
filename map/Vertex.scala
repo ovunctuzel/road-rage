@@ -16,9 +16,13 @@ class Vertex(val location: Coordinate, val id: Int) {
   // what verts does this one lead to?
   def out_verts = HashSet() ++ turns.map(t => t.to.to)
 
+  // Somewhere due to unordered hashes, the turns list winds up in an
+  // inconsistent order. To make diffs of output be the same for the same code,
+  // impose an ordering on the turns, sorting first by the 'from' edge and then
+  // the 'to' edge.
   def to_xml = <vertex id={id.toString} x={location.x.toString}
                        y={location.y.toString}>
-                 {turns.map(t => t.to_xml)}
+                 {turns.sortBy(t => (t.from.id, t.to.id)).map(t => t.to_xml)}
                </vertex>
 
   override def equals(other: Any) = other match {

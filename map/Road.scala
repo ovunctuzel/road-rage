@@ -58,39 +58,5 @@ class Road(val id: Int, val points: List[Coordinate], val name: String,
     }*/
   }
 
-  // by v1: 0..1
-  def first_line = new Line(points.head, points.tail.head)
-  // by v2: -2..-1
-  def last_line = new Line(points.dropRight(1).last, points.last)
-
-  // clockwise is > 0, counter-clockwise is < 0
-  def angle_to(r: Road): Double = {
-    var from_angle = 0.0
-    var to_angle = 0.0
-
-    // find the vertex in common to determine ordering
-    if (v1 == r.v1) {
-      from_angle = first_line.angle
-      to_angle   = r.first_line.angle
-    } else if (v1 == r.v2) {
-      from_angle = first_line.angle
-      to_angle   = r.last_line.angle
-    } else if (v2 == r.v1) {
-      from_angle = last_line.angle
-      to_angle   = r.first_line.angle
-    } else if (v2 == r.v2) {
-      from_angle = last_line.angle
-      to_angle   = r.last_line.angle
-    } else {
-      throw new Exception("roads dont meet up") // TODO
-    }
-
-    // which way is the shortest rotation?
-    // can we just use dot product after making vectors from the two angles?
-    val l1 = new Line(0, 0, math.cos(from_angle), math.sin(from_angle))
-    val l2 = new Line(0, 0, math.cos(to_angle), math.sin(to_angle))
-    return l1.angle_to(l2)
-  }
-
   def pairs_of_points = points zip points.tail
 }
