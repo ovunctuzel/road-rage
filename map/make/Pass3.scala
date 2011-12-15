@@ -5,6 +5,7 @@ import scala.collection.mutable.HashSet
 import scala.collection.mutable.Stack
 import scala.collection.mutable.{Set => MutableSet}
 import scala.collection.mutable.MultiMap
+import scala.collection.mutable.ListBuffer
 
 import map.{Road, Edge, Vertex, Turn, TurnType, Line, Coordinate}
 
@@ -20,7 +21,7 @@ class Pass3(old_graph: PreGraph2) {
   val v_stack = new Stack[Vertex]
   var dfs = 0   // counter numbering
 
-  def run(): PreGraph3 = {
+  def run(show_dead: Boolean): PreGraph3 = {
     // TODO two loops (make edge, process it). meh?
     for (r <- graph.roads) {
       roads_per_vert.addBinding(r.v1, r)
@@ -58,9 +59,56 @@ class Pass3(old_graph: PreGraph2) {
     // finally, use Tarjan's to locate all SCC's in the graph. ideally we'd just
     // have one, but crappy graphs, weird reality, and poor turn heuristics mean
     // we'll have disconnected portions.
+    var sccs = new ListBuffer[List[Vertex]]
+
     for (v <- graph.vertices) {
       if (!visited(v)) {
-        tarjan(v);
+        sccs ++= tarjan(v);
+      }
+    }
+
+    // TODO take a command line option
+    // deal with all edges of all but the largest SCC by either
+    // 1) coloring them so we can manually inspect
+    // 2) or removing the associated roads, vertices, edges
+
+    if (show_dead) {
+      // this sort is ascending, so drop the highest scc -- it's the valid map.
+      for (scc <- sccs.sortBy(scc => scc.size).dropRight(1)) {
+        // for now, by coloring it with an angry road type
+        for (vert <- scc; road <- vert.roads) {
+          road.road_type = "doomed"
+        }
+      }
+      println("Doomed " + (sccs.size - 1) + " disconnected SCC's from the graph")
+    } else {
+      // This is a cheap trick, and it absolutely works.
+      val doomed_verts = HashSet() ++ sccs.sortBy(scc => scc.size).dropRight(1).flatten
+      val doomed_roads = HashSet() ++ doomed_verts.flatMap(v => v.roads)
+      val doomed_edges = HashSet() ++ doomed_roads.flatMap(r => r.all_lanes)
+      println("Removing " + doomed_verts.size + " disconnected vertices, "
+              + doomed_roads.size + " roads, and "
+              + doomed_edges.size + " edges from graph\n")
+      // Yes, it really is this easy (and evil)
+      graph.vertices = graph.vertices.filter(v => !doomed_verts(v))
+      graph.edges = graph.edges.filter(e => !doomed_edges(e))
+      graph.roads = graph.roads.filter(r => !doomed_roads(r))
+      // Although we do have to clean up IDs
+      // TODO a better way, and one without reassigning to 'val' id?
+      var id = 0
+      for (v <- graph.vertices) {
+        v.id = id
+        id += 1
+      }
+      id = 0
+      for (r <- graph.roads) {
+        r.id = id
+        id += 1
+      }
+      id = 0
+      for (e <- graph.edges) {
+        e.id = id
+        id += 1
       }
     }
 
@@ -150,14 +198,17 @@ class Pass3(old_graph: PreGraph2) {
       }
     }
 
-    // sanity check; make sure every edge is connected
-    /*for (incoming <- in_edges if v.turns_to(incoming).length == 0) {
-      println("GRR: nowhere to go after " + from)
+    // here's how to diagnose SCC's.
+    for (in <- incoming_roads; src <- in.incoming_lanes(v)
+         if v.turns_from(src).length == 0)
+    {
+      println("GRR: nowhere to go after " + src)
     }
-    for (outgoing <- out_edges if v.turns_from(outgoing).length == 0) {
-      println("GRR: nothing leads to " + to)
+    for (out <- outgoing_roads; dst <- out.outgoing_lanes(v)
+         if v.turns_to(dst).length == 0)
+    {
+      println("GRR: nothing leads to " + dst)
     }
-    */
   }
 
   private def shift_line(l: Int, pt1: Coordinate, pt2: Coordinate): Line = {
@@ -179,18 +230,21 @@ class Pass3(old_graph: PreGraph2) {
   }
 
   // flood from v
-  private def tarjan(v: Vertex) {
-    return
-    // TODO it's not ready yet.
+  private def tarjan(v: Vertex): ListBuffer[List[Vertex]] = {
     visited += v
     v_idx(v) = dfs
+    v_low(v) = dfs
     dfs += 1
     v_stack.push(v)
+
+    var sccs = new ListBuffer[List[Vertex]]
 
     // what vertices can we reach from here?
     for (next <- v.out_verts) {
       if (!visited(next)) {
-        tarjan(next)
+        // TODO the recursion is expensive. can we rewrite iteratively, or make
+        // it tail recursion? (tail seems REALLY unlikely)
+        sccs ++= tarjan(next)
         v_low(v) = math.min(v_low(v), v_low(next))
       } else if (v_stack.contains(next)) {
         // here's a back-edge
@@ -202,15 +256,18 @@ class Pass3(old_graph: PreGraph2) {
     if (v_low(v) == v_idx(v)) {
       // pop stack and stop when we hit v
       // these all make an scc
-      var buddy : Vertex = null
+      var member : Vertex = null
       // TODO a functional way? :P
       var cnt = 0
+      var scc = new ListBuffer[Vertex]
       do {
-        buddy = v_stack.pop
-        // add to scc
-        cnt += 1
-      } while (v != buddy)
-      println("found an scc of " + cnt + "\n")
+        member = v_stack.pop
+        scc += member
+      } while (v != member)
+      // TODO it'd be awesome to keep the list in sorted order as we build it
+      sccs += scc.toList
     }
+
+    return sccs
   }
 }

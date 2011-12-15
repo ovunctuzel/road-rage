@@ -2,4 +2,5 @@
 
 . common.sh
 
-scala $RUN_OPTS map.make.Builder $@
+# TODO increase stack size so tarjan's can run
+scala $RUN_OPTS -J-Xss200m map.make.Builder $@

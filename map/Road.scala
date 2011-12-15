@@ -2,9 +2,10 @@ package map
 
 import scala.collection.mutable.MutableList
 
-// TODO enum for type
-class Road(val id: Int, val points: List[Coordinate], val name: String,
-           val road_type: String, val osm_id: Int, val v1: Vertex,
+// TODO enum for type. also, it's var because of tarjan's...
+// TODO var id due to tarjan
+class Road(var id: Int, val points: List[Coordinate], val name: String,
+           var road_type: String, val osm_id: Int, val v1: Vertex,
            val v2: Vertex)
 {
   // an invariant: v1 = vertex at points.first, v2 = vertex at points.last
@@ -13,6 +14,8 @@ class Road(val id: Int, val points: List[Coordinate], val name: String,
   // pass 3 doesn't set this, only Reader does. kinda sucks how we do it now.
   var pos_lanes = new MutableList[Edge]
   var neg_lanes = new MutableList[Edge]
+
+  def all_lanes() = pos_lanes ++ neg_lanes
 
   def is_oneway = pos_lanes.length == 0 || neg_lanes.length == 0
   // TODO assert is_oneway, maybe. or maybe even case class...

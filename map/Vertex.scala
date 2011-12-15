@@ -3,7 +3,8 @@ package map
 import scala.collection.mutable.MutableList
 import scala.collection.immutable.HashSet
 
-class Vertex(val location: Coordinate, val id: Int) {
+// TODO var id due to tarjan
+class Vertex(val location: Coordinate, var id: Int) {
   // TODO we could keep a map for faster lookup, sure
   var turns = new MutableList[Turn]
 
@@ -16,6 +17,8 @@ class Vertex(val location: Coordinate, val id: Int) {
   // what verts does this one lead to?
   def out_verts = HashSet() ++ turns.map(t => t.to.to)
 
+  def roads = HashSet() ++ turns.flatMap(t => List(t.from.road, t.to.road))
+
   // Somewhere due to unordered hashes, the turns list winds up in an
   // inconsistent order. To make diffs of output be the same for the same code,
   // impose an ordering on the turns, sorting first by the 'from' edge and then
@@ -24,6 +27,8 @@ class Vertex(val location: Coordinate, val id: Int) {
                        y={location.y.toString}>
                  {turns.sortBy(t => (t.from.id, t.to.id)).map(t => t.to_xml)}
                </vertex>
+
+  override def toString = "[V" + id + "]"
 
   override def equals(other: Any) = other match {
     case other: Vertex => { id == other.id }

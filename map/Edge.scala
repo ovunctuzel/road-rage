@@ -4,7 +4,8 @@ import scala.collection.immutable.{List => ImmutableList}
 
 // TODO subclass Edge for pos/neg.. seems easier for lots of things
 
-class Edge(val id: Int, val road: Road, val dir: Direction.Direction) {
+// TODO var id due to tarjan
+class Edge(var id: Int, val road: Road, val dir: Direction.Direction) {
   var lane_num: Int = -1  // TODO needs to be initialized to be defined.. bleh.
 
   // TODO finally, something that isnt mutable! make them all this way.
