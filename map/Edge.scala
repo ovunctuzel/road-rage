@@ -18,6 +18,9 @@ class Edge(val id: Int, val road: Road, val dir: Direction.Direction) {
 
   override def toString = "Lane %s%d of %s (%d)".format(dir, id, road.name, id)
 
+  def from = if (dir == Direction.POS) road.v1 else road.v2
+  def to   = if (dir == Direction.POS) road.v2 else road.v1
+
   def to_xml = <edge id={id.toString} road={road.id.toString} dir={dir.toString}
                      laneNum={lane_num.toString}>
                  {lines.map(l => l.to_xml)}
@@ -28,8 +31,7 @@ class Line(val x1: Double, val y1: Double, val x2: Double, val y2: Double) {
   def this(pt1: Coordinate, pt2: Coordinate) = this(pt1.x, pt1.y, pt2.x, pt2.y)
   def this(v1: Vertex, v2: Vertex) = this(v1.location, v2.location)
 
-  // recall y inversion
-  def angle = math.atan2(y1 - y2, x2 - x1)
+  def angle = math.atan2(y2 - y1, x2 - x1)
 
   def midpt = new Coordinate((x1 + x2) / 2, (y1 + y2) / 2)
 

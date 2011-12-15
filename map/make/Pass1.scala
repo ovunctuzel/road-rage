@@ -41,8 +41,6 @@ class Pass1(fn: String) {
   // according to http://wiki.openstreetmap.org/wiki/Key:oneway
   val forced_oneways = Set("motorway", "motorway_link", "trunk")
 
-
-
   def run(): PreGraph1 = {
     // fill out graph with roads and collect all info
     match_events( new XMLEventReader( Source.fromFile(fn) ) )

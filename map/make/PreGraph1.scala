@@ -65,6 +65,8 @@ class PreGraph1() {
     def normalize(pt: Coordinate): Coordinate = {
       // Longitude, Latitude origin is bottom-left; we draw from top-left
       // Hence height - y
+      // This is the ONLY place we handle y inversion. Don't make things
+      // confusing after this!
       return new Coordinate(
         (pt.x + offX) * scale,
         height - (pt.y + offY) * scale

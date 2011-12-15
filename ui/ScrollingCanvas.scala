@@ -87,9 +87,8 @@ abstract class ScrollingCanvas extends Component {
 
   }
 
+  // prevent coordinates from leaving the canvas
   private def fix_oob() = {
-    // prevent coordinates from leaving the canvas
-
     // upper logical bounds of the current screen
     val x2 = screen_to_map_x(size.width)
     val y2 = screen_to_map_y(size.height)
@@ -108,9 +107,6 @@ abstract class ScrollingCanvas extends Component {
     y_off = math.max(0, y_off)
   }
 
-
-
-
   override def paintComponent(g2d: Graphics2D) = {
     // clear things
     super.paintComponent(g2d)
@@ -126,7 +122,7 @@ abstract class ScrollingCanvas extends Component {
     val antialiasing = new java.util.HashMap[Any,Any]()
     antialiasing.put(
       RenderingHints.KEY_ANTIALIASING,
-      RenderingHints.VALUE_ANTIALIAS_ON
+      RenderingHints.VALUE_ANTIALIAS_OFF
     )
     g2d.setRenderingHints(antialiasing)
 

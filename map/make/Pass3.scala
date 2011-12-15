@@ -1,6 +1,8 @@
 package map.make
 
 import scala.collection.mutable.HashMap
+import scala.collection.mutable.HashSet
+import scala.collection.mutable.Stack
 import scala.collection.mutable.{Set => MutableSet}
 import scala.collection.mutable.MultiMap
 
@@ -13,8 +15,8 @@ class Pass3(old_graph: PreGraph2) {
   // for tarjan's
   val visited = new HashSet[Vertex]
   // TODO or operate on a wrapper structure.
-  val v_idx = new HashMap[Vertex, Integer]
-  val v_low = new HashMap[Vertex, Integer]
+  val v_idx = new HashMap[Vertex, Int]
+  val v_low = new HashMap[Vertex, Int]
   val v_stack = new Stack[Vertex]
   var dfs = 0   // counter numbering
 
@@ -70,7 +72,6 @@ class Pass3(old_graph: PreGraph2) {
     // TODO cfg
     val cross_thresshold = math.Pi / 10 // allow 18 degrees
 
-
     // if all edges belong to the same road, this is a dead-end
     if (roads.size == 1) {
       // link corresponding lane numbers
@@ -80,7 +81,7 @@ class Pass3(old_graph: PreGraph2) {
       }
     }
 
-    // To account for oneways, we actually want to reason about roads that are
+    // To account for one-ways, we actually want to reason about roads that are
     // incoming to or outgoing from this vert.
     val incoming_roads = roads filter (_.incoming_lanes(v).length != 0)
     val outgoing_roads = roads filter (_.outgoing_lanes(v).length != 0)
@@ -93,14 +94,12 @@ class Pass3(old_graph: PreGraph2) {
       // line after the common vert)
       // if it's clockwise, that's a right turn.
       // counterclockwise is left.
-      // (smallest angle of rotation between two angles)
+      // (using the smallest angle of rotation between two angles)
 
       // analysis is often based on the angle between the parts of the edge's
       // lines that meet
-      // the order of r1 vs r2 should not matter
-      val angle_btwn = r1.angle_to(r2)
-
-      println("  from " + r1 + "  to " + r2 + " is " + angle_btwn.toDegrees)
+      // the order of r1 vs r2 should not matter (TODO verify)
+      val angle_btwn = r1.angle_to(r2)  // TODO so 'angle_btwn'?
 
       val from_edges = r1.incoming_lanes(v)  
       val to_edges = r2.outgoing_lanes(v)  
@@ -192,11 +191,14 @@ class Pass3(old_graph: PreGraph2) {
 
   // flood from v
   private def tarjan(v: Vertex) {
+    return
+    // TODO it's not ready yet.
     visited += v
     v_idx(v) = dfs
     dfs += 1
-    stack.push(v)
+    v_stack.push(v)
 
+    // what vertices can we reach from here?
     for (next <- v.out_verts) {
       if (!visited(next)) {
         tarjan(next)
@@ -211,6 +213,15 @@ class Pass3(old_graph: PreGraph2) {
     if (v_low(v) == v_idx(v)) {
       // pop stack and stop when we hit v
       // these all make an scc
+      var buddy : Vertex = null
+      // TODO a functional way? :P
+      var cnt = 0
+      do {
+        buddy = v_stack.pop
+        // add to scc
+        cnt += 1
+      } while (v != buddy)
+      println("found an scc of " + cnt + "\n")
     }
   }
 }

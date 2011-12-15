@@ -1,0 +1,5 @@
+#!/bin/bash
+
+. common.sh
+
+scala $RUN_OPTS ui.Viewer $2

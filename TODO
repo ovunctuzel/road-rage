@@ -2,18 +2,25 @@
 
 ### Map building ###
 
-- lanes go the wrong way, often -- dont trust the trig, bro.
 - improve turn heuristics
 - trim edge lines back
 
-- tarjan's scc removal (just see 315 proj9)
+- tarjan's scc removal
 - cul-de-sac handling in p2
 - pregraph3 vs final graph structure?
 - whats the purpose of phase 2 now?
+- document stuff, code-freeze on mapgen!
 
-### Scala ###
+### UI ###
+
+- get everything old working again
+- way better pruning of what to (re-draw) using quadtrees
+
+### Scalaisms ###
 
 - figure out if all those coordinate copies are necessary... thinking not.
 - use ListBuffers more.
 - make things like points lists immutable, so slicing is maybe more efficient?
 - reduce more vars to vals
+- improve build system (dont recompile)
+- hierarchial logging

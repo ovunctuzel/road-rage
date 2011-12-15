@@ -1,6 +1,7 @@
 package map
 
 import scala.collection.mutable.MutableList
+import scala.collection.immutable.HashSet
 
 class Vertex(val location: Coordinate, val id: Int) {
   // TODO we could keep a map for faster lookup, sure
@@ -10,8 +11,10 @@ class Vertex(val location: Coordinate, val id: Int) {
   def turns_from(from: Edge): List[Turn] = turns.toList.filter(_.from == from)
   def turns_to(to: Edge): List[Turn] = turns.toList.filter(_.to == to)
 
-  def in_verts = // TODO set of from.road foreach turns
-  def out_verts = // TODO set of to.road foreach turns
+  // what verts lead to this one?
+  def in_verts = HashSet() ++ turns.map(t => t.from.from)
+  // what verts does this one lead to?
+  def out_verts = HashSet() ++ turns.map(t => t.to.to)
 
   def to_xml = <vertex id={id.toString} x={location.x.toString}
                        y={location.y.toString}>

@@ -1,5 +1,13 @@
 package map
 
+/*
+ * A vital note about coordinate systems:
+ * - (longitude, latitude) corresponds to (x, y) where y increases upwards
+ * - Swing/AWT has y increasing downwards
+ * - Thus, Pass 1 immediately converts to y increasing downwards. This removes
+ *   the "y inversion" handling from everywhere else.
+ */
+
 class Coordinate(val x: Double, val y: Double) {
   override def hashCode = (x, y).hashCode
   // TODO override this notion of equals and hashCode automatically.

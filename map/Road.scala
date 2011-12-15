@@ -85,15 +85,12 @@ class Road(val id: Int, val points: List[Coordinate], val name: String,
       throw new Exception("roads dont meet up") // TODO
     }
 
-    println("rotate from " + from_angle.toDegrees + " to " + to_angle.toDegrees)
-
     // which way is the shortest rotation?
     // can we just use dot product after making vectors from the two angles?
     val l1 = new Line(0, 0, math.cos(from_angle), math.sin(from_angle))
     val l2 = new Line(0, 0, math.cos(to_angle), math.sin(to_angle))
     return l1.angle_to(l2)
   }
-    
 
   def pairs_of_points = points zip points.tail
 }
