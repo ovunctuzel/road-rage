@@ -9,7 +9,12 @@ import java.awt.geom.Rectangle2D
 // TODO maybe adaptor class for our map geometry?
 
 abstract class ScrollingCanvas extends Component {
+  // It's nice to have access to this.
+  protected var status = Status_Bar
+
   override def background = Color.LIGHT_GRAY
+  override def focusable = true  // TODO it doesnt work?
+  requestFocus  // TODO?
 
   // this defines the current viewing window
   protected var zoom = 1.0
@@ -33,7 +38,7 @@ abstract class ScrollingCanvas extends Component {
   listenTo(mouse.moves)
   listenTo(mouse.clicks)
   listenTo(mouse.wheel)
-  //listenTo(keyboard)    // TODO
+  //listenTo(keys) // TODO :(
 
   reactions += {
     // TODO fast_mode
@@ -89,9 +94,13 @@ abstract class ScrollingCanvas extends Component {
 
       fix_oob()
       // show the zoom
+      status.zoom.text = "" + zoom
       repaint()
     }
 
+    /*case KeyPressed(_, key, _, _) => {
+      println("keypress: " + key)
+    }*/
   }
 
   // prevent coordinates from leaving the canvas
@@ -158,3 +167,4 @@ abstract class ScrollingCanvas extends Component {
 // TODO is this the right way to do this?
 sealed trait UI_Event {}
 final case class EV_Mouse_Moved(x: Double, y: Double) extends UI_Event {}
+final case class EV_Param_Set(key: String, value: Option[String]) extends UI_Event {}

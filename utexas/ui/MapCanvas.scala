@@ -16,7 +16,7 @@ import utexas.Util.{log, log_push, log_pop}
 class MapCanvas(g: Graph) extends ScrollingCanvas {
   // state
   private var current_edge: Option[Edge] = None
-
+  private var highlight_type: Option[String] = None
 
   def canvas_width = g.width.toInt
   def canvas_height = g.height.toInt
@@ -80,6 +80,8 @@ class MapCanvas(g: Graph) extends ScrollingCanvas {
   // pre-compute; we don't have more than max_lanes
   private val strokes = (0 until max_lanes).map(n => new BasicStroke(lane_width * n.toFloat))
 
+  // TODO colors for everything belong in cfg.
+
   // Coordinates passed in are logical/map
   def render_canvas(g2d: Graphics2D) = {
     // a window of our logical bounds
@@ -89,8 +91,13 @@ class MapCanvas(g: Graph) extends ScrollingCanvas {
     val roads_seen = new ListBuffer[RoadLine]
 
     // Draw the first layer (roads)
-    g2d.setColor(Color.BLACK)
     for (l <- bg_lines if l.line.intersects(window)) {
+      g2d.setColor(
+        highlight_type match {
+          case (Some(x)) if x == l.road.road_type => Color.GREEN
+          case _                                  => Color.BLACK
+        }
+      )
       g2d.setStroke(strokes(l.road.num_lanes))
       g2d.draw(l.line)
       roads_seen += l
@@ -191,8 +198,17 @@ class MapCanvas(g: Graph) extends ScrollingCanvas {
             case Some(l) => Some(l.edge)
             case None    => None
           }
+          status.location.text = current_edge match {
+            case Some(e) => "" + e
+            case None    => "Nowhere"
+          }
         }
         // TODO always?
+        repaint
+      }
+      // TODO type erasure warning...
+      case EV_Param_Set("highlight", value: Option[String]) => {
+        highlight_type = value
         repaint
       }
     }

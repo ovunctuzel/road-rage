@@ -13,13 +13,15 @@
 
 - get everything old working again
   - drawing turns (better)
-  - menu items do stuff
-  - config
   - keyboarding
+  - config
+  - menu items do stuff
+- oneways look wretched
+- support neighborhoods again
+- make it look nicer
 - figure out why broken_angle and y inversion everywhere still...
 - way better pruning of what to (re-draw) using quadtrees
   - but is it even needed?
-- oneways look wretched
 
 ### Scalaisms ###
 
