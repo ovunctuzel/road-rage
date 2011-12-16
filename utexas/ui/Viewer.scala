@@ -45,7 +45,7 @@ object Viewer extends SimpleSwingApplication {
         })*/
 
         contents += new MenuItem(Action("Configuration") {
-          // TODO ui_config()
+          popup_config
         })
         contents += new Separator
         contents += new MenuItem(Action("Quit") {
@@ -103,5 +103,10 @@ object Viewer extends SimpleSwingApplication {
       contents += canvas
       border = Swing.MatteBorder(2, 2, 2, 2, Color.RED)
     }
+  }
+
+  def popup_config() = {
+    // TODO tabbed pane by category?
+
   }
 }

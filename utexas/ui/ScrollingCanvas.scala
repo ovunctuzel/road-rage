@@ -6,6 +6,8 @@ import java.awt.{Color,RenderingHints}
 import java.awt.geom.AffineTransform
 import java.awt.geom.Rectangle2D
 
+import utexas.Util
+
 // TODO maybe adaptor class for our map geometry?
 
 abstract class ScrollingCanvas extends Component {

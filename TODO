@@ -25,10 +25,14 @@
 
 ### Scalaisms ###
 
+- move all configable things to Util
 - figure out if all those coordinate copies are necessary... thinking not.
 - use ListBuffers more.
-- make things like points lists immutable, so slicing is maybe more efficient?
+- make more immutable things
 - reduce more vars to vals
 - improve build system (dont recompile)
 - Edges as subclasses for direxn might be nice
+  - make everything possible immutable, but then have to figure out how to build
+    inter-referential things
+  - have more ids and methods that access based on those. that'll break it.
 - explicitly override hashcode?

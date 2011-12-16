@@ -9,6 +9,7 @@ import java.awt.geom._
 
 import utexas.map._  // TODO yeah getting lazy.
 
+import utexas.cfg
 import utexas.Util.{log, log_push, log_pop}
 
 // TODO maybe adaptor class for our map geometry? stick in a 'render road' bit
@@ -67,18 +68,15 @@ class MapCanvas(g: Graph) extends ScrollingCanvas {
   x_off = canvas_width / 2
   y_off = canvas_height / 2
 
-  // TODO all of this is config.
+  // TODO cfg
   private val center_stroke = new BasicStroke(
     0.1f, BasicStroke.CAP_BUTT, BasicStroke.JOIN_MITER, 1.0f, Array(1.0f), 0.0f
   )
   private val lane_stroke = new BasicStroke(0.05f)
-  private val picked_lane_stroke = new BasicStroke(0.15f)
   private val lane_width = 0.6f
-  private val max_lanes = 10
-  private val zoom_threshold = 5.0
 
   // pre-compute; we don't have more than max_lanes
-  private val strokes = (0 until max_lanes).map(n => new BasicStroke(lane_width * n.toFloat))
+  private val strokes = (0 until cfg.max_lanes).map(n => new BasicStroke(lane_width * n.toFloat))
 
   // TODO colors for everything belong in cfg.
 
@@ -105,7 +103,7 @@ class MapCanvas(g: Graph) extends ScrollingCanvas {
 
     // don't show tiny details when it doesn't matter (and when it's expensive
     // to render them all)
-    if (zoom > zoom_threshold) {
+    if (zoom > cfg.zoom_threshold) {
       // then the second layer (lanes)
       g2d.setColor(Color.BLUE)
       g2d.setStroke(lane_stroke)
@@ -193,7 +191,7 @@ class MapCanvas(g: Graph) extends ScrollingCanvas {
     ev match {
       case EV_Mouse_Moved(x, y) => {
         // Are we mouse-overing something? ("mousing over"?)
-        if (zoom > zoom_threshold) {
+        if (zoom > cfg.zoom_threshold) {
           current_edge = mouseover_edge(x, y) match {
             case Some(l) => Some(l.edge)
             case None    => None
