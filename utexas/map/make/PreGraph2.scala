@@ -1,17 +1,19 @@
-package map.make
+package utexas.map.make
 
 import scala.collection.mutable.ListBuffer
 import scala.collection.mutable.HashMap
 import scala.collection.mutable.MutableList
 
-import map.Coordinate
+import utexas.map.Coordinate
+
+import utexas.Util.{log, log_push, log_pop}
 
 class PreGraph2(old_graph: PreGraph1) {
   // (v1, v2, road name) to the edge. used for detecting cul-de-sacs easily.
   private val edge_lookup = new HashMap[(Coordinate, Coordinate, String), PreEdge2]
 
   // find true edges between adjacent vertices
-  println("Splitting " + old_graph.edges.length + " roads into edges between intersections")
+  log("Splitting " + old_graph.edges.length + " roads into edges between intersections")
   var edges = old_graph.edges flatMap split_road
 
   def split_road(road: PreEdge1): List[PreEdge2] = {

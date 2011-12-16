@@ -1,4 +1,4 @@
-package ui
+package utexas.ui
 
 import swing._  // TODO figure out exactly what
 import swing.event._

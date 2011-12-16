@@ -27,9 +27,5 @@
 - make things like points lists immutable, so slicing is maybe more efficient?
 - reduce more vars to vals
 - improve build system (dont recompile)
-- hierarchial logging
-- timing
 - Edges as subclasses for direxn might be nice
 - explicitly override hashcode?
-
-- how much does printing 'proccing xml' slow us down?

@@ -1,9 +1,9 @@
-package map
+package utexas.map
 
 //import scala.collection.mutable.HashMap
 //import scala.collection.mutable.MutableList
 
-import map.make.Reader
+import utexas.map.make.Reader
 
 // TODO I can haz named parameters? :(
 class Graph(val roads: List[Road], val edges: List[Edge],

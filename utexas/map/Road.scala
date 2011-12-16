@@ -1,4 +1,4 @@
-package map
+package utexas.map
 
 import scala.collection.mutable.MutableList
 

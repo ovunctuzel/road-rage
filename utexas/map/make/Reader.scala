@@ -1,4 +1,4 @@
-package map.make
+package utexas.map.make
 
 import scala.io.Source
 import scala.xml.MetaData
@@ -6,8 +6,11 @@ import scala.xml.pull._
 
 import scala.collection.mutable.MutableList
 
-import map.{Coordinate, Graph, Road, Vertex, Edge, Direction, Line, TurnType,
-            Turn}
+import utexas.map.{Coordinate, Graph, Road, Vertex, Edge, Direction, Line, TurnType,
+                   Turn}
+
+import utexas.Util
+import utexas.Util.{log, log_push, log_pop}
 
 class Reader(fn: String) {
   // per road
@@ -17,10 +20,12 @@ class Reader(fn: String) {
   var vertLinks: Array[List[TmpLink]] = null
   
   def load(): Graph = {
-    println("Loading map " + fn)
+    log("Loading map " + fn)
+    log_push
     var g = match_events( new XMLEventReader( Source.fromFile(fn) ) )
+    log_pop
 
-    println("Adding references at intersections")
+    log("Adding references at intersections")
 
     for (v <- g.vertices) {
       for (link <- vertLinks(v.id)) {
@@ -29,7 +34,7 @@ class Reader(fn: String) {
     }
 
     // it works! first try. :D
-    //println("Consistency check...")
+    //log("Consistency check...")
     //xml.XML.save("dat/echo.map", g.to_xml)
 
     // TODO free all this temp crap we made somehow
@@ -70,7 +75,10 @@ class Reader(fn: String) {
 
     event_reader.foreach(ev => {
       ev_count += 1
-      print("\rProcessed %,d XML events".format(ev_count))
+      if (ev_count % 1000 == 0) {
+        // it's expensive to spam System.out, believe it or not :P
+        print("\r" + Util.indent + "Processed %,d XML events".format(ev_count))
+      }
 
       ev match {
         case EvElemStart(_, "graph", attribs, _) => {
@@ -192,7 +200,7 @@ class Reader(fn: String) {
         case _ => {}
       }
     })
-    println("")
+    log("")
     // TODO named params?
     return new Graph(
       roads.toList, edges.toList, verts.toList,

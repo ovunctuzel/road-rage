@@ -1,10 +1,12 @@
-package ui
+package utexas.ui
 
 import scala.collection.mutable.ListBuffer
 import java.awt.{Graphics2D, Shape, BasicStroke, Color}
 import java.awt.geom._
 
-import map._  // TODO yeah getting lazy.
+import utexas.map._  // TODO yeah getting lazy.
+
+import utexas.Util.{log, log_push, log_pop}
 
 // TODO maybe adaptor class for our map geometry? stick in a 'render road' bit
 
@@ -15,7 +17,7 @@ class MapCanvas(g: Graph) extends ScrollingCanvas {
   // pre-render base roads.
   // TODO this was too ridiculous a sequence comprehension, so use a ListBuffer,
   // which is supposed to be O(1) append and conversion to list.
-  println("Pre-rendering road geometry...")
+  log("Pre-rendering road geometry...")
   val bg_lines = build_bg_lines
 
   // just used during construction.

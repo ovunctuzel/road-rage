@@ -1,4 +1,4 @@
-package map
+package utexas.map
 
 /*
  * A vital note about coordinate systems:

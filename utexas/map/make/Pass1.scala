@@ -1,4 +1,4 @@
-package map.make
+package utexas.map.make
 
 import scala.io.Source
 import scala.xml.MetaData
@@ -6,7 +6,10 @@ import scala.xml.pull._
 import scala.collection.mutable.HashMap
 import scala.collection.mutable.MutableList
 
-import map.Coordinate
+import utexas.map.Coordinate
+
+import utexas.Util
+import utexas.Util.{log, log_push, log_pop}
 
 class Pass1(fn: String) {
   // OSM's id to (longitude, latitude)
@@ -45,7 +48,7 @@ class Pass1(fn: String) {
     // fill out graph with roads and collect all info
     match_events( new XMLEventReader( Source.fromFile(fn) ) )
 
-    println("Normalizing graph coordinates")
+    log("Normalizing graph coordinates")
     graph.normalize()
 
     return graph
@@ -68,13 +71,16 @@ class Pass1(fn: String) {
 
     event_reader.foreach(ev => {
       ev_count += 1
-      print("\rProcessed %,d XML events".format(ev_count))
+      if (ev_count % 1000 == 0) {
+        // it's expensive to spam System.out, believe it or not :P
+        print("\r" + Util.indent + "Processed %,d XML events".format(ev_count))
+      }
 
       ev match {
         case EvElemStart(_, "node", attribs, _) => {
           val viz = get_attrib(attribs, "visible")
           if (viz != None && viz != "true") {
-            println("WARNING: invisible node in osm")
+            log("WARNING: invisible node in osm")
           } else {
             // record the node
             val id = get_attrib(attribs, "id").toInt
@@ -90,7 +96,7 @@ class Pass1(fn: String) {
           // TODO refactor the skip invisible check
           val viz = get_attrib(attribs, "visible")
           if (viz != None && viz != "true") {
-            println("WARNING: invisible way in osm")
+            log("WARNING: invisible way in osm")
           } else {
             id = get_attrib(attribs, "id").toInt
             name = ""
@@ -160,7 +166,7 @@ class Pass1(fn: String) {
             if (id_to_node.contains(ref)) {
               refs :+= ref
             } else {
-              println("WARNING: way references unknown node")
+              log("WARNING: way references unknown node")
             }
           }
         }
@@ -168,6 +174,6 @@ class Pass1(fn: String) {
         case _ => {}
       }
     })
-    println("")
+    log("")
   }
 }

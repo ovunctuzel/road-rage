@@ -1,11 +1,13 @@
-package map.make
+package utexas.map.make
 
 import scala.collection.mutable.HashMap
 import scala.collection.mutable.MutableList
 import scala.collection.mutable.HashSet
 import math.{min, max}
 
-import map.Coordinate
+import utexas.map.Coordinate
+
+import utexas.Util.{log, log_push, log_pop}
 
 class PreGraph1() {
   var edges = new MutableList[PreEdge1]
@@ -51,7 +53,7 @@ class PreGraph1() {
       maxX = max(maxX, pt.x)
       maxY = max(maxY, pt.y)
     }
-    println("Bounds: %f .. %f, %f .. %f".format(minX, maxX, minY, maxY))
+    log("Bounds: %f .. %f, %f .. %f".format(minX, maxX, minY, maxY))
 
     // so to make (minX, minY) the new origin...
     offX = 0 - minX
@@ -73,7 +75,7 @@ class PreGraph1() {
       )
 
       //if (x < 0 || x > width || y < 0 || y > height) {
-      //  println("OOB coordinate after normalizing! " + pt)
+      //  log("OOB coordinate after normalizing! " + pt)
       //}
     }
 

@@ -1,4 +1,4 @@
-package map.make
+package utexas.map.make
 
 class Pass2(old_graph: PreGraph1) {
   val graph = new PreGraph2(old_graph)

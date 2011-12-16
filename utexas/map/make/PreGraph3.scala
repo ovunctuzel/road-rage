@@ -1,9 +1,9 @@
-package map.make
+package utexas.map.make
 
 import scala.collection.mutable.HashMap
 import scala.collection.mutable.MutableList
 
-import map.{Coordinate, Vertex, Road, Edge, Direction}
+import utexas.map.{Coordinate, Vertex, Road, Edge, Direction}
 
 // TODO we should really subclass the real Graph, but not sure yet.
 

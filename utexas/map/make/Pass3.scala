@@ -1,4 +1,4 @@
-package map.make
+package utexas.map.make
 
 import scala.collection.mutable.HashMap
 import scala.collection.mutable.HashSet
@@ -7,10 +7,12 @@ import scala.collection.mutable.{Set => MutableSet}
 import scala.collection.mutable.MultiMap
 import scala.collection.mutable.ListBuffer
 
-import map.{Road, Edge, Vertex, Turn, TurnType, Line, Coordinate}
+import utexas.map.{Road, Edge, Vertex, Turn, TurnType, Line, Coordinate}
+
+import utexas.Util.{log, log_push, log_pop}
 
 class Pass3(old_graph: PreGraph2) {
-  println("Multiplying and directing " + old_graph.edges.length + " edges")
+  log("Multiplying and directing " + old_graph.edges.length + " edges")
   val graph = new PreGraph3(old_graph)
   val roads_per_vert = new HashMap[Vertex, MutableSet[Road]] with MultiMap[Vertex, Road]
   // for tarjan's
@@ -40,16 +42,18 @@ class Pass3(old_graph: PreGraph2) {
       }
     }
 
-    println("Connecting the dots...")
+    log("Connecting the dots...")
+    log_push
     // TODO return the mapping in the future?
     for (v <- graph.vertices) {
       // TODO not sure why this is the case yet
       if (roads_per_vert.contains(v)) {
         connect_vertex(v, roads_per_vert(v))
       } else {
-        //println("nothing refs vert " + v)
+        //log("nothing refs vert " + v)
       }
     }
+    log_pop
 
     // TODO adjust terminal line segments somehow
     // look at the vertex an edge hits, then find the perpendicular(ish) road
@@ -80,15 +84,15 @@ class Pass3(old_graph: PreGraph2) {
           road.road_type = "doomed"
         }
       }
-      println("Doomed " + (sccs.size - 1) + " disconnected SCC's from the graph")
+      log("Doomed " + (sccs.size - 1) + " disconnected SCC's from the graph")
     } else {
       // This is a cheap trick, and it absolutely works.
       val doomed_verts = HashSet() ++ sccs.sortBy(scc => scc.size).dropRight(1).flatten
       val doomed_roads = HashSet() ++ doomed_verts.flatMap(v => v.roads)
       val doomed_edges = HashSet() ++ doomed_roads.flatMap(r => r.all_lanes)
-      println("Removing " + doomed_verts.size + " disconnected vertices, "
-              + doomed_roads.size + " roads, and "
-              + doomed_edges.size + " edges from graph\n")
+      log("Removing " + doomed_verts.size + " disconnected vertices, "
+          + doomed_roads.size + " roads, and "
+          + doomed_edges.size + " edges from graph\n")
       // Yes, it really is this easy (and evil)
       graph.vertices = graph.vertices.filter(v => !doomed_verts(v))
       graph.edges = graph.edges.filter(e => !doomed_edges(e))
@@ -202,12 +206,12 @@ class Pass3(old_graph: PreGraph2) {
     for (in <- incoming_roads; src <- in.incoming_lanes(v)
          if v.turns_from(src).length == 0)
     {
-      println("GRR: nowhere to go after " + src)
+      log("GRR: nowhere to go after " + src)
     }
     for (out <- outgoing_roads; dst <- out.outgoing_lanes(v)
          if v.turns_to(dst).length == 0)
     {
-      println("GRR: nothing leads to " + dst)
+      log("GRR: nothing leads to " + dst)
     }
   }
 

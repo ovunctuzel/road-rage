@@ -2,4 +2,4 @@
 
 . common.sh
 
-scala $RUN_OPTS ui.Viewer $@
+scala $RUN_OPTS utexas.ui.Viewer $@

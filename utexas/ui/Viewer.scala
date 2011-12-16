@@ -1,8 +1,8 @@
-package ui
+package utexas.ui
 
 import swing._  // TODO figure out exactly what
 
-import map.Graph
+import utexas.map.Graph
 
 // TODO SwingApplication has a startup, quit, shutdown...
 object Viewer extends SimpleSwingApplication {

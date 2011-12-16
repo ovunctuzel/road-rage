@@ -1,4 +1,6 @@
-package map.make
+package utexas.map.make
+
+import utexas.Util.{log, log_push, log_pop}
 
 object Builder {
   val default_fn = "dat/btr.osm"
@@ -18,7 +20,8 @@ object Builder {
       }
     }
 
-    println("Processing " + fn)
+    log("Processing " + fn)
+    log_push
 
     // first, let's take osm to an undirected graph with vertex intersections
     // and entire-road edges.
@@ -30,11 +33,12 @@ object Builder {
     // now split edges into multiple directed lanes and connect them with some
     // smart intersections
     val graph3 = new Pass3(graph2).run(show_dead)
+    log_pop
 
     // TODO better output location?
     // TODO single tags look sucky
     // TODO could new xml.PrettyPrinter(80, 2).format(node), but eh
-    println(
+    log(
       "Dumping map with %d roads, %d edges, and %d vertices".format(
         graph3.roads.length, graph3.edges.length, graph3.vertices.length
     ))
