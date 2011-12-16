@@ -1,6 +1,9 @@
 package utexas.ui
 
+import scala.collection.mutable.MultiMap
 import scala.collection.mutable.ListBuffer
+import scala.collection.mutable.HashMap
+import scala.collection.mutable.{Set => MutableSet}
 import java.awt.{Graphics2D, Shape, BasicStroke, Color}
 import java.awt.geom._
 
@@ -11,6 +14,10 @@ import utexas.Util.{log, log_push, log_pop}
 // TODO maybe adaptor class for our map geometry? stick in a 'render road' bit
 
 class MapCanvas(g: Graph) extends ScrollingCanvas {
+  // state
+  private var current_edge: Option[Edge] = None
+
+
   def canvas_width = g.width.toInt
   def canvas_height = g.height.toInt
 
@@ -19,6 +26,11 @@ class MapCanvas(g: Graph) extends ScrollingCanvas {
   // which is supposed to be O(1) append and conversion to list.
   log("Pre-rendering road geometry...")
   val bg_lines = build_bg_lines
+
+  // this is only used for finer granularity searching...
+  val edge2lines = new HashMap[Edge, MutableSet[EdgeLine]] with MultiMap[Edge, EdgeLine]
+  // pre-render lanes
+  val fg_lines = build_fg_lines
 
   // just used during construction.
   private def build_bg_lines(): List[RoadLine] = {
@@ -39,10 +51,17 @@ class MapCanvas(g: Graph) extends ScrollingCanvas {
     }
     return list.toList
   }
-                   
-  // pre-render lanes
-  val fg_lines = for (e <- g.edges; l <- e.lines)
-                 yield new EdgeLine(l, e)
+  private def build_fg_lines(): List[EdgeLine] = {
+    val list = new ListBuffer[EdgeLine]()
+    for (e <- g.edges) {
+      for (l <- e.lines) {
+        val line = new EdgeLine(l, e)
+        edge2lines.addBinding(e, line)
+        list += line
+      }
+    }
+    return list.toList
+  }
 
   // begin in the center
   x_off = canvas_width / 2
@@ -62,11 +81,9 @@ class MapCanvas(g: Graph) extends ScrollingCanvas {
   private val strokes = (0 until max_lanes).map(n => new BasicStroke(lane_width * n.toFloat))
 
   // Coordinates passed in are logical/map
-  def render_canvas(g2d: Graphics2D, x1: Double, y1: Double,
-                    x2: Double, y2: Double, zoom: Double) =
-  {
+  def render_canvas(g2d: Graphics2D) = {
     // a window of our logical bounds
-    val window = new Rectangle2D.Double(x1, y1, x2 - x1, y2 - y1)
+    val window = viewing_window
 
     // remember these so we can draw center lines more efficiently
     val roads_seen = new ListBuffer[RoadLine]
@@ -98,6 +115,12 @@ class MapCanvas(g: Graph) extends ScrollingCanvas {
         g2d.draw(l.line)
       }
 
+      // draw turns?
+      current_edge match {
+        case Some(e) => draw_intersection(g2d, e)
+        case None    => {}
+      }
+
       // TODO agents, cursor, turns
     }
 
@@ -111,7 +134,69 @@ class MapCanvas(g: Graph) extends ScrollingCanvas {
     g2d.draw(new Line2D.Double(x2, y1, x2, y2))
   }
 
-  // TODO callback mechanism of some sort.
+  val turn_colors = Map( // cfg
+    TurnType.CROSS       -> Color.WHITE,
+    TurnType.CROSS_MERGE -> Color.RED,   // TODO i want to notice it!
+    TurnType.LEFT        -> Color.ORANGE,
+    TurnType.RIGHT       -> Color.GREEN,
+    TurnType.UTURN       -> Color.MAGENTA
+  )
+
+  def draw_intersection(g2d: Graphics2D, e: Edge) = {
+    def draw_turn(turn: Turn) = {
+      val pt1 = e.end_pt
+      val pt2 = e.to.location
+      val pt3 = turn.to.start_pt
+      val curve = new CubicCurve2D.Double(
+        pt1.x, pt1.y, pt2.x, pt2.y, pt2.x, pt2.y, pt3.x, pt3.y
+      )
+      g2d.setColor(turn_colors(turn.turn_type))
+      // draw the directed turn
+      g2d.draw(curve)
+      g2d.fill(
+        GeomFactory.draw_arrow(new Line(pt2.x, pt2.y, pt3.x, pt3.y), 3)
+      )
+    }
+
+    // TODO cycling through and showing conflicts
+    for (turn <- e.next_turns) {
+      draw_turn(turn)
+    }
+  }
+
+  // the radius of a small epsilon circle for the cursor
+  def eps = 5.0 / zoom
+
+  def mouseover_edge(x: Double, y: Double): Option[EdgeLine] = {
+    val window = viewing_window
+    val cursor_bubble = new Rectangle2D.Double(x - eps, y - eps, eps * 2, eps * 2)
+    // do a search at low granularity first
+    for (big_line <- bg_lines if big_line.line.intersects(window)) {
+      for (e <- big_line.road.all_lanes) {
+        for (l <- edge2lines(e) if l.line.intersects(cursor_bubble)) {
+          return Some(l)
+        }
+      }
+    }
+    // no hit
+    return None
+  }
+
+  def handle_ev(ev: UI_Event) = {
+    ev match {
+      case EV_Mouse_Moved(x, y) => {
+        // Are we mouse-overing something? ("mousing over"?)
+        if (zoom > zoom_threshold) {
+          current_edge = mouseover_edge(x, y) match {
+            case Some(l) => Some(l.edge)
+            case None    => None
+          }
+        }
+        // TODO always?
+        repaint
+      }
+    }
+  }
 }
 
 sealed trait ScreenLine {
@@ -122,9 +207,10 @@ final case class RoadLine(a: Coordinate, b: Coordinate, road: Road) extends Scre
 }
 final case class EdgeLine(l: Line, edge: Edge) extends ScreenLine {
   val line = new Line2D.Double(l.x1, l.y1, l.x2, l.y2)
-  val arrow = GeomFactory.draw_arrow(l, 3)  // TODO 3? THREE?! さん！？
+  val arrow = GeomFactory.draw_arrow(l, 1)  // TODO 3? THREE?! さん！？
 }
 
+// TODO what else belongs?
 object GeomFactory {
   def draw_arrow(line: Line, size: Int): Shape = {
     // TODO enum for size

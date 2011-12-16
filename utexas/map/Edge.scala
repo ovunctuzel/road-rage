@@ -14,6 +14,9 @@ class Edge(var id: Int, val road: Road, val dir: Direction.Direction) {
 
   def other_lanes = if (dir == Direction.POS) road.pos_lanes else road.neg_lanes
 
+  def next_turns = to.turns_from(this)
+  def prev_turns = from.turns_to(this)
+
   // TODO rewrite sexilyer
   // the rightmost lane actually becomes the center line
   def lane_offset = if (road.is_oneway) road.num_lanes - lane_num - 1
@@ -29,17 +32,34 @@ class Edge(var id: Int, val road: Road, val dir: Direction.Direction) {
                  {lines.map(l => l.to_xml)}
                </edge>
 
+  //////// Geometry. TODO separate somewhere?
+
   // recall + means v1->v2, and that road's points are stored in that order
   // what's the first line segment we traverse following this lane?
-  def first_line = if (dir == Direction.POS)
-                     new Line(road.points.head, road.points.tail.head) // 0 -> 1
-                   else
-                     new Line(road.points.last, road.points.dropRight(1).last) // -1 -> -2
+  def first_road_line = if (dir == Direction.POS)
+                          new Line(road.points.head, road.points.tail.head) // 0 -> 1
+                        else
+                          new Line(road.points.last, road.points.dropRight(1).last) // -1 -> -2
   // what's the last line segment we traverse following this lane?
-  def last_line = if (dir == Direction.POS)
-                    new Line(road.points.dropRight(1).last, road.points.last) // -2 -> -1
-                  else
-                    new Line(road.points.tail.head, road.points.head) // 1 -> 0
+  def last_road_line = if (dir == Direction.POS)
+                         new Line(road.points.dropRight(1).last, road.points.last) // -2 -> -1
+                       else
+                         new Line(road.points.tail.head, road.points.head) // 1 -> 0
+
+  // this takes a point along a line and moves it back
+  private val shift_mag = 1.0 // TODO cfg
+  // TODO y inversion problems still?!
+  private def shift_pt(x: Double, y: Double, theta: Double) = new Coordinate(
+    x + (shift_mag * math.cos(theta)), y - (shift_mag * math.sin(theta))
+  )
+  def start_pt: Coordinate = {
+    val l = lines.head
+    return shift_pt(l.x1, l.y1, l.angle)
+  }
+  def end_pt: Coordinate = {
+    val l = lines.last
+    return shift_pt(l.x2, l.y2, l.angle + math.Pi)  // reverse the angle
+  }
 }
 
 class Line(val x1: Double, val y1: Double, val x2: Double, val y2: Double) {

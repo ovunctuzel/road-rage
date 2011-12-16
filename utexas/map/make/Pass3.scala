@@ -145,8 +145,8 @@ class Pass3(old_graph: PreGraph2) {
       val to_edges = r2.outgoing_lanes(v)  
 
       // we want the angle to go from a 'from' edge to a 'to' edge
-      val from_angle = from_edges.head.last_line.angle
-      val to_angle = to_edges.head.first_line.angle
+      val from_angle = from_edges.head.last_road_line.angle
+      val to_angle = to_edges.head.first_road_line.angle
 
       // smallest angle of rotation, from "Agony" on gamedev TODO cite
       val angle_btwn = ((from_angle - to_angle + 3 * (math.Pi)) % (2 * math.Pi)) - math.Pi

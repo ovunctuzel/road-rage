@@ -12,13 +12,14 @@
 ### UI ###
 
 - get everything old working again
+  - drawing turns (better)
   - menu items do stuff
   - config
-  - drawing turns
+  - keyboarding
+- figure out why broken_angle and y inversion everywhere still...
 - way better pruning of what to (re-draw) using quadtrees
   - but is it even needed?
 - oneways look wretched
-- figure out why broken_angle
 
 ### Scalaisms ###
 

@@ -4,6 +4,7 @@ import swing._  // TODO figure out exactly what
 import swing.event._
 import java.awt.{Color,RenderingHints}
 import java.awt.geom.AffineTransform
+import java.awt.geom.Rectangle2D
 
 // TODO maybe adaptor class for our map geometry?
 
@@ -40,7 +41,9 @@ abstract class ScrollingCanvas extends Component {
       // TODO nicer reassignment?
       mouse_at_x = e.point.x
       mouse_at_y = e.point.y
-      // TODO publish event
+      handle_ev(new EV_Mouse_Moved(
+        screen_to_map_x(mouse_at_x), screen_to_map_y(mouse_at_y)
+      ))
     }
 
     case e: MousePressed => {
@@ -64,9 +67,12 @@ abstract class ScrollingCanvas extends Component {
       // reset for the next event
       click_x = e.point.x
       click_y = e.point.y
+
       mouse_at_x = e.point.x
       mouse_at_y = e.point.y
-      // TODO publish event. aka, mouseMoved.
+      handle_ev(new EV_Mouse_Moved(
+        screen_to_map_x(mouse_at_x), screen_to_map_y(mouse_at_y)
+      ))
     }
 
     case e: MouseWheelMoved => {
@@ -127,20 +133,28 @@ abstract class ScrollingCanvas extends Component {
     )
     g2d.setRenderingHints(antialiasing)
 
-    // what logical coordinates are in view?
-    val x1 = screen_to_map_x(0)
-    val y1 = screen_to_map_y(0)
-    val x2 = screen_to_map_x(size.width)
-    val y2 = screen_to_map_y(size.height)
     // do the actual work
-    render_canvas(g2d, x1, y1, x2, y2, zoom)
+    render_canvas(g2d)
+  }
+
+  // what logical coordinates are in view?
+  def x1 = screen_to_map_x(0)
+  def y1 = screen_to_map_y(0)
+  def x2 = screen_to_map_x(size.width)
+  def y2 = screen_to_map_y(size.height)
+  def viewing_window: Rectangle2D.Double = {
+    return new Rectangle2D.Double(x1, y1, x2 - x1, y2 - y1)
   }
 
   // implement these
-  def render_canvas(g2d: Graphics2D, x1: Double, y1: Double,
-                    x2: Double, y2: Double, zoom: Double)
+  def render_canvas(g2d: Graphics2D)
   def canvas_width: Int
   def canvas_height: Int
+  def handle_ev(ev: UI_Event)
 
   // TODO callback mechanism of some sort.
 }
+
+// TODO is this the right way to do this?
+sealed trait UI_Event {}
+final case class EV_Mouse_Moved(x: Double, y: Double) extends UI_Event {}
