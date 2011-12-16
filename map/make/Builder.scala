@@ -5,6 +5,7 @@ object Builder {
 
   // generate a .map from a .osm
   def main(args: Array[String]) {
+    // TODO usage info
     // Input that can be specified, with defaults:
     var fn = default_fn
     var show_dead = true

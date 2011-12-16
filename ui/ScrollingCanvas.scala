@@ -8,7 +8,7 @@ import java.awt.geom.AffineTransform
 // TODO maybe adaptor class for our map geometry?
 
 abstract class ScrollingCanvas extends Component {
-  background = Color.LIGHT_GRAY
+  override def background = Color.LIGHT_GRAY
 
   // this defines the current viewing window
   protected var zoom = 1.0
@@ -17,6 +17,7 @@ abstract class ScrollingCanvas extends Component {
   // this defines controls
   protected var key_speed = 10
   protected var zoom_step = 0.1
+  protected var zoom_mult = 10  // it's kind of weird why this isn't just ^
 
   // translate between screen and map coordinate systems
   // define (x_off, y_off) to be the top-left corner of the screen
@@ -70,8 +71,8 @@ abstract class ScrollingCanvas extends Component {
 
     case e: MouseWheelMoved => {
       val old_zoom = zoom
-      val dz = e.rotation
-      zoom -= zoom_step * dz  // TODO *10, but just stick that in step?
+      val dz = e.rotation * zoom_mult
+      zoom -= zoom_step * dz
       // cap zoom
       zoom = math.max(zoom_step, zoom)
 
@@ -122,16 +123,22 @@ abstract class ScrollingCanvas extends Component {
     val antialiasing = new java.util.HashMap[Any,Any]()
     antialiasing.put(
       RenderingHints.KEY_ANTIALIASING,
-      RenderingHints.VALUE_ANTIALIAS_OFF
+      RenderingHints.VALUE_ANTIALIAS_ON
     )
     g2d.setRenderingHints(antialiasing)
 
+    // what logical coordinates are in view?
+    val x1 = screen_to_map_x(0)
+    val y1 = screen_to_map_y(0)
+    val x2 = screen_to_map_x(size.width)
+    val y2 = screen_to_map_y(size.height)
     // do the actual work
-    render_canvas(g2d)
+    render_canvas(g2d, x1, y1, x2, y2, zoom)
   }
 
   // implement these
-  def render_canvas(g2d: Graphics2D)
+  def render_canvas(g2d: Graphics2D, x1: Double, y1: Double,
+                    x2: Double, y2: Double, zoom: Double)
   def canvas_width: Int
   def canvas_height: Int
 

@@ -12,7 +12,13 @@
 ### UI ###
 
 - get everything old working again
+  - menu items do stuff
+  - config
+  - drawing turns
 - way better pruning of what to (re-draw) using quadtrees
+  - but is it even needed?
+- oneways look wretched
+- figure out why broken_angle
 
 ### Scalaisms ###
 
@@ -22,5 +28,8 @@
 - reduce more vars to vals
 - improve build system (dont recompile)
 - hierarchial logging
+- timing
 - Edges as subclasses for direxn might be nice
 - explicitly override hashcode?
+
+- how much does printing 'proccing xml' slow us down?

@@ -15,6 +15,7 @@ class MapCanvas(g: Graph) extends ScrollingCanvas {
   // pre-render base roads.
   // TODO this was too ridiculous a sequence comprehension, so use a ListBuffer,
   // which is supposed to be O(1) append and conversion to list.
+  println("Pre-rendering road geometry...")
   val bg_lines = build_bg_lines
 
   // just used during construction.
@@ -22,6 +23,7 @@ class MapCanvas(g: Graph) extends ScrollingCanvas {
     val list = new ListBuffer[RoadLine]()
     for (r <- g.roads; (from, to) <- r.pairs_of_points) {
       if (r.is_oneway) {
+        // TODO this still looks uber sucky.
         val l = r.oneway_lanes.head.lines.last
         // shift the road over a half-lane?
         list += new RoadLine(
@@ -51,13 +53,17 @@ class MapCanvas(g: Graph) extends ScrollingCanvas {
   private val lane_stroke = new BasicStroke(0.05f)
   private val picked_lane_stroke = new BasicStroke(0.15f)
   private val lane_width = 0.6f
+  private val max_lanes = 10
+  private val zoom_threshold = 5.0
 
-  def render_canvas(g2d: Graphics2D) = {
-    // grab our logical bounds
-    val x1 = screen_to_map_x(0)
-    val y1 = screen_to_map_y(0)
-    val x2 = screen_to_map_x(canvas_width)
-    val y2 = screen_to_map_y(canvas_height)
+  // pre-compute; we don't have more than max_lanes
+  private val strokes = (0 until max_lanes).map(n => new BasicStroke(lane_width * n.toFloat))
+
+  // Coordinates passed in are logical/map
+  def render_canvas(g2d: Graphics2D, x1: Double, y1: Double,
+                    x2: Double, y2: Double, zoom: Double) =
+  {
+    // a window of our logical bounds
     val window = new Rectangle2D.Double(x1, y1, x2 - x1, y2 - y1)
 
     // remember these so we can draw center lines more efficiently
@@ -66,28 +72,32 @@ class MapCanvas(g: Graph) extends ScrollingCanvas {
     // Draw the first layer (roads)
     g2d.setColor(Color.BLACK)
     for (l <- bg_lines if l.line.intersects(window)) {
-      // TODO make a table of these; we wont see weird numbers of lanes.
-      g2d.setStroke(new BasicStroke(lane_width * l.road.num_lanes))
+      g2d.setStroke(strokes(l.road.num_lanes))
       g2d.draw(l.line)
       roads_seen += l
     }
 
-    // then the second layer (lanes)
-    g2d.setColor(Color.BLUE)
-    g2d.setStroke(lane_stroke)
-    for (l <- fg_lines if l.line.intersects(window)) {
-      g2d.draw(l.line)
-      g2d.fill(l.arrow)
-    }
+    // don't show tiny details when it doesn't matter (and when it's expensive
+    // to render them all)
+    if (zoom > zoom_threshold) {
+      // then the second layer (lanes)
+      g2d.setColor(Color.BLUE)
+      g2d.setStroke(lane_stroke)
+      // TODO if it's an edge of a road whose line has been seen?
+      for (l <- fg_lines if l.line.intersects(window)) {
+        g2d.draw(l.line)
+        g2d.fill(l.arrow)
+      }
 
-    // and the third layer (dashed center lines)
-    g2d.setColor(Color.YELLOW)
-    g2d.setStroke(center_stroke)
-    for (l <- roads_seen) {
-      g2d.draw(l.line)
-    }
+      // and the third layer (dashed center lines)
+      g2d.setColor(Color.YELLOW)
+      g2d.setStroke(center_stroke)
+      for (l <- roads_seen) {
+        g2d.draw(l.line)
+      }
 
-    // TODO agents, cursor, turns
+      // TODO agents, cursor, turns
+    }
 
     // and the map boundary
     g2d.setColor(Color.GREEN)
@@ -130,7 +140,7 @@ object GeomFactory {
     }
 
     val mid = line.midpt
-    val theta = line.angle
+    val theta = line.broken_angle
     val x = mid.x + (height * math.cos(theta))
     val y = mid.y + (height * math.sin(theta))
 
