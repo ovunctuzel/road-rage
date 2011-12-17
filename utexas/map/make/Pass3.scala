@@ -40,25 +40,29 @@ class Pass3(old_graph: PreGraph2) {
         // TODO inefficient just because i wanted a two-liner?
         e.lines = e.lines.reverse
       }
+
+      // force line segments to meet up on the inside
+      for (e <- r.all_lanes; (l1, l2) <- e.lines zip e.lines.tail) {
+        adjust_lines(l1, l2)
+      }
     }
 
     log("Connecting the dots...")
     log_push
     // TODO return the mapping in the future?
     for (v <- graph.vertices) {
-      // TODO not sure why this is the case yet
       if (roads_per_vert.contains(v)) {
         connect_vertex(v, roads_per_vert(v))
       } else {
-        //log("nothing refs vert " + v)
+        // TODO not sure I see this happen ever
+        log("WARNING nothing refs vert " + v)
       }
     }
     log_pop
 
-    // TODO adjust terminal line segments somehow
-    // look at the vertex an edge hits, then find the perpendicular(ish) road
-    // and trim everything back. but everything? not quite, cause you could have
-    // a |--- situation.
+    log("Tidying up geometry...")
+    // Do this work per edge, for now.
+    graph.edges.foreach(e => adjust_segments(e))
 
     // finally, use Tarjan's to locate all SCC's in the graph. ideally we'd just
     // have one, but crappy graphs, weird reality, and poor turn heuristics mean
@@ -144,6 +148,10 @@ class Pass3(old_graph: PreGraph2) {
       val from_edges = r1.incoming_lanes(v)  
       val to_edges = r2.outgoing_lanes(v)  
 
+      // choose arbitrary representatives so we can make queries
+      val from = from_edges.head
+      val to   = to_edges.head
+
       // we want the angle to go from any 'from' edge to any 'to' edge
       val from_angle = from_edges.head.last_road_line.angle
       val to_angle = to_edges.head.first_road_line.angle
@@ -194,11 +202,9 @@ class Pass3(old_graph: PreGraph2) {
           //v.turns += (from_edges.tail zip regulars) map turn_factory(TurnType.CROSS)
         }
       } else if (angle_btwn < 0) {
-        // leftmost = highest lane-num
-        v.turns += new Turn(from_edges.last, TurnType.LEFT, to_edges.last)
+        v.turns += new Turn(from.leftmost_lane, TurnType.LEFT, to.leftmost_lane)
       } else {
-        // rightmost = lowest lane-num
-        v.turns += new Turn(from_edges.head, TurnType.RIGHT, to_edges.head)
+        v.turns += new Turn(from.rightmost_lane, TurnType.RIGHT, to.rightmost_lane)
       }
     }
 
@@ -231,6 +237,35 @@ class Pass3(old_graph: PreGraph2) {
     val dy = l * width * math.sin(theta)
 
     return new Line(pt1.x + dx, pt1.y + dy, pt2.x + dx, pt2.y + dy)
+  }
+
+  private def adjust_segments(e: Edge) = {
+    // When we shift lines from the road's center to draw lanes, we end up with
+    // lines that protrude too far into the intersection. It's not clear how far
+    // back to trim these in general, so one solution is to find all the other
+    // line segments of adjacent edges, determine intersection points, and trim
+    // both lines back to that point.
+    // TODO investigate a general "scale length by 10%" policy
+    // TODO multiple 'right roads' are untested? :P
+
+    // We want our rightmsot lane to match whatever is counter-clockwise to it. 
+    e.next_counterclockwise_to match {
+      case Some(ccw) => adjust_lines(e.lines.last, ccw.lines.head)
+      case _ => {}
+    }
+  }
+
+  private def adjust_lines(l1: Line, l2: Line) = {
+    // expect them to collide.
+    l1.intersection(l2) match {
+      case Some(pt) => {
+        l1.x2 = pt.x
+        l1.y2 = pt.y
+        l2.x1 = pt.x
+        l2.y1 = pt.y
+      }
+      case None => {} // don't worry about parallel lines
+    }
   }
 
   // flood from v

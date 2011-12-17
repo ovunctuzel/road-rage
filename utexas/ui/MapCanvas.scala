@@ -69,9 +69,10 @@ class MapCanvas(g: Graph) extends ScrollingCanvas {
   y_off = canvas_height / 2
 
   // TODO cfg
-  private val center_stroke = new BasicStroke(
+  /*private val center_stroke = new BasicStroke(
     0.1f, BasicStroke.CAP_BUTT, BasicStroke.JOIN_MITER, 1.0f, Array(1.0f), 0.0f
-  )
+  )*/
+  private val center_stroke = new BasicStroke(0.1f)
   private val lane_stroke = new BasicStroke(0.05f)
   private val lane_width = 0.6f
 
@@ -100,11 +101,12 @@ class MapCanvas(g: Graph) extends ScrollingCanvas {
     // to render them all)
     if (zoom > cfg.zoom_threshold) {
       // then the second layer (lanes)
-      g2d.setColor(Color.BLUE)
       g2d.setStroke(lane_stroke)
       // TODO if it's an edge of a road whose line has been seen?
       for (l <- fg_lines if l.line.intersects(window)) {
+        g2d.setColor(color_edge(l.edge))
         g2d.draw(l.line)
+        g2d.setColor(Color.BLUE)
         g2d.fill(l.arrow)
       }
 
@@ -136,7 +138,7 @@ class MapCanvas(g: Graph) extends ScrollingCanvas {
 
   def color_road(r: Road): Color = {
     // Test parallel/perpendicular roads.
-    current_edge match {
+    /*current_edge match {
       case Some(e) => {
         //val special = e.to.parallel_roads(e.road)
         val special = e.to.perp_roads(e.road)
@@ -145,7 +147,7 @@ class MapCanvas(g: Graph) extends ScrollingCanvas {
         }
       }
       case _ => {}
-    }
+    }*/
 
     // The normal handling
     return highlight_type match
@@ -153,6 +155,21 @@ class MapCanvas(g: Graph) extends ScrollingCanvas {
       case (Some(x)) if x == r.road_type => Color.GREEN
       case _                             => Color.BLACK
     }
+  }
+
+  def color_edge(e: Edge): Color = {
+    // Test counter-clockwise ordering
+    /*current_edge match {
+      case Some(cur) => {
+        cur.next_counterclockwise_to match {
+          case (Some(ccw)) if e == ccw => return Color.CYAN
+          case _ => {}
+        }
+      }
+      case _ => {}
+    }*/
+
+    return Color.WHITE
   }
 
   val turn_colors = Map( // cfg

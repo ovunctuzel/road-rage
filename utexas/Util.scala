@@ -29,7 +29,8 @@ object cfg {
 
   val doubles = List(
     ("lane_width",     0.05, "Width of a lane", 0.01, 0.1),
-    ("zoom_threshold", 5.0,  "How close to zoom in before drawing details", 1.0, 15.0)
+    ("zoom_threshold", 5.0,  "How close to zoom in before drawing details", 1.0, 15.0),
+    ("epsilon", 0.00001,  "What do we take as zero due to FP imprecision?", 0.0, 1.0)
   ) map {c => c._1 -> new Double_Cfgable(c._2, c._3, c._4, c._5)} toMap
 
   val ints = List(
@@ -48,6 +49,7 @@ object cfg {
 
   def lane_width      = doubles("lane_width").value
   def zoom_threshold  = doubles("zoom_threshold").value
+  def epsilon  = doubles("epsilon").value
 
   def max_lanes       = ints("max_lanes").value
 }

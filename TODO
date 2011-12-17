@@ -2,23 +2,24 @@
 
 ### Map building ###
 
-- trim edge lines back, deal with densely clustered line segments
-- cul-de-sac handling in p2
+- deal with densely clustered line segments
+- cul-de-sac handling in p2... needed?
 - pregraph3 vs final graph structure?
-- whats the purpose of phase 2 now?
 - deal with disconnected things properly
 - document stuff, code-freeze on mapgen!
 
 ### UI ###
 
 - get everything old working again
-  - drawing turns (better)
   - keyboarding
   - config
   - menu items do stuff
 - oneways look wretched
 - support neighborhoods again
 - make it look nicer
+  - UI polishing
+  - black road backgrounds dont meet up smoothly since we go by line segment
+    - add extra lanes on either side, dont color them white, but draw the stuff in between?
 - figure out why broken_angle and y inversion everywhere still...
 - way better pruning of what to (re-draw) using quadtrees
   - but is it even needed?
@@ -32,7 +33,7 @@
 - reduce more vars to vals
 - improve build system (dont recompile)
 - Edges as subclasses for direxn might be nice
-  - make everything possible immutable, but then have to figure out how to build
-    inter-referential things
+- make everything possible immutable, but then have to figure out how to build
+  inter-referential things
   - have more ids and methods that access based on those. that'll break it.
 - explicitly override hashcode?

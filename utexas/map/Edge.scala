@@ -1,6 +1,6 @@
 package utexas.map
 
-import scala.collection.immutable.{List => ImmutableList}
+import utexas.cfg
 
 // TODO subclass Edge for pos/neg.. seems easier for lots of things
 
@@ -13,9 +13,30 @@ class Edge(var id: Int, val road: Road, val dir: Direction.Direction) {
   var lines: List[Line] = List()
 
   def other_lanes = if (dir == Direction.POS) road.pos_lanes else road.neg_lanes
+  def rightmost_lane = other_lanes.head
+  def leftmost_lane  = other_lanes.last
 
   def next_turns = to.turns_from(this)
   def prev_turns = from.turns_to(this)
+  def right_turns_to = next_turns.filter(t => t.turn_type == TurnType.RIGHT).map(t => t.to)
+  def left_turns_to  = next_turns.filter(t => t.turn_type == TurnType.LEFT).map(t => t.to)
+  def crosses_to     = next_turns.filter(t => t.turn_type == TurnType.CROSS).map(t => t.to)
+
+  def is_rightmost = lane_num == 0
+
+  // It really is this simple.
+  def next_counterclockwise_to: Option[Edge] = {
+    if (is_rightmost) {
+      val ordering = right_turns_to ++ crosses_to ++ left_turns_to
+      if (ordering.size > 0) {
+        return Some(ordering.head)
+      } else {
+        return None
+      }
+    } else {
+      return Some(other_lanes(lane_num - 1))
+    }
+  }
 
   // TODO rewrite sexilyer
   // the rightmost lane actually becomes the center line
@@ -62,7 +83,8 @@ class Edge(var id: Int, val road: Road, val dir: Direction.Direction) {
   }
 }
 
-class Line(val x1: Double, val y1: Double, val x2: Double, val y2: Double) {
+// TODO noooo not var >_<
+class Line(var x1: Double, var y1: Double, var x2: Double, var y2: Double) {
   def this(pt1: Coordinate, pt2: Coordinate) = this(pt1.x, pt1.y, pt2.x, pt2.y)
   def this(v1: Vertex, v2: Vertex) = this(v1.location, v2.location)
 
@@ -93,7 +115,25 @@ class Line(val x1: Double, val y1: Double, val x2: Double, val y2: Double) {
   // assuming the two lines share an origin
   def dot(l2: Line) = (x2 - x1) * (l2.x2 - l2.x1) + (y2 - y1) * (l2.y2 - l2.y1)
 
-  // line intersection and overlap and crap
+  // this is line intersection, not line segment.
+  def intersection(other: Line): Option[Coordinate] = {
+    // Ripped from http://en.wikipedia.org/wiki/Line-line_intersection shamelessly
+    val x3 = other.x1
+    val x4 = other.x2
+    val y3 = other.y1
+    val y4 = other.y2
+
+    val denom: Double = (x1 - x2) * (y3 - y4) - (y1 - y2) * (x3 - x4)
+    val num_x: Double = (x1 * y2 - y1 * x2) * (x3 - x4) - (x1 - x2) * (x3 * y4 - y3 * x4)
+    val num_y: Double = (x1 * y2 - y1 * x2) * (y3 - y4) - (y1 - y2) * (x3 * y4 - y3 * x4)
+
+    if (denom.abs <= cfg.epsilon) {
+      // they're parallel
+      return None
+    } else {
+      return Some(new Coordinate(num_x / denom, num_y / denom))
+    }
+  }
 }
 
 object Direction extends Enumeration {

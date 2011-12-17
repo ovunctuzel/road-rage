@@ -30,36 +30,9 @@ class Road(var id: Int, val points: List[Coordinate], val name: String,
 
   override def toString = name + " [R" + id + "]"
   
-  // TODO overload equality better? also, bizarre unreachable code bugs.
-  def incoming_lanes(v: Vertex): MutableList[Edge] = {
-    if (v == v1) {
-      return neg_lanes
-    } else if (v == v2) {
-      return pos_lanes
-    } else {
-      throw new Exception("road doesnt involve v")  // TODO
-    }
-    /*v match {
-      case v1 => neg_lanes
-      case v2 => pos_lanes
-      case _  => throw new Exception("road doesnt involve v") // TODO }
-    }*/
-  }
-
-  def outgoing_lanes(v: Vertex): MutableList[Edge] = {
-    if (v == v1) {
-      return pos_lanes
-    } else if (v == v2) {
-      return neg_lanes
-    } else {
-      throw new Exception("road doesnt involve v")  // TODO
-    }
-    /*v match {
-      case v1 => pos_lanes
-      case v2 => neg_lanes
-      case _  => throw new Exception("road doesnt involve v") // TODO
-    }*/
-  }
+  // TODO don't ask for vertex that isn't either v1 or v2.
+  def incoming_lanes(v: Vertex) = if (v == v1) neg_lanes else pos_lanes
+  def outgoing_lanes(v: Vertex) = if (v == v1) pos_lanes else neg_lanes
 
   def pairs_of_points = points zip points.tail
 }

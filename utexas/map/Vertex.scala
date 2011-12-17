@@ -18,9 +18,9 @@ class Vertex(val location: Coordinate, var id: Int) {
   def out_verts = HashSet() ++ turns.map(t => t.to.to)
 
   def roads = HashSet() ++ turns.flatMap(t => List(t.from.road, t.to.road))
-  // these are useful for finding turn conflicts and trimming edge lines (during
-  // construction). We do the hard work already by making turns.
-  // TODO test for one-ways
+
+  // these may prove useful; just remember roads are undirected.
+  // TODO test for one-ways?
   private def find_roads(r: Road, types: Set[TurnType.TurnType]): Set[Road] = {
     return HashSet() ++ turns.filter(
       t => (t.involves_road(r) && types(t.turn_type))
