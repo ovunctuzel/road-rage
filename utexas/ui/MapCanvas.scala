@@ -90,12 +90,7 @@ class MapCanvas(g: Graph) extends ScrollingCanvas {
 
     // Draw the first layer (roads)
     for (l <- bg_lines if l.line.intersects(window)) {
-      g2d.setColor(
-        highlight_type match {
-          case (Some(x)) if x == l.road.road_type => Color.GREEN
-          case _                                  => Color.BLACK
-        }
-      )
+      g2d.setColor(color_road(l.road))
       g2d.setStroke(strokes(l.road.num_lanes))
       g2d.draw(l.line)
       roads_seen += l
@@ -137,6 +132,27 @@ class MapCanvas(g: Graph) extends ScrollingCanvas {
     g2d.draw(new Line2D.Double(x1, y2, x2, y2))
     g2d.draw(new Line2D.Double(x1, y1, x1, y2))
     g2d.draw(new Line2D.Double(x2, y1, x2, y2))
+  }
+
+  def color_road(r: Road): Color = {
+    // Test parallel/perpendicular roads.
+    current_edge match {
+      case Some(e) => {
+        //val special = e.to.parallel_roads(e.road)
+        val special = e.to.perp_roads(e.road)
+        if (special(r)) {
+          return Color.CYAN
+        }
+      }
+      case _ => {}
+    }
+
+    // The normal handling
+    return highlight_type match
+    {
+      case (Some(x)) if x == r.road_type => Color.GREEN
+      case _                             => Color.BLACK
+    }
   }
 
   val turn_colors = Map( // cfg

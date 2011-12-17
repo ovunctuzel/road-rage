@@ -144,7 +144,7 @@ class Pass3(old_graph: PreGraph2) {
       val from_edges = r1.incoming_lanes(v)  
       val to_edges = r2.outgoing_lanes(v)  
 
-      // we want the angle to go from a 'from' edge to a 'to' edge
+      // we want the angle to go from any 'from' edge to any 'to' edge
       val from_angle = from_edges.head.last_road_line.angle
       val to_angle = to_edges.head.first_road_line.angle
 

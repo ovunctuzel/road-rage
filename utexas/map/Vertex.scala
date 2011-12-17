@@ -18,6 +18,18 @@ class Vertex(val location: Coordinate, var id: Int) {
   def out_verts = HashSet() ++ turns.map(t => t.to.to)
 
   def roads = HashSet() ++ turns.flatMap(t => List(t.from.road, t.to.road))
+  // these are useful for finding turn conflicts and trimming edge lines (during
+  // construction). We do the hard work already by making turns.
+  // TODO test for one-ways
+  private def find_roads(r: Road, types: Set[TurnType.TurnType]): Set[Road] = {
+    return HashSet() ++ turns.filter(
+      t => (t.involves_road(r) && types(t.turn_type))
+    ).map(t => t.other_road(r))
+  }
+  def parallel_roads(r: Road) = find_roads(r, Set(TurnType.CROSS))
+  def perp_roads(r: Road)     = find_roads(r, Set(TurnType.LEFT, TurnType.RIGHT))
+  def left_roads(r: Road)     = find_roads(r, Set(TurnType.LEFT))
+  def right_roads(r: Road)    = find_roads(r, Set(TurnType.RIGHT))
 
   // Somewhere due to unordered hashes, the turns list winds up in an
   // inconsistent order. To make diffs of output be the same for the same code,
@@ -36,10 +48,12 @@ class Vertex(val location: Coordinate, var id: Int) {
   }
 }
 
-// TODO maybe this would work better as a Pair
 class Turn(val from: Edge, val turn_type: TurnType.TurnType, val to: Edge) {
   def to_xml = <link from={from.id.toString} to={to.id.toString}
                      type={turn_type.toString}/>
+
+  def involves_road(r: Road) = (from.road == r || to.road == r)
+  def other_road(r: Road) = if (from.road == r) to.road else from.road
 }
 
 object TurnType extends Enumeration {
