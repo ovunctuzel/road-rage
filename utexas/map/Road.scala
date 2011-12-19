@@ -1,5 +1,7 @@
 package utexas.map
 
+import java.io.FileWriter
+
 import scala.collection.mutable.MutableList
 
 // TODO enum for type. also, it's var because of tarjan's...
@@ -23,10 +25,14 @@ class Road(var id: Int, val points: List[Coordinate], val name: String,
 
   def num_lanes = pos_lanes.length + neg_lanes.length
 
-  def to_xml = <road name={name} type={road_type} osmid={osm_id.toString}
-                     v1={v1.id.toString} v2={v2.id.toString} id={id.toString}>
-                 {points.map(pt => pt.to_xml)}
-               </road>
+  def to_xml(out: FileWriter) = {
+    out.write(
+      "  <road name=\"" + name + "\" type=\"" + road_type + "\" osmid=\"" + osm_id
+      + "\" v1=\"" + v1.id + "\" v2=\"" + v2.id + "\" id=\"" + id + "\">\n"
+    )
+    points.foreach(pt => pt.to_xml(out))
+    out.write("</road>\n")
+  }
 
   override def toString = name + " [R" + id + "]"
   

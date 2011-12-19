@@ -249,6 +249,12 @@ class Pass3(old_graph: PreGraph2) {
     // TODO multiple 'right roads' are untested? :P
 
     // We want our rightmsot lane to match whatever is counter-clockwise to it. 
+    // TODO this is flawed in the presence of oneways:
+    // ^
+    // |
+    // V <======  the ccw lane relevant is incoming, not outgoing
+    // ^
+    // |
     e.next_counterclockwise_to match {
       case Some(ccw) => adjust_lines(e.lines.last, ccw.lines.head)
       case _ => {}

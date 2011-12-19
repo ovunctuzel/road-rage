@@ -1,5 +1,7 @@
 package utexas.map
 
+import java.io.FileWriter
+
 import utexas.cfg
 
 // TODO subclass Edge for pos/neg.. seems easier for lots of things
@@ -13,14 +15,18 @@ class Edge(var id: Int, val road: Road, val dir: Direction.Direction) {
   var lines: List[Line] = List()
 
   def other_lanes = if (dir == Direction.POS) road.pos_lanes else road.neg_lanes
+  def opposite_lanes = if (dir == Direction.POS) road.neg_lanes else road.pos_lanes
   def rightmost_lane = other_lanes.head
   def leftmost_lane  = other_lanes.last
 
   def next_turns = to.turns_from(this)
   def prev_turns = from.turns_to(this)
-  def right_turns_to = next_turns.filter(t => t.turn_type == TurnType.RIGHT).map(t => t.to)
-  def left_turns_to  = next_turns.filter(t => t.turn_type == TurnType.LEFT).map(t => t.to)
-  def crosses_to     = next_turns.filter(t => t.turn_type == TurnType.CROSS).map(t => t.to)
+  def right_turns = next_turns.filter(t => t.turn_type == TurnType.RIGHT)
+  def left_turns  = next_turns.filter(t => t.turn_type == TurnType.LEFT)
+  def crosses     = next_turns.filter(t => t.turn_type == TurnType.CROSS)
+  def right_turns_to = right_turns.map(t => t.to)
+  def left_turns_to  = left_turns.map(t => t.to)
+  def crosses_to     = crosses.map(t => t.to)
 
   def is_rightmost = lane_num == 0
 
@@ -48,10 +54,14 @@ class Edge(var id: Int, val road: Road, val dir: Direction.Direction) {
   def from: Vertex = if (dir == Direction.POS) road.v1 else road.v2
   def to: Vertex   = if (dir == Direction.POS) road.v2 else road.v1
 
-  def to_xml = <edge id={id.toString} road={road.id.toString} dir={dir.toString}
-                     laneNum={lane_num.toString}>
-                 {lines.map(l => l.to_xml)}
-               </edge>
+  def to_xml(out: FileWriter) = {
+    out.write(
+      "  <edge id=\"" + id + "\" road=\"" + road.id + "\" dir=\"" + dir
+      + "\" laneNum=\"" + lane_num + "\">\n"
+    )
+    lines.foreach(l => l.to_xml(out))
+    out.write("  </edge>\n")
+  }
 
   //////// Geometry. TODO separate somewhere?
 
@@ -106,8 +116,12 @@ class Line(var x1: Double, var y1: Double, var x2: Double, var y2: Double) {
 
   override def toString = "%f, %f ---> %f, %f".format(x1, y1, x2, y2)
 
-  def to_xml = <line x1={x1.toString} y1={y1.toString} x2={x2.toString}
-                     y2={y2.toString}/>
+  def to_xml(out: FileWriter) = {
+    out.write(
+      "    <line x1=\"" + x1 + "\" y1=\"" + y1 + "\" x2=\"" + x2 + "\" y2=\""
+      + y2 + "\"/>\n"
+    )
+  }
 
   // TODO theres also a version of this in world's meters
   def length = math.sqrt(math.pow(x2 - x1, 2) + math.pow(y2 - y1, 2))

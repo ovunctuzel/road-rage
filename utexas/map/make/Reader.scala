@@ -33,13 +33,7 @@ class Reader(fn: String) {
       }
     }
 
-    // it works! first try. :D
-    //log("Consistency check...")
-    //xml.XML.save("dat/echo.map", g.to_xml)
-
     // TODO free all this temp crap we made somehow
-
-    
 
     return g
   }

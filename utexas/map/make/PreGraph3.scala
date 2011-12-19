@@ -1,5 +1,7 @@
 package utexas.map.make
 
+import java.io.FileWriter
+
 import scala.collection.mutable.HashMap
 import scala.collection.mutable.MutableList
 
@@ -77,15 +79,19 @@ class PreGraph3(old_graph: PreGraph2) {
   }
 
   // TODO pregraph1 should have a 'data' structure or something
-  // TODO dont we want to stream this out? or is this xml construction fine?
-  // it's important to dump vertices first
-  def to_xml(dat: PreGraph1) =
-    <graph width={dat.width.toString} height={dat.height.toString}
-           xoff={dat.offX.toString} yoff={dat.offY.toString} scale={dat.scale.toString}
-           roads={roads.length.toString} edges={edges.length.toString}
-           verts={vertices.length.toString}>
-      {vertices.map(v => v.to_xml)}
-      {roads.map(r => r.to_xml)}
-      {edges.map(e => e.to_xml)}
-    </graph>
+  // it's important to dump vertices first, since roads need them. and edges
+  // need roads, so the order works out well.
+  // scala has nice xml construction, but it's a memory hog.
+  def to_xml(out: FileWriter, dat: PreGraph1) = {
+    out.write(
+      "<graph width=\"" + dat.width + "\" height=\"" + dat.height
+      + "\" xoff=\"" + dat.offX + "\" yoff=\"" + dat.offY
+      + "\" scale=\"" + dat.scale + "\" roads=\"" + roads.length
+      + "\" edges=\"" + edges.length + "\" verts=\"" + vertices.length + "\">\n"
+    )
+    vertices.foreach(v => v.to_xml(out))
+    roads.foreach(r => r.to_xml(out))
+    edges.foreach(e => e.to_xml(out))
+    out.write("</graph>\n")
+  }
 }

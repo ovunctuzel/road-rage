@@ -1,5 +1,7 @@
 package utexas.map
 
+import java.io.FileWriter
+
 /*
  * A vital note about coordinate systems:
  * - (longitude, latitude) corresponds to (x, y) where y increases upwards
@@ -22,7 +24,9 @@ class Coordinate(val x: Double, val y: Double) {
   // pretty printer
   override def toString = "(%f, %f)".format(x, y)
 
-  def to_xml = <pt x={x.toString} y={y.toString}/>
+  def to_xml(out: FileWriter) = {
+    out.write("    <pt x=\"" + x + "\" y=\"" + y + "\"/>\n")
+  }
 
   // TODO sexy overloading
   def subtract(other: Coordinate) = new Coordinate(x - other.x, y - other.y)

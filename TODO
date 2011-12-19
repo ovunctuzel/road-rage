@@ -7,11 +7,12 @@
 - pregraph3 vs final graph structure?
 - deal with disconnected things properly
 - document stuff, code-freeze on mapgen!
+- multi-lane situations dont have enough turns, and we need to do more trimming!
 
 ### UI ###
 
+- conflicts dont look correct
 - get everything old working again
-  - keyboarding
   - config
   - menu items do stuff
 - oneways look wretched

@@ -1,5 +1,7 @@
 package utexas.map
 
+import java.io.FileWriter
+
 import scala.collection.mutable.MutableList
 import scala.collection.immutable.HashSet
 
@@ -35,10 +37,13 @@ class Vertex(val location: Coordinate, var id: Int) {
   // inconsistent order. To make diffs of output be the same for the same code,
   // impose an ordering on the turns, sorting first by the 'from' edge and then
   // the 'to' edge.
-  def to_xml = <vertex id={id.toString} x={location.x.toString}
-                       y={location.y.toString}>
-                 {turns.sortBy(t => (t.from.id, t.to.id)).map(t => t.to_xml)}
-               </vertex>
+  def to_xml(out: FileWriter) = {
+    out.write(
+      "  <vertex id=\"" + id + "\" x=\"" + location.x + "\" y=\"" + location.y + "\">\n"
+    )
+    turns.sortBy(t => (t.from.id, t.to.id)).foreach(t => t.to_xml(out))
+    out.write("  </vertex>\n")
+  }
 
   override def toString = "[V" + id + "]"
 
@@ -46,21 +51,4 @@ class Vertex(val location: Coordinate, var id: Int) {
     case other: Vertex => { id == other.id }
     case _ => false
   }
-}
-
-class Turn(val from: Edge, val turn_type: TurnType.TurnType, val to: Edge) {
-  def to_xml = <link from={from.id.toString} to={to.id.toString}
-                     type={turn_type.toString}/>
-
-  def involves_road(r: Road) = (from.road == r || to.road == r)
-  def other_road(r: Road) = if (from.road == r) to.road else from.road
-}
-
-object TurnType extends Enumeration {
-  type TurnType = Value
-  val CROSS       = Value("C")
-  val CROSS_MERGE = Value("M")
-  val LEFT        = Value("L")
-  val RIGHT       = Value("R")
-  val UTURN       = Value("U")
 }

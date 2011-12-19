@@ -89,7 +89,7 @@ object Viewer extends SimpleSwingApplication {
     contents = new BoxPanel(Orientation.Vertical) {
       contents += new GridPanel(2, 4) {
         // TODO config for all the sizings...
-        maximumSize = new Dimension(800, 10)
+        maximumSize = new Dimension(Int.MaxValue, 10)
         border = Swing.MatteBorder(5, 5, 5, 5, Color.BLACK)
         contents += new Label("Zoom: ")
         contents += new Label("Agents: ")

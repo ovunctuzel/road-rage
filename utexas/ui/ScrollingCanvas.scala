@@ -8,21 +8,27 @@ import java.awt.geom.Rectangle2D
 
 import utexas.Util
 
+// TODO we can't hear the tab key until we figure out how to
+// have 'with Component.SuperMixin' so we can do setFocusTraversalEnabled(false)
+
 // TODO maybe adaptor class for our map geometry?
 
+// SuperMixin lets us get tab back
 abstract class ScrollingCanvas extends Component {
   // It's nice to have access to this.
   protected var status = Status_Bar
 
   override def background = Color.LIGHT_GRAY
-  override def focusable = true  // TODO it doesnt work?
-  requestFocus  // TODO?
+  override def focusable = true   // for keys to work
 
-  // this defines the current viewing window
+  // this defines the current viewing window. these values are arbitrary;
+  // reset_window will clobber them.
   protected var zoom = 1.0
   protected var x_off, y_off = 0.0
+  reset_window
 
   // this defines controls
+  // TODO cfg
   protected var key_speed = 10
   protected var zoom_step = 0.1
   protected var zoom_mult = 10  // it's kind of weird why this isn't just ^
@@ -40,7 +46,7 @@ abstract class ScrollingCanvas extends Component {
   listenTo(mouse.moves)
   listenTo(mouse.clicks)
   listenTo(mouse.wheel)
-  //listenTo(keys) // TODO :(
+  listenTo(keys) // TODO work damnit!
 
   reactions += {
     // TODO fast_mode
@@ -94,15 +100,34 @@ abstract class ScrollingCanvas extends Component {
       x_off = ((zoom / old_zoom) * (mouse_at_x + x_off)) - mouse_at_x
       y_off = ((zoom / old_zoom) * (mouse_at_y + y_off)) - mouse_at_y
 
-      fix_oob()
+      fix_oob
       // show the zoom
       status.zoom.text = "" + zoom
-      repaint()
+      repaint
     }
 
-    /*case KeyPressed(_, key, _, _) => {
-      println("keypress: " + key)
-    }*/
+    // on my system, this is fired constantly at a repeat rate, rather than
+    // having the usual semantics of one press/release pair.
+    case KeyPressed(_, key, _, _) => {
+      key match {
+        case Key.Up    => y_off -= zoom * key_speed
+        case Key.Down  => y_off += zoom * key_speed
+        case Key.Left  => x_off -= zoom * key_speed
+        case Key.Right => x_off += zoom * key_speed
+        case Key.R     => reset_window
+        case _         => handle_ev(EV_Key_Press(key))
+      }
+
+      fix_oob
+      repaint
+    }
+  }
+
+  // begin in the center
+  private def reset_window() = {
+    x_off = canvas_width / 2
+    y_off = canvas_height / 2
+    zoom = 1.0
   }
 
   // prevent coordinates from leaving the canvas
@@ -128,6 +153,11 @@ abstract class ScrollingCanvas extends Component {
   override def paintComponent(g2d: Graphics2D) = {
     // clear things
     super.paintComponent(g2d)
+
+    // oh the strange bugginess of swing. make keys work.
+    if (!hasFocus) {
+      requestFocus
+    }
 
     // Perform the transformations to mimic scrolling and zooming
     val transform = new AffineTransform()
@@ -162,11 +192,13 @@ abstract class ScrollingCanvas extends Component {
   def canvas_width: Int
   def canvas_height: Int
   def handle_ev(ev: UI_Event)
-
-  // TODO callback mechanism of some sort.
 }
 
 // TODO is this the right way to do this?
+// TODO hey, why not use the existing swingish publisher/reactions framework? :P
 sealed trait UI_Event {}
 final case class EV_Mouse_Moved(x: Double, y: Double) extends UI_Event {}
 final case class EV_Param_Set(key: String, value: Option[String]) extends UI_Event {}
+// TODO this is really a swing.event.Key (a Enumeration.Value), but I can't get
+// that to work...
+final case class EV_Key_Press(key: Any) extends UI_Event {}

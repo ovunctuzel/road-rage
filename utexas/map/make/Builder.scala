@@ -1,5 +1,8 @@
 package utexas.map.make
 
+import java.io.FileWriter
+
+import utexas.Util
 import utexas.Util.{log, log_push, log_pop}
 
 object Builder {
@@ -36,12 +39,12 @@ object Builder {
     log_pop
 
     // TODO better output location?
-    // TODO single tags look sucky
-    // TODO could new xml.PrettyPrinter(80, 2).format(node), but eh
     log(
       "Dumping map with %d roads, %d edges, and %d vertices".format(
         graph3.roads.length, graph3.edges.length, graph3.vertices.length
     ))
-    xml.XML.save("dat/test.map", graph3.to_xml(graph1))
+    val out = new FileWriter("dat/test.map")
+    graph3.to_xml(out, graph1)
+    out.close
   }
 }

@@ -6,6 +6,7 @@ import scala.collection.mutable.HashMap
 import scala.collection.mutable.{Set => MutableSet}
 import java.awt.{Graphics2D, Shape, BasicStroke, Color}
 import java.awt.geom._
+import swing.event.Key
 
 import utexas.map._  // TODO yeah getting lazy.
 
@@ -18,6 +19,7 @@ class MapCanvas(g: Graph) extends ScrollingCanvas {
   // state
   private var current_edge: Option[Edge] = None
   private var highlight_type: Option[String] = None
+  private var current_turn = -1  // for cycling through turns from an edge
 
   def canvas_width = g.width.toInt
   def canvas_height = g.height.toInt
@@ -180,25 +182,35 @@ class MapCanvas(g: Graph) extends ScrollingCanvas {
     TurnType.UTURN       -> Color.MAGENTA
   )
 
-  def draw_intersection(g2d: Graphics2D, e: Edge) = {
-    def draw_turn(turn: Turn) = {
-      val pt1 = e.end_pt
-      val pt2 = e.to.location
-      val pt3 = turn.to.start_pt
-      val curve = new CubicCurve2D.Double(
-        pt1.x, pt1.y, pt2.x, pt2.y, pt2.x, pt2.y, pt3.x, pt3.y
-      )
-      g2d.setColor(turn_colors(turn.turn_type))
-      // draw the directed turn
-      g2d.draw(curve)
-      g2d.fill(
-        GeomFactory.draw_arrow(new Line(pt2.x, pt2.y, pt3.x, pt3.y), 3)
-      )
-    }
+  def draw_turn(g2d: Graphics2D, turn: Turn, color: Color) = {
+    val pt1 = turn.from.end_pt
+    val pt2 = turn.from.to.location
+    val pt3 = turn.to.start_pt
+    val curve = new CubicCurve2D.Double(
+      pt1.x, pt1.y, pt2.x, pt2.y, pt2.x, pt2.y, pt3.x, pt3.y
+    )
+    g2d.setColor(color)
+    // draw the directed turn
+    g2d.draw(curve)
+    g2d.fill(
+      GeomFactory.draw_arrow(new Line(pt2.x, pt2.y, pt3.x, pt3.y), 3)
+    )
+  }
 
-    // TODO cycling through and showing conflicts
-    for (turn <- e.next_turns) {
-      draw_turn(turn)
+  def draw_intersection(g2d: Graphics2D, e: Edge) = {
+    if (current_turn == -1) {
+      // show all turns
+      for (turn <- e.next_turns) {
+        draw_turn(g2d, turn, turn_colors(turn.turn_type))
+      }
+    } else {
+      // show one turn and its conflicts
+      val turn = e.next_turns(current_turn)
+      draw_turn(g2d, turn, turn_colors(turn.turn_type))
+      // TODO this looks buggy!
+      for (conflict <- turn.conflicts) {
+        draw_turn(g2d, conflict, Color.RED)
+      }
     }
   }
 
@@ -223,6 +235,9 @@ class MapCanvas(g: Graph) extends ScrollingCanvas {
   def handle_ev(ev: UI_Event) = {
     ev match {
       case EV_Mouse_Moved(x, y) => {
+        // always reset this
+        current_turn = -1
+
         // Are we mouse-overing something? ("mousing over"?)
         if (zoom > cfg.zoom_threshold) {
           current_edge = mouseover_edge(x, y) match {
@@ -241,6 +256,25 @@ class MapCanvas(g: Graph) extends ScrollingCanvas {
       case EV_Param_Set("highlight", value: Option[String]) => {
         highlight_type = value
         repaint
+      }
+      case EV_Key_Press(key) => {
+        key match {
+          // TODO this'll be tab someday, i vow!
+          case Key.Control => {
+            // cycle through turns
+            current_edge match {
+              case Some(e) => {
+                current_turn += 1
+                if (current_turn >= e.next_turns.size) {
+                  current_turn = 0
+                }
+                repaint
+              }
+              case None => {}
+            }
+          }
+          case _ => {}
+        }
       }
     }
   }
