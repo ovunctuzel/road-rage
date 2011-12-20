@@ -13,7 +13,7 @@ object Builder {
     // TODO usage info
     // Input that can be specified, with defaults:
     var fn = default_fn
-    var show_dead = true
+    var show_dead = false
 
     for (arg <- args) {
       arg match {

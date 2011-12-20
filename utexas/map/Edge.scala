@@ -15,6 +15,7 @@ class Edge(var id: Int, val road: Road, val dir: Direction.Direction) {
   var lines: List[Line] = List()
 
   def other_lanes = if (dir == Direction.POS) road.pos_lanes else road.neg_lanes
+  def other_vert(v: Vertex) = road.other_vert(v)
   def opposite_lanes = if (dir == Direction.POS) road.neg_lanes else road.pos_lanes
   def rightmost_lane = other_lanes.head
   def leftmost_lane  = other_lanes.last
@@ -64,6 +65,8 @@ class Edge(var id: Int, val road: Road, val dir: Direction.Direction) {
   }
 
   //////// Geometry. TODO separate somewhere?
+
+  def length: Double = lines.foldLeft(0.0)((a, b) => a + b.length)
 
   // recall + means v1->v2, and that road's points are stored in that order
   // what's the first line segment we traverse following this lane?
@@ -124,7 +127,7 @@ class Line(var x1: Double, var y1: Double, var x2: Double, var y2: Double) {
   }
 
   // TODO theres also a version of this in world's meters
-  def length = math.sqrt(math.pow(x2 - x1, 2) + math.pow(y2 - y1, 2))
+  def length: Double = math.sqrt(math.pow(x2 - x1, 2) + math.pow(y2 - y1, 2))
 
   // assuming the two lines share an origin
   def dot(l2: Line) = (x2 - x1) * (l2.x2 - l2.x1) + (y2 - y1) * (l2.y2 - l2.y1)

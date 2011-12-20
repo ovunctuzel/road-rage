@@ -18,6 +18,7 @@ class Road(var id: Int, val points: List[Coordinate], val name: String,
   var neg_lanes = new MutableList[Edge]
 
   def all_lanes() = pos_lanes ++ neg_lanes
+  def other_vert(v: Vertex) = if (v == v1) v2 else v1
 
   def is_oneway = pos_lanes.length == 0 || neg_lanes.length == 0
   // TODO assert is_oneway, maybe. or maybe even case class...
@@ -27,8 +28,9 @@ class Road(var id: Int, val points: List[Coordinate], val name: String,
 
   def to_xml(out: FileWriter) = {
     out.write(
-      "  <road name=\"" + name + "\" type=\"" + road_type + "\" osmid=\"" + osm_id
-      + "\" v1=\"" + v1.id + "\" v2=\"" + v2.id + "\" id=\"" + id + "\">\n"
+      "  <road name=\"" + scala.xml.Utility.escape(name) + "\" type=\"" + road_type
+      + "\" osmid=\"" + osm_id + "\" v1=\"" + v1.id + "\" v2=\"" + v2.id
+      + "\" id=\"" + id + "\">\n"
     )
     points.foreach(pt => pt.to_xml(out))
     out.write("</road>\n")

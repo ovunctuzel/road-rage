@@ -21,6 +21,18 @@ class MapCanvas(g: Graph) extends ScrollingCanvas {
   private var highlight_type: Option[String] = None
   private var current_turn = -1  // for cycling through turns from an edge
 
+  // this is like static config, except it's a function of the map and rng seed
+  private val special_ward_color = Color.BLACK
+  private val ward_colors = List(
+    Color.RED, Color.BLUE, Color.GREEN, Color.YELLOW, Color.CYAN, Color.ORANGE,
+    Color.PINK, Color.MAGENTA
+  ) // TODO cfg
+  // TODO do this better by shuffling once and then having a lazy cyclic
+  // infinite list
+  private val ward_colorings = g.wards.map(
+    w => (w, scala.util.Random.shuffle(ward_colors).head)
+  ).toMap ++ List((g.special_ward, special_ward_color)).toMap
+
   def canvas_width = g.width.toInt
   def canvas_height = g.height.toInt
 
@@ -139,6 +151,9 @@ class MapCanvas(g: Graph) extends ScrollingCanvas {
   }
 
   def color_road(r: Road): Color = {
+    // Test wards
+    return ward_colorings(g.ward(r))
+
     // Test parallel/perpendicular roads.
     /*current_edge match {
       case Some(e) => {

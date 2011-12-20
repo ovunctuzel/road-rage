@@ -60,11 +60,7 @@ class Pass3(old_graph: PreGraph2) {
     }
     log_pop
 
-    log("Tidying up geometry...")
-    // Do this work per edge, for now.
-    graph.edges.foreach(e => adjust_segments(e))
-
-    // finally, use Tarjan's to locate all SCC's in the graph. ideally we'd just
+    // use Tarjan's to locate all SCC's in the graph. ideally we'd just
     // have one, but crappy graphs, weird reality, and poor turn heuristics mean
     // we'll have disconnected portions.
     var sccs = new ListBuffer[List[Vertex]]
@@ -96,7 +92,7 @@ class Pass3(old_graph: PreGraph2) {
       val doomed_edges = HashSet() ++ doomed_roads.flatMap(r => r.all_lanes)
       log("Removing " + doomed_verts.size + " disconnected vertices, "
           + doomed_roads.size + " roads, and "
-          + doomed_edges.size + " edges from graph\n")
+          + doomed_edges.size + " edges from graph")
       // Yes, it really is this easy (and evil)
       graph.vertices = graph.vertices.filter(v => !doomed_verts(v))
       graph.edges = graph.edges.filter(e => !doomed_edges(e))
@@ -119,6 +115,10 @@ class Pass3(old_graph: PreGraph2) {
         id += 1
       }
     }
+
+    log("Tidying up geometry...")
+    // Do this work per edge, for now.
+    graph.edges.foreach(e => adjust_segments(e))
 
     return graph
   }

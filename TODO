@@ -6,17 +6,26 @@
 - cul-de-sac handling in p2... needed?
 - pregraph3 vs final graph structure?
 - deal with disconnected things properly
-- document stuff, code-freeze on mapgen!
 - multi-lane situations dont have enough turns, and we need to do more trimming!
+- scc removal appears broken in Houston?
+- document stuff, code-freeze on mapgen!
+
+### Wards ###
+
+- whats broken with mikes?
+  - length
+  - overall strategy
+  - semantics of one of the set operations
+- try mine
+  - find 'major' roads better
+  - guarantee some kind of connectedness within a ward
 
 ### UI ###
 
 - conflicts dont look correct
-- get everything old working again
-  - config
-  - menu items do stuff
+- config
+- menu items doing stuff
 - oneways look wretched
-- support neighborhoods again
 - make it look nicer
   - UI polishing
   - black road backgrounds dont meet up smoothly since we go by line segment

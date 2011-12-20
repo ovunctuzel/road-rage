@@ -20,6 +20,7 @@ class Vertex(val location: Coordinate, var id: Int) {
   def out_verts = HashSet() ++ turns.map(t => t.to.to)
 
   def roads = HashSet() ++ turns.flatMap(t => List(t.from.road, t.to.road))
+  def edges = turns.flatMap(t => List(t.from, t.to))
 
   // these may prove useful; just remember roads are undirected.
   // TODO test for one-ways?

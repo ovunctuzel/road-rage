@@ -19,26 +19,12 @@ class Reader(fn: String) {
   // we know all of this as soon as we read the graph tag...
   var vertLinks: Array[List[TmpLink]] = null
   
+  // TODO this is one nasty long routine...
   def load(): Graph = {
     log("Loading map " + fn)
+    val event_reader = new XMLEventReader( Source.fromFile(fn) )
     log_push
-    var g = match_events( new XMLEventReader( Source.fromFile(fn) ) )
-    log_pop
 
-    log("Adding references at intersections")
-
-    for (v <- g.vertices) {
-      for (link <- vertLinks(v.id)) {
-        v.turns += new Turn(g.edges(link.from), link.link_type, g.edges(link.to))
-      }
-    }
-
-    // TODO free all this temp crap we made somehow
-
-    return g
-  }
-
-  def match_events(event_reader: XMLEventReader): Graph = {
     var ev_count = 0
 
     // TODO probably a better way to unpack than casting to string
@@ -195,10 +181,20 @@ class Reader(fn: String) {
       }
     })
     log("")
+    log_pop
+
+    log("Adding references at intersections")
+    for (v <- verts) {
+      for (link <- vertLinks(v.id)) {
+        v.turns += new Turn(edges(link.from), link.link_type, edges(link.to))
+      }
+    }
+
     // TODO named params?
     return new Graph(
       roads.toList, edges.toList, verts.toList,
       width, height, offX, offY, scale
     )
+    // TODO free all this temp crap we made somehow
   }
 }
