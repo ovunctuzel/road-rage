@@ -18,6 +18,9 @@
   - semantics of one of the set operations
 - try mine
   - find 'major' roads better
+    - lots of verts
+    - crosses/links major roads
+    - manually editing
   - guarantee some kind of connectedness within a ward
 
 ### UI ###
@@ -41,7 +44,7 @@
 - use ListBuffers more.
 - make more immutable things
 - reduce more vars to vals
-- improve build system (dont recompile)
+- improve build system (dont recompile) (fsc)
 - Edges as subclasses for direxn might be nice
 - make everything possible immutable, but then have to figure out how to build
   inter-referential things

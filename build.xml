@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+
+<project basedir="." default="simulate" name="Road Rage">
+  <property name="src" value="."/>
+  <property name="build" value=".build"/>
+
+  <path id="compile_cp">
+    <pathelement location="/usr/share/java/scala-compiler.jar"/>
+    <pathelement location="/usr/share/java/scala-library.jar"/>
+    <pathelement location="/usr/share/java/scala-swing.jar"/>
+  </path>
+
+  <taskdef resource="scala/tools/ant/antlib.xml">
+    <classpath refid="compile_cp"/>
+  </taskdef>
+
+  <path id="run_cp">
+    <pathelement location="${build}"/>
+    <path refid="compile_cp"/>
+  </path>
+
+  <!-- TODO addparams and unchecked don't seem to work. -->
+
+  <target name="compile">
+    <mkdir dir="${build}"/>
+    <fsc srcdir="${src}" destdir="${build}" classpathref="compile_cp">
+      <include name="**/*.scala"/>
+    </fsc>
+  </target>
+
+  <target name="clean">
+    <delete dir="${build}"/>
+  </target>
+
+  <!--<target name="simulate" depends="compile">
+    <java classname="scala.tools.nsc.MainGenericRunner" fork="true">
+      <classpath>
+        <path refid="run_cp"/>
+      </classpath>
+      <arg line="utexas.ui.Viewer"/>
+    </java>
+  </target>-->
+
+  <!-- TODO build-map targets... and taking args? -->
+</project>
