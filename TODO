@@ -18,6 +18,9 @@
   - semantics of one of the set operations
 - try mine
   - find 'major' roads better
+    - lots of verts
+    - crosses/links major roads
+    - manually editing
   - guarantee some kind of connectedness within a ward
 
 ### UI ###

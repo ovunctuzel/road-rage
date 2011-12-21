@@ -5,6 +5,9 @@ import scala.collection.mutable.{Set => MutableSet}
 import scala.collection.mutable.{HashSet => MutableHashSet}
 import scala.collection.mutable.MutableList
 import scala.collection.mutable.{Stack => MutableStack}
+import scala.collection.mutable.{HashMap => MutableMap}
+
+import utexas.Util.{log, log_push, log_pop}
 
 class Ward(val roads: Set[Road]) {
   override def toString = "Ward with " + roads.size + " roads"
@@ -76,6 +79,20 @@ object Ward {
     // for now, two classifications: major and minor roads
     val major = new MutableHashSet[Road]
     val minor = new MutableHashSet[Road]
+
+    // How many roads was an OSM way split into?
+    // TODO more functionally. partition?
+    val osm_hits = new MutableMap[Int, Int]
+    for (road <- g.roads) {
+      val id = road.osm_id
+      if (!osm_hits.contains(id)) {
+        osm_hits(id) = 0
+      }
+      osm_hits(id) += 1
+    }
+
+    //val percent = 
+    //log("" + osm_hits.toList.sortBy({_._2}).slice(osm_hits.size * percent, osm_hits.size - 1))
 
     // TODO but osm's idea of residential seems wrong in so many cases... so
     // next, count how many vertices an osm_id is a part of, and add candidates
