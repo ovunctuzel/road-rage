@@ -5,9 +5,8 @@ import utexas.map.make.Reader
 import utexas.Util.{log, log_push, log_pop}
 
 // TODO I can haz named parameters? :(
-class Graph(val roads: List[Road], val edges: List[Edge],
-            val vertices: List[Vertex], val width: Double, val height: Double,
-            val xOff: Double, val yOff: Double, val scale: Double)
+class Raw_Graph(val roads: List[Road], val edges: List[Edge],
+                val vertices: List[Vertex], val width: Double, val height: Double)
 {
   log("Dividing the map into wards...")
   log_push
@@ -29,6 +28,6 @@ class Graph(val roads: List[Road], val edges: List[Edge],
                         special_ward
 }
 
-object Graph {
-  def load(fn: String) = (new Reader(fn)).load
+object Raw_Graph {
+  def load(fn: String) = (new Reader(fn)).load_raw
 }

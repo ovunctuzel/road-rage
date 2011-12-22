@@ -3,7 +3,7 @@ package utexas.ui
 import swing._  // TODO figure out exactly what
 import java.awt.Color
 
-import utexas.map.Graph
+import utexas.sim.Graph
 
 object Status_Bar {
   val zoom     = new Label("1.0") // TODO from cfg

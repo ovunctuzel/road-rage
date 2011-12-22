@@ -37,6 +37,12 @@
 - way better pruning of what to (re-draw) using quadtrees
   - but is it even needed?
 
+### Agents ###
+
+- spawning them
+- moving them (so add a simulation/timer too, soon)
+- rendering them
+
 ### Scalaisms ###
 
 - move all configable things to Util
@@ -44,7 +50,7 @@
 - use ListBuffers more.
 - make more immutable things
 - reduce more vars to vals
-- improve build system (dont recompile) (fsc)
+- improve build system (dont recompile)
 - Edges as subclasses for direxn might be nice
 - make everything possible immutable, but then have to figure out how to build
   inter-referential things

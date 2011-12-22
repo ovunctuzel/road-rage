@@ -18,7 +18,7 @@ object Ward {
   // along the edges. This finds vertices that are clustered "densely." Roads
   // completely inside one of these floods constitute a Ward, and those along
   // the border form "super-roads" that link Wards.
-  def construct_mikes_wards(g: Graph): (List[Ward], Ward) = {
+  def construct_mikes_wards(g: Raw_Graph): (List[Ward], Ward) = {
     val max_dist = 200  // between intersections, in meters
 
     // This assigns wards to vertices. We'll map that to roads later.
@@ -75,7 +75,7 @@ object Ward {
   }
 
   // Dustin's idea: Wards are the area physically surrounded by "major" roads.
-  def construct_dustins_wards(g: Graph): (List[Ward], Ward) = {
+  def construct_dustins_wards(g: Raw_Graph): (List[Ward], Ward) = {
     // for now, two classifications: major and minor roads
     val major = new MutableHashSet[Road]
     val minor = new MutableHashSet[Road]

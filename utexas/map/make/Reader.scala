@@ -6,8 +6,9 @@ import scala.xml.pull._
 
 import scala.collection.mutable.MutableList
 
-import utexas.map.{Coordinate, Graph, Road, Vertex, Edge, Direction, Line, TurnType,
-                   Turn}
+import utexas.map.{Coordinate, Road, Vertex, Edge, Direction, Line, TurnType,
+                   Turn, Raw_Graph}
+import utexas.sim.{Queue_of_Agents, Graph}
 
 import utexas.Util
 import utexas.Util.{log, log_push, log_pop}
@@ -18,9 +19,13 @@ class Reader(fn: String) {
 
   // we know all of this as soon as we read the graph tag...
   var vertLinks: Array[List[TmpLink]] = null
+
+  def load_raw(): Raw_Graph     = return load(false).right.get
+  def load_with_agents(): Graph = return load(true).left.get
   
   // TODO this is one nasty long routine...
-  def load(): Graph = {
+  // and it changes behavior at a few places based on its parameter.
+  def load(with_agents: Boolean): Either[Graph, Raw_Graph] = {
     log("Loading map " + fn)
     val event_reader = new XMLEventReader( Source.fromFile(fn) )
     log_push
@@ -34,9 +39,9 @@ class Reader(fn: String) {
 
     // per graph
     var roads: Array[Road] = null
-    var edges: Array[Edge] = null
+    var edges: Array[Either[Edge with Queue_of_Agents, Edge]] = null
     var verts: Array[Vertex] = null
-    var width, height, offX, offY, scale: Double = 0.0
+    var width, height: Double = 0.0
 
     // per road
     var rd_name, rd_type: String = ""
@@ -64,9 +69,6 @@ class Reader(fn: String) {
         case EvElemStart(_, "graph", attribs, _) => {
           width  = get_doubles(attribs)("width")
           height = get_doubles(attribs)("height")
-          offX   = get_doubles(attribs)("xoff")
-          offY   = get_doubles(attribs)("yoff")
-          scale  = get_doubles(attribs)("scale")
 
           val num_roads = get_ints(attribs)("roads")
           val num_edges = get_ints(attribs)("edges")
@@ -74,7 +76,7 @@ class Reader(fn: String) {
 
           // set up all the temporary things to accumulate stuff
           roads = new Array[Road](num_roads)
-          edges = new Array[Edge](num_edges)
+          edges = new Array[Either[Edge with Queue_of_Agents, Edge]](num_edges)
           verts = new Array[Vertex](num_verts)
 
           vertLinks = new Array[List[TmpLink]](num_verts)
@@ -128,16 +130,23 @@ class Reader(fn: String) {
           e_lines = new MutableList[Line]
         }
         case EvElemEnd(_, "edge") => {
-          val e = new Edge(e_id, roads(e_rd), e_dir)
-          e.lane_num = e_lane
+          val e = if (with_agents)
+                    Left(new Edge(e_id, roads(e_rd), e_dir) with Queue_of_Agents)
+                  else
+                    Right(new Edge(e_id, roads(e_rd), e_dir))
           edges(e_id) = e
-          e.lines = e_lines.toList
+
+          // then "downcast" to just an edge to set some properties
+          val just_e = if (with_agents) e.left.get else e.right.get
+
+          just_e.lane_num = e_lane
+          just_e.lines = e_lines.toList
 
           // tell the road about the edge, too
           // TODO edges in the xml will be ordered by their id, which we created
           // in order of lane numbering too
-          assert(e.other_lanes.length == e.lane_num)
-          e.other_lanes += e
+          assert(just_e.other_lanes.length == just_e.lane_num)
+          just_e.other_lanes += just_e
 
           // reset
           e_id = -1
@@ -184,17 +193,20 @@ class Reader(fn: String) {
     log_pop
 
     log("Adding references at intersections")
+    // turns just want edges, doesn't matter what trait they're endowed with
+    val just_edges: Array[Edge] = if (with_agents) edges.map(_.left.get) else edges.map(_.right.get)
     for (v <- verts) {
       for (link <- vertLinks(v.id)) {
-        v.turns += new Turn(edges(link.from), link.link_type, edges(link.to))
+        v.turns += new Turn(just_edges(link.from), link.link_type, just_edges(link.to))
       }
     }
 
-    // TODO named params?
-    return new Graph(
-      roads.toList, edges.toList, verts.toList,
-      width, height, offX, offY, scale
-    )
+    if (with_agents) {
+      val populated_edges: Array[Edge with Queue_of_Agents] = edges.map(_.left.get)
+      return Left(new Graph(roads.toList, populated_edges.toList, verts.toList, width, height))
+    } else {
+      return Right(new Raw_Graph(roads.toList, just_edges.toList, verts.toList, width, height))
+    }
     // TODO free all this temp crap we made somehow
   }
 }

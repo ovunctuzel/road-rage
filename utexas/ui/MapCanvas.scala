@@ -9,6 +9,7 @@ import java.awt.geom._
 import swing.event.Key
 
 import utexas.map._  // TODO yeah getting lazy.
+import utexas.sim.{Graph, Queue_of_Agents, LanePosition, VoidPosition}
 
 import utexas.cfg
 import utexas.Util.{log, log_push, log_pop}
@@ -118,10 +119,7 @@ class MapCanvas(g: Graph) extends ScrollingCanvas {
       g2d.setStroke(lane_stroke)
       // TODO if it's an edge of a road whose line has been seen?
       for (l <- fg_lines if l.line.intersects(window)) {
-        g2d.setColor(color_edge(l.edge))
-        g2d.draw(l.line)
-        g2d.setColor(Color.BLUE)
-        g2d.fill(l.arrow)
+        draw_edge(g2d, l)
       }
 
       // and the third layer (dashed center lines)
@@ -136,8 +134,6 @@ class MapCanvas(g: Graph) extends ScrollingCanvas {
         case Some(e) => draw_intersection(g2d, e)
         case None    => {}
       }
-
-      // TODO agents, cursor, turns
     }
 
     // and the map boundary
@@ -148,6 +144,27 @@ class MapCanvas(g: Graph) extends ScrollingCanvas {
     g2d.draw(new Line2D.Double(x1, y2, x2, y2))
     g2d.draw(new Line2D.Double(x1, y1, x1, y2))
     g2d.draw(new Line2D.Double(x2, y1, x2, y2))
+  }
+
+  def draw_edge(g2d: Graphics2D, l: EdgeLine) = {
+    g2d.setColor(color_edge(l.edge))
+    g2d.draw(l.line)
+    g2d.setColor(Color.BLUE)
+    g2d.fill(l.arrow)
+
+    // and any agents
+    g2d.setColor(Color.RED) // TODO depending on their state, later
+    for (a <- l.edge.agents) {
+      // TODO how can we encode the invariant that edge.agents only contains
+      // agents with at=LanePosition?
+      /*a.at match {
+        case LanePosition => {
+          val loc = a.at.location
+          g2d.fill(new Ellipse2D.Double(loc.x - eps, loc.y - eps, eps * 2, eps * 2))
+        }
+        case VoidPosition => {}
+      }*/  // TODO i'll fix in a minute
+    }
   }
 
   def color_road(r: Road): Color = {
@@ -267,8 +284,7 @@ class MapCanvas(g: Graph) extends ScrollingCanvas {
         // TODO always?
         repaint
       }
-      // TODO type erasure warning...
-      case EV_Param_Set("highlight", value: Option[String]) => {
+      case EV_Param_Set("highlight", value) => {
         highlight_type = value
         repaint
       }
@@ -301,7 +317,7 @@ sealed trait ScreenLine {
 final case class RoadLine(a: Coordinate, b: Coordinate, road: Road) extends ScreenLine {
   val line = new Line2D.Double(a.x, a.y, b.x, b.y)
 }
-final case class EdgeLine(l: Line, edge: Edge) extends ScreenLine {
+final case class EdgeLine(l: Line, edge: Edge with Queue_of_Agents) extends ScreenLine {
   val line = new Line2D.Double(l.x1, l.y1, l.x2, l.y2)
   val arrow = GeomFactory.draw_arrow(l, 1)  // TODO 3? THREE?! さん！？
 }
