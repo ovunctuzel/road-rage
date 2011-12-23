@@ -3,12 +3,12 @@ package utexas.ui
 import swing._  // TODO figure out exactly what
 import java.awt.Color
 
-import utexas.sim.Graph
+import utexas.sim.Simulation
 
 object Status_Bar {
   val zoom     = new Label("1.0") // TODO from cfg
   val agents   = new Label("0")
-  val time     = new Label("0")
+  val time     = new Label("0.0 [Paused]")
   val location = new Label("Nowhere")
 
   // TODO could put methods here to set text!
@@ -22,7 +22,7 @@ object Viewer extends SimpleSwingApplication {
     "tertiary", "primary", "service", "doomed"
   )
   // TODO parametric from args
-  val canvas = new MapCanvas(Graph.load("dat/test.map"))
+  val canvas = new MapCanvas(Simulation.load("dat/test.map"))
 
   def top = new MainFrame {
     title = "Road Rage Map Viewer"
@@ -58,12 +58,12 @@ object Viewer extends SimpleSwingApplication {
           // TODO write this more functionally
           for (road_type <- road_types) {
             contents += new MenuItem(Action(road_type) {
-              canvas.handle_ev(new EV_Param_Set("highlight", Some(road_type)))
+              canvas.handle_ev(EV_Param_Set("highlight", Some(road_type)))
             })
           }
         }
         contents += new MenuItem(Action("Clear all highlighting") {
-          canvas.handle_ev(new EV_Param_Set("highlight", None))
+          canvas.handle_ev(EV_Param_Set("highlight", None))
         })
       }
 
@@ -80,9 +80,14 @@ object Viewer extends SimpleSwingApplication {
 
       contents += new Menu("Simulate") {
         contents += new MenuItem("Spawn Agent")
-        contents += new MenuItem("Spawn Army")
+        contents += new MenuItem(Action("Spawn Army") {
+          canvas.handle_ev(EV_Action("spawn-army"))
+        })
         contents += new MenuItem("Sacrifice to RNG God")
-        contents += new MenuItem("Play/Pause")
+        contents += new MenuItem(Action("Play/Pause") {
+          println("orly?")
+          canvas.handle_ev(EV_Action("toggle-running"))
+        })
       }
     }
 

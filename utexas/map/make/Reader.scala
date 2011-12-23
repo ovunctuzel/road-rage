@@ -7,8 +7,8 @@ import scala.xml.pull._
 import scala.collection.mutable.MutableList
 
 import utexas.map.{Coordinate, Road, Vertex, Edge, Direction, Line, TurnType,
-                   Turn, Raw_Graph}
-import utexas.sim.{Queue_of_Agents, Graph}
+                   Turn, Graph}
+import utexas.sim.{Queue_of_Agents, Simulation}
 
 import utexas.Util
 import utexas.Util.{log, log_push, log_pop}
@@ -20,12 +20,12 @@ class Reader(fn: String) {
   // we know all of this as soon as we read the graph tag...
   var vertLinks: Array[List[TmpLink]] = null
 
-  def load_raw(): Raw_Graph     = return load(false).right.get
-  def load_with_agents(): Graph = return load(true).left.get
+  def load_map(): Graph            = return load(false).right.get
+  def load_simulation(): Simulation = return load(true).left.get
   
   // TODO this is one nasty long routine...
   // and it changes behavior at a few places based on its parameter.
-  def load(with_agents: Boolean): Either[Graph, Raw_Graph] = {
+  def load(with_agents: Boolean): Either[Simulation, Graph] = {
     log("Loading map " + fn)
     val event_reader = new XMLEventReader( Source.fromFile(fn) )
     log_push
@@ -203,9 +203,9 @@ class Reader(fn: String) {
 
     if (with_agents) {
       val populated_edges: Array[Edge with Queue_of_Agents] = edges.map(_.left.get)
-      return Left(new Graph(roads.toList, populated_edges.toList, verts.toList, width, height))
+      return Left(new Simulation(roads.toList, populated_edges.toList, verts.toList, width, height))
     } else {
-      return Right(new Raw_Graph(roads.toList, just_edges.toList, verts.toList, width, height))
+      return Right(new Graph(roads.toList, just_edges.toList, verts.toList, width, height))
     }
     // TODO free all this temp crap we made somehow
   }

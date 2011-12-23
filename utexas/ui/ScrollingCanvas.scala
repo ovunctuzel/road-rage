@@ -54,7 +54,7 @@ abstract class ScrollingCanvas extends Component {
       // TODO nicer reassignment?
       mouse_at_x = e.point.x
       mouse_at_y = e.point.y
-      handle_ev(new EV_Mouse_Moved(
+      handle_ev(EV_Mouse_Moved(
         screen_to_map_x(mouse_at_x), screen_to_map_y(mouse_at_y)
       ))
     }
@@ -83,7 +83,7 @@ abstract class ScrollingCanvas extends Component {
 
       mouse_at_x = e.point.x
       mouse_at_y = e.point.y
-      handle_ev(new EV_Mouse_Moved(
+      handle_ev(EV_Mouse_Moved(
         screen_to_map_x(mouse_at_x), screen_to_map_y(mouse_at_y)
       ))
     }
@@ -203,3 +203,4 @@ final case class EV_Param_Set(key: String, value: Option[String]) extends UI_Eve
 // TODO this is really a swing.event.Key (a Enumeration.Value), but I can't get
 // that to work...
 final case class EV_Key_Press(key: Any) extends UI_Event {}
+final case class EV_Action(key: String) extends UI_Event {}

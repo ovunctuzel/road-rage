@@ -1,5 +1,7 @@
 package utexas
 
+import scala.util.Random
+
 object Util {
   def timer(msg: String) = new Timer(msg)
   
@@ -8,6 +10,18 @@ object Util {
   def log_pop =  { indent_log -= 1 }
   def indent = "  " * indent_log
   def log(msg: String) = println(indent + msg)
+
+  private val rng = new Random()  // TODO saving seeds
+  def rand_double(min: Double, max: Double): Double = {
+    if (min < max) {
+      return rand_double(max, min)
+    } else if (min == max) {
+      return min
+    } else {
+      return min + rng.nextDouble * (max - min)
+    }
+  }
+  def choose_rand[T](from: Seq[T]): T = from(rng.nextInt(from.length))
 }
 
 class Timer(msg: String) {

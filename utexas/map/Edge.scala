@@ -22,6 +22,8 @@ class Edge(var id: Int, val road: Road, val dir: Direction.Direction) {
 
   def next_turns = to.turns_from(this)
   def prev_turns = from.turns_to(this)
+  def succs: List[Edge] = next_turns.map(t => t.to)
+  def preds: List[Edge] = prev_turns.map(t => t.from)
   def right_turns = next_turns.filter(t => t.turn_type == TurnType.RIGHT)
   def left_turns  = next_turns.filter(t => t.turn_type == TurnType.LEFT)
   def crosses     = next_turns.filter(t => t.turn_type == TurnType.CROSS)
@@ -67,6 +69,31 @@ class Edge(var id: Int, val road: Road, val dir: Direction.Direction) {
   //////// Geometry. TODO separate somewhere?
 
   def length: Double = lines.foldLeft(0.0)((a, b) => a + b.length)
+
+  // if dist is > length or < 0, then this query makes no sense
+  def location(dist: Double): Option[Coordinate] = {
+    // TODO it's late, I am not going to write this functionally...
+    if (dist < 0) {
+      return None
+    }
+
+    var at = dist
+    for (l <- lines) {
+      if (at > l.length) {
+        at -= l.length
+      } else {
+        // where are we on this line?
+        val percent = at / l.length
+        return Some(new Coordinate(
+          l.x1 + (l.width * percent),
+          l.y1 + (l.height * percent)
+        ))
+      }
+    }
+    // TODO return the extra distance, or just make the client do dist -
+    // e.length
+    return None   // we're "past" this edge
+  }
 
   // recall + means v1->v2, and that road's points are stored in that order
   // what's the first line segment we traverse following this lane?
@@ -116,6 +143,8 @@ class Line(var x1: Double, var y1: Double, var x2: Double, var y2: Double) {
   def broken_angle = math.atan2(y2 - y1, x2 - x1)
 
   def midpt = new Coordinate((x1 + x2) / 2, (y1 + y2) / 2)
+  def width = x2 - x1
+  def height = y2 - y1
 
   override def toString = "%f, %f ---> %f, %f".format(x1, y1, x2, y2)
 

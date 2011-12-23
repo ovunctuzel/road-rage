@@ -9,14 +9,22 @@ import java.awt.geom._
 import swing.event.Key
 
 import utexas.map._  // TODO yeah getting lazy.
-import utexas.sim.{Graph, Queue_of_Agents, LanePosition, VoidPosition}
+import utexas.sim.{Simulation, Queue_of_Agents, LanePosition, VoidPosition,
+                   Agent, Simulation_Listener}
 
 import utexas.cfg
 import utexas.Util.{log, log_push, log_pop}
 
 // TODO maybe adaptor class for our map geometry? stick in a 'render road' bit
 
-class MapCanvas(g: Graph) extends ScrollingCanvas {
+class MapCanvas(sim: Simulation) extends ScrollingCanvas {
+  // listen!
+  sim.listeners += new Simulation_Listener() {
+    def ev_step() = {
+      handle_ev(EV_Action("step"))
+    }
+  }
+
   // state
   private var current_edge: Option[Edge] = None
   private var highlight_type: Option[String] = None
@@ -30,12 +38,12 @@ class MapCanvas(g: Graph) extends ScrollingCanvas {
   ) // TODO cfg
   // TODO do this better by shuffling once and then having a lazy cyclic
   // infinite list
-  private val ward_colorings = g.wards.map(
+  private val ward_colorings = sim.wards.map(
     w => (w, scala.util.Random.shuffle(ward_colors).head)
-  ).toMap ++ List((g.special_ward, special_ward_color)).toMap
+  ).toMap ++ List((sim.special_ward, special_ward_color)).toMap
 
-  def canvas_width = g.width.toInt
-  def canvas_height = g.height.toInt
+  def canvas_width = sim.width.toInt
+  def canvas_height = sim.height.toInt
 
   // pre-render base roads.
   // TODO this was too ridiculous a sequence comprehension, so use a ListBuffer,
@@ -51,7 +59,7 @@ class MapCanvas(g: Graph) extends ScrollingCanvas {
   // just used during construction.
   private def build_bg_lines(): List[RoadLine] = {
     val list = new ListBuffer[RoadLine]()
-    for (r <- g.roads; (from, to) <- r.pairs_of_points) {
+    for (r <- sim.roads; (from, to) <- r.pairs_of_points) {
       if (r.is_oneway) {
         // TODO this still looks uber sucky.
         val l = r.oneway_lanes.head.lines.last
@@ -69,7 +77,7 @@ class MapCanvas(g: Graph) extends ScrollingCanvas {
   }
   private def build_fg_lines(): List[EdgeLine] = {
     val list = new ListBuffer[EdgeLine]()
-    for (e <- g.edges) {
+    for (e <- sim.edges) {
       for (l <- e.lines) {
         val line = new EdgeLine(l, e)
         edge2lines.addBinding(e, line)
@@ -134,16 +142,10 @@ class MapCanvas(g: Graph) extends ScrollingCanvas {
         case Some(e) => draw_intersection(g2d, e)
         case None    => {}
       }
+    } else {
+      // Draw agents anyway?
+      sim.agents.foreach(a => draw_agent(g2d, a))
     }
-
-    // and the map boundary
-    g2d.setColor(Color.GREEN)
-    g2d.setStroke(lane_stroke)
-    // TODO these coords are wrong!
-    g2d.draw(new Line2D.Double(x1, y1, x2, y1))
-    g2d.draw(new Line2D.Double(x1, y2, x2, y2))
-    g2d.draw(new Line2D.Double(x1, y1, x1, y2))
-    g2d.draw(new Line2D.Double(x2, y1, x2, y2))
   }
 
   def draw_edge(g2d: Graphics2D, l: EdgeLine) = {
@@ -153,23 +155,30 @@ class MapCanvas(g: Graph) extends ScrollingCanvas {
     g2d.fill(l.arrow)
 
     // and any agents
+    l.edge.agents.foreach(a => draw_agent(g2d, a))
+  }
+
+  def draw_agent(g2d: Graphics2D, a: Agent) = {
     g2d.setColor(Color.RED) // TODO depending on their state, later
-    for (a <- l.edge.agents) {
-      // TODO how can we encode the invariant that edge.agents only contains
-      // agents with at=LanePosition?
-      /*a.at match {
-        case LanePosition => {
-          val loc = a.at.location
-          g2d.fill(new Ellipse2D.Double(loc.x - eps, loc.y - eps, eps * 2, eps * 2))
+    // TODO how can we encode the invariant that edge.agents only contains
+    // agents with at=LanePosition?
+    a.at match {
+      case LanePosition(e, dist) => {
+        // TODO again, i think we have the assumption that they'll validly be
+        // on this edge.
+        val loc = e.location(dist)
+        loc match {
+          case Some(pt) => g2d.fill(new Ellipse2D.Double(pt.x - eps, pt.y - eps, eps * 2, eps * 2))
+          case None     => {}
         }
-        case VoidPosition => {}
-      }*/  // TODO i'll fix in a minute
+      }
+      case VoidPosition() => {}
     }
   }
 
   def color_road(r: Road): Color = {
     // Test wards
-    return ward_colorings(g.ward(r))
+    return ward_colorings(sim.ward(r))
 
     // Test parallel/perpendicular roads.
     /*current_edge match {
@@ -304,7 +313,31 @@ class MapCanvas(g: Graph) extends ScrollingCanvas {
               case None => {}
             }
           }
+          case Key.P => {
+            handle_ev(EV_Action("toggle-running"))
+          }
           case _ => {}
+        }
+      }
+      case EV_Action("spawn-army") => {
+        // TODO cfg
+        for (_ <- 0 until 10) {
+          sim.add_agent(sim.random_edge_except(Set()))
+        }
+        status.agents.text = "" + sim.agents.length
+        repaint
+      }
+      case EV_Action("step") => {
+        status.time.text = "%.1f".format(sim.tick)
+        // agents have maybe moved, so...
+        repaint
+      }
+      case EV_Action("toggle-running") => {
+        if (sim.running) {
+          sim.pause
+          status.time.text = "%.1f [Paused]".format(sim.tick)
+        } else {
+          sim.resume
         }
       }
     }

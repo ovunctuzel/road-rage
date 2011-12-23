@@ -18,9 +18,6 @@ class Coordinate(val x: Double, val y: Double) {
     case _ => false
   }
 
-  // TODO better cloning constructor? and is it needed?
-  def copy = new Coordinate(x, y)
-
   // pretty printer
   override def toString = "(%f, %f)".format(x, y)
 

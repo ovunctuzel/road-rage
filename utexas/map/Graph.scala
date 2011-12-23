@@ -2,12 +2,26 @@ package utexas.map
 
 import utexas.map.make.Reader
 
-import utexas.Util.{log, log_push, log_pop}
+import utexas.Util.{log, log_push, log_pop, choose_rand}
 
 // TODO I can haz named parameters? :(
-class Raw_Graph(val roads: List[Road], val edges: List[Edge],
+class Graph(val roads: List[Road], val edges: List[Edge],
                 val vertices: List[Vertex], val width: Double, val height: Double)
 {
+  // also fixed constraints: residential types and decent length
+  def random_edge_except(except: Set[Edge]): Edge = {
+    val min_len = 1.0 // TODO cfg. what unit is this in?
+    val e = choose_rand(edges)
+    if (!except(e) && e.road.road_type == "residential" && e.length > min_len) {
+      return e
+    } else {
+      return random_edge_except(except)
+    }
+  }
+
+
+
+  
   log("Dividing the map into wards...")
   log_push
   // Mike has "super-edges" in between wards, and Dustin has the "highway". All
@@ -28,6 +42,6 @@ class Raw_Graph(val roads: List[Road], val edges: List[Edge],
                         special_ward
 }
 
-object Raw_Graph {
-  def load(fn: String) = (new Reader(fn)).load_raw
+object Graph {
+  def load(fn: String) = (new Reader(fn)).load_map
 }

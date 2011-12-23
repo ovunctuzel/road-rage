@@ -8,6 +8,7 @@
 - deal with disconnected things properly
 - multi-lane situations dont have enough turns, and we need to do more trimming!
 - scc removal appears broken in Houston?
+- lines arent deterministic?!
 - document stuff, code-freeze on mapgen!
 
 ### Wards ###
@@ -39,14 +40,15 @@
 
 ### Agents ###
 
-- spawning them
-- moving them (so add a simulation/timer too, soon)
-- rendering them
+- a dumb behavior to move to end of lane and disappear/go to next edge
+- physics... start with velocity, have (de)acceleration
+- actual agent queue semantics, spawning them safely
+- old static behavior
+- spawning specifically in UI
 
 ### Scalaisms ###
 
 - move all configable things to Util
-- figure out if all those coordinate copies are necessary... thinking not.
 - use ListBuffers more.
 - make more immutable things
 - reduce more vars to vals

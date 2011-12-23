@@ -126,20 +126,20 @@ class Pass1(fn: String) {
             // what points does this edge touch?
             var points = new MutableList[Coordinate]
             for (ref <- refs) {
-              points += id_to_node(ref).copy  // TODO copy?
+              points += id_to_node(ref)
               id_to_uses(ref) += 1
 
               // as soon as we hit the second reference, it's a vertex
               if (id_to_uses(ref) == 2) {
-                graph.add_vertex(id_to_node(ref).copy) // TODO copy?
+                graph.add_vertex(id_to_node(ref))
               }
             }
 
             graph.add_edge(name, road_type, oneway, id, points)
 
             // The tip and tail of this edge's points are always vertices
-            graph.add_vertex(points.head.copy)  // TODO copy?
-            graph.add_vertex(points.last.copy)  // TODO copy?
+            graph.add_vertex(points.head)
+            graph.add_vertex(points.last)
           }
         }
 
