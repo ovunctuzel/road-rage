@@ -71,12 +71,12 @@ class Edge(var id: Int, val road: Road, val dir: Direction.Direction) {
   def length: Double = lines.foldLeft(0.0)((a, b) => a + b.length)
 
   // if dist is > length or < 0, then this query makes no sense
-  def location(dist: Double): Option[Coordinate] = {
-    // TODO it's late, I am not going to write this functionally...
+  def location(dist: Double): Coordinate = {
     if (dist < 0) {
-      return None
+      throw new Exception("Negative distance on a location?!")
     }
 
+    // TODO it's late, I am not going to write this functionally...
     var at = dist
     for (l <- lines) {
       if (at > l.length) {
@@ -84,15 +84,14 @@ class Edge(var id: Int, val road: Road, val dir: Direction.Direction) {
       } else {
         // where are we on this line?
         val percent = at / l.length
-        return Some(new Coordinate(
+        return new Coordinate(
           l.x1 + (l.width * percent),
           l.y1 + (l.height * percent)
-        ))
+        )
       }
     }
-    // TODO return the extra distance, or just make the client do dist -
-    // e.length
-    return None   // we're "past" this edge
+
+    throw new Exception("Location is past the end of an edge!")
   }
 
   // recall + means v1->v2, and that road's points are stored in that order

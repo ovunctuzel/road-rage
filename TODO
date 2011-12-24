@@ -42,10 +42,11 @@
 ### Agents ###
 
 - a dumb behavior to move to end of lane and disappear/go to next edge
-- physics... start with velocity, have (de)acceleration
+- traveling along turns
 - actual agent queue semantics, spawning them safely
 - old static behavior
 - spawning specifically in UI
+- allow accel control too
 
 ### Scalaisms ###
 
@@ -59,3 +60,4 @@
   inter-referential things
   - have more ids and methods that access based on those. that'll break it.
 - explicitly override hashcode?
+- modularity of Edge/Edge with agent queues is... messy, and separate lookups arent the best answer.

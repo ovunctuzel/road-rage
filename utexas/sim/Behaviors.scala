@@ -1,0 +1,35 @@
+package utexas.sim
+
+import utexas.map.{Edge, Turn}
+import utexas.Util.{log, log_push, log_pop}
+
+abstract class Behavior(a: Agent) {
+  // asked every time. just one action per tick?
+  def choose_action(dt_ms: Long, tick: Double): Action
+  // only queried when the agent reaches a vertex
+  def choose_turn(e: Edge): Turn
+}
+
+class IdleBehavior(a: Agent) extends Behavior(a) {
+  override def choose_action(dt_ms: Long, tick: Double): Action = {
+    return Act_Nothing()
+  }
+
+  override def choose_turn(e: Edge): Turn = {
+    // lol @ test behavior
+    return e.next_turns.head
+  }
+}
+
+//class OldStaticBehavior(a: Agent) extends Behavior(a) {
+//}
+
+// TODO this would be the coolest thing ever... driving game!
+//class HumanControlBehavior(a: Agent) extends Behavior(a) {
+//}
+
+abstract class Action
+final case class Act_Change_Speed(new_speed: Double) extends Action
+final case class Act_Disappear() extends Action
+final case class Act_Lane_Change(lane: Edge) extends Action
+final case class Act_Nothing() extends Action

@@ -1,21 +1,31 @@
 package utexas.sim
 
-import scala.collection.mutable.MutableList
+import scala.collection.mutable.{HashSet => MutableSet} // TODO
 
 import utexas.map.Edge
 import utexas.Util.{log, log_push, log_pop, rand_double}
 
-trait Queue_of_Agents extends Edge {
-  val agents = new MutableList[Agent]()  // TODO right data structure...
+// Although we know the edge we describe, it shouldn't be tough to generalize
+// this queue to impose ordering for different agent-containing structures.
+class Queue_of_Agents(e: Edge) {
+  val agents = new MutableSet[Agent]()  // TODO right data structure...
 
   def enter(a: Agent, dist: Double): LanePosition = {
-    val pos = new LanePosition(this, dist)
+    val pos = LanePosition(e, dist)
     // TODO add ourself to the CORRECT spot
     agents += a
     return pos
   }
 
-  // TODO def exit
+  def exit(a: Agent) = {
+    // TODO hrmm...
+    agents -= a
+  }
+
+  def move(a: Agent, new_dist: Double): LanePosition = {
+    // TODO check for collisions? queue shouldn't change...
+    return LanePosition(e, new_dist)
+  }
 
   def random_spawn(): Double = {
     // TODO here's where we have to fix old problems:
@@ -24,7 +34,7 @@ trait Queue_of_Agents extends Edge {
     // 2) if we're running right now, what do?
 
     // but for now... :P
-    return rand_double(.20 * length, .80 * length).toDouble
+    return rand_double(.20 * e.length, .80 * e.length).toDouble
   }
 
   // TODO queries: collision checks, nearest to agent/pos

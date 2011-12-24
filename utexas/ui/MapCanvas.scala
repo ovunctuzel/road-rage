@@ -155,7 +155,7 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
     g2d.fill(l.arrow)
 
     // and any agents
-    l.edge.agents.foreach(a => draw_agent(g2d, a))
+    sim.queues(l.edge).agents.foreach(a => draw_agent(g2d, a))
   }
 
   def draw_agent(g2d: Graphics2D, a: Agent) = {
@@ -164,13 +164,8 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
     // agents with at=LanePosition?
     a.at match {
       case LanePosition(e, dist) => {
-        // TODO again, i think we have the assumption that they'll validly be
-        // on this edge.
         val loc = e.location(dist)
-        loc match {
-          case Some(pt) => g2d.fill(new Ellipse2D.Double(pt.x - eps, pt.y - eps, eps * 2, eps * 2))
-          case None     => {}
-        }
+        g2d.fill(new Ellipse2D.Double(loc.x - eps, loc.y - eps, eps * 2, eps * 2))
       }
       case VoidPosition() => {}
     }
@@ -178,7 +173,7 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
 
   def color_road(r: Road): Color = {
     // Test wards
-    return ward_colorings(sim.ward(r))
+    //return ward_colorings(sim.ward(r))
 
     // Test parallel/perpendicular roads.
     /*current_edge match {
@@ -321,7 +316,7 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
       }
       case EV_Action("spawn-army") => {
         // TODO cfg
-        for (_ <- 0 until 10) {
+        for (_ <- 0 until 1) {
           sim.add_agent(sim.random_edge_except(Set()))
         }
         status.agents.text = "" + sim.agents.length
@@ -350,7 +345,7 @@ sealed trait ScreenLine {
 final case class RoadLine(a: Coordinate, b: Coordinate, road: Road) extends ScreenLine {
   val line = new Line2D.Double(a.x, a.y, b.x, b.y)
 }
-final case class EdgeLine(l: Line, edge: Edge with Queue_of_Agents) extends ScreenLine {
+final case class EdgeLine(l: Line, edge: Edge) extends ScreenLine {
   val line = new Line2D.Double(l.x1, l.y1, l.x2, l.y2)
   val arrow = GeomFactory.draw_arrow(l, 1)  // TODO 3? THREE?! さん！？
 }

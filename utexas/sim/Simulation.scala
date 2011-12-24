@@ -11,20 +11,21 @@ import utexas.map.make.Reader
 
 import utexas.Util.{log, log_push, log_pop, choose_rand}
 
-// TODO better name, i promise
-
 // This just adds a notion of agents
-class Simulation(roads: List[Road], override val edges: List[Edge with Queue_of_Agents],
-                 vertices: List[Vertex], width: Double, height: Double)
+class Simulation(roads: List[Road], edges: List[Edge], vertices: List[Vertex],
+                 width: Double, height: Double)
   extends Graph(roads, edges, vertices, width, height)
 {
   /////////// Agent management
+  Agent.sim = this  // let them get to us
+  val queues = edges.map(e => e -> new Queue_of_Agents(e)).toMap
 
+  // TODO would a set be nicer?
   val agents = new MutableList[Agent]()
 
-  def add_agent(start: Edge with Queue_of_Agents): Agent = {
+  def add_agent(start: Edge): Agent = {
     // TODO give it more life soon
-    val a = new Agent(agents.size, new IdleBehavior())
+    val a = new Agent(agents.size)
     agents += a
     a.spawn_at(start)
     return a
@@ -40,6 +41,7 @@ class Simulation(roads: List[Road], override val edges: List[Edge with Queue_of_
   var tick: Double = 0
   // we can pause
   var running = false
+  val listeners = new MutableList[Simulation_Listener]()
 
   // an awesome example of continuations from
   // http://www.scala-lang.org/node/2096
@@ -56,8 +58,8 @@ class Simulation(roads: List[Road], override val edges: List[Edge with Queue_of_
   reset {
     while (true) {
       val start = System.currentTimeMillis
-      // we should fire about 2x/second
-      sleep(500)
+      // we should fire about 10x/second
+      sleep(100)
       if (running) {
         step(System.currentTimeMillis - start)
       }
@@ -77,22 +79,6 @@ class Simulation(roads: List[Road], override val edges: List[Edge with Queue_of_
 
   def pause()  = { running = false }
   def resume() = { running = true }
-
-  /////////////// Callbacks
-  val listeners = new MutableList[Simulation_Listener]()
-
-  ////////////// Type erasure fixes
-
-  // TODO this is HIDEOUS, but i dunno how to preserve the edge with the trait!
-  override def random_edge_except(except: Set[Edge]): Edge with Queue_of_Agents = {
-    val min_len = 1.0 // TODO cfg. what unit is this in?
-    val e = choose_rand(edges)
-    if (!except(e) && e.road.road_type == "residential" && e.length > min_len) {
-      return e
-    } else {
-      return random_edge_except(except)
-    }
-  }
 }
 
 object Simulation {
