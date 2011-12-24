@@ -92,18 +92,42 @@ object Viewer extends SimpleSwingApplication {
     }
 
     contents = new BoxPanel(Orientation.Vertical) {
-      contents += new GridPanel(2, 4) {
+      contents += new GridBagPanel {
         // TODO config for all the sizings...
         maximumSize = new Dimension(Int.MaxValue, 10)
         border = Swing.MatteBorder(5, 5, 5, 5, Color.BLACK)
-        contents += new Label("Zoom: ")
-        contents += new Label("Agents: ")
-        contents += new Label("Time: ")
-        contents += new Label("At: ")
-        contents += Status_Bar.zoom
-        contents += Status_Bar.agents
-        contents += Status_Bar.time
-        contents += Status_Bar.location
+
+        // all of this to prevent the rightmost 'At' column from spazzing out when the text
+        // changes length
+        // row 1: labels
+        val c = new Constraints
+        c.gridx = 0
+        c.gridy = 0
+        c.ipadx = 50
+        layout(new Label("Zoom: ")) = c
+        c.gridx = 1
+        layout(new Label("Agents: ")) = c
+        c.gridx = 2
+        layout(new Label("Time: ")) = c
+        c.gridx = 3
+        c.weightx = 1.0
+        c.ipadx = 0
+        layout(new Label("At: ")) = c
+
+        // row 2: columns
+        c.weightx = 0.0
+        c.ipadx = 50
+        c.gridx = 0
+        c.gridy = 1
+        layout(Status_Bar.zoom) = c
+        c.gridx = 1
+        layout(Status_Bar.agents) = c
+        c.gridx = 2
+        layout(Status_Bar.time) = c
+        c.gridx = 3
+        c.weightx = 1.0
+        c.ipadx = 0
+        layout(Status_Bar.location) = c
       }
       contents += canvas
       border = Swing.MatteBorder(2, 2, 2, 2, Color.RED)

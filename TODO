@@ -37,6 +37,7 @@
 - figure out why broken_angle and y inversion everywhere still...
 - way better pruning of what to (re-draw) using quadtrees
   - but is it even needed?
+- keyboard-grabbing focus is... greedy when minimized
 
 ### Agents ###
 
