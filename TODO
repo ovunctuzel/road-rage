@@ -17,12 +17,13 @@
   - length
   - overall strategy
   - semantics of one of the set operations
-- try mine
-  - find 'major' roads better
-    - lots of verts
-    - crosses/links major roads
-    - manually editing
+- find 'major' roads better
+  - crosses/links major roads
+  - manually editing
+  - update osm (scripts!)
+- wards!
   - guarantee some kind of connectedness within a ward
+  - deal with the small roads that cut through?
 
 ### UI ###
 

@@ -173,7 +173,7 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
 
   def color_road(r: Road): Color = {
     // Test wards
-    //return ward_colorings(sim.ward(r))
+    return ward_colorings(sim.ward(r))
 
     // Test parallel/perpendicular roads.
     /*current_edge match {

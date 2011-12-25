@@ -81,6 +81,7 @@ object Ward {
     val minor = new MutableHashSet[Road]
 
     // trust OSM first
+    // TODO this could be a groupBy
     for (road <- g.roads) {
       road.road_type match {
         case "residential" => minor += road
@@ -95,10 +96,47 @@ object Ward {
 
     val candidates = osm_origs.reverse.slice(0, (osm_origs.size * percent).toInt).flatMap(_._2)
     minor --= candidates
+    major ++= candidates
 
-    return (
-      List(minor, candidates).map(w => new Ward(w.toSet)),
-      new Ward(major.toSet)
-    )
+    // Now majors are fixed.
+    val major_ward = new Ward(major.toSet)
+
+    // Now take each minor road and flood, stopping at major roads. That'll
+    // discover the clusters of minor roads in between major roads. Additionally
+    // it gives us connectivity properties within the wards -- IF there aren't
+    // wacky one-ways.
+    val wards = new MutableList[Ward]
+    while (minor.size != 0) {
+      val representative = minor.head
+      val w = new Ward(flood_roads(representative, major_ward.roads))
+      minor --= w.roads
+      wards += w
+    }
+
+    return (wards.toList, major_ward)
+  }
+
+  def flood_roads(start: Road, major: Set[Road]): Set[Road] = {
+    val set = new MutableHashSet[Road]
+    val stack = new MutableStack[Road]
+
+    def consider(ls: Set[Road]) = {
+      // & is intersection, if unclear
+      if ((ls & major.toSet).size == 0) {
+        for (r <- ls if !set(r)) {
+          stack.push(r)
+        }
+        set ++= ls
+      }
+    }
+
+    stack.push(start)
+    while (stack.size != 0) {
+      val from = stack.pop
+      set += from
+      consider(from.v1.roads)
+      consider(from.v2.roads)
+    }
+    return set.toSet
   }
 }
