@@ -11,6 +11,28 @@ import utexas.Util.{log, log_push, log_pop}
 
 class Ward(val roads: Set[Road]) {
   override def toString = "Ward with " + roads.size + " roads"
+
+  private def find_center(): Coordinate = {
+    val verts = roads.flatMap(r => List(r.v1.location, r.v2.location)).toSet
+    val sum = verts.foldLeft(new Coordinate(0, 0))((a, b) => a + b)
+    return new Coordinate(sum.x / verts.size, sum.y / verts.size)
+  }
+
+  // find the roads that lead out of the ward, and return those vertices
+  private def find_frontier(): Set[Vertex] = {
+    val set = new MutableHashSet[Vertex]
+    for (v <- roads.flatMap(r => List(r.v1, r.v2))) {
+      if (v.roads.filter(r => !roads(r)).size != 0) {
+        set += v
+      }
+    }
+    return set.toSet
+  }
+
+  val center = find_center
+
+  // The vertices that lead to the ward
+  val frontier = find_frontier
 }
 
 object Ward {

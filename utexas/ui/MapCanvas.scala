@@ -29,6 +29,8 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
   private var current_edge: Option[Edge] = None
   private var highlight_type: Option[String] = None
   private var current_turn = -1  // for cycling through turns from an edge
+  private var show_wards = false
+  private var current_ward: Option[Ward] = None
 
   // this is like static config, except it's a function of the map and rng seed
   private val special_ward_color = Color.BLACK
@@ -49,12 +51,14 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
   // TODO this was too ridiculous a sequence comprehension, so use a ListBuffer,
   // which is supposed to be O(1) append and conversion to list.
   log("Pre-rendering road geometry...")
+  val road2lines = new HashMap[Road, MutableSet[RoadLine]] with MultiMap[Road, RoadLine]
   val bg_lines = build_bg_lines
-
   // this is only used for finer granularity searching...
   val edge2lines = new HashMap[Edge, MutableSet[EdgeLine]] with MultiMap[Edge, EdgeLine]
   // pre-render lanes
   val fg_lines = build_fg_lines
+  // pre-render ward bubbles
+  val ward_bubbles = sim.wards.filter(_.roads.size > 1).map(new WardBubble(_))
 
   // just used during construction.
   private def build_bg_lines(): List[RoadLine] = {
@@ -72,6 +76,7 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
       } else {
         list += new RoadLine(from, to, r)
       }
+      road2lines.addBinding(r, list.last)
     }
     return list.toList
   }
@@ -104,7 +109,6 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
 
   // TODO colors for everything belong in cfg.
 
-  // Coordinates passed in are logical/map
   def render_canvas(g2d: Graphics2D) = {
     // a window of our logical bounds
     val window = viewing_window
@@ -112,12 +116,18 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
     // remember these so we can draw center lines more efficiently
     val roads_seen = new ListBuffer[RoadLine]
 
-    // Draw the first layer (roads)
-    for (l <- bg_lines if l.line.intersects(window)) {
-      g2d.setColor(color_road(l.road))
-      g2d.setStroke(strokes(l.road.num_lanes))
-      g2d.draw(l.line)
+    // Draw the first layer (roads) - either all or just major ones
+    for (l <- bg_lines if (l.line.intersects(window) && (!show_wards || sim.special_ward.roads(l.road))))
+    {
+      draw_road(g2d, l)
       roads_seen += l
+    }
+
+    // Draw wards?
+    if (show_wards) {
+      for (w <- ward_bubbles if w.bubble.intersects(window)) {
+        roads_seen ++= draw_ward(g2d, w)
+      }
     }
 
     // don't show tiny details when it doesn't matter (and when it's expensive
@@ -125,8 +135,10 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
     if (zoom > cfg.zoom_threshold) {
       // then the second layer (lanes)
       g2d.setStroke(lane_stroke)
-      // TODO if it's an edge of a road whose line has been seen?
-      for (l <- fg_lines if l.line.intersects(window)) {
+      //for (l <- fg_lines if l.line.intersects(window)) {
+      // TODO this is ugly and maybe inefficient?
+      for (r <- roads_seen; l <- r.road.all_lanes.flatMap(edge2lines(_)) if l.line.intersects(window))
+      {
         draw_edge(g2d, l)
       }
 
@@ -146,6 +158,36 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
       // Draw agents anyway?
       sim.agents.foreach(a => draw_agent(g2d, a))
     }
+  }
+
+  // we return any new roads seen
+  def draw_ward(g2d: Graphics2D, w: WardBubble): Set[RoadLine] = {
+    current_ward match {
+      // Show the roads of the highlighted ward
+      case (Some(ward)) if w.ward == ward => {
+        val lines = ward.roads.flatMap(road2lines(_))
+        lines.foreach(l => draw_road(g2d, l))
+        return lines
+      }
+      case _ => {
+        // Show the center of the ward and all external connections
+        g2d.setColor(ward_colorings(w.ward))
+        g2d.fill(w.bubble)
+        g2d.setStroke(strokes(1)) // TODO
+        for (v <- w.ward.frontier) {
+          g2d.draw(new Line2D.Double(
+            w.bubble.getCenterX, w.bubble.getCenterY, v.location.x, v.location.y
+          ))
+        }
+        return Set()
+      }
+    }
+  }
+
+  def draw_road(g2d: Graphics2D, l: RoadLine) = {
+    g2d.setColor(color_road(l.road))
+    g2d.setStroke(strokes(l.road.num_lanes))
+    g2d.draw(l.line)
   }
 
   def draw_edge(g2d: Graphics2D, l: EdgeLine) = {
@@ -257,6 +299,7 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
     val window = viewing_window
     val cursor_bubble = new Rectangle2D.Double(x - eps, y - eps, eps * 2, eps * 2)
     // do a search at low granularity first
+    // TODO does this actually help us?
     for (big_line <- bg_lines if big_line.line.intersects(window)) {
       for (e <- big_line.road.all_lanes) {
         for (l <- edge2lines(e) if l.line.intersects(cursor_bubble)) {
@@ -268,14 +311,33 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
     return None
   }
 
+  def mouseover_ward(x: Double, y: Double): Option[WardBubble] = {
+    val cursor_bubble = new Rectangle2D.Double(x - eps, y - eps, eps * 2, eps * 2)
+    for (w <- ward_bubbles if w.bubble.intersects(cursor_bubble)) {
+      return Some(w)
+    }
+    return None
+  }
+
   def handle_ev(ev: UI_Event) = {
     ev match {
       case EV_Mouse_Moved(x, y) => {
         // always reset this
         current_turn = -1
 
-        // Are we mouse-overing something? ("mousing over"?)
-        if (zoom > cfg.zoom_threshold) {
+        // Are we mouse-overing something? ("mousing over")
+        if (show_wards) {
+          current_ward = mouseover_ward(x, y) match {
+            case Some(w) => Some(w.ward)
+            case None    => None
+          }
+          // TODO fall back to looking for edges if None?
+          status.location.text = current_ward match {
+            case Some(w) => "" + w
+            case None    => "Nowhere"
+          }
+          current_edge = None
+        } else if (zoom > cfg.zoom_threshold) {
           current_edge = mouseover_edge(x, y) match {
             case Some(l) => Some(l.edge)
             case None    => None
@@ -284,8 +346,10 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
             case Some(e) => "" + e
             case None    => "Nowhere"
           }
+          current_ward = None
         }
-        // TODO always?
+
+        // TODO only on changes?
         repaint
       }
       case EV_Param_Set("highlight", value) => {
@@ -311,6 +375,9 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
           case Key.P => {
             handle_ev(EV_Action("toggle-running"))
           }
+          case Key.W => {
+            handle_ev(EV_Action("toggle-wards"))
+          }
           case _ => {}
         }
       }
@@ -335,6 +402,12 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
           sim.resume
         }
       }
+      case EV_Action("toggle-wards") => {
+        show_wards = !show_wards
+        // TODO this doesnt quite seem to match until we actually move...
+        handle_ev(EV_Mouse_Moved(mouse_at_x, mouse_at_y))
+        repaint
+      }
     }
   }
 }
@@ -348,6 +421,11 @@ final case class RoadLine(a: Coordinate, b: Coordinate, road: Road) extends Scre
 final case class EdgeLine(l: Line, edge: Edge) extends ScreenLine {
   val line = new Line2D.Double(l.x1, l.y1, l.x2, l.y2)
   val arrow = GeomFactory.draw_arrow(l, 1)  // TODO 3? THREE?! さん！？
+}
+// and, separately...
+class WardBubble(val ward: Ward) {
+  private val r = 2.0 + (0.1 * ward.roads.size) // TODO cfg
+  val bubble = new Ellipse2D.Double(ward.center.x - r, ward.center.y - r, r * 2, r * 2)
 }
 
 // TODO what else belongs?

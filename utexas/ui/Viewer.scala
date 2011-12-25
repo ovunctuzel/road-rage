@@ -65,6 +65,9 @@ object Viewer extends SimpleSwingApplication {
         contents += new MenuItem(Action("Clear all highlighting") {
           canvas.handle_ev(EV_Param_Set("highlight", None))
         })
+        contents += new MenuItem(Action("Toggle wards display") {
+          canvas.handle_ev(EV_Action("toggle-wards"))
+        })
       }
 
       contents += new Menu("Query") {

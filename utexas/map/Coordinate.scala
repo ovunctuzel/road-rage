@@ -25,10 +25,5 @@ class Coordinate(val x: Double, val y: Double) {
     out.write("    <pt x=\"" + x + "\" y=\"" + y + "\"/>\n")
   }
 
-  // TODO sexy overloading
-  def subtract(other: Coordinate) = new Coordinate(x - other.x, y - other.y)
-
-  def difference(other: Coordinate) = subtract(other).mag
-
-  def mag = math.sqrt(x*x + y*y)
+  def +(other: Coordinate) = new Coordinate(x + other.x, y + other.y)
 }
