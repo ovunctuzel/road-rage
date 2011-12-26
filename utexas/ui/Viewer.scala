@@ -88,7 +88,6 @@ object Viewer extends SimpleSwingApplication {
         })
         contents += new MenuItem("Sacrifice to RNG God")
         contents += new MenuItem(Action("Play/Pause") {
-          println("orly?")
           canvas.handle_ev(EV_Action("toggle-running"))
         })
       }

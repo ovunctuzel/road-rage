@@ -7,7 +7,7 @@ import math.{min, max}
 
 import utexas.map.Coordinate
 
-import utexas.Util.{log, log_push, log_pop}
+import utexas.Util
 
 class PreGraph1() {
   var edges = new MutableList[PreEdge1]
@@ -53,7 +53,7 @@ class PreGraph1() {
       maxX = max(maxX, pt.x)
       maxY = max(maxY, pt.y)
     }
-    log("Bounds: %f .. %f, %f .. %f".format(minX, maxX, minY, maxY))
+    Util.log("Bounds: %f .. %f, %f .. %f".format(minX, maxX, minY, maxY))
 
     // so to make (minX, minY) the new origin...
     offX = 0 - minX
@@ -75,7 +75,7 @@ class PreGraph1() {
       )
 
       //if (x < 0 || x > width || y < 0 || y > height) {
-      //  log("OOB coordinate after normalizing! " + pt)
+      //  Util.log("OOB coordinate after normalizing! " + pt)
       //}
     }
 

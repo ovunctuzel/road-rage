@@ -4,11 +4,12 @@
 
 - deal with densely clustered line segments
 - cul-de-sac handling in p2... needed?
+  - Claus Circle in BR... has no outgoing turns.
 - pregraph3 vs final graph structure?
 - deal with disconnected things properly
 - multi-lane situations dont have enough turns, and we need to do more trimming!
 - scc removal appears broken in Houston?
-- lines arent deterministic?!
+- lines arent deterministic?! small floating pt variation...
 - document stuff, code-freeze on mapgen!
 
 ### Wards ###
@@ -24,6 +25,7 @@
 - wards!
   - guarantee some kind of connectedness within a ward
   - deal with the small roads that cut through?
+- precompute them and save in the xml
 
 ### UI ###
 
@@ -42,12 +44,11 @@
 
 ### Agents ###
 
-- a dumb behavior to move to end of lane and disappear/go to next edge
-- traveling along turns
 - actual agent queue semantics, spawning them safely
 - old static behavior
 - spawning specifically in UI
 - allow accel control too
+- dimensions to the cars
 
 ### Scalaisms ###
 

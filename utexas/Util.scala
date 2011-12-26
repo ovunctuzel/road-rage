@@ -22,6 +22,9 @@ object Util {
     }
   }
   def choose_rand[T](from: Seq[T]): T = from(rng.nextInt(from.length))
+
+  // to meters/sec, that is. SI units.
+  def mph_to_si(r: Double) = r * 0.44704
 }
 
 class Timer(msg: String) {

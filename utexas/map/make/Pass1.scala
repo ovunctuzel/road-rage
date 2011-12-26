@@ -9,7 +9,6 @@ import scala.collection.mutable.MutableList
 import utexas.map.Coordinate
 
 import utexas.Util
-import utexas.Util.{log, log_push, log_pop}
 
 class Pass1(fn: String) {
   // OSM's id to (longitude, latitude)
@@ -48,7 +47,7 @@ class Pass1(fn: String) {
     // fill out graph with roads and collect all info
     match_events( new XMLEventReader( Source.fromFile(fn) ) )
 
-    log("Normalizing graph coordinates")
+    Util.log("Normalizing graph coordinates")
     graph.normalize()
 
     return graph
@@ -80,7 +79,7 @@ class Pass1(fn: String) {
         case EvElemStart(_, "node", attribs, _) => {
           val viz = get_attrib(attribs, "visible")
           if (viz != None && viz != "true") {
-            log("WARNING: invisible node in osm")
+            Util.log("WARNING: invisible node in osm")
           } else {
             // record the node
             val id = get_attrib(attribs, "id").toInt
@@ -96,7 +95,7 @@ class Pass1(fn: String) {
           // TODO refactor the skip invisible check
           val viz = get_attrib(attribs, "visible")
           if (viz != None && viz != "true") {
-            log("WARNING: invisible way in osm")
+            Util.log("WARNING: invisible way in osm")
           } else {
             id = get_attrib(attribs, "id").toInt
             name = ""
@@ -166,7 +165,7 @@ class Pass1(fn: String) {
             if (id_to_node.contains(ref)) {
               refs :+= ref
             } else {
-              log("WARNING: way references unknown node")
+              Util.log("WARNING: way references unknown node")
             }
           }
         }
@@ -174,6 +173,6 @@ class Pass1(fn: String) {
         case _ => {}
       }
     })
-    log("")
+    Util.log("")
   }
 }

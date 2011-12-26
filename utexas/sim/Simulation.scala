@@ -9,7 +9,7 @@ import scala.util.continuations.{shift, reset}
 import utexas.map.{Graph, Road, Edge, Vertex}
 import utexas.map.make.Reader
 
-import utexas.Util.{log, log_push, log_pop, choose_rand}
+import utexas.Util
 
 // This just adds a notion of agents
 class Simulation(roads: List[Road], edges: List[Edge], vertices: List[Vertex],

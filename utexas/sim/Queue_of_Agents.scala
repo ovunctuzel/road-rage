@@ -3,7 +3,7 @@ package utexas.sim
 import scala.collection.mutable.{HashSet => MutableSet} // TODO
 
 import utexas.map.Edge
-import utexas.Util.{log, log_push, log_pop, rand_double}
+import utexas.Util
 
 // Although we know the edge we describe, it shouldn't be tough to generalize
 // this queue to impose ordering for different agent-containing structures.
@@ -34,7 +34,7 @@ class Queue_of_Agents(e: Edge) {
     // 2) if we're running right now, what do?
 
     // but for now... :P
-    return rand_double(.20 * e.length, .80 * e.length).toDouble
+    return Util.rand_double(.20 * e.length, .80 * e.length).toDouble
   }
 
   // TODO queries: collision checks, nearest to agent/pos

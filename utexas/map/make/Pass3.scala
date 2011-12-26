@@ -9,10 +9,10 @@ import scala.collection.mutable.ListBuffer
 
 import utexas.map.{Road, Edge, Vertex, Turn, TurnType, Line, Coordinate}
 
-import utexas.Util.{log, log_push, log_pop}
+import utexas.Util
 
 class Pass3(old_graph: PreGraph2) {
-  log("Multiplying and directing " + old_graph.edges.length + " edges")
+  Util.log("Multiplying and directing " + old_graph.edges.length + " edges")
   val graph = new PreGraph3(old_graph)
   val roads_per_vert = new HashMap[Vertex, MutableSet[Road]] with MultiMap[Vertex, Road]
   // for tarjan's
@@ -47,18 +47,18 @@ class Pass3(old_graph: PreGraph2) {
       }
     }
 
-    log("Connecting the dots...")
-    log_push
+    Util.log("Connecting the dots...")
+    Util.log_push
     // TODO return the mapping in the future?
     for (v <- graph.vertices) {
       if (roads_per_vert.contains(v)) {
         connect_vertex(v, roads_per_vert(v))
       } else {
         // TODO not sure I see this happen ever
-        log("WARNING nothing refs vert " + v)
+        Util.log("WARNING nothing refs vert " + v)
       }
     }
-    log_pop
+    Util.log_pop
 
     // use Tarjan's to locate all SCC's in the graph. ideally we'd just
     // have one, but crappy graphs, weird reality, and poor turn heuristics mean
@@ -84,13 +84,13 @@ class Pass3(old_graph: PreGraph2) {
           road.road_type = "doomed"
         }
       }
-      log("Doomed " + (sccs.size - 1) + " disconnected SCC's from the graph")
+      Util.log("Doomed " + (sccs.size - 1) + " disconnected SCC's from the graph")
     } else {
       // This is a cheap trick, and it absolutely works.
       val doomed_verts = HashSet() ++ sccs.sortBy(scc => scc.size).dropRight(1).flatten
       val doomed_roads = HashSet() ++ doomed_verts.flatMap(v => v.roads)
       val doomed_edges = HashSet() ++ doomed_roads.flatMap(r => r.all_lanes)
-      log("Removing " + doomed_verts.size + " disconnected vertices, "
+      Util.log("Removing " + doomed_verts.size + " disconnected vertices, "
           + doomed_roads.size + " roads, and "
           + doomed_edges.size + " edges from graph")
       // Yes, it really is this easy (and evil)
@@ -116,7 +116,7 @@ class Pass3(old_graph: PreGraph2) {
       }
     }
 
-    log("Tidying up geometry...")
+    Util.log("Tidying up geometry...")
     // Do this work per edge, for now.
     graph.edges.foreach(e => adjust_segments(e))
 
@@ -212,12 +212,12 @@ class Pass3(old_graph: PreGraph2) {
     for (in <- incoming_roads; src <- in.incoming_lanes(v)
          if v.turns_from(src).length == 0)
     {
-      log("GRR: nowhere to go after " + src)
+      Util.log("GRR: nowhere to go after " + src)
     }
     for (out <- outgoing_roads; dst <- out.outgoing_lanes(v)
          if v.turns_to(dst).length == 0)
     {
-      log("GRR: nothing leads to " + dst)
+      Util.log("GRR: nothing leads to " + dst)
     }
   }
 

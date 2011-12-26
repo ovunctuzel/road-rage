@@ -11,7 +11,6 @@ import utexas.map.{Coordinate, Road, Vertex, Edge, Direction, Line, TurnType,
 import utexas.sim.Simulation
 
 import utexas.Util
-import utexas.Util.{log, log_push, log_pop}
 
 class Reader(fn: String) {
   // per road
@@ -26,9 +25,9 @@ class Reader(fn: String) {
   // TODO this is one nasty long routine...
   // and it changes behavior at a few places based on its parameter.
   def load(with_agents: Boolean): Either[Simulation, Graph] = {
-    log("Loading map " + fn)
+    Util.log("Loading map " + fn)
     val event_reader = new XMLEventReader( Source.fromFile(fn) )
-    log_push
+    Util.log_push
 
     var ev_count = 0
 
@@ -182,10 +181,10 @@ class Reader(fn: String) {
         case _ => {}
       }
     })
-    log("")
-    log_pop
+    Util.log("")
+    Util.log_pop
 
-    log("Adding references at intersections")
+    Util.log("Adding references at intersections")
     // turns just want edges, doesn't matter what trait they're endowed with
     for (v <- verts) {
       for (link <- vertLinks(v.id)) {

@@ -1,7 +1,7 @@
 package utexas.sim
 
-import utexas.map.{Edge, Coordinate, Turn}
-import utexas.Util.{log, log_push, log_pop}
+import utexas.map.{Edge, Coordinate, Turn, Traversable}
+import utexas.Util
 
 // TODO come up with a notion of dimension and movement capability. at first,
 // just use radius bounded by lane widths?
@@ -11,7 +11,7 @@ class Agent(id: Int) {
   // We can only change speed, and always accelerate as fast as possible to a
   // new speed. This is a major simplifying assumption!
   var speed: Double = 0.0   // units?
-  var target_speed: Double = 0.0
+  var target_speed: Double = Util.mph_to_si(10)
   val behavior = new IdleBehavior(this) // TODO
 
   def spawn_at(e: Edge) = {
@@ -28,25 +28,29 @@ class Agent(id: Int) {
   def step(dt_ms: Long, tick: Double) = {
     at match {
       case VoidPosition() => {}   // we don't care. (TODO give them a chance to enter map)
-      case LanePosition(start_edge, old_dist) => {
+      case LanePosition(start_on, old_dist) => {
         // Do physics to update current speed and figure out how far we've traveled in
         // this timestep.
         val new_dist = update_kinematics(dt_ms / 1000.0)  // ms -> sec
 
         // Apply this distance. 
-        var current_edge = start_edge
+        var current_on = start_on
         var current_dist = old_dist + new_dist
-        while (current_dist > current_edge.length) {
+        while (current_dist > current_on.length) {
           // TODO don't warp through the vertex; the turn has a line, too
-          current_dist -= current_edge.length
-          current_edge = behavior.choose_turn(current_edge).to
+          current_dist -= current_on.length
+          // Are we finishing a turn or starting one?
+          current_on = current_on match {
+            case e: Edge => behavior.choose_turn(e)
+            case t: Turn => t.to
+          }
         }
         // so we finally end up somewhere...
-        if (start_edge == current_edge) {
-          at = move(current_edge, current_dist)
+        if (start_on == current_on) {
+          at = move(start_on, current_dist)
         } else {
-          exit(start_edge)
-          at = enter(current_edge, current_dist)
+          exit(start_on)
+          at = enter(current_on, current_dist)
         }
         // TODO deal with lane-changing
         // TODO check for collisions when all of this is happening
@@ -96,9 +100,18 @@ class Agent(id: Int) {
   }
 
   // Delegate to the queues that simulation manages
-  def enter(e: Edge, dist: Double) = Agent.sim.queues(e).enter(this, dist)
-  def exit(e: Edge)                = Agent.sim.queues(e).exit(this)
-  def move(e: Edge, dist: Double)  = Agent.sim.queues(e).move(this, dist)
+  def enter(t: Traversable, dist: Double) = t match {
+    case e: Edge => Agent.sim.queues(e).enter(this, dist)
+    case _: Turn => LanePosition(t, dist)
+  }
+  def exit(t: Traversable) = t match {
+    case e: Edge => Agent.sim.queues(e).exit(this)
+    case _       =>
+  }
+  def move(t: Traversable, dist: Double) = t match {
+    case e: Edge => Agent.sim.queues(e).move(this, dist)
+    case _: Turn => LanePosition(t, dist)
+  }
 }
 
 // the singleton just lets us get at the simulation to look up queues
@@ -114,8 +127,9 @@ abstract class Position
 // TODO or we could have a way of representing driveways
 final case class VoidPosition() extends Position {}
 
-final case class LanePosition(e: Edge, dist: Double) extends Position {
+// TODO a misnomer now?
+final case class LanePosition(on: Traversable, dist: Double) extends Position {
   // TODO make them comparable for sorting!
 
-  def location = e.location(dist)
+  def location = on.location(dist)
 }

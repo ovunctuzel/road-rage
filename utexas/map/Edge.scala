@@ -7,12 +7,12 @@ import utexas.cfg
 // TODO subclass Edge for pos/neg.. seems easier for lots of things
 
 // TODO var id due to tarjan
-class Edge(var id: Int, val road: Road, val dir: Direction.Direction) {
+class Edge(var id: Int, val road: Road, val dir: Direction.Direction) extends Traversable {
   var lane_num: Int = -1  // TODO needs to be initialized to be defined.. bleh.
 
   // TODO finally, something that isnt mutable! make them all this way.
   // TODO what is this silliness though
-  var lines: List[Line] = List()
+  var lines = List[Line]()
 
   def other_lanes = if (dir == Direction.POS) road.pos_lanes else road.neg_lanes
   def other_vert(v: Vertex) = road.other_vert(v)
@@ -68,32 +68,6 @@ class Edge(var id: Int, val road: Road, val dir: Direction.Direction) {
 
   //////// Geometry. TODO separate somewhere?
 
-  def length: Double = lines.foldLeft(0.0)((a, b) => a + b.length)
-
-  // if dist is > length or < 0, then this query makes no sense
-  def location(dist: Double): Coordinate = {
-    if (dist < 0) {
-      throw new Exception("Negative distance on a location?!")
-    }
-
-    // TODO it's late, I am not going to write this functionally...
-    var at = dist
-    for (l <- lines) {
-      if (at > l.length) {
-        at -= l.length
-      } else {
-        // where are we on this line?
-        val percent = at / l.length
-        return new Coordinate(
-          l.x1 + (l.width * percent),
-          l.y1 + (l.height * percent)
-        )
-      }
-    }
-
-    throw new Exception("Location is past the end of an edge!")
-  }
-
   // recall + means v1->v2, and that road's points are stored in that order
   // what's the first line segment we traverse following this lane?
   def first_road_line = if (dir == Direction.POS)
@@ -144,6 +118,8 @@ class Line(var x1: Double, var y1: Double, var x2: Double, var y2: Double) {
   def midpt = new Coordinate((x1 + x2) / 2, (y1 + y2) / 2)
   def width = x2 - x1
   def height = y2 - y1
+  def start = new Coordinate(x1, y1)
+  def end = new Coordinate(x2, y2)
 
   override def toString = "%f, %f ---> %f, %f".format(x1, y1, x2, y2)
 

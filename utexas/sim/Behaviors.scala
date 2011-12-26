@@ -1,7 +1,7 @@
 package utexas.sim
 
 import utexas.map.{Edge, Turn}
-import utexas.Util.{log, log_push, log_pop}
+import utexas.Util
 
 abstract class Behavior(a: Agent) {
   // asked every time. just one action per tick?
@@ -17,6 +17,11 @@ class IdleBehavior(a: Agent) extends Behavior(a) {
 
   override def choose_turn(e: Edge): Turn = {
     // lol @ test behavior
+    if (e.next_turns.size == 0) {
+      // TODO fix this in the map properly.
+      Util.log("wtf @ " + e)
+      return e.prev_turns.head
+    }
     return e.next_turns.head
   }
 }

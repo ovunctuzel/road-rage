@@ -7,7 +7,7 @@ import scala.collection.mutable.MutableList
 import scala.collection.mutable.{Stack => MutableStack}
 import scala.collection.mutable.{HashMap => MutableMap}
 
-import utexas.Util.{log, log_push, log_pop}
+import utexas.Util
 
 class Ward(val roads: Set[Road]) {
   override def toString = "Ward with " + roads.size + " roads"

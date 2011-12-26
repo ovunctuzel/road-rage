@@ -13,7 +13,7 @@ import utexas.sim.{Simulation, Queue_of_Agents, LanePosition, VoidPosition,
                    Agent, Simulation_Listener}
 
 import utexas.cfg
-import utexas.Util.{log, log_push, log_pop}
+import utexas.Util
 
 // TODO maybe adaptor class for our map geometry? stick in a 'render road' bit
 
@@ -50,7 +50,7 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
   // pre-render base roads.
   // TODO this was too ridiculous a sequence comprehension, so use a ListBuffer,
   // which is supposed to be O(1) append and conversion to list.
-  log("Pre-rendering road geometry...")
+  Util.log("Pre-rendering road geometry...")
   val road2lines = new HashMap[Road, MutableSet[RoadLine]] with MultiMap[Road, RoadLine]
   val bg_lines = build_bg_lines
   // this is only used for finer granularity searching...
@@ -154,10 +154,12 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
         case Some(e) => draw_intersection(g2d, e)
         case None    => {}
       }
-    } else {
-      // Draw agents anyway?
-      sim.agents.foreach(a => draw_agent(g2d, a))
     }
+
+    // When an agent is doing a turn, it's not any edge's agent queue. Because
+    // of that and because they're seemingly so cheap to draw anyway, just
+    // always...
+    sim.agents.foreach(a => draw_agent(g2d, a))
   }
 
   // we return any new roads seen
@@ -196,8 +198,9 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
     g2d.setColor(Color.BLUE)
     g2d.fill(l.arrow)
 
-    // and any agents
-    sim.queues(l.edge).agents.foreach(a => draw_agent(g2d, a))
+    // (draw all agents)
+    //// and any agents
+    //sim.queues(l.edge).agents.foreach(a => draw_agent(g2d, a))
   }
 
   def draw_agent(g2d: Graphics2D, a: Agent) = {
@@ -383,7 +386,7 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
       }
       case EV_Action("spawn-army") => {
         // TODO cfg
-        for (_ <- 0 until 1) {
+        for (_ <- 0 until 1000) {
           sim.add_agent(sim.random_edge_except(Set()))
         }
         status.agents.text = "" + sim.agents.length
