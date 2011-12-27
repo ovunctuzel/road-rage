@@ -7,9 +7,12 @@ import scala.collection.mutable.MutableList
 import scala.collection.mutable.{Stack => MutableStack}
 import scala.collection.mutable.{HashMap => MutableMap}
 
+import utexas.map.make.PreGraph3 // TODO we can actually operate just as easily on a grap...
+
 import utexas.Util
 
-class Ward(val roads: Set[Road]) {
+// note that ID does NOT give the ward list that graph has any ordering!
+class Ward(val id: Int, val roads: Set[Road]) {
   override def toString = "Ward with " + roads.size + " roads"
 
   private def find_center(): Coordinate = {
@@ -36,11 +39,17 @@ class Ward(val roads: Set[Road]) {
 }
 
 object Ward {
+  private var id_counter = -1
+  def next_id:Int = {
+    id_counter += 1
+    return id_counter
+  }
+
   // Mike's idea: flood out from vertices as long as there's a small distance
   // along the edges. This finds vertices that are clustered "densely." Roads
   // completely inside one of these floods constitute a Ward, and those along
   // the border form "super-roads" that link Wards.
-  def construct_mikes_wards(g: Graph): (List[Ward], Ward) = {
+  def construct_mikes_wards(g: PreGraph3): (List[Ward], Ward) = {
     val max_dist = 200  // between intersections, in meters
 
     // This assigns wards to vertices. We'll map that to roads later.
@@ -90,14 +99,14 @@ object Ward {
         }
       }
       // we have a ward!
-      wards += new Ward(ward_roads.toSet)
+      wards += new Ward(Ward.next_id, ward_roads.toSet)
     }
 
-    return (wards.toList, new Ward(super_roads.toSet))
+    return (wards.toList, new Ward(Ward.next_id, super_roads.toSet))
   }
 
   // Dustin's idea: Wards are the area physically surrounded by "major" roads.
-  def construct_dustins_wards(g: Graph): (List[Ward], Ward) = {
+  def construct_dustins_wards(g: PreGraph3): (List[Ward], Ward) = {
     // for now, two classifications: major and minor roads
     val major = new MutableHashSet[Road]
     val minor = new MutableHashSet[Road]
@@ -121,7 +130,7 @@ object Ward {
     major ++= candidates
 
     // Now majors are fixed.
-    val major_ward = new Ward(major.toSet)
+    val major_ward = new Ward(Ward.next_id, major.toSet)
 
     // Now take each minor road and flood, stopping at major roads. That'll
     // discover the clusters of minor roads in between major roads. Additionally
@@ -130,7 +139,7 @@ object Ward {
     val wards = new MutableList[Ward]
     while (minor.size != 0) {
       val representative = minor.head
-      val w = new Ward(flood_roads(representative, major_ward.roads))
+      val w = new Ward(Ward.next_id, flood_roads(representative, major_ward.roads))
       minor --= w.roads
       wards += w
     }

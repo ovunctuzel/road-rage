@@ -17,6 +17,9 @@ class Road(var id: Int, val points: List[Coordinate], val name: String,
   var pos_lanes = new MutableList[Edge]
   var neg_lanes = new MutableList[Edge]
 
+  // This is fixed, but we don't know it immediately...
+  var ward: Ward = null
+
   def all_lanes() = pos_lanes ++ neg_lanes
   def other_vert(v: Vertex) = if (v == v1) v2 else v1
 
@@ -30,7 +33,7 @@ class Road(var id: Int, val points: List[Coordinate], val name: String,
     out.write(
       "  <road name=\"" + scala.xml.Utility.escape(name) + "\" type=\"" + road_type
       + "\" osmid=\"" + osm_id + "\" v1=\"" + v1.id + "\" v2=\"" + v2.id
-      + "\" id=\"" + id + "\">\n"
+      + "\" ward=\"" + ward.id + "\" id=\"" + id + "\">\n"
     )
     points.foreach(pt => pt.to_xml(out))
     out.write("</road>\n")

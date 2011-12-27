@@ -22,10 +22,9 @@
   - crosses/links major roads
   - manually editing
   - update osm (scripts!)
-- wards!
+- my wards!
   - guarantee some kind of connectedness within a ward
   - deal with the small roads that cut through?
-- precompute them and save in the xml
 
 ### UI ###
 
@@ -63,3 +62,9 @@
   - have more ids and methods that access based on those. that'll break it.
 - explicitly override hashcode?
 - modularity of Edge/Edge with agent queues is... messy, and separate lookups arent the best answer.
+
+### Simulation ###
+
+- tolling?
+- reversal?
+- spawning realistic traffic patterns

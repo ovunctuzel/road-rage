@@ -86,6 +86,5 @@ class PreGraph1() {
   }
 }
 
-// TODO this is now a glorified struct. O_O
 class PreEdge1(val name: String, val road_type: String, val oneway: Boolean,
                val orig_id: Int, var points: MutableList[Coordinate]) {}

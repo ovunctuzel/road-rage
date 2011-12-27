@@ -6,15 +6,15 @@ import java.util.{Timer,TimerTask}
 // TODO do we want a dependency on continuations? we'll see...
 import scala.util.continuations.{shift, reset}
 
-import utexas.map.{Graph, Road, Edge, Vertex}
+import utexas.map.{Graph, Road, Edge, Vertex, Ward}
 import utexas.map.make.Reader
 
 import utexas.Util
 
 // This just adds a notion of agents
 class Simulation(roads: List[Road], edges: List[Edge], vertices: List[Vertex],
-                 width: Double, height: Double)
-  extends Graph(roads, edges, vertices, width, height)
+                 wards: List[Ward], special_ward: Ward, width: Double, height: Double)
+  extends Graph(roads, edges, vertices, wards, special_ward, width, height)
 {
   /////////// Agent management
   Agent.sim = this  // let them get to us

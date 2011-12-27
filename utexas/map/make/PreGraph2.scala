@@ -53,19 +53,19 @@ class PreGraph2(old_graph: PreGraph1) {
     // do we already have an edge from v1->v2 or v2->v1?
     // this handling mainly needs to deal with cul-de-sacs
 
-    // TODO do the ternary if thingy
     if (edge_lookup.contains((v1, v2, edge_dat.name)) ||
         edge_lookup.contains((v2, v1, edge_dat.name)))
     {
+      //Util.log("well, finally! already exists " + edge_dat.name)
+      // TODO make a new edge if the points dont match?
       return null
     } else {
-      return new PreEdge2(v1, v2, points, edge_dat)
+      val e = new PreEdge2(v1, v2, points, edge_dat)
+      //edge_lookup((v1, v2, edge_dat.name)) = e
+      return e
     }
-    // TODO any need to make sure point data matches up if we matched?
-    // TODO in fact, when do we already match?
   }
 }
 
-// TODO another glorified struct?
 class PreEdge2(val from: Coordinate, val to: Coordinate,
                val points: MutableList[Coordinate], val dat: PreEdge1) {}

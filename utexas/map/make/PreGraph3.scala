@@ -5,7 +5,7 @@ import java.io.FileWriter
 import scala.collection.mutable.HashMap
 import scala.collection.mutable.MutableList
 
-import utexas.map.{Coordinate, Vertex, Road, Edge, Direction}
+import utexas.map.{Coordinate, Vertex, Road, Edge, Direction, Ward}
 
 // TODO we should really subclass the real Graph, but not sure yet.
 
@@ -20,6 +20,8 @@ class PreGraph3(old_graph: PreGraph2) {
 
   var edges = new MutableList[Edge]          // a directed lane
   var roads = old_graph.edges map add_road   // collections of edges
+  var wards = List[Ward]()
+  var special_ward: Ward = null
 
   def add_road(old_edge: PreEdge2): Road = {
     // do addEdges too, once we decide how many lanes to do
@@ -70,7 +72,7 @@ class PreGraph3(old_graph: PreGraph2) {
     lanes += e
   }
 
-  // TODO osm types are inconsistent and wacky, but do our best
+  // osm types are inconsistent and wacky, but do our best
   private def how_many_lanes(road_type: String): Int = road_type match {
     case "residential"   => 1
     case "motorway_link" => 1   // these merge ramps should be one-way too
@@ -87,7 +89,8 @@ class PreGraph3(old_graph: PreGraph2) {
       "<graph width=\"" + dat.width + "\" height=\"" + dat.height
       + "\" xoff=\"" + dat.offX + "\" yoff=\"" + dat.offY
       + "\" scale=\"" + dat.scale + "\" roads=\"" + roads.length
-      + "\" edges=\"" + edges.length + "\" verts=\"" + vertices.length + "\">\n"
+      + "\" edges=\"" + edges.length + "\" verts=\"" + vertices.length 
+      + "\" special_ward=\"" + special_ward.id + "\">\n"
     )
     vertices.foreach(v => v.to_xml(out))
     roads.foreach(r => r.to_xml(out))

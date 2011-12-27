@@ -51,14 +51,19 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
   // TODO this was too ridiculous a sequence comprehension, so use a ListBuffer,
   // which is supposed to be O(1) append and conversion to list.
   Util.log("Pre-rendering road geometry...")
+  Util.log_push
   val road2lines = new HashMap[Road, MutableSet[RoadLine]] with MultiMap[Road, RoadLine]
+  Util.log("Road lines...")
   val bg_lines = build_bg_lines
   // this is only used for finer granularity searching...
   val edge2lines = new HashMap[Edge, MutableSet[EdgeLine]] with MultiMap[Edge, EdgeLine]
   // pre-render lanes
+  Util.log("Edge lines...")
   val fg_lines = build_fg_lines
   // pre-render ward bubbles
+  Util.log("Ward bubbles...")
   val ward_bubbles = sim.wards.filter(_.roads.size > 1).map(new WardBubble(_))
+  Util.log_pop
 
   // just used during construction.
   private def build_bg_lines(): List[RoadLine] = {
@@ -218,7 +223,7 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
 
   def color_road(r: Road): Color = {
     // Test wards
-    return ward_colorings(sim.ward(r))
+    return ward_colorings(r.ward)
 
     // Test parallel/perpendicular roads.
     /*current_edge match {

@@ -5,9 +5,12 @@ import scala.xml.MetaData
 import scala.xml.pull._
 
 import scala.collection.mutable.MutableList
+import scala.collection.mutable.HashMap
+import scala.collection.mutable.MultiMap
+import scala.collection.mutable.{Set => MutableSet}
 
 import utexas.map.{Coordinate, Road, Vertex, Edge, Direction, Line, TurnType,
-                   Turn, Graph}
+                   Turn, Graph, Ward}
 import utexas.sim.Simulation
 
 import utexas.Util
@@ -41,10 +44,12 @@ class Reader(fn: String) {
     var edges: Array[Edge] = null
     var verts: Array[Vertex] = null
     var width, height: Double = 0.0
+    val wards_map = new HashMap[Int, MutableSet[Road]] with MultiMap[Int, Road]
+    var special_ward_id: Int = -1
 
     // per road
     var rd_name, rd_type: String = ""
-    var rd_osm, rd_id, rd_v1, rd_v2: Int = -1
+    var rd_osm, rd_id, rd_ward, rd_v1, rd_v2: Int = -1
     var rd_pts: MutableList[Coordinate] = null
 
     // per edge
@@ -68,6 +73,7 @@ class Reader(fn: String) {
         case EvElemStart(_, "graph", attribs, _) => {
           width  = get_doubles(attribs)("width")
           height = get_doubles(attribs)("height")
+          special_ward_id = get_ints(attribs)("special_ward")
 
           val num_roads = get_ints(attribs)("roads")
           val num_edges = get_ints(attribs)("edges")
@@ -86,6 +92,7 @@ class Reader(fn: String) {
           rd_type = get_attrib(attribs, "type")
           rd_osm = get_ints(attribs)("osmid")
           rd_id = get_ints(attribs)("id")
+          rd_ward = get_ints(attribs)("ward")
           rd_v1 = get_ints(attribs)("v1")
           rd_v2 = get_ints(attribs)("v2")
           rd_pts = new MutableList[Coordinate]
@@ -97,12 +104,14 @@ class Reader(fn: String) {
             // first
             verts(rd_v1), verts(rd_v2)
           )
+          wards_map.addBinding(rd_ward, roads(rd_id))
 
           // reset stuff
           rd_name = ""
           rd_type = ""
           rd_osm = -1
           rd_id = -1
+          rd_ward = -1
           rd_v1 = -1
           rd_v2 = -1
           rd_pts.clear
@@ -192,11 +201,21 @@ class Reader(fn: String) {
       }
     }
 
+    Util.log("Recovering wards as well")
+    // Don't forget to separate out the special ward first
+    val special_ward = new Ward(special_ward_id, wards_map(special_ward_id).toSet)
+    wards_map -= special_ward_id
+    val wards: List[Ward] = wards_map.map(pair => new Ward(pair._1, pair._2.toSet)).toList
+
     if (with_agents) {
-      return Left(new Simulation(roads.toList, edges.toList, verts.toList, width, height))
+      return Left(new Simulation(
+        roads.toList, edges.toList, verts.toList, wards, special_ward, width, height
+      ))
     } else {
-      return Right(new Graph(roads.toList, edges.toList, verts.toList, width, height))
+      return Right(new Graph(
+        roads.toList, edges.toList, verts.toList, wards, special_ward, width, height
+      ))
     }
-    // TODO free all this temp crap we made somehow
+    // TODO anything to more explicitly free up?
   }
 }

@@ -7,7 +7,7 @@ import scala.collection.mutable.{Set => MutableSet}
 import scala.collection.mutable.MultiMap
 import scala.collection.mutable.ListBuffer
 
-import utexas.map.{Road, Edge, Vertex, Turn, TurnType, Line, Coordinate}
+import utexas.map.{Road, Edge, Vertex, Turn, TurnType, Line, Coordinate, Ward}
 
 import utexas.Util
 
@@ -119,6 +119,21 @@ class Pass3(old_graph: PreGraph2) {
     Util.log("Tidying up geometry...")
     // Do this work per edge, for now.
     graph.edges.foreach(e => adjust_segments(e))
+
+    Util.log("Dividing the map into wards...")
+    Util.log_push
+    // Mike has "super-edges" in between wards, and Dustin has the "highway". All
+    // roads belong to this special ward.
+    //val (wards, special_ward) = Ward.construct_mikes_wards(graph)
+    val (wards, special_ward) = Ward.construct_dustins_wards(graph)
+    graph.wards = wards
+    graph.special_ward = special_ward
+    // Tell road about their ward
+    for (w <- special_ward :: wards) {
+      w.roads.foreach(r => r.ward = w)
+    }
+    Util.log("The map has " + (wards.size + 1) + " wards")
+    Util.log_pop
 
     return graph
   }
