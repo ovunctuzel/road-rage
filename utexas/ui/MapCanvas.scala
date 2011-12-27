@@ -15,6 +15,13 @@ import utexas.sim.{Simulation, Queue_of_Agents, LanePosition, VoidPosition,
 import utexas.cfg
 import utexas.Util
 
+object Mode extends Enumeration {
+  type Mode = Value
+  val EXPLORE = Value("Explore")  // just chilling
+  val PICK_1st = Value("Pick 1st edge") // for now, only client is pathfinding
+  val PICK_2nd = Value("Pick 2nd edge")
+}
+
 // TODO maybe adaptor class for our map geometry? stick in a 'render road' bit
 
 class MapCanvas(sim: Simulation) extends ScrollingCanvas {
@@ -28,9 +35,14 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
   // state
   private var current_edge: Option[Edge] = None
   private var highlight_type: Option[String] = None
+  private var show_ward_colors = true
   private var current_turn = -1  // for cycling through turns from an edge
   private var show_wards = false
   private var current_ward: Option[Ward] = None
+  private var mode = Mode.EXPLORE
+  private var chosen_edge1: Option[Edge] = None
+  private var chosen_edge2: Option[Edge] = None
+  private var route = Set[Traversable]()
 
   // this is like static config, except it's a function of the map and rng seed
   private val special_ward_color = Color.BLACK
@@ -105,8 +117,9 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
   /*private val center_stroke = new BasicStroke(
     0.1f, BasicStroke.CAP_BUTT, BasicStroke.JOIN_MITER, 1.0f, Array(1.0f), 0.0f
   )*/
-  private val center_stroke = new BasicStroke(0.1f)
-  private val lane_stroke = new BasicStroke(0.05f)
+  private val center_stroke     = new BasicStroke(0.1f)
+  private val route_lane_stroke = new BasicStroke(0.45f)
+  private val lane_stroke       = new BasicStroke(0.05f)
   private val lane_width = 0.6f
 
   // pre-compute; we don't have more than max_lanes
@@ -139,7 +152,6 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
     // to render them all)
     if (zoom > cfg.zoom_threshold) {
       // then the second layer (lanes)
-      g2d.setStroke(lane_stroke)
       //for (l <- fg_lines if l.line.intersects(window)) {
       // TODO this is ugly and maybe inefficient?
       for (r <- roads_seen; l <- r.road.all_lanes.flatMap(edge2lines(_)) if l.line.intersects(window))
@@ -198,6 +210,11 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
   }
 
   def draw_edge(g2d: Graphics2D, l: EdgeLine) = {
+    if (route(l.edge)) {
+      g2d.setStroke(route_lane_stroke)
+    } else {
+      g2d.setStroke(lane_stroke)
+    }
     g2d.setColor(color_edge(l.edge))
     g2d.draw(l.line)
     g2d.setColor(Color.BLUE)
@@ -222,42 +239,29 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
   }
 
   def color_road(r: Road): Color = {
-    // Test wards
-    return ward_colorings(r.ward)
-
-    // Test parallel/perpendicular roads.
-    /*current_edge match {
-      case Some(e) => {
-        //val special = e.to.parallel_roads(e.road)
-        val special = e.to.perp_roads(e.road)
-        if (special(r)) {
-          return Color.CYAN
-        }
+    if (show_ward_colors) {
+      return ward_colorings(r.ward)
+    } else {
+      // The normal handling
+      return highlight_type match
+      {
+        case (Some(x)) if x == r.road_type => Color.GREEN
+        case _                             => Color.BLACK
       }
-      case _ => {}
-    }*/
-
-    // The normal handling
-    return highlight_type match
-    {
-      case (Some(x)) if x == r.road_type => Color.GREEN
-      case _                             => Color.BLACK
     }
   }
 
   def color_edge(e: Edge): Color = {
-    // Test counter-clockwise ordering
-    /*current_edge match {
-      case Some(cur) => {
-        cur.next_counterclockwise_to match {
-          case (Some(ccw)) if e == ccw => return Color.CYAN
-          case _ => {}
-        }
-      }
-      case _ => {}
-    }*/
-
-    return Color.WHITE
+    // TODO cfg
+    if (chosen_edge1.isDefined && chosen_edge1.get == e) {
+      return Color.BLUE
+    } else if (chosen_edge2.isDefined && chosen_edge2.get == e) {
+      return Color.RED
+    } else if (route(e)) {
+      return Color.GREEN
+    } else {
+      return Color.WHITE
+    }
   }
 
   val turn_colors = Map( // cfg
@@ -269,9 +273,9 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
   )
 
   def draw_turn(g2d: Graphics2D, turn: Turn, color: Color) = {
-    val pt1 = turn.from.end_pt
+    val pt1 = turn.from.shifted_end_pt
     val pt2 = turn.from.to.location
-    val pt3 = turn.to.start_pt
+    val pt3 = turn.to.shifted_start_pt
     val curve = new CubicCurve2D.Double(
       pt1.x, pt1.y, pt2.x, pt2.y, pt2.x, pt2.y, pt3.x, pt3.y
     )
@@ -364,30 +368,25 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
         highlight_type = value
         repaint
       }
-      case EV_Key_Press(key) => {
-        key match {
-          // TODO this'll be tab someday, i vow!
-          case Key.Control => {
-            // cycle through turns
-            current_edge match {
-              case Some(e) => {
-                current_turn += 1
-                if (current_turn >= e.next_turns.size) {
-                  current_turn = 0
-                }
-                repaint
-              }
-              case None => {}
+      // TODO this'll be tab someday, i vow!
+      case EV_Key_Press(Key.Control) => {
+        // cycle through turns
+        current_edge match {
+          case Some(e) => {
+            current_turn += 1
+            if (current_turn >= e.next_turns.size) {
+              current_turn = 0
             }
+            repaint
           }
-          case Key.P => {
-            handle_ev(EV_Action("toggle-running"))
-          }
-          case Key.W => {
-            handle_ev(EV_Action("toggle-wards"))
-          }
-          case _ => {}
+          case None => {}
         }
+      }
+      case EV_Key_Press(Key.P) => {
+        handle_ev(EV_Action("toggle-running"))
+      }
+      case EV_Key_Press(Key.W) => {
+        handle_ev(EV_Action("toggle-wards"))
       }
       case EV_Action("spawn-army") => {
         // TODO cfg
@@ -416,7 +415,55 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
         handle_ev(EV_Mouse_Moved(mouse_at_x, mouse_at_y))
         repaint
       }
+      case EV_Action("pathfind") => {
+        show_ward_colors = false  // it's really hard to see otherwise
+        switch_mode(Mode.PICK_1st)
+        chosen_edge1 = None
+        chosen_edge2 = None
+        route = Set[Traversable]()
+        repaint
+      }
+      case EV_Action("clear-route") => {
+        switch_mode(Mode.EXPLORE)
+        chosen_edge1 = None
+        chosen_edge2 = None
+        route = Set[Traversable]()
+        repaint
+      }
+      case EV_Key_Press(Key.C) if current_edge.isDefined => {
+        mode match {
+          case Mode.PICK_1st => {
+            chosen_edge1 = current_edge
+            switch_mode(Mode.PICK_2nd)
+            repaint
+          }
+          case Mode.PICK_2nd => {
+            chosen_edge2 = current_edge
+            // TODO later, let this inform any client
+            show_pathfinding
+            switch_mode(Mode.EXPLORE)
+          }
+          case _ =>
+        }
+      }
+      case EV_Key_Press(Key.T) => {
+        // toggle road-coloring mode
+        show_ward_colors = !show_ward_colors
+        repaint
+      }
+      case EV_Key_Press(_) => // Ignore the rest
     }
+  }
+
+  def switch_mode(m: Mode.Mode) = {
+    mode = m
+    status.mode.text = "" + mode
+  }
+
+  def show_pathfinding() = {
+    // contract: must be called when current_edge1 and 2 are set
+    route = sim.pathfind_astar(chosen_edge1.get, chosen_edge2.get).toSet
+    repaint
   }
 }
 

@@ -13,12 +13,16 @@ class Edge(var id: Int, val road: Road, val dir: Direction.Direction) extends Tr
   // TODO finally, something that isnt mutable! make them all this way.
   // TODO what is this silliness though
   var lines = List[Line]()
+  def leads_to = next_turns ++ List(shift_left, shift_right).flatten
 
   def other_lanes = if (dir == Direction.POS) road.pos_lanes else road.neg_lanes
   def other_vert(v: Vertex) = road.other_vert(v)
   def opposite_lanes = if (dir == Direction.POS) road.neg_lanes else road.pos_lanes
   def rightmost_lane = other_lanes.head
   def leftmost_lane  = other_lanes.last
+
+  def shift_left: Option[Edge]  = if (is_leftmost)  None else Some(other_lanes(lane_num + 1))
+  def shift_right: Option[Edge] = if (is_rightmost) None else Some(other_lanes(lane_num - 1))
 
   def next_turns = to.turns_from(this)
   def prev_turns = from.turns_to(this)
@@ -32,6 +36,7 @@ class Edge(var id: Int, val road: Road, val dir: Direction.Direction) extends Tr
   def crosses_to     = crosses.map(t => t.to)
 
   def is_rightmost = lane_num == 0
+  def is_leftmost  = lane_num == other_lanes.size - 1
 
   // It really is this simple.
   def next_counterclockwise_to: Option[Edge] = {
@@ -86,11 +91,11 @@ class Edge(var id: Int, val road: Road, val dir: Direction.Direction) extends Tr
   private def shift_pt(x: Double, y: Double, theta: Double) = new Coordinate(
     x + (shift_mag * math.cos(theta)), y - (shift_mag * math.sin(theta))
   )
-  def start_pt: Coordinate = {
+  def shifted_start_pt: Coordinate = {
     val l = lines.head
     return shift_pt(l.x1, l.y1, l.angle)
   }
-  def end_pt: Coordinate = {
+  def shifted_end_pt: Coordinate = {
     val l = lines.last
     return shift_pt(l.x2, l.y2, l.angle + math.Pi)  // reverse the angle
   }

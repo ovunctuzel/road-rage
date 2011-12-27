@@ -10,6 +10,7 @@ object Status_Bar {
   val agents   = new Label("0")
   val time     = new Label("0.0 [Paused]")
   val location = new Label("Nowhere")
+  val mode     = new Label("" + Mode.EXPLORE)
 
   // TODO could put methods here to set text!
 }
@@ -30,20 +31,6 @@ object Viewer extends SimpleSwingApplication {
     
     menuBar = new MenuBar {
       contents += new Menu("File") {
-        // It's not actually that useful to be able to do this.
-        /*val osm_chooser = new FileChooser {
-          fileFilter = new javax.swing.filechooser.FileNameExtensionFilter("OSM", "osm")
-        }
-        contents += new MenuItem(Action("Process OSM Map") {
-          // TODO maybe not the best way to do this
-          if (osm_chooser.showOpenDialog(this) == FileChooser.Result.Approve)
-          {
-            val fn = osm_chooser.selectedFile
-            // TODO exec ./run a $fn, echoing STDOUT
-            // then 'use source' of graph.load
-          }
-        })*/
-
         contents += new MenuItem(Action("Configuration") {
           popup_config
         })
@@ -71,22 +58,26 @@ object Viewer extends SimpleSwingApplication {
       }
 
       contents += new Menu("Query") {
-        contents += new MenuItem("Teleport")
+        contents += new MenuItem("Teleport")  // TODO
         
         // TODO these are kind of toggleable...
-        contents += new MenuItem("Pathfind")
-        contents += new MenuItem("Clear Route")
+        contents += new MenuItem(Action("Pathfind") {
+          canvas.handle_ev(EV_Action("pathfind"))
+        })
+        contents += new MenuItem(Action("Clear Route") {
+          canvas.handle_ev(EV_Action("clear-route"))
+        })
 
-        contents += new MenuItem("Mark Agent")
+        contents += new MenuItem("Mark Agent")  // TODO
         contents += new MenuItem("Unmark Agent")
       }
 
       contents += new Menu("Simulate") {
-        contents += new MenuItem("Spawn Agent")
+        contents += new MenuItem("Spawn Agent") // TODO
         contents += new MenuItem(Action("Spawn Army") {
           canvas.handle_ev(EV_Action("spawn-army"))
         })
-        contents += new MenuItem("Sacrifice to RNG God")
+        contents += new MenuItem("Sacrifice to RNG God")  // TODO
         contents += new MenuItem(Action("Play/Pause") {
           canvas.handle_ev(EV_Action("toggle-running"))
         })
@@ -106,15 +97,17 @@ object Viewer extends SimpleSwingApplication {
         c.gridx = 0
         c.gridy = 0
         c.ipadx = 50
-        layout(new Label("Zoom: ")) = c
+        layout(new Label("Zoom")) = c
         c.gridx = 1
-        layout(new Label("Agents: ")) = c
+        layout(new Label("Agents")) = c
         c.gridx = 2
-        layout(new Label("Time: ")) = c
+        layout(new Label("Time")) = c
         c.gridx = 3
+        layout(new Label("Mode")) = c
+        c.gridx = 4
         c.weightx = 1.0
         c.ipadx = 0
-        layout(new Label("At: ")) = c
+        layout(new Label("Location")) = c
 
         // row 2: columns
         c.weightx = 0.0
@@ -127,6 +120,8 @@ object Viewer extends SimpleSwingApplication {
         c.gridx = 2
         layout(Status_Bar.time) = c
         c.gridx = 3
+        layout(Status_Bar.mode) = c
+        c.gridx = 4
         c.weightx = 1.0
         c.ipadx = 0
         layout(Status_Bar.location) = c

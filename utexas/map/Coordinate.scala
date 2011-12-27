@@ -26,4 +26,5 @@ class Coordinate(val x: Double, val y: Double) {
   }
 
   def +(other: Coordinate) = new Coordinate(x + other.x, y + other.y)
+  def euclid_dist(o: Coordinate) = math.sqrt(math.pow(x - o.x, 2) + math.pow(y - o.y, 2))
 }

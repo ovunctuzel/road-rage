@@ -1,5 +1,7 @@
 package utexas.map
 
+import scala.collection.mutable.{HashMap, PriorityQueue}
+
 import utexas.map.make.Reader
 
 import utexas.Util
@@ -23,6 +25,66 @@ class Graph(val roads: List[Road], val edges: List[Edge],
     } else {
       return random_edge_except(except)
     }
+  }
+
+  // TODO eventually make this very general and reusable
+  // Returns the sequence of both edges and turns. Lane-changes are implicit
+  // (two edges without a turn in between)
+  def pathfind_astar(from: Edge, to: Edge): List[Traversable] = {
+    // This is only used internally right now
+    class Step(val on: Traversable, val dist: Double) extends Ordered[Step] {
+      // This orders small distances first
+      def compare(other: Step) = other.dist.compare(dist)
+    }
+
+    // If this is requested, presumably they don't want us to return an empty
+    // path
+    val loop = from == to
+    // Used for heuristic
+    val goal_pt = to.start_pt
+    // encodes where we've visited and the backreferences for getting there
+    val visited = new HashMap[Traversable, Traversable]()
+    val open = new PriorityQueue[Step]()
+
+    def collect_path(at: Traversable): List[Traversable] = at match {
+      case null => List()
+      case _    => {
+        // clean as we go to break loops
+        val next = visited.remove(at).get
+        at :: collect_path(next)
+      }
+    }
+
+    // Start
+    open.enqueue(new Step(from, 0))
+    visited(from) = null  // some way of encoding the start
+
+    // Main loop
+    var first = true
+    while (!open.isEmpty) {
+      val step = open.dequeue
+
+      // Are we there yet?
+      if (step.on == to && !first) {
+        return collect_path(step.on)
+      }
+
+      // Where can we go next?
+      for (next <- step.on.leads_to) {
+        if ((loop && next == from) || !visited.contains(next)) {
+          // TODO do we have to relax / handle finding a shorter path?
+          // TODO there are probably better heuristics than euclid
+          val heuristic = next.start_pt.euclid_dist(goal_pt)
+          open.enqueue(new Step(next, step.dist + next.length + heuristic))
+          visited(next) = step.on
+        }
+      }
+
+      first = false
+    }
+
+    // We didn't find the way?!
+    throw new Exception("Couldn't A* from " + from + " to " + to)
   }
 }
 

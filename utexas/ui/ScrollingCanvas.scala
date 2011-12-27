@@ -102,7 +102,7 @@ abstract class ScrollingCanvas extends Component {
 
       fix_oob
       // show the zoom
-      status.zoom.text = "" + zoom
+      status.zoom.text = "%.1f".format(zoom)
       repaint
     }
 

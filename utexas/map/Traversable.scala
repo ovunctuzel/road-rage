@@ -1,7 +1,10 @@
 package utexas.map
 
+// Something with a sequence of lines forming a path and a way to get to more
+// somethings
 abstract class Traversable() {
   var lines: List[Line]
+  def leads_to: List[Traversable]
 
   def length: Double = lines.foldLeft(0.0)((a, b) => a + b.length)
 
@@ -28,4 +31,7 @@ abstract class Traversable() {
 
     throw new Exception("Location is past the end of an edge!")
   }
+
+  def start_pt = lines.head.start
+  def end_pt  = lines.last.end
 }

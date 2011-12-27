@@ -27,6 +27,7 @@ class Turn(val from: Edge, val turn_type: TurnType.TurnType, val to: Edge) exten
   private val a = from.lines.last.end
   private val b = to.lines.head.start
   var lines = List[Line](new Line(a.x, a.y, b.x, b.y))
+  def leads_to = List(to)
 
   def involves_road(r: Road) = (from.road == r || to.road == r)
   def other_road(r: Road) = if (from.road == r) to.road else from.road

@@ -28,6 +28,7 @@
 
 ### UI ###
 
+- show routes better
 - conflicts dont look correct
 - config
 - menu items doing stuff
@@ -43,8 +44,8 @@
 
 ### Agents ###
 
-- actual agent queue semantics, spawning them safely
 - old static behavior
+- actual agent queue semantics, spawning them safely
 - spawning specifically in UI
 - allow accel control too
 - dimensions to the cars
