@@ -58,6 +58,7 @@ class Edge(var id: Int, val road: Road, val dir: Direction.Direction) extends Tr
                     else other_lanes.length - lane_num
 
   override def toString = "Lane %s%d of %s (%d)".format(dir, lane_num, road.name, id)
+  //override def toString = "Lane %d".format(id)
 
   def from: Vertex = if (dir == Direction.POS) road.v1 else road.v2
   def to: Vertex   = if (dir == Direction.POS) road.v2 else road.v1

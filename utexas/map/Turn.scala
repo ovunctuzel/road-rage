@@ -21,7 +21,7 @@ class Turn(val from: Edge, val turn_type: TurnType.TurnType, val to: Edge) exten
     )
   }
 
-  override def toString = "" + turn_type + " turn from " + from + " to " + to
+  override def toString = "" + turn_type + " turn(" + from + ", " + to + ")"
 
   // TODO a little anonymous sub returning the line?
   private val a = from.lines.last.end

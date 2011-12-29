@@ -25,9 +25,10 @@ class Simulation(roads: List[Road], edges: List[Edge], vertices: List[Vertex],
 
   def add_agent(start: Edge): Agent = {
     // TODO give it more life soon
-    val a = new Agent(agents.size)
+    val a = new Agent(agents.size, this)
     agents += a
     a.spawn_at(start)
+    a.go_to(random_edge_except(Set()))
     return a
   }
 

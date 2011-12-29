@@ -45,7 +45,13 @@
 ### Agents ###
 
 - old static behavior
-- actual agent queue semantics, spawning them safely
+  - just go to goal
+    - callbacks for behavior to know where agent is
+    - handle disappearing
+  - detect collisions
+    - actual agent queue semantics, spawning them safely
+  - ... motivate reactive solution: avoid collisions!
+- delegate pricy work to a thread pool
 - spawning specifically in UI
 - allow accel control too
 - dimensions to the cars

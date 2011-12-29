@@ -29,7 +29,8 @@ class Graph(val roads: List[Road], val edges: List[Edge],
 
   // TODO eventually make this very general and reusable
   // Returns the sequence of both edges and turns. Lane-changes are implicit
-  // (two edges without a turn in between)
+  // (two edges without a turn in between). First step is NOT 'from', but last
+  // step is 'to'.
   def pathfind_astar(from: Edge, to: Edge): List[Traversable] = {
     // This is only used internally right now
     class Step(val on: Traversable, val dist: Double) extends Ordered[Step] {
@@ -50,8 +51,8 @@ class Graph(val roads: List[Road], val edges: List[Edge],
       case null => List()
       case _    => {
         // clean as we go to break loops
-        val next = visited.remove(at).get
-        at :: collect_path(next)
+        val prev = visited.remove(at).get
+        collect_path(prev) ++ List(at)
       }
     }
 
@@ -66,7 +67,8 @@ class Graph(val roads: List[Road], val edges: List[Edge],
 
       // Are we there yet?
       if (step.on == to && !first) {
-        return collect_path(step.on)
+        // Don't return the first step as 'from'
+        return collect_path(step.on).tail
       }
 
       // Where can we go next?

@@ -1,18 +1,18 @@
 package utexas.sim
 
-import utexas.map.{Edge, Coordinate, Turn, Traversable}
+import utexas.map.{Edge, Coordinate, Turn, Traversable, Graph}
 import utexas.Util
 
 // TODO come up with a notion of dimension and movement capability. at first,
 // just use radius bounded by lane widths?
 
-class Agent(id: Int) {
+class Agent(id: Int, val graph: Graph) {
   var at: Position = new VoidPosition()   // start nowhere
   // We can only change speed, and always accelerate as fast as possible to a
   // new speed. This is a major simplifying assumption!
   var speed: Double = 0.0   // units?
-  var target_speed: Double = Util.mph_to_si(10)
-  val behavior = new IdleBehavior(this) // TODO
+  var target_speed: Double = 0
+  val behavior = new DangerousBehavior(this) // TODO who chooses this?
 
   def spawn_at(e: Edge) = {
     // a sanity check. TODO make it an assert, once we figure out how to test
@@ -23,6 +23,11 @@ class Agent(id: Int) {
     }
 
     at = enter(e, Agent.sim.queues(e).random_spawn)
+  }
+
+  // just tell the behavior
+  def go_to(e: Edge) = {
+    behavior.set_goal(e)
   }
 
   def step(dt_ms: Long, tick: Double) = {
@@ -57,10 +62,9 @@ class Agent(id: Int) {
 
         // then let them react
         behavior.choose_action(dt_ms, tick) match {
-          case Act_Change_Speed(new_speed) => { target_speed = new_speed }
-          case Act_Disappear()             => {}  // TODO signal SImulation
-          case Act_Lane_Change(lane)       => {}  // TODO uhh how?
-          case Act_Nothing()               => {}
+          case Act_Set_Speed(new_speed) => { target_speed = new_speed }
+          case Act_Disappear()          => { Util.log("TODO disappear") }  // TODO signal SImulation
+          case Act_Lane_Change(lane)    => { Util.log("TODO lanechange") }  // TODO uhh how?
         }
       }
     }

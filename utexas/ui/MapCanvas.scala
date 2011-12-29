@@ -42,7 +42,7 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
   private var mode = Mode.EXPLORE
   private var chosen_edge1: Option[Edge] = None
   private var chosen_edge2: Option[Edge] = None
-  private var route = Set[Traversable]()
+  private var route_members = Set[Edge]()
 
   // this is like static config, except it's a function of the map and rng seed
   private val special_ward_color = Color.BLACK
@@ -210,7 +210,7 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
   }
 
   def draw_edge(g2d: Graphics2D, l: EdgeLine) = {
-    if (route(l.edge)) {
+    if (route_members(l.edge)) {
       g2d.setStroke(route_lane_stroke)
     } else {
       g2d.setStroke(lane_stroke)
@@ -257,7 +257,7 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
       return Color.BLUE
     } else if (chosen_edge2.isDefined && chosen_edge2.get == e) {
       return Color.RED
-    } else if (route(e)) {
+    } else if (route_members(e)) {
       return Color.GREEN
     } else {
       return Color.WHITE
@@ -390,7 +390,8 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
       }
       case EV_Action("spawn-army") => {
         // TODO cfg
-        for (_ <- 0 until 1000) {
+        for (i <- 0 until 1) {
+          Util.log("Spawning agent " + i)
           sim.add_agent(sim.random_edge_except(Set()))
         }
         status.agents.text = "" + sim.agents.length
@@ -420,14 +421,14 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
         switch_mode(Mode.PICK_1st)
         chosen_edge1 = None
         chosen_edge2 = None
-        route = Set[Traversable]()
+        route_members = Set[Edge]()
         repaint
       }
       case EV_Action("clear-route") => {
         switch_mode(Mode.EXPLORE)
         chosen_edge1 = None
         chosen_edge2 = None
-        route = Set[Traversable]()
+        route_members = Set[Edge]()
         repaint
       }
       case EV_Key_Press(Key.C) if current_edge.isDefined => {
@@ -462,7 +463,13 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
 
   def show_pathfinding() = {
     // contract: must be called when current_edge1 and 2 are set
-    route = sim.pathfind_astar(chosen_edge1.get, chosen_edge2.get).toSet
+    val r = sim.pathfind_astar(chosen_edge1.get, chosen_edge2.get)
+    // Filter and just remember the edges; the UI doesn't want to highlight
+    // turns.
+    route_members = r.map(s => s match {
+      case e: Edge => Some(e)
+      case _       => None
+    }).flatten.toSet
     repaint
   }
 }
