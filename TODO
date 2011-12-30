@@ -45,9 +45,9 @@
 ### Agents ###
 
 - old static behavior
-  - just go to goal
-    - callbacks for behavior to know where agent is
-    - handle disappearing
+  ? just go to goal
+    ? callbacks for behavior to know where agent is
+    ? handle disappearing
   - detect collisions
     - actual agent queue semantics, spawning them safely
   - ... motivate reactive solution: avoid collisions!

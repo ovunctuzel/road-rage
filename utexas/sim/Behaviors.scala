@@ -12,6 +12,8 @@ abstract class Behavior(a: Agent) {
   def choose_action(dt_ms: Long, tick: Double): Action
   // only queried when the agent reaches a vertex
   def choose_turn(e: Edge): Turn
+  // every time the agent moves to a new traversable
+  def transition(from: Traversable, to: Traversable)
 }
 
 // Never speeds up from rest, so effectively never does anything
@@ -29,10 +31,13 @@ class IdleBehavior(a: Agent) extends Behavior(a) {
     }
     return e.next_turns.head
   }
+
+  override def transition(from: Traversable, to: Traversable) = {}   // mmkay
 }
 
 // Pathfinding somewhere spatially and proceeds to clobber through agents
 class DangerousBehavior(a: Agent) extends Behavior(a) {
+  // route.head is always our next move
   var route: List[Traversable] = List[Traversable]()
 
   override def set_goal(to: Edge) = {
@@ -70,6 +75,14 @@ class DangerousBehavior(a: Agent) extends Behavior(a) {
         return t
       }
       case _ => throw new Exception("Asking us to choose a turn at the wrong time!")
+    }
+  }
+
+  override def transition(from: Traversable, to: Traversable) = {
+    if (route.head == to) {
+      route = route.tail   // moving right along
+    } else {
+      throw new Exception("We missed a move!")
     }
   }
 }

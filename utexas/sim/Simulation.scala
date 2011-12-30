@@ -20,8 +20,7 @@ class Simulation(roads: List[Road], edges: List[Edge], vertices: List[Vertex],
   Agent.sim = this  // let them get to us
   val queues = edges.map(e => e -> new Queue_of_Agents(e)).toMap
 
-  // TODO would a set be nicer?
-  val agents = new MutableList[Agent]()
+  var agents = Set[Agent]()
 
   def add_agent(start: Edge): Agent = {
     // TODO give it more life soon
@@ -31,10 +30,6 @@ class Simulation(roads: List[Road], edges: List[Edge], vertices: List[Vertex],
     a.go_to(random_edge_except(Set()))
     return a
   }
-
-  // TODO some sort of thread that's advancing a timer
-  // TODO a step(dt) that gives everybody a chance, and reaps?
-  // TODO pause toggling
 
   ////////////// Timing
 
@@ -71,8 +66,8 @@ class Simulation(roads: List[Road], edges: List[Edge], vertices: List[Vertex],
     val time_speed = 1.0  // TODO cfg :P
     tick += dt_ms / 1000.0 * time_speed
 
-    // TODO reaping dead ones and stuff
-    agents.foreach(a => a.step(dt_ms, tick))
+    // reap the agents that are done. true indicates alive.
+    agents = agents.filter(a => a.step(dt_ms, tick))
 
     // inform listeners (the UI, usually)
     listeners.foreach(l => l.ev_step)
