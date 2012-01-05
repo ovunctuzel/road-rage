@@ -6,11 +6,12 @@ import java.awt.Color
 import utexas.sim.Simulation
 
 object Status_Bar {
-  val zoom     = new Label("1.0") // TODO from cfg
-  val agents   = new Label("0")
-  val time     = new Label("0.0 [Paused]")
-  val location = new Label("Nowhere")
-  val mode     = new Label("" + Mode.EXPLORE)
+  val zoom       = new Label("1.0") // TODO from cfg
+  val agents     = new Label("0")
+  val time       = new Label("0.0 [Paused]")
+  val time_speed = new Label("1.0x")
+  val location   = new Label("Nowhere")
+  val mode       = new Label("" + Mode.EXPLORE)
 
   // TODO could put methods here to set text!
 }
@@ -90,6 +91,8 @@ object Viewer extends SimpleSwingApplication {
         maximumSize = new Dimension(Int.MaxValue, 10)
         border = Swing.MatteBorder(5, 5, 5, 5, Color.BLACK)
 
+        // TODO generate these?
+
         // all of this to prevent the rightmost 'At' column from spazzing out when the text
         // changes length
         // row 1: labels
@@ -103,8 +106,10 @@ object Viewer extends SimpleSwingApplication {
         c.gridx = 2
         layout(new Label("Time")) = c
         c.gridx = 3
-        layout(new Label("Mode")) = c
+        layout(new Label("Sim Speed")) = c
         c.gridx = 4
+        layout(new Label("Mode")) = c
+        c.gridx = 5
         c.weightx = 1.0
         c.ipadx = 0
         layout(new Label("Location")) = c
@@ -120,8 +125,10 @@ object Viewer extends SimpleSwingApplication {
         c.gridx = 2
         layout(Status_Bar.time) = c
         c.gridx = 3
-        layout(Status_Bar.mode) = c
+        layout(Status_Bar.time_speed) = c
         c.gridx = 4
+        layout(Status_Bar.mode) = c
+        c.gridx = 5
         c.weightx = 1.0
         c.ipadx = 0
         layout(Status_Bar.location) = c

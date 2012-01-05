@@ -2,6 +2,7 @@
 
 ### Map building ###
 
+- style: xml out could be string.format or xml and then stringify
 - deal with densely clustered line segments
 - cul-de-sac handling in p2... needed?
   - Claus Circle in BR... has no outgoing turns.
@@ -10,6 +11,7 @@
 - multi-lane situations dont have enough turns, and we need to do more trimming!
 - scc removal appears broken in Houston?
 - lines arent deterministic?! small floating pt variation...
+- interstates are so broken...
 - document stuff, code-freeze on mapgen!
 
 ### Wards ###
@@ -45,12 +47,10 @@
 ### Agents ###
 
 - old static behavior
-  ? just go to goal
-    ? callbacks for behavior to know where agent is
-    ? handle disappearing
   - detect collisions
     - actual agent queue semantics, spawning them safely
   - ... motivate reactive solution: avoid collisions!
+  - lanechanging model
 - delegate pricy work to a thread pool
 - spawning specifically in UI
 - allow accel control too

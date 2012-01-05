@@ -29,6 +29,7 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
   sim.listeners += new Simulation_Listener() {
     def ev_step() = {
       handle_ev(EV_Action("step"))
+      status.agents.text = "" + sim.agents.size
     }
   }
 
@@ -394,7 +395,7 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
           Util.log("Spawning agent " + i)
           sim.add_agent(sim.random_edge_except(Set()))
         }
-        status.agents.text = "" + sim.agents.length
+        status.agents.text = "" + sim.agents.size
         repaint
       }
       case EV_Action("step") => {
@@ -451,6 +452,14 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
         // toggle road-coloring mode
         show_ward_colors = !show_ward_colors
         repaint
+      }
+      case EV_Key_Press(Key.OpenBracket) => {
+        sim.slow_down
+        status.time_speed.text = "%.1fx".format(sim.time_speed)
+      }
+      case EV_Key_Press(Key.CloseBracket) => {
+        sim.speed_up
+        status.time_speed.text = "%.1fx".format(sim.time_speed)
       }
       case EV_Key_Press(_) => // Ignore the rest
     }

@@ -13,7 +13,9 @@ class Edge(var id: Int, val road: Road, val dir: Direction.Direction) extends Tr
   // TODO finally, something that isnt mutable! make them all this way.
   // TODO what is this silliness though
   var lines = List[Line]()
-  def leads_to = next_turns ++ List(shift_left, shift_right).flatten
+  //def leads_to = next_turns ++ List(shift_left, shift_right).flatten
+  // TODO until lane-changing works.
+  def leads_to = next_turns
 
   def other_lanes = if (dir == Direction.POS) road.pos_lanes else road.neg_lanes
   def other_vert(v: Vertex) = road.other_vert(v)

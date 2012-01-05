@@ -9,9 +9,9 @@ abstract class Behavior(a: Agent) {
   // get things rollin'
   def set_goal(e: Edge)
   // asked every time. just one action per tick?
-  def choose_action(dt_ms: Long, tick: Double): Action
-  // only queried when the agent reaches a vertex
-  def choose_turn(e: Edge): Turn
+  def choose_action(dt_s: Double, tick: Double): Action
+  // only queried when the agent reaches a vertex. None means disappear.
+  def choose_turn(e: Edge): Option[Turn]
   // every time the agent moves to a new traversable
   def transition(from: Traversable, to: Traversable)
 }
@@ -20,16 +20,16 @@ abstract class Behavior(a: Agent) {
 class IdleBehavior(a: Agent) extends Behavior(a) {
   override def set_goal(e: Edge) = {} // we don't care
 
-  override def choose_action(dt_ms: Long, tick: Double) = Act_Set_Speed(0)
+  override def choose_action(dt_s: Double, tick: Double) = Act_Set_Speed(0)
 
-  override def choose_turn(e: Edge): Turn = {
+  override def choose_turn(e: Edge): Option[Turn] = {
     // lol @ test behavior
     if (e.next_turns.size == 0) {
       // TODO fix this in the map properly.
       Util.log("wtf @ " + e)
-      return e.prev_turns.head
+      return Some(e.prev_turns.head)
     }
-    return e.next_turns.head
+    return Some(e.next_turns.head)
   }
 
   override def transition(from: Traversable, to: Traversable) = {}   // mmkay
@@ -49,30 +49,34 @@ class DangerousBehavior(a: Agent) extends Behavior(a) {
     }
   }
 
-  override def choose_action(dt_ms: Long, tick: Double): Action = {
-    // Done?
-    if (route.size == 0) {
-      return Act_Disappear()
-    }
-
-    // Time to lane-change?
-    // TODO choose the right time for it, once we have a model for lane-changing
-    route.head match {
-      case e: Edge => {
-        return Act_Lane_Change(e)
+  override def choose_action(dt_s: Double, tick: Double): Action = {
+    // We disappear in choose_turn, so when route is empty here, just keep
+    // moving so we can reach the end of our destination edge.
+    if (route.size != 0) {
+      // Time to lane-change?
+      // TODO choose the right time for it, once we have a model for lane-changing
+      (a.at, route.head) match {
+        case (LanePosition(e1: Edge, _), e2: Edge) => {
+          return Act_Lane_Change(e2)
+        }
+        case _ =>
       }
-      case _ =>
     }
 
-    // Otherwise, plow ahead! (through cars)
+    // Plow ahead! (through cars)
     val speed = Util.mph_to_si(10)  // that's slow, bro
     return Act_Set_Speed(speed)
   }
 
-  override def choose_turn(e: Edge): Turn = {
+  override def choose_turn(e: Edge): Option[Turn] = {
+    // Done!
+    if (route.size == 0) {
+      return None
+    }
+
     route.head match {
       case t: Turn => {
-        return t
+        return Some(t)
       }
       case _ => throw new Exception("Asking us to choose a turn at the wrong time!")
     }
@@ -93,5 +97,4 @@ class DangerousBehavior(a: Agent) extends Behavior(a) {
 
 abstract class Action
 final case class Act_Set_Speed(new_speed: Double) extends Action
-final case class Act_Disappear() extends Action
 final case class Act_Lane_Change(lane: Edge) extends Action

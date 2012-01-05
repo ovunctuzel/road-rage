@@ -38,6 +38,16 @@ class Simulation(roads: List[Road], edges: List[Edge], vertices: List[Vertex],
   // we can pause
   var running = false
   val listeners = new MutableList[Simulation_Listener]()
+  // WE CAN GO FASTER
+  var time_speed = 1.0
+
+  // TODO cfg
+  def slow_down() = {
+    time_speed = math.max(0.1, time_speed - 0.1)
+  }
+  def speed_up() = {
+    time_speed += 0.1
+  }
 
   // an awesome example of continuations from
   // http://www.scala-lang.org/node/2096
@@ -63,13 +73,14 @@ class Simulation(roads: List[Road], edges: List[Edge], vertices: List[Vertex],
   }
 
   def step(dt_ms: Long) = {
-    val time_speed = 1.0  // TODO cfg :P
-    tick += dt_ms / 1000.0 * time_speed
+    // This value is dt in simulation time, not real time
+    val dt_s = dt_ms / 1000.0 * time_speed
+    tick += dt_s
 
     // reap the agents that are done. true indicates alive.
-    agents = agents.filter(a => a.step(dt_ms, tick))
+    agents = agents.filter(a => a.step(dt_s, tick))
 
-    // inform listeners (the UI, usually)
+    // inform listeners
     listeners.foreach(l => l.ev_step)
   }
 

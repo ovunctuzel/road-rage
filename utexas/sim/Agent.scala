@@ -31,13 +31,13 @@ class Agent(id: Int, val graph: Graph) {
   }
 
   // returns false if we are to be reaped
-  def step(dt_ms: Long, tick: Double): Boolean = {
+  def step(dt_s: Double, tick: Double): Boolean = {
     at match {
       case VoidPosition() => {}   // we don't care. (TODO give them a chance to enter map)
       case LanePosition(start_on, old_dist) => {
         // Do physics to update current speed and figure out how far we've traveled in
         // this timestep.
-        val new_dist = update_kinematics(dt_ms / 1000.0)  // ms -> sec
+        val new_dist = update_kinematics(dt_s)
 
         // Apply this distance. 
         var current_on = start_on
@@ -45,13 +45,18 @@ class Agent(id: Int, val graph: Graph) {
         while (current_dist > current_on.length) {
           current_dist -= current_on.length
           // Are we finishing a turn or starting one?
-          val next = current_on match {
+          val next: Option[Traversable] = current_on match {
             case e: Edge => behavior.choose_turn(e)
-            case t: Turn => t.to
+            case t: Turn => Some(t.to)
           }
-          // this lets behaviors make sure their route is being followed
-          behavior.transition(current_on, next)
-          current_on = next
+          next match {
+            case Some(t) => {
+              // this lets behaviors make sure their route is being followed
+              behavior.transition(current_on, t)
+              current_on = t
+            }
+            case None => return false   // disappear!
+          }
         }
         // so we finally end up somewhere...
         if (start_on == current_on) {
@@ -64,9 +69,8 @@ class Agent(id: Int, val graph: Graph) {
         // TODO check for collisions when all of this is happening
 
         // then let them react
-        behavior.choose_action(dt_ms, tick) match {
+        behavior.choose_action(dt_s, tick) match {
           case Act_Set_Speed(new_speed) => { target_speed = new_speed }
-          case Act_Disappear()          => { return false }
           case Act_Lane_Change(lane)    => { Util.log("TODO lanechange") }  // TODO uhh how?
         }
       }
