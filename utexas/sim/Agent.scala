@@ -6,76 +6,68 @@ import utexas.Util
 // TODO come up with a notion of dimension and movement capability. at first,
 // just use radius bounded by lane widths?
 
-class Agent(id: Int, val graph: Graph) {
-  var at: Position = new VoidPosition()   // start nowhere
+class Agent(id: Int, val graph: Graph, start: Edge) {
+  var at = enter(start, Agent.sim.queues(start).random_spawn)
+
   // We can only change speed, and always accelerate as fast as possible to a
   // new speed. This is a major simplifying assumption!
   var speed: Double = 0.0   // units?
   var target_speed: Double = 0
   val behavior = new DangerousBehavior(this) // TODO who chooses this?
 
-  def spawn_at(e: Edge) = {
-    // a sanity check. TODO make it an assert, once we figure out how to test
-    // case class.
-    at match {
-      case LanePosition(_, _) => throw new Exception("spawning must happen from the void!")
-      case VoidPosition()     => {}
-    }
-
-    at = enter(e, Agent.sim.queues(e).random_spawn)
-  }
+  override def toString = "Agent " + id
 
   // just tell the behavior
   def go_to(e: Edge) = {
     behavior.set_goal(e)
   }
 
-  // returns false if we are to be reaped
-  def step(dt_s: Double, tick: Double): Boolean = {
-    at match {
-      case VoidPosition() => {}   // we don't care. (TODO give them a chance to enter map)
-      case LanePosition(start_on, old_dist) => {
-        // Do physics to update current speed and figure out how far we've traveled in
-        // this timestep.
-        val new_dist = update_kinematics(dt_s)
+  def step(tick: Double, dt_s: Double): Unit = {
+    val start_on = at.on
+    val old_dist = at.dist
 
-        // Apply this distance. 
-        var current_on = start_on
-        var current_dist = old_dist + new_dist
-        while (current_dist > current_on.length) {
-          current_dist -= current_on.length
-          // Are we finishing a turn or starting one?
-          val next: Option[Traversable] = current_on match {
-            case e: Edge => behavior.choose_turn(e)
-            case t: Turn => Some(t.to)
-          }
-          next match {
-            case Some(t) => {
-              // this lets behaviors make sure their route is being followed
-              behavior.transition(current_on, t)
-              current_on = t
-            }
-            case None => return false   // disappear!
-          }
+    // Do physics to update current speed and figure out how far we've traveled in
+    // this timestep.
+    val new_dist = update_kinematics(dt_s)
+
+    // Apply this distance. 
+    var current_on = start_on
+    var current_dist = old_dist + new_dist
+    while (current_dist > current_on.length) {
+      current_dist -= current_on.length
+      // Are we finishing a turn or starting one?
+      val next: Option[Traversable] = current_on match {
+        case e: Edge => behavior.choose_turn(e)
+        case t: Turn => Some(t.to)
+      }
+      next match {
+        case Some(t) => {
+          // this lets behaviors make sure their route is being followed
+          behavior.transition(current_on, t)
+          current_on = t
         }
-        // so we finally end up somewhere...
-        if (start_on == current_on) {
-          at = move(start_on, current_dist)
-        } else {
+        case None => {
+          // Done. Disappear!
           exit(start_on)
-          at = enter(current_on, current_dist)
-        }
-        // TODO deal with lane-changing
-        // TODO check for collisions when all of this is happening
-
-        // then let them react
-        behavior.choose_action(dt_s, tick) match {
-          case Act_Set_Speed(new_speed) => { target_speed = new_speed }
-          case Act_Lane_Change(lane)    => { Util.log("TODO lanechange") }  // TODO uhh how?
+          return
         }
       }
     }
-    return true
+    // so we finally end up somewhere...
+    if (start_on == current_on) {
+      at = move(start_on, current_dist)
+    } else {
+      exit(start_on)
+      at = enter(current_on, current_dist)
+    }
+    // TODO deal with lane-changing
+    // TODO check for collisions when all of this is happening
+
+    // then let them react
+    behavior.choose_action(dt_s) match {
+      case Act_Set_Speed(new_speed) => { target_speed = new_speed }
+      case Act_Lane_Change(lane)    => { Util.log("TODO lanechange") }  // TODO uhh how?
+    }
   }
 
   // returns distance traveled, updates speed. note unit of the argument.
@@ -112,18 +104,9 @@ class Agent(id: Int, val graph: Graph) {
   }
 
   // Delegate to the queues that simulation manages
-  def enter(t: Traversable, dist: Double) = t match {
-    case e: Edge => Agent.sim.queues(e).enter(this, dist)
-    case _: Turn => LanePosition(t, dist)
-  }
-  def exit(t: Traversable) = t match {
-    case e: Edge => Agent.sim.queues(e).exit(this)
-    case _       =>
-  }
-  def move(t: Traversable, dist: Double) = t match {
-    case e: Edge => Agent.sim.queues(e).move(this, dist)
-    case _: Turn => LanePosition(t, dist)
-  }
+  def enter(t: Traversable, dist: Double) = Agent.sim.queues(t).enter(this, dist)
+  def exit(t: Traversable)                = Agent.sim.queues(t).exit(this)
+  def move(t: Traversable, dist: Double)  = Agent.sim.queues(t).move(this, dist)
 }
 
 // the singleton just lets us get at the simulation to look up queues
@@ -133,15 +116,11 @@ object Agent {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-abstract class Position
+// VoidPosition used to exist too, but I couldn't work out when we would ever
+// want it. If there's an agent waiting to enter the map, they don't need to
+// exist yet.
 
-// They haven't entered the map yet
-// TODO or we could have a way of representing driveways
-final case class VoidPosition() extends Position {}
-
-// TODO a misnomer now?
-final case class LanePosition(on: Traversable, dist: Double) extends Position {
-  // TODO make them comparable for sorting!
-
+case class Position(val on: Traversable, val dist: Double) {
+  assert(dist >= 0)
   def location = on.location(dist)
 }

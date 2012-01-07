@@ -203,7 +203,11 @@ class Reader(fn: String) {
 
     Util.log("Recovering wards as well")
     // Don't forget to separate out the special ward first
-    val special_ward = new Ward(special_ward_id, wards_map(special_ward_id).toSet)
+    // Missing the special ward  can happen on some oddly-constructed maps
+    val special_ward = if (wards_map.contains(special_ward_id))
+                         new Ward(special_ward_id, wards_map(special_ward_id).toSet)
+                       else
+                         new Ward(special_ward_id, Set())
     wards_map -= special_ward_id
     val wards: List[Ward] = wards_map.map(pair => new Ward(pair._1, pair._2.toSet)).toList
 

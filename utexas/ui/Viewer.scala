@@ -4,6 +4,7 @@ import swing._  // TODO figure out exactly what
 import java.awt.Color
 
 import utexas.sim.Simulation
+import utexas.Util
 
 object Status_Bar {
   val zoom       = new Label("1.0") // TODO from cfg
@@ -25,6 +26,15 @@ object Viewer extends SimpleSwingApplication {
   )
   // TODO parametric from args
   val canvas = new MapCanvas(Simulation.load("dat/test.map"))
+
+  override def main(args: Array[String]) = {
+    if (args.size == 1) {
+      Util.init_rng(args.head.toLong)
+    } else {
+      Util.init_rng(System.currentTimeMillis)
+    }
+    super.main(args)
+  }
 
   def top = new MainFrame {
     title = "Road Rage Map Viewer"

@@ -18,17 +18,34 @@ class Simulation(roads: List[Road], edges: List[Edge], vertices: List[Vertex],
 {
   /////////// Agent management
   Agent.sim = this  // let them get to us
-  val queues = edges.map(e => e -> new Queue_of_Agents(e)).toMap
+  Util.log("Creating agent queues for edges and turns...")
+  val queues = traversables.map(t => t -> new Queue_of_Agents(t)).toMap
 
-  var agents = Set[Agent]()
+  // Should be a stable order.
+  def agents() = traversables.map(t => queues(t)).flatMap(q => q.agents)
 
   def add_agent(start: Edge): Agent = {
-    // TODO give it more life soon
-    val a = new Agent(agents.size, this)
-    agents += a
-    a.spawn_at(start)
-    a.go_to(random_edge_except(Set()))
+    val a = new Agent(agents.size, this, start)
+    // Throw an exception if we couldn't find anything...
+    a.go_to(random_edge(min_len = 0).get)
     return a
+  }
+
+  // There might be nothing satisfying the constraints.
+  final def random_edge(except: Set[Edge] = Set(), spawning: Boolean = false,
+                        min_len: Double = 1.0): Option[Edge] =
+  {
+    def ok(e: Edge) = (!except.contains(e)
+                   && e.road.road_type == "residential"
+                   && e.length > min_len
+                   && (!spawning || queues(e).ok_to_spawn))
+
+    val candidates = edges.filter(ok)
+    if (candidates.size > 0) {
+      return Some(Util.choose_rand(candidates))
+    } else {
+      return None
+    }
   }
 
   ////////////// Timing
@@ -39,7 +56,7 @@ class Simulation(roads: List[Road], edges: List[Edge], vertices: List[Vertex],
   var running = false
   val listeners = new MutableList[Simulation_Listener]()
   // WE CAN GO FASTER
-  var time_speed = 1.0
+  var time_speed = 10.0
 
   // TODO cfg
   def slow_down() = {
@@ -77,8 +94,15 @@ class Simulation(roads: List[Road], edges: List[Edge], vertices: List[Vertex],
     val dt_s = dt_ms / 1000.0 * time_speed
     tick += dt_s
 
-    // reap the agents that are done. true indicates alive.
-    agents = agents.filter(a => a.step(dt_s, tick))
+    // Move all agents, and check that order is maintained afterwards.
+    queues.values.foreach(q => q.start_step)
+
+    // Iterate in a fixed, deterministic order.
+    for (a <- agents) {
+      a.step(tick, dt_s)
+    }
+
+    queues.values.foreach(q => q.end_step)
 
     // inform listeners
     listeners.foreach(l => l.ev_step)

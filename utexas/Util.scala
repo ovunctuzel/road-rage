@@ -11,10 +11,16 @@ object Util {
   def indent = "  " * indent_log
   def log(msg: String) = println(indent + msg)
 
-  private val rng = new Random()  // TODO saving seeds
+  private var rng: Random = null  // icky...
+
+  def init_rng(seed: Long) = {
+    rng = new Random(seed)
+    Util.log("RNG seed: " + seed)
+  }
+
   def rand_double(min: Double, max: Double): Double = {
-    if (min < max) {
-      return rand_double(max, min)
+    if (min > max) {
+      throw new Exception("rand(" + min + ", " + max + ") requested")
     } else if (min == max) {
       return min
     } else {

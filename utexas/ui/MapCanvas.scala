@@ -9,8 +9,7 @@ import java.awt.geom._
 import swing.event.Key
 
 import utexas.map._  // TODO yeah getting lazy.
-import utexas.sim.{Simulation, Queue_of_Agents, LanePosition, VoidPosition,
-                   Agent, Simulation_Listener}
+import utexas.sim.{Simulation, Queue_of_Agents, Agent, Simulation_Listener}
 
 import utexas.cfg
 import utexas.Util
@@ -65,14 +64,18 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
   // which is supposed to be O(1) append and conversion to list.
   Util.log("Pre-rendering road geometry...")
   Util.log_push
+
+  // TODO profile this, it's slow.
   val road2lines = new HashMap[Road, MutableSet[RoadLine]] with MultiMap[Road, RoadLine]
   Util.log("Road lines...")
   val bg_lines = build_bg_lines
+
   // this is only used for finer granularity searching...
   val edge2lines = new HashMap[Edge, MutableSet[EdgeLine]] with MultiMap[Edge, EdgeLine]
   // pre-render lanes
   Util.log("Edge lines...")
   val fg_lines = build_fg_lines
+
   // pre-render ward bubbles
   Util.log("Ward bubbles...")
   val ward_bubbles = sim.wards.filter(_.roads.size > 1).map(new WardBubble(_))
@@ -228,15 +231,8 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
 
   def draw_agent(g2d: Graphics2D, a: Agent) = {
     g2d.setColor(Color.RED) // TODO depending on their state, later
-    // TODO how can we encode the invariant that edge.agents only contains
-    // agents with at=LanePosition?
-    a.at match {
-      case LanePosition(e, dist) => {
-        val loc = e.location(dist)
-        g2d.fill(new Ellipse2D.Double(loc.x - eps, loc.y - eps, eps * 2, eps * 2))
-      }
-      case VoidPosition() => {}
-    }
+    val loc = a.at.location
+    g2d.fill(new Ellipse2D.Double(loc.x - eps, loc.y - eps, eps * 2, eps * 2))
   }
 
   def color_road(r: Road): Color = {
@@ -390,11 +386,18 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
         handle_ev(EV_Action("toggle-wards"))
       }
       case EV_Action("spawn-army") => {
-        // TODO cfg
-        for (i <- 0 until 1) {
-          Util.log("Spawning agent " + i)
-          sim.add_agent(sim.random_edge_except(Set()))
+        val num = 100   // TODO cfg
+        def spawn(i: Int): Unit = {
+          Util.log("Spawning agent " + (num - i))
+          sim.random_edge(spawning = true) match {
+            case Some(e) => sim.add_agent(e)
+            case None    => { Util.log("... No room left!"); return }
+          }
+          if (i > 0) {
+            spawn(i - 1)
+          }
         }
+        spawn(num - 1)
         status.agents.text = "" + sim.agents.size
         repaint
       }

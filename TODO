@@ -47,10 +47,31 @@
 ### Agents ###
 
 - old static behavior
+  *** lane changes on the synthetic?!
+  *** why doesnt tarjans catch more SCCish things? consider 'bigger' graph with all traversables.
+    - write a crazy map-checker
+    - and fix fpu bug with lines and building
+  *** agents floating off into void?!
+
+
+  - lack of determinism
+    - timesteps matter / crossing many things in one hop
+    - patho case: two lanes merging, agent on each, order matters.
+
   - detect collisions
-    - actual agent queue semantics, spawning them safely
+    - post-mortem checker still misses scary things in between, like when merging.
+    - force collisions, see if they're detected. set one guy on the road and make him be still!
+    - conflicting simultaneous turns
+    - ui show collisions
+
+  - enforce speed limits and never allow spawning too close... then false positive
+    overtaking/collisions should be impossible!
+    - er, no, timesteps can be variable.
+
+
   - ... motivate reactive solution: avoid collisions!
   - lanechanging model
+- spawning safely
 - delegate pricy work to a thread pool
 - spawning specifically in UI
 - allow accel control too
@@ -72,6 +93,9 @@
 
 ### Simulation ###
 
-- tolling?
-- reversal?
+- tolling
+- lane reversal
+- 4-way stops
+- traffic signals
+- dynamic traffic signals
 - spawning realistic traffic patterns

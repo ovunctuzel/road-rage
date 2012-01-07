@@ -9,7 +9,7 @@ abstract class Behavior(a: Agent) {
   // get things rollin'
   def set_goal(e: Edge)
   // asked every time. just one action per tick?
-  def choose_action(dt_s: Double, tick: Double): Action
+  def choose_action(dt_s: Double): Action
   // only queried when the agent reaches a vertex. None means disappear.
   def choose_turn(e: Edge): Option[Turn]
   // every time the agent moves to a new traversable
@@ -20,7 +20,7 @@ abstract class Behavior(a: Agent) {
 class IdleBehavior(a: Agent) extends Behavior(a) {
   override def set_goal(e: Edge) = {} // we don't care
 
-  override def choose_action(dt_s: Double, tick: Double) = Act_Set_Speed(0)
+  override def choose_action(dt_s: Double) = Act_Set_Speed(0)
 
   override def choose_turn(e: Edge): Option[Turn] = {
     // lol @ test behavior
@@ -40,23 +40,19 @@ class DangerousBehavior(a: Agent) extends Behavior(a) {
   // route.head is always our next move
   var route: List[Traversable] = List[Traversable]()
 
-  override def set_goal(to: Edge) = {
-    a.at match {
-      case LanePosition(e: Edge, _) => {
-        route = graph.pathfind_astar(e, to)
-      }
-      case _ => throw new Exception("Start agent on an edge to do stuff!")
-    }
+  override def set_goal(to: Edge): Unit = a.at.on match {
+    case e: Edge => { route = graph.pathfind_astar(e, to) }
+    case _       => throw new Exception("Start agent on an edge to do stuff!")
   }
 
-  override def choose_action(dt_s: Double, tick: Double): Action = {
+  override def choose_action(dt_s: Double): Action = {
     // We disappear in choose_turn, so when route is empty here, just keep
     // moving so we can reach the end of our destination edge.
     if (route.size != 0) {
       // Time to lane-change?
       // TODO choose the right time for it, once we have a model for lane-changing
       (a.at, route.head) match {
-        case (LanePosition(e1: Edge, _), e2: Edge) => {
+        case (Position(e1: Edge, _), e2: Edge) => {
           return Act_Lane_Change(e2)
         }
         case _ =>

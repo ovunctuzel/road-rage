@@ -2,4 +2,5 @@
 *.swp
 .scala_dependencies
 *.osm
+!synthetic.osm
 *.map
