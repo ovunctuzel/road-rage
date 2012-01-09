@@ -96,6 +96,8 @@ object Viewer extends SimpleSwingApplication {
     }
 
     contents = new BoxPanel(Orientation.Vertical) {
+      background = Color.LIGHT_GRAY
+
       contents += new GridBagPanel {
         // TODO config for all the sizings...
         maximumSize = new Dimension(Int.MaxValue, 10)

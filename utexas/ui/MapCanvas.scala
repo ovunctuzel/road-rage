@@ -157,9 +157,9 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
     // to render them all)
     if (zoom > cfg.zoom_threshold) {
       // then the second layer (lanes)
-      //for (l <- fg_lines if l.line.intersects(window)) {
       // TODO this is ugly and maybe inefficient?
-      for (r <- roads_seen; l <- r.road.all_lanes.flatMap(edge2lines(_)) if l.line.intersects(window))
+      //for (r <- roads_seen; l <- r.road.all_lanes.flatMap(edge2lines(_)) if l.line.intersects(window))
+      for (l <- fg_lines if l.line.intersects(window))
       {
         draw_edge(g2d, l)
       }
@@ -314,31 +314,31 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
     val cursor_bubble = new Rectangle2D.Double(x - eps, y - eps, eps * 2, eps * 2)
     // do a search at low granularity first
     // TODO does this actually help us?
-    for (big_line <- bg_lines if big_line.line.intersects(window)) {
+    /*for (big_line <- bg_lines if big_line.line.intersects(window)) {
       for (e <- big_line.road.all_lanes) {
         for (l <- edge2lines(e) if l.line.intersects(cursor_bubble)) {
           return Some(l.edge)
         }
       }
+    }*/
+
+    return fg_lines.find(l => l.line.intersects(cursor_bubble)) match {
+      case Some(l) => Some(l.edge)
+      case None    => None
     }
-    // no hit
-    return None
   }
 
   def mouseover_ward(x: Double, y: Double): Option[Ward] = {
     val cursor_bubble = new Rectangle2D.Double(x - eps, y - eps, eps * 2, eps * 2)
-    for (w <- ward_bubbles if w.bubble.intersects(cursor_bubble)) {
-      return Some(w.ward)
+    return ward_bubbles.find(w => w.bubble.intersects(cursor_bubble)) match {
+      case Some(b) => Some(b.ward)
+      case None    => None
     }
-    return None
   }
 
   def mouseover_agent(x: Double, y: Double): Option[Agent] = {
     val cursor_bubble = new Rectangle2D.Double(x - eps, y - eps, eps * 2, eps * 2)
-    for (a <- sim.agents if agent_bubble(a).intersects(cursor_bubble)) {
-      return Some(a)
-    }
-    return None
+    return sim.agents.find(a => agent_bubble(a).intersects(cursor_bubble))
   }
 
   def handle_ev(ev: UI_Event) = {
@@ -353,6 +353,8 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
         current_agent match {
           case Some(a) => {
             status.location.text = "" + a
+            current_ward = None
+            current_edge = None
           }
           case None => {
             if (show_wards) {
@@ -363,6 +365,7 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
                 case None    => "Nowhere"
               }
               current_edge = None
+              current_agent = None
             } else if (zoom > cfg.zoom_threshold) {
               current_edge = mouseover_edge(x, y)
               status.location.text = current_edge match {
@@ -370,6 +373,9 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
                 case None    => "Nowhere"
               }
               current_ward = None
+              current_agent = None
+            } else {
+              status.location.text = "Nowhere"
             }
           }
         }

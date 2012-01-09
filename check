@@ -1,0 +1,5 @@
+#!/bin/bash
+
+. common.sh
+
+scala $RUN_OPTS utexas.map.make.Checker $@

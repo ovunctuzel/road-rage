@@ -18,7 +18,6 @@ abstract class ScrollingCanvas extends Component {
   // It's nice to have access to this.
   protected var status = Status_Bar
 
-  override def background = Color.LIGHT_GRAY
   override def focusable = true   // for keys to work
 
   // this defines the current viewing window. these values are arbitrary;

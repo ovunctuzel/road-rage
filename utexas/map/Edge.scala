@@ -44,11 +44,7 @@ class Edge(var id: Int, val road: Road, val dir: Direction.Direction) extends Tr
   def next_counterclockwise_to: Option[Edge] = {
     if (is_rightmost) {
       val ordering = right_turns_to ++ crosses_to ++ left_turns_to
-      if (ordering.size > 0) {
-        return Some(ordering.head)
-      } else {
-        return None
-      }
+      return ordering.headOption
     } else {
       return Some(other_lanes(lane_num - 1))
     }

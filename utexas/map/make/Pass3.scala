@@ -43,7 +43,7 @@ class Pass3(old_graph: PreGraph2) {
 
       // force line segments to meet up on the inside
       for (e <- r.all_lanes; (l1, l2) <- e.lines zip e.lines.tail) {
-        adjust_lines(l1, l2)
+        adjust_lines(l1, l2, true)
       }
     }
 
@@ -263,27 +263,41 @@ class Pass3(old_graph: PreGraph2) {
     // TODO investigate a general "scale length by 10%" policy
     // TODO multiple 'right roads' are untested? :P
 
-    // We want our rightmsot lane to match whatever is counter-clockwise to it. 
+    // We want our rightmost lane to match whatever is counter-clockwise to it. 
     // TODO this is flawed in the presence of oneways:
     // ^
     // |
     // V <======  the ccw lane relevant is incoming, not outgoing
     // ^
     // |
-    e.next_counterclockwise_to match {
-      case Some(ccw) => adjust_lines(e.lines.last, ccw.lines.head)
+
+    // next_counterclockwise_to returns parallel lanes, but we actually want the
+    // edge that's going to cross us, so that's why we force rightmost lane
+    // Not adjusting the other line if we're not the rightmost lane... TODO does
+    // this help?
+    e.rightmost_lane.next_counterclockwise_to match {
+      case Some(ccw) => adjust_lines(e.lines.last, ccw.lines.head, e.is_rightmost)
       case _ => {}
     }
   }
 
-  private def adjust_lines(l1: Line, l2: Line) = {
+  private def adjust_lines(l1: Line, l2: Line, both: Boolean) = {
     // expect them to collide.
     l1.intersection(l2) match {
       case Some(pt) => {
-        l1.x2 = pt.x
-        l1.y2 = pt.y
-        l2.x1 = pt.x
-        l2.y1 = pt.y
+        // With multiple lanes, this could happen multiple times. Either force
+        // far-to-near order so lines only ever decrease, or just only permit
+        // changes when it makes lines shorter...
+        if ((new Line(l1.x1, l1.y1, pt.x, pt.y)).length < l1.length) {
+          l1.x2 = pt.x
+          l1.y2 = pt.y
+        }
+        if (both) {
+          if ((new Line(pt.x, pt.y, l2.x2, l2.y2)).length < l2.length) {
+            l2.x1 = pt.x
+            l2.y1 = pt.y
+          }
+        }
       }
       case None => {} // don't worry about parallel lines
     }
