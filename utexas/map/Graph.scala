@@ -46,7 +46,7 @@ class Graph(val roads: List[Road], val edges: List[Edge],
         val prev = visited.remove(at)
         prev match {
           case Some(step) => collect_path(step) ++ List(at)
-          case _          => Nil
+          case _          => List(at)   // the start of a looped path
         }
       }
     }
@@ -63,7 +63,9 @@ class Graph(val roads: List[Road], val edges: List[Edge],
       // Are we there yet?
       if (step.on == to && !first) {
         // Don't return the first step as 'from'
-        return collect_path(step.on).tail
+        val path = collect_path(step.on)
+        assert(path.head == from)
+        return path.tail
       }
 
       // Where can we go next?

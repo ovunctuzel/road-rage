@@ -66,7 +66,11 @@ class Agent(id: Int, val graph: Graph, start: Edge) {
     // then let them react
     behavior.choose_action(dt_s) match {
       case Act_Set_Speed(new_speed) => { target_speed = new_speed }
-      case Act_Lane_Change(lane)    => { Util.log("TODO lanechange") }  // TODO uhh how?
+      case Act_Lane_Change(lane)    => {
+        // TODO ensure it's a valid request
+        // TODO uhh how?
+        Util.log("TODO lanechange")
+      }
     }
   }
 

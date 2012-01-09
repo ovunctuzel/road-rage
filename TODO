@@ -47,14 +47,12 @@
 ### Agents ###
 
 - old static behavior
-  *** lane changes on the synthetic?!
   *** why doesnt tarjans catch more SCCish things? consider 'bigger' graph with all traversables.
     - write a crazy map-checker
     - and fix fpu bug with lines and building
   *** agents floating off into void?!
 
-
-  - lack of determinism
+  - lack of determinism?
     - timesteps matter / crossing many things in one hop
     - patho case: two lanes merging, agent on each, order matters.
 
