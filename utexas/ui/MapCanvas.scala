@@ -43,6 +43,7 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
   private var chosen_edge1: Option[Edge] = None
   private var chosen_edge2: Option[Edge] = None
   private var route_members = Set[Edge]()
+  private var current_agent: Option[Agent] = None
 
   // this is like static config, except it's a function of the map and rng seed
   private val special_ward_color = Color.BLACK
@@ -229,10 +230,14 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
     //sim.queues(l.edge).agents.foreach(a => draw_agent(g2d, a))
   }
 
+  def agent_bubble(a: Agent): Ellipse2D = {
+    val loc = a.at.location
+    return new Ellipse2D.Double(loc.x - eps, loc.y - eps, eps * 2, eps * 2)
+  }
+
   def draw_agent(g2d: Graphics2D, a: Agent) = {
     g2d.setColor(Color.RED) // TODO depending on their state, later
-    val loc = a.at.location
-    g2d.fill(new Ellipse2D.Double(loc.x - eps, loc.y - eps, eps * 2, eps * 2))
+    g2d.fill(agent_bubble(a))
   }
 
   def color_road(r: Road): Color = {
@@ -304,7 +309,7 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
   // the radius of a small epsilon circle for the cursor
   def eps = 5.0 / zoom
 
-  def mouseover_edge(x: Double, y: Double): Option[EdgeLine] = {
+  def mouseover_edge(x: Double, y: Double): Option[Edge] = {
     val window = viewing_window
     val cursor_bubble = new Rectangle2D.Double(x - eps, y - eps, eps * 2, eps * 2)
     // do a search at low granularity first
@@ -312,7 +317,7 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
     for (big_line <- bg_lines if big_line.line.intersects(window)) {
       for (e <- big_line.road.all_lanes) {
         for (l <- edge2lines(e) if l.line.intersects(cursor_bubble)) {
-          return Some(l)
+          return Some(l.edge)
         }
       }
     }
@@ -320,10 +325,18 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
     return None
   }
 
-  def mouseover_ward(x: Double, y: Double): Option[WardBubble] = {
+  def mouseover_ward(x: Double, y: Double): Option[Ward] = {
     val cursor_bubble = new Rectangle2D.Double(x - eps, y - eps, eps * 2, eps * 2)
     for (w <- ward_bubbles if w.bubble.intersects(cursor_bubble)) {
-      return Some(w)
+      return Some(w.ward)
+    }
+    return None
+  }
+
+  def mouseover_agent(x: Double, y: Double): Option[Agent] = {
+    val cursor_bubble = new Rectangle2D.Double(x - eps, y - eps, eps * 2, eps * 2)
+    for (a <- sim.agents if agent_bubble(a).intersects(cursor_bubble)) {
+      return Some(a)
     }
     return None
   }
@@ -335,27 +348,30 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
         current_turn = -1
 
         // Are we mouse-overing something? ("mousing over")
-        if (show_wards) {
-          current_ward = mouseover_ward(x, y) match {
-            case Some(w) => Some(w.ward)
-            case None    => None
+        current_agent = mouseover_agent(x, y)
+
+        current_agent match {
+          case Some(a) => {
+            status.location.text = "" + a
           }
-          // TODO fall back to looking for edges if None?
-          status.location.text = current_ward match {
-            case Some(w) => "" + w
-            case None    => "Nowhere"
+          case None => {
+            if (show_wards) {
+              current_ward = mouseover_ward(x, y)
+              // TODO fall back to looking for edges if None?
+              status.location.text = current_ward match {
+                case Some(w) => "" + w
+                case None    => "Nowhere"
+              }
+              current_edge = None
+            } else if (zoom > cfg.zoom_threshold) {
+              current_edge = mouseover_edge(x, y)
+              status.location.text = current_edge match {
+                case Some(e) => "" + e
+                case None    => "Nowhere"
+              }
+              current_ward = None
+            }
           }
-          current_edge = None
-        } else if (zoom > cfg.zoom_threshold) {
-          current_edge = mouseover_edge(x, y) match {
-            case Some(l) => Some(l.edge)
-            case None    => None
-          }
-          status.location.text = current_edge match {
-            case Some(e) => "" + e
-            case None    => "Nowhere"
-          }
-          current_ward = None
         }
 
         // TODO only on changes?
@@ -463,6 +479,9 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
       case EV_Key_Press(Key.CloseBracket) => {
         sim.speed_up
         status.time_speed.text = "%.1fx".format(sim.time_speed)
+      }
+      case EV_Key_Press(Key.A) if current_agent.isDefined => {
+        current_agent.get.dump_info
       }
       case EV_Key_Press(_) => // Ignore the rest
     }

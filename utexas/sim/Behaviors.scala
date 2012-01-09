@@ -14,6 +14,8 @@ abstract class Behavior(a: Agent) {
   def choose_turn(e: Edge): Option[Turn]
   // every time the agent moves to a new traversable
   def transition(from: Traversable, to: Traversable)
+  // just for debugging
+  def dump_info()
 }
 
 // Never speeds up from rest, so effectively never does anything
@@ -33,6 +35,10 @@ class IdleBehavior(a: Agent) extends Behavior(a) {
   }
 
   override def transition(from: Traversable, to: Traversable) = {}   // mmkay
+
+  override def dump_info() = {
+    Util.log("Idle behavior")
+  }
 }
 
 // Pathfinding somewhere spatially and proceeds to clobber through agents
@@ -84,6 +90,14 @@ class DangerousBehavior(a: Agent) extends Behavior(a) {
     } else {
       throw new Exception("We missed a move!")
     }
+  }
+
+  override def dump_info() = {
+    Util.log("Dangerous behavior")
+    Util.log("Route:")
+    Util.log_push
+    route.foreach(s => Util.log("" + s))
+    Util.log_pop
   }
 }
 

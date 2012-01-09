@@ -111,6 +111,15 @@ class Agent(id: Int, val graph: Graph, start: Edge) {
   def enter(t: Traversable, dist: Double) = Agent.sim.queues(t).enter(this, dist)
   def exit(t: Traversable)                = Agent.sim.queues(t).exit(this)
   def move(t: Traversable, dist: Double)  = Agent.sim.queues(t).move(this, dist)
+
+  def dump_info() = {
+    Util.log("" + this)
+    Util.log_push
+    Util.log("At: " + at)
+    Util.log("Speed: " + speed + " of target " + target_speed)
+    behavior.dump_info
+    Util.log_pop
+  }
 }
 
 // the singleton just lets us get at the simulation to look up queues
