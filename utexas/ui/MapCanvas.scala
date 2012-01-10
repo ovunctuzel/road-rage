@@ -66,7 +66,6 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
   Util.log("Pre-rendering road geometry...")
   Util.log_push
 
-  // TODO profile this, it's slow.
   val road2lines = new HashMap[Road, MutableSet[RoadLine]] with MultiMap[Road, RoadLine]
   Util.log("Road lines...")
   val bg_lines = build_bg_lines
@@ -83,22 +82,23 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
   Util.log_pop
 
   // just used during construction.
+  // Note ListBuffer takes O(n) to access the last element, so only write to it,
+  // don't read from it.
   private def build_bg_lines(): List[RoadLine] = {
     val list = new ListBuffer[RoadLine]()
     for (r <- sim.roads; (from, to) <- r.pairs_of_points) {
-      list += new RoadLine(from, to, r)
-      road2lines.addBinding(r, list.last)
+      val line = new RoadLine(from, to, r)
+      road2lines.addBinding(r, line)
+      list += line
     }
     return list.toList
   }
   private def build_fg_lines(): List[EdgeLine] = {
     val list = new ListBuffer[EdgeLine]()
-    for (e <- sim.edges) {
-      for (l <- e.lines) {
-        val line = new EdgeLine(l, e)
-        edge2lines.addBinding(e, line)
-        list += line
-      }
+    for (e <- sim.edges; l <- e.lines) {
+      val line = new EdgeLine(l, e)
+      edge2lines.addBinding(e, line)
+      list += line
     }
     return list.toList
   }
