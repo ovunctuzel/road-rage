@@ -2,8 +2,10 @@
 
 ### Map building ###
 
-- deal with densely clustered line segments
-- oneways/highways look like shit (roads arent under the edge)
+1 osm now does include info on num of lanes!
+  - if its not a oneway, total?
+
+2 lines arent deterministic?! small floating pt variation...
 
 
 - make line segs meet up better.
@@ -14,8 +16,6 @@
 - deal with disconnected things properly
 - multi-lane situations dont have enough turns, and we need to do more trimming!
 - scc removal appears broken in Houston?
-- lines arent deterministic?! small floating pt variation...
-- interstates are so broken...
 - document stuff, code-freeze on mapgen!
 
 ### Wards ###
@@ -47,6 +47,7 @@
 - way better pruning of what to (re-draw) using quadtrees
   - but is it even needed?
 - keyboard-grabbing focus is... greedy when minimized
+- dont show arrows when line segs are really clustered
 
 ### Agents ###
 
@@ -83,9 +84,9 @@
 - Edges as subclasses for direxn might be nice
 - make everything possible immutable, but then have to figure out how to build
   inter-referential things
+  - Mutable subclasses of everything used during construction..
   - have more ids and methods that access based on those. that'll break it.
 - explicitly override hashcode?
-- modularity of Edge/Edge with agent queues is... messy, and separate lookups arent the best answer.
 
 ### Simulation ###
 

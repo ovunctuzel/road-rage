@@ -50,10 +50,8 @@ class Edge(var id: Int, val road: Road, val dir: Direction.Direction) extends Tr
     }
   }
 
-  // TODO rewrite sexilyer
-  // the rightmost lane actually becomes the center line
-  def lane_offset = if (road.is_oneway) road.num_lanes - lane_num - 1
-                    else other_lanes.length - lane_num
+  // not for one-ways right now. but TODO it'd be cool to put that here.
+  def lane_offset = other_lanes.length - lane_num
 
   override def toString = "Lane %s%d of %s (%d)".format(dir, lane_num, road.name, id)
   //override def toString = "Lane %d".format(id)

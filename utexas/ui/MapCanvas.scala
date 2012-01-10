@@ -86,18 +86,7 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
   private def build_bg_lines(): List[RoadLine] = {
     val list = new ListBuffer[RoadLine]()
     for (r <- sim.roads; (from, to) <- r.pairs_of_points) {
-      if (r.is_oneway) {
-        // TODO this still looks uber sucky.
-        val l = r.oneway_lanes.head.lines.last
-        // shift the road over a half-lane?
-        list += new RoadLine(
-          new Coordinate((from.x + l.x1) / 2, (from.y + l.y1) / 2),
-          new Coordinate((to.x + l.x2) / 2, (to.y + l.y2) / 2),
-          r
-        )
-      } else {
-        list += new RoadLine(from, to, r)
-      }
+      list += new RoadLine(from, to, r)
       road2lines.addBinding(r, list.last)
     }
     return list.toList
@@ -167,7 +156,7 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
       // and the third layer (dashed center lines)
       g2d.setColor(Color.YELLOW)
       g2d.setStroke(center_stroke)
-      for (l <- roads_seen) {
+      for (l <- roads_seen if !l.road.is_oneway) {
         g2d.draw(l.line)
       }
 

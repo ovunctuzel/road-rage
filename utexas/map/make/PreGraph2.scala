@@ -14,15 +14,14 @@ class PreGraph2(old_graph: PreGraph1) {
 
   // find true edges between adjacent vertices
   Util.log("Splitting " + old_graph.edges.length + " roads into edges between intersections")
-  var edges = old_graph.edges flatMap split_road
+  var edges = old_graph.edges.flatMap(split_road)
 
   def split_road(road: PreEdge1): List[PreEdge2] = {
     // Walk the list of points in this edge, discovering chains between
     // vertices
 
-    // TODO I think this could potentially be some awesome recursion
-    // TODO or otherwise written in essentially one line ;)
-    val split_edges = new ListBuffer[PreEdge2]
+    // TODO this is essentially a 'split at vertices'
+    val split_edges = new ListBuffer[Option[PreEdge2]]
 
     var start = 0   // first point in an edge is guaranteed to be a vertex
     // List.range is [lower, upper)
@@ -30,11 +29,7 @@ class PreGraph2(old_graph: PreGraph1) {
       if (start != i && old_graph.is_vert(road.points(i))) {
         // so we have an edge from start to i
         // slice is [from, till), hence the +1
-        val e = find_or_make_edge(road.points.slice(start, i + 1), road)
-        if (e != null) {
-          split_edges += e
-          // TODO yield?
-        }
+        split_edges += find_or_make_edge(road.points.slice(start, i + 1), road)
         start = i
       }
     }
@@ -42,11 +37,12 @@ class PreGraph2(old_graph: PreGraph1) {
 
     // maybe Nil, if so, flatMap doesn't care
     // honey badger doesn't give a fuck
-    return split_edges.toList
+    return split_edges.toList.flatten
   }
 
-  // null if it's already there
-  def find_or_make_edge(points: MutableList[Coordinate], edge_dat: PreEdge1): PreEdge2 = {
+  // None if it's already there
+  def find_or_make_edge(points: MutableList[Coordinate], edge_dat: PreEdge1): Option[PreEdge2] =
+  {
     val v1 = points.head
     val v2 = points.last
 
@@ -58,11 +54,11 @@ class PreGraph2(old_graph: PreGraph1) {
     {
       //Util.log("well, finally! already exists " + edge_dat.name)
       // TODO make a new edge if the points dont match?
-      return null
+      return None
     } else {
       val e = new PreEdge2(v1, v2, points, edge_dat)
       //edge_lookup((v1, v2, edge_dat.name)) = e
-      return e
+      return Some(e)
     }
   }
 }

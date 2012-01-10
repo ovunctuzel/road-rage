@@ -29,6 +29,7 @@
     <tag k='tiger:upload_uuid' v='bulk_upload.pl-40f65c9b-293f-4ade-855c-437289561ee9' />
     <tag k='tiger:zip_left' v='70806' />
     <tag k='tiger:zip_right' v='70806' />
+    <tag k='oneway' v='no' />
   </way>
   <way id='12629510' action='modify' timestamp='2007-11-15T13:07:26Z' uid='7168' user='DaveHansenTiger' visible='true' version='1' changeset='516391'>
     <nd ref='115252481' />
@@ -51,5 +52,6 @@
     <tag k='tiger:upload_uuid' v='bulk_upload.pl-40f65c9b-293f-4ade-855c-437289561ee9' />
     <tag k='tiger:zip_left' v='70806' />
     <tag k='tiger:zip_right' v='70806' />
+    <tag k='oneway' v='yes' />
   </way>
 </osm>

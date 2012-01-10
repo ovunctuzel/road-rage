@@ -24,21 +24,37 @@ class Pass3(old_graph: PreGraph2) {
   var dfs = 0   // counter numbering
 
   def run(show_dead: Boolean): PreGraph3 = {
-    // TODO two loops (make edge, process it). meh?
     for (r <- graph.roads) {
       roads_per_vert.addBinding(r.v1, r)
       roads_per_vert.addBinding(r.v2, r)
 
       // pre-compute lines constituting the edges
-      for (e <- r.pos_lanes) {
-        e.lines = for ((from, to) <- r.pairs_of_points)
-                  yield shift_line(e.lane_offset, from, to)
-      }
-      for (e <- r.neg_lanes) {
-        e.lines = for ((from, to) <- r.pairs_of_points)
-                  yield shift_line(e.lane_offset, to, from)
-        // TODO inefficient just because i wanted a two-liner?
-        e.lines = e.lines.reverse
+      if (r.is_oneway) {
+        val num = r.oneway_lanes.size
+        // These always make the oneway lanes center around the road's center
+        val offsets = if (num % 2 == 0)
+                        // even
+                        (-0.5 - ((num / 2) - 1)) until (0.5 + (num / 2)) by 1.0
+                      else
+                        // odd
+                        -(num / 2).toDouble until ((num / 2) + 1).toDouble by 1.0
+
+        // reverse because the most positive shift should be the rightmost lane
+        for ((e, offset) <- r.oneway_lanes.zip(offsets.reverse)) {
+          e.lines = for ((from, to) <- r.pairs_of_points)
+                    yield shift_line(offset, from, to)
+        }
+      } else {
+        for (e <- r.pos_lanes) {
+          e.lines = for ((from, to) <- r.pairs_of_points)
+                    yield shift_line(e.lane_offset, from, to)
+        }
+        for (e <- r.neg_lanes) {
+          e.lines = for ((from, to) <- r.pairs_of_points)
+                    yield shift_line(e.lane_offset, to, from)
+          // TODO inefficient just because i wanted a two-liner?
+          e.lines = e.lines.reverse
+        }
       }
 
       // force line segments to meet up on the inside
@@ -236,7 +252,7 @@ class Pass3(old_graph: PreGraph2) {
     }
   }
 
-  private def shift_line(l: Int, pt1: Coordinate, pt2: Coordinate): Line = {
+  private def shift_line(off: Double, pt1: Coordinate, pt2: Coordinate): Line = {
     // This used to be much more complex, generating two lines and seeing which
     // one was 'less' wrong from a point we projected. Apparently it's MUCH
     // simpler than that.
@@ -248,8 +264,8 @@ class Pass3(old_graph: PreGraph2) {
     val road_line = new Line(pt1.x, pt1.y, pt2.x, pt2.y)
     // TODO why does the angle() that respects inversion fail?
     val theta = road_line.broken_angle + (math.Pi / 2)
-    val dx = l * width * math.cos(theta)
-    val dy = l * width * math.sin(theta)
+    val dx = off * width * math.cos(theta)
+    val dy = off * width * math.sin(theta)
 
     return new Line(pt1.x + dx, pt1.y + dy, pt2.x + dx, pt2.y + dy)
   }
