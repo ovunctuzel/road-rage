@@ -34,7 +34,7 @@ class PreGraph3(old_graph: PreGraph2) {
     road_id_cnt += 1
 
     // now make the directed edges too
-    val lanes = how_many_lanes(old_edge.dat.road_type)
+    val lanes = how_many_lanes(old_edge.dat)
 
     // v1 -> v2 lanes
     for (l <- 1 to lanes) {
@@ -73,11 +73,15 @@ class PreGraph3(old_graph: PreGraph2) {
   }
 
   // osm types are inconsistent and wacky, but do our best
-  private def how_many_lanes(road_type: String): Int = road_type match {
-    case "residential"   => 1
-    case "motorway_link" => 1   // these merge ramps should be one-way too
-    case "service"       => 1   // I don't know what these are supposed to be
-    case _               => 2
+  private def how_many_lanes(dat: PreEdge1): Int = (dat.lanes, dat.road_type) match {
+    // OSM actually told us!
+    // TODO This number should be total, but I'm seeing examples of '3 lanes'...
+    // how do we split those in each direction?
+    case (Some(n), _)            => n
+    case (None, "residential")   => 1
+    case (None, "motorway_link") => 1   // these merge ramps should be one-way too
+    case (None, "service")       => 1   // I don't know what these are supposed to be
+    case _                       => 2
   }
 
   // TODO pregraph1 should have a 'data' structure or something

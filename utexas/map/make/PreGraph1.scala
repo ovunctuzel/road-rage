@@ -23,9 +23,9 @@ class PreGraph1() {
   var scale: Double = 5000
 
   def add_edge(name: String, road_type: String, oneway: Boolean,
-               orig_id: Int, points: MutableList[Coordinate]) =
+               orig_id: Int, points: MutableList[Coordinate], lanes: Option[Int]) =
   {
-    edges += new PreEdge1(name, road_type, oneway, orig_id, points)
+    edges += new PreEdge1(name, road_type, oneway, orig_id, points, lanes)
   }
 
   // idempotent if there is already a vertex
@@ -87,4 +87,5 @@ class PreGraph1() {
 }
 
 class PreEdge1(val name: String, val road_type: String, val oneway: Boolean,
-               val orig_id: Int, var points: MutableList[Coordinate]) {}
+               val orig_id: Int, var points: MutableList[Coordinate],
+               var lanes: Option[Int]) {}

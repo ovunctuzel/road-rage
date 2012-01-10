@@ -62,6 +62,7 @@ class Pass1(fn: String) {
     var skip_way: Boolean = false
     var id: Int = -1
     var refs: MutableList[Int] = new MutableList[Int]
+    var lanes: Option[Int] = None
 
     var ev_count = 0
 
@@ -103,6 +104,7 @@ class Pass1(fn: String) {
             oneway = false
             skip_way = false
             refs = new MutableList[Int]
+            lanes = None
           }
         }
         case EvElemEnd(_, "way") => {
@@ -134,7 +136,7 @@ class Pass1(fn: String) {
               }
             }
 
-            graph.add_edge(name, road_type, oneway, id, points)
+            graph.add_edge(name, road_type, oneway, id, points, lanes)
 
             // The tip and tail of this edge's points are always vertices
             graph.add_vertex(points.head)
@@ -153,6 +155,7 @@ class Pass1(fn: String) {
                 case "name"    => { name = value }
                 case "highway" => { road_type = value }
                 case "oneway"  => { oneway = value == "yes" }
+                case "lanes"   => { lanes = Some(value.toInt) }
                 case _         => {}
               }
             }
