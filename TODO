@@ -5,9 +5,7 @@
 1 osm now does include info on num of lanes!
   - if its not a oneway, total?
 
-2 lines arent deterministic?! small floating pt variation...
-
-
+- deterministic construction is still wonky, with both ward IDs and lines (due to meeting up)
 - make line segs meet up better.
 - style: xml out could be string.format or xml and then stringify
 - cul-de-sac handling in p2... needed?

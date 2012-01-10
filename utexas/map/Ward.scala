@@ -12,7 +12,8 @@ import utexas.map.make.PreGraph3 // TODO we can actually operate just as easily 
 import utexas.Util
 
 // note that ID does NOT give the ward list that graph has any ordering!
-class Ward(val id: Int, val roads: Set[Road]) {
+// TODO var id so we can get deterministic ordering ;)
+class Ward(var id: Int, val roads: Set[Road]) {
   override def toString = "Ward with " + roads.size + " roads"
 
   private def find_center(): Coordinate = {
@@ -144,7 +145,17 @@ object Ward {
       wards += w
     }
 
-    return (wards.toList, major_ward)
+    // Since we use hashes during construction, force determinism by sorting
+    // (Yes, I realize it's possible for two wards to wind up with the same
+    // center. Screw the pathological case.)
+    var i = 0
+    for (w <- wards.toList.sortBy(_.center)) {
+      w.id = i
+      i += 1
+    }
+    major_ward.id = i
+
+    return (wards.toList.sortBy(w => w.center), major_ward)
   }
 
   def flood_roads(start: Road, major: Set[Road]): Set[Road] = {

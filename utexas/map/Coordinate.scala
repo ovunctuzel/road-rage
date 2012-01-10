@@ -10,7 +10,7 @@ import java.io.FileWriter
  *   the "y inversion" handling from everywhere else.
  */
 
-class Coordinate(val x: Double, val y: Double) {
+class Coordinate(val x: Double, val y: Double) extends Ordered[Coordinate] {
   override def hashCode = (x, y).hashCode
   // TODO override this notion of equals and hashCode automatically.
   override def equals(other: Any) = other match {
@@ -18,6 +18,11 @@ class Coordinate(val x: Double, val y: Double) {
     case _ => false
   }
 
+  // Lexicographic
+  override def compare(other: Coordinate) = if (x == other.x)
+                                              y.compare(other.y)
+                                            else
+                                              x.compare(other.x)
   // pretty printer
   override def toString = "(%f, %f)".format(x, y)
 
