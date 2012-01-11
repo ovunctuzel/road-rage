@@ -22,6 +22,7 @@ class Pass3(old_graph: PreGraph2) {
   val v_low = new HashMap[Vertex, Int]
   val v_stack = new Stack[Vertex]
   var dfs = 0   // counter numbering
+  var turn_cnt = -1
 
   def run(show_dead: Boolean): PreGraph3 = {
     for (r <- graph.roads) {
@@ -154,6 +155,11 @@ class Pass3(old_graph: PreGraph2) {
     return graph
   }
 
+  def next_id(): Int = {
+    turn_cnt += 1
+    return turn_cnt
+  }
+
   // fill out an intersection with turns
   private def connect_vertex(v: Vertex, roads: MutableSet[Road]) = {
     // TODO cfg
@@ -164,7 +170,7 @@ class Pass3(old_graph: PreGraph2) {
       // link corresponding lane numbers
       val r = roads.toList(0)  // TODO ugly way to get the only road?
       for ((from, to) <- r.incoming_lanes(v) zip r.outgoing_lanes(v)) {
-        v.turns += new Turn(from, TurnType.UTURN, to)
+        v.turns += new Turn(next_id, from, TurnType.UTURN, to)
       }
     }
 
@@ -206,7 +212,7 @@ class Pass3(old_graph: PreGraph2) {
         // TODO scalaisms.
         if (lane_diff == 0) {
           for ((from, to) <- from_edges zip to_edges) {
-            v.turns += new Turn(from, TurnType.CROSS, to)
+            v.turns += new Turn(next_id, from, TurnType.CROSS, to)
           }
           // TODO doesnt work
           //v.turns += (from_edges zip to_edges) map cross_turn
@@ -214,10 +220,10 @@ class Pass3(old_graph: PreGraph2) {
           // more to less. the leftmost destination gets many sources.
           val (mergers, regulars) = from_edges splitAt (from_edges.length + lane_diff)
           for (from <- mergers) {
-            v.turns += new Turn(from, TurnType.CROSS_MERGE, to_edges.last)
+            v.turns += new Turn(next_id, from, TurnType.CROSS_MERGE, to_edges.last)
           }
           for ((from, to) <- regulars zip to_edges.tail) {
-            v.turns += new Turn(from, TurnType.CROSS, to)
+            v.turns += new Turn(next_id, from, TurnType.CROSS, to)
           }
 
           //v.turns += mergers map new Turn(_, TurnType.CROSS_MERGE, to_edges.last)
@@ -226,16 +232,16 @@ class Pass3(old_graph: PreGraph2) {
           // less to more. the rightmost gets to pick many destinations.
           val (many_sourced, regulars) = to_edges splitAt lane_diff
           for (to <- many_sourced) {
-            v.turns += new Turn(from_edges.head, TurnType.CROSS, to)
+            v.turns += new Turn(next_id, from_edges.head, TurnType.CROSS, to)
           }
 
           //v.turns += many_sourced map new Turn(from_edges.head, TurnType.CROSS, _)
           //v.turns += (from_edges.tail zip regulars) map turn_factory(TurnType.CROSS)
         }
       } else if (angle_btwn < 0) {
-        v.turns += new Turn(from.leftmost_lane, TurnType.LEFT, to.leftmost_lane)
+        v.turns += new Turn(next_id, from.leftmost_lane, TurnType.LEFT, to.leftmost_lane)
       } else {
-        v.turns += new Turn(from.rightmost_lane, TurnType.RIGHT, to.rightmost_lane)
+        v.turns += new Turn(next_id, from.rightmost_lane, TurnType.RIGHT, to.rightmost_lane)
       }
     }
 

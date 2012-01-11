@@ -22,7 +22,7 @@ class Agent(id: Int, val graph: Graph, start: Edge) {
     behavior.set_goal(e)
   }
 
-  def step(tick: Double, dt_s: Double): Unit = {
+  def step(dt_s: Double): Unit = {
     assert(dt_s <= cfg.max_dt)
 
     val start_on = at.on
@@ -64,9 +64,10 @@ class Agent(id: Int, val graph: Graph, start: Edge) {
     }
     // TODO deal with lane-changing
     // TODO check for collisions when all of this is happening
+  }
 
-    // then let them react
-    behavior.choose_action(dt_s) match {
+  def react() = {
+    behavior.choose_action match {
       case Act_Set_Speed(new_speed) => { target_speed = new_speed }
       case Act_Lane_Change(lane)    => {
         // TODO ensure it's a valid request
@@ -109,8 +110,20 @@ class Agent(id: Int, val graph: Graph, start: Edge) {
   }
 
   // Delegate to the queues that simulation manages
-  def enter(t: Traversable, dist: Double) = Agent.sim.queues(t).enter(this, dist)
-  def exit(t: Traversable)                = Agent.sim.queues(t).exit(this)
+  def enter(t: Traversable, dist: Double): Position = {
+    t match {
+      case turn: Turn => Agent.sim.intersections(turn.vert).enter(turn)
+      case _ =>
+    }
+    return Agent.sim.queues(t).enter(this, dist)
+  }
+  def exit(t: Traversable) = {
+    t match {
+      case turn: Turn => Agent.sim.intersections(turn.vert).exit(turn)
+      case _ =>
+    }
+    Agent.sim.queues(t).exit(this)
+  }
   def move(t: Traversable, dist: Double)  = Agent.sim.queues(t).move(this, dist)
 
   def dump_info() = {
@@ -121,6 +134,8 @@ class Agent(id: Int, val graph: Graph, start: Edge) {
     behavior.dump_info
     Util.log_pop
   }
+
+  def cur_queue = Agent.sim.queues(at.on)
 }
 
 // the singleton just lets us get at the simulation to look up queues

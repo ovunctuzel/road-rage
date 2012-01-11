@@ -3,7 +3,6 @@ package utexas.map
 import java.io.FileWriter
 
 import scala.collection.mutable.MutableList
-import scala.collection.immutable.HashSet
 
 // TODO var id due to tarjan
 class Vertex(val location: Coordinate, var id: Int) {
@@ -15,19 +14,19 @@ class Vertex(val location: Coordinate, var id: Int) {
   def turns_to(to: Edge): List[Turn] = turns.toList.filter(_.to == to)
 
   // what verts lead to this one?
-  def in_verts = HashSet() ++ turns.map(t => t.from.from)
+  def in_verts = turns.map(t => t.from.from).toSet
   // what verts does this one lead to?
-  def out_verts = HashSet() ++ turns.map(t => t.to.to)
+  def out_verts = turns.map(t => t.to.to).toSet
 
-  def roads = HashSet() ++ turns.flatMap(t => List(t.from.road, t.to.road))
+  def roads = turns.flatMap(t => List(t.from.road, t.to.road)).toSet
   def edges = turns.flatMap(t => List(t.from, t.to))
 
   // these may prove useful; just remember roads are undirected.
   // TODO test for one-ways?
   private def find_roads(r: Road, types: Set[TurnType.TurnType]): Set[Road] = {
-    return HashSet() ++ turns.filter(
+    return turns.filter(
       t => (t.involves_road(r) && types(t.turn_type))
-    ).map(t => t.other_road(r))
+    ).map(t => t.other_road(r)).toSet
   }
   def parallel_roads(r: Road) = find_roads(r, Set(TurnType.CROSS))
   def perp_roads(r: Road)     = find_roads(r, Set(TurnType.LEFT, TurnType.RIGHT))

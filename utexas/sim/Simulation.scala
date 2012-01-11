@@ -18,8 +18,9 @@ class Simulation(roads: List[Road], edges: List[Edge], vertices: List[Vertex],
 {
   /////////// Agent management
   Agent.sim = this  // let them get to us
-  Util.log("Creating agent queues for edges and turns...")
-  val queues = traversables.map(t => t -> new Queue_of_Agents(t)).toMap
+  Util.log("Creating queues and intersections for collision handling...")
+  val queues = traversables.map(t => t -> new Queue(t)).toMap
+  val intersections = vertices.map(v => v -> new Intersection(v)).toMap
 
   // Should be a stable order.
   def agents() = traversables.map(t => queues(t)).flatMap(q => q.agents)
@@ -97,20 +98,19 @@ class Simulation(roads: List[Road], edges: List[Edge], vertices: List[Vertex],
     // up this time-step, if needed.
     while (dt_s > 0.0) {
       val this_step = math.min(dt_s, cfg.max_dt)
-
-      tick += this_step
-      // Move all agents, and check that order is maintained afterwards.
-      queues.values.foreach(q => q.start_step)
-      // Iterate in a fixed, deterministic order.
-      for (a <- agents) {
-        a.step(tick, dt_s)
-      }
-      queues.values.foreach(q => q.end_step)
-
       dt_s -= this_step
+      tick += this_step
+
+      queues.values.foreach(q => q.start_step)
+      agents.foreach(a => a.step(this_step))
+      queues.values.foreach(q => q.end_step)
+      intersections.values.foreach(i => i.end_step)
+
+      // Let agents react.
+      agents.foreach(a => a.react)
     }
 
-    // inform listeners
+    // listener (usually UI) callbacks
     listeners.foreach(l => l.ev_step)
   }
 

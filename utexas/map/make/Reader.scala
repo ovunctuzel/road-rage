@@ -17,7 +17,7 @@ import utexas.Util
 
 class Reader(fn: String) {
   // per road
-  class TmpLink(val from: Int, val to: Int, val link_type: TurnType.TurnType)
+  class TmpLink(val id: Int, val from: Int, val to: Int, val link_type: TurnType.TurnType)
 
   // we know all of this as soon as we read the graph tag...
   var vertLinks: Array[List[TmpLink]] = null
@@ -182,7 +182,7 @@ class Reader(fn: String) {
 
         case EvElemStart(_, "link", attribs, _) => {
           v_links += new TmpLink(
-            get_ints(attribs)("from"), get_ints(attribs)("to"),
+            get_ints(attribs)("id"), get_ints(attribs)("from"), get_ints(attribs)("to"),
             TurnType.withName(get_attrib(attribs, "type"))
           )
         }
@@ -197,7 +197,7 @@ class Reader(fn: String) {
     // turns just want edges, doesn't matter what trait they're endowed with
     for (v <- verts) {
       for (link <- vertLinks(v.id)) {
-        v.turns += new Turn(edges(link.from), link.link_type, edges(link.to))
+        v.turns += new Turn(link.id, edges(link.from), link.link_type, edges(link.to))
       }
     }
 

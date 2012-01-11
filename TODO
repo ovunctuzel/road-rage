@@ -32,7 +32,7 @@
 ### UI ###
 
 - show routes better
-- conflicts dont look correct
+- conflicts dont look correct?
 - config
 - menu items doing stuff
 - oneways look wretched
@@ -57,12 +57,28 @@
   - detect collisions
     - post-mortem checker still misses scary things in between, like when merging.
     - force collisions, see if they're detected. set one guy on the road and make him be still!
-    - conflicting simultaneous turns
     - ui show collisions
 
 - ... motivate reactive solution: avoid collisions!
+  - we can look ahead to next few travs for agent to avoid
+  - but we dont want to reason about who WILL be 
+    say theres nobody on the cur queue to worry about. so worry about who could be there next.
+    - if we're on a turn going to an edge, just look at the target queue. only way to enter target
+      is by lane-changing (TODO) or an incoming turn, and we can trust the intersection exclusion.
+    - if we're on an edge going to a turn, we need to ask the vertex if we're clear to cross.
+      turn requested => first time.
+      - ask as soon as we're on the edge, get a time, idle so that we cross at the right time
+        - to give times, we need to know finish times. it'd suck to predict those.
+      - or just ask, "lock turn set", slow down (how much?) upon rejection or plow ahead upon success 
+        (and lock it.)
+    - and do we have to look ahead one trav, or as many as could happen in the timestep?
+
+
+
   - enforce speed limits
   - test with stalled car
+  - make them slow down for turns
+  - we'll need an AIM-like reservation system for crossing safely...
 
 - lanechanging model
 - spawning safely

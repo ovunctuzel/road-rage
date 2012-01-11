@@ -9,7 +9,7 @@ import java.awt.geom._
 import swing.event.Key
 
 import utexas.map._  // TODO yeah getting lazy.
-import utexas.sim.{Simulation, Queue_of_Agents, Agent, Simulation_Listener}
+import utexas.sim.{Simulation, Agent, Simulation_Listener}
 
 import utexas.cfg
 import utexas.Util
@@ -56,6 +56,7 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
   private val ward_colorings = sim.wards.map(
     w => (w, scala.util.Random.shuffle(ward_colors).head)
   ).toMap ++ List((sim.special_ward, special_ward_color)).toMap
+  private val agent_colors = HashMap[Agent, Color]()
 
   def canvas_width = sim.width.toInt
   def canvas_height = sim.height.toInt
@@ -225,7 +226,10 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
   }
 
   def draw_agent(g2d: Graphics2D, a: Agent) = {
-    g2d.setColor(Color.RED) // TODO depending on their state, later
+    if (!agent_colors.contains(a)) {
+      agent_colors(a) = GeomFactory.rand_color
+    }
+    g2d.setColor(agent_colors(a))
     g2d.fill(agent_bubble(a))
   }
 
@@ -553,4 +557,10 @@ object GeomFactory {
     arrow.lineTo(mid.x + cos_perp2, mid.y + sin_perp2)
     return arrow
   }
+
+  def rand_color() = new Color(
+    Util.rand_double(0.0, 1.0).toFloat,
+    Util.rand_double(0.0, 1.0).toFloat,
+    Util.rand_double(0.0, 1.0).toFloat
+  )
 }

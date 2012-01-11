@@ -6,7 +6,8 @@ import utexas.Util
 // TODO introduce a notion of dimension
 // TODO logs -> asserts once things work right
 
-class Queue_of_Agents(t: Traversable) {
+// Reason about collisions on edges and within individual turns.
+class Queue(t: Traversable) {
   // Descending by distance: head of list is front of traversable.
   var agents = List[Agent]()
   var prev_agents = List[Agent]()   // to verify no collisions occurred in a step
@@ -89,4 +90,6 @@ class Queue_of_Agents(t: Traversable) {
                                  true
                                else
                                  .20 * t.length < .80 * agents.last.at.dist
+
+  def ahead_of(a: Agent) = agents.takeWhile(_ != a).lastOption
 }
