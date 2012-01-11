@@ -66,7 +66,7 @@ class DangerousBehavior(a: Agent) extends Behavior(a) {
     }
 
     // Plow ahead! (through cars)
-    val speed = Util.mph_to_si(10)  // that's slow, bro
+    val speed = Util.mph_to_si(Util.rand_double(5, 15))  // that's slow, bro
     return Act_Set_Speed(speed)
   }
 

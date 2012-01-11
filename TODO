@@ -60,9 +60,9 @@
     - conflicting simultaneous turns
     - ui show collisions
 
-  - ... motivate reactive solution: avoid collisions!
-    - enforce speed limits
-    - test with stalled car
+- ... motivate reactive solution: avoid collisions!
+  - enforce speed limits
+  - test with stalled car
 
 - lanechanging model
 - spawning safely

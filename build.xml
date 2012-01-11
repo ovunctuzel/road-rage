@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 
-<project basedir="." default="simulate" name="Road Rage">
+<project basedir="." default="compile" name="Road Rage">
   <property name="src" value="."/>
   <property name="build" value=".build"/>
 

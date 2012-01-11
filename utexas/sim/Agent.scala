@@ -1,7 +1,7 @@
 package utexas.sim
 
 import utexas.map.{Edge, Coordinate, Turn, Traversable, Graph}
-import utexas.Util
+import utexas.{Util, cfg}
 
 // TODO come up with a notion of dimension and movement capability. at first,
 // just use radius bounded by lane widths?
@@ -23,6 +23,8 @@ class Agent(id: Int, val graph: Graph, start: Edge) {
   }
 
   def step(tick: Double, dt_s: Double): Unit = {
+    assert(dt_s <= cfg.max_dt)
+
     val start_on = at.on
     val old_dist = at.dist
 
@@ -68,7 +70,6 @@ class Agent(id: Int, val graph: Graph, start: Edge) {
       case Act_Set_Speed(new_speed) => { target_speed = new_speed }
       case Act_Lane_Change(lane)    => {
         // TODO ensure it's a valid request
-        // TODO uhh how?
         Util.log("TODO lanechange")
       }
     }

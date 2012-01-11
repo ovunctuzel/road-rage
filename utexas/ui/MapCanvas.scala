@@ -147,8 +147,8 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
     if (zoom > cfg.zoom_threshold) {
       // then the second layer (lanes)
       // TODO this is ugly and maybe inefficient?
-      //for (r <- roads_seen; l <- r.road.all_lanes.flatMap(edge2lines(_)) if l.line.intersects(window))
-      for (l <- fg_lines if l.line.intersects(window))
+      //for (l <- fg_lines if l.line.intersects(window))
+      for (r <- roads_seen; l <- r.road.all_lanes.flatMap(edge2lines(_)) if l.line.intersects(window))
       {
         draw_edge(g2d, l)
       }

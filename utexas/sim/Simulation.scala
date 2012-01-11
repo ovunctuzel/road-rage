@@ -9,7 +9,7 @@ import scala.util.continuations.{shift, reset}
 import utexas.map.{Graph, Road, Edge, Vertex, Ward}
 import utexas.map.make.Reader
 
-import utexas.Util
+import utexas.{Util, cfg}
 
 // This just adds a notion of agents
 class Simulation(roads: List[Road], edges: List[Edge], vertices: List[Vertex],
@@ -56,7 +56,7 @@ class Simulation(roads: List[Road], edges: List[Edge], vertices: List[Vertex],
   var running = false
   val listeners = new MutableList[Simulation_Listener]()
   // WE CAN GO FASTER
-  var time_speed = 10.0
+  var time_speed = 1.0
 
   // TODO cfg
   def slow_down() = {
@@ -91,18 +91,24 @@ class Simulation(roads: List[Road], edges: List[Edge], vertices: List[Vertex],
 
   def step(dt_ms: Long) = {
     // This value is dt in simulation time, not real time
-    val dt_s = dt_ms / 1000.0 * time_speed
-    tick += dt_s
+    var dt_s = dt_ms / 1000.0 * time_speed
 
-    // Move all agents, and check that order is maintained afterwards.
-    queues.values.foreach(q => q.start_step)
+    // Agents can't react properly in the presence of huge time-steps. So chop
+    // up this time-step, if needed.
+    while (dt_s > 0.0) {
+      val this_step = math.min(dt_s, cfg.max_dt)
 
-    // Iterate in a fixed, deterministic order.
-    for (a <- agents) {
-      a.step(tick, dt_s)
+      tick += this_step
+      // Move all agents, and check that order is maintained afterwards.
+      queues.values.foreach(q => q.start_step)
+      // Iterate in a fixed, deterministic order.
+      for (a <- agents) {
+        a.step(tick, dt_s)
+      }
+      queues.values.foreach(q => q.end_step)
+
+      dt_s -= this_step
     }
-
-    queues.values.foreach(q => q.end_step)
 
     // inform listeners
     listeners.foreach(l => l.ev_step)
