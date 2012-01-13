@@ -88,7 +88,6 @@ class Pass3(old_graph: PreGraph2) {
       }
     }
 
-    // TODO take a command line option
     // deal with all edges of all but the largest SCC by either
     // 1) coloring them so we can manually inspect
     // 2) or removing the associated roads, vertices, edges
@@ -104,9 +103,9 @@ class Pass3(old_graph: PreGraph2) {
       Util.log("Doomed " + (sccs.size - 1) + " disconnected SCC's from the graph")
     } else {
       // This is a cheap trick, and it absolutely works.
-      val doomed_verts = HashSet() ++ sccs.sortBy(scc => scc.size).dropRight(1).flatten
-      val doomed_roads = HashSet() ++ doomed_verts.flatMap(v => v.roads)
-      val doomed_edges = HashSet() ++ doomed_roads.flatMap(r => r.all_lanes)
+      val doomed_verts = sccs.sortBy(scc => scc.size).dropRight(1).flatten.toSet
+      val doomed_roads = doomed_verts.flatMap(v => v.roads).toSet
+      val doomed_edges = doomed_roads.flatMap(r => r.all_lanes).toSet
       Util.log("Removing " + doomed_verts.size + " disconnected vertices, "
           + doomed_roads.size + " roads, and "
           + doomed_edges.size + " edges from graph")

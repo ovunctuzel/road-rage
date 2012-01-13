@@ -21,22 +21,24 @@ class Pass1(fn: String) {
 
   // if an osm node mentions these, it's not an edge we care about.
   val ignore_me = Set(
-    "boundary",   // edge of a city
-    "railway",    // tracks would be too easy
-    "amenity",    // no stops on this trip
-    "aeroway",    // we're not cl0ud
-    "landuse",    // we don't want to use it
-    "natural",    // naturally useless to us
-    "waterway",   // we don't swim
-    "building",   // we try not to drive through these
-    "foot",       // we don't have feet
-    "man_made",   // man-made things tend to suck
-    "crossing",   // TODO dunno?
-    "area",       // these, according to a forgotten old comment, are weird
+    "boundary",       // edge of a city
+    "railway",        // tracks would be too easy
+    "amenity",        // no stops on this trip
+    "aeroway",        // we're not cl0ud
+    "landuse",        // we don't want to use it
+    "natural",        // naturally useless to us
+    "waterway",       // we don't swim
+    "building",       // we try not to drive through these
+    "foot",           // we don't have feet
+    "man_made",       // man-made things tend to suck
+    "crossing",       // TODO dunno?
+    "area",           // these, according to a forgotten old comment, are weird
+    "leisure",        // NO TIME FOR THAT NOW
+    "multipolygon",   // WHY ARE THERE SO MANY
     "path", "cycleway", "footway", "bridleway", "steps", "pedestrian",
     "bus_guideway"
     // TODO cemeteries in Houston, real roads in BTR, alleys in ATX...
-    // they all cause problems when they have no name.
+    // they all cause problems when they have no name:
     // "service"
   )
 
@@ -55,7 +57,6 @@ class Pass1(fn: String) {
 
   def match_events(event_reader: XMLEventReader) = {
     // per way, we accumulate:
-    // TODO i cant leave these uninitialized or set them to _
     var name: String = ""
     var road_type: String = ""
     var oneway: Boolean = false
@@ -63,6 +64,10 @@ class Pass1(fn: String) {
     var id: Int = -1
     var refs: MutableList[Int] = new MutableList[Int]
     var lanes: Option[Int] = None
+
+    // per relation:
+    var relation_members: Set[Int] = Set()
+    var skip_relation: Boolean = false
 
     var ev_count = 0
 
@@ -142,9 +147,11 @@ class Pass1(fn: String) {
             graph.add_vertex(points.head)
             graph.add_vertex(points.last)
           }
+
+          id = -1
         }
 
-        case EvElemStart(_, "tag", attribs, _) => {
+        case EvElemStart(_, "tag", attribs, _) if id != -1 => {
           if (!skip_way) {
             val key = get_attrib(attribs, "k")
             val value = get_attrib(attribs, "v")
@@ -170,6 +177,35 @@ class Pass1(fn: String) {
             } else {
               Util.log("WARNING: way references unknown node")
             }
+          }
+        }
+
+        case EvElemStart(_, "relation", attribs, _) => {
+          relation_members = Set()
+          skip_relation = false
+        }
+
+        // The version for relations, not ways
+        case EvElemStart(_, "tag", attribs, _) if id == -1 => {
+          val key = get_attrib(attribs, "k")
+          val value = get_attrib(attribs, "v")
+          if (ignore_me(key) || ((key == "highway" || key == "type") && ignore_me(value))) {
+            skip_relation = true
+          }
+        }
+
+        case EvElemStart(_, "member", attribs, _) => {
+          if (get_attrib(attribs, "type") == "way") {
+            relation_members += get_attrib(attribs, "ref").toInt
+          }
+        }
+
+        case EvElemEnd(_, "relation") => {
+          if (skip_relation) {
+            // We won't worry about the vertices associated with these obselete
+            // edges; they'll only survive to the end if they're referenced by
+            // something else.
+            graph.remove_edges(relation_members)
           }
         }
 

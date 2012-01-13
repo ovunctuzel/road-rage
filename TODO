@@ -1,9 +1,14 @@
 # TODO #
 
-- ant
+- preps for tues
+  - make sure atx works well
+  - get scc removal working correctly
+  - deal with small ward roads
+  - ant
 
 ### Map building ###
 
+- our pruning of pedestrian ways seems to be a bit too enthusiastic (see Guadalupe St)
 - deterministic construction is still wonky, with both ward IDs and lines (due to meeting up)
 - make line segs meet up better.
 - style: xml out could be string.format or xml and then stringify, or use lazy?
@@ -13,7 +18,6 @@
 - deal with disconnected things properly
 - multi-lane situations dont have enough turns, and we need to do more trimming!
 - scc removal appears broken in Houston?
-- document stuff, code-freeze on mapgen!
 
 ### Wards ###
 
@@ -32,10 +36,8 @@
 ### UI ###
 
 - show routes better
-- conflicts dont look correct?
 - config
 - menu items doing stuff
-- oneways look wretched
 - make it look nicer
   - UI polishing
   - black road backgrounds dont meet up smoothly since we go by line segment
@@ -109,3 +111,9 @@
 - traffic signals
 - dynamic traffic signals
 - spawning realistic traffic patterns
+
+### Administrative ###
+
+- documentation
+- API and code freeze
+- paper

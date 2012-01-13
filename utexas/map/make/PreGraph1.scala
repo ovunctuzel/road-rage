@@ -28,6 +28,11 @@ class PreGraph1() {
     edges += new PreEdge1(name, road_type, oneway, orig_id, points, lanes)
   }
 
+  // Further evidence in the OSM source suggests these edges are bogus
+  def remove_edges(ids: Set[Int]) = {
+    edges = edges.filter(e => !ids.contains(e.orig_id))
+  }
+
   // idempotent if there is already a vertex
   def add_vertex(where: Coordinate) {
     vert_lookup += where
