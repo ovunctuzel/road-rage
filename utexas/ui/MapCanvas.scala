@@ -79,7 +79,7 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
 
   // pre-render ward bubbles
   Util.log("Ward bubbles...")
-  val ward_bubbles = sim.wards.filter(_.roads.size > 1).map(new WardBubble(_))
+  val ward_bubbles = sim.wards.map(new WardBubble(_))
   Util.log_pop
 
   // just used during construction.

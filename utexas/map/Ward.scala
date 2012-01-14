@@ -130,8 +130,9 @@ object Ward {
     minor --= candidates
     major ++= candidates
 
-    // Now majors are fixed.
-    val major_ward = new Ward(Ward.next_id, major.toSet)
+    // These majors determine boundaries for containing wards, but we'll still
+    // add more fake major roads from wards with only 1 road in them.
+    val orig_majors = major.toSet
 
     // Now take each minor road and flood, stopping at major roads. That'll
     // discover the clusters of minor roads in between major roads. Additionally
@@ -140,9 +141,16 @@ object Ward {
     val wards = new MutableList[Ward]
     while (minor.size != 0) {
       val representative = minor.head
-      val w = new Ward(Ward.next_id, flood_roads(representative, major_ward.roads))
-      minor --= w.roads
-      wards += w
+      val roads = flood_roads(representative, orig_majors)
+      if (roads.size == 1) {
+        // A ward with only one road is useless... just add it to the highway
+        // instead.
+        major ++= roads
+      } else {
+        wards += new Ward(Ward.next_id, roads)
+      }
+
+      minor --= roads
     }
 
     // Since we use hashes during construction, force determinism by sorting
@@ -153,7 +161,7 @@ object Ward {
       w.id = i
       i += 1
     }
-    major_ward.id = i
+    val major_ward = new Ward(i, major.toSet)
 
     return (wards.toList.sortBy(w => w.center), major_ward)
   }

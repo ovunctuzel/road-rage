@@ -3,7 +3,6 @@
 - preps for tues
   - make sure atx works well
   - get scc removal working correctly
-  - deal with small ward roads
   - ant
 
 ### Map building ###
@@ -33,7 +32,6 @@
   - update osm (scripts!)
 - my wards!
   - guarantee some kind of connectedness within a ward
-  - deal with the small roads that cut through?
 
 ### UI ###
 
@@ -77,6 +75,8 @@
         (and lock it.)
     - and do we have to look ahead one trav, or as many as could happen in the timestep?
 
+    http://sumo.sourceforge.net/doc/current/docs/userdoc/Theory/Traffic_Simulations.html describes approaches
+
 
 
   - enforce speed limits
@@ -113,6 +113,8 @@
 - traffic signals
 - dynamic traffic signals
 - spawning realistic traffic patterns
+  http://sumo.sourceforge.net/doc/current/docs/userdoc/Demand/Introduction_to_demand_modelling_in_SUMO.html
+  http://sumo.sourceforge.net/doc/current/docs/userdoc/Data/Traffic_Data.html
 
 ### Administrative ###
 
