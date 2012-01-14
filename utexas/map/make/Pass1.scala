@@ -35,8 +35,8 @@ class Pass1(fn: String) {
     "area",           // these, according to a forgotten old comment, are weird
     "leisure",        // NO TIME FOR THAT NOW
     "multipolygon",   // WHY ARE THERE SO MANY
-    "path", "cycleway", "footway", "bridleway", "steps", "pedestrian",
-    "bus_guideway"
+    // cycleway is marked in addition to being highway=tertiary... geez.
+    "path", "footway", "bridleway", "steps", "pedestrian", "bus_guideway"
     // TODO cemeteries in Houston, real roads in BTR, alleys in ATX...
     // they all cause problems when they have no name:
     // "service"

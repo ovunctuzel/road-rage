@@ -15,7 +15,9 @@
 - cul-de-sac handling in p2... needed?
   - Claus Circle in BR... has no outgoing turns.
 - pregraph3 vs final graph structure?
-- deal with disconnected things properly
+- scc removal is broken
+  - being on a directed graph DOES change things... we're detecting an scc and not handling the
+    one-way edge leading into it!
 - multi-lane situations dont have enough turns, and we need to do more trimming!
 - scc removal appears broken in Houston?
 
