@@ -1,5 +1,5 @@
 #!/bin/bash
 
-. common.sh
+ant
 
-scala $RUN_OPTS utexas.ui.Viewer $@
+scala -cp .build:/usr/share/java/scala-swing.jar utexas.ui.Viewer $@

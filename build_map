@@ -1,6 +1,6 @@
 #!/bin/bash
 
-. common.sh
+ant
 
 # TODO increase stack size so tarjan's can run
-scala $RUN_OPTS -J-Xss200m utexas.map.make.Builder $@
+scala -cp .build -J-Xss200m utexas.map.make.Builder $@

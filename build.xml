@@ -16,16 +16,9 @@
     <classpath refid="compile_cp"/>
   </taskdef>
 
-  <!--<path id="run_cp">
-    <pathelement location="${build}"/>
-    <path refid="compile_cp"/>
-  </path>-->
-
-  <!-- TODO addparams and unchecked don't seem to work. -->
-
   <target name="compile">
     <mkdir dir="${build}"/>
-    <fsc srcdir="${src}" destdir="${build}" classpathref="compile_cp">
+    <fsc srcdir="${src}" destdir="${build}" classpathref="compile_cp" failonerror="false">
       <include name="**/*.scala"/>
     </fsc>
   </target>
@@ -33,15 +26,4 @@
   <target name="clean">
     <delete dir="${build}"/>
   </target>
-
-  <!--<target name="simulate" depends="compile">
-    <java classname="scala.tools.nsc.MainGenericRunner" fork="true">
-      <classpath>
-        <path refid="run_cp"/>
-      </classpath>
-      <arg line="utexas.ui.Viewer"/>
-    </java>
-  </target>-->
-
-  <!-- TODO build-map targets... and taking args? -->
 </project>
