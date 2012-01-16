@@ -4,6 +4,8 @@
   - make sure atx works well
   - get scc removal working correctly
   - ant
+    - remove dep on continuations
+  - think about lane reversal
 
 ### Map building ###
 

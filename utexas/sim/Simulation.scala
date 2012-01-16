@@ -1,10 +1,6 @@
 package utexas.sim
 
 import scala.collection.mutable.MutableList
-// don't use swing timers; we're not tied to GUI
-import java.util.{Timer,TimerTask}
-// TODO do we want a dependency on continuations? we'll see...
-import scala.util.continuations.{shift, reset}
 
 import utexas.map.{Graph, Road, Edge, Vertex, Ward}
 import utexas.map.make.Reader
@@ -67,28 +63,18 @@ class Simulation(roads: List[Road], edges: List[Edge], vertices: List[Vertex],
     time_speed += 0.1
   }
 
-  // an awesome example of continuations from
-  // http://www.scala-lang.org/node/2096
-  private val timer = new Timer()
-
-  def sleep(delay: Int) = shift { k: (Unit => Unit) =>
-    // TODO gotta read the docs more, but I think all timer events are fired
-    // from one thread
-    timer.schedule(new TimerTask {
-      def run() = k() // in a real program, we'd execute k on a thread pool
-    }, delay)
-  }
-
-  reset {
-    while (true) {
-      val start = System.currentTimeMillis
-      // we should fire about 10x/second
-      sleep(100)
-      if (running) {
-        step(System.currentTimeMillis - start)
+  new Runnable {
+    override def run(): Unit = {
+      while (true) {
+        val start = System.currentTimeMillis
+        // we should fire about 10x/second
+        Thread.sleep(100)
+        if (running) {
+          step(System.currentTimeMillis - start)
+        }
       }
     }
-  }
+  }.run
 
   def step(dt_ms: Long) = {
     // This value is dt in simulation time, not real time

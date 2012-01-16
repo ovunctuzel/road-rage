@@ -512,7 +512,7 @@ final case class RoadLine(a: Coordinate, b: Coordinate, road: Road) extends Scre
 }
 final case class EdgeLine(l: Line, edge: Edge) extends ScreenLine {
   val line = new Line2D.Double(l.x1, l.y1, l.x2, l.y2)
-  val arrow = GeomFactory.draw_arrow(l, 1)  // TODO 3? THREE?! さん！？
+  val arrow = GeomFactory.draw_arrow(l, 1)  // TODO 3? THREE?!
 }
 // and, separately...
 class WardBubble(val ward: Ward) {
