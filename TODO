@@ -1,11 +1,17 @@
 # TODO #
 
-- preps for tues
-  - make sure atx works well
-  - get scc removal working correctly
-  - ant
-    - remove dep on continuations
-  - think about lane reversal
+- intersection policies
+  - should_proceed(agent, turn) = yes, no
+  1) always stop
+    - FIFO internally
+    - could optimize later with no conflicting turns
+  2) cycled lights
+    - "yellow" for some agents
+    - could optimize by adjusting based on batching
+  3) reservations
+    - FIFO as agents approach, screw optimality
+
+- maintain stopping distance from next agent
 
 ### Map building ###
 
@@ -20,7 +26,9 @@
   - being on a directed graph DOES change things... we're detecting an scc and not handling the
     one-way edge leading into it!
 - multi-lane situations dont have enough turns, and we need to do more trimming!
-- scc removal appears broken in Houston?
+- lane reversal
+  1) Traversable.location starts from the other end (distances, queues all stay same)
+  2) dynamically recalculating turns
 
 ### Wards ###
 
@@ -80,11 +88,11 @@
     http://sumo.sourceforge.net/doc/current/docs/userdoc/Theory/Traffic_Simulations.html describes approaches
 
 
+  - lots of things break if we have a vertex with a self-loop
 
   - enforce speed limits
   - test with stalled car
   - make them slow down for turns
-  - we'll need an AIM-like reservation system for crossing safely...
 
 - lanechanging model
 - spawning safely
@@ -117,6 +125,8 @@
 - spawning realistic traffic patterns
   http://sumo.sourceforge.net/doc/current/docs/userdoc/Demand/Introduction_to_demand_modelling_in_SUMO.html
   http://sumo.sourceforge.net/doc/current/docs/userdoc/Data/Traffic_Data.html
+- promoting stop signs -> lights
+- mixing intersections!
 
 ### Administrative ###
 

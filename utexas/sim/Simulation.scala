@@ -65,7 +65,6 @@ class Simulation(roads: List[Road], edges: List[Edge], vertices: List[Vertex],
 
   // Fire steps every once in a while
   // TODO this ignores us exiting the swing app, then
-  Util.log("making")
   new Thread {
     override def run(): Unit = {
       while (true) {
@@ -78,7 +77,6 @@ class Simulation(roads: List[Road], edges: List[Edge], vertices: List[Vertex],
       }
     }
   }.start
-  Util.log("done")
 
   def step(dt_ms: Long) = {
     // This value is dt in simulation time, not real time

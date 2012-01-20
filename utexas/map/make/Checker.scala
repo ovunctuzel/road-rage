@@ -12,6 +12,8 @@ object Checker {
     check_turn_length(g)
 
     // TODO check connectivity
+
+    // TODO check for self-loops
   }
 
   // This causes agents to "float" over other the map as they chase an edge far

@@ -11,6 +11,7 @@ class Agent(id: Int, val graph: Graph, start: Edge) {
 
   // We can only change speed, and always accelerate as fast as possible to a
   // new speed. This is a major simplifying assumption!
+  val max_accel = 2.7   // TODO cfg and based on vehicle type
   var speed: Double = 0.0   // units?
   var target_speed: Double = 0
   val behavior = new DangerousBehavior(this) // TODO who chooses this?
@@ -63,7 +64,6 @@ class Agent(id: Int, val graph: Graph, start: Edge) {
       at = enter(current_on, current_dist)
     }
     // TODO deal with lane-changing
-    // TODO check for collisions when all of this is happening
   }
 
   def react() = {
@@ -79,17 +79,15 @@ class Agent(id: Int, val graph: Graph, start: Edge) {
   // returns distance traveled, updates speed. note unit of the argument.
   def update_kinematics(dt_sec: Double): Double = {
     val initial_speed = speed
-    def dist_at_constant_speed(speed: Double, time: Double) = speed * time
-    def dist_at_constant_accel(accel: Double, time: Double) = (initial_speed * time) + (0.5 * accel * (time * time))
 
     if (target_speed == speed) {
       // No change to speed
-      return dist_at_constant_speed(speed, dt_sec)
+      return Util.dist_at_constant_speed(speed, dt_sec)
     } else {
       val accel = if (speed < target_speed)
-                    2.7   // TODO cfg and based on vehicle type!
+                    max_accel
                   else
-                    -2.7
+                    -max_accel
       // How long does it take to get to target speed? v_f = v_i + a*t
       val time_until_target = (target_speed - speed) / accel
 
@@ -98,18 +96,18 @@ class Agent(id: Int, val graph: Graph, start: Edge) {
         speed = target_speed
         // we travel a distance during acceleration and then another distance
         // during constant speed phase once we reach our target
-        return dist_at_constant_accel(accel, time_until_target)
-             + dist_at_constant_speed(speed, dt_sec - time_until_target)
+        return Util.dist_at_constant_accel(accel, time_until_target, initial_speed)
+             + Util.dist_at_constant_speed(speed, dt_sec - time_until_target)
       } else {
         // we don't reach our target speed, just v_f = v_i + a*t
         speed = speed + (accel * dt_sec)
         // and we travel a distance during acceleration phase only
-        return dist_at_constant_accel(accel, dt_sec)
+        return Util.dist_at_constant_accel(accel, dt_sec, initial_speed)
       }
     }
   }
 
-  // Delegate to the queues that simulation manages
+  // Delegate to the queues and intersections that simulation manages
   def enter(t: Traversable, dist: Double): Position = {
     t match {
       case turn: Turn => Agent.sim.intersections(turn.vert).enter(turn)
@@ -136,6 +134,14 @@ class Agent(id: Int, val graph: Graph, start: Edge) {
   }
 
   def cur_queue = Agent.sim.queues(at.on)
+
+  def stopping_distance(): Double = {
+    // Here's some shoddy physics.
+    // v_f = v_0 + a*t gives us
+    val stop_time = speed / max_accel
+    // Then at constant acceleration, we travel
+    return speed * stop_time + (0.5 * max_accel * stop_time * stop_time)
+  }
 }
 
 // the singleton just lets us get at the simulation to look up queues
@@ -152,4 +158,6 @@ object Agent {
 case class Position(val on: Traversable, val dist: Double) {
   assert(dist >= 0)
   def location = on.location(dist)
+
+  def dist_left = on.length - dist
 }

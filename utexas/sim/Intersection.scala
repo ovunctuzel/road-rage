@@ -6,6 +6,12 @@ import utexas.Util
 
 // Reason about collisions from conflicting simultaneous turns.
 class Intersection(v: Vertex) {
+  // TODO mix and match!
+  val policy: Policy = new AlwaysStopPolicy(this)
+
+  // Just delegate.
+  def should_stop(a: Agent, turn: Turn) = policy.should_stop(a, turn)
+
   // Multiple agents can be on the same turn; the corresponding queue will
   // handle collisions. So in fact, we want to track which turns are active...
   var turns = Set[Turn]()
@@ -36,4 +42,13 @@ class Intersection(v: Vertex) {
   def exit(t: Turn) = {
     turns -= t
   }
+}
+
+abstract class Policy(intersection: Intersection) {
+  def should_stop(a: Agent, turn: Turn): Boolean
+}
+
+// Great for testing to see if agents listen to this.
+class AlwaysStopPolicy(intersection: Intersection) extends Policy(intersection) {
+  def should_stop(a: Agent, turn: Turn) = true
 }

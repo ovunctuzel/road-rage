@@ -101,35 +101,84 @@ class DangerousBehavior(a: Agent) extends Behavior(a) {
     Util.log_pop
   }
 
+  // This is defined by several things, in some order: the agent in front of us now,
+  // the agent in front of us at the way we're going, whether the intersection
+  // is ready for us, speed limits of current and future edge
   def max_safe_speed(): Double = {
-    // TODO put this where it belongs
-    val speed_limit = Util.mph_to_si(30)
+    val speed_limit = Util.mph_to_si(30)  // TODO ask the road or whatever
 
-    // Find the person currently in front of us or who will be
-    val q = a.cur_queue
-    val next = q.ahead_of(a)
-
-    // Say there's nobody on our queue. It's... not easy to figure out who, if
-    // anyone, we want to pay attention to.
-
-
-    // (on same trav, on trav we next plan on being at... but then we have to
-    // predict who could be there!) TODO
-
-    return next match {
-      case Some(avoid: Agent) => avoid.speed
-      case None               => speed_limit
+    val avoid_agent_cur = a.cur_queue.ahead_of(a)
+    val avoid_agent_next = a.at match {
+      case Position(t: Turn, _) => Agent.sim.queues(t.to)
+      case _                    => None
+    }
+    val next_turn: Option[Turn] = route.headOption match {
+      case Some(e: Edge) => None
+      case Some(t: Turn) => Some(t)
+      case None          => None
+    }
+    val stop_at_end = a.at match {
+      // Keep going if we're doing a turn
+      case Position(t: Turn, _) => false
+      // Stop if we're arriving at our destination
+      case (Position(e: Edge, _)) if route.size == 0 => true
+      // Otherwise, let the intersection decide
+      case Position(e: Edge, _) => Agent.sim.intersections(e.to).should_stop(a, next_turn.get)
     }
 
-    // And say they choose to slam on their brakes in this step. What do we
-    // have to do to prevent collision? TODO
-
-    // Will it be emergent behavior that we get some distance between ourselves
-    // and then converge on their speed?
+    val speed = (avoid_agent_cur, avoid_agent_next) match {
+      // First see if there's somebody currently in front of us.
+      case (Some(avoid: Agent), _)     => speed_to_avoid(avoid)
+      // Next try and find somebody on the edge we're about to be at
+      case (None, Some(avoid: Agent))  => speed_to_avoid(avoid)
+      // Do we need to stop at the end of this edge?
+      case (None, None) if stop_at_end => speed_to_end
+      // No? Plow ahead!
+      case _                           => speed_limit
+    }
 
     // TODO I think we want to do math.max(this result, speed limit of
     // current/next possible)
+    return speed
   }
+
+  // TODO we could slow down more gradually and be fuel efficient.
+
+  private def speed_to_avoid(avoid: Agent): Double = {
+    assert(avoid.at.on != a.at.on || avoid.at.dist > a.at.dist)
+
+    // Maintain our stopping distance away from this guy...
+    val stop_dist = a.stopping_distance
+
+    // How far away are we?
+    // TODO assume we're at most one traversable away (since we could be trying
+    // to avoid the person on the edge we're headed towards
+    val dist_from_them = if (a.at.on == avoid.at.on)
+                           avoid.at.dist - a.at.dist
+                         else
+                           a.at.dist_left + avoid.at.dist
+
+    // Positive = speed up, zero = go their speed, negative = slow down
+    val desired_dist = dist_from_them - stop_dist
+
+    // And we know we can react every cfg.max_dt at worst...
+
+    // TODO figure this out
+    return avoid.speed
+
+    // TODO they might not be on the same traversable, in which case we need the
+    // distance between us and them properly
+  }
+
+  // Make sure we stop at the end of this edge
+  // TODO a better threshold?
+  // TODO a different way to signal no limit? and ask road!
+
+  // The factor of 1.3 is a threshold to account for slow reaction times
+  private def speed_to_end = if (a.stopping_distance * 1.3 < a.at.dist_left)
+                               Util.mph_to_si(30) // TODO ask road
+                             else
+                               0
 }
 
 // TODO this would be the coolest thing ever... driving game!
