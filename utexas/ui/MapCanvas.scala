@@ -401,7 +401,7 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
         handle_ev(EV_Action("toggle-wards"))
       }
       case EV_Action("spawn-army") => {
-        val num = 100   // TODO cfg
+        val num = 1   // TODO cfg
         def spawn(i: Int): Unit = {
           Util.log("Spawning agent " + (num - i))
           sim.random_edge(spawning = true) match {

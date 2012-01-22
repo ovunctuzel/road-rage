@@ -11,7 +11,13 @@
   3) reservations
     - FIFO as agents approach, screw optimality
 
-- maintain stopping distance from next agent
+- fix avoid_next_agent
+
+- make agents be able to reach any goal
+  - creep along at nonzero speed to goal, noting timesteps
+  - adjust threshold for when to start stopping
+
+- make intersection detect when agent disobeys?
 
 ### Map building ###
 

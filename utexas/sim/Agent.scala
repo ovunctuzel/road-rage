@@ -135,13 +135,9 @@ class Agent(id: Int, val graph: Graph, start: Edge) {
 
   def cur_queue = Agent.sim.queues(at.on)
 
-  def stopping_distance(): Double = {
-    // Here's some shoddy physics.
-    // v_f = v_0 + a*t gives us
-    val stop_time = speed / max_accel
-    // Then at constant acceleration, we travel
-    return speed * stop_time + (0.5 * max_accel * stop_time * stop_time)
-  }
+  // stopping time comes from v_f = v_0 + a*t
+  // negative accel because we're slowing down.
+  def stopping_distance = Util.dist_at_constant_accel(-max_accel, speed / max_accel, speed)
 }
 
 // the singleton just lets us get at the simulation to look up queues
@@ -157,7 +153,8 @@ object Agent {
 
 case class Position(val on: Traversable, val dist: Double) {
   assert(dist >= 0)
-  def location = on.location(dist)
+  assert(dist <= on.length)
 
+  def location = on.location(dist)
   def dist_left = on.length - dist
 }

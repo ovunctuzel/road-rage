@@ -47,6 +47,10 @@ class DangerousBehavior(a: Agent) extends Behavior(a) {
   var route: List[Traversable] = List[Traversable]()
   // Just to force collisions to almost happen
   val our_speed = Util.mph_to_si(Util.rand_double(5, 35))
+  // Once we start stopping for the end of an edge, keep doing so, even if it
+  // seems like our stopping distance is getting fine again.
+  // TODO explicit state machine might work better
+  var keep_stopping = false
 
   override def set_goal(to: Edge): Unit = a.at.on match {
     case e: Edge => { route = graph.pathfind_astar(e, to) }
@@ -87,7 +91,8 @@ class DangerousBehavior(a: Agent) extends Behavior(a) {
 
   override def transition(from: Traversable, to: Traversable) = {
     if (route.head == to) {
-      route = route.tail   // moving right along
+      route = route.tail      // moving right along
+      keep_stopping = false   // always reset
     } else {
       throw new Exception("We missed a move!")
     }
@@ -117,29 +122,36 @@ class DangerousBehavior(a: Agent) extends Behavior(a) {
       case Some(t: Turn) => Some(t)
       case None          => None
     }
-    val stop_at_end = a.at match {
-      // Keep going if we're doing a turn
+    val should_stop_at_end = a.at match {
+      // Keep going if we're currently doing a turn
       case Position(t: Turn, _) => false
       // Stop if we're arriving at our destination
       case (Position(e: Edge, _)) if route.size == 0 => true
       // Otherwise, let the intersection decide
       case Position(e: Edge, _) => Agent.sim.intersections(e.to).should_stop(a, next_turn.get)
     }
+    // Then be consistent with stopping, once we decide to!
+    // TODO do we need a threshold?
+    if (should_stop_at_end && !keep_stopping && a.stopping_distance * 1.1 >= a.at.dist_left) {
+      keep_stopping = true
+    }
+    val stop_at_end = should_stop_at_end && keep_stopping
 
-    val speed = (avoid_agent_cur, avoid_agent_next) match {
+    val set_speed = (avoid_agent_cur, avoid_agent_next) match {
       // First see if there's somebody currently in front of us.
       case (Some(avoid: Agent), _)     => speed_to_avoid(avoid)
       // Next try and find somebody on the edge we're about to be at
       case (None, Some(avoid: Agent))  => speed_to_avoid(avoid)
-      // Do we need to stop at the end of this edge?
-      case (None, None) if stop_at_end => speed_to_end
       // No? Plow ahead!
       case _                           => speed_limit
     }
 
-    // TODO I think we want to do math.max(this result, speed limit of
-    // current/next possible)
-    return speed
+    // We actually want to pay attention to a few constraints, since the next
+    // agent may be doing something different.
+    return if (stop_at_end)
+             math.min(set_speed, speed_to_end)
+           else
+             set_speed
   }
 
   // TODO we could slow down more gradually and be fuel efficient.
@@ -159,26 +171,20 @@ class DangerousBehavior(a: Agent) extends Behavior(a) {
                            a.at.dist_left + avoid.at.dist
 
     // Positive = speed up, zero = go their speed, negative = slow down
-    val desired_dist = dist_from_them - stop_dist
+    val delta_dist = dist_from_them - stop_dist
 
     // And we know we can react every cfg.max_dt at worst...
 
     // TODO figure this out
-    return avoid.speed
+    return 0.8 * avoid.speed
 
     // TODO they might not be on the same traversable, in which case we need the
     // distance between us and them properly
   }
 
-  // Make sure we stop at the end of this edge
-  // TODO a better threshold?
-  // TODO a different way to signal no limit? and ask road!
-
-  // The factor of 1.3 is a threshold to account for slow reaction times
-  private def speed_to_end = if (a.stopping_distance * 1.3 < a.at.dist_left)
-                               Util.mph_to_si(30) // TODO ask road
-                             else
-                               0
+  // Make sure we stop at the end of this edge. Could slow down more gradually
+  // later.
+  private def speed_to_end = 0
 }
 
 // TODO this would be the coolest thing ever... driving game!
