@@ -51,6 +51,8 @@ class DangerousBehavior(a: Agent) extends Behavior(a) {
   // seems like our stopping distance is getting fine again.
   // TODO explicit state machine might work better
   var keep_stopping = false
+  // Remember if we're polling a new intersection or not
+  var first_request = true
 
   override def set_goal(to: Edge): Unit = a.at.on match {
     case e: Edge => { route = graph.pathfind_astar(e, to) }
@@ -93,6 +95,7 @@ class DangerousBehavior(a: Agent) extends Behavior(a) {
     if (route.head == to) {
       route = route.tail      // moving right along
       keep_stopping = false   // always reset
+      first_request = true
     } else {
       throw new Exception("We missed a move!")
     }
@@ -127,8 +130,11 @@ class DangerousBehavior(a: Agent) extends Behavior(a) {
       // Stop if we're arriving at our destination
       case (Position(e: Edge, _)) if route.size == 0 => true
       // Otherwise, let the intersection decide
-      case Position(e: Edge, _) => Agent.sim.intersections(e.to).should_stop(a, next_turn.get)
+      case Position(e: Edge, _) => Agent.sim.intersections(e.to).should_stop(
+                                     a, next_turn.get, first_request
+                                   )
     }
+    first_request = false   // this is reset once we move to a new edge
     // Then be consistent with stopping, once we decide to!
     // TODO do we need a threshold? depends on speed and timestep, i guess.
     if (should_stop_at_end && !keep_stopping && a.stopping_distance * 1.1 >= a.at.dist_left) {

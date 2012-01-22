@@ -1,19 +1,10 @@
 # TODO #
 
-- intersection policies
-  2) cycled lights
-    - "yellow" for some agents
-    - could optimize by adjusting based on batching
-  3) reservations
-    - FIFO as agents approach, screw optimality
-
 - fix avoid_next_agent
 
 - make agents be able to reach any goal
   - creep along at nonzero speed to goal, noting timesteps
   - adjust threshold for when to start stopping
-
-- structuring this as a state machine and events may be more elegant...
 
 ### Map building ###
 
@@ -102,6 +93,7 @@
 - spawning specifically in UI
 - allow accel control too
 - dimensions to the cars
+- structuring policy stuff as a state machine and events may be more elegant...
 
 ### Scalaisms ###
 
