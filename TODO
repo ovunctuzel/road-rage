@@ -1,10 +1,10 @@
 # TODO #
 
 - intersection policies
-  - should_proceed(agent, turn) = yes, no
   1) always stop
     - FIFO internally
     - could optimize later with no conflicting turns
+    - when do we schedule them if we can't exactly get to the end?
   2) cycled lights
     - "yellow" for some agents
     - could optimize by adjusting based on batching
@@ -16,8 +16,6 @@
 - make agents be able to reach any goal
   - creep along at nonzero speed to goal, noting timesteps
   - adjust threshold for when to start stopping
-
-- make intersection detect when agent disobeys?
 
 ### Map building ###
 

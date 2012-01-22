@@ -110,14 +110,14 @@ class Agent(id: Int, val graph: Graph, start: Edge) {
   // Delegate to the queues and intersections that simulation manages
   def enter(t: Traversable, dist: Double): Position = {
     t match {
-      case turn: Turn => Agent.sim.intersections(turn.vert).enter(turn)
+      case turn: Turn => Agent.sim.intersections(turn.vert).enter(this, turn)
       case _ =>
     }
     return Agent.sim.queues(t).enter(this, dist)
   }
   def exit(t: Traversable) = {
     t match {
-      case turn: Turn => Agent.sim.intersections(turn.vert).exit(turn)
+      case turn: Turn => Agent.sim.intersections(turn.vert).exit(this, turn)
       case _ =>
     }
     Agent.sim.queues(t).exit(this)

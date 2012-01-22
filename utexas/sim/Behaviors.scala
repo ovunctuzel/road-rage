@@ -118,9 +118,8 @@ class DangerousBehavior(a: Agent) extends Behavior(a) {
       case _                    => None
     }
     val next_turn: Option[Turn] = route.headOption match {
-      case Some(e: Edge) => None
       case Some(t: Turn) => Some(t)
-      case None          => None
+      case _             => None
     }
     val should_stop_at_end = a.at match {
       // Keep going if we're currently doing a turn
@@ -131,7 +130,7 @@ class DangerousBehavior(a: Agent) extends Behavior(a) {
       case Position(e: Edge, _) => Agent.sim.intersections(e.to).should_stop(a, next_turn.get)
     }
     // Then be consistent with stopping, once we decide to!
-    // TODO do we need a threshold?
+    // TODO do we need a threshold? depends on speed and timestep, i guess.
     if (should_stop_at_end && !keep_stopping && a.stopping_distance * 1.1 >= a.at.dist_left) {
       keep_stopping = true
     }
