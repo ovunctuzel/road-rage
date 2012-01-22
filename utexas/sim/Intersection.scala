@@ -9,7 +9,7 @@ import utexas.Util
 // Reason about collisions from conflicting simultaneous turns.
 class Intersection(v: Vertex) {
   // TODO mix and match!
-  val policy: Policy = new AlwaysStopPolicy(this)
+  val policy: Policy = new NeverGoPolicy(this)
 
   // Just delegate.
   def should_stop(a: Agent, turn: Turn) = policy.should_stop(a, turn)
@@ -44,7 +44,9 @@ class Intersection(v: Vertex) {
       turns(t) = 0
     }
     turns(t) += 1
-    policy.validate_entry(a, t)
+    if (!policy.validate_entry(a, t)) {
+      Util.log("!!! Agent illegally entered intersection")
+    }
   }
 
   def exit(a: Agent, t: Turn) = {
@@ -52,20 +54,65 @@ class Intersection(v: Vertex) {
     if (turns(t) == 0) {
       turns -= t
     }
+    policy.handle_exit(a, t)
   }
 }
 
 abstract class Policy(intersection: Intersection) {
   def should_stop(a: Agent, turn: Turn): Boolean
 
-  def validate_entry(a: Agent, turn: Turn)
+  def validate_entry(a: Agent, turn: Turn): Boolean
+  def handle_exit(a: Agent, turn: Turn)
 }
 
 // Great for testing to see if agents listen to this.
-class AlwaysStopPolicy(intersection: Intersection) extends Policy(intersection) {
+class NeverGoPolicy(intersection: Intersection) extends Policy(intersection) {
   def should_stop(a: Agent, turn: Turn) = true
+  def validate_entry(a: Agent, turn: Turn) = false
+  def handle_exit(a: Agent, turn: Turn) = {}
+}
 
-  def validate_entry(a: Agent, turn: Turn) = {
-    Util.log("*** We said nobody should cross intersection!!!")
+// Always stop, then FIFO. Totally unoptimized.
+// TODO untested.
+class StopSignPolicy(intersection: Intersection) extends Policy(intersection) {
+  // owner of the intersection!
+  var current_owner: Option[Agent] = None
+  val queue = new List[Agent]
+
+  def should_stop(a: Agent, turn: Turn): Boolean = {
+    current_owner match {
+      case Some(a) => return true
+    }
+
+    // Already scheduled?
+    if (queue.contains(a)) {
+      return false
+    }
+
+    // Do we add them to the queue? They have to be at the end.
+    val can_add_to_queue = a.at.dist_left == 0.0  // TODO < epsilon
+
+    if (can_add_to_queue) {
+      queue += a
+      // And if they're the first in the queue, immediately promote them and let
+      // them go.
+      if (queue.size == 1) {
+        return true
+      }
+    }
+
+    return false
+  }
+
+  def validate_entry(a: Agent, turn: Turn) = current_owner.get == a
+
+  def handle_exit(a: Agent, turn: Turn) = {
+    assert(a == current_owner.get)
+    if (queue.size > 0) {
+      current_owner = Some(queue.head)
+      queue = queue.tail
+    } else {
+      current_owner = None
+    }
   }
 }
