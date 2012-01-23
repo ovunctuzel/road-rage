@@ -32,9 +32,10 @@ object Util {
   // to meters/sec, that is. SI units.
   def mph_to_si(r: Double) = r * 0.44704
 
-  def dist_at_constant_speed(speed: Double, time: Double) = speed * time
   def dist_at_constant_accel(accel: Double, time: Double, initial_speed: Double)
     = (initial_speed * time) + (0.5 * accel * (time * time))
+  // and a special case where accel=0
+  def dist_at_constant_speed(speed: Double, time: Double) = speed * time
 }
 
 class Timer(msg: String) {

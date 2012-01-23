@@ -1,7 +1,7 @@
 package utexas.sim
 
 import utexas.map.{Edge, Turn, Traversable}
-import utexas.Util
+import utexas.{Util, cfg}
 
 abstract class Behavior(a: Agent) {
   val graph = a.graph
@@ -137,7 +137,7 @@ class DangerousBehavior(a: Agent) extends Behavior(a) {
     first_request = false   // this is reset once we move to a new edge
     // Then be consistent with stopping, once we decide to!
     // TODO do we need a threshold? depends on speed and timestep, i guess.
-    if (should_stop_at_end && !keep_stopping && a.stopping_distance * 1.1 >= a.at.dist_left) {
+    if (should_stop_at_end && !keep_stopping && a.stopping_distance * 1.4 >= a.at.dist_left) {
       keep_stopping = true
     }
     val stop_at_end = should_stop_at_end && keep_stopping
@@ -189,7 +189,47 @@ class DangerousBehavior(a: Agent) extends Behavior(a) {
 
   // Make sure we stop at the end of this edge. Could slow down more gradually
   // later.
-  private def speed_to_end = 0
+
+  // TODO refactor as 'speed to travel a target distance' and use for avoiding
+  // agents, too!
+  private def speed_to_end = 0.0
+  /*private def speed_to_end(): Double = {
+    return 0.0
+
+    val accel = -a.max_accel
+    // try to travel half the remaining distance. GO ZENO GO.
+    val target_dist = a.at.dist_left / 2.0
+    // How long could we be deaccelerating for?
+    val deaccel_time = math.min((0.0 - a.speed) / accel, cfg.max_dt)
+    // suppose we spend the whole time deaccelerating... we minimize the
+    // distance traveled, then.
+    val least_dist = Util.dist_at_constant_accel(accel, deaccel_time, a.speed)
+    
+
+
+    // TODO method one is take the nasty algebra and solve for time and just
+    // work with that
+
+
+    Util.log("try to travel " + target_dist + ", but least we could travel is " +
+    all_deaccel)
+
+    if (target_dist >= all_deaccel) {
+      // then just slow doooown! (is there hope of stopping in time, though?)
+      Util.log("shooting for 0!")
+      return 0.0
+    } else {
+      // Algebra time. Pick a SPEED that satisfies:
+      // time_till_target = (SPEED - a.speed) / accel
+      // target_dist = const_accel(accel, time_till_target, a.speed)
+      //               + const_speed(SPEED, util.max_dt - time_till_target)
+      return (a.at.dist_left / 2.0) / cfg.max_dt
+    }
+  }*/
+
+
+  // in cfg.max_dt from a.speed, aim for what speed in order to cover
+  // a.at.dist_left / 2.0?
 }
 
 // TODO this would be the coolest thing ever... driving game!
