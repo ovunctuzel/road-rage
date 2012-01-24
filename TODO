@@ -1,11 +1,8 @@
 # TODO #
 
-- define "at the end of the edge" better, because if we were exactly there, we'd bump over to the next.
-- figure out what threshold to begin stopping at. then we could just have speed as 0.
-
-- make agents be able to reach any goal
-  - creep along at nonzero speed to goal, noting timesteps (to test)
-- fix avoid_next_agent (by using above?)
+- define "at the end of the edge" better, because if we were exactly there, we'd bump over to the next
+- if we do piyush's optimal way, we pick the right time to start, set the right accel to make it work
+- maintain some minimum distance between cars
 
 ### Map building ###
 

@@ -9,11 +9,11 @@ import utexas.{Util, cfg}
 class Agent(id: Int, val graph: Graph, start: Edge) {
   var at = enter(start, Agent.sim.queues(start).random_spawn)
 
-  // We can only change speed, and always accelerate as fast as possible to a
-  // new speed. This is a major simplifying assumption!
+  // We can only set a target acceleration, which we travel at for the entire
+  // duration of timesteps.
   val max_accel = 2.7   // TODO cfg and based on vehicle type
-  var speed: Double = 0.0   // units?
-  var target_speed: Double = 0
+  var speed: Double = 0.0   // meters/sec, I believe
+  var target_accel: Double = 0  // m/s^2
   val behavior = new DangerousBehavior(this) // TODO who chooses this?
 
   override def toString = "Agent " + id
@@ -76,9 +76,9 @@ class Agent(id: Int, val graph: Graph, start: Edge) {
 
   def react() = {
     behavior.choose_action match {
-      case Act_Set_Speed(new_speed) => {
-        assert(new_speed >= 0.0)
-        target_speed = new_speed
+      case Act_Set_Accel(new_accel) => {
+        assert(new_accel.abs <= max_accel)
+        target_accel = new_accel
       }
       case Act_Lane_Change(lane)    => {
         // TODO ensure it's a valid request
@@ -89,33 +89,18 @@ class Agent(id: Int, val graph: Graph, start: Edge) {
 
   // returns distance traveled, updates speed. note unit of the argument.
   def update_kinematics(dt_sec: Double): Double = {
+    // Simply travel at the target constant acceleration for the duration of the
+    // timestep.
     val initial_speed = speed
+    speed = initial_speed + (target_accel * dt_sec)
+    val dist = Util.dist_at_constant_accel(target_accel, dt_sec, initial_speed)
 
-    if (target_speed == speed) {
-      // No change to speed
-      return Util.dist_at_constant_speed(speed, dt_sec)
-    } else {
-      val accel = if (speed < target_speed)
-                    max_accel
-                  else
-                    -max_accel
-      // How long does it take to get to target speed? v_f = v_i + a*t
-      val time_until_target = (target_speed - speed) / accel
+    // It's the behavior's burden to set acceleration so that neither of these
+    // cases happen
+    assert(speed >= 0.0)
+    assert(dist >= 0.0)
 
-      if (time_until_target <= dt_sec) {
-        // we reach our target speed.
-        speed = target_speed
-        // we travel a distance during acceleration and then another distance
-        // during constant speed phase once we reach our target
-        return Util.dist_at_constant_accel(accel, time_until_target, initial_speed)
-             + Util.dist_at_constant_speed(speed, dt_sec - time_until_target)
-      } else {
-        // we don't reach our target speed, just v_f = v_i + a*t
-        speed = speed + (accel * dt_sec)
-        // and we travel a distance during acceleration phase only
-        return Util.dist_at_constant_accel(accel, dt_sec, initial_speed)
-      }
-    }
+    return dist
   }
 
   // Delegate to the queues and intersections that simulation manages
@@ -127,7 +112,8 @@ class Agent(id: Int, val graph: Graph, start: Edge) {
     Util.log("" + this)
     Util.log_push
     Util.log("At: " + at)
-    Util.log("Speed: " + speed + " of target " + target_speed)
+    Util.log("Speed: " + speed)
+    Util.log("Next step's acceleration: " + target_accel)
     behavior.dump_info
     Util.log_pop
   }

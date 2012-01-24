@@ -22,7 +22,7 @@ abstract class Behavior(a: Agent) {
 class IdleBehavior(a: Agent) extends Behavior(a) {
   override def set_goal(e: Edge) = {} // we don't care
 
-  override def choose_action() = Act_Set_Speed(0)
+  override def choose_action() = Act_Set_Accel(0)
 
   override def choose_turn(e: Edge): Option[Turn] = {
     // lol @ test behavior
@@ -73,8 +73,14 @@ class DangerousBehavior(a: Agent) extends Behavior(a) {
       }
     }
 
-    // Plow ahead! (through cars)
-    return Act_Set_Speed(math.min(our_speed, max_safe_speed))
+    // Plow ahead! (not through cars, hopefully)
+    val a1 = safe_accel
+
+    // arbitrarily also follow our own random limit
+    val a2 = accel_to_achieve(our_speed)
+    
+    // It's always conservative to have more negative accel, aka, slow down.
+    return Act_Set_Accel(math.min(a1, a2))
   }
 
   override def choose_turn(e: Edge): Option[Turn] = {
@@ -109,14 +115,17 @@ class DangerousBehavior(a: Agent) extends Behavior(a) {
     Util.log_pop
   }
 
+  // TODO implement piyush's optimal stopping. decide to stop once, set a speed
+  // that accounts for the lag once, then mash at max_accel towards 0.
+
   // This is defined by several things, in some order: the agent in front of us now,
   // the agent in front of us at the way we're going, whether the intersection
   // is ready for us, speed limits of current and future edge
-  def max_safe_speed(): Double = {
+  def safe_accel(): Double = {
     val speed_limit = Util.mph_to_si(30)  // TODO ask the road or whatever
 
-    val avoid_agent_cur = a.cur_queue.ahead_of(a)
-    val avoid_agent_next = a.at match {
+    val follow_agent_cur = a.cur_queue.ahead_of(a)
+    val follow_agent_next = a.at match {
       case Position(t: Turn, _) => Agent.sim.queues(t.to)
       case _                    => None
     }
@@ -136,100 +145,70 @@ class DangerousBehavior(a: Agent) extends Behavior(a) {
     }
     first_request = false   // this is reset once we move to a new edge
     // Then be consistent with stopping, once we decide to!
-    // TODO do we need a threshold? depends on speed and timestep, i guess.
-    if (should_stop_at_end && !keep_stopping && a.stopping_distance * 1.4 >= a.at.dist_left) {
+    // threshold accounts for time lag
+    val threshold = a.speed * cfg.max_dt
+    if (should_stop_at_end && !keep_stopping && a.stopping_distance >= a.at.dist_left - threshold) {
       keep_stopping = true
     }
     val stop_at_end = should_stop_at_end && keep_stopping
 
-    val set_speed = (avoid_agent_cur, avoid_agent_next) match {
+    val set_accel = (follow_agent_cur, follow_agent_next) match {
       // First see if there's somebody currently in front of us.
-      case (Some(avoid: Agent), _)     => speed_to_avoid(avoid)
+      case (Some(follow: Agent), _)     => accel_to_follow(follow)
       // Next try and find somebody on the edge we're about to be at
-      case (None, Some(avoid: Agent))  => speed_to_avoid(avoid)
+      case (None, Some(follow: Agent))  => accel_to_follow(follow)
       // No? Plow ahead!
-      case _                           => speed_limit
+      case _                           => math.min(a.max_accel, accel_to_achieve(speed_limit))
     }
 
     // We actually want to pay attention to a few constraints, since the next
     // agent may be doing something different.
     return if (stop_at_end)
-             math.min(set_speed, speed_to_end)
+             // again, conservative to slow down more
+             math.min(set_accel, accel_to_end)
            else
-             set_speed
+             set_accel
   }
 
-  // TODO we could slow down more gradually and be fuel efficient.
-
-  private def speed_to_avoid(avoid: Agent): Double = {
-    assert(avoid.at.on != a.at.on || avoid.at.dist > a.at.dist)
+  private def accel_to_follow(follow: Agent): Double = {
+    assert(follow.at.on != a.at.on || follow.at.dist > a.at.dist)
 
     // Maintain our stopping distance away from this guy...
-    val stop_dist = a.stopping_distance
+    val our_stop_dist = a.stopping_distance
 
     // How far away are we?
     // TODO assume we're at most one traversable away (since we could be trying
     // to avoid the person on the edge we're headed towards
-    val dist_from_them = if (a.at.on == avoid.at.on)
-                           avoid.at.dist - a.at.dist
-                         else
-                           a.at.dist_left + avoid.at.dist
-
-    // Positive = speed up, zero = go their speed, negative = slow down
-    val delta_dist = dist_from_them - stop_dist
-
-    // And we know we can react every cfg.max_dt at worst...
-
-    // TODO figure this out
-    return 0.8 * avoid.speed
-
     // TODO they might not be on the same traversable, in which case we need the
     // distance between us and them properly
+    val dist_from_them = if (a.at.on == follow.at.on)
+                           follow.at.dist - a.at.dist
+                         else
+                           a.at.dist_left + follow.at.dist
+
+    // Positive = speed up, zero = go their speed, negative = slow down
+    val delta_dist = dist_from_them - our_stop_dist
+
+    // TODO make sure it can handle negatives...
+    return if (delta_dist > 0)
+      // don't go too fast, either
+      math.min(a.max_accel, accel_to_cover(delta_dist))
+    else
+      accel_to_cover(delta_dist)
   }
 
-  // Make sure we stop at the end of this edge. Could slow down more gradually
-  // later.
+  // Make sure we stop at the end of this edge.
+  // TODO It seems to be unrealistic to achieve ending in cfg.max_dt, which
+  // makes sense, so just shoot for half? Distance left should drop
+  // exponentially.
+  private def accel_to_end = accel_to_cover(a.at.dist_left * 0.5)
+  // TODO somehow cap at our max deaccel? this tries to speed up!
+  //private def accel_to_end = math.max(-a.max_accel, accel_to_cover(a.at.dist_left))
 
-  // TODO refactor as 'speed to travel a target distance' and use for avoiding
-  // agents, too!
-  private def speed_to_end = 0.0
-  /*private def speed_to_end(): Double = {
-    return 0.0
-
-    val accel = -a.max_accel
-    // try to travel half the remaining distance. GO ZENO GO.
-    val target_dist = a.at.dist_left / 2.0
-    // How long could we be deaccelerating for?
-    val deaccel_time = math.min((0.0 - a.speed) / accel, cfg.max_dt)
-    // suppose we spend the whole time deaccelerating... we minimize the
-    // distance traveled, then.
-    val least_dist = Util.dist_at_constant_accel(accel, deaccel_time, a.speed)
-    
-
-
-    // TODO method one is take the nasty algebra and solve for time and just
-    // work with that
-
-
-    Util.log("try to travel " + target_dist + ", but least we could travel is " +
-    all_deaccel)
-
-    if (target_dist >= all_deaccel) {
-      // then just slow doooown! (is there hope of stopping in time, though?)
-      Util.log("shooting for 0!")
-      return 0.0
-    } else {
-      // Algebra time. Pick a SPEED that satisfies:
-      // time_till_target = (SPEED - a.speed) / accel
-      // target_dist = const_accel(accel, time_till_target, a.speed)
-      //               + const_speed(SPEED, util.max_dt - time_till_target)
-      return (a.at.dist_left / 2.0) / cfg.max_dt
-    }
-  }*/
-
-
-  // in cfg.max_dt from a.speed, aim for what speed in order to cover
-  // a.at.dist_left / 2.0?
+  // This directly follows from the distance traveled at constant accel
+  private def accel_to_cover(dist: Double) =
+    2 * (dist - (a.speed * cfg.max_dt)) / (cfg.max_dt * cfg.max_dt)
+  def accel_to_achieve(target_speed: Double) = Util.accel_to_achieve(a.speed, target_speed)
 }
 
 // TODO this would be the coolest thing ever... driving game!
@@ -237,5 +216,5 @@ class DangerousBehavior(a: Agent) extends Behavior(a) {
 //}
 
 abstract class Action
-final case class Act_Set_Speed(new_speed: Double) extends Action
+final case class Act_Set_Accel(new_accel: Double) extends Action
 final case class Act_Lane_Change(lane: Edge) extends Action
