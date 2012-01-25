@@ -10,8 +10,9 @@ abstract class Behavior(a: Agent) {
   def set_goal(e: Edge)
   // asked every tick after everybody has moved
   def choose_action(): Action
-  // only queried when the agent reaches a vertex. None means disappear.
-  def choose_turn(e: Edge): Option[Turn]
+  // only queried when the agent reaches a vertex
+  def choose_turn(e: Edge): Turn
+  def done_with_route: Boolean
   // every time the agent moves to a new traversable
   def transition(from: Traversable, to: Traversable)
   // just for debugging
@@ -24,15 +25,17 @@ class IdleBehavior(a: Agent) extends Behavior(a) {
 
   override def choose_action() = Act_Set_Accel(0)
 
-  override def choose_turn(e: Edge): Option[Turn] = {
+  override def choose_turn(e: Edge): Turn = {
     // lol @ test behavior
     if (e.next_turns.size == 0) {
       // TODO fix this in the map properly.
       Util.log("wtf @ " + e)
-      return Some(e.prev_turns.head)
+      return e.prev_turns.head
     }
-    return Some(e.next_turns.head)
+    return e.next_turns.head
   }
+
+  override def done_with_route = true
 
   override def transition(from: Traversable, to: Traversable) = {}   // mmkay
 
@@ -42,7 +45,7 @@ class IdleBehavior(a: Agent) extends Behavior(a) {
 }
 
 // Pathfinding somewhere spatially and proceeds to clobber through agents
-class DangerousBehavior(a: Agent) extends Behavior(a) {
+class AutonomousBehavior(a: Agent) extends Behavior(a) {
   // route.head is always our next move
   var route: List[Traversable] = List[Traversable]()
   // Just to force collisions to almost happen
@@ -76,26 +79,21 @@ class DangerousBehavior(a: Agent) extends Behavior(a) {
     // Plow ahead! (not through cars, hopefully)
     val a1 = safe_accel
 
-    // arbitrarily also follow our own random limit
-    val a2 = accel_to_achieve(our_speed)
-    
-    // It's always conservative to have more negative accel, aka, slow down.
-    return Act_Set_Accel(math.min(a1, a2))
+    return Act_Set_Accel(
+      if (a1 >= 0)
+        // never go faster than our own random limit, to make it more fun
+        math.min(a1, accel_to_achieve(our_speed))
+      else
+        a1
+    )
   }
 
-  override def choose_turn(e: Edge): Option[Turn] = {
-    // Done!
-    if (route.size == 0) {
-      return None
-    }
-
-    route.head match {
-      case t: Turn => {
-        return Some(t)
-      }
-      case _ => throw new Exception("Asking us to choose a turn at the wrong time!")
-    }
+  override def choose_turn(e: Edge): Turn = route match {
+    case ((t: Turn) :: rest) => t
+    case _                 => throw new Exception("Asking us to choose turn now?!")
   }
+
+  override def done_with_route = route.size == 0
 
   override def transition(from: Traversable, to: Traversable) = {
     if (route.head == to) {
@@ -108,7 +106,7 @@ class DangerousBehavior(a: Agent) extends Behavior(a) {
   }
 
   override def dump_info() = {
-    Util.log("Dangerous behavior")
+    Util.log("Autonomous behavior")
     Util.log("Route:")
     Util.log_push
     route.foreach(s => Util.log("" + s))
@@ -158,23 +156,28 @@ class DangerousBehavior(a: Agent) extends Behavior(a) {
       // Next try and find somebody on the edge we're about to be at
       case (None, Some(follow: Agent))  => accel_to_follow(follow)
       // No? Plow ahead!
-      case _                           => math.min(a.max_accel, accel_to_achieve(speed_limit))
+      case _                           => accel_to_achieve(speed_limit)
     }
 
-    // We actually want to pay attention to a few constraints, since the next
-    // agent may be doing something different.
-    return if (stop_at_end)
-             // again, conservative to slow down more
-             math.min(set_accel, accel_to_end)
+    val choice = if (stop_at_end)
+                   // it's always conservative to slow down more
+                   math.min(set_accel, accel_to_end)
+                 else
+                   set_accel
+    // and we can never exceed our possibilities
+    return if (choice >= 0)
+             math.min(choice, a.max_accel)
            else
-             set_accel
+             math.max(choice, -a.max_accel)
   }
 
   private def accel_to_follow(follow: Agent): Double = {
     assert(follow.at.on != a.at.on || follow.at.dist > a.at.dist)
 
-    // Maintain our stopping distance away from this guy...
-    val our_stop_dist = a.stopping_distance
+    // Maintain our stopping distance away from this guy, plus don't scrunch
+    // together too closely...
+    // TODO we wind up with negative speeds! not stopping well enough!
+    val our_stop_dist = a.stopping_distance //+ cfg.follow_dist
 
     // How far away are we?
     // TODO assume we're at most one traversable away (since we could be trying
@@ -188,6 +191,10 @@ class DangerousBehavior(a: Agent) extends Behavior(a) {
 
     // Positive = speed up, zero = go their speed, negative = slow down
     val delta_dist = dist_from_them - our_stop_dist
+
+    /*if (delta_dist <= 0.0) {
+      Util.log(a + " cover neg dist " + delta_dist + " with accel " + accel_to_cover(delta_dist))
+    }*/
 
     // TODO make sure it can handle negatives...
     return if (delta_dist > 0)

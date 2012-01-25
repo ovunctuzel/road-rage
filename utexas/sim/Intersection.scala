@@ -10,7 +10,7 @@ import utexas.Util
 // Reason about collisions from conflicting simultaneous turns.
 class Intersection(v: Vertex) {
   // TODO mix and match!
-  val policy: Policy = new NeverGoPolicy(this)
+  val policy: Policy = new StopSignPolicy(this)
 
   // Just delegate.
   def should_stop(a: Agent, turn: Turn, first_req: Boolean) = policy.should_stop(a, turn, first_req)
@@ -81,31 +81,35 @@ class StopSignPolicy(intersection: Intersection) extends Policy(intersection) {
 
   def should_stop(a: Agent, turn: Turn, first_req: Boolean): Boolean = {
     current_owner match {
-      case Some(a) => return true
+      case Some(owner) if a == owner => return false
       case _       =>
     }
 
     // Already scheduled?
     if (queue.contains(a)) {
-      return false
+      return true
     }
 
     // Do we add them to the queue? They have to be at the end.
-    val can_add_to_queue = a.at.dist_left == 0.0  // TODO < epsilon
+    val can_add_to_queue = a.at_end_of_edge
 
     if (can_add_to_queue) {
-      queue :+= a
-      // And if they're the first in the queue, immediately promote them and let
-      // them go.
-      if (queue.size == 1) {
-        return true
+      // If they're the first one, let them go now. They've stopped validly.
+      if (queue.size == 0 && !current_owner.isDefined) {
+        current_owner = Some(a)
+        return false
+      } else {
+        queue :+= a
       }
     }
 
-    return false
+    return true
   }
 
-  def validate_entry(a: Agent, turn: Turn) = current_owner.get == a
+  def validate_entry(a: Agent, turn: Turn) = current_owner match {
+    case Some(a) => true
+    case _       => false
+  }
 
   def handle_exit(a: Agent, turn: Turn) = {
     assert(a == current_owner.get)

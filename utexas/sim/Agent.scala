@@ -14,7 +14,7 @@ class Agent(id: Int, val graph: Graph, start: Edge) {
   val max_accel = 2.7   // TODO cfg and based on vehicle type
   var speed: Double = 0.0   // meters/sec, I believe
   var target_accel: Double = 0  // m/s^2
-  val behavior = new DangerousBehavior(this) // TODO who chooses this?
+  val behavior = new AutonomousBehavior(this) // TODO who chooses this?
 
   override def toString = "Agent " + id
 
@@ -23,7 +23,7 @@ class Agent(id: Int, val graph: Graph, start: Edge) {
     behavior.set_goal(e)
   }
 
-  def step(dt_s: Double): Unit = {
+  def step(dt_s: Double) = {
     assert(dt_s <= cfg.max_dt)
 
     val start_on = at.on
@@ -39,38 +39,35 @@ class Agent(id: Int, val graph: Graph, start: Edge) {
     while (current_dist > current_on.length) {
       current_dist -= current_on.length
       // Are we finishing a turn or starting one?
-      val next: Option[Traversable] = current_on match {
+      val next: Traversable = current_on match {
         case e: Edge => behavior.choose_turn(e)
-        case t: Turn => Some(t.to)
+        case t: Turn => t.to
       }
 
       // tell the intersection
       (current_on, next) match {
-        case (e: Edge, Some(t: Turn)) => Agent.sim.intersections(t.vert).enter(this, t)
-        case (t: Turn, Some(e: Edge)) => Agent.sim.intersections(t.vert).exit(this, t)
-        case (e: Edge, None)          =>
+        case (e: Edge, t: Turn) => Agent.sim.intersections(t.vert).enter(this, t)
+        case (t: Turn, e: Edge) => Agent.sim.intersections(t.vert).exit(this, t)
       }
 
-      next match {
-        case Some(t) => {
-          // this lets behaviors make sure their route is being followed
-          behavior.transition(current_on, t)
-          current_on = t
-        }
-        case None => {
-          // Done. Disappear!
-          exit(start_on)
-          return
-        }
-      }
+      // this lets behaviors make sure their route is being followed
+      behavior.transition(current_on, next)
+      current_on = next
     }
+
     // so we finally end up somewhere...
     if (start_on == current_on) {
       at = move(start_on, current_dist)
+
+      // are we completely done?
+      if (behavior.done_with_route && at_end_of_edge) {
+        exit(start_on)
+      }
     } else {
       exit(start_on)
       at = enter(current_on, current_dist)
     }
+
     // TODO deal with lane-changing
   }
 
@@ -123,6 +120,10 @@ class Agent(id: Int, val graph: Graph, start: Edge) {
   // stopping time comes from v_f = v_0 + a*t
   // negative accel because we're slowing down.
   def stopping_distance = Util.dist_at_constant_accel(-max_accel, speed / max_accel, speed)
+
+  // If at.dist == at.on.length, then we'd actually end up on the next
+  // traversable. So accept something a few meters back.
+  def at_end_of_edge = at.dist_left <= cfg.end_threshold
 }
 
 // the singleton just lets us get at the simulation to look up queues

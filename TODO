@@ -1,8 +1,19 @@
 # TODO #
 
-- define "at the end of the edge" better, because if we were exactly there, we'd bump over to the next
+- test reservation policy, then at scale.
+
+- maintain some minimum distance between cars (problem)
+
 - if we do piyush's optimal way, we pick the right time to start, set the right accel to make it work
-- maintain some minimum distance between cars
+
+- nongraphical mode that runs as fast as possible!
+- ui could show policy's current owner or something
+
+- with stop sign policy, observed an agent overtaking another... does avoiding the next agent
+  really work?
+
+* online traffic spawning
+* lane changing
 
 ### Map building ###
 

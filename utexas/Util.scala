@@ -60,7 +60,11 @@ object cfg {
     ("lane_width",     0.05, "Width of a lane", 0.01, 0.1),
     ("zoom_threshold",  5.0, "How close to zoom in before drawing details",    1.0, 15.0),
     ("epsilon",     0.00001, "What do we take as zero due to FP imprecision?", 0.0,  1.0),
-    ("max_dt",          1.0, "Max dt in seconds an agent can experience?",     0.1,  3.0)
+    ("max_dt",          1.0, "Max dt in seconds an agent can experience?",     0.1,  3.0),
+    // account for crosswalks, vehicle length...
+    ("end_threshold",   0.5, "The end of a traversable is its length - this",  0.1,  3.0),
+    // this kind of gives dimension to cars, actually
+    ("follow_dist",     0.5, "Even if stopped, don't get closer than this",    0.1, 1.0)
   ) map {c => c._1 -> new Double_Cfgable(c._2, c._3, c._4, c._5)} toMap
 
   val ints = List(
@@ -79,7 +83,9 @@ object cfg {
 
   def lane_width      = doubles("lane_width").value
   def zoom_threshold  = doubles("zoom_threshold").value
-  def epsilon  = doubles("epsilon").value
+  def epsilon         = doubles("epsilon").value
+  def end_threshold   = doubles("end_threshold").value
+  def follow_dist     = doubles("follow_dist").value
 
   def max_lanes       = ints("max_lanes").value
   
