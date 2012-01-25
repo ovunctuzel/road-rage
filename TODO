@@ -1,19 +1,21 @@
 # TODO #
 
-- test reservation policy, then at scale.
-
 - maintain some minimum distance between cars (problem)
+  - speed dips too low... same happens in headless mode? are we breaking apart dt well?
+
+- test reservation policy
+  *** oh, we do have deadlock. fifo scheduling isnt quite right...
+
+- with both policies, observed an agent overtaking another... does avoiding the next agent
+  really work?
 
 - if we do piyush's optimal way, we pick the right time to start, set the right accel to make it work
 
-- nongraphical mode that runs as fast as possible!
 - ui could show policy's current owner or something
-
-- with stop sign policy, observed an agent overtaking another... does avoiding the next agent
-  really work?
 
 * online traffic spawning
 * lane changing
+* slow down for turns
 
 ### Map building ###
 

@@ -45,6 +45,21 @@ class Simulation(roads: List[Road], edges: List[Edge], vertices: List[Vertex],
     }
   }
 
+  def spawn_army(i: Int): Unit = {
+    Util.log("Spawning agent " + i)
+    random_edge(spawning = true) match {
+      case Some(e) => {
+        add_agent(e)
+        if (i > 0) {
+          spawn_army(i - 1)
+        }
+      }
+      case None => {
+        Util.log("... No room left!")
+      }
+    }
+  }
+
   ////////////// Timing
 
   // this represents "real seconds", so all velocity formulas work out normally
@@ -65,18 +80,20 @@ class Simulation(roads: List[Road], edges: List[Edge], vertices: List[Vertex],
 
   // Fire steps every once in a while
   // TODO this ignores us exiting the swing app, then
-  new Thread {
-    override def run(): Unit = {
-      while (true) {
-        val start = System.currentTimeMillis
-        // we should fire about 10x/second
-        Thread.sleep(100)
-        if (running) {
-          step(System.currentTimeMillis - start)
+  def start_timer = {
+    new Thread {
+      override def run(): Unit = {
+        while (true) {
+          val start = System.currentTimeMillis
+          // we should fire about 10x/second
+          Thread.sleep(100)
+          if (running) {
+            step(System.currentTimeMillis - start)
+          }
         }
       }
-    }
-  }.start
+    }.start
+  }
 
   def step(dt_ms: Long) = {
     // This value is dt in simulation time, not real time

@@ -9,8 +9,8 @@ import utexas.Util
 
 // Reason about collisions from conflicting simultaneous turns.
 class Intersection(v: Vertex) {
-  // TODO mix and match!
   val policy: Policy = new StopSignPolicy(this)
+  //val policy: Policy = new ReservationPolicy(this)
 
   // Just delegate.
   def should_stop(a: Agent, turn: Turn, first_req: Boolean) = policy.should_stop(a, turn, first_req)
@@ -132,46 +132,13 @@ class StopSignPolicy(intersection: Intersection) extends Policy(intersection) {
 // If we found the optimal number of batches, that would be an instance of graph
 // coloring.
 class ReservationPolicy(intersection: Intersection) extends Policy(intersection) {
-  // Count how many agents are doing each type of turn, and add turns that don't
-  // conflict
-  class TurnBatch() {
-    val turns = new MutableMap[Turn, Int]
-
-    // false if it conflicts with this group
-    def add_turn(t: Turn): Boolean = {
-      if (turns.contains(t)) {
-        // existing turn
-        turns(t) += 1
-        return true
-      } else if (turns.keys.filter(c => t.conflicts(c)).size == 0) {
-        // new turn that doesn't conflict
-        turns(t) = 1
-        return true
-      } else {
-        // conflict
-        return false
-      }
-    }
-
-    def has_turn(t: Turn) = turns.contains(t)
-
-    def remove_turn(t: Turn) = {
-      turns(t) -= 1
-      if (turns(t) == 0) {
-        turns -= t
-      }
-    }
-
-    def all_done = turns.size == 0
-  }
-
   var current_batch = new TurnBatch()
   var reservations = List[TurnBatch]()
 
   def should_stop(a: Agent, turn: Turn, first_req: Boolean): Boolean = {
     if (first_req) {
       if (current_batch.add_turn(turn)) {
-        return true
+        return false
       } else {
         // A conflicting turn. Add it to the reservations.
 
@@ -184,10 +151,10 @@ class ReservationPolicy(intersection: Intersection) extends Policy(intersection)
           reservations :+= b
         }
 
-        return false
+        return true
       }
     } else {
-      return current_batch.has_turn(turn)
+      return !current_batch.has_turn(turn)
     }
   }
 
@@ -205,4 +172,37 @@ class ReservationPolicy(intersection: Intersection) extends Policy(intersection)
       }
     }
   }
+}
+
+// Count how many agents are doing each type of turn, and add turns that don't
+// conflict
+class TurnBatch() {
+  val turns = new MutableMap[Turn, Int]
+
+  // false if it conflicts with this group
+  def add_turn(t: Turn): Boolean = {
+    if (turns.contains(t)) {
+      // existing turn
+      turns(t) += 1
+      return true
+    } else if (turns.keys.filter(c => t.conflicts(c)).size == 0) {
+      // new turn that doesn't conflict
+      turns(t) = 1
+      return true
+    } else {
+      // conflict
+      return false
+    }
+  }
+
+  def has_turn(t: Turn) = turns.contains(t)
+
+  def remove_turn(t: Turn) = {
+    turns(t) -= 1
+    if (turns(t) == 0) {
+      turns -= t
+    }
+  }
+
+  def all_done = turns.size == 0
 }

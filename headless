@@ -1,0 +1,5 @@
+#!/bin/bash
+
+ant
+
+scala -cp .build utexas.sim.Headless $@

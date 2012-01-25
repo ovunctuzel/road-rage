@@ -32,6 +32,9 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
     }
   }
 
+  // start the simulation
+  sim.start_timer
+
   // state
   private var current_edge: Option[Edge] = None
   private var highlight_type: Option[String] = None
@@ -402,17 +405,7 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
       }
       case EV_Action("spawn-army") => {
         val num = 100   // TODO cfg
-        def spawn(i: Int): Unit = {
-          Util.log("Spawning agent " + (num - i))
-          sim.random_edge(spawning = true) match {
-            case Some(e) => sim.add_agent(e)
-            case None    => { Util.log("... No room left!"); return }
-          }
-          if (i > 0) {
-            spawn(i - 1)
-          }
-        }
-        spawn(num - 1)
+        sim.spawn_army(num - 1)
         status.agents.text = "" + sim.agents.size
         repaint
       }
