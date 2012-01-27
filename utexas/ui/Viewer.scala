@@ -25,14 +25,24 @@ object Viewer extends SimpleSwingApplication {
     "tertiary", "primary", "service", "doomed"
   )
   // TODO parametric from args
-  val canvas = new MapCanvas(Simulation.load("dat/test.map"))
+  var canvas:MapCanvas = null
 
   override def main(args: Array[String]) = {
-    if (args.size == 1) {
-      Util.init_rng(args.head.toLong)
-    } else {
-      Util.init_rng(System.currentTimeMillis)
+    val keys = args.zipWithIndex.filter(p => p._2 % 2 == 0).map(p => p._1)
+    val vals = args.zipWithIndex.filter(p => p._2 % 2 == 1).map(p => p._1)
+    val pairs = keys.zip(vals)
+    var fn = "dat/test.map"
+    var rng = System.currentTimeMillis
+
+    for ((key, value) <- pairs) {
+      key match {
+        case "--input"    	=> { fn = value }
+        case "--rng"		=> { rng = value.toLong }
+        case _				=> { Util.log("Unknown argument: "+value)}
+      }
     }
+    Util.init_rng(rng)
+    canvas = new MapCanvas(Simulation.load(fn))
     super.main(args)
   }
 
