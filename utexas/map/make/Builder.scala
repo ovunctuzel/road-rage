@@ -16,16 +16,18 @@ object Builder {
     var ofn = default_ofn
     var show_dead = false
     
+    if (args.size % 2 != 0) {
+      Util.log("Command-line parameters must be pairs of key => value")
+    }
     val keys = args.zipWithIndex.filter(p => p._2 % 2 == 0).map(p => p._1)
     val vals = args.zipWithIndex.filter(p => p._2 % 2 == 1).map(p => p._1)
-    val pairs = keys.zip(vals)
 
-    for ((key, value) <- pairs) {
+    for ((key, value) <- keys.zip(vals)) {
       key match {
-        case "--show-dead"	=> { show_dead = value == "1" }
-        case "--input"    	=> { ifn = value }
-        case "--output"		=> { ofn = value }
-        case _				=> { Util.log("Unknown argument: "+value)}
+        case "--show-dead" => { show_dead = value == "1" }
+        case "--input"     => { ifn = value }
+        case "--output"    => { ofn = value }
+        case _             => { println("wtf") }
       }
     }
 

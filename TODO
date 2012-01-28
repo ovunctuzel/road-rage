@@ -1,10 +1,79 @@
 # TODO #
 
+hackathon topics:
+  math to stop
+  order for reservation policy
+  timing for cycle light policy
+  lets make sure length corresponds to reality (in m or km)
+  slow down for turns if needed
+
+  lane-changing
+  online spawning
+  mikes wards
+  pick a client app
+
+- when dt_s = max_dt = 0.1, bad things happen... why?
+  we begin stopping when our stopping distance... all thats correct
+  but stopping dist occurs in some time thats bigger than this value
+  but while we're stopping, we try to cover half the remaining dist in max_dt!!! unrealistic.
+
+  ??? sometimes we're going too fast..
+    - we're going faster than what should be possible?
+
+  1) understand piyush's optimal way, instead.
+  2) silly alt is to just adjust max_dt, actual_dt, or the value used for predictions?
+
+  3) idea: accel = max_deaccel to reach end. one correction lets us do that?
+     possibly... dist we want to cover in a step is... dist we COULD cover in a step, going at
+     max_deaccel? min of that and actual dist left?
+
+  4) piyush's way: cover minimum distance needed to keep invariant:
+      stopping_distance > dist_left + (max_dt * cur_speed)
+     aka finalize v_f at the end of this next tick
+
+
+  piyush's way, revised:
+  
+  if we continued at current velocity, we wouldnt be able to stop...
+    *** or if we sped up the max?
+  stopping_dist(cur_v) >= dist_left - (cur_v * max_dt)
+  stopping_dist(v) = v^2 / (2 * a_max)   this is correct
+
+  minimize the time taken to complete this stopping dist.
+    v_cur' = vel after this tick
+    dist_left' = dist left after this tick
+    dist_tick = dist we will travel in this tick
+  so of course dist_left = dist_tick + dist_left'
+
+  to minimize time, reduce speed by as little as possible (aka maximize v_cur')
+  and then slam on brakes. this condition gives
+    dist-left' = stopping_dist(v_cur')
+
+  ....
+
+  distance_tick = v_current * dt + 1/2 (v_current_prime - v_current) * dt 
+                = 1/2 (v_current_prime + v_current) * dt
+
+  plug in...
+
+  solve for v_current_prime'; make that the speed we accelerate to. take the greater of the solns.
+    distance_left = 1/2 (v_current_prime + v_current) * dt + v_current_prime^2 / (2 * a_max)
+
+
+  
+  and make sure to have a buffer for where we stop.
+
+  
+
+
+
 - maintain some minimum distance between cars (problem)
-  - speed dips too low... same happens in headless mode? are we breaking apart dt well?
 
 - test reservation policy
-  *** oh, we do have deadlock. fifo scheduling isnt quite right...
+  - we do deadlock!
+  - tell the intersection who we are behind, and make sure our turn will be satisfied after theirs
+    in the queue.
+  *** but then they will have to schedule their turn first...
 
 - with both policies, observed an agent overtaking another... does avoiding the next agent
   really work?
@@ -16,6 +85,11 @@
 * online traffic spawning
 * lane changing
 * slow down for turns
+
+- cyclic traffic signal mode
+  - do we need an event scheduling system?
+
+- can we get total deterministicness in headless mode?
 
 ### Map building ###
 
@@ -85,8 +159,7 @@
 - spawning safely
 - delegate pricy work to a thread pool
 - spawning specifically in UI
-- allow accel control too
-- dimensions to the cars
+- dimensions to the cars (solved by maintaining fixed dist)
 - structuring policy stuff as a state machine and events may be more elegant...
 
 ### Scalaisms ###

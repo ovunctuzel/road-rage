@@ -3,7 +3,7 @@ package utexas.ui
 import swing._  // TODO figure out exactly what
 import java.awt.Color
 
-import utexas.sim.Simulation
+import utexas.sim.{Simulation, Headless}
 import utexas.Util
 
 object Status_Bar {
@@ -24,25 +24,11 @@ object Viewer extends SimpleSwingApplication {
     "motorway_link", "motorway", "trunk_link", "secondary_link", "primary_link",
     "tertiary", "primary", "service", "doomed"
   )
-  // TODO parametric from args
-  var canvas:MapCanvas = null
+  // null just because it's parametric from argv
+  var canvas: MapCanvas = null
 
   override def main(args: Array[String]) = {
-    val keys = args.zipWithIndex.filter(p => p._2 % 2 == 0).map(p => p._1)
-    val vals = args.zipWithIndex.filter(p => p._2 % 2 == 1).map(p => p._1)
-    val pairs = keys.zip(vals)
-    var fn = "dat/test.map"
-    var rng = System.currentTimeMillis
-
-    for ((key, value) <- pairs) {
-      key match {
-        case "--input"    	=> { fn = value }
-        case "--rng"		=> { rng = value.toLong }
-        case _				=> { Util.log("Unknown argument: "+value)}
-      }
-    }
-    Util.init_rng(rng)
-    canvas = new MapCanvas(Simulation.load(fn))
+    canvas = new MapCanvas(Headless.process_args(args))
     super.main(args)
   }
 
