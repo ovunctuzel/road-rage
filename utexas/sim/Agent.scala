@@ -74,7 +74,11 @@ class Agent(id: Int, val graph: Graph, start: Edge) {
   def react() = {
     behavior.choose_action match {
       case Act_Set_Accel(new_accel) => {
+        // physical limitations
         assert(new_accel.abs <= max_accel)
+        // catch error early
+        assert(speed + (new_accel * cfg.max_dt) >= 0);
+
         target_accel = new_accel
       }
       case Act_Lane_Change(lane)    => {
@@ -119,6 +123,7 @@ class Agent(id: Int, val graph: Graph, start: Edge) {
 
   // stopping time comes from v_f = v_0 + a*t
   // negative accel because we're slowing down.
+  // this is equal to (speed * speed) / (2 * max_accel)
   def stopping_distance = Util.dist_at_constant_accel(-max_accel, speed / max_accel, speed)
 
   // If at.dist == at.on.length, then we'd actually end up on the next

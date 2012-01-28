@@ -204,13 +204,27 @@ class AutonomousBehavior(a: Agent) extends Behavior(a) {
       accel_to_cover(delta_dist)
   }
 
-  // Make sure we stop at the end of this edge.
-  // TODO It seems to be unrealistic to achieve ending in cfg.max_dt, which
-  // makes sense, so just shoot for half? Distance left should drop
-  // exponentially.
   private def accel_to_end = accel_to_cover(a.at.dist_left * 0.5)
-  // TODO somehow cap at our max deaccel? this tries to speed up!
-  //private def accel_to_end = math.max(-a.max_accel, accel_to_cover(a.at.dist_left))
+  // TODO this is based on piyush's proof, but it doesn't quite work yet.
+  /*private def accel_to_end(): Double = {
+    if (a.stopping_distance >= a.at.dist_left) {
+      Util.log("DOOMED?")
+    }
+    Util.log("stop dist " + a.stopping_distance + ", left " + a.at.dist_left) 
+
+    // TODO -max_accel?
+    // a, b, c for a normal quadratic
+    val q_a = 1 / a.max_accel
+    // TODO maybe this dt, not max? why?
+    val q_b = cfg.max_dt
+    val q_c = (a.speed * cfg.max_dt) - (2 * a.at.dist_left)
+    // TODO the other soln?
+    val desired_speed = (-q_b + math.sqrt((q_b * q_b) - (4 * q_a * q_c))) / (2 * q_a)
+
+    Util.log("want speed " + a.speed + " -> " + desired_speed)
+    // TODO eh.. the max.
+    return (math.max(0, desired_speed) - a.speed) / cfg.max_dt
+  }*/
 
   // This directly follows from the distance traveled at constant accel
   private def accel_to_cover(dist: Double) =

@@ -34,6 +34,7 @@ abstract class ScrollingCanvas extends Component {
 
   // translate between screen and map coordinate systems
   // define (x_off, y_off) to be the top-left corner of the screen
+  // and remember world coordinates now increase up
   def screen_to_map_x(x: Double) = (x + x_off) / zoom
   def screen_to_map_y(y: Double) = (y + y_off) / zoom
   def map_to_screen_x(x: Double) = (x - x_off) * zoom

@@ -84,9 +84,8 @@ class Edge(var id: Int, val road: Road, val dir: Direction.Direction) extends Tr
 
   // this takes a point along a line and moves it back
   private val shift_mag = 1.0 // TODO cfg
-  // TODO y inversion problems still?!
   private def shift_pt(x: Double, y: Double, theta: Double) = new Coordinate(
-    x + (shift_mag * math.cos(theta)), y - (shift_mag * math.sin(theta))
+    x + (shift_mag * math.cos(theta)), y + (shift_mag * math.sin(theta))
   )
   def shifted_start_pt: Coordinate = {
     val l = lines.head
@@ -104,18 +103,14 @@ class Line(var x1: Double, var y1: Double, var x2: Double, var y2: Double) {
   def this(v1: Vertex, v2: Vertex) = this(v1.location, v2.location)
 
   // return [0, 2pi) like a reasonable bloody...
-  // also, this is a place where we have to recall the coordinate system has y
-  // increasing down, but trig thinks y increases up...
   def angle: Double = {
-    val theta = math.atan2(y1 - y2, x2 - x1)  // y inversion
+    // no y inversion problem; our coordinate system and trig both increase up
+    val theta = math.atan2(y2 - y1, x2 - x1)
     if (theta < 0)
       return theta + (2 * math.Pi)
     else
       return theta
   }
-
-  // TODO shiftline() broke with the seemingly correct angle(). testing.
-  def broken_angle = math.atan2(y2 - y1, x2 - x1)
 
   def midpt = new Coordinate((x1 + x2) / 2, (y1 + y2) / 2)
   def width = x2 - x1
@@ -132,8 +127,10 @@ class Line(var x1: Double, var y1: Double, var x2: Double, var y2: Double) {
     )
   }
 
-  def length(): Double = Coordinate.getDistanceInMeters(
-      Graph.worldToGPS(new Coordinate(x1,x2)),Graph.worldToGPS(new Coordinate(y1,y2)))
+  def length = Coordinate.getDistanceInMeters(
+    Graph.worldToGPS(new Coordinate(x1, x2)),
+    Graph.worldToGPS(new Coordinate(y1,y2))
+  )
 
   // assuming the two lines share an origin
   def dot(l2: Line) = (x2 - x1) * (l2.x2 - l2.x1) + (y2 - y1) * (l2.y2 - l2.y1)

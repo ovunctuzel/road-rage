@@ -531,7 +531,7 @@ object GeomFactory {
     }
 
     val mid = line.midpt
-    val theta = line.broken_angle
+    val theta = line.angle
     val x = mid.x + (height * math.cos(theta))
     val y = mid.y + (height * math.sin(theta))
 

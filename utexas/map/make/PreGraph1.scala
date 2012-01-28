@@ -68,21 +68,25 @@ class PreGraph1() {
     width = (maxX + offX) * scale
     height = (maxY + offY) * scale
 
-    // TODO this is so close to a one-liner now...
-    def normalize(pt: Coordinate): Coordinate = {
-      // Longitude, Latitude origin is bottom-left; we draw from top-left
-      // Hence height - y
-      // This is the ONLY place we handle y inversion. Don't make things
-      // confusing after this!
-      return new Coordinate(
-        (pt.x + offX) * scale,
-        height - (pt.y + offY) * scale
-      )
+    // Latitude increases up, and so does our coordinate system, so no y
+    // inversion is necessary.
 
-      //if (x < 0 || x > width || y < 0 || y > height) {
-      //  Util.log("OOB coordinate after normalizing! " + pt)
-      //}
+    // TODO test the new y inversion fixes, then get rid of the OOB check.
+    /*
+    def normalize(pt: Coordinate) = new Coordinate(
+      (pt.x + offX) * scale,
+      (pt.y + offY) * scale
+    )*/
+
+    def normalize(pt: Coordinate): Coordinate = {
+      val x = (pt.x + offX) * scale
+      val y = (pt.y + offY) * scale
+      if (x < 0 || x > width || y < 0 || y > height) {
+        Util.log("OOB coordinate after normalizing! " + pt)
+      }
+      return new Coordinate(x, y)
     }
+
 
     vert_lookup = vert_lookup map normalize
     for (e <- edges) {

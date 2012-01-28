@@ -2,6 +2,11 @@
 
 hackathon topics:
   math to stop
+    it's hard, maybe just make max_dt high?
+
+    we're predicting what we COULD do in 1.0 seconds, but then trying to do pieces of it in 0.1
+
+    just make max_dt = only dt ever observed
   order for reservation policy
   timing for cycle light policy
   lets make sure length corresponds to reality (in m or km)
@@ -130,7 +135,6 @@ hackathon topics:
   - UI polishing
   - black road backgrounds dont meet up smoothly since we go by line segment
     - add extra lanes on either side, dont color them white, but draw the stuff in between?
-- figure out why broken_angle and y inversion everywhere still...
 - way better pruning of what to (re-draw) using quadtrees
   - but is it even needed?
 - keyboard-grabbing focus is... greedy when minimized

@@ -267,8 +267,7 @@ class Pass3(old_graph: PreGraph2) {
     // just move in the direction of the road (as given by the ordering of the
     // points) plus 90 degrees clockwise
     val road_line = new Line(pt1.x, pt1.y, pt2.x, pt2.y)
-    // TODO why does the angle() that respects inversion fail?
-    val theta = road_line.broken_angle + (math.Pi / 2)
+    val theta = road_line.angle + (math.Pi / 2)
     val dx = off * width * math.cos(theta)
     val dy = off * width * math.sin(theta)
 
