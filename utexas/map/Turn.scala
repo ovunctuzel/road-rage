@@ -29,7 +29,7 @@ class Turn(val id: Int, val from: Edge, val turn_type: TurnType.TurnType, val to
   // TODO a little anonymous sub returning the line?
   private val a = from.lines.last.end
   private val b = to.lines.head.start
-  var lines = List[Line](new Line(a.x, a.y, b.x, b.y))
+  set_lines(List[Line](new Line(a.x, a.y, b.x, b.y)))
   def leads_to = List(to)
 
   def involves_road(r: Road) = (from.road == r || to.road == r)

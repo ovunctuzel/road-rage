@@ -145,7 +145,7 @@ class Reader(fn: String) {
           val e = new Edge(e_id, roads(e_rd), e_dir)
           edges(e_id) = e
           e.lane_num = e_lane
-          e.lines = e_lines.toList
+          e.set_lines(e_lines.toList)
 
           // tell the road about the edge, too
           // TODO edges in the xml will be ordered by their id, which we created

@@ -36,7 +36,7 @@ object Util {
   def dist_at_constant_accel(accel: Double, time: Double, initial_speed: Double)
     = (initial_speed * time) + (0.5 * accel * (time * time))
   def accel_to_achieve(cur_speed: Double, target_speed: Double)
-    = (target_speed - cur_speed) / cfg.max_dt
+    = (target_speed - cur_speed) / cfg.dt_s
 }
 
 class Timer(msg: String) {
@@ -60,7 +60,7 @@ object cfg {
     ("lane_width",     0.05, "Width of a lane", 0.01, 0.1),
     ("zoom_threshold",  5.0, "How close to zoom in before drawing details",    1.0, 15.0),
     ("epsilon",     0.00001, "What do we take as zero due to FP imprecision?", 0.0,  1.0),
-    ("max_dt",          1.0, "Max dt in seconds an agent can experience?",     0.1,  3.0),
+    ("dt_s",            0.1, "The only dt in seconds an agent can experience", 0.1,  3.0),
     // account for crosswalks, vehicle length...
     ("end_threshold",   0.5, "The end of a traversable is its length - this",  0.1,  3.0),
     // this kind of gives dimension to cars, actually
@@ -89,7 +89,7 @@ object cfg {
 
   def max_lanes       = ints("max_lanes").value
   
-  def max_dt          = doubles("max_dt").value
+  def dt_s            = doubles("dt_s").value
 }
 
 // couldn't quite the OO work out to bundle these

@@ -42,19 +42,19 @@ class Pass3(old_graph: PreGraph2) {
 
         // reverse because the most positive shift should be the rightmost lane
         for ((e, offset) <- r.oneway_lanes.zip(offsets.reverse)) {
-          e.lines = for ((from, to) <- r.pairs_of_points)
-                    yield shift_line(offset, from, to)
+          e.set_lines(for ((from, to) <- r.pairs_of_points)
+                      yield shift_line(offset, from, to))
         }
       } else {
         for (e <- r.pos_lanes) {
-          e.lines = for ((from, to) <- r.pairs_of_points)
-                    yield shift_line(e.lane_offset, from, to)
+          e.set_lines(for ((from, to) <- r.pairs_of_points)
+                      yield shift_line(e.lane_offset, from, to))
         }
         for (e <- r.neg_lanes) {
-          e.lines = for ((from, to) <- r.pairs_of_points)
-                    yield shift_line(e.lane_offset, to, from)
+          val ls = for ((from, to) <- r.pairs_of_points)
+                   yield shift_line(e.lane_offset, to, from)
           // TODO inefficient just because i wanted a two-liner?
-          e.lines = e.lines.reverse
+          e.set_lines(ls.reverse)
         }
       }
 

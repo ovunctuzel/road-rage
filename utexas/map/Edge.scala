@@ -10,9 +10,6 @@ import utexas.cfg
 class Edge(var id: Int, val road: Road, val dir: Direction.Direction) extends Traversable {
   var lane_num: Int = -1  // TODO needs to be initialized to be defined.. bleh.
 
-  // TODO finally, something that isnt mutable! make them all this way.
-  // TODO what is this silliness though
-  var lines = List[Line]()
   //def leads_to = next_turns ++ List(shift_left, shift_right).flatten
   // TODO until lane-changing works.
   def leads_to = next_turns
@@ -100,6 +97,17 @@ class Edge(var id: Int, val road: Road, val dir: Direction.Direction) extends Tr
 
 // TODO noooo not var >_<
 class Line(var x1: Double, var y1: Double, var x2: Double, var y2: Double) {
+  // Compute and store it once, since the math isn't free
+  // TODO why does the old euclid dist way break?! we never hit the speed we
+  // want...
+  val length = math.sqrt(math.pow(x2 - x1, 2) + math.pow(y2 - y1, 2))
+  // TODO this doesn't break anything, it just makes things longer, and I'm
+  // impatient ;)
+  /*val length = Coordinate.getDistanceInMeters(
+    Graph.worldToGPS(new Coordinate(x1, x2)),
+    Graph.worldToGPS(new Coordinate(y1,y2))
+  )*/
+
   def this(pt1: Coordinate, pt2: Coordinate) = this(pt1.x, pt1.y, pt2.x, pt2.y)
   def this(v1: Vertex, v2: Vertex) = this(v1.location, v2.location)
 
@@ -131,9 +139,6 @@ class Line(var x1: Double, var y1: Double, var x2: Double, var y2: Double) {
       + y2 + "\"/>\n"
     )
   }
-
-  def length(): Double = Coordinate.getDistanceInMeters(
-      Graph.worldToGPS(new Coordinate(x1,x2)),Graph.worldToGPS(new Coordinate(y1,y2)))
 
   // assuming the two lines share an origin
   def dot(l2: Line) = (x2 - x1) * (l2.x2 - l2.x1) + (y2 - y1) * (l2.y2 - l2.y1)

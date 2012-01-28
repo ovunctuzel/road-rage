@@ -3,10 +3,16 @@ package utexas.map
 // Something with a sequence of lines forming a path and a way to get to more
 // somethings
 abstract class Traversable() {
-  var lines: List[Line]
+  var lines: List[Line] = Nil // till set_lines happens.
   def leads_to: List[Traversable]
 
-  def length: Double = lines.foldLeft(0.0)((a, b) => a + b.length)
+  // Store; it's not free to compute it constantly
+  var length: Double = 0
+
+  def set_lines(ls: List[Line]) = {
+    lines = ls
+    length = lines.foldLeft(0.0)((a, b) => a + b.length)
+  }
 
   // if dist is > length or < 0, then this query makes no sense
   def location(dist: Double): Coordinate = {

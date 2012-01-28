@@ -24,7 +24,7 @@ class Agent(id: Int, val graph: Graph, start: Edge) {
   }
 
   def step(dt_s: Double) = {
-    assert(dt_s <= cfg.max_dt)
+    assert(dt_s == cfg.dt_s)
 
     val start_on = at.on
     val old_dist = at.dist
@@ -36,6 +36,7 @@ class Agent(id: Int, val graph: Graph, start: Edge) {
     // Apply this distance. 
     var current_on = start_on
     var current_dist = old_dist + new_dist
+
     while (current_dist > current_on.length) {
       current_dist -= current_on.length
       // Are we finishing a turn or starting one?
@@ -74,7 +75,11 @@ class Agent(id: Int, val graph: Graph, start: Edge) {
   def react() = {
     behavior.choose_action match {
       case Act_Set_Accel(new_accel) => {
+        // we have physical limits
         assert(new_accel.abs <= max_accel)
+        // make sure this won't put us at a negative speed
+        assert(speed + (new_accel * cfg.dt_s) >= 0)
+
         target_accel = new_accel
       }
       case Act_Lane_Change(lane)    => {
@@ -119,7 +124,7 @@ class Agent(id: Int, val graph: Graph, start: Edge) {
 
   // stopping time comes from v_f = v_0 + a*t
   // negative accel because we're slowing down.
-  def stopping_distance = Util.dist_at_constant_accel(-max_accel, speed / max_accel, speed)
+  def stopping_distance(s: Double = speed) = Util.dist_at_constant_accel(-max_accel, s / max_accel, s)
 
   // If at.dist == at.on.length, then we'd actually end up on the next
   // traversable. So accept something a few meters back.

@@ -113,9 +113,6 @@ class AutonomousBehavior(a: Agent) extends Behavior(a) {
     Util.log_pop
   }
 
-  // TODO implement piyush's optimal stopping. decide to stop once, set a speed
-  // that accounts for the lag once, then mash at max_accel towards 0.
-
   // This is defined by several things, in some order: the agent in front of us now,
   // the agent in front of us at the way we're going, whether the intersection
   // is ready for us, speed limits of current and future edge
@@ -142,11 +139,17 @@ class AutonomousBehavior(a: Agent) extends Behavior(a) {
                                    )
     }
     first_request = false   // this is reset once we move to a new edge
-    // Then be consistent with stopping, once we decide to!
-    // threshold accounts for time lag
-    val threshold = a.speed * cfg.max_dt
-    if (should_stop_at_end && !keep_stopping && a.stopping_distance >= a.at.dist_left - threshold) {
+    // Since we can't react instantly, we have to consider the worst-case of the
+    // next tick, which happens when we speed up as much as possible this tick.
+    // If we would overshoot by then, then start braking now.
+    val worst_speed = a.speed + (a.max_accel * cfg.dt_s)
+    val worst_stop_dist = a.stopping_distance(worst_speed)
+    val worst_travel = Util.dist_at_constant_accel(a.max_accel, cfg.dt_s, a.speed)
+    //Util.log("we have " + a.at.dist_left + " left now. least left next is " + (a.at.dist_left - threshold) + ", and stop dist is " + a.stopping_distance)
+    if (should_stop_at_end && !keep_stopping && worst_stop_dist + worst_travel >= a.at.dist_left) {
+      // Then be consistent with stopping, once we decide to!
       keep_stopping = true
+      //Util.log("  start stopping now")
     }
     val stop_at_end = should_stop_at_end && keep_stopping
 
@@ -156,19 +159,14 @@ class AutonomousBehavior(a: Agent) extends Behavior(a) {
       // Next try and find somebody on the edge we're about to be at
       case (None, Some(follow: Agent))  => accel_to_follow(follow)
       // No? Plow ahead!
-      case _                           => accel_to_achieve(speed_limit)
+      case _                           => math.min(a.max_accel, accel_to_achieve(speed_limit))
     }
 
-    val choice = if (stop_at_end)
-                   // it's always conservative to slow down more
-                   math.min(set_accel, accel_to_end)
-                 else
-                   set_accel
-    // and we can never exceed our possibilities
-    return if (choice >= 0)
-             math.min(choice, a.max_accel)
+    return if (stop_at_end)
+             // it's always conservative to slow down more
+             math.min(set_accel, accel_to_end)
            else
-             math.max(choice, -a.max_accel)
+             set_accel
   }
 
   private def accel_to_follow(follow: Agent): Double = {
@@ -177,7 +175,7 @@ class AutonomousBehavior(a: Agent) extends Behavior(a) {
     // Maintain our stopping distance away from this guy, plus don't scrunch
     // together too closely...
     // TODO we wind up with negative speeds! not stopping well enough!
-    val our_stop_dist = a.stopping_distance //+ cfg.follow_dist
+    val our_stop_dist = a.stopping_distance() //+ cfg.follow_dist
 
     // How far away are we?
     // TODO assume we're at most one traversable away (since we could be trying
@@ -204,17 +202,62 @@ class AutonomousBehavior(a: Agent) extends Behavior(a) {
       accel_to_cover(delta_dist)
   }
 
-  // Make sure we stop at the end of this edge.
-  // TODO It seems to be unrealistic to achieve ending in cfg.max_dt, which
-  // makes sense, so just shoot for half? Distance left should drop
-  // exponentially.
-  private def accel_to_end = accel_to_cover(a.at.dist_left * 0.5)
-  // TODO somehow cap at our max deaccel? this tries to speed up!
-  //private def accel_to_end = math.max(-a.max_accel, accel_to_cover(a.at.dist_left))
+  // This is based on Piyush's proof.
+  private def accel_to_end(): Double = {
+    // Just a simple short-circuit case.
+    // TODO maybe not needed, and this fails for 1327896599636 on btr at 0.9 dt
+    if (a.speed == 0.0) {
+      assert(a.at_end_of_edge)
+      return 0
+    }
+
+    // most rounds, stop dist should == a.at.dist_left, within epsilon or so
+    /*Util.log("stop dist " + a.stopping_distance() + ", left " + a.at.dist_left) 
+    if (a.stopping_distance() > a.at.dist_left) {
+      Util.log("  DOOMED? by " + (a.stopping_distance() - a.at.dist_left))
+    }*/
+
+    // a, b, c for a normal quadratic
+    val q_a = 1 / a.max_accel
+    val q_b = cfg.dt_s
+    // we take away end_threshold, since stopping right at the end of the edge
+    // makes us technically enter the intersection
+    val q_c = (a.speed * cfg.dt_s) - (2 * (a.at.dist_left - cfg.end_threshold))
+    val desired_speed = (-q_b + math.sqrt((q_b * q_b) - (4 * q_a * q_c))) / (2 * q_a)
+
+    // TODO why does this or NaN ever happen?
+    /*if (desired_speed < 0) {
+      Util.log("why neg speed?")
+    } else if (desired_speed.toString == "NaN") {
+      // TODO Double.NaN comparison doesnt seem to work. also, not sure why this
+      // happens, nor exactly how to fix...
+      // try seed 1327894373344 to make it happen, though. synthetic.
+      Util.log("NaN speed... a=" + q_a + ", b=" + q_b + ", c=" + q_c)
+    }*/
+
+    //Util.log("want speed " + a.speed + " -> " + desired_speed + "\n")
+
+    // in the NaN case, just try to stop?
+    val needed_accel = if (desired_speed.toString == "NaN")
+                         accel_to_achieve(0)
+                       else
+                         accel_to_achieve(math.max(0, desired_speed))
+
+    if (needed_accel > 0) {
+      Util.log("really? speed up?!")
+    }
+
+    // TODO make sure this difference is very small.. just floating pt issues
+    // sometimes it isn't, and that seems to lead to NaN... figure out why.
+    /*if (needed_accel < 0 && needed_accel < -a.max_accel) {
+      println("how is " + needed_accel + " exceeding " + -a.max_accel)
+    }*/
+    return math.max(-a.max_accel, needed_accel)
+  }
 
   // This directly follows from the distance traveled at constant accel
   private def accel_to_cover(dist: Double) =
-    2 * (dist - (a.speed * cfg.max_dt)) / (cfg.max_dt * cfg.max_dt)
+    2 * (dist - (a.speed * cfg.dt_s)) / (cfg.dt_s * cfg.dt_s)
   def accel_to_achieve(target_speed: Double) = Util.accel_to_achieve(a.speed, target_speed)
 }
 

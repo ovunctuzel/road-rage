@@ -63,8 +63,12 @@ class Simulation(roads: List[Road], edges: List[Edge], vertices: List[Vertex],
 
   ////////////// Timing
 
-  // this represents "real seconds", so all velocity formulas work out normally
+  // this represents total "real seconds", so all velocity formulas work out
+  // normally. so far this is also just for external UIness, nothing internal
+  // cares.
   var tick: Double = 0
+  // we only ever step with dt = cfg.dt_s, so we may have leftover.
+  private var dt_accumulated: Double = 0
   // we can pause
   var running = false
   val listeners = new MutableList[Simulation_Listener]()
@@ -86,29 +90,30 @@ class Simulation(roads: List[Road], edges: List[Edge], vertices: List[Vertex],
       override def run(): Unit = {
         while (true) {
           val start = System.currentTimeMillis
-          // we should fire about 10x/second
+          // we should fire about 10x/second. optimal/useful rate is going to be
+          // related to time_speed and cfg.dt_s   TODO
           Thread.sleep(100)
           if (running) {
-            step(System.currentTimeMillis - start)
+            step((System.currentTimeMillis - start).toDouble / 1000.0)
           }
         }
       }
     }.start
   }
 
-  def step(dt_ms: Long) = {
+  def step(dt_s: Double) = {
     // This value is dt in simulation time, not real time
-    var dt_s = dt_ms / 1000.0 * time_speed
+    val this_time = dt_s * time_speed
+    dt_accumulated += this_time
+    tick += this_time
 
     // Agents can't react properly in the presence of huge time-steps. So chop
-    // up this time-step, if needed.
-    while (dt_s > 0.0) {
-      val this_step = math.min(dt_s, cfg.max_dt)
-      dt_s -= this_step
-      tick += this_step
+    // up this time-step into exactly consistent/equal pieces, if needed.
+    while (dt_accumulated >= cfg.dt_s) {
+      dt_accumulated -= cfg.dt_s
 
       queues.values.foreach(q => q.start_step)
-      agents.foreach(a => a.step(this_step))
+      agents.foreach(a => a.step(cfg.dt_s))
       queues.values.foreach(q => q.end_step)
       intersections.values.foreach(i => i.end_step)
 

@@ -29,10 +29,9 @@ object Headless {
     sim.spawn_army(100)
 
     val timer = Util.timer("running the sim")
-    val dt_ms = (cfg.max_dt * 1000.0 / sim.time_speed).toLong
-    Util.log("Starting simulation with time-steps of " + dt_ms + "ms")
+    Util.log("Starting simulation with time-steps of " + cfg.dt_s + "s")
     while (sim.agents.size != 0) {
-      sim.step(dt_ms)
+      sim.step(cfg.dt_s)
     }
     Util.log("Simulation took " + sim.tick + " virtual seconds")
     timer.stop

@@ -9,6 +9,7 @@ import utexas.Util
 
 // Reason about collisions from conflicting simultaneous turns.
 class Intersection(v: Vertex) {
+  //val policy: Policy = new NeverGoPolicy(this)
   val policy: Policy = new StopSignPolicy(this)
   //val policy: Policy = new ReservationPolicy(this)
 

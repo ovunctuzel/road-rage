@@ -26,10 +26,7 @@ object Mode extends Enumeration {
 class MapCanvas(sim: Simulation) extends ScrollingCanvas {
   // listen!
   sim.listeners += new Simulation_Listener() {
-    def ev_step() = {
-      handle_ev(EV_Action("step"))
-      status.agents.text = "" + sim.agents.size
-    }
+    def ev_step() = handle_ev(EV_Action("step"))
   }
 
   // start the simulation
@@ -404,7 +401,7 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
         handle_ev(EV_Action("toggle-wards"))
       }
       case EV_Action("spawn-army") => {
-        val num = 100   // TODO cfg
+        val num = 1   // TODO cfg
         sim.spawn_army(num - 1)
         status.agents.text = "" + sim.agents.size
         repaint
@@ -412,6 +409,7 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
       case EV_Action("step") => {
         status.time.text = "%.1f".format(sim.tick)
         // agents have maybe moved, so...
+        status.agents.text = "" + sim.agents.size
         repaint
       }
       case EV_Action("toggle-running") => {
