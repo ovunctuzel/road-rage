@@ -9,8 +9,9 @@ import utexas.{Util, cfg}
 
 // This just adds a notion of agents
 class Simulation(roads: List[Road], edges: List[Edge], vertices: List[Vertex],
-                 wards: List[Ward], special_ward: Ward, width: Double, height: Double)
-  extends Graph(roads, edges, vertices, wards, special_ward, width, height)
+                 wards: List[Ward], special_ward: Ward, width: Double, height: Double,
+                 xOff: Double, yOff: Double, scale: Double)
+  extends Graph(roads, edges, vertices, wards, special_ward, width, height, xOff, yOff, scale)
 {
   /////////// Agent management
   Agent.sim = this  // let them get to us

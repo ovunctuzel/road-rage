@@ -132,8 +132,8 @@ class Line(var x1: Double, var y1: Double, var x2: Double, var y2: Double) {
     )
   }
 
-  // TODO theres also a version of this in world's meters
-  def length: Double = math.sqrt(math.pow(x2 - x1, 2) + math.pow(y2 - y1, 2))
+  def length(): Double = Coordinate.getDistanceInMeters(
+      Graph.worldToGPS(new Coordinate(x1,x2)),Graph.worldToGPS(new Coordinate(y1,y2)))
 
   // assuming the two lines share an origin
   def dot(l2: Line) = (x2 - x1) * (l2.x2 - l2.x1) + (y2 - y1) * (l2.y2 - l2.y1)

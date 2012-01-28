@@ -8,8 +8,14 @@ import utexas.Util
 
 class Graph(val roads: List[Road], val edges: List[Edge],
             val vertices: List[Vertex], val wards: List[Ward],
-            val special_ward: Ward, val width: Double, val height: Double)
+            val special_ward: Ward, val width: Double, val ht: Double,
+            val xoff:Double, val yoff:Double, val sc:Double)
 {
+  val height: Double = Graph.setHeight(ht)
+  val xOff: Double = Graph.setXOff(xoff)
+  val yOff: Double = Graph.setYOff(yoff)
+  val scale: Double = Graph.setScale(sc) //TODO  Is there a better way to "set static variables"?
+  
   val turns = vertices.foldLeft(List[Turn]())((l, v) => v.turns.toList ++ l)
 
   // Tell road about their ward
@@ -91,5 +97,15 @@ class Graph(val roads: List[Road], val edges: List[Edge],
 }
 
 object Graph {
+  var scale: Double = 1.0
+  var xOff, yOff, height: Double = 0.0
+  def setScale(sc: Double): Double = {scale = sc; return scale;}
+  def setXOff(xoff: Double): Double = {xOff = xoff; return xOff;}
+  def setYOff(yoff: Double): Double = {yOff = yoff; return yOff;}
+  def setHeight(ht: Double): Double = {height = ht; return height;}
   def load(fn: String) = (new Reader(fn)).load_map
+  def worldToGPS(pt: Coordinate): Coordinate =
+    new Coordinate((pt.x / scale) - xOff,((height - pt.y) / scale) - yOff)
+  def gpsToWorld(pt: Coordinate): Coordinate = 
+    new Coordinate((pt.x + xOff) * scale, (pt.y + yOff) * scale)
 }
