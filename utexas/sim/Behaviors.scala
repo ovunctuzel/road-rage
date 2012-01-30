@@ -174,32 +174,55 @@ class AutonomousBehavior(a: Agent) extends Behavior(a) {
 
     // Maintain our stopping distance away from this guy, plus don't scrunch
     // together too closely...
-    // TODO we wind up with negative speeds! not stopping well enough!
-    val our_stop_dist = a.stopping_distance() //+ cfg.follow_dist
 
-    // How far away are we?
+    // How far away are we currently? Starting with this value lets us shove all
+    // the complications of being on different traversables here. Doesn't matter
+    // if 'follow' is about to cross to another traversable.
     // TODO assume we're at most one traversable away (since we could be trying
     // to avoid the person on the edge we're headed towards
     // TODO they might not be on the same traversable, in which case we need the
     // distance between us and them properly
-    val dist_from_them = if (a.at.on == follow.at.on)
-                           follow.at.dist - a.at.dist
-                         else
-                           a.at.dist_left + follow.at.dist
+    val dist_from_them_now = if (a.at.on == follow.at.on)
+                               follow.at.dist - a.at.dist
+                             else
+                               a.at.dist_left + follow.at.dist
+
+    // Again, reason about the worst-case: we speed up as much as possible, they
+    // slam on their brakes.
+    val us_worst_speed = a.speed + (a.max_accel * cfg.dt_s)
+    val us_worst_stop_dist = a.stopping_distance(us_worst_speed)
+    val most_we_could_go = Util.dist_at_constant_accel(a.max_accel, cfg.dt_s, a.speed)
+
+    val least_they_could_go = Util.dist_at_constant_accel(-follow.max_accel, cfg.dt_s, follow.speed)
+
+    // TODO this optimizes for next tick, so we're playing it really
+    // conservative here... will that make us fluctuate more?
+    val projected_dist_from_them = dist_from_them_now - most_we_could_go + least_they_could_go
+
+    // don't ride bumper-to-bumper
+    val desired_dist_btwn = us_worst_stop_dist + cfg.follow_dist
 
     // Positive = speed up, zero = go their speed, negative = slow down
-    val delta_dist = dist_from_them - our_stop_dist
+    val delta_dist = projected_dist_from_them - desired_dist_btwn
 
+    // TODO can we nix this?
     /*if (delta_dist <= 0.0) {
       Util.log(a + " cover neg dist " + delta_dist + " with accel " + accel_to_cover(delta_dist))
     }*/
 
-    // TODO make sure it can handle negatives...
-    return if (delta_dist > 0)
-      // don't go too fast, either
-      math.min(a.max_accel, accel_to_cover(delta_dist))
+    // Try to cover whatever the distance is, and cap off our values.
+    // TODO pretty sure this handles both + and - deltas
+    val accel = accel_to_cover(delta_dist)
+
+    // TODO its a bit scary that this ever happens? does that mean we're too
+    // close..?
+    // Make sure we don't deaccelerate past 0 either.
+    val accel_to_stop = accel_to_achieve(0)
+
+    return if (accel > 0)
+      math.min(a.max_accel, accel)
     else
-      accel_to_cover(delta_dist)
+      math.max(-a.max_accel, math.max(accel_to_stop, accel))
   }
 
   // This is based on Piyush's proof.

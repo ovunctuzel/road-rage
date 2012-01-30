@@ -1,6 +1,5 @@
 # TODO #
 
-- maintain some minimum distance between cars
 - lets make sure length corresponds to reality (in m). it's long.
 - 100 agents is slow. probably something very basic to speed up.
 

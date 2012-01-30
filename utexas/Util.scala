@@ -64,7 +64,7 @@ object cfg {
     // account for crosswalks, vehicle length...
     ("end_threshold",   0.5, "The end of a traversable is its length - this",  0.1,  3.0),
     // this kind of gives dimension to cars, actually
-    ("follow_dist",     0.5, "Even if stopped, don't get closer than this",    0.1, 1.0)
+    ("follow_dist",     1.0, "Even if stopped, don't get closer than this",    0.1, 1.0)
   ) map {c => c._1 -> new Double_Cfgable(c._2, c._3, c._4, c._5)} toMap
 
   val ints = List(
