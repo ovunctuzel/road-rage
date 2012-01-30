@@ -402,7 +402,7 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
       }
       case EV_Action("spawn-army") => {
         val num = 100   // TODO cfg
-        sim.spawn_army(num - 1)
+        sim.spawn_army(num)
         status.agents.text = "" + sim.agents.size
         repaint
       }

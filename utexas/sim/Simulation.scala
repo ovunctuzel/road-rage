@@ -1,6 +1,7 @@
 package utexas.sim
 
 import scala.collection.mutable.MutableList
+import scala.collection.mutable.{HashSet => MutableSet}
 
 import utexas.map.{Graph, Road, Edge, Vertex, Ward}
 import utexas.map.make.Reader
@@ -19,11 +20,13 @@ class Simulation(roads: List[Road], edges: List[Edge], vertices: List[Vertex],
   val queues = traversables.map(t => t -> new Queue(t)).toMap
   val intersections = vertices.map(v => v -> new Intersection(v)).toMap
 
-  // Should be a stable order.
-  def agents() = traversables.map(t => queues(t)).flatMap(q => q.agents)
+  val agents = new MutableSet[Agent]
+  // Below was a stable order and less maintenance, but it's SLOW
+  //def agents() = traversables.map(t => queues(t)).flatMap(q => q.agents)
 
   def add_agent(start: Edge): Agent = {
     val a = new Agent(agents.size, this, start)
+    agents += a
     // Throw an exception if we couldn't find anything...
     a.go_to(random_edge(min_len = 0).get)
     return a
@@ -51,7 +54,7 @@ class Simulation(roads: List[Road], edges: List[Edge], vertices: List[Vertex],
     random_edge(spawning = true) match {
       case Some(e) => {
         add_agent(e)
-        if (i > 0) {
+        if (i > 1) {
           spawn_army(i - 1)
         }
       }
@@ -113,12 +116,15 @@ class Simulation(roads: List[Road], edges: List[Edge], vertices: List[Vertex],
       dt_accumulated -= cfg.dt_s
 
       queues.values.foreach(q => q.start_step)
-      agents.foreach(a => a.step(cfg.dt_s))
+      agents.foreach(a => {
+        // reap the done agents
+        if (a.step(cfg.dt_s)) {
+          agents -= a
+        }
+      })
       queues.values.foreach(q => q.end_step)
       intersections.values.foreach(i => i.end_step)
-
-      // Let agents react.
-      agents.foreach(a => a.react)
+      agents.foreach(a => a.react)                        // Let agents react.
     }
 
     // listener (usually UI) callbacks

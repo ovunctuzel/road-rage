@@ -23,7 +23,8 @@ class Agent(id: Int, val graph: Graph, start: Edge) {
     behavior.set_goal(e)
   }
 
-  def step(dt_s: Double) = {
+  // Returns true if we are done
+  def step(dt_s: Double): Boolean = {
     assert(dt_s == cfg.dt_s)
 
     val start_on = at.on
@@ -63,6 +64,7 @@ class Agent(id: Int, val graph: Graph, start: Edge) {
       // are we completely done?
       if (behavior.done_with_route && at_end_of_edge) {
         exit(start_on)
+        return true   // we're done
       }
     } else {
       exit(start_on)
@@ -70,6 +72,7 @@ class Agent(id: Int, val graph: Graph, start: Edge) {
     }
 
     // TODO deal with lane-changing
+    return false    // not done
   }
 
   def react() = {

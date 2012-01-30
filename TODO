@@ -1,11 +1,13 @@
 # TODO #
 
 - lets make sure length corresponds to reality (in m). it's long.
-- 100 agents is slow. probably something very basic to speed up.
+- optimize checks for queues/intersections?
+  - tweak framerate based on dt
 
 - hopefully minor issues
   - NaN at 1327894373344 on synthetic, 0.1 dt
   - agents stopping too prematurely at 1327896599636 on btr, 0.9 dt
+  - 1327906698728 in btr: illegal entry. i suspect many edges in one tick?
 
 - test reservation policy
   - we do deadlock!
@@ -14,9 +16,6 @@
   *** but then they will have to schedule their turn first...
   - or no, there is no deadlock, since if x is behind y, theyre in the same turn, and those never
     conflict?
-
-- with both policies, observed an agent overtaking another... does avoiding the next agent
-  really work?
 
 - ui could show policy's current owner or something
 

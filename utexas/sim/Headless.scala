@@ -31,6 +31,7 @@ object Headless {
     val timer = Util.timer("running the sim")
     Util.log("Starting simulation with time-steps of " + cfg.dt_s + "s")
     while (sim.agents.size != 0) {
+      Util.log(sim.agents.size + " left at t=" + sim.tick)
       sim.step(cfg.dt_s)
     }
     Util.log("Simulation took " + sim.tick + " virtual seconds")
