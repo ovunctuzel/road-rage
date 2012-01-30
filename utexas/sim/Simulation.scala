@@ -20,6 +20,11 @@ class Simulation(roads: List[Road], edges: List[Edge], vertices: List[Vertex],
   val queues = traversables.map(t => t -> new Queue(t)).toMap
   val intersections = vertices.map(v => v -> new Intersection(v)).toMap
 
+  // Iterating through the values of a large map isn't cheap... so sacrifice
+  // more memory for speed.
+  private val queue_ls = queues.values.toList
+  private val intersection_ls = intersections.values.toList
+
   val agents = new MutableSet[Agent]
   // Below was a stable order and less maintenance, but it's SLOW
   //def agents() = traversables.map(t => queues(t)).flatMap(q => q.agents)
@@ -115,15 +120,15 @@ class Simulation(roads: List[Road], edges: List[Edge], vertices: List[Vertex],
     while (dt_accumulated >= cfg.dt_s) {
       dt_accumulated -= cfg.dt_s
 
-      queues.values.foreach(q => q.start_step)
+      queue_ls.foreach(q => q.start_step)
       agents.foreach(a => {
         // reap the done agents
         if (a.step(cfg.dt_s)) {
           agents -= a
         }
       })
-      queues.values.foreach(q => q.end_step)
-      intersections.values.foreach(i => i.end_step)
+      queue_ls.foreach(q => q.end_step)
+      intersection_ls.foreach(i => i.end_step)
       agents.foreach(a => a.react)                        // Let agents react.
     }
 

@@ -1,8 +1,6 @@
 # TODO #
 
 - lets make sure length corresponds to reality (in m). it's long.
-- optimize checks for queues/intersections?
-  - tweak framerate based on dt
 
 - hopefully minor issues
   - NaN at 1327894373344 on synthetic, 0.1 dt
