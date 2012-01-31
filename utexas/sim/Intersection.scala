@@ -48,6 +48,7 @@ class Intersection(v: Vertex) {
     turns(t) += 1
     if (!policy.validate_entry(a, t)) {
       Util.log("!!! Agent illegally entered intersection, going at " + a.speed)
+      Util.log("  Incident was near " + t.from + " and " + t.to)
     }
   }
 

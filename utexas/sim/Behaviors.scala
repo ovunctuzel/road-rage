@@ -267,7 +267,8 @@ class AutonomousBehavior(a: Agent) extends Behavior(a) {
                          accel_to_achieve(math.max(0, desired_speed))
 
     if (needed_accel > 0) {
-      Util.log("really? speed up?!")
+      //Util.log("really? speed up?!")
+      return math.max(a.max_accel, needed_accel)
     }
 
     // TODO make sure this difference is very small.. just floating pt issues

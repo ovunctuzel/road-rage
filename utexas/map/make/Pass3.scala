@@ -297,7 +297,8 @@ class Pass3(old_graph: PreGraph2) {
     // Not adjusting the other line if we're not the rightmost lane... TODO does
     // this help?
     e.rightmost_lane.next_counterclockwise_to match {
-      case Some(ccw) => adjust_lines(e.lines.last, ccw.lines.head, e.is_rightmost)
+      // TODO re-enable when it stops destroying some lines entirely.
+      case Some(ccw) => //adjust_lines(e.lines.last, ccw.lines.head, e.is_rightmost)
       case _ => {}
     }
   }
