@@ -20,6 +20,7 @@ class Pass3(old_graph: PreGraph2) {
   // TODO or operate on a wrapper structure.
   val v_idx = new HashMap[Vertex, Int]
   val v_low = new HashMap[Vertex, Int]
+  val in_stack = new HashSet[Vertex]  // yay linear-time Tarjan's
   val v_stack = new Stack[Vertex]
   var dfs = 0   // counter numbering
   var turn_cnt = -1
@@ -80,13 +81,17 @@ class Pass3(old_graph: PreGraph2) {
     // use Tarjan's to locate all SCC's in the graph. ideally we'd just
     // have one, but crappy graphs, weird reality, and poor turn heuristics mean
     // we'll have disconnected portions.
-    var sccs = new ListBuffer[List[Vertex]]
+    // we're going to pass this list buffer through at all levels to help things
+    // be tail recursive
+    val sccs = new ListBuffer[List[Vertex]]
 
+    val t = Util.timer("find sccs")
     for (v <- graph.vertices) {
       if (!visited(v)) {
-        sccs ++= tarjan(v);
+        tarjan_body(v, sccs)
       }
     }
+    t.stop
 
     // deal with all edges of all but the largest SCC by either
     // 1) coloring them so we can manually inspect
@@ -326,44 +331,77 @@ class Pass3(old_graph: PreGraph2) {
   }
 
   // flood from v
-  private def tarjan(v: Vertex): ListBuffer[List[Vertex]] = {
+
+  // call at the beginning of the recursion to do work on 'v' just once. returns
+  // the list of vertices to look at next.
+  private def tarjan_head(v: Vertex): Set[Vertex] = {
     visited += v
     v_idx(v) = dfs
     v_low(v) = dfs
     dfs += 1
     v_stack.push(v)
+    in_stack += v
 
-    var sccs = new ListBuffer[List[Vertex]]
+    return v.out_verts
+  }
 
-    // what vertices can we reach from here?
-    for (next <- v.out_verts) {
-      if (!visited(next)) {
-        // TODO the recursion is expensive. can we rewrite iteratively, or make
-        // it tail recursion? (tail seems REALLY unlikely)
-        sccs ++= tarjan(next)
-        v_low(v) = math.min(v_low(v), v_low(next))
-      } else if (v_stack.contains(next)) {
-        // here's a back-edge
-        v_low(v) = math.min(v_low(v), v_idx(next))
+  // this is the thing that has to be tail recursive.
+  private def tarjan_body(orig_vert: Vertex, sccs: ListBuffer[List[Vertex]]): Unit =
+  {
+    // tuple is ('v', our vert 'backref' so we can do v_low, then list of connected verts left to
+    // process)
+    val work = new Stack[(Vertex, Vertex, Set[Vertex])]
+
+    // seed with original work
+    work.push((orig_vert, null, tarjan_head(orig_vert)))
+
+    while (work.size != 0) {
+      val (v, backref, next_verts) = work.pop
+
+      if (next_verts.size != 0) {
+        val next = next_verts.head
+
+        // either way, there's more work to do -- push it on BEFORE other work
+        // we might add.
+        work.push((v, backref, next_verts.tail))
+
+        if (!visited(next)) {
+          // here's where we "recurse"
+          work.push((next, v, tarjan_head(next)))
+        // TODO keep a flag for 'in stack' to speed up
+        } else if (in_stack(next)) {
+          // here's a back-edge
+          v_low(v) = math.min(v_low(v), v_idx(next))
+        }
+
+      } else {
+        // done with processing all the vert's connections...
+
+        // are we a 'root'?
+        if (v_low(v) == v_idx(v)) {
+          // pop stack and stop when we hit v
+          // these all make an scc
+          var member : Vertex = null
+          // TODO a functional way? :P
+          var cnt = 0
+          var scc = new ListBuffer[Vertex]
+          do {
+            member = v_stack.pop
+            in_stack -= member
+            scc += member
+          } while (v != member)
+          // TODO it'd be awesome to keep the list in sorted order as we build it
+          sccs += scc.toList
+        }
+
+        // this is normally where we'd return and pop out of the recursion, so
+        // do that work here...
+
+        // should only be null for orig_vert
+        if (backref != null) {
+          v_low(backref) = math.min(v_low(backref), v_low(v))
+        }
       }
     }
-
-    // are we a 'root'?
-    if (v_low(v) == v_idx(v)) {
-      // pop stack and stop when we hit v
-      // these all make an scc
-      var member : Vertex = null
-      // TODO a functional way? :P
-      var cnt = 0
-      var scc = new ListBuffer[Vertex]
-      do {
-        member = v_stack.pop
-        scc += member
-      } while (v != member)
-      // TODO it'd be awesome to keep the list in sorted order as we build it
-      sccs += scc.toList
-    }
-
-    return sccs
   }
 }

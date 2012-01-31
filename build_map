@@ -2,5 +2,4 @@
 
 ant
 
-# TODO increase stack size so tarjan's can run
-scala -cp .build -J-Xss200m utexas.map.make.Builder $@
+scala -cp .build utexas.map.make.Builder $@
