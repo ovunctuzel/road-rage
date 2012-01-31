@@ -5,7 +5,7 @@ import java.io.FileWriter
 import scala.collection.mutable.HashMap
 import scala.collection.mutable.MutableList
 
-import utexas.map.{Coordinate, Vertex, Road, Edge, Direction, Ward}
+import utexas.map.{Coordinate, Vertex, Road, Edge, Direction, Ward, Turn}
 
 // TODO we should really subclass the real Graph, but not sure yet.
 
@@ -18,10 +18,15 @@ class PreGraph3(old_graph: PreGraph2) {
   // TODO i hope this wont be necessary eventually
   var road_id_cnt = 0
 
-  var edges = new MutableList[Edge]          // a directed lane
-  var roads = old_graph.edges map add_road   // collections of edges
+  var edges = new MutableList[Edge]           // a directed lane
+  var roads = old_graph.edges.map(add_road)   // collections of edges
   var wards = List[Ward]()
   var special_ward: Ward = null
+
+  // magic borrowed from Graph to support Tarjan's. Each of these expensive
+  // things should only be called once.
+  def turns() = vertices.foldLeft(List[Turn]())((l, v) => v.turns.toList ++ l)
+  def traversables() = edges ++ turns
 
   def add_road(old_edge: PreEdge2): Road = {
     // do addEdges too, once we decide how many lanes to do

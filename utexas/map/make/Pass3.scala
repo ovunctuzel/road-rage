@@ -6,8 +6,10 @@ import scala.collection.mutable.Stack
 import scala.collection.mutable.{Set => MutableSet}
 import scala.collection.mutable.MultiMap
 import scala.collection.mutable.ListBuffer
+import scala.collection.mutable.MutableList
 
-import utexas.map.{Road, Edge, Vertex, Turn, TurnType, Line, Coordinate, Ward}
+import utexas.map.{Road, Edge, Vertex, Turn, TurnType, Line, Coordinate, Ward,
+                   Traversable}
 
 import utexas.Util
 
@@ -15,15 +17,16 @@ class Pass3(old_graph: PreGraph2) {
   Util.log("Multiplying and directing " + old_graph.edges.length + " edges")
   val graph = new PreGraph3(old_graph)
   val roads_per_vert = new HashMap[Vertex, MutableSet[Road]] with MultiMap[Vertex, Road]
-  // for tarjan's
-  val visited = new HashSet[Vertex]
-  // TODO or operate on a wrapper structure.
-  val v_idx = new HashMap[Vertex, Int]
-  val v_low = new HashMap[Vertex, Int]
-  val in_stack = new HashSet[Vertex]  // yay linear-time Tarjan's
-  val v_stack = new Stack[Vertex]
-  var dfs = 0   // counter numbering
   var turn_cnt = -1
+
+  // for tarjan's
+  val visited = new HashSet[Traversable]
+  // TODO or operate on a wrapper structure.
+  val t_idx = new HashMap[Traversable, Int]
+  val t_low = new HashMap[Traversable, Int]
+  val in_stack = new HashSet[Traversable]  // yay linear-time Tarjan's
+  val t_stack = new Stack[Traversable]
+  var dfs = 0   // counter numbering
 
   def run(show_dead: Boolean): PreGraph3 = {
     for (r <- graph.roads) {
@@ -83,21 +86,38 @@ class Pass3(old_graph: PreGraph2) {
     // we'll have disconnected portions.
     // we're going to pass this list buffer through at all levels to help things
     // be tail recursive
-    val sccs = new ListBuffer[List[Vertex]]
+    val sccs = new ListBuffer[List[Traversable]]
 
-    val t = Util.timer("find sccs")
-    for (v <- graph.vertices) {
-      if (!visited(v)) {
-        tarjan_body(v, sccs)
+    for (t <- graph.traversables) {
+      if (!visited(t)) {
+        tarjan_body(t, sccs)
       }
     }
-    t.stop
 
     // deal with all edges of all but the largest SCC by either
     // 1) coloring them so we can manually inspect
     // 2) or removing the associated roads, vertices, edges
 
+    // Collect all the bad edges and turns.
+    val bad_edges = new ListBuffer[Edge]
+    val bad_turns = new ListBuffer[Turn]
+
+    sccs.sortBy(scc => scc.size).toList.reverse match {
+      case ((biggest: List[Traversable]) :: doomed_sccs) => {
+        for (scc <- doomed_sccs; trav <- scc) {
+          trav match {
+            case e: Edge => bad_edges += e
+            case t: Turn => bad_turns += t
+          }
+        }
+      }
+      case Nil => Util.log("Map was empty?!") // shouldn't happen
+    }
+
+    Util.log(bad_edges.size + " bad edges, " + bad_turns.size + " bad turns")
+
     if (show_dead) {
+      /*
       // this sort is ascending, so drop the highest scc -- it's the valid map.
       for (scc <- sccs.sortBy(scc => scc.size).dropRight(1)) {
         // for now, by coloring it with an angry road type
@@ -106,19 +126,66 @@ class Pass3(old_graph: PreGraph2) {
         }
       }
       Util.log("Doomed " + (sccs.size - 1) + " disconnected SCC's from the graph")
+      */
     } else {
-      // This is a cheap trick, and it absolutely works.
-      val doomed_verts = sccs.sortBy(scc => scc.size).dropRight(1).flatten.toSet
-      val doomed_roads = doomed_verts.flatMap(v => v.roads).toSet
-      val doomed_edges = doomed_roads.flatMap(r => r.all_lanes).toSet
-      Util.log("Removing " + doomed_verts.size + " disconnected vertices, "
-          + doomed_roads.size + " roads, and "
-          + doomed_edges.size + " edges from graph")
-      // Yes, it really is this easy (and evil)
-      graph.vertices = graph.vertices.filter(v => !doomed_verts(v))
+      // Deal with bad edges by finding roads only containing bad edges (doom
+      // them too), and filter out the bad edges from the rest.
+      val keep_roads = new ListBuffer[Road]
+
+      val doomed_edges = bad_edges.toSet
+      for (r <- graph.roads) {
+        val pos_lanes = r.pos_lanes.filter(l => !doomed_edges(l))
+        val neg_lanes = r.neg_lanes.filter(l => !doomed_edges(l))
+
+        // We can completely nix this road otherwise
+        if (pos_lanes.size != 0 || neg_lanes.size != 0) {
+          // This will end up looking weird (gaps in roads), but just get rid of
+          // the bad lanes. Gotta clean up lane numbers right now, IDs later.
+          r.pos_lanes.clear
+          r.pos_lanes ++= pos_lanes
+          for ((lane, idx) <- r.pos_lanes.zipWithIndex) {
+            lane.lane_num = idx
+          }
+          r.neg_lanes.clear
+          r.neg_lanes ++= neg_lanes
+          for ((lane, idx) <- r.neg_lanes.zipWithIndex) {
+            lane.lane_num = idx
+          }
+
+          keep_roads += r
+        }
+      }
+
+      // Now clean up each vertex similarly by filtering out bad turns and
+      // possibly nixing the vertex completely
+      val doomed_turns = bad_turns.toSet
+      val keep_verts = new ListBuffer[Vertex]
+      for (v <- graph.vertices) {
+        val turns = v.turns.filter(t => !doomed_turns(t))
+        // If there are no turns left, nix this vertex completely
+        if (turns.size != 0) {
+          v.turns.clear
+          v.turns ++= turns
+          keep_verts += v
+        }
+      }
+
+      // Now get rid of all the bad stuff
+      // TODO merge this step and the ID reassignment -- it could be cleaner and
+      // a bit faster.
+      Util.log((graph.roads.size - keep_roads.size) + " roads and " +
+               (graph.vertices.size - keep_verts.size) + " vertices were bad too")
+      graph.roads.clear
+      graph.roads ++= keep_roads
       graph.edges = graph.edges.filter(e => !doomed_edges(e))
-      graph.roads = graph.roads.filter(r => !doomed_roads(r))
-      // Although we do have to clean up IDs
+      graph.vertices.clear
+      graph.vertices ++= keep_verts
+
+      // As a note, all of these steps that completely delete a structure are
+      // safe -- anything else referring to them will also be deleted, thanks to
+      // Mr. Tarjan.
+
+      // clean up ids of all edges, roads, verts.
       // TODO a better way, and one without reassigning to 'val' id?
       var id = 0
       for (v <- graph.vertices) {
@@ -330,66 +397,63 @@ class Pass3(old_graph: PreGraph2) {
     }
   }
 
-  // flood from v
-
-  // call at the beginning of the recursion to do work on 'v' just once. returns
-  // the list of vertices to look at next.
-  private def tarjan_head(v: Vertex): Set[Vertex] = {
-    visited += v
-    v_idx(v) = dfs
-    v_low(v) = dfs
+  // call at the beginning of the recursion to do work on 't' just once. returns
+  // the list of traversables to look at next.
+  private def tarjan_head(t: Traversable): List[Traversable] = {
+    visited += t
+    t_idx(t) = dfs
+    t_low(t) = dfs
     dfs += 1
-    v_stack.push(v)
-    in_stack += v
+    t_stack.push(t)
+    in_stack += t
 
-    return v.out_verts
+    return t.leads_to
   }
 
-  // this is the thing that has to be tail recursive.
-  private def tarjan_body(orig_vert: Vertex, sccs: ListBuffer[List[Vertex]]): Unit =
+  private def tarjan_body(orig_trav: Traversable, sccs: ListBuffer[List[Traversable]]): Unit =
   {
-    // tuple is ('v', our vert 'backref' so we can do v_low, then list of connected verts left to
-    // process)
-    val work = new Stack[(Vertex, Vertex, Set[Vertex])]
+    // tuple is ('t', our trav 'backref' so we can do t_low, then list of
+    // connected travss left to process)
+    val work = new Stack[(Traversable, Traversable, List[Traversable])]
 
     // seed with original work
-    work.push((orig_vert, null, tarjan_head(orig_vert)))
+    work.push((orig_trav, null, tarjan_head(orig_trav)))
 
-    while (work.size != 0) {
-      val (v, backref, next_verts) = work.pop
+    while (!work.isEmpty) {
+      val (t, backref, next_steps) = work.pop
 
-      if (next_verts.size != 0) {
-        val next = next_verts.head
+      if (!next_steps.isEmpty) {
+        val next = next_steps.head
 
         // either way, there's more work to do -- push it on BEFORE other work
         // we might add.
-        work.push((v, backref, next_verts.tail))
+        work.push((t, backref, next_steps.tail))
 
         if (!visited(next)) {
           // here's where we "recurse"
-          work.push((next, v, tarjan_head(next)))
-        // TODO keep a flag for 'in stack' to speed up
+          work.push((next, t, tarjan_head(next)))
         } else if (in_stack(next)) {
-          // here's a back-edge
-          v_low(v) = math.min(v_low(v), v_idx(next))
+          // here's a back-edge. keeping this map above is the trick that makes
+          // Tarjan's O(n)
+          t_low(t) = math.min(t_low(t), t_idx(next))
         }
 
       } else {
         // done with processing all the vert's connections...
 
         // are we a 'root'?
-        if (v_low(v) == v_idx(v)) {
-          // pop stack and stop when we hit v
+        if (t_low(t) == t_idx(t)) {
+          // pop stack and stop when we hit t
           // these all make an scc
-          var member : Vertex = null
+          var member: Traversable = null
           // TODO a functional way? :P
           var cnt = 0
-          var scc = new ListBuffer[Vertex]
+          var scc = new ListBuffer[Traversable]
           do {
-            member = v_stack.pop
+            member = t_stack.pop
             in_stack -= member
             scc += member
-          } while (v != member)
+          } while (t != member)
           // TODO it'd be awesome to keep the list in sorted order as we build it
           sccs += scc.toList
         }
@@ -397,9 +461,9 @@ class Pass3(old_graph: PreGraph2) {
         // this is normally where we'd return and pop out of the recursion, so
         // do that work here...
 
-        // should only be null for orig_vert
+        // should only be null for orig_trav
         if (backref != null) {
-          v_low(backref) = math.min(v_low(backref), v_low(v))
+          t_low(backref) = math.min(t_low(backref), t_low(t))
         }
       }
     }

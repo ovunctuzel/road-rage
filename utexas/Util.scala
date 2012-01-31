@@ -4,6 +4,7 @@ import scala.util.Random
 
 object Util {
   def timer(msg: String) = new Timer(msg)
+  def stopwatch = new Stopwatch
   
   private var indent_log = 0
   def log_push = { indent_log += 1 }
@@ -44,6 +45,26 @@ class Timer(msg: String) {
   def stop = {
     val now = System.currentTimeMillis
     Util.log("\"" + msg + "\": " + ((now - start) / 1000.0) + "s")
+  }
+}
+
+class Stopwatch() {
+  // accumulation is more sensitive; use nanoseconds
+  var from: Long = System.nanoTime
+  var seconds: Double = 0.0
+
+  def start = {
+    from = System.nanoTime
+  }
+
+  def stop = {
+    val now = System.nanoTime
+    seconds += (now - from) / 1000000000.0
+  }
+
+  def reset = {
+    seconds = 0.0
+    start
   }
 }
 

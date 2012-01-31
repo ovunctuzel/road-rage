@@ -1,11 +1,13 @@
 # TODO #
 
-1 fix sccs totally
-2 fix turns and conflicts totally
-3 diagnose illegal entry (short edges?) and fix totally
+- clean up scc removal code and add 'show dead' option.
+  remove behavior code that worries about connectivity
 
-4 traffic lights
-5 write paper
+1 fix turns and conflicts totally
+2 diagnose illegal entry (short edges?) and fix totally
+
+3 traffic lights
+4 write paper
 
 - lets make sure length corresponds to reality (in m). it's long.
 

@@ -14,8 +14,8 @@ class Road(var id: Int, val points: List[Coordinate], val name: String,
 
   // + lanes go from v1->v2; - lanes go from v2->v1
   // pass 3 doesn't set this, only Reader does. kinda sucks how we do it now.
-  var pos_lanes = new MutableList[Edge]
-  var neg_lanes = new MutableList[Edge]
+  val pos_lanes = new MutableList[Edge]
+  val neg_lanes = new MutableList[Edge]
 
   // This is fixed, but we don't know it immediately...
   var ward: Ward = null
