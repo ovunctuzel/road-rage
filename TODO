@@ -2,10 +2,13 @@
 
 0 fix geometry of edge lines
 1 fix turns and conflicts totally
+  - randomize num of lanes to test.
+  - investigate individual problems
 2 diagnose illegal entry (short edges?) and fix totally
 
 3 traffic lights
   - yellow light handling
+  - quadratic conflict checking!
 4 write paper
 
 - lets make sure length corresponds to reality (in m). it's long.

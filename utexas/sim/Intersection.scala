@@ -77,7 +77,6 @@ class NeverGoPolicy(intersection: Intersection) extends Policy(intersection) {
 }
 
 // Always stop, then FIFO. Totally unoptimized.
-// TODO untested.
 class StopSignPolicy(intersection: Intersection) extends Policy(intersection) {
   // owner of the intersection!
   var current_owner: Option[Agent] = None
@@ -125,10 +124,6 @@ class StopSignPolicy(intersection: Intersection) extends Policy(intersection) {
     }
   }
 }
-
-// TODO handle 'yellows' for some agents, learn and adjust the timing
-//class TrafficLightPolicy(intersection: Intersection) extends Policy(intersection) {
-//}
 
 // FIFO based on request, batched by non-conflicting turns.
 // Possible deadlock, since new agents can pour into the current_turns, and the
@@ -228,6 +223,8 @@ class SignalCyclePolicy(intersection: Intersection) extends Policy(intersection)
     val cycle_list = new ListBuffer[Set[Turn]]()
     while (!turns_left.isEmpty) {
       val canonical = turns_left.head
+      // TODO conflict relation is symmetric, but not transitive... just because
+      // it's fine with the canonical, doesn't mean it's fine with all of em
       turns_left.partition(t => canonical.conflicts(t)) match {
         case (more_left, this_group) => {
           assert(this_group(canonical))

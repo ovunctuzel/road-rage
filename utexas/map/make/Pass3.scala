@@ -233,7 +233,7 @@ class Pass3(old_graph: PreGraph2) {
     // if all edges belong to the same road, this is a dead-end
     if (roads.size == 1) {
       // link corresponding lane numbers
-      val r = roads.toList(0)  // TODO ugly way to get the only road?
+      val r = roads.head
       for ((from, to) <- r.incoming_lanes(v) zip r.outgoing_lanes(v)) {
         v.turns += new Turn(next_id, from, TurnType.UTURN, to)
       }
@@ -244,69 +244,65 @@ class Pass3(old_graph: PreGraph2) {
     val incoming_roads = roads filter (_.incoming_lanes(v).length != 0)
     val outgoing_roads = roads filter (_.outgoing_lanes(v).length != 0)
 
-    // TODO do we need equality on roads? go by id.
     // this is a Cartesian product.
     for (r1 <- incoming_roads; r2 <- outgoing_roads if r1 != r2) {
-      val from_edges = r1.incoming_lanes(v)  
-      val to_edges = r2.outgoing_lanes(v)  
+      val from_edges = r1.incoming_lanes(v)
+      val to_edges = r2.outgoing_lanes(v)
 
       // choose arbitrary representatives so we can make queries
-      val from = from_edges.head
-      val to   = to_edges.head
+      val from_rep = from_edges.head
+      val to_rep   = to_edges.head
 
       // we want the angle to go from any 'from' edge to any 'to' edge
-      val from_angle = from_edges.head.last_road_line.angle
-      val to_angle = to_edges.head.first_road_line.angle
+      val from_angle = from_rep.last_road_line.angle
+      val to_angle = to_rep.first_road_line.angle
 
       // smallest angle of rotation, from "Agony" on gamedev TODO cite
       val angle_btwn = ((from_angle - to_angle + 3 * (math.Pi)) % (2 * math.Pi)) - math.Pi
 
       if (r1.osm_id == r2.osm_id || math.abs(angle_btwn) <= cross_thresshold) {
+        // TODO possibly worry about when just osm id matches and angle is
+        // huge... is it really a cross?
+        
         // a crossing!
         // essentially zip the from's to the to's, but handle merging:
-        // x -> x + n, make the n leftmost lead to the leftmost
-        // x + n -> x, make the n rightmost lead to the rightmost
+        // x -> x + n, make the 1 leftmost  lead to the n leftmost
+        // x + n -> x, make the n rightmost lead to the 1 rightmost
 
+        // TODO these rules are hard to generalize. when should we have
+        // left/right-turn only lanes and stuff?
+
+        def cross_turn(pair: (Edge, Edge)) = new Turn(next_id, pair._1, TurnType.CROSS, pair._2)
         val lane_diff = to_edges.length - from_edges.length
 
-        // TODO doesnt work :(
-        //def cross_turn(from: Edge, to: Edge) = new Turn(from, TurnType.CROSS, to)
-
-        // TODO combo logic somehow? :P
-        // TODO also, i'm sure theres off-by-ones here.
-        // TODO scalaisms.
         if (lane_diff == 0) {
-          for ((from, to) <- from_edges zip to_edges) {
-            v.turns += new Turn(next_id, from, TurnType.CROSS, to)
-          }
-          // TODO doesnt work
-          //v.turns += (from_edges zip to_edges) map cross_turn
+          // exact 1:1 mapping
+          v.turns ++= from_edges.zip(to_edges).map(cross_turn)
         } else if (lane_diff < 0) {
-          // more to less. the leftmost destination gets many sources.
-          val (mergers, regulars) = from_edges splitAt (from_edges.length + lane_diff)
-          for (from <- mergers) {
-            v.turns += new Turn(next_id, from, TurnType.CROSS_MERGE, to_edges.last)
-          }
-          for ((from, to) <- regulars zip to_edges.tail) {
-            v.turns += new Turn(next_id, from, TurnType.CROSS, to)
-          }
+          // more to less. the rightmost will all have to merge.
+          // we have 'to_edges.length - 1' regular dsts.
+          val (mergers, regulars) = from_edges.splitAt(from_edges.length - (to_edges.length - 1))
+          assert(regulars.length == to_edges.length - 1)
 
-          //v.turns += mergers map new Turn(_, TurnType.CROSS_MERGE, to_edges.last)
-          //v.turns += (regulars zip to_edges.tail) map turn_factory(TurnType.CROSS)
+          v.turns ++= mergers.map(from => new Turn(next_id, from, TurnType.CROSS_MERGE, to_edges.first))
+          v.turns ++= regulars.zip(to_edges.tail).map(cross_turn)
         } else if (lane_diff > 0) {
-          // less to more. the rightmost gets to pick many destinations.
-          val (many_sourced, regulars) = to_edges splitAt lane_diff
-          for (to <- many_sourced) {
-            v.turns += new Turn(next_id, from_edges.head, TurnType.CROSS, to)
-          }
+          // less to more. the leftmost gets to pick many destinations.
+          val lucky_src = from_edges.last
+          var regular_srcs = from_edges.dropRight(1)
 
-          //v.turns += many_sourced map new Turn(from_edges.head, TurnType.CROSS, _)
-          //v.turns += (from_edges.tail zip regulars) map turn_factory(TurnType.CROSS)
+          val (regular_dsts, choices) = to_edges.splitAt(to_edges.size - lane_diff - 1)
+          assert(regular_srcs.size == regular_dsts.size)
+          
+          v.turns ++= regular_srcs.zip(regular_dsts).map(cross_turn)
+          v.turns ++= choices.map(to => new Turn(next_id, lucky_src, TurnType.CROSS, to))
         }
       } else if (angle_btwn < 0) {
-        v.turns += new Turn(next_id, from.leftmost_lane, TurnType.LEFT, to.leftmost_lane)
+        // no multiple turn lanes supported yet. it's just too hard to know when
+        // this is the case.
+        v.turns += new Turn(next_id, from_rep.leftmost_lane, TurnType.LEFT, to_rep.leftmost_lane)
       } else {
-        v.turns += new Turn(next_id, from.rightmost_lane, TurnType.RIGHT, to.rightmost_lane)
+        v.turns += new Turn(next_id, from_rep.rightmost_lane, TurnType.RIGHT, to_rep.rightmost_lane)
       }
     }
 
@@ -314,12 +310,12 @@ class Pass3(old_graph: PreGraph2) {
     for (in <- incoming_roads; src <- in.incoming_lanes(v)
          if v.turns_from(src).length == 0)
     {
-      Util.log("GRR: nowhere to go after " + src)
+      Util.log("Warning: nowhere to go after " + src)
     }
     for (out <- outgoing_roads; dst <- out.outgoing_lanes(v)
          if v.turns_to(dst).length == 0)
     {
-      Util.log("GRR: nothing leads to " + dst)
+      Util.log("Warning: nothing leads to " + dst)
     }
   }
 
