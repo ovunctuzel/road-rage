@@ -88,11 +88,8 @@ class Graph(val roads: List[Road], val edges: List[Edge],
       first = false
     }
 
-    // We didn't find the way?!
-    // TODO once this works...
-    Util.log("Couldn't A* from " + from + " to " + to)
-    return Nil
-    //throw new Exception("Couldn't A* from " + from + " to " + to)
+    // We didn't find the way?! The graph is connected!
+    throw new Exception("Couldn't A* from " + from + " to " + to)
   }
 }
 

@@ -21,7 +21,6 @@ class Pass3(old_graph: PreGraph2) {
 
   // for tarjan's
   val visited = new HashSet[Traversable]
-  // TODO or operate on a wrapper structure.
   val t_idx = new HashMap[Traversable, Int]
   val t_low = new HashMap[Traversable, Int]
   val in_stack = new HashSet[Traversable]  // yay linear-time Tarjan's
@@ -84,8 +83,6 @@ class Pass3(old_graph: PreGraph2) {
     // use Tarjan's to locate all SCC's in the graph. ideally we'd just
     // have one, but crappy graphs, weird reality, and poor turn heuristics mean
     // we'll have disconnected portions.
-    // we're going to pass this list buffer through at all levels to help things
-    // be tail recursive
     val sccs = new ListBuffer[List[Traversable]]
 
     for (t <- graph.traversables) {
@@ -103,7 +100,7 @@ class Pass3(old_graph: PreGraph2) {
     val bad_turns = new ListBuffer[Turn]
 
     sccs.sortBy(scc => scc.size).toList.reverse match {
-      case ((biggest: List[Traversable]) :: doomed_sccs) => {
+      case (biggest :: doomed_sccs) => {
         for (scc <- doomed_sccs; trav <- scc) {
           trav match {
             case e: Edge => bad_edges += e
@@ -115,24 +112,25 @@ class Pass3(old_graph: PreGraph2) {
     }
 
     Util.log(bad_edges.size + " bad edges, " + bad_turns.size + " bad turns")
+    val doomed_edges = bad_edges.toSet
 
     if (show_dead) {
-      /*
-      // this sort is ascending, so drop the highest scc -- it's the valid map.
-      for (scc <- sccs.sortBy(scc => scc.size).dropRight(1)) {
-        // for now, by coloring it with an angry road type
-        for (vert <- scc; road <- vert.roads) {
-          road.road_type = "doomed"
+      // Just mark all roads involving bad edges.
+      // TODO is it useful to mark the individual edge?
+      for (r <- graph.roads) {
+        if (r.all_lanes.find(l => doomed_edges(l)).isDefined) {
+          r.road_type = "doomed"
         }
       }
-      Util.log("Doomed " + (sccs.size - 1) + " disconnected SCC's from the graph")
-      */
     } else {
+      // As a note, all of these steps that completely delete a structure are
+      // safe -- anything else referring to them will also be deleted, thanks to
+      // Mr. Tarjan.
+
       // Deal with bad edges by finding roads only containing bad edges (doom
       // them too), and filter out the bad edges from the rest.
       val keep_roads = new ListBuffer[Road]
 
-      val doomed_edges = bad_edges.toSet
       for (r <- graph.roads) {
         val pos_lanes = r.pos_lanes.filter(l => !doomed_edges(l))
         val neg_lanes = r.neg_lanes.filter(l => !doomed_edges(l))
@@ -171,22 +169,18 @@ class Pass3(old_graph: PreGraph2) {
       }
 
       // Now get rid of all the bad stuff
-      // TODO merge this step and the ID reassignment -- it could be cleaner and
-      // a bit faster.
       Util.log((graph.roads.size - keep_roads.size) + " roads and " +
                (graph.vertices.size - keep_verts.size) + " vertices were bad too")
+
       graph.roads.clear
       graph.roads ++= keep_roads
       graph.edges = graph.edges.filter(e => !doomed_edges(e))
       graph.vertices.clear
       graph.vertices ++= keep_verts
 
-      // As a note, all of these steps that completely delete a structure are
-      // safe -- anything else referring to them will also be deleted, thanks to
-      // Mr. Tarjan.
-
       // clean up ids of all edges, roads, verts.
-      // TODO a better way, and one without reassigning to 'val' id?
+      // TODO a better way, and one without reassigning to 'val' id? if we just
+      // clone each structure and have a mapping from old to new... worth it?
       var id = 0
       for (v <- graph.vertices) {
         v.id = id

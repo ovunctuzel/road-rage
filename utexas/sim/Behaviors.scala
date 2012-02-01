@@ -25,15 +25,7 @@ class IdleBehavior(a: Agent) extends Behavior(a) {
 
   override def choose_action() = Act_Set_Accel(0)
 
-  override def choose_turn(e: Edge): Turn = {
-    // lol @ test behavior
-    if (e.next_turns.size == 0) {
-      // TODO fix this in the map properly.
-      Util.log("wtf @ " + e)
-      return e.prev_turns.head
-    }
-    return e.next_turns.head
-  }
+  override def choose_turn(e: Edge) = e.next_turns.head
 
   override def done_with_route = true
 

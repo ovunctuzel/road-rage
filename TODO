@@ -1,8 +1,5 @@
 # TODO #
 
-- clean up scc removal code and add 'show dead' option.
-  remove behavior code that worries about connectivity
-
 1 fix turns and conflicts totally
 2 diagnose illegal entry (short edges?) and fix totally
 
@@ -47,9 +44,6 @@
 - cul-de-sac handling in p2... needed?
   - Claus Circle in BR... has no outgoing turns.
 - pregraph3 vs final graph structure?
-- scc removal is broken
-  - being on a directed graph DOES change things... we're detecting an scc and not handling the
-    one-way edge leading into it!
 - multi-lane situations dont have enough turns, and we need to do more trimming!
 - lane reversal
   1) Traversable.location starts from the other end (distances, queues all stay same)
@@ -107,6 +101,7 @@
 - spawning specifically in UI
 - dimensions to the cars (solved by maintaining fixed dist)
 - structuring policy stuff as a state machine and events may be more elegant...
+- give lanes/roads/etc the ability to be closed
 
 ### Scalaisms ###
 
