@@ -2,16 +2,18 @@ package utexas.sim
 
 import scala.collection.mutable.{HashMap => MutableMap}
 import scala.collection.mutable.{HashSet => MutableSet}
+import scala.collection.mutable.ListBuffer
 
 import utexas.map.{Vertex, Turn}
 
 import utexas.Util
 
 // Reason about collisions from conflicting simultaneous turns.
-class Intersection(v: Vertex) {
+class Intersection(val v: Vertex) {
   //val policy: Policy = new NeverGoPolicy(this)
   val policy: Policy = new StopSignPolicy(this)
   //val policy: Policy = new ReservationPolicy(this)
+  //val policy: Policy = new SignalCyclePolicy(this)
 
   // Just delegate.
   def should_stop(a: Agent, turn: Turn, first_req: Boolean) = policy.should_stop(a, turn, first_req)
@@ -207,4 +209,43 @@ class TurnBatch() {
   }
 
   def all_done = turns.size == 0
+}
+
+// A cycle-based light.
+class SignalCyclePolicy(intersection: Intersection) extends Policy(intersection) {
+  // Assign turns to each cycle
+  val cycles: List[Set[Turn]] = find_cycles
+  // And have a fixed duration for all of them for now
+  val duration = 20.0   // TODO cfg
+  
+  // note that toInt is floor
+  def current_cycle = cycles((Agent.sim.tick / duration).toInt % cycles.size)
+
+  // Least number of cycles can be modeled as graph coloring, but we're just
+  // going to do a simple greedy approach.
+  def find_cycles(): List[Set[Turn]] = {
+    var turns_left = intersection.v.turns.toSet
+    val cycle_list = new ListBuffer[Set[Turn]]()
+    while (!turns_left.isEmpty) {
+      val canonical = turns_left.head
+      turns_left.partition(t => canonical.conflicts(t)) match {
+        case (more_left, this_group) => {
+          assert(this_group(canonical))
+          cycle_list += this_group
+          turns_left = more_left
+        }
+      }
+    }
+    return cycle_list.toList
+  }
+
+  // TODO need to deal with "yellow lights" -- tell an agent to stop early
+  // enough.
+  def should_stop(a: Agent, turn: Turn, first_req: Boolean) = !current_cycle(turn)
+
+  def validate_entry(a: Agent, turn: Turn) = current_cycle(turn)
+
+  def handle_exit(a: Agent, turn: Turn) = {
+    assert(current_cycle(turn))
+  }
 }
