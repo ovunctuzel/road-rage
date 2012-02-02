@@ -65,7 +65,9 @@ object Viewer extends SimpleSwingApplication {
       }
 
       contents += new Menu("Query") {
-        contents += new MenuItem("Teleport")  // TODO
+        contents += new MenuItem(Action("Teleport to Edge") {
+          canvas.handle_ev(EV_Action("teleport"))
+        })
         
         // TODO these are kind of toggleable...
         contents += new MenuItem(Action("Pathfind") {

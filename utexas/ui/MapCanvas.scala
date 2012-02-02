@@ -7,6 +7,7 @@ import scala.collection.mutable.{Set => MutableSet}
 import java.awt.{Graphics2D, Shape, BasicStroke, Color}
 import java.awt.geom._
 import swing.event.Key
+import swing.Dialog
 
 import utexas.map._  // TODO yeah getting lazy.
 import utexas.sim.{Simulation, Agent, Simulation_Listener}
@@ -444,6 +445,26 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
         route_members = Set[Edge]()
         repaint
       }
+      case EV_Action("teleport") => {
+        Dialog.showInput(
+          message = "What edge ID do you seek?", initial = ""
+        ) match {
+          case Some(id) => {
+            try {
+              val e = sim.edges(id.toInt)
+              // TODO center on some part of the edge and zoom in, rather than just
+              // vaguely moving that way
+              Util.log("Here's " + e)
+              x_off = e.lines.head.x1 * zoom
+              y_off = e.lines.head.y1 * zoom
+              repaint
+            } catch {
+              case _ => Util.log("Bad edge ID " + id)
+            }
+          }
+          case _ =>
+        }
+      }
       case EV_Key_Press(Key.C) if current_edge.isDefined => {
         mode match {
           case Mode.PICK_1st => {
@@ -478,7 +499,8 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
       }
       case EV_Key_Press(Key.D) if current_edge.isDefined => {
         val r = current_edge.get.road
-        Util.log(r + " is a " + r.road_type)
+        Util.log(r + " is a " + r.road_type + " of length " +
+                 current_edge.get.length + " meters")
       }
       case EV_Key_Press(_) => // Ignore the rest
     }
