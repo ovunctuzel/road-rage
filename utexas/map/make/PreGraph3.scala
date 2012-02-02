@@ -84,9 +84,15 @@ class PreGraph3(old_graph: PreGraph2) {
     // how do we split those in each direction?
     case (Some(n), _)            => n
     case (None, "residential")   => 1
-    case (None, "motorway_link") => 1   // these merge ramps should be one-way too
-    case (None, "service")       => 1   // I don't know what these are supposed to be
-    case _                       => 2
+    // not all types of links between highways are one-laners, but most seem to
+    // be.
+    case (None, "motorway_link")  => 1
+    case (None, "trunk_link")     => 1
+    case (None, "primary_link")   => 1
+    case (None, "secondary_link") => 1
+    case (None, "tertiary_link")  => 1
+    case (None, "service")        => 1   // I don't know what these are supposed to be
+    case _                        => 2
   }
 
   // TODO pregraph1 should have a 'data' structure or something

@@ -476,6 +476,10 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
       case EV_Key_Press(Key.A) if current_agent.isDefined => {
         current_agent.get.dump_info
       }
+      case EV_Key_Press(Key.D) if current_edge.isDefined => {
+        val r = current_edge.get.road
+        Util.log(r + " is a " + r.road_type)
+      }
       case EV_Key_Press(_) => // Ignore the rest
     }
   }
