@@ -3,7 +3,6 @@
 0 fix geometry of edge lines
 1 fix turns and conflicts totally
   - randomize num of lanes to test.
-  - investigate individual problems
 2 diagnose illegal entry (short edges?) and fix totally
 
 3 traffic lights

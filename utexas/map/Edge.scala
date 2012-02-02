@@ -10,6 +10,9 @@ import utexas.cfg
 class Edge(var id: Int, val road: Road, val dir: Direction.Direction) extends Traversable {
   var lane_num: Int = -1  // TODO needs to be initialized to be defined.. bleh.
 
+  // This is diagnostic.
+  var doomed = false
+
   //def leads_to = next_turns ++ List(shift_left, shift_right).flatten
   // TODO until lane-changing works.
   def leads_to = next_turns
@@ -57,9 +60,13 @@ class Edge(var id: Int, val road: Road, val dir: Direction.Direction) extends Tr
   def to: Vertex   = if (dir == Direction.POS) road.v2 else road.v1
 
   def to_xml(out: FileWriter) = {
+    val is_doomed = if (doomed)
+                      " doomed=\"absolutely\""
+                    else
+                      ""
     out.write(
       "  <edge id=\"" + id + "\" road=\"" + road.id + "\" dir=\"" + dir
-      + "\" laneNum=\"" + lane_num + "\">\n"
+      + "\" laneNum=\"" + lane_num + "\"" + is_doomed + ">\n"
     )
     lines.foreach(l => l.to_xml(out))
     out.write("  </edge>\n")

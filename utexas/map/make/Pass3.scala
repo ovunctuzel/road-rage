@@ -115,13 +115,15 @@ class Pass3(old_graph: PreGraph2) {
     val doomed_edges = bad_edges.toSet
 
     if (show_dead) {
-      // Just mark all roads involving bad edges.
-      // TODO is it useful to mark the individual edge?
+      // Mark all roads involving bad edges.
       for (r <- graph.roads) {
         if (r.all_lanes.find(l => doomed_edges(l)).isDefined) {
           r.road_type = "doomed"
         }
       }
+      
+      // And also mark exactly the bad edges.
+      doomed_edges.foreach(e => e.doomed = true)
     } else {
       // As a note, all of these steps that completely delete a structure are
       // safe -- anything else referring to them will also be deleted, thanks to
@@ -284,7 +286,7 @@ class Pass3(old_graph: PreGraph2) {
           val (mergers, regulars) = from_edges.splitAt(from_edges.length - (to_edges.length - 1))
           assert(regulars.length == to_edges.length - 1)
 
-          v.turns ++= mergers.map(from => new Turn(next_id, from, TurnType.CROSS_MERGE, to_edges.first))
+          v.turns ++= mergers.map(from => new Turn(next_id, from, TurnType.CROSS_MERGE, to_edges.head))
           v.turns ++= regulars.zip(to_edges.tail).map(cross_turn)
         } else if (lane_diff > 0) {
           // less to more. the leftmost gets to pick many destinations.

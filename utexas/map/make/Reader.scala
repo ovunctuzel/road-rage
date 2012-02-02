@@ -34,8 +34,10 @@ class Reader(fn: String) {
 
     var ev_count = 0
 
-    // TODO probably a better way to unpack than casting to string
+    // TODO probably a better way to unpack than casting to string. also, .head
+    // was when I didn't understand Option.
     def get_attrib(attribs: MetaData, key: String): String = attribs.get(key).head.text
+    def has_attrib(attribs: MetaData, key: String) = attribs.get(key).isDefined
     def get_ints(attribs: MetaData) = get_attrib(attribs, (_: String)).toInt
     def get_doubles(attribs: MetaData) = get_attrib(attribs, (_: String)).toDouble
 
@@ -57,6 +59,7 @@ class Reader(fn: String) {
     var e_id, e_rd, e_lane: Int = -1
     var e_dir: Direction.Direction = Direction.POS
     var e_lines = new MutableList[Line]
+    var e_doomed = false
 
     // per vertex
     var v_id: Int = -1
@@ -133,6 +136,8 @@ class Reader(fn: String) {
           val dir = get_attrib(attribs, "dir")(0)
           e_lane = get_ints(attribs)("laneNum")
 
+          e_doomed = has_attrib(attribs, "doomed")
+
           if (dir == '+') {
             e_dir = Direction.POS
           } else {
@@ -143,6 +148,7 @@ class Reader(fn: String) {
         }
         case EvElemEnd(_, "edge") => {
           val e = new Edge(e_id, roads(e_rd), e_dir)
+          e.doomed = e_doomed
           edges(e_id) = e
           e.lane_num = e_lane
           e.set_lines(e_lines.toList)
@@ -159,6 +165,7 @@ class Reader(fn: String) {
           e_lane = -1
           e_dir = Direction.POS
           e_lines.clear
+          e_doomed = false
         }
 
         case EvElemStart(_, "line", attribs, _) => {

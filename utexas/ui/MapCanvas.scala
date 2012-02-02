@@ -254,6 +254,9 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
       return Color.RED
     } else if (route_members(e)) {
       return Color.GREEN
+    } else if (e.doomed) {
+      // TODO configurable.
+      return Color.RED
     } else {
       return Color.WHITE
     }
