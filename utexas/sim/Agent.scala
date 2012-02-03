@@ -27,11 +27,6 @@ class Agent(val id: Int, val graph: Graph, start: Edge) {
   def step(dt_s: Double): Boolean = {
     assert(dt_s == cfg.dt_s)
 
-    // TODO cfg
-    if (speed > Util.mph_to_si(30)) {
-      Util.log(this + " at " + at + " is over the speed: " + speed + " > " + Util.mph_to_si(30))
-    }
-
     // To confirm determinism, enable one of these (more precision in doubles is
     // more likely to differ) and diff the logs.
     //Util.log(this + " at " + Agent.sim.tick + " is at " + at)
@@ -43,6 +38,9 @@ class Agent(val id: Int, val graph: Graph, start: Edge) {
     // Do physics to update current speed and figure out how far we've traveled in
     // this timestep.
     val new_dist = update_kinematics(dt_s)
+
+    // TODO cfg
+    assert(speed <= Util.mph_to_si(30))
 
     // Apply this distance. 
     var current_on = start_on

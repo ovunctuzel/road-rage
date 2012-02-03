@@ -1,6 +1,6 @@
 # TODO #
 
-fri goals: geom of edge lines, map building paper, diagnose speed limit exceeding
+fri goals: geom of edge lines, map building paper
 
 MEETING NOTES
   - theme: easy simulation in your city, in 2 minutes!
@@ -11,7 +11,6 @@ MEETING NOTES
     - agents reacting is the current bottleneck
 
 BUGS
-  - why exceeding speed limit?
   - why is accel to achieve speed limit extremely negative?
   - NaN at 1327894373344 on synthetic, 0.1 dt
   - agents stopping too prematurely at 1327896599636 on btr, 0.9 dt
@@ -23,6 +22,9 @@ BUGS WITH FIXES
   - illegal entry of intersections caused by short edges
     - fuse in pass 1
   - need to avoid next agent on cur/next no matter if we're currently a turn or edge.
+  - speed limit cleanup
+    - make speed limit per road, then worry about obeying next road's?
+    - clamp_accel, clamp_speed(cur road, next road) and clean up!
 
 BIGGER ISSUES
   - traffic lights
@@ -106,7 +108,6 @@ POSSIBLY SIMPLE
 
   - lots of things break if we have a vertex with a self-loop
 
-  - enforce speed limits
   - test with stalled car
   - make them slow down for turns
 

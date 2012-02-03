@@ -47,6 +47,8 @@ class AutonomousBehavior(a: Agent) extends Behavior(a) {
   // Remember if we're polling a new intersection or not
   var first_request = true
 
+  val speed_limit = Util.mph_to_si(30)  // TODO ask the road or whatever
+
   override def set_goal(to: Edge): Unit = a.at.on match {
     case e: Edge => { route = graph.pathfind_astar(e, to) }
     case _       => throw new Exception("Start agent on an edge to do stuff!")
@@ -99,8 +101,6 @@ class AutonomousBehavior(a: Agent) extends Behavior(a) {
   // the agent in front of us at the way we're going, whether the intersection
   // is ready for us, speed limits of current and future edge
   def safe_accel(): Double = {
-    val speed_limit = Util.mph_to_si(30)  // TODO ask the road or whatever
-
     val follow_agent_cur = a.cur_queue.ahead_of(a)
     // TODO avoid the agent on the next traversable, whether that's a turn or an edge
     val follow_agent_next = a.at match {
@@ -200,13 +200,16 @@ class AutonomousBehavior(a: Agent) extends Behavior(a) {
     // TODO pretty sure this handles both + and - deltas
     val accel = accel_to_cover(delta_dist)
 
+    // Don't ever exceed the speed limit just to catch up.
+    val accel_for_limit = accel_to_achieve(speed_limit)
+
     // TODO its a bit scary that this ever happens? does that mean we're too
     // close..?
     // Make sure we don't deaccelerate past 0 either.
     val accel_to_stop = accel_to_achieve(0)
 
     return if (accel > 0)
-      math.min(a.max_accel, accel)
+      math.min(math.min(a.max_accel, accel), accel_for_limit)
     else
       math.max(-a.max_accel, math.max(accel_to_stop, accel))
   }
@@ -235,7 +238,7 @@ class AutonomousBehavior(a: Agent) extends Behavior(a) {
     // we take away end_threshold, since stopping right at the end of the edge
     // makes us technically enter the intersection
     val q_c = (a.speed * cfg.dt_s) - (2 * (a.at.dist_left - cfg.end_threshold))
-    val desired_speed = (-q_b + math.sqrt((q_b * q_b) - (4 * q_a * q_c))) / (2 * q_a)
+    val try_speed = (-q_b + math.sqrt((q_b * q_b) - (4 * q_a * q_c))) / (2 * q_a)
 
     // TODO why does this or NaN ever happen?
     /*if (desired_speed < 0) {
@@ -250,10 +253,14 @@ class AutonomousBehavior(a: Agent) extends Behavior(a) {
     //Util.log("want speed " + a.speed + " -> " + desired_speed + "\n")
 
     // in the NaN case, just try to stop?
-    val needed_accel = if (desired_speed.toString == "NaN")
-                         accel_to_achieve(0)
-                       else
-                         accel_to_achieve(math.max(0, desired_speed))
+    // It's a bit bizarre that we might try to exceed the speed limit just to
+    // reach the end, but it could be possible.
+    val desired_speed = if (try_speed.toString == "NaN")
+                          0
+                        else
+                          math.min(speed_limit, math.max(0, try_speed))
+
+    val needed_accel = accel_to_achieve(desired_speed)
 
     if (needed_accel > 0) {
       //Util.log("really? speed up?!")
