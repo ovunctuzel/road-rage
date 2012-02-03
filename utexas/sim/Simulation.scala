@@ -121,7 +121,8 @@ class Simulation(roads: List[Road], edges: List[Edge], vertices: List[Vertex],
       dt_accumulated -= cfg.dt_s
 
       queue_ls.foreach(q => q.start_step)
-      agents.foreach(a => {
+      // TODO we only sortBy id to get determinism so we can repeat runs.
+      agents.toList.sortBy(a => a.id).foreach(a => {
         // reap the done agents
         if (a.step(cfg.dt_s)) {
           agents -= a
@@ -129,7 +130,7 @@ class Simulation(roads: List[Road], edges: List[Edge], vertices: List[Vertex],
       })
       queue_ls.foreach(q => q.end_step)
       intersection_ls.foreach(i => i.end_step)
-      agents.foreach(a => a.react)                        // Let agents react.
+      agents.toList.sortBy(a => a.id).foreach(a => a.react)                        // Let agents react.
     }
 
     // listener (usually UI) callbacks

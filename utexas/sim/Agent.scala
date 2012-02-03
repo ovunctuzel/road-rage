@@ -6,7 +6,7 @@ import utexas.{Util, cfg}
 // TODO come up with a notion of dimension and movement capability. at first,
 // just use radius bounded by lane widths?
 
-class Agent(id: Int, val graph: Graph, start: Edge) {
+class Agent(val id: Int, val graph: Graph, start: Edge) {
   var at = enter(start, Agent.sim.queues(start).random_spawn)
 
   // We can only set a target acceleration, which we travel at for the entire
@@ -26,6 +26,9 @@ class Agent(id: Int, val graph: Graph, start: Edge) {
   // Returns true if we are done
   def step(dt_s: Double): Boolean = {
     assert(dt_s == cfg.dt_s)
+
+    //Util.log(this + " at " + Agent.sim.tick + " is at " + at)
+    Util.log(this + " at " + "%.1f".format(Agent.sim.tick) + " is at " + at.on + " len " + "%.1f".format(at.dist))
 
     val start_on = at.on
     val old_dist = at.dist
