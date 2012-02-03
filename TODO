@@ -1,53 +1,38 @@
 # TODO #
 
-TONIGHT
-- lets make sure length corresponds to reality (in m). it's long.
-1 diagnose illegal entry (short edges?) and fix totally
-  rng producing bad set accel at 130s: 1328243253582
-  agent exits without entering at 4s: 1328243340187
-
-
-  - short edges
-    - arbitrary lookahead
-    - remove short edges
-
-
-
-  - are we entering next edge too fast after a turn? passing up agents.
+BUGS
+  - why exceeding speed limit?
+  - why is accel to achieve speed limit extremely negative?
   - NaN at 1327894373344 on synthetic, 0.1 dt
   - agents stopping too prematurely at 1327896599636 on btr, 0.9 dt
-  - 1327906698728 in btr: illegal entry. i suspect many edges in one tick?
-0 fix geometry of edge lines
 
-2 fix turns and conflicts totally
-  - randomize num of lanes to test.
+BUGS WITH FIXES
+  - "isn't moving, but isnt at end of edge"
+    - make them spawn outside of the bad at_end zone?
+  - illegal entry of intersections caused by short edges
+    - fuse in pass 1
+  - need to avoid next agent on cur/next no matter if we're currently a turn or edge.
 
-3 traffic lights
-  - yellow light handling
-  - quadratic conflict checking!
-4 write paper
-
-- test reservation policy
-  - we do deadlock!
-  - tell the intersection who we are behind, and make sure our turn will be satisfied after theirs
-    in the queue.
-  *** but then they will have to schedule their turn first...
-  - or no, there is no deadlock, since if x is behind y, theyre in the same turn, and those never
-    conflict?
-
-- ui could show policy's current owner or something
-
-* online traffic spawning
-* lane changing
-* slow down for turns
-
-- cyclic traffic signal mode
-  - do we need an event scheduling system?
-  - not necessarily, use agents polling us as a timer.
-
-- can we get total deterministicness in headless mode?
-
-- clean up changes (and this bloody file)
+BIGGER ISSUES
+  - traffic lights
+    - accept for 30 seconds into queue, switch when everyone's done?
+    - is there deadlock?
+    - quadratic conflict checking!
+  - lets make sure length corresponds to reality (in m). it's long.
+  - are we entering next edge too fast after a turn? passing up agents.
+  - fix geom of edge lines
+  - make sure turns and conflicts are as good as possible
+    - randomize num of lanes to test
+  - reservation policy
+    - we do deadlock!
+    - tell the intersection who we are behind, and make sure our turn will be satisfied after theirs
+      in the queue.
+    *** but then they will have to schedule their turn first...
+    - or no, there is no deadlock, since if x is behind y, theyre in the same turn, and those never
+      conflict?
+  * online traffic spawning
+  * lane changing
+  * slow down for turns
 
 ### Map building ###
 
@@ -89,6 +74,7 @@ TONIGHT
   - but is it even needed?
 - keyboard-grabbing focus is... greedy when minimized
 - dont show arrows when line segs are really clustered
+- ui could show policy's current owner or something
 
 ### Agents ###
 

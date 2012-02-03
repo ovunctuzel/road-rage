@@ -17,7 +17,7 @@ object Headless {
       key match {
         case "--input" => { fn = value }
         case "--rng"   => { rng = value.toLong }
-        case _         => { Util.log("Unknown argument: " + value); exit }
+        case _         => { Util.log("Unknown argument: " + value); sys.exit }
       }
     }
     Util.init_rng(rng)
@@ -33,7 +33,7 @@ object Headless {
     var last_time = 0.0
     while (!sim.agents.isEmpty) {
       if (sim.tick - last_time >= 1.0) {
-        Util.log(sim.agents.size + " left at t=" + sim.tick)
+        Util.log(sim.agents.size + " agents left at t=" + sim.tick)
         last_time = sim.tick
       }
       sim.step(cfg.dt_s)

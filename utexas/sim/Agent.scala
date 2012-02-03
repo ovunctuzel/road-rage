@@ -27,8 +27,15 @@ class Agent(val id: Int, val graph: Graph, start: Edge) {
   def step(dt_s: Double): Boolean = {
     assert(dt_s == cfg.dt_s)
 
+    // TODO cfg
+    if (speed > Util.mph_to_si(30)) {
+      Util.log(this + " at " + at + " is over the speed: " + speed + " > " + Util.mph_to_si(30))
+    }
+
+    // To confirm determinism, enable one of these (more precision in doubles is
+    // more likely to differ) and diff the logs.
     //Util.log(this + " at " + Agent.sim.tick + " is at " + at)
-    Util.log(this + " at " + "%.1f".format(Agent.sim.tick) + " is at " + at.on + " len " + "%.1f".format(at.dist))
+    //Util.log(this + " at " + "%.1f".format(Agent.sim.tick) + " is at " + at.on + " len " + "%.1f".format(at.dist))
 
     val start_on = at.on
     val old_dist = at.dist
@@ -41,7 +48,7 @@ class Agent(val id: Int, val graph: Graph, start: Edge) {
     var current_on = start_on
     var current_dist = old_dist + new_dist
 
-    while (current_dist > current_on.length) {
+    while (current_dist >= current_on.length) {
       current_dist -= current_on.length
       // Are we finishing a turn or starting one?
       val next: Traversable = current_on match {
@@ -63,15 +70,15 @@ class Agent(val id: Int, val graph: Graph, start: Edge) {
     // so we finally end up somewhere...
     if (start_on == current_on) {
       at = move(start_on, current_dist)
-
-      // are we completely done?
-      if (behavior.done_with_route && at_end_of_edge) {
-        exit(start_on)
-        return true   // we're done
-      }
     } else {
       exit(start_on)
       at = enter(current_on, current_dist)
+    }
+
+    // are we completely done?
+    if (behavior.done_with_route && at_end_of_edge) {
+      exit(start_on)
+      return true   // we're done
     }
 
     // TODO deal with lane-changing

@@ -67,14 +67,12 @@ class AutonomousBehavior(a: Agent) extends Behavior(a) {
     }
 
     // Plow ahead! (not through cars, hopefully)
-    val a1 = safe_accel
-
     return Act_Set_Accel(safe_accel)
   }
 
   override def choose_turn(e: Edge): Turn = route match {
     case ((t: Turn) :: rest) => t
-    case _                 => throw new Exception("Asking us to choose turn now?!")
+    case _                   => throw new Exception("Asking " + a + " to choose turn now?!")
   }
 
   override def done_with_route = route.size == 0
@@ -104,10 +102,9 @@ class AutonomousBehavior(a: Agent) extends Behavior(a) {
     val speed_limit = Util.mph_to_si(30)  // TODO ask the road or whatever
 
     val follow_agent_cur = a.cur_queue.ahead_of(a)
-    // avoid the agent on the next traversable, whether that's a turn or an edge
+    // TODO avoid the agent on the next traversable, whether that's a turn or an edge
     val follow_agent_next = a.at match {
       case Position(t: Turn, _) => Agent.sim.queues(t.to)
-      //case Position(trav, _) => Agent.sim.queues(trav.to)
       case _                 => None
     }
     val next_turn: Option[Turn] = route.headOption match {
@@ -146,25 +143,6 @@ class AutonomousBehavior(a: Agent) extends Behavior(a) {
       case (None, Some(follow: Agent))  => accel_to_follow(follow)
       // No? Plow ahead!
       case _                           => math.min(a.max_accel, accel_to_achieve(speed_limit))
-    }
-
-    val end_accel = accel_to_end
-
-    if (set_accel.abs > a.max_accel) {
-      Util.log("set accel was bad: " + set_accel)
-
-      val reason: String = (follow_agent_cur, follow_agent_next) match {
-        // First see if there's somebody currently in front of us.
-        case (Some(follow: Agent), _)     => "follow cur: " + accel_to_follow(follow)
-        // Next try and find somebody on the edge we're about to be at
-        case (None, Some(follow: Agent))  => "follow next: " + accel_to_follow(follow)
-        // No? Plow ahead!
-        case _                           => "speed lim: " + math.min(a.max_accel, accel_to_achieve(speed_limit))
-      }
-      Util.log("reason: " + reason)
-    }
-    if (end_accel.abs > a.max_accel) {
-      Util.log("end accel was bad: " + end_accel)
     }
 
     return if (stop_at_end)

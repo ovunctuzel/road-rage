@@ -120,9 +120,12 @@ class Simulation(roads: List[Road], edges: List[Edge], vertices: List[Vertex],
     while (dt_accumulated >= cfg.dt_s) {
       dt_accumulated -= cfg.dt_s
 
+      // we only sortBy id to get determinism so we can repeat runs.
+      // TODO maintain a sorted set or something instead
+      val agents_by_id = agents.toList.sortBy(a => a.id)
+
       queue_ls.foreach(q => q.start_step)
-      // TODO we only sortBy id to get determinism so we can repeat runs.
-      agents.toList.sortBy(a => a.id).foreach(a => {
+      agents_by_id.foreach(a => {
         // reap the done agents
         if (a.step(cfg.dt_s)) {
           agents -= a
@@ -130,7 +133,7 @@ class Simulation(roads: List[Road], edges: List[Edge], vertices: List[Vertex],
       })
       queue_ls.foreach(q => q.end_step)
       intersection_ls.foreach(i => i.end_step)
-      agents.toList.sortBy(a => a.id).foreach(a => a.react)                        // Let agents react.
+      agents_by_id.foreach(a => a.react)
     }
 
     // listener (usually UI) callbacks
