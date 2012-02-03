@@ -40,8 +40,6 @@ class IdleBehavior(a: Agent) extends Behavior(a) {
 class AutonomousBehavior(a: Agent) extends Behavior(a) {
   // route.head is always our next move
   var route: List[Traversable] = List[Traversable]()
-  // Just to force collisions to almost happen
-  val our_speed = Util.mph_to_si(Util.rand_double(5, 35))
   // Once we start stopping for the end of an edge, keep doing so, even if it
   // seems like our stopping distance is getting fine again.
   // TODO explicit state machine might work better
@@ -71,13 +69,7 @@ class AutonomousBehavior(a: Agent) extends Behavior(a) {
     // Plow ahead! (not through cars, hopefully)
     val a1 = safe_accel
 
-    return Act_Set_Accel(
-      if (a1 >= 0)
-        // never go faster than our own random limit, to make it more fun
-        math.min(a1, accel_to_achieve(our_speed))
-      else
-        a1
-    )
+    return Act_Set_Accel(safe_accel)
   }
 
   override def choose_turn(e: Edge): Turn = route match {
@@ -112,9 +104,11 @@ class AutonomousBehavior(a: Agent) extends Behavior(a) {
     val speed_limit = Util.mph_to_si(30)  // TODO ask the road or whatever
 
     val follow_agent_cur = a.cur_queue.ahead_of(a)
+    // avoid the agent on the next traversable, whether that's a turn or an edge
     val follow_agent_next = a.at match {
       case Position(t: Turn, _) => Agent.sim.queues(t.to)
-      case _                    => None
+      //case Position(trav, _) => Agent.sim.queues(trav.to)
+      case _                 => None
     }
     val next_turn: Option[Turn] = route.headOption match {
       case Some(t: Turn) => Some(t)
@@ -152,6 +146,15 @@ class AutonomousBehavior(a: Agent) extends Behavior(a) {
       case (None, Some(follow: Agent))  => accel_to_follow(follow)
       // No? Plow ahead!
       case _                           => math.min(a.max_accel, accel_to_achieve(speed_limit))
+    }
+
+    val end_accel = accel_to_end
+
+    if (set_accel.abs > a.max_accel) {
+      Util.log("set accel was bad: " + set_accel)
+    }
+    if (end_accel.abs > a.max_accel) {
+      Util.log("end accel was bad: " + end_accel)
     }
 
     return if (stop_at_end)
@@ -222,7 +225,10 @@ class AutonomousBehavior(a: Agent) extends Behavior(a) {
     // Just a simple short-circuit case.
     // TODO maybe not needed, and this fails for 1327896599636 on btr at 0.9 dt
     if (a.speed == 0.0) {
-      assert(a.at_end_of_edge)
+      //assert(a.at_end_of_edge)
+      if (!a.at_end_of_edge) {
+        Util.log(a + " isn't moving, but isnt at end of edge")
+      }
       return 0
     }
 
@@ -260,7 +266,7 @@ class AutonomousBehavior(a: Agent) extends Behavior(a) {
 
     if (needed_accel > 0) {
       //Util.log("really? speed up?!")
-      return math.max(a.max_accel, needed_accel)
+      return math.min(a.max_accel, needed_accel)
     }
 
     // TODO make sure this difference is very small.. just floating pt issues

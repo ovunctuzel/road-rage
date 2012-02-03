@@ -17,7 +17,7 @@ object Headless {
       key match {
         case "--input" => { fn = value }
         case "--rng"   => { rng = value.toLong }
-        case _         => { Util.log("Unknown argument: " + value) }
+        case _         => { Util.log("Unknown argument: " + value); exit }
       }
     }
     Util.init_rng(rng)
@@ -30,8 +30,12 @@ object Headless {
 
     val timer = Util.timer("running the sim")
     Util.log("Starting simulation with time-steps of " + cfg.dt_s + "s")
+    var last_time = 0.0
     while (!sim.agents.isEmpty) {
-      Util.log(sim.agents.size + " left at t=" + sim.tick)
+      if (sim.tick - last_time >= 1.0) {
+        Util.log(sim.agents.size + " left at t=" + sim.tick)
+        last_time = sim.tick
+      }
       sim.step(cfg.dt_s)
     }
     Util.log("Simulation took " + sim.tick + " virtual seconds")

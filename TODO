@@ -3,6 +3,12 @@
 TONIGHT
 - lets make sure length corresponds to reality (in m). it's long.
 1 diagnose illegal entry (short edges?) and fix totally
+  - short edges
+    - arbitrary lookahead
+    - remove short edges
+
+
+
   - are we entering next edge too fast after a turn? passing up agents.
   - NaN at 1327894373344 on synthetic, 0.1 dt
   - agents stopping too prematurely at 1327896599636 on btr, 0.9 dt

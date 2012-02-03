@@ -11,6 +11,8 @@ object Checker {
 
     check_turn_length(g)
 
+    check_edge_length(g)
+
     // TODO check connectivity
 
     // TODO check for self-loops
@@ -28,6 +30,15 @@ object Checker {
     }
 
     Util.log_pop
+  }
+
+  // This possibly causes agents to not look ahead enough and smash through an
+  // intersection before even asking it if they should stop.
+  def check_edge_length(g: Graph) = {
+    val short = 1.0 // TODO shrug
+    for (e <- g.edges if e.length < short) {
+      Util.log(e + " is short: " + e.length)
+    }
   }
 
   // This is a weak, but fast, way to measure connectivity

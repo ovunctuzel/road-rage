@@ -51,6 +51,7 @@ class Intersection(val v: Vertex) {
     if (!policy.validate_entry(a, t)) {
       Util.log("!!! Agent illegally entered intersection, going at " + a.speed)
       Util.log("  Incident was near " + t.from + " and " + t.to)
+      Util.log("  Origin lane length: " + t.from.length)
     }
   }
 
@@ -115,7 +116,12 @@ class StopSignPolicy(intersection: Intersection) extends Policy(intersection) {
   }
 
   def handle_exit(a: Agent, turn: Turn) = {
-    assert(a == current_owner.get)
+    //assert(a == current_owner.get)
+    if (current_owner.get != a) {
+      Util.log(a + " is leaving, but current owner is " + current_owner.get)
+      Util.log("Crazy guy was attempting " + turn)
+      Util.log("Time was " + Agent.sim.tick)
+    }
     if (queue.size > 0) {
       current_owner = Some(queue.head)
       queue = queue.tail
