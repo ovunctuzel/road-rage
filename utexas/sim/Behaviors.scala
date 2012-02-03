@@ -153,7 +153,10 @@ class AutonomousBehavior(a: Agent) extends Behavior(a) {
   }
 
   private def accel_to_follow(follow: Agent): Double = {
-    assert(follow.at.on != a.at.on || follow.at.dist > a.at.dist)
+    //assert(follow.at.on != a.at.on || follow.at.dist > a.at.dist) // TODO
+    if (!(follow.at.on != a.at.on || follow.at.dist > a.at.dist)) {
+      Util.log(a + " following " + follow + " may have issues")
+    }
 
     // Maintain our stopping distance away from this guy, plus don't scrunch
     // together too closely...

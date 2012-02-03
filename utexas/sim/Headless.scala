@@ -40,5 +40,6 @@ object Headless {
     }
     Util.log("Simulation took " + sim.tick + " virtual seconds")
     timer.stop
+    Util.log("Average of " + (sim.tick / timer.so_far) + "x speedup")
   }
 }

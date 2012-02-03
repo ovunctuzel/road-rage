@@ -42,9 +42,11 @@ object Util {
 
 class Timer(msg: String) {
   val start = System.currentTimeMillis
+
+  def so_far = (System.currentTimeMillis - start) / 1000.0
+
   def stop = {
-    val now = System.currentTimeMillis
-    Util.log("\"" + msg + "\": " + ((now - start) / 1000.0) + "s")
+    Util.log("\"" + msg + "\": " + so_far + "s")
   }
 }
 
