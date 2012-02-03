@@ -4,7 +4,7 @@ import scala.annotation.tailrec
 import scala.collection.mutable.MutableList
 import scala.collection.mutable.{HashSet => MutableSet}
 
-import utexas.map.{Graph, Road, Edge, Vertex, Ward}
+import utexas.map.{Graph, Road, Edge, Vertex, Ward, Turn}
 import utexas.map.make.Reader
 
 import utexas.{Util, cfg}
@@ -21,10 +21,15 @@ class Simulation(roads: List[Road], edges: List[Edge], vertices: List[Vertex],
   val queues = traversables.map(t => t -> new Queue(t)).toMap
   val intersections = vertices.map(v => v -> new Intersection(v)).toMap
 
-  // Iterating through the values of a large map isn't cheap... so sacrifice
-  // more memory for speed.
-  private val queue_ls = queues.values.toList
-  private val intersection_ls = intersections.values.toList
+  // It's expensive to go through every one of these without reason every
+  // time. This banks on the fact that the number of agents is smaller, and
+  // they're not evenly distributed through a huge map.
+  def active_queues(): Set[Queue] = agents.map(a => queues(a.at.on)).toSet
+  def active_intersections(): Set[Intersection] = agents.flatMap(
+    a => a.at.on match {
+      case t: Turn => Some(intersections(t.vert))
+      case _       => None
+    }).toSet
 
   val agents = new MutableSet[Agent]
   // Below was a stable order and less maintenance, but it's SLOW
@@ -123,19 +128,27 @@ class Simulation(roads: List[Road], edges: List[Edge], vertices: List[Vertex],
     while (dt_accumulated >= cfg.dt_s) {
       dt_accumulated -= cfg.dt_s
 
+      // If you wanted crazy speedup, disable all but agent stepping and
+      // reacting. But that involves trusting that no simulation violations
+      // could occur. ;)
+
       // we only sortBy id to get determinism so we can repeat runs.
       // TODO maintain a sorted set or something instead
       val agents_by_id = agents.toList.sortBy(a => a.id)
 
-      queue_ls.foreach(q => q.start_step)
+      active_queues.foreach(q => q.start_step)
+
       agents_by_id.foreach(a => {
         // reap the done agents
         if (a.step(cfg.dt_s)) {
           agents -= a
         }
       })
-      queue_ls.foreach(q => q.end_step)
-      intersection_ls.foreach(i => i.end_step)
+
+      active_queues.foreach(q => q.end_step)
+
+      active_intersections.foreach(i => i.end_step)
+
       agents_by_id.foreach(a => a.react)
     }
 

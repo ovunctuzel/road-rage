@@ -1,5 +1,15 @@
 # TODO #
 
+fri goals: geom of edge lines, map building paper, diagnose speed limit exceeding
+
+MEETING NOTES
+  - theme: easy simulation in your city, in 2 minutes!
+  - ui configurable intersection policies
+  - ui draw generators/destinations and spawn traffic constantlyish
+  - target scale of 20,000 agents or so in smaller area
+    - how hard is thread-based parallelism?
+    - agents reacting is the current bottleneck
+
 BUGS
   - why exceeding speed limit?
   - why is accel to achieve speed limit extremely negative?
@@ -34,6 +44,10 @@ BIGGER ISSUES
   * online traffic spawning
   * lane changing
   * slow down for turns
+
+POSSIBLY SIMPLE
+  - script to scrape osm
+  - switch ant to sbt?
 
 ### Map building ###
 
