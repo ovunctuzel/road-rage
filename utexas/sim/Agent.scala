@@ -49,6 +49,13 @@ class Agent(val id: Int, val graph: Graph, start: Edge) {
     var current_dist = old_dist + new_dist
 
     while (current_dist >= current_on.length) {
+      if (behavior.done_with_route) {
+        Util.log(this + " already passed up their destination! Cheating.")
+        // TODO cheating till we fix.
+        exit(current_on)
+        return true   // we're done
+      }
+
       current_dist -= current_on.length
       // Are we finishing a turn or starting one?
       val next: Traversable = current_on match {
@@ -77,7 +84,7 @@ class Agent(val id: Int, val graph: Graph, start: Edge) {
 
     // are we completely done?
     if (behavior.done_with_route && at_end_of_edge) {
-      exit(start_on)
+      exit(current_on)
       return true   // we're done
     }
 

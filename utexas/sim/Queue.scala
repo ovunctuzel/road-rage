@@ -68,7 +68,7 @@ class Queue(t: Traversable) {
   }
 
   def random_spawn(): Double = {
-    assume(ok_to_spawn)
+    assert(ok_to_spawn)
     
     // TODO here's where we have to fix old problems:
     // 1) if we're spawning in front of somebody and starting at 0 km/s...,

@@ -116,12 +116,12 @@ class StopSignPolicy(intersection: Intersection) extends Policy(intersection) {
   }
 
   def handle_exit(a: Agent, turn: Turn) = {
-    assert(a == current_owner.get)
-    /*if (current_owner.get != a) {
-      Util.log(a + " is leaving, but current owner is " + current_owner.get)
-      Util.log("Crazy guy was attempting " + turn)
-      Util.log("Time was " + Agent.sim.tick)
-    }*/
+    //assert(a == current_owner.get)    // TODO
+    if (!current_owner.isDefined || current_owner.get != a) {
+      Util.log(a + " is leaving, but current owner is " + current_owner)
+      Util.log("  Crazy guy was attempting " + turn)
+      Util.log("  Time was " + Agent.sim.tick)
+    }
     if (queue.size > 0) {
       current_owner = Some(queue.head)
       queue = queue.tail

@@ -406,7 +406,7 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
       }
       case EV_Action("spawn-army") => {
         val num = 100   // TODO cfg
-        sim.spawn_army(num)
+        sim.spawn_army(1, num)
         status.agents.text = "" + sim.agents.size
         repaint
       }
@@ -457,6 +457,7 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
               Util.log("Here's " + e)
               x_off = e.lines.head.x1 * zoom
               y_off = e.lines.head.y1 * zoom
+              chosen_edge2 = Some(e)  // just kind of use this to highlight it
               repaint
             } catch {
               case _ => Util.log("Bad edge ID " + id)

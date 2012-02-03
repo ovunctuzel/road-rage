@@ -142,7 +142,7 @@ class AutonomousBehavior(a: Agent) extends Behavior(a) {
       // Next try and find somebody on the edge we're about to be at
       case (None, Some(follow: Agent))  => accel_to_follow(follow)
       // No? Plow ahead!
-      case _                           => math.min(a.max_accel, accel_to_achieve(speed_limit))
+      case _                           => safe_accel_to_achieve(speed_limit)
     }
 
     return if (stop_at_end)
@@ -213,7 +213,7 @@ class AutonomousBehavior(a: Agent) extends Behavior(a) {
     // Just a simple short-circuit case.
     // TODO maybe not needed, and this fails for 1327896599636 on btr at 0.9 dt
     if (a.speed == 0.0) {
-      //assert(a.at_end_of_edge)
+      //assert(a.at_end_of_edge)  // TODO
       if (!a.at_end_of_edge) {
         Util.log(a + " isn't moving, but isnt at end of edge")
       }
@@ -269,6 +269,15 @@ class AutonomousBehavior(a: Agent) extends Behavior(a) {
   private def accel_to_cover(dist: Double) =
     2 * (dist - (a.speed * cfg.dt_s)) / (cfg.dt_s * cfg.dt_s)
   def accel_to_achieve(target_speed: Double) = Util.accel_to_achieve(a.speed, target_speed)
+
+  // TODO refactor the clamped-accel pattern
+  def safe_accel_to_achieve(target_speed: Double): Double = {
+    val accel = accel_to_achieve(target_speed)
+    return if (accel > 0)
+      math.min(a.max_accel, accel)
+    else
+      math.max(-a.max_accel, accel)
+  }
 }
 
 // TODO this would be the coolest thing ever... driving game!

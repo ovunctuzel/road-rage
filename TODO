@@ -5,6 +5,7 @@ BUGS
   - why is accel to achieve speed limit extremely negative?
   - NaN at 1327894373344 on synthetic, 0.1 dt
   - agents stopping too prematurely at 1327896599636 on btr, 0.9 dt
+  - passing up destination... houston 1328286746717
 
 BUGS WITH FIXES
   - "isn't moving, but isnt at end of edge"

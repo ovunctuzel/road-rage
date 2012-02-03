@@ -1,5 +1,6 @@
 package utexas.sim
 
+import scala.annotation.tailrec
 import scala.collection.mutable.MutableList
 import scala.collection.mutable.{HashSet => MutableSet}
 
@@ -54,17 +55,19 @@ class Simulation(roads: List[Road], edges: List[Edge], vertices: List[Vertex],
     }
   }
 
-  def spawn_army(i: Int): Unit = {
-    Util.log("Spawning agent " + i)
+  @tailrec final def spawn_army(i: Int, total: Int): Unit = {
+    print("\r" + Util.indent + "Spawning agent " + i + "/" + total)
     random_edge(spawning = true) match {
       case Some(e) => {
         add_agent(e)
-        if (i > 1) {
-          spawn_army(i - 1)
+        if (i != total) {
+          spawn_army(i + 1, total)
+        } else {
+          Util.log("")
         }
       }
       case None => {
-        Util.log("... No room left!")
+        Util.log("\n... No room left!")
       }
     }
   }
