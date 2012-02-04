@@ -183,6 +183,12 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
     g2d.setColor(Color.RED)
     g2d.setStroke(drawing_stroke)
     g2d.draw(polygon)
+
+    // Show where vertices are (TODO temporary)
+    g2d.setStroke(center_stroke)
+    sim.vertices.foreach(
+      v => g2d.fill(new Ellipse2D.Double(v.location.x - 0.5, v.location.y - 0.5, 1.0, 1.0))
+    )
   }
 
   // we return any new roads seen

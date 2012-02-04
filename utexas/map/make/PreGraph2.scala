@@ -2,9 +2,8 @@ package utexas.map.make
 
 import scala.collection.mutable.ListBuffer
 import scala.collection.mutable.HashMap
-import scala.collection.mutable.MutableList
 
-import utexas.map.Coordinate
+import utexas.map.{Coordinate, Line}
 
 import utexas.Util
 
@@ -15,6 +14,10 @@ class PreGraph2(old_graph: PreGraph1) {
   // find true edges between adjacent vertices
   Util.log("Splitting " + old_graph.edges.length + " roads into edges between intersections")
   var edges = old_graph.edges.flatMap(split_road)
+
+  // This is slow, but simpler to reason about, since we don't have to maintain
+  // it.
+  def verts(of: Coordinate) = edges.filter(e => e.from == of || e.to == of)
 
   def split_road(road: PreEdge1): List[PreEdge2] = {
     // Walk the list of points in this edge, discovering chains between
@@ -29,7 +32,7 @@ class PreGraph2(old_graph: PreGraph1) {
       if (start != i && old_graph.is_vert(road.points(i))) {
         // so we have an edge from start to i
         // slice is [from, till), hence the +1
-        split_edges += find_or_make_edge(road.points.slice(start, i + 1), road)
+        split_edges += find_or_make_edge(road.points.slice(start, i + 1).toList, road)
         start = i
       }
     }
@@ -41,13 +44,21 @@ class PreGraph2(old_graph: PreGraph1) {
   }
 
   // None if it's already there
-  def find_or_make_edge(points: MutableList[Coordinate], edge_dat: PreEdge1): Option[PreEdge2] =
+  def find_or_make_edge(points: List[Coordinate], edge_dat: PreEdge1): Option[PreEdge2] =
   {
     val v1 = points.head
     val v2 = points.last
 
+    // TODO it's too hard to deal with these when fusing vertices.
+    if (v1 == v2) {
+      Util.log("Removing cul-de-sac " + edge_dat.name)
+      return None
+    }
+
     // do we already have an edge from v1->v2 or v2->v1?
     // this handling mainly needs to deal with cul-de-sacs
+    // TODO figure it out again and make it work, because we certainly seem to
+    // hit multi-edges or dupes or something...
 
     if (edge_lookup.contains((v1, v2, edge_dat.name)) ||
         edge_lookup.contains((v2, v1, edge_dat.name)))
@@ -56,12 +67,25 @@ class PreGraph2(old_graph: PreGraph1) {
       // TODO make a new edge if the points dont match?
       return None
     } else {
-      val e = new PreEdge2(v1, v2, points, edge_dat)
+      assert(v1 == points.head)
+      assert(v2 == points.last)
+      val e = new PreEdge2(points, edge_dat)
       //edge_lookup((v1, v2, edge_dat.name)) = e
       return Some(e)
     }
   }
 }
 
-class PreEdge2(val from: Coordinate, val to: Coordinate,
-               val points: MutableList[Coordinate], val dat: PreEdge1) {}
+// Mutable because fiddling with clones while fusing is confusing.
+class PreEdge2(var points: List[Coordinate], val dat: PreEdge1)
+{
+  def from = points.head
+  def to   = points.last
+
+  // TODO re-check every time we change?
+  assert(from != to)  // TODO no cul-de-sacs yet
+
+  val length = points.zip(points.tail).map(p => new Line(p._1, p._2)).foldLeft(0.0)(
+    (a, b) => a + b.length
+  )
+}

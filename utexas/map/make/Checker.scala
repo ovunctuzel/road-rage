@@ -1,7 +1,7 @@
 package utexas.map.make
 
 import utexas.map.Graph
-import utexas.Util
+import utexas.{Util, cfg}
 
 object Checker {
   def main(args: Array[String]) = {
@@ -35,7 +35,7 @@ object Checker {
   // This possibly causes agents to not look ahead enough and smash through an
   // intersection before even asking it if they should stop.
   def check_edge_length(g: Graph) = {
-    val short = 1.0 // TODO shrug
+    val short = cfg.min_edge_len
     for (e <- g.edges if e.length < short) {
       Util.log(e + " is short: " + e.length)
     }

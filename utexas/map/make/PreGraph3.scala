@@ -32,7 +32,7 @@ class PreGraph3(old_graph: PreGraph2) {
     // do addEdges too, once we decide how many lanes to do
     // TODO shit, decide roads.size while we're assigning to it?
     val r = new Road(
-      road_id_cnt, old_edge.points.toList,
+      road_id_cnt, old_edge.points,
       old_edge.dat.name, old_edge.dat.road_type, old_edge.dat.orig_id,
       get_vert(old_edge.points.head), get_vert(old_edge.points.last)
     )

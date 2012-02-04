@@ -1,6 +1,6 @@
 # TODO #
 
-fri goals: map building paper
+sat goals: PAPER, lookahead, online traffic spawning, generators and sinks, ask piyush about deadlock with signals
 
 MEETING NOTES
   - theme: easy simulation in your city, in 2 minutes!
@@ -22,10 +22,12 @@ BUGS WITH FIXES
   - illegal entry of intersections caused by short edges
     - fuse in pass 1
       - whats the min length we accept?
+      - mess with scale?
   - need to avoid next agent on cur/next no matter if we're currently a turn or edge.
   - speed limit cleanup
     - make speed limit per road, then worry about obeying next road's?
     - clamp_accel, clamp_speed(cur road, next road) and clean up!
+    - clamp speed limit in just one place at the end
 
 BIGGER ISSUES
   - traffic lights

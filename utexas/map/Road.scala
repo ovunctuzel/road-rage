@@ -10,7 +10,8 @@ class Road(var id: Int, val points: List[Coordinate], val name: String,
            var road_type: String, val osm_id: Int, val v1: Vertex,
            val v2: Vertex)
 {
-  // an invariant: v1 = vertex at points.first, v2 = vertex at points.last
+  assert(v1.location == points.head)
+  assert(v2.location == points.last)
 
   // + lanes go from v1->v2; - lanes go from v2->v1
   // pass 3 doesn't set this, only Reader does. kinda sucks how we do it now.

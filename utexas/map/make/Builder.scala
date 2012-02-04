@@ -18,6 +18,7 @@ object Builder {
     
     if (args.size % 2 != 0) {
       Util.log("Command-line parameters must be pairs of key => value")
+      sys.exit
     }
     val keys = args.zipWithIndex.filter(p => p._2 % 2 == 0).map(p => p._1)
     val vals = args.zipWithIndex.filter(p => p._2 % 2 == 1).map(p => p._1)
