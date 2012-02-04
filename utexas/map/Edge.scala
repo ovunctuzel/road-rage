@@ -17,6 +17,8 @@ class Edge(var id: Int, val road: Road, val dir: Direction.Direction) extends Tr
   // TODO until lane-changing works.
   def leads_to = next_turns
 
+  def turn_to(dest: Edge) = next_turns.find(t => t.to == dest)
+
   def other_lanes = if (dir == Direction.POS) road.pos_lanes else road.neg_lanes
   def other_vert(v: Vertex) = road.other_vert(v)
   def opposite_lanes = if (dir == Direction.POS) road.neg_lanes else road.pos_lanes

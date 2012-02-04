@@ -23,6 +23,11 @@ class Graph(val roads: List[Road], val edges: List[Edge],
     w.roads.foreach(r => r.ward = w)
   }
 
+  // Pre-compute all-pairs shortest path
+  private val t = Util.timer("floyd marshall")
+  floyd_warshall
+  t.stop
+
   def traversables() = edges ++ turns
 
   // TODO eventually make this very general and reusable
@@ -90,6 +95,35 @@ class Graph(val roads: List[Road], val edges: List[Edge],
 
     // We didn't find the way?! The graph is connected!
     throw new Exception("Couldn't A* from " + from + " to " + to)
+  }
+
+  def floyd_warshall() = {
+    // Interpret our graph as lanes being vertices and turns being edges. A bit
+    // odd, but it makes sense for this.
+
+    // Initialize the quadratic arrays.
+    Util.log("tabulating 1")
+    val costs = Array.tabulate(edges.size, edges.size)(
+      (a, b) => edges(a).turn_to(edges(b)) match {
+        case Some(turn) => edges(a).length + turn.length
+        case None       => Double.MaxValue
+      }
+    )
+    Util.log("tabulating 2")
+    // Start this one knowing nothing.
+    val steps = Array.tabulate(edges.size, edges.size)((a, b) => -1)
+
+    Util.log("tabulating 3")
+    // Main magic
+    for (k <- (0 until edges.size)) {
+      Util.log("floyd marshall " + k + " of " + edges.size)
+      for (i <- (0 until edges.size)) {
+        for (j <- (0 until edges.size)) {
+          costs(i)(j) = math.min(costs(i)(j), costs(i)(k) + costs(k)(j))
+          steps(i)(j) = k    // remember the intermediate step
+        }
+      }
+    }
   }
 }
 
