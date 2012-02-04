@@ -1,6 +1,24 @@
 # TODO #
 
-fri goals: map building paper
+sat goals: PAPER, lookahead, online traffic spawning, generators and sinks, ask piyush about deadlock with signals
+
+agent behavior: simplify
+  ? options
+    1) lookahead >= dist_left
+    2) or >= dist_left - end_threshold and make accel_to_end speed up a little.
+
+  ? maybe keep_stopping is needed.
+    if we stop even earlier due to end_threshold, then it wont move forward.
+    ? so combine ^?
+    ? or just keep_stopping?
+
+  *** stagnation
+  *** still buggy and stagnates. btr seed 1328413163236, 1328419573032
+
+
+- make agents pause a moment at stop signs?
+
+
 
 MEETING NOTES
   - theme: easy simulation in your city, in 2 minutes!
@@ -20,12 +38,12 @@ BUGS WITH FIXES
   - "isn't moving, but isnt at end of edge"
     - make them spawn outside of the bad at_end zone?
   - illegal entry of intersections caused by short edges
-    - fuse in pass 1
-      - whats the min length we accept?
+    - lookahead!
   - need to avoid next agent on cur/next no matter if we're currently a turn or edge.
   - speed limit cleanup
     - make speed limit per road, then worry about obeying next road's?
     - clamp_accel, clamp_speed(cur road, next road) and clean up!
+    - clamp speed limit in just one place at the end
 
 BIGGER ISSUES
   - traffic lights

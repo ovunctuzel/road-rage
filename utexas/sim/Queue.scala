@@ -12,6 +12,8 @@ class Queue(t: Traversable) {
   var agents = List[Agent]()
   var prev_agents = List[Agent]()   // to verify no collisions occurred in a step
 
+  def last = agents.lastOption
+
   def start_step() = {
     prev_agents = agents
   }

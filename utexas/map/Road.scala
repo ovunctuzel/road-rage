@@ -4,6 +4,8 @@ import java.io.FileWriter
 
 import scala.collection.mutable.MutableList
 
+import utexas.Util
+
 // TODO enum for type. also, it's var because of tarjan's...
 // TODO var id due to tarjan
 class Road(var id: Int, val points: List[Coordinate], val name: String,
@@ -46,4 +48,10 @@ class Road(var id: Int, val points: List[Coordinate], val name: String,
   def outgoing_lanes(v: Vertex) = if (v == v1) pos_lanes else neg_lanes
 
   def pairs_of_points = points zip points.tail
+
+  // TODO more of these
+  def speed_limit = Util.mph_to_si(road_type match {
+    case "residential" => 30
+    case _             => 50
+  })
 }

@@ -16,7 +16,7 @@ class Intersection(val v: Vertex) {
   //val policy: Policy = new SignalCyclePolicy(this)
 
   // Just delegate.
-  def should_stop(a: Agent, turn: Turn, first_req: Boolean) = policy.should_stop(a, turn, first_req)
+  def should_stop(a: Agent, turn: Turn) = policy.should_stop(a, turn)
 
   // Multiple agents can be on the same turn; the corresponding queue will
   // handle collisions. So in fact, we want to track which turns are active...
@@ -49,9 +49,10 @@ class Intersection(val v: Vertex) {
     }
     turns(t) += 1
     if (!policy.validate_entry(a, t)) {
-      Util.log("!!! Agent illegally entered intersection, going at " + a.speed)
-      Util.log("  Incident was near " + t.from + " and " + t.to)
+      Util.log("!!! " + a + " illegally entered intersection, going at " + a.speed)
+      Util.log("  Incident was near " + t.from + " and " + t)
       Util.log("  Origin lane length: " + t.from.length)
+      assert(false)
     }
   }
 
@@ -65,14 +66,20 @@ class Intersection(val v: Vertex) {
 }
 
 abstract class Policy(intersection: Intersection) {
-  def should_stop(a: Agent, turn: Turn, first_req: Boolean): Boolean
+  def should_stop(a: Agent, turn: Turn): Boolean
   def validate_entry(a: Agent, turn: Turn): Boolean
   def handle_exit(a: Agent, turn: Turn)
+
+  // TODO common stuff for figuring out first-req
+
+  // They have to be at the end of the correct edge, since now they might
+  // lookahead.
+  def is_waiting(a: Agent, t: Turn) = a.at.on == t.from && a.at_end_of_edge
 }
 
 // Great for testing to see if agents listen to this.
 class NeverGoPolicy(intersection: Intersection) extends Policy(intersection) {
-  def should_stop(a: Agent, turn: Turn, first_req: Boolean) = true
+  def should_stop(a: Agent, turn: Turn) = true
   def validate_entry(a: Agent, turn: Turn) = false
   def handle_exit(a: Agent, turn: Turn) = {}
 }
@@ -83,7 +90,7 @@ class StopSignPolicy(intersection: Intersection) extends Policy(intersection) {
   var current_owner: Option[Agent] = None
   var queue = List[Agent]()
 
-  def should_stop(a: Agent, turn: Turn, first_req: Boolean): Boolean = {
+  def should_stop(a: Agent, turn: Turn): Boolean = {
     current_owner match {
       case Some(owner) if a == owner => return false
       case _       =>
@@ -95,7 +102,7 @@ class StopSignPolicy(intersection: Intersection) extends Policy(intersection) {
     }
 
     // Do we add them to the queue? They have to be at the end.
-    val can_add_to_queue = a.at_end_of_edge
+    val can_add_to_queue = is_waiting(a, turn)
 
     if (can_add_to_queue) {
       // If they're the first one, let them go now. They've stopped validly.
@@ -140,7 +147,11 @@ class ReservationPolicy(intersection: Intersection) extends Policy(intersection)
   var current_batch = new TurnBatch()
   var reservations = List[TurnBatch]()
 
-  def should_stop(a: Agent, turn: Turn, first_req: Boolean): Boolean = {
+  def should_stop(a: Agent, turn: Turn): Boolean = {
+    // TODO rethink this idea so that we don't have to put the burden on agents
+    // to figure this out.
+    val first_req = false
+
     if (first_req) {
       if (current_batch.add_turn(turn)) {
         return false
@@ -244,7 +255,7 @@ class SignalCyclePolicy(intersection: Intersection) extends Policy(intersection)
 
   // TODO need to deal with "yellow lights" -- tell an agent to stop early
   // enough.
-  def should_stop(a: Agent, turn: Turn, first_req: Boolean) = !current_cycle(turn)
+  def should_stop(a: Agent, turn: Turn) = !current_cycle(turn)
 
   def validate_entry(a: Agent, turn: Turn) = current_cycle(turn)
 

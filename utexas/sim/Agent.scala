@@ -39,8 +39,11 @@ class Agent(val id: Int, val graph: Graph, start: Edge, val dynamicSpawn: Boolea
     // this timestep.
     val new_dist = update_kinematics(dt_s)
 
-    // TODO cfg
-    assert(speed <= Util.mph_to_si(30))
+    // Check speed limit
+    start_on match {
+      case e: Edge => assert(speed <= e.road.speed_limit)
+      case _ =>
+    }
 
     // Apply this distance. 
     var current_on = start_on
@@ -134,6 +137,7 @@ class Agent(val id: Int, val graph: Graph, start: Edge, val dynamicSpawn: Boolea
     Util.log("At: " + at)
     Util.log("Speed: " + speed)
     Util.log("Next step's acceleration: " + target_accel)
+    Util.log("At end of edge? " + at_end_of_edge)
     behavior.dump_info
     Util.log_pop
   }

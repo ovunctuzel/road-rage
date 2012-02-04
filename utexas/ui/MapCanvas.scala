@@ -36,7 +36,7 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
   // state
   private var current_edge: Option[Edge] = None
   private var highlight_type: Option[String] = None
-  private var show_ward_colors = true
+  private var show_ward_colors = false
   private var current_turn = -1  // for cycling through turns from an edge
   private var show_wards = false
   private var current_ward: Option[Ward] = None
