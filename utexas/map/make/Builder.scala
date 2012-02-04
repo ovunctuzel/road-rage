@@ -27,7 +27,7 @@ object Builder {
         case "--show-dead" => { show_dead = value == "1" }
         case "--input"     => { ifn = value }
         case "--output"    => { ofn = value }
-        case _             => { println("Weird option " + key) }
+        case _             => { Util.log("Weird option " + key); sys.exit }
       }
     }
 

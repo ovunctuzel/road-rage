@@ -361,8 +361,7 @@ class Pass3(old_graph: PreGraph2) {
     // Not adjusting the other line if we're not the rightmost lane... TODO does
     // this help?
     e.rightmost_lane.next_counterclockwise_to match {
-      // TODO re-enable when it stops destroying some lines entirely.
-      case Some(ccw) => //adjust_lines(e.lines.last, ccw.lines.head, e.is_rightmost)
+      case Some(ccw) => adjust_lines(e.lines.last, ccw.lines.head, e.is_rightmost)
       case _ => {}
     }
   }
@@ -374,12 +373,19 @@ class Pass3(old_graph: PreGraph2) {
         // With multiple lanes, this could happen multiple times. Either force
         // far-to-near order so lines only ever decrease, or just only permit
         // changes when it makes lines shorter...
-        if ((new Line(l1.x1, l1.y1, pt.x, pt.y)).length < l1.length) {
+
+        // But some changes, for some reason, make some lines MUCH shorter, so
+        // detect and avoid trimming those.
+        val max_trim = 1.0  // TODO cfg and make units make sense.
+
+        val possible1 = new Line(l1.x1, l1.y1, pt.x, pt.y)
+        if (possible1.length < l1.length && l1.length - possible1.length <= max_trim) {
           l1.x2 = pt.x
           l1.y2 = pt.y
         }
         if (both) {
-          if ((new Line(pt.x, pt.y, l2.x2, l2.y2)).length < l2.length) {
+          val possible2 = new Line(pt.x, pt.y, l2.x2, l2.y2)
+          if (possible2.length < l2.length && l2.length - possible2.length <= max_trim) {
             l2.x1 = pt.x
             l2.y1 = pt.y
           }
