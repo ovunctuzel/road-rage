@@ -93,6 +93,7 @@ POSSIBLY SIMPLE
 - keyboard-grabbing focus is... greedy when minimized
 - dont show arrows when line segs are really clustered
 - ui could show policy's current owner or something
+- draw the orig corner of freehanded polygons differently or something
 
 ### Agents ###
 

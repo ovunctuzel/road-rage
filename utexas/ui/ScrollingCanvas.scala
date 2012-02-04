@@ -2,7 +2,7 @@ package utexas.ui
 
 import swing._  // TODO figure out exactly what
 import swing.event._
-import java.awt.{Color,RenderingHints}
+import java.awt.{Color, RenderingHints, Polygon}
 import java.awt.geom.AffineTransform
 import java.awt.geom.Rectangle2D
 
@@ -12,6 +12,9 @@ import utexas.Util
 // have 'with Component.SuperMixin' so we can do setFocusTraversalEnabled(false)
 
 // TODO maybe adaptor class for our map geometry?
+
+// TODO for now, we'll implement the free-hand drawing here, but eventually it
+// makes more sense as some kind of nifty mixin thing.
 
 // SuperMixin lets us get tab back
 abstract class ScrollingCanvas extends Component {
@@ -47,7 +50,47 @@ abstract class ScrollingCanvas extends Component {
   listenTo(mouse.wheel)
   listenTo(keys) // TODO work damnit!
 
+  // Free-hand drawing stuff
+  private var drawing_mode = false
+  var polygon = new Polygon()
+
   reactions += {
+    // Free-hand drawing stuff
+    case KeyPressed(_, Key.Shift, _, _) => {
+      drawing_mode = true
+    }
+    case KeyReleased(_, Key.Shift, _, _) => {
+      drawing_mode = false
+    }
+    case e: MousePressed if drawing_mode => {
+      val x = screen_to_map_x(e.point.x).toInt
+      val y = screen_to_map_y(e.point.y).toInt
+      polygon.addPoint(x, y)
+      repaint
+    }
+    case e: MouseDragged if drawing_mode => {
+      val x = screen_to_map_x(e.point.x).toInt
+      val y = screen_to_map_y(e.point.y).toInt
+      if (polygon.npoints == 1) {
+        // add it, so we can drag and make the first line
+        polygon.addPoint(x, y)
+      }
+      polygon.xpoints(polygon.npoints - 1) = x
+      polygon.ypoints(polygon.npoints - 1) = y
+      repaint
+    }
+    case KeyPressed(_, Key.S, _, _) if drawing_mode => {
+      // finish it off
+      if (polygon.npoints < 3) {
+        Util.log("A polygon needs more than one line")
+      } else {
+        handle_ev(EV_Select_Polygon())
+      }
+      drawing_mode = false
+      polygon = new Polygon()
+      repaint
+    }
+
     // TODO fast_mode
     case e: MouseMoved => {
       // TODO nicer reassignment?
@@ -74,7 +117,7 @@ abstract class ScrollingCanvas extends Component {
       fix_oob()
 
       // show the pan
-      repaint()
+      repaint
 
       // reset for the next event
       click_x = e.point.x
@@ -203,3 +246,4 @@ final case class EV_Param_Set(key: String, value: Option[String]) extends UI_Eve
 // that to work...
 final case class EV_Key_Press(key: Any) extends UI_Event {}
 final case class EV_Action(key: String) extends UI_Event {}
+final case class EV_Select_Polygon() extends UI_Event {}

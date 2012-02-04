@@ -45,6 +45,7 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
   private var chosen_edge2: Option[Edge] = None
   private var route_members = Set[Edge]()
   private var current_agent: Option[Agent] = None
+  private var polygon_roads: Set[Road] = Set()
 
   // this is like static config, except it's a function of the map and rng seed
   private val special_ward_color = Color.BLACK
@@ -117,6 +118,10 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
   private val route_lane_stroke = new BasicStroke(0.45f)
   private val lane_stroke       = new BasicStroke(0.05f)
   private val lane_width = 0.6f
+  // TODO make this look cooler.
+  private val drawing_stroke = new BasicStroke(
+    5.0f, BasicStroke.CAP_BUTT, BasicStroke.JOIN_MITER, 1.0f, Array(1.0f), 0.0f
+  )
 
   // pre-compute; we don't have more than max_lanes
   private val strokes = (0 until cfg.max_lanes).map(n => new BasicStroke(lane_width * n.toFloat))
@@ -173,6 +178,11 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
     // of that and because they're seemingly so cheap to draw anyway, just
     // always...
     sim.agents.foreach(a => draw_agent(g2d, a))
+
+    // Finally, if the user is free-handing a region, show their work.
+    g2d.setColor(Color.RED)
+    g2d.setStroke(drawing_stroke)
+    g2d.draw(polygon)
   }
 
   // we return any new roads seen
@@ -235,7 +245,9 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
   }
 
   def color_road(r: Road): Color = {
-    if (show_ward_colors) {
+    if (polygon_roads(r)) {
+      return Color.YELLOW
+    } else if (show_ward_colors) {
       return ward_colorings(r.ward)
     } else {
       // The normal handling
@@ -502,6 +514,11 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
         val r = current_edge.get.road
         Util.log(r + " is a " + r.road_type + " of length " +
                  current_edge.get.length + " meters")
+      }
+      case EV_Select_Polygon() => {
+        // Let's find all vertices inside the polygon.
+        polygon_roads = sim.vertices.filter(v => polygon.contains(v.location.x, v.location.y)).flatMap(v => v.roads).toSet
+        Util.log("Matched " + polygon_roads.size + " roads")
       }
       case EV_Key_Press(_) => // Ignore the rest
     }
