@@ -45,12 +45,12 @@ class Simulation(roads: List[Road], edges: List[Edge], vertices: List[Vertex],
 
   // There might be nothing satisfying the constraints.
   final def random_edge(except: Set[Edge] = Set(), spawning: Boolean = false,
-                        min_len: Double = 1.0): Option[Edge] =
+                        min_len: Double = 1.0, dynamicSpawning: Boolean = false): Option[Edge] =
   {
     def ok(e: Edge) = (!except.contains(e)
-                   && e.road.road_type == "residential"
+                   && e.road.road_type == "residential" //TODO Really?  There's like 100+ road types...
                    && e.length > min_len
-                   && (!spawning || queues(e).ok_to_spawn))
+                   && (!spawning || queues(e).ok_to_spawn(dynamicSpawning)))
 
     val candidates = edges.filter(ok)
     if (candidates.size > 0) {

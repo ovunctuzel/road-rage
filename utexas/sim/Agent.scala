@@ -6,8 +6,8 @@ import utexas.{Util, cfg}
 // TODO come up with a notion of dimension and movement capability. at first,
 // just use radius bounded by lane widths?
 
-class Agent(val id: Int, val graph: Graph, start: Edge) {
-  var at = enter(start, Agent.sim.queues(start).random_spawn)
+class Agent(val id: Int, val graph: Graph, start: Edge, val dynamicSpawn: Boolean = false) {
+  var at = enter(start, Agent.sim.queues(start).random_spawn(dynamicSpawn))
 
   // We can only set a target acceleration, which we travel at for the entire
   // duration of timesteps.
