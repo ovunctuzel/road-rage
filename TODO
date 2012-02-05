@@ -1,24 +1,19 @@
 # TODO #
 
-sat goals: PAPER, lookahead, online traffic spawning, generators and sinks, ask piyush about deadlock with signals
+sun goals: PAPER, online traffic spawning, generators and sinks, gps
+mon goals: ask piyush about deadlock with signals
 
-agent behavior: simplify
-  ? options
-    1) lookahead >= dist_left
-    2) or >= dist_left - end_threshold and make accel_to_end speed up a little.
-
-  ? maybe keep_stopping is needed.
-    if we stop even earlier due to end_threshold, then it wont move forward.
-    ? so combine ^?
-    ? or just keep_stopping?
-
-  *** stagnation
-  *** still buggy and stagnates. btr seed 1328413163236, 1328419573032
-
-
-- make agents pause a moment at stop signs?
-
-
+- new spawning / thread pool
+  - make thread pool optional
+  - do we need to lock?
+    - yes. what if two threads think an edge has room, then both try?
+  - breaks determinism (out of order requests to rng)
+  - new spawning breaks
+    ok_to_spawn assertion at the beginning of queue's random_spawn breaks
+    which means sim.random_edge now disagrees with ok_to_spawn, or the race condition.
+  - coherent code style... spacing
+  - thread pool does pathfinding, which modifies nothing. offers back paths when done, so waiting agents can spawn from one thread.
+  - it broke headless.
 
 MEETING NOTES
   - theme: easy simulation in your city, in 2 minutes!
@@ -28,30 +23,12 @@ MEETING NOTES
     - how hard is thread-based parallelism?
     - agents reacting is the current bottleneck
 
-BUGS
-  - why is accel to achieve speed limit extremely negative?
-  - NaN at 1327894373344 on synthetic, 0.1 dt
-  - agents stopping too prematurely at 1327896599636 on btr, 0.9 dt
-  - passing up destination... houston 1328286746717
-
-BUGS WITH FIXES
-  - "isn't moving, but isnt at end of edge"
-    - make them spawn outside of the bad at_end zone?
-  - illegal entry of intersections caused by short edges
-    - lookahead!
-  - need to avoid next agent on cur/next no matter if we're currently a turn or edge.
-  - speed limit cleanup
-    - make speed limit per road, then worry about obeying next road's?
-    - clamp_accel, clamp_speed(cur road, next road) and clean up!
-    - clamp speed limit in just one place at the end
-
 BIGGER ISSUES
   - traffic lights
     - accept for 30 seconds into queue, switch when everyone's done?
     - is there deadlock?
     - quadratic conflict checking!
   - lets make sure length corresponds to reality (in m). it's long.
-  - are we entering next edge too fast after a turn? passing up agents.
   - fix geom of edge lines
   - make sure turns and conflicts are as good as possible
     - randomize num of lanes to test
@@ -65,10 +42,13 @@ BIGGER ISSUES
   * online traffic spawning
   * lane changing
   * slow down for turns
+  - is there a way to analytically say "an agent will own this chunk" at some time, and then solve for collisions?
 
 POSSIBLY SIMPLE
   - script to scrape osm
   - switch ant to sbt?
+  - make agents pause a moment at stop signs?
+    - tell intersection how long have been stopped
 
 ### Map building ###
 
