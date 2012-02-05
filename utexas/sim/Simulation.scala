@@ -36,18 +36,23 @@ class Simulation(roads: List[Road], edges: List[Edge], vertices: List[Vertex],
   //def agents() = traversables.map(t => queues(t)).flatMap(q => q.agents)
 
   def add_agent(start: Edge): Agent = {
-    val a = new Agent(agents.size, this, start)
+    if (running){
+      throw new UnsupportedOperationException("We can't spawn agents dynamically yet!");
+    }
+    else{
+      val a = new Agent(agents.size, this, start, false)
     agents += a
     // Throw an exception if we couldn't find anything...
     a.go_to(random_edge(min_len = 0).get)
     return a
+    }
   }
 
   // There might be nothing satisfying the constraints.
   final def random_edge(except: Set[Edge] = Set(), spawning: Boolean = false,
                         min_len: Double = 1.0, dynamicSpawning: Boolean = false): Option[Edge] =
   {
-    def ok(e: Edge) = (!except.contains(e)
+    def ok(e: Edge) = ((except == null || !except.contains(e))
                    && e.road.road_type == "residential" //TODO Really?  There's like 100+ road types...
                    && e.length > min_len
                    && (!spawning || queues(e).ok_to_spawn(dynamicSpawning)))
@@ -60,21 +65,22 @@ class Simulation(roads: List[Road], edges: List[Edge], vertices: List[Vertex],
     }
   }
 
-  @tailrec final def spawn_army(i: Int, total: Int): Unit = {
-    print("\r" + Util.indent + "Spawning agent " + i + "/" + total)
-    random_edge(spawning = true) match {
-      case Some(e) => {
-        add_agent(e)
-        if (i != total) {
-          spawn_army(i + 1, total)
-        } else {
-          Util.log("")
-        }
-      }
-      case None => {
-        Util.log("\n... No room left!")
-      }
-    }
+  /*@tailrec*/ final def spawn_army(i: Int, total: Int): Unit = {
+//    print("\r" + Util.indent + "Spawning agent " + i + "/" + total)
+//    random_edge(spawning = true) match {
+//      case Some(e) => {
+//        add_agent(e)
+//        if (i != total) {
+//          spawn_army(i + 1, total)
+//        } else {
+//          Util.log("")
+//        }
+//      }
+//      case None => {
+//        Util.log("\n... No room left!")
+//      }
+//    }
+    new ArmySpawner(4,total,this,false).run(); //TODO cfg number of threads
   }
 
   ////////////// Timing
