@@ -6,8 +6,8 @@ import utexas.{Util, cfg}
 // TODO come up with a notion of dimension and movement capability. at first,
 // just use radius bounded by lane widths?
 
-class Agent(val id: Int, val graph: Graph, start: Edge, val dynamicSpawn: Boolean = false) {
-  var at = enter(start, Agent.sim.queues(start).random_spawn(dynamicSpawn))
+class Agent(val id: Int, val graph: Graph, start: Edge) {
+  var at = enter(start, Agent.sim.queues(start).random_spawn)
 
   // We can only set a target acceleration, which we travel at for the entire
   // duration of timesteps.
@@ -23,8 +23,7 @@ class Agent(val id: Int, val graph: Graph, start: Edge, val dynamicSpawn: Boolea
     behavior.set_goal(e)
   }
 
-  // Returns true if we are done
-  def step(dt_s: Double): Boolean = {
+  def step(dt_s: Double) = {
     assert(dt_s == cfg.dt_s)
 
     // To confirm determinism, enable one of these (more precision in doubles is
@@ -50,13 +49,6 @@ class Agent(val id: Int, val graph: Graph, start: Edge, val dynamicSpawn: Boolea
     var current_dist = old_dist + new_dist
 
     while (current_dist >= current_on.length) {
-      if (behavior.done_with_route) {
-        Util.log(this + " already passed up their destination! Cheating.")
-        // TODO cheating till we fix.
-        exit(current_on)
-        return true   // we're done
-      }
-
       current_dist -= current_on.length
       // Are we finishing a turn or starting one?
       val next: Traversable = current_on match {
@@ -83,17 +75,11 @@ class Agent(val id: Int, val graph: Graph, start: Edge, val dynamicSpawn: Boolea
       at = enter(current_on, current_dist)
     }
 
-    // are we completely done?
-    if (behavior.done_with_route && at_end_of_edge) {
-      exit(current_on)
-      return true   // we're done
-    }
-
     // TODO deal with lane-changing
-    return false    // not done
   }
 
-  def react() = {
+  // Returns true if we're done
+  def react(): Boolean = {
     behavior.choose_action match {
       case Act_Set_Accel(new_accel) => {
         // we have physical limits
@@ -102,10 +88,18 @@ class Agent(val id: Int, val graph: Graph, start: Edge, val dynamicSpawn: Boolea
         assert(speed + (new_accel * cfg.dt_s) >= 0)
 
         target_accel = new_accel
+        return false
       }
-      case Act_Lane_Change(lane)    => {
+      case Act_Lane_Change(lane) => {
         // TODO ensure it's a valid request
         Util.log("TODO lanechange")
+        return false
+      }
+      case Act_Done_With_Route() => {
+        // Trust behavior, don't abuse this.
+        assert(speed == 0.0)
+        exit(at.on)
+        return true
       }
     }
   }

@@ -1,7 +1,7 @@
 package utexas.sim
 
 import utexas.map.Traversable
-import utexas.{Util, cfg}
+import utexas.Util
 
 // TODO introduce a notion of dimension
 // TODO logs -> asserts once things work right
@@ -69,8 +69,8 @@ class Queue(t: Traversable) {
     return enter(a, new_dist)
   }
 
-  def random_spawn(dynamic:Boolean = false): Double = {
-    assert(ok_to_spawn(dynamic))
+  def random_spawn(): Double = {
+    assert(ok_to_spawn)
     
     // TODO here's where we have to fix old problems:
     // 1) if we're spawning in front of somebody and starting at 0 km/s...,
@@ -78,28 +78,20 @@ class Queue(t: Traversable) {
     // 2) if we're running right now, what do?
 
     // We have to enter at the end, so...
-    if (dynamic){
-      throw new UnsupportedOperationException("We can't spawn agents dynamically yet!"); //TODO
-    }
-    else{
-      var lastSeen = 0.
-      for (a <- agents.reverse){
-        var dist = a.at.dist
-        if (dist - lastSeen > cfg.min_spawn_dist*2) return lastSeen + Util.rand_double(cfg.min_spawn_dist,dist-lastSeen-cfg.min_spawn_dist)
-        else lastSeen = dist
-      }
-      if (t.length - lastSeen > cfg.min_spawn_dist*2) return lastSeen + Util.rand_double(cfg.min_spawn_dist,t.length-lastSeen-cfg.min_spawn_dist)
-    }
-    throw new IllegalStateException("Failed to find spot for agent on traversable "+t)
+    val max = if (agents.size == 0)
+                .80 * t.length
+              else
+                .80 * agents.last.at.dist
+
+    return Util.rand_double(.20 * t.length, max)
   }
 
-  //Since we're trying to have a ton of agents, just make sure we have min_spawn_dist
-  def ok_to_spawn(dynamic:Boolean = false): Boolean = {
-    if (dynamic){
-      return false; //TODO
-    }
-    else return (agents.size+5)*cfg.min_spawn_dist < t.length //+5 accounts for start/end (2 for each) and rounding
-  }
+  // TODO they should really just start a fixed bit back, not more and more as
+  // the last agent gets closer to the start...
+  def ok_to_spawn(): Boolean = if (agents.size == 0)
+                                 true
+                               else
+                                 .20 * t.length < .80 * agents.last.at.dist
 
   def ahead_of(a: Agent) = agents.takeWhile(_ != a).lastOption
 }

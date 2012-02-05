@@ -12,7 +12,6 @@ abstract class Behavior(a: Agent) {
   def choose_action(): Action
   // only queried when the agent reaches a vertex
   def choose_turn(e: Edge): Turn
-  def done_with_route: Boolean
   // every time the agent moves to a new traversable
   def transition(from: Traversable, to: Traversable)
   // just for debugging
@@ -26,8 +25,6 @@ class IdleBehavior(a: Agent) extends Behavior(a) {
   override def choose_action() = Act_Set_Accel(0)
 
   override def choose_turn(e: Edge) = e.next_turns.head
-
-  override def done_with_route = true
 
   override def transition(from: Traversable, to: Traversable) = {}   // mmkay
 
@@ -65,15 +62,13 @@ class AutonomousBehavior(a: Agent) extends Behavior(a) {
     }
 
     // Plow ahead! (not through cars, hopefully)
-    return Act_Set_Accel(max_safe_accel)
+    return max_safe_accel
   }
 
   override def choose_turn(e: Edge): Turn = route match {
     case ((t: Turn) :: rest) => t
     case _                   => throw new Exception("Asking " + a + " to choose turn now?!")
   }
-
-  override def done_with_route = route.size == 0
 
   override def transition(from: Traversable, to: Traversable) = {
     if (route.head == to) {
@@ -92,7 +87,8 @@ class AutonomousBehavior(a: Agent) extends Behavior(a) {
     Util.log_pop
   }
 
-  def max_safe_accel(): Double = {
+  // Returns Act_Set_Accel almost always.
+  def max_safe_accel(): Action = {
     // Since we can't react instantly, we have to consider the worst-case of the
     // next tick, which happens when we speed up as much as possible this tick.
     val worst_speed = a.speed + (a.max_accel * cfg.dt_s)
@@ -113,6 +109,7 @@ class AutonomousBehavior(a: Agent) extends Behavior(a) {
 
     // and the output.
     var stop_how_far_away: Option[Double] = None
+    var stopping_for_destination = false
     var follow_agent: Option[Agent] = None
     var follow_agent_how_far_away = 0.0   // gets set when follow_agent does.
     var min_speed_limit = Double.MaxValue
@@ -124,25 +121,26 @@ class AutonomousBehavior(a: Agent) extends Behavior(a) {
       // 1) Stopping at the end
       if (!stop_how_far_away.isDefined) {
         val should_stop = keep_stopping || (lookahead >= dist_left)
+        val how_far_away = looked_ahead_so_far + dist_left
+        // TODO tell them how long we've been waiting
         val stop_at_end: Boolean = should_stop && (step match {
           // Don't stop at the end of a turn
           case t: Turn => false
           // Stop if we're arriving at destination
-          case e if route_left.size == 0 => true
+          case e if route_left.size == 0 => { stopping_for_destination = true; true }
           // Otherwise, ask the intersection
-          case e: Edge => Agent.sim.intersections(e.to).should_stop(a, next_turn)
+          case e: Edge => Agent.sim.intersections(e.to).should_stop(a, next_turn, how_far_away)
         })
         if (stop_at_end) {
           keep_stopping = true
-          stop_how_far_away = Some(looked_ahead_so_far + dist_left)
+          stop_how_far_away = Some(how_far_away)
         }
       }
 
       // 2) Agent
       // Worry either about the one we're following, or the one at the end of
       // the queue right now. It's the intersection's job to worry about letting
-      // another wind up on our lane at the wrong time. Only bother if we
-      // haven't 
+      // another wind up on our lane at the wrong time.
       if (!follow_agent.isDefined) {
         follow_agent = if (a.at.on == step)
                          a.cur_queue.ahead_of(a)
@@ -165,8 +163,8 @@ class AutonomousBehavior(a: Agent) extends Behavior(a) {
       // Now, prepare for the next step.
       lookahead -= dist_left
       if (route_left.isEmpty) {
-        // Otherwise we've overshot?!  TODO or maybe not..
-        lookahead = -1  // stop considering possibilities immediately.
+        // stop considering possibilities immediately.
+        lookahead = -1
       } else {
         looked_ahead_so_far += dist_left
         step = route_left.head
@@ -176,33 +174,38 @@ class AutonomousBehavior(a: Agent) extends Behavior(a) {
       }
     }
 
-    // So, three possible constraints.
-    val v1 = stop_how_far_away match {
-      case Some(dist) => accel_to_end(dist)
-      case _          => Double.MaxValue
+    if (stopping_for_destination && stop_how_far_away.get <= cfg.end_threshold && a.speed == 0.0) {
+      // We can't get any closer to our actual destination. Terminate.
+      return Act_Done_With_Route()
+    } else {
+      // So, three possible constraints.
+      val v1 = stop_how_far_away match {
+        case Some(dist) => accel_to_end(dist)
+        case _          => Double.MaxValue
+      }
+      val v2 = follow_agent match {
+        case Some(f) => accel_to_follow(f, follow_agent_how_far_away)
+        case _       => Double.MaxValue
+      }
+      val v3 = accel_to_achieve(min_speed_limit)
+
+      //if (a.id == 15) {
+      /*Util.log("%s's choices: %s, %s, speed lim %f".format(
+        a, stop_how_far_away, follow_agent, min_speed_limit
+      ))*/
+      /*Util.log("%s's choices: %.3f, %.3f, %.3f".format(
+        a, v1, v2, v3
+      ))*/
+      //}
+
+      val conservative_accel = math.min(v1, math.min(v2, v3))
+
+      // As the very last step, clamp based on our physical capabilities.
+      return Act_Set_Accel(if (conservative_accel > 0)
+                             math.min(conservative_accel, a.max_accel)
+                           else
+                             math.max(conservative_accel, -a.max_accel))
     }
-    val v2 = follow_agent match {
-      case Some(f) => accel_to_follow(f, follow_agent_how_far_away)
-      case _       => Double.MaxValue
-    }
-    val v3 = accel_to_achieve(min_speed_limit)
-
-    //if (a.id == 15) {
-    /*Util.log("%s's choices: %s, %s, speed lim %f".format(
-      a, stop_how_far_away, follow_agent, min_speed_limit
-    ))*/
-    /*Util.log("%s's choices: %.3f, %.3f, %.3f".format(
-      a, v1, v2, v3
-    ))*/
-    //}
-
-    val conservative_accel = math.min(v1, math.min(v2, v3))
-
-    // As the very last step, clamp based on our physical capabilities.
-    return if (conservative_accel > 0)
-             math.min(conservative_accel, a.max_accel)
-           else
-             math.max(conservative_accel, -a.max_accel)
   }
 
   private def accel_to_follow(follow: Agent, dist_from_them_now: Double): Double = {
@@ -309,3 +312,4 @@ class AutonomousBehavior(a: Agent) extends Behavior(a) {
 abstract class Action
 final case class Act_Set_Accel(new_accel: Double) extends Action
 final case class Act_Lane_Change(lane: Edge) extends Action
+final case class Act_Done_With_Route() extends Action

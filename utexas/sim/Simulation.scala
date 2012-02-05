@@ -50,12 +50,12 @@ class Simulation(roads: List[Road], edges: List[Edge], vertices: List[Vertex],
 
   // There might be nothing satisfying the constraints.
   final def random_edge(except: Set[Edge] = Set(), spawning: Boolean = false,
-                        min_len: Double = 1.0, dynamicSpawning: Boolean = false): Option[Edge] =
+                        min_len: Double = 1.0): Option[Edge] =
   {
-    def ok(e: Edge) = ((except == null || !except.contains(e))
-                   && e.road.road_type == "residential" //TODO Really?  There's like 100+ road types...
+    def ok(e: Edge) = (!except.contains(e)
+                   && e.road.road_type == "residential"
                    && e.length > min_len
-                   && (!spawning || queues(e).ok_to_spawn(dynamicSpawning)))
+                   && (!spawning || queues(e).ok_to_spawn))
 
     val candidates = edges.filter(ok)
     if (candidates.size > 0) {
@@ -144,18 +144,18 @@ class Simulation(roads: List[Road], edges: List[Edge], vertices: List[Vertex],
 
       active_queues.foreach(q => q.start_step)
 
-      agents_by_id.foreach(a => {
-        // reap the done agents
-        if (a.step(cfg.dt_s)) {
-          agents -= a
-        }
-      })
+      agents_by_id.foreach(a => a.step(cfg.dt_s))
 
       active_queues.foreach(q => q.end_step)
 
       active_intersections.foreach(i => i.end_step)
 
-      agents_by_id.foreach(a => a.react)
+      agents_by_id.foreach(a => {
+        // reap the done agents
+        if (a.react) {
+          agents -= a
+        }
+      })
     }
 
     // listener (usually UI) callbacks

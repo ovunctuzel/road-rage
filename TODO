@@ -1,22 +1,20 @@
 # TODO #
 
-sun goals: PAPER, online traffic spawning, generators and sinks, gps
-mon goals: ask piyush about deadlock with signals
+mon goals: simulation PAPER, spawning/thread pool/master/generators, making generators in UI, gps, ask piyush about deadlock with signals
 
-- new spawning / thread pool
-  - make thread pool optional
-  - do we need to lock?
-    - yes. what if two threads think an edge has room, then both try?
-  - breaks determinism (out of order requests to rng)
-  - new spawning breaks
-    ok_to_spawn assertion at the beginning of queue's random_spawn breaks
-    which means sim.random_edge now disagrees with ok_to_spawn, or the race condition.
-  - coherent code style... spacing
-  - thread pool does pathfinding, which modifies nothing. offers back paths when done, so waiting agents can spawn from one thread.
-  - it broke headless.
+- safe spawning
+- all the nice logging
+
+- thread pool, multiple workers, pre-emptively shutting them down, etc
+- make sure UI stuff still all works and gets updated
+- a way for generators to die off and get themselves reaped
+
+- remaining bugs (modulo spawning issues)
+  - btr, 1000 agents, seed 1328487489724: vert collisions, asking to choose turn now?
+  - if we seriously pack people together, we get a traffic jam! try on synthetic.
+  - is an agent overshooting its route sometimes?
 
 MEETING NOTES
-  - theme: easy simulation in your city, in 2 minutes!
   - ui configurable intersection policies
   - ui draw generators/destinations and spawn traffic constantlyish
   - target scale of 20,000 agents or so in smaller area
@@ -46,9 +44,11 @@ BIGGER ISSUES
 
 POSSIBLY SIMPLE
   - script to scrape osm
-  - switch ant to sbt?
+  - switch ant to sbt? https://github.com/harrah/xsbt/wiki/Examples
   - make agents pause a moment at stop signs?
     - tell intersection how long have been stopped
+  - drunkard walk endless behavior mode... no planning, just wanders around
+  - print RNG at end of every UI and headless, for convenience.
 
 ### Map building ###
 
@@ -95,27 +95,16 @@ POSSIBLY SIMPLE
 
 ### Agents ###
 
-- old static behavior
-  - lack of determinism?
-    - timesteps matter / crossing many things in one hop
-      - if an agent can only adjust speed once per timestep... oops.
-    - patho case: two lanes merging, agent on each, order matters.
+- detect collisions
+  - post-mortem checker still misses scary things in between, like when merging.
 
-  - detect collisions
-    - post-mortem checker still misses scary things in between, like when merging.
-    - force collisions, see if they're detected. set one guy on the road and make him be still!
-    - ui show collisions
+- lots of things break if we have a vertex with a self-loop
 
-  - lots of things break if we have a vertex with a self-loop
-
-  - test with stalled car
-  - make them slow down for turns
+- make them slow down for turns
 
 - lanechanging model
 - spawning safely
-- delegate pricy work to a thread pool
 - spawning specifically in UI
-- dimensions to the cars (solved by maintaining fixed dist)
 - structuring policy stuff as a state machine and events may be more elegant...
 - give lanes/roads/etc the ability to be closed
 
