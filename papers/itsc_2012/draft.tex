@@ -1,13 +1,16 @@
 \documentclass[12pt]{article}
 
+% TODO grab the format
+
 \title{Paper}
-\author{Dustin Carlino and Mike Depinet}
+\author{Dustin Carlino, Mike Depinet, Piyush Khandelwal, Peter Stone}
 \date{...}
 
 \begin{document}
 \maketitle
 
 % what are our goals with this paper?
+% theme: easy simulation in your city, in 2 minutes!
 % * demonstrate use of OSM and motivate more data collection
 % * present a simulation framework
 % * present a pretty naive static planning
@@ -16,16 +19,136 @@
 
 % contribution: autonomous car / human car sim on EXISTING INFRASTRUCTURE
 
+\section{Architecture}
+
+scala
+
+maps separate from simulation separate from UI (mostly)
+
+thread pools?
+
+programs: build map, UI (describe what it can do), headless
+
+api / extending it
+
 \section{Map Construction from OSM}
 
-each step
+% briefly introduce OSM, advantages, etc
 
-limitations
+To run a simulation on a map from OSM, there is a one-time conversion process to
+transform the map into AORTA's format, which is also encoded with XML. It is
+split into 3 passes, each feeding the next.
+
+\subsection{Map Model}
+
+roads, verts, edges, wards, traversables, turns...
+
+edges are made up of multiple lines.. this could be control pts of a curve
+(hereon, line means line segment)
+
+\subsection{Pass 1}
+
+The relevant parts of OSM's map model are nodes and ways. A node corresponds to
+a GPS location, and ways are links between many nodes, corresponding to roads
+and other paths. The first pass reads OSM's XML format, gathering ways as a
+series of coordinates. Ways intersect when a node is used by multiple ways.
+
+Since OSM also encodes pedestrian paths, bike routes, and even lakes with ways,
+pass 1 filters out anything that does not seem to be driveable. OSM does not
+seem to provide a unified list of valid roads, so these heuristics are
+imperfect.
+
+Finally, coordinates are normalized from GPS (longitude, latitude) to a planar
+coordinate system with no negative coordinates and the Y coordinate increasing
+upwards. This is done for convenince of manipulation in the UI, but the scale
+and offset used are retained, so a coordinate in the final form of the map can
+still be mapped back to its original GPS form.
+
+\subsection{Pass 2}
+
+OSM ways only implicitly intersect at common coordinates; AORTA's structure
+demands a traditional definition of edge linking exactly two vertices. Pass 2
+walks along each way's coordinates, dividing it into multiple undirected edges.
+
+\subsection{Pass 3}
+
+Finally, pass 3 performs successive transformations to produce the final graph,
+which is saved in XML.
+
+\subsubsection{Making Lanes}
+
+Undirected edges are first multiplied into directed lanes. The coordinates from
+a slice of an OSM way are interpreted to be the center line of the road, and
+lanes are placed by projecting the width of a line perpendicularly from the
+center line in either direction. OSM encodes one-way streets, so in this case,
+if there are an odd number of one-way lanes, the middle lane is placed where the
+center line would be, and the other lanes are shifted from there. If there are
+an even number, then the middle two are both equidistant away from the invisible
+center line. The number of lanes is guessed from OSM's annotation of the way's
+``type.'' OSM's specification includes a tag for number of lanes, but in
+practice as of the time of writing, it is rarely used.
+
+\subsubsection{Making Turns}
+
+Next, turns are constructed at each vertex between the incoming and outgoing
+edges. This is completely heuristic based: we classify a potential turn as a
+left, right, or straight turn based solely on angles between edges and if the
+edge's original OSM ID matches. U-turns are constructed at dead-ends. If several
+lanes all cross into fewer lanes, merging is forced for the rightmost lanes.
+These patterns are attempts at generalizations; this process results in many
+intersections having the incorrect turns. However, without a more detailed
+source, this is the best compromise. Finally, the geometry of a turn is
+extremely simplified as a single line between the ends of the edges it connects.
+In the future, a more realistic curve could be drawn.
+
+\subsubsection{Ensuring connectivity}
+
+Because turns are constructed imperfectly, most large graphs have edges that are
+not reachable from some portions of the graph. Simulation and pathfinding would
+suffer greatly if this was the case, so pass 3 uses Tarjan's linear-time
+algorithm for locating strongly connected components to remove the components of
+the directed graph with the least members. (There is also a debugging switch to
+leave these components in and highlight them in the UI.) The algorithm operates
+at the granularity of lanes. If several lanes of many are disconnected within
+one road, then the bad lanes are spliced out. This results in visually
+unappealing geometric gaps, but if the entire road were removed, then Tarjan's
+algorithm would have to be repeated to determine what edges the good lanes would
+then disconnect. The end result is a connected digraph, ideal for corner
+case-free pathfinding and simulation.
+
+\subsubsection{Cleaning up geometry}
+
+A road's center line correctly meets adjoining roads' center lines in the middle
+of an intersection. Since the lines for a lane are parallel to the center line
+and have the same length, they also meet in the intersection. This is
+geometrically incorrect; lanes stop along the border of the intersection. Thus,
+pass 3 includes heuristics to trim a lane's lines to the spot where they
+intersect with another lane's lines. This results in a more accurate model, but
+the process is imperfect, so sometimes lines extend too far or not enough.
+
+\subsubsection{Hierarchial divisions of the graph}
+
+% TODO i don't think this'll have much coverage in the rest of the paper; should
+% we describe wards?
+
+\subsection{Limitations}
 
 proposals to change OSM to fix these issues
 
-integrating with what other sources for spawning traffic, placing POI?
+projecting lines sucks... but all it really does is clutter UI
+filtering out invalid ways in pass 1 is really not a clear process
+number of lanes... road types are wacky and wrong
+turns are brittle.. detecting right-turn only lane is rare. shared center lane?
+  not part of our model, or OSM's.
+removing sccs is not ideal
 
+\subsection{Integrating other data sources}
+
+how easy would it be?
+
+match on gps, or on road metadata like names
+
+integrating with what other sources for spawning traffic, placing POI?
 
 \section{Simulation}
 
@@ -37,7 +160,7 @@ justify arbitrary constants, like deaccel for cars
 interface... what invariants do agents have to follow, and how does the default
 behavior provide them?
 
-\section{notes}
+\section{Notes}
 
 possible background/links
 http://www.caliper.com/transmodeler/default.htm
