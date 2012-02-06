@@ -417,8 +417,9 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
         handle_ev(EV_Action("toggle-wards"))
       }
       case EV_Action("spawn-army") => {
-        val num = 1000   // TODO cfg
-        sim.spawn_army(1, num)
+        sim.spawn_army(100) // TODO cfg
+        // TODO eh, do something a bit different if we're pasued?
+        sim.wait_for_all_generators
         status.agents.text = "" + sim.agents.size
         repaint
       }

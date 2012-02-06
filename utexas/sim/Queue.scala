@@ -69,29 +69,5 @@ class Queue(t: Traversable) {
     return enter(a, new_dist)
   }
 
-  def random_spawn(): Double = {
-    assert(ok_to_spawn)
-    
-    // TODO here's where we have to fix old problems:
-    // 1) if we're spawning in front of somebody and starting at 0 km/s...,
-    //    could have collisions on THIS edge and on predecessors
-    // 2) if we're running right now, what do?
-
-    // We have to enter at the end, so...
-    val max = if (agents.size == 0)
-                .80 * t.length
-              else
-                .80 * agents.last.at.dist
-
-    return Util.rand_double(.20 * t.length, max)
-  }
-
-  // TODO they should really just start a fixed bit back, not more and more as
-  // the last agent gets closer to the start...
-  def ok_to_spawn(): Boolean = if (agents.size == 0)
-                                 true
-                               else
-                                 .20 * t.length < .80 * agents.last.at.dist
-
   def ahead_of(a: Agent) = agents.takeWhile(_ != a).lastOption
 }

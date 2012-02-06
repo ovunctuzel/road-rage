@@ -20,6 +20,15 @@ class Simulation(roads: List[Road], edges: List[Edge], vertices: List[Vertex],
   Util.log("Creating queues and intersections for collision handling...")
   val queues = traversables.map(t => t -> new Queue(t)).toMap
   val intersections = vertices.map(v => v -> new Intersection(v)).toMap
+  val agents = new MutableSet[Agent]
+  var ready_to_spawn: List[Agent] = Nil
+  val generators = new MutableSet[Generator]
+  private var id_cnt = -1
+
+  def next_id(): Int = {
+    id_cnt += 1
+    return id_cnt
+  }
 
   // It's expensive to go through every one of these without reason every
   // time. This banks on the fact that the number of agents is smaller, and
@@ -31,56 +40,14 @@ class Simulation(roads: List[Road], edges: List[Edge], vertices: List[Vertex],
       case _       => None
     }).toSet
 
-  val agents = new MutableSet[Agent]
-  // Below was a stable order and less maintenance, but it's SLOW
-  //def agents() = traversables.map(t => queues(t)).flatMap(q => q.agents)
-
-  def add_agent(start: Edge): Agent = {
-    if (running){
-      throw new UnsupportedOperationException("We can't spawn agents dynamically yet!");
-    }
-    else{
-      val a = new Agent(agents.size, this, start, false)
-    agents += a
-    // Throw an exception if we couldn't find anything...
-    a.go_to(random_edge(min_len = 0).get)
-    return a
-    }
+  // Just a convenience method.
+  def spawn_army(total: Int) = {
+    generators += new FixedSizeGenerator(this, edges, edges, total)
   }
 
-  // There might be nothing satisfying the constraints.
-  final def random_edge(except: Set[Edge] = Set(), spawning: Boolean = false,
-                        min_len: Double = 1.0): Option[Edge] =
-  {
-    def ok(e: Edge) = (!except.contains(e)
-                   && e.road.road_type == "residential"
-                   && e.length > min_len
-                   && (!spawning || queues(e).ok_to_spawn))
-
-    val candidates = edges.filter(ok)
-    if (candidates.size > 0) {
-      return Some(Util.choose_rand(candidates))
-    } else {
-      return None
-    }
-  }
-
-  /*@tailrec*/ final def spawn_army(i: Int, total: Int): Unit = {
-//    print("\r" + Util.indent + "Spawning agent " + i + "/" + total)
-//    random_edge(spawning = true) match {
-//      case Some(e) => {
-//        add_agent(e)
-//        if (i != total) {
-//          spawn_army(i + 1, total)
-//        } else {
-//          Util.log("")
-//        }
-//      }
-//      case None => {
-//        Util.log("\n... No room left!")
-//      }
-//    }
-    new ArmySpawner(4,total,this,false).run(); //TODO cfg number of threads
+  def wait_for_all_generators() = {
+    generators.foreach(g => g.wait_for_all)
+    pre_step
   }
 
   ////////////// Timing
@@ -123,7 +90,17 @@ class Simulation(roads: List[Road], edges: List[Edge], vertices: List[Vertex],
     }.start
   }
 
+  def pre_step() = {
+    // First, give generators a chance to introduce more agents into the system
+    generators.foreach(g => ready_to_spawn ++= g.run)
+
+    // Then, introduce any new agents that are ready to spawn into the system
+    ready_to_spawn = ready_to_spawn.filter(a => !try_spawn(a))
+  }
+
   def step(dt_s: Double) = {
+    pre_step
+
     // This value is dt in simulation time, not real time
     val this_time = dt_s * time_speed
     dt_accumulated += this_time
@@ -160,6 +137,17 @@ class Simulation(roads: List[Road], edges: List[Edge], vertices: List[Vertex],
 
     // listener (usually UI) callbacks
     listeners.foreach(l => l.ev_step)
+  }
+
+  // True if we've correctly promoted into real agents. Does the work of
+  // spawning as well.
+  def try_spawn(a: Agent): Boolean = {
+    val can_spawn = true  // TODO
+    if (can_spawn) {
+      agents += a
+      a.at = a.enter(a.start, a.start_dist)
+    }
+    return can_spawn
   }
 
   def pause()  = { running = false }

@@ -6,8 +6,7 @@ import utexas.{Util, cfg}
 abstract class Behavior(a: Agent) {
   val graph = a.graph
 
-  // get things rollin'
-  def set_goal(e: Edge)
+  def give_route(r: List[Traversable])
   // asked every tick after everybody has moved
   def choose_action(): Action
   // only queried when the agent reaches a vertex
@@ -20,7 +19,7 @@ abstract class Behavior(a: Agent) {
 
 // Never speeds up from rest, so effectively never does anything
 class IdleBehavior(a: Agent) extends Behavior(a) {
-  override def set_goal(e: Edge) = {} // we don't care
+  override def give_route(r: List[Traversable]) = {}  // we don't care
 
   override def choose_action() = Act_Set_Accel(0)
 
@@ -36,16 +35,13 @@ class IdleBehavior(a: Agent) extends Behavior(a) {
 // Safe behavior, but it doesn't re-plan or anything fancy.
 class AutonomousBehavior(a: Agent) extends Behavior(a) {
   // route.head is always our next move
-  var route: List[Traversable] = List[Traversable]()
+  var route: List[Traversable] = Nil
   // This is set the first time we choose to begin stopping, and it helps since
   // worst-case analysis says we won't toe the line, but we still want to invoke
   // the same math.
   var keep_stopping = false
 
-  override def set_goal(to: Edge): Unit = a.at.on match {
-    case e: Edge => { route = graph.pathfind_astar(e, to) }
-    case _       => throw new Exception("Start agent on an edge to do stuff!")
-  }
+  override def give_route(r: List[Traversable]) = { route = r }
 
   override def choose_action(): Action = {
     // We disappear in choose_turn, so when route is empty here, just keep

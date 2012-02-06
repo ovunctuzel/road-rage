@@ -6,8 +6,9 @@ import utexas.{Util, cfg}
 // TODO come up with a notion of dimension and movement capability. at first,
 // just use radius bounded by lane widths?
 
-class Agent(val id: Int, val graph: Graph, start: Edge) {
-  var at = enter(start, Agent.sim.queues(start).random_spawn)
+class Agent(val id: Int, val graph: Graph, val start: Edge, val start_dist: Double) {
+  // just until they're introduced!
+  var at: Position = null
 
   // We can only set a target acceleration, which we travel at for the entire
   // duration of timesteps.
@@ -17,11 +18,6 @@ class Agent(val id: Int, val graph: Graph, start: Edge) {
   val behavior = new AutonomousBehavior(this) // TODO who chooses this?
 
   override def toString = "Agent " + id
-
-  // just tell the behavior
-  def go_to(e: Edge) = {
-    behavior.set_goal(e)
-  }
 
   def step(dt_s: Double) = {
     assert(dt_s == cfg.dt_s)

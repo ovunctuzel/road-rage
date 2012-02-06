@@ -26,7 +26,8 @@ object Headless {
 
   def main(args: Array[String]) = {
     val sim = process_args(args)
-    sim.spawn_army(1, 1000)
+    sim.spawn_army(100)
+    sim.wait_for_all_generators
 
     val timer = Util.timer("running the sim")
     Util.log("Starting simulation with time-steps of " + cfg.dt_s + "s")
