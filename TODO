@@ -1,26 +1,22 @@
 # TODO #
 
-mon goals: simulation PAPER, thread pools
-tues goals: UI generators, gps, ask piyush about deadlock with signals
+tues goals: PAPER, gps, ask piyush about deadlock with signals
 
-*** edge len!
+*** gps / edge len!
+then email demo
 
 GENERATORS
-  - a way to make generators in the UI
-  - constant generators!
-  - test the scale.
+  - make it use as many threads as is a good idea..
+  - a way to turn them off / reap them in the UI
+  - color agents from diff generators a certain way
+  - a way to save a "scenario"
+  - test at scale.
 
 - remaining bugs
   - btr, 1000 agents, seed 1328487489724: vert collisions, asking to choose turn now?
   - if we seriously pack people together, we get a traffic jam! try on synthetic.
   - is an agent overshooting its route sometimes? (change assert to warning)
   - collisions in intersection
-
-MEETING NOTES
-  - ui configurable intersection policies
-  - target scale of 20,000 agents or so in smaller area
-    - how hard is thread-based parallelism?
-    - agents reacting is the current bottleneck
 
 BIGGER ISSUES
   - traffic lights
@@ -38,7 +34,6 @@ BIGGER ISSUES
     *** but then they will have to schedule their turn first...
     - or no, there is no deadlock, since if x is behind y, theyre in the same turn, and those never
       conflict?
-  * online traffic spawning
   * lane changing
   * slow down for turns
   - is there a way to analytically say "an agent will own this chunk" at some time, and then solve for collisions?
@@ -51,6 +46,7 @@ POSSIBLY SIMPLE
   - drunkard walk endless behavior mode... no planning, just wanders around
   - print RNG at end of every UI and headless, for convenience.
   - when we speed up, sleep less in UI?
+  - ui configurable intersection policies
 
 ### Map building ###
 

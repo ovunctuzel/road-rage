@@ -49,12 +49,9 @@ object Viewer extends SimpleSwingApplication {
 
       contents += new Menu("View") {
         contents += new Menu("Highlight type of road") {
-          // TODO write this more functionally
-          for (road_type <- road_types) {
-            contents += new MenuItem(Action(road_type) {
-              canvas.handle_ev(EV_Param_Set("highlight", Some(road_type)))
-            })
-          }
+          contents ++= road_types.map(t => new MenuItem(t) {
+            canvas.handle_ev(EV_Param_Set("highlight", Some(t)))
+          })
         }
         contents += new MenuItem(Action("Clear all highlighting") {
           canvas.handle_ev(EV_Param_Set("highlight", None))
@@ -76,9 +73,6 @@ object Viewer extends SimpleSwingApplication {
         contents += new MenuItem(Action("Clear Route") {
           canvas.handle_ev(EV_Action("clear-route"))
         })
-
-        contents += new MenuItem("Mark Agent")  // TODO
-        contents += new MenuItem("Unmark Agent")
       }
 
       contents += new Menu("Simulate") {
@@ -86,7 +80,6 @@ object Viewer extends SimpleSwingApplication {
         contents += new MenuItem(Action("Spawn Army") {
           canvas.handle_ev(EV_Action("spawn-army"))
         })
-        contents += new MenuItem("Sacrifice to RNG God")  // TODO
         contents += new MenuItem(Action("Play/Pause") {
           canvas.handle_ev(EV_Action("toggle-running"))
         })

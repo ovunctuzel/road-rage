@@ -4,7 +4,7 @@ import java.util.concurrent.{Executors, FutureTask, Callable}
 
 import utexas.map.{Edge, Traversable}
 
-import utexas.Util
+import utexas.{Util, cfg}
 
 object Generator {
   val worker_pool = Executors.newFixedThreadPool(2) // TODO
@@ -48,7 +48,19 @@ abstract class Generator(sim: Simulation, desired_starts: List[Edge], val end_ca
 
   // And the blocking poll
   def wait_for_all() = pending.foreach(a => a._2.get())
+
+  def create_and_poll(n: Int): List[Agent] = {
+    for (i <- (0 until n)) {
+      val start = Util.choose_rand[Edge](start_candidates)
+      val end = Util.choose_rand[Edge](end_candidates)
+      add_specific_agent(start, end)
+    }
+    return poll
+  }
 }
+
+// TODO there's further refactorings that should happen between these two...
+// Fixed is really a degenerate case of continuous.
 
 class FixedSizeGenerator(sim: Simulation, starts: List[Edge], ends: List[Edge], total: Int)
   extends Generator(sim, starts, ends)
@@ -63,19 +75,34 @@ class FixedSizeGenerator(sim: Simulation, starts: List[Edge], ends: List[Edge], 
       Util.log("Generator has no viable starting edges!")
       return Right(true)
     } else {
-      // First create new agents
-      for (i <- (0 until num_to_spawn)) {
-        val start = Util.choose_rand[Edge](start_candidates)
-        val end = Util.choose_rand[Edge](end_candidates)
-        add_specific_agent(start, end)
-        num_to_spawn -= 1
-      }
-
-      // Then return anybody who's ready.
-      return Left(poll)
+      val n = num_to_spawn
+      num_to_spawn = 0
+      return Left(create_and_poll(n))
     }
   }
 }
 
-//class ConstantGenerator() extends Generator() {
-//}
+class ContinuousGenerator(sim: Simulation, starts: List[Edge], ends: List[Edge],
+                          rate: Double, num: Int) extends Generator(sim, starts, ends)
+{
+  val num_per_tick = ((rate / cfg.dt_s) * num).toInt
+
+  override def run(): Either[List[Agent], Boolean] = {
+    if (num_per_tick == 0) {
+      // TODO figure out how to spawn per 2 ticks, or whatever
+      Util.log("Generator won't spawn anything! (Choose more agents per time)")
+      return Right(true)
+    } else if (start_candidates.isEmpty) {
+      Util.log("Generator has no viable starting edges!")
+      return Right(true)
+    } else {
+      // TODO fine tune this policy a bit. basically, dont schedule TOO many
+      // routes to be found if we can't keep up computationally.
+      if (pending.size >= num_per_tick * 2) {
+        return Left(poll)
+      } else {
+        return Left(create_and_poll(num_per_tick))
+      }
+    }
+  }
+}

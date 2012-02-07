@@ -10,7 +10,7 @@ import swing.event.Key
 import swing.Dialog
 
 import utexas.map._  // TODO yeah getting lazy.
-import utexas.sim.{Simulation, Agent}
+import utexas.sim.{Simulation, Agent, FixedSizeGenerator, ContinuousGenerator}
 
 import utexas.cfg
 import utexas.Util
@@ -58,7 +58,8 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
   private var chosen_edge2: Option[Edge] = None
   private var route_members = Set[Edge]()
   private var current_agent: Option[Agent] = None
-  private var polygon_roads: Set[Road] = Set()
+  private var polygon_roads1: Set[Road] = Set()
+  private var polygon_roads2: Set[Road] = Set()
 
   // this is like static config, except it's a function of the map and rng seed
   private val special_ward_color = Color.BLACK
@@ -258,8 +259,10 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
   }
 
   def color_road(r: Road): Color = {
-    if (polygon_roads(r)) {
-      return Color.YELLOW
+    if (polygon_roads1(r)) {
+      return Color.RED
+    } else if (polygon_roads2(r)) {
+      return Color.GREEN
     } else if (show_ward_colors) {
       return ward_colorings(r.ward)
     } else {
@@ -436,7 +439,11 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
         repaint
       }
       case EV_Action("step") => {
-        status.time.text = "%.1f".format(sim.tick)
+        val note = if (running)
+                     ""
+                   else
+                     " [Paused]"
+        status.time.text = "%.1f %s".format(sim.tick, note)
         // agents have maybe moved, so...
         status.agents.text = sim.describe_agents
         repaint
@@ -444,7 +451,6 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
       case EV_Action("toggle-running") => {
         if (running) {
           running = false
-          status.time.text = "%.1f [Paused]".format(sim.tick)
         } else {
           running = true
         }
@@ -471,9 +477,7 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
         repaint
       }
       case EV_Action("teleport") => {
-        Dialog.showInput(
-          message = "What edge ID do you seek?", initial = ""
-        ) match {
+        prompt_int("What edge ID do you seek?") match {
           case Some(id) => {
             try {
               val e = sim.edges(id.toInt)
@@ -530,11 +534,90 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
       }
       case EV_Select_Polygon() => {
         // Let's find all vertices inside the polygon.
-        polygon_roads = sim.vertices.filter(v => polygon.contains(v.location.x, v.location.y)).flatMap(v => v.roads).toSet
-        Util.log("Matched " + polygon_roads.size + " roads")
+        val rds = sim.vertices.filter(v => polygon.contains(v.location.x, v.location.y)).flatMap(v => v.roads).toSet
+        Util.log("Matched " + rds.size + " roads")
+        if (polygon_roads1.isEmpty) {
+          polygon_roads1 = rds
+          Util.log("Now select a second set of roads")
+        } else {
+          polygon_roads2 = rds
+          Util.log("Creating a new generator...")
+
+          // Ask: fixed (how many) or continuous (how many per what time)
+          // TODO improve the UI.
+          Dialog.showOptions(
+            message = "Want a fixed, one-time burst or a continuous generator?",
+            optionType = Dialog.Options.YesNoCancel, initial = 0,
+            entries = Seq("Constant", "Continuous")
+          ) match {
+            case Dialog.Result.Yes => {
+              // Fixed
+              prompt_int("How many agents?") match {
+                case Some(num) => {
+                  sim.generators += new FixedSizeGenerator(
+                    sim,
+                    polygon_roads1.toList.flatMap(r => r.all_lanes),
+                    polygon_roads2.toList.flatMap(r => r.all_lanes),
+                    num
+                  )
+                }
+                case _ =>
+              }
+            }
+            case Dialog.Result.No => {
+              // Continuous
+              prompt_double("How often (in simulation-time seconds) do you want more agents?") match {
+                case Some(rate) => {
+                  prompt_int("How many agents?") match {
+                    case Some(num) => {
+                      sim.generators += new ContinuousGenerator(
+                        sim,
+                        polygon_roads1.toList.flatMap(r => r.all_lanes),
+                        polygon_roads2.toList.flatMap(r => r.all_lanes),
+                        rate, num
+                      )
+                    }
+                    case _ =>
+                  }
+                }
+                case _ =>
+              }
+            }
+          }
+
+          polygon_roads1 = Set()
+          polygon_roads2 = Set()
+        }
       }
       case EV_Key_Press(_) => // Ignore the rest
     }
+  }
+
+  // TODO ew, even refactored, these are a bit ugly.
+  def prompt_int(msg: String): Option[Int] = Dialog.showInput(
+    message = msg, initial = ""
+  ) match {
+    case Some(num) => {
+      try {
+        Some(num.toInt)
+      } catch {
+        case _ => None
+      }
+    }
+    case _ => None
+  }
+
+  def prompt_double(msg: String): Option[Double] = Dialog.showInput(
+    message = msg, initial = ""
+  ) match {
+    case Some(num) => {
+      try {
+        Some(num.toDouble)
+      } catch {
+        case _ => None
+      }
+    }
+    case _ => None
   }
 
   def switch_mode(m: Mode.Mode) = {
