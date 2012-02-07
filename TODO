@@ -6,8 +6,6 @@ tues goals: UI generators, gps, ask piyush about deadlock with signals
 *** edge len!
 
 GENERATORS
-  - a way for generators to die off and get themselves reaped
-    - are they spawning too much, doing something weird?
   - all the nice logging
   - a way to make generators in the UI
   - constant generators!
@@ -112,7 +110,6 @@ POSSIBLY SIMPLE
 - make them slow down for turns
 
 - lanechanging model
-- spawning safely
 - spawning specifically in UI
 - structuring policy stuff as a state machine and events may be more elegant...
 - give lanes/roads/etc the ability to be closed

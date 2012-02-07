@@ -92,7 +92,14 @@ class Simulation(roads: List[Road], edges: List[Edge], vertices: List[Vertex],
 
   def pre_step() = {
     // First, give generators a chance to introduce more agents into the system
-    generators.foreach(g => ready_to_spawn ++= g.run)
+    var reap = new MutableSet[Generator]()
+    generators.foreach(g => {
+      g.run match {
+        case Left(newbies) => { ready_to_spawn ++= newbies }
+        case Right(_)      => { reap += g }
+      }
+    })
+    generators --= reap
 
     // Then, introduce any new agents that are ready to spawn into the system
     ready_to_spawn = ready_to_spawn.filter(a => !try_spawn(a))
