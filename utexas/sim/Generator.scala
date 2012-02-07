@@ -1,23 +1,21 @@
 package utexas.sim
 
-import scala.actors.Futures.future
-import scala.actors.Future
+import java.util.concurrent.{Executors, FutureTask, Callable}
 
 import utexas.map.{Edge, Traversable}
 
 import utexas.Util
 
-// TODO abstract class generator. implementations could use blocking routing,
-// futures, ...  or generators dispatch to another mechanism for routefinding,
-// altho that might not be clean.
+object Generator {
+  val worker_pool = Executors.newFixedThreadPool(2) // TODO
+}
 
-// TODO this will really be 'blocking ASAP' generator
 abstract class Generator(sim: Simulation, desired_starts: List[Edge], val end_candidates: List[Edge])
 {
   // Prune the desired_starts for road type and length
   val start_candidates = desired_starts.filter(e => sim.queues(e).ok_to_spawn)
 
-  protected var pending: List[(Agent, Future[List[Traversable]])] = Nil
+  protected var pending: List[(Agent, FutureTask[List[Traversable]])] = Nil
 
   // Returns new agents to try to spawn, or boolean means reap this genertor
   def run(): Either[List[Agent], Boolean]
@@ -27,15 +25,20 @@ abstract class Generator(sim: Simulation, desired_starts: List[Edge], val end_ca
     // TODO the work we do here, if any, actually depends on the behavior.
 
     // schedule some work.
-    pending :+= (a, future { Util.log("oh god more"); sim.pathfind_astar(start, end) })
+    val delayed = new FutureTask[List[Traversable]](new Callable[List[Traversable]]() {
+      def call(): List[Traversable] = {
+        return sim.pathfind_astar(start, end)
+      }
+    })
+    Generator.worker_pool.execute(delayed)
+    pending :+= (a, delayed)
   }
 
   // This is a nonblocking poll, of course
   def poll(): List[Agent] = {
-    val (done, still_pending) = pending.partition(a => a._2.isSet)
+    val (done, still_pending) = pending.partition(a => a._2.isDone)
     pending = still_pending
-    done.foreach(a => a._1.behavior.give_route(a._2()))
-    Util.log(done.size + " were done, " + pending.size + " left")
+    done.foreach(a => a._1.behavior.give_route(a._2.get()))
     return done.map(a => a._1)
   }
 
@@ -51,7 +54,6 @@ class FixedSizeGenerator(sim: Simulation, starts: List[Edge], ends: List[Edge], 
 
   override def run(): Either[List[Agent], Boolean] = {
     if (num_to_spawn == 0 && pending.isEmpty) {
-      Util.log("genertor is done")
       // this generator's done.
       return Right(true)
     } else if (start_candidates.isEmpty) {
