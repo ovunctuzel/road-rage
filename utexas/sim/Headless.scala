@@ -27,14 +27,18 @@ object Headless {
   def main(args: Array[String]) = {
     val sim = process_args(args)
     sim.spawn_army(100)
+    // This can be optional
+    Util.log("Waiting for all routes to be computed")
+    val t = Util.timer("Computing routes")
     sim.wait_for_all_generators
+    t.stop
 
     val timer = Util.timer("running the sim")
     Util.log("Starting simulation with time-steps of " + cfg.dt_s + "s")
     var last_time = 0.0
-    while (!sim.agents.isEmpty) {
+    while (!sim.done) {
       if (sim.tick - last_time >= 1.0) {
-        Util.log(sim.agents.size + " agents left at t=" + sim.tick)
+        Util.log("At t=%.1f: %s".format(sim.tick, sim.describe_agents))
         last_time = sim.tick
       }
       sim.step(cfg.dt_s)
@@ -42,5 +46,6 @@ object Headless {
     Util.log("Simulation took " + sim.tick + " virtual seconds")
     timer.stop
     Util.log("Average of " + (sim.tick / timer.so_far) + "x speedup with dt=" + cfg.dt_s)
+    sim.shutdown
   }
 }

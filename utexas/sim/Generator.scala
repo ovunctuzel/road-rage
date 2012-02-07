@@ -8,6 +8,8 @@ import utexas.Util
 
 object Generator {
   val worker_pool = Executors.newFixedThreadPool(2) // TODO
+
+  def shutdown = worker_pool.shutdown
 }
 
 abstract class Generator(sim: Simulation, desired_starts: List[Edge], val end_candidates: List[Edge])
@@ -19,6 +21,8 @@ abstract class Generator(sim: Simulation, desired_starts: List[Edge], val end_ca
 
   // Returns new agents to try to spawn, or boolean means reap this genertor
   def run(): Either[List[Agent], Boolean]
+
+  def count_pending = pending.size
 
   def add_specific_agent(start: Edge, end: Edge) = {
     val a = new Agent(sim.next_id, sim, start, sim.queues(start).safe_spawn_dist)
@@ -42,9 +46,8 @@ abstract class Generator(sim: Simulation, desired_starts: List[Edge], val end_ca
     return done.map(a => a._1)
   }
 
-  // TODO makes sense for delayed computation ones.
-  def wait_for_all() = {
-  }
+  // And the blocking poll
+  def wait_for_all() = pending.foreach(a => a._2.get())
 }
 
 class FixedSizeGenerator(sim: Simulation, starts: List[Edge], ends: List[Edge], total: Int)

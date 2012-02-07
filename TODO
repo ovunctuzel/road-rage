@@ -6,23 +6,14 @@ tues goals: UI generators, gps, ask piyush about deadlock with signals
 *** edge len!
 
 GENERATORS
-  - all the nice logging
   - a way to make generators in the UI
   - constant generators!
-
-THREAD POOL
-  - make it work in headless for sure
-  - pre-emptively shutting them down
-  - UI
-    - make statusbar update, and show pending/ready agents too
-    - poll while paused
-    - when we speed up, sleep less?
-  - whoa, simulation's timer isnt thread safe!
+  - test the scale.
 
 - remaining bugs
   - btr, 1000 agents, seed 1328487489724: vert collisions, asking to choose turn now?
   - if we seriously pack people together, we get a traffic jam! try on synthetic.
-  - is an agent overshooting its route sometimes?
+  - is an agent overshooting its route sometimes? (change assert to warning)
   - collisions in intersection
 
 MEETING NOTES
@@ -59,6 +50,7 @@ POSSIBLY SIMPLE
     - tell intersection how long have been stopped
   - drunkard walk endless behavior mode... no planning, just wanders around
   - print RNG at end of every UI and headless, for convenience.
+  - when we speed up, sleep less in UI?
 
 ### Map building ###
 
@@ -102,6 +94,7 @@ POSSIBLY SIMPLE
 - dont show arrows when line segs are really clustered
 - ui could show policy's current owner or something
 - draw the orig corner of freehanded polygons differently or something
+- whoa, timer isnt thread safe? (mouse over an agent without a position!)
 
 ### Agents ###
 

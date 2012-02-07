@@ -8,7 +8,7 @@ import utexas.Util
 
 object Status_Bar {
   val zoom       = new Label("1.0") // TODO from cfg
-  val agents     = new Label("0")
+  val agents     = new Label("0 / 0 / 0 (0 generators)")
   val time       = new Label("0.0 [Paused]")
   val time_speed = new Label("1.0x")
   val location   = new Label("Nowhere")
@@ -112,7 +112,7 @@ object Viewer extends SimpleSwingApplication {
         c.ipadx = 50
         layout(new Label("Zoom")) = c
         c.gridx = 1
-        layout(new Label("Agents")) = c
+        layout(new Label("Agents Active/Ready/Routing")) = c
         c.gridx = 2
         layout(new Label("Time")) = c
         c.gridx = 3

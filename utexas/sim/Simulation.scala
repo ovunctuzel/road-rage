@@ -23,12 +23,22 @@ class Simulation(roads: List[Road], edges: List[Edge], vertices: List[Vertex],
   val agents = new MutableSet[Agent]
   var ready_to_spawn: List[Agent] = Nil
   val generators = new MutableSet[Generator]
+  private var generator_count = 0   // just for informational/UI purposes
   private var id_cnt = -1
 
   def next_id(): Int = {
     id_cnt += 1
     return id_cnt
   }
+
+  // Be sure to call pre_step at least once to poke all the generators
+  def done = agents.isEmpty && ready_to_spawn.isEmpty && generator_count == 0
+
+  def shutdown = Generator.shutdown
+
+  def describe_agents = "%d / %d / %d (%d generators)".format(
+    agents.size, ready_to_spawn.size, generator_count, generators.size
+  )
 
   // It's expensive to go through every one of these without reason every
   // time. This banks on the fact that the number of agents is smaller, and
@@ -46,8 +56,9 @@ class Simulation(roads: List[Road], edges: List[Edge], vertices: List[Vertex],
   }
 
   def wait_for_all_generators() = {
-    generators.foreach(g => g.wait_for_all)
+    // A pre-step to schedule requests, then blockingly wait for routes to be done
     pre_step
+    generators.foreach(g => g.wait_for_all)
   }
 
   ////////////// Timing
@@ -58,9 +69,6 @@ class Simulation(roads: List[Road], edges: List[Edge], vertices: List[Vertex],
   var tick: Double = 0
   // we only ever step with dt = cfg.dt_s, so we may have leftover.
   private var dt_accumulated: Double = 0
-  // we can pause
-  var running = false
-  val listeners = new MutableList[Simulation_Listener]()
   // WE CAN GO FASTER
   var time_speed = 1.0
 
@@ -72,32 +80,16 @@ class Simulation(roads: List[Road], edges: List[Edge], vertices: List[Vertex],
     time_speed += 0.1
   }
 
-  // Fire steps every once in a while
-  // TODO this ignores us exiting the swing app, then
-  def start_timer = {
-    new Thread {
-      override def run(): Unit = {
-        while (true) {
-          val start = System.currentTimeMillis
-          // we should fire about 10x/second. optimal/useful rate is going to be
-          // related to time_speed and cfg.dt_s   TODO
-          Thread.sleep(100)
-          if (running) {
-            step((System.currentTimeMillis - start).toDouble / 1000.0)
-          }
-        }
-      }
-    }.start
-  }
-
   def pre_step() = {
     // First, give generators a chance to introduce more agents into the system
     var reap = new MutableSet[Generator]()
+    generator_count = 0
     generators.foreach(g => {
       g.run match {
         case Left(newbies) => { ready_to_spawn ++= newbies }
         case Right(_)      => { reap += g }
       }
+      generator_count += g.count_pending
     })
     generators --= reap
 
@@ -141,9 +133,6 @@ class Simulation(roads: List[Road], edges: List[Edge], vertices: List[Vertex],
         }
       })
     }
-
-    // listener (usually UI) callbacks
-    listeners.foreach(l => l.ev_step)
   }
 
   // True if we've correctly promoted into real agents. Does the work of
@@ -157,15 +146,8 @@ class Simulation(roads: List[Road], edges: List[Edge], vertices: List[Vertex],
       return false
     }
   }
-
-  def pause()  = { running = false }
-  def resume() = { running = true }
 }
 
 object Simulation {
   def load(fn: String) = (new Reader(fn)).load_simulation
-}
-
-abstract class Simulation_Listener {
-  def ev_step()
 }

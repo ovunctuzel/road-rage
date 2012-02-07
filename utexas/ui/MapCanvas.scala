@@ -10,7 +10,7 @@ import swing.event.Key
 import swing.Dialog
 
 import utexas.map._  // TODO yeah getting lazy.
-import utexas.sim.{Simulation, Agent, Simulation_Listener}
+import utexas.sim.{Simulation, Agent}
 
 import utexas.cfg
 import utexas.Util
@@ -25,13 +25,26 @@ object Mode extends Enumeration {
 // TODO maybe adaptor class for our map geometry? stick in a 'render road' bit
 
 class MapCanvas(sim: Simulation) extends ScrollingCanvas {
-  // listen!
-  sim.listeners += new Simulation_Listener() {
-    def ev_step() = handle_ev(EV_Action("step"))
-  }
-
-  // start the simulation
-  sim.start_timer
+  // fire steps every now and then
+  new Thread {
+    override def run(): Unit = {
+      while (true) {
+        val start = System.currentTimeMillis
+        // we should fire about 10x/second. optimal/useful rate is going to be
+        // related to time_speed and cfg.dt_s   TODO
+        Thread.sleep(100)
+        if (running) {
+          sim.step((System.currentTimeMillis - start).toDouble / 1000.0)
+        } else {
+          // poll the generators
+          sim.pre_step
+        }
+        handle_ev(EV_Action("step"))
+      }
+    }
+  }.start
+  // but we can also pause
+  var running = false
 
   // state
   private var current_edge: Option[Edge] = None
@@ -419,21 +432,21 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
       case EV_Action("spawn-army") => {
         sim.spawn_army(100) // TODO cfg
         // TODO when we're paused, poll generators anyway.
-        status.agents.text = "" + sim.agents.size
+        status.agents.text = sim.describe_agents
         repaint
       }
       case EV_Action("step") => {
         status.time.text = "%.1f".format(sim.tick)
         // agents have maybe moved, so...
-        status.agents.text = "" + sim.agents.size
+        status.agents.text = sim.describe_agents
         repaint
       }
       case EV_Action("toggle-running") => {
-        if (sim.running) {
-          sim.pause
+        if (running) {
+          running = false
           status.time.text = "%.1f [Paused]".format(sim.tick)
         } else {
-          sim.resume
+          running = true
         }
       }
       case EV_Action("toggle-wards") => {
