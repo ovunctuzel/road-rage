@@ -1,22 +1,31 @@
 # TODO #
 
-mon goals: simulation PAPER, spawning/thread pool/master/generators, making generators in UI, gps, ask piyush about deadlock with signals
+mon goals: simulation PAPER, thread pools
+tues goals: UI generators, gps, ask piyush about deadlock with signals
 
-- safe spawning
-- all the nice logging
+*** edge len!
 
-- thread pool, multiple workers, pre-emptively shutting them down, etc
-- make sure UI stuff still all works and gets updated
-- a way for generators to die off and get themselves reaped
+GENERATORS
+  - a way for generators to die off and get themselves reaped
+    - are they spawning too much, doing something weird?
+  - all the nice logging
+  - a way to make generators in the UI
+  - constant generators!
 
-- remaining bugs (modulo spawning issues)
+THREAD POOL
+  - thread pool, multiple workers, pre-emptively shutting them down, etc
+  - make sure UI stuff still all works and gets updated
+  - futures, threadpoolexecutor
+  - whoa, simulation's timer isnt thread safe!
+
+- remaining bugs
   - btr, 1000 agents, seed 1328487489724: vert collisions, asking to choose turn now?
   - if we seriously pack people together, we get a traffic jam! try on synthetic.
   - is an agent overshooting its route sometimes?
+  - collisions in intersection
 
 MEETING NOTES
   - ui configurable intersection policies
-  - ui draw generators/destinations and spawn traffic constantlyish
   - target scale of 20,000 agents or so in smaller area
     - how hard is thread-based parallelism?
     - agents reacting is the current bottleneck

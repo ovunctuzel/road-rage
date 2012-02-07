@@ -418,8 +418,10 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
       }
       case EV_Action("spawn-army") => {
         sim.spawn_army(100) // TODO cfg
-        // TODO eh, do something a bit different if we're pasued?
-        sim.wait_for_all_generators
+        // Whoa, the other thread actually starts doing stuff in parallel!
+        if (!sim.running) {
+          sim.wait_for_all_generators
+        }
         status.agents.text = "" + sim.agents.size
         repaint
       }

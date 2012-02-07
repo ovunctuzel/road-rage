@@ -142,12 +142,13 @@ class Simulation(roads: List[Road], edges: List[Edge], vertices: List[Vertex],
   // True if we've correctly promoted into real agents. Does the work of
   // spawning as well.
   def try_spawn(a: Agent): Boolean = {
-    val can_spawn = true  // TODO
-    if (can_spawn) {
+    if (queues(a.start).can_spawn_now(a.start_dist)) {
       agents += a
       a.at = a.enter(a.start, a.start_dist)
+      return true
+    } else {
+      return false
     }
-    return can_spawn
   }
 
   def pause()  = { running = false }

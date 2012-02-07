@@ -12,7 +12,7 @@ class Agent(val id: Int, val graph: Graph, val start: Edge, val start_dist: Doub
 
   // We can only set a target acceleration, which we travel at for the entire
   // duration of timesteps.
-  val max_accel = 2.7   // TODO cfg and based on vehicle type
+  val max_accel = cfg.max_accel   // TODO based on vehicle type
   var speed: Double = 0.0   // meters/sec, I believe
   var target_accel: Double = 0  // m/s^2
   val behavior = new AutonomousBehavior(this) // TODO who chooses this?

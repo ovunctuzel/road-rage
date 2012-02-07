@@ -2,7 +2,7 @@ package utexas.sim
 
 import utexas.map.Edge
 
-import utexas.{Util, cfg}
+import utexas.Util
 
 // TODO abstract class generator. implementations could use blocking routing,
 // futures, ...  or generators dispatch to another mechanism for routefinding,
@@ -12,14 +12,14 @@ import utexas.{Util, cfg}
 abstract class Generator(sim: Simulation, desired_starts: List[Edge], val end_candidates: List[Edge])
 {
   // Prune the desired_starts for road type and length
-  val start_candidates = desired_starts.filter(e => ok_to_spawn(e))
+  val start_candidates = desired_starts.filter(e => sim.queues(e).ok_to_spawn)
   var ready_agents: List[Agent] = Nil
 
   // Returns new agents to try to spawn. Override this!
   def run(): List[Agent]
 
   def add_specific_agent(start: Edge, end: Edge) = {
-    val a = new Agent(sim.next_id, sim, start, safe_spawn_dist(start))
+    val a = new Agent(sim.next_id, sim, start, sim.queues(start).safe_spawn_dist)
     // TODO the work we do here, if any, actually depends on the behavior.
 
     // immediately and blockingly compute the path
@@ -28,12 +28,6 @@ abstract class Generator(sim: Simulation, desired_starts: List[Edge], val end_ca
     // oh hey, lookie
     ready_agents :+= a
   }
-
-  // TODO and length.
-  def ok_to_spawn(e: Edge) = e.road.road_type == "residential" && e.length >= 1.0
-
-  // TODO math, please.
-  def safe_spawn_dist(e: Edge) = Util.rand_double(.20 * e.length, .80 * e.length)
 
   // TODO makes sense for delayed computation ones.
   def wait_for_all() = {
@@ -52,14 +46,12 @@ class FixedSizeGenerator(sim: Simulation, starts: List[Edge], ends: List[Edge], 
         Util.log("Generator has no viable starting edges!")
         return Nil
       } else {
-        Util.log("We'll make " + num_to_spawn)
         for (i <- (0 until num_to_spawn)) {
           val start = Util.choose_rand[Edge](start_candidates)
           val end = Util.choose_rand[Edge](end_candidates)
           add_specific_agent(start, end)
           num_to_spawn -= 1
         }
-        Util.log("Done spawning")
       }
     }
 
