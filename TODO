@@ -11,9 +11,11 @@ GENERATORS
   - constant generators!
 
 THREAD POOL
-  - thread pool, multiple workers, pre-emptively shutting them down, etc
-  - make sure UI stuff still all works and gets updated
-  - futures, threadpoolexecutor
+  - make it use a thread pool and not try all of these at once
+  - pre-emptively shutting them down
+  - UI
+    - make statusbar update
+    - poll while paused
   - whoa, simulation's timer isnt thread safe!
 
 - remaining bugs

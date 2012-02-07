@@ -1,6 +1,9 @@
 package utexas.sim
 
-import utexas.map.Edge
+import scala.actors.Futures.future
+import scala.actors.Future
+
+import utexas.map.{Edge, Traversable}
 
 import utexas.Util
 
@@ -13,7 +16,8 @@ abstract class Generator(sim: Simulation, desired_starts: List[Edge], val end_ca
 {
   // Prune the desired_starts for road type and length
   val start_candidates = desired_starts.filter(e => sim.queues(e).ok_to_spawn)
-  var ready_agents: List[Agent] = Nil
+
+  protected var pending: List[(Agent, Future[List[Traversable]])] = Nil
 
   // Returns new agents to try to spawn, or boolean means reap this genertor
   def run(): Either[List[Agent], Boolean]
@@ -22,11 +26,17 @@ abstract class Generator(sim: Simulation, desired_starts: List[Edge], val end_ca
     val a = new Agent(sim.next_id, sim, start, sim.queues(start).safe_spawn_dist)
     // TODO the work we do here, if any, actually depends on the behavior.
 
-    // immediately and blockingly compute the path
-    a.behavior.give_route(sim.pathfind_astar(start, end))
+    // schedule some work.
+    pending :+= (a, future { Util.log("oh god more"); sim.pathfind_astar(start, end) })
+  }
 
-    // oh hey, lookie
-    ready_agents :+= a
+  // This is a nonblocking poll, of course
+  def poll(): List[Agent] = {
+    val (done, still_pending) = pending.partition(a => a._2.isSet)
+    pending = still_pending
+    done.foreach(a => a._1.behavior.give_route(a._2()))
+    Util.log(done.size + " were done, " + pending.size + " left")
+    return done.map(a => a._1)
   }
 
   // TODO makes sense for delayed computation ones.
@@ -40,7 +50,8 @@ class FixedSizeGenerator(sim: Simulation, starts: List[Edge], ends: List[Edge], 
   var num_to_spawn = total
 
   override def run(): Either[List[Agent], Boolean] = {
-    if (num_to_spawn == 0) {
+    if (num_to_spawn == 0 && pending.isEmpty) {
+      Util.log("genertor is done")
       // this generator's done.
       return Right(true)
     } else if (start_candidates.isEmpty) {
@@ -56,9 +67,7 @@ class FixedSizeGenerator(sim: Simulation, starts: List[Edge], ends: List[Edge], 
       }
 
       // Then return anybody who's ready.
-      val ready = ready_agents
-      ready_agents = Nil
-      return Left(ready)
+      return Left(poll)
     }
   }
 }
