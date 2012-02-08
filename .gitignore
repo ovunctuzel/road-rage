@@ -4,3 +4,6 @@
 *.osm
 !synthetic.osm
 *.map
+*.aux
+*.log
+*.pdf

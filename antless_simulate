@@ -1,0 +1,5 @@
+#!/bin/bash
+
+. common_antless
+
+scala -cp .build:/usr/share/java/scala-swing.jar utexas.ui.Viewer $@

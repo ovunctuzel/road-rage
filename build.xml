@@ -19,7 +19,7 @@
   <target name="compile">
     <mkdir dir="${build}"/>
     <fsc srcdir="${src}" destdir="${build}" classpathref="compile_cp" failonerror="false">
-      <include name="**/*.scala"/>
+      <include name="*/*.scala"/>
     </fsc>
   </target>
 

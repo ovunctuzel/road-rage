@@ -2,8 +2,13 @@
 
 tues goals: PAPER, gps, ask piyush about deadlock with signals
 
-tweak cfg now that we have meters
-then email demo
+wed goals:
+  3 sections of paper
+  fix remaining bugs
+  tweak cfg with units
+  improve generators
+
+- tweak cfg now that we have meters
 
 GENERATORS
   - make it use as many threads as is a good idea..
@@ -112,8 +117,6 @@ POSSIBLY SIMPLE
 - use ListBuffers more.
 - make more immutable things
 - reduce more vars to vals
-- improve build system (dont recompile)
-- Edges as subclasses for direxn might be nice
 - make everything possible immutable, but then have to figure out how to build
   inter-referential things
   - Mutable subclasses of everything used during construction..
@@ -124,7 +127,6 @@ POSSIBLY SIMPLE
 
 - tolling
 - lane reversal
-- 4-way stops
 - traffic signals
 - dynamic traffic signals
 - spawning realistic traffic patterns

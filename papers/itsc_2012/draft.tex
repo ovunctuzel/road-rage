@@ -1,6 +1,6 @@
 \documentclass[12pt]{article}
 
-% TODO grab the format
+% TODO grab the ieee format
 
 \title{Paper}
 \author{Dustin Carlino, Mike Depinet, Piyush Khandelwal, Peter Stone}
@@ -19,17 +19,25 @@
 
 % contribution: autonomous car / human car sim on EXISTING INFRASTRUCTURE
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 \section{Architecture}
 
-scala
+AORTA's implementation uses Scala, a language implemented on the Java Virtual
+Machine. Scala provides the advantage of functional programming constructs
+without imposing them; parts of AORTA or extensions or clients can just as
+easily be written in the more familiar Java.
 
-maps separate from simulation separate from UI (mostly)
+The architecture of AORTA is described below.
 
 thread pools?
 
 programs: build map, UI (describe what it can do), headless
 
 api / extending it
+maps separate from simulation separate from UI (mostly)
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \section{Map Construction from OSM}
 
@@ -45,6 +53,7 @@ roads, verts, edges, wards, traversables, turns...
 
 edges are made up of multiple lines.. this could be control pts of a curve
 (hereon, line means line segment)
+(turns are also traversable)
 
 \subsection{Pass 1}
 
@@ -150,21 +159,68 @@ match on gps, or on road metadata like names
 
 integrating with what other sources for spawning traffic, placing POI?
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 \section{Simulation}
 
-limitations of timesteps and small edges. in reality, more computational power
-and more reactivity
+AORTA uses microscopic simulation, modeling individual drivers as agents.
+Discrete-time simulation is used, meaning an agent accelerates at a fixed rate
+for the duration of a ``tick'' to achieve a new position and velocity. The tick
+duration $dt$ is configurable and fixed for the simulation. Agents know this
+value and use it to reason about collision avoidance and satisfying other
+constraints, so setting this value to the standard ``reaction time'' of a human
+driver may be appropriate. Each tick, the simulation performs the following
+steps:
+\begin{itemize}
+  \item Introducing new agents into the map
+  \item Updating the position and velocity of agents
+  \item Checking for collisions
+  \item Allowing each agent to react
+\end{itemize}
+
+There are two structures to detect collisions. All traversables (edges and the
+straight line-approximation of turns) maintain a queue of occupying agents,
+ordering them so that the agent farthest along is at the head of the queue.
+A naive method of collision detection would detect an agent passing an agent on
+the same queue, or entering a new queue not at the end, immediately after an
+agent moves. However, agents take their steps sequentially and in an effectively
+random order. Ideally they could be reordered so that agents in the front of a
+queue always move first. Since the first agent may cross into the next queue,
+that introduces a depdendency between traversables. A topological sort of a
+directed graph containing circuits is not possible, though, and since we
+guarantee connectedness, there are obviously circuits. Instead, collisions are
+checked after every agent has stepped forward in time. Queues remember the
+original order of agents before a step, and afterwards can verify the order is
+still legal, with new agents on the end and existing agents in the same order.
+Likewise, intersections check for collisions after everybody has moved by
+examining the turn each agent is performing and verifying that no other agent is
+simultaneously performing a conflicting turn.
+
+
+
+invariants for agents. interface of behavior and intersection policies.
+
+lookahead... worst-case stop dist argument is everywhere. safe spawning, too.
+
+intersection policies... stop sign, traffic light.
 
 justify arbitrary constants, like deaccel for cars
 
-interface... what invariants do agents have to follow, and how does the default
-behavior provide them?
+scale
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{Experimental Results}
+
+% upgrading stop signs to signals, optimizing timing
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \section{Notes}
 
 possible background/links
-http://www.caliper.com/transmodeler/default.htm
-http://ieeexplore.ieee.org/stamp/stamp.jsp?tp=&arnumber=6082793
- https://www.google.com/search?sourceid=chrome&ie=UTF-8&q=Agent-Based+Traffic+Simulation+and+Traffic+Signal+Timing+Optimization+with+GPU
+%http://www.caliper.com/transmodeler/default.htm
+%http://ieeexplore.ieee.org/stamp/stamp.jsp?tp=&arnumber=6082793
+%https://www.google.com/search?sourceid=chrome&ie=UTF-8&q=Agent-Based+Traffic+Simulation+and+Traffic+Signal+Timing+Optimization+with+GPU
 
 \end{document}

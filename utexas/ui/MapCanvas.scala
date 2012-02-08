@@ -536,57 +536,61 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
         // Let's find all vertices inside the polygon.
         val rds = sim.vertices.filter(v => polygon.contains(v.location.x, v.location.y)).flatMap(v => v.roads).toSet
         Util.log("Matched " + rds.size + " roads")
-        if (polygon_roads1.isEmpty) {
-          polygon_roads1 = rds
-          Util.log("Now select a second set of roads")
+        if (rds.isEmpty) {
+          Util.log("Try that again.")
         } else {
-          polygon_roads2 = rds
-          Util.log("Creating a new generator...")
+          if (polygon_roads1.isEmpty) {
+            polygon_roads1 = rds
+            Util.log("Now select a second set of roads")
+          } else {
+            polygon_roads2 = rds
+            Util.log("Creating a new generator...")
 
-          // Ask: fixed (how many) or continuous (how many per what time)
-          // TODO improve the UI.
-          Dialog.showOptions(
-            message = "Want a fixed, one-time burst or a continuous generator?",
-            optionType = Dialog.Options.YesNoCancel, initial = 0,
-            entries = Seq("Constant", "Continuous")
-          ) match {
-            case Dialog.Result.Yes => {
-              // Fixed
-              prompt_int("How many agents?") match {
-                case Some(num) => {
-                  sim.generators += new FixedSizeGenerator(
-                    sim,
-                    polygon_roads1.toList.flatMap(r => r.all_lanes),
-                    polygon_roads2.toList.flatMap(r => r.all_lanes),
-                    num
-                  )
-                }
-                case _ =>
-              }
-            }
-            case Dialog.Result.No => {
-              // Continuous
-              prompt_double("How often (in simulation-time seconds) do you want more agents?") match {
-                case Some(rate) => {
-                  prompt_int("How many agents?") match {
-                    case Some(num) => {
-                      sim.generators += new ContinuousGenerator(
-                        sim,
-                        polygon_roads1.toList.flatMap(r => r.all_lanes),
-                        polygon_roads2.toList.flatMap(r => r.all_lanes),
-                        rate, num
-                      )
-                    }
-                    case _ =>
+            // Ask: fixed (how many) or continuous (how many per what time)
+            // TODO improve the UI.
+            Dialog.showOptions(
+              message = "Want a fixed, one-time burst or a continuous generator?",
+              optionType = Dialog.Options.YesNoCancel, initial = 0,
+              entries = Seq("Constant", "Continuous")
+            ) match {
+              case Dialog.Result.Yes => {
+                // Fixed
+                prompt_int("How many agents?") match {
+                  case Some(num) => {
+                    sim.generators += new FixedSizeGenerator(
+                      sim,
+                      polygon_roads1.toList.flatMap(r => r.all_lanes),
+                      polygon_roads2.toList.flatMap(r => r.all_lanes),
+                      num
+                    )
                   }
+                  case _ =>
                 }
-                case _ =>
+              }
+              case Dialog.Result.No => {
+                // Continuous
+                prompt_double("How often (in simulation-time seconds) do you want more agents?") match {
+                  case Some(rate) => {
+                    prompt_int("How many agents?") match {
+                      case Some(num) => {
+                        sim.generators += new ContinuousGenerator(
+                          sim,
+                          polygon_roads1.toList.flatMap(r => r.all_lanes),
+                          polygon_roads2.toList.flatMap(r => r.all_lanes),
+                          rate, num
+                        )
+                      }
+                      case _ =>
+                    }
+                  }
+                  case _ =>
+                }
               }
             }
-          }
 
-          polygon_roads1 = Set()
-          polygon_roads2 = Set()
+            polygon_roads1 = Set()
+            polygon_roads2 = Set()
+          }
         }
       }
       case EV_Key_Press(_) => // Ignore the rest
