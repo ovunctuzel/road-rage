@@ -376,7 +376,7 @@ class Pass3(old_graph: PreGraph2) {
 
         // But some changes, for some reason, make some lines MUCH shorter, so
         // detect and avoid trimming those.
-        val max_trim = 1.0  // TODO cfg and make units make sense.
+        val max_trim = 50.0  // TODO cfg. this should be meters now.
 
         val possible1 = new Line(l1.x1, l1.y1, pt.x, pt.y)
         if (possible1.length < l1.length && l1.length - possible1.length <= max_trim) {

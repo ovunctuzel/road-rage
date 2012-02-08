@@ -79,15 +79,16 @@ object cfg {
     ("dash_center",     true,  "Dash the center yellow line?")
   ) map {c => c._1 -> new Bool_Cfgable(c._2, c._3)} toMap
 
+  // all distances should be in meters
   val doubles = List(
     ("lane_width",     0.05, "Width of a lane", 0.01, 0.1),
     ("zoom_threshold",  5.0, "How close to zoom in before drawing details",    1.0, 15.0),
     ("epsilon",     0.00001, "What do we take as zero due to FP imprecision?", 0.0,  1.0),
     ("dt_s",            0.1, "The only dt in seconds an agent can experience", 0.1,  3.0),
     // account for crosswalks, vehicle length...
-    ("end_threshold",   0.5, "The end of a traversable is its length - this",  0.1,  3.0),
+    ("end_threshold",  10.0, "The end of a traversable is its length - this",  0.1,  3.0),
     // this kind of gives dimension to cars, actually
-    ("follow_dist",     1.0, "Even if stopped, don't get closer than this", 0.1, 1.0),
+    ("follow_dist",     20.0, "Even if stopped, don't get closer than this", 0.1, 1.0),
     ("max_accel",       2.7, "A car's physical capability",                    0.5, 5.0)
   ) map {c => c._1 -> new Double_Cfgable(c._2, c._3, c._4, c._5)} toMap
 

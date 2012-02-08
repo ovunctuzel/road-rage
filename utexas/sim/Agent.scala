@@ -44,6 +44,9 @@ class Agent(val id: Int, val graph: Graph, val start: Edge, val start_dist: Doub
     var current_on = start_on
     var current_dist = old_dist + new_dist
 
+    // TODO this is cheating, it's temporary.
+    try {
+    // TODO
     while (current_dist >= current_on.length) {
       current_dist -= current_on.length
       // Are we finishing a turn or starting one?
@@ -62,6 +65,14 @@ class Agent(val id: Int, val graph: Graph, val start: Edge, val start_dist: Doub
       behavior.transition(current_on, next)
       current_on = next
     }
+    // TODO
+    } catch {
+      case _ => {
+        Util.log("bad time to choose a turn, apparently.")
+        dump_info
+      }
+    }
+    // TODO
 
     // so we finally end up somewhere...
     if (start_on == current_on) {
