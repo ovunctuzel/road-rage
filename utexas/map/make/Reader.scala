@@ -45,8 +45,6 @@ class Reader(fn: String) {
     var roads: Array[Road] = null
     var edges: Array[Edge] = null
     var verts: Array[Vertex] = null
-    var width, height, xOff, yOff: Double = 0.0
-    var scale: Double = 1.0
     val wards_map = new HashMap[Int, MutableSet[Road]] with MultiMap[Int, Road]
     var special_ward_id: Int = -1
 
@@ -75,11 +73,15 @@ class Reader(fn: String) {
 
       ev match {
         case EvElemStart(_, "graph", attribs, _) => {
-          width  = get_doubles(attribs)("width")
-          height = get_doubles(attribs)("height")
-          xOff = get_doubles(attribs)("xoff")
-          yOff = get_doubles(attribs)("yoff")
-          scale = get_doubles(attribs)("scale")
+          val width  = get_doubles(attribs)("width")
+          val height = get_doubles(attribs)("height")
+          val xoff = get_doubles(attribs)("xoff")
+          val yoff = get_doubles(attribs)("yoff")
+          val scale = get_doubles(attribs)("scale")
+          // Set this as early as possible! length() of any lines we make needs
+          // it.
+          Graph.set_params(width, height, xoff, yoff, scale)
+
           special_ward_id = get_ints(attribs)("special_ward")
 
           val num_roads = get_ints(attribs)("roads")
@@ -224,11 +226,11 @@ class Reader(fn: String) {
 
     if (with_agents) {
       return Left(new Simulation(
-        roads.toList, edges.toList, verts.toList, wards, special_ward, width, height, xOff, yOff, scale
+        roads.toList, edges.toList, verts.toList, wards, special_ward
       ))
     } else {
       return Right(new Graph(
-        roads.toList, edges.toList, verts.toList, wards, special_ward, width, height, xOff, yOff, scale
+        roads.toList, edges.toList, verts.toList, wards, special_ward
       ))
     }
     // TODO anything to more explicitly free up?

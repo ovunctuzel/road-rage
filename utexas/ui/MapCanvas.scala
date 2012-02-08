@@ -74,8 +74,8 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
   ).toMap ++ List((sim.special_ward, special_ward_color)).toMap
   private val agent_colors = HashMap[Agent, Color]()
 
-  def canvas_width = sim.width.toInt
-  def canvas_height = sim.height.toInt
+  def canvas_width = Graph.width.toInt
+  def canvas_height = Graph.height.toInt
 
   // pre-render base roads.
   // TODO this was too ridiculous a sequence comprehension, so use a ListBuffer,

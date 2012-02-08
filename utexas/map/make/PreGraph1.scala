@@ -76,7 +76,7 @@ class PreGraph1() {
       // confusing after this!
       return new Coordinate(
         (pt.x + offX) * scale,
-        height - (pt.y + offY) * scale
+        height - ((pt.y + offY) * scale)
       )
 
       //if (x < 0 || x > width || y < 0 || y > height) {

@@ -2,11 +2,12 @@
 
 tues goals: PAPER, gps, ask piyush about deadlock with signals
 
-*** gps / edge len!
+tweak cfg now that we have meters
 then email demo
 
 GENERATORS
   - make it use as many threads as is a good idea..
+  - we can do much better with ready agents... max capacity of edges, group them based on where they want to spawn, maybe by generator?
   - a way to turn them off / reap them in the UI
   - color agents from diff generators a certain way
   - a way to save a "scenario"
@@ -23,7 +24,6 @@ BIGGER ISSUES
     - accept for 30 seconds into queue, switch when everyone's done?
     - is there deadlock?
     - quadratic conflict checking!
-  - lets make sure length corresponds to reality (in m). it's long.
   - fix geom of edge lines
   - make sure turns and conflicts are as good as possible
     - randomize num of lanes to test

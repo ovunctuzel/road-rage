@@ -8,14 +8,8 @@ import utexas.Util
 
 class Graph(val roads: List[Road], val edges: List[Edge],
             val vertices: List[Vertex], val wards: List[Ward],
-            val special_ward: Ward, val width: Double, val ht: Double,
-            val xoff:Double, val yoff:Double, val sc:Double)
+            val special_ward: Ward)
 {
-  val height: Double = Graph.setHeight(ht)
-  val xOff: Double = Graph.setXOff(xoff)
-  val yOff: Double = Graph.setYOff(yoff)
-  val scale: Double = Graph.setScale(sc) //TODO  Is there a better way to "set static variables"?
-  
   val turns = vertices.foldLeft(List[Turn]())((l, v) => v.turns.toList ++ l)
 
   // Tell road about their ward
@@ -93,16 +87,27 @@ class Graph(val roads: List[Road], val edges: List[Edge],
   }
 }
 
+// It's a bit funky, but the actual graph instance doesn't have this; we do.
 object Graph {
-  var scale: Double = 1.0
-  var xOff, yOff, height: Double = 0.0
-  def setScale(sc: Double): Double = {scale = sc; return scale;}
-  def setXOff(xoff: Double): Double = {xOff = xoff; return xOff;}
-  def setYOff(yoff: Double): Double = {yOff = yoff; return yOff;}
-  def setHeight(ht: Double): Double = {height = ht; return height;}
+  var width = 0.0
+  var height = 0.0
+  var xoff = 0.0
+  var yoff = 0.0
+  var scale = 0.0
+
+  // this MUST be set before world_to_gps is called.
+  def set_params(w: Double, h: Double, x: Double, y: Double, s: Double) = {
+    width = w
+    height = h
+    xoff = x
+    yoff = y
+    scale = s
+  }
+
+  // inverts what PreGraph1's normalize() does.
+  def world_to_gps(x: Double, y: Double) = new Coordinate(
+    (x / scale) - xoff, ((height - y) / scale) - yoff
+  )
+
   def load(fn: String) = (new Reader(fn)).load_map
-  def worldToGPS(pt: Coordinate): Coordinate =
-    new Coordinate((pt.x / scale) - xOff,((height - pt.y) / scale) - yOff)
-  def gpsToWorld(pt: Coordinate): Coordinate = 
-    new Coordinate((pt.x + xOff) * scale, (pt.y + yOff) * scale)
 }

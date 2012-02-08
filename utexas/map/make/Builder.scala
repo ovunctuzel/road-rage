@@ -2,6 +2,8 @@ package utexas.map.make
 
 import java.io.FileWriter
 
+import utexas.map.Graph
+
 import utexas.Util
 
 object Builder {
@@ -37,6 +39,8 @@ object Builder {
     // first, let's take osm to an undirected graph with vertex intersections
     // and entire-road edges.
     val graph1 = new Pass1(ifn).run()
+    // So our edges can have a reasonable length...
+    Graph.set_params(graph1.width, graph1.height, graph1.offX, graph1.offY, graph1.scale)
 
     // then split roads so that edges are between just two vertices
     val graph2 = new Pass2(graph1).run()
