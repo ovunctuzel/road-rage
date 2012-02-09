@@ -86,35 +86,34 @@ class NeverGoPolicy(intersection: Intersection) extends Policy(intersection) {
 
 // Always stop, then FIFO. Totally unoptimized.
 class StopSignPolicy(intersection: Intersection) extends Policy(intersection) {
-  // owner of the intersection!
+  // owner of the intersection! may be None when the queue has members. In that
+  // case, the first person has to pause a bit longer before continuing.
   var current_owner: Option[Agent] = None
   var queue = List[Agent]()
 
   def should_stop(a: Agent, turn: Turn, far_away: Double): Boolean = {
+    // Do they have the lock?
     current_owner match {
       case Some(owner) if a == owner => return false
       case _       =>
     }
 
-    // Already scheduled?
-    if (queue.contains(a)) {
+    // Schedule them if needed and if they're at the end of the edge.
+    if (!queue.contains(a) && is_waiting(a, turn, far_away)) {
+      queue :+= a
+    }
+
+    // Can we promote them now?
+    val ready = !current_owner.isDefined && !queue.isEmpty && a == queue.head &&
+                a.how_long_idle >= cfg.pause_at_stop
+    if (ready) {
+      // promote them!
+      current_owner = Some(queue.head)
+      queue = queue.tail
+      return false
+    } else {
       return true
     }
-
-    // Do we add them to the queue? They have to be at the end.
-    val can_add_to_queue = is_waiting(a, turn, far_away)
-
-    if (can_add_to_queue) {
-      // If they're the first one, let them go now. They've stopped validly.
-      if (queue.size == 0 && !current_owner.isDefined) {
-        current_owner = Some(a)
-        return false
-      } else {
-        queue :+= a
-      }
-    }
-
-    return true
   }
 
   def validate_entry(a: Agent, turn: Turn) = current_owner match {
@@ -129,12 +128,9 @@ class StopSignPolicy(intersection: Intersection) extends Policy(intersection) {
       Util.log("  Crazy guy was attempting " + turn)
       Util.log("  Time was " + Agent.sim.tick)
     }
-    if (queue.size > 0) {
-      current_owner = Some(queue.head)
-      queue = queue.tail
-    } else {
-      current_owner = None
-    }
+    current_owner = None
+    // Next time queue.head, if it exists, polls, we'll let them go if they've
+    // waited patiently.
   }
 }
 

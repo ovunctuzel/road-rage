@@ -17,6 +17,7 @@ GENERATORS
   - test at scale.
 
 - remaining bugs
+  - entering intersections at speed=0, causing deadlock.
   - btr, 1000 agents, seed 1328487489724: vert collisions, asking to choose turn now?
   - if we seriously pack people together, we get a traffic jam! try on synthetic.
   - is an agent overshooting its route sometimes? (change assert to warning)
@@ -44,8 +45,6 @@ BIGGER ISSUES
 POSSIBLY SIMPLE
   - script to scrape osm
   - switch ant to sbt? https://github.com/harrah/xsbt/wiki/Examples
-  - make agents pause a moment at stop signs?
-    - tell intersection how long have been stopped
   - drunkard walk endless behavior mode... no planning, just wanders around
   - print RNG at end of every UI and headless, for convenience.
   - when we speed up, sleep less in UI?

@@ -16,6 +16,7 @@ class Agent(val id: Int, val graph: Graph, val start: Edge, val start_dist: Doub
   var speed: Double = 0.0   // meters/sec, I believe
   var target_accel: Double = 0  // m/s^2
   val behavior = new AutonomousBehavior(this) // TODO who chooses this?
+  var idle_since = -1.0   // how long has our speed been 0?
 
   override def toString = "Agent " + id
 
@@ -33,6 +34,13 @@ class Agent(val id: Int, val graph: Graph, val start: Edge, val start_dist: Doub
     // Do physics to update current speed and figure out how far we've traveled in
     // this timestep.
     val new_dist = update_kinematics(dt_s)
+
+    idle_since = if (speed == 0.0 && idle_since == -1.0)
+                   Agent.sim.tick   // we've started idling
+                 else if (speed == 0.0)
+                   idle_since   // keep same
+                 else
+                   -1.0   // we're not idling
 
     // Check speed limit
     start_on match {
@@ -84,6 +92,11 @@ class Agent(val id: Int, val graph: Graph, val start: Edge, val start_dist: Doub
 
     // TODO deal with lane-changing
   }
+
+  def how_long_idle = if (idle_since == -1.0)
+                        0.0
+                      else
+                        Agent.sim.tick - idle_since
 
   // Returns true if we're done
   def react(): Boolean = {
@@ -139,6 +152,7 @@ class Agent(val id: Int, val graph: Graph, val start: Edge, val start_dist: Doub
     Util.log("Speed: " + speed)
     Util.log("Next step's acceleration: " + target_accel)
     Util.log("At end of edge? " + at_end_of_edge)
+    Util.log("How long idle? " + how_long_idle)
     behavior.dump_info
     Util.log_pop
   }

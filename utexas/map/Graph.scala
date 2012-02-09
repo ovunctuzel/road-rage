@@ -39,6 +39,7 @@ class Graph(val roads: List[Road], val edges: List[Edge],
     val visited = new HashMap[Traversable, Traversable]()
     val open = new PriorityQueue[Step]()
 
+    // TODO we're not tail-recursive, so stack overflows. fix this.
     def collect_path(at: Traversable): List[Traversable] = at match {
       case null => Nil
       case _    => {
