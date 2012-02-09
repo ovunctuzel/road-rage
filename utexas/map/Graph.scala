@@ -39,19 +39,6 @@ class Graph(val roads: List[Road], val edges: List[Edge],
     val visited = new HashMap[Traversable, Traversable]()
     val open = new PriorityQueue[Step]()
 
-    // TODO we're not tail-recursive, so stack overflows. fix this.
-    def collect_path(at: Traversable): List[Traversable] = at match {
-      case null => Nil
-      case _    => {
-        // clean as we go to break loops
-        val prev = visited.remove(at)
-        prev match {
-          case Some(step) => collect_path(step) ++ List(at)
-          case _          => List(at)   // the start of a looped path
-        }
-      }
-    }
-
     // Start
     open.enqueue(new Step(from, 0))
     visited(from) = null  // some way of encoding the start
@@ -63,9 +50,14 @@ class Graph(val roads: List[Road], val edges: List[Edge],
 
       // Are we there yet?
       if (step.on == to && !first) {
-        // Don't return the first step as 'from'
-        val path = collect_path(step.on)
-        assert(path.head == from)
+        var path: List[Traversable] = Nil
+        var at: Option[Traversable] = Some(step.on)
+        while (at.isDefined && at.get != null) {
+          path = at.get :: path
+          // clean as we go to break loops
+          at = visited.remove(at.get)
+        }
+        // the first step is 'from', but we know.
         return path.tail
       }
 

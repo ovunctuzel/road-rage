@@ -116,7 +116,8 @@ class AutonomousBehavior(a: Agent) extends Behavior(a) {
     while (lookahead > 0.0 && (!stop_how_far_away.isDefined || !follow_agent.isDefined)) {
       // 1) Stopping at the end
       if (!stop_how_far_away.isDefined) {
-        val should_stop = keep_stopping || (lookahead >= dist_left)
+        // physically stop somewhat far back from the intersection.
+        val should_stop = keep_stopping || (lookahead >= dist_left - cfg.end_threshold)
         val how_far_away = looked_ahead_so_far + dist_left
         // TODO tell them how long we've been waiting
         val stop_at_end: Boolean = should_stop && (step match {

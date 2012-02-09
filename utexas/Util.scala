@@ -86,7 +86,7 @@ object cfg {
     ("epsilon",     0.00001, "What do we take as zero due to FP imprecision?", 0.0,  1.0),
     ("dt_s",            0.1, "The only dt in seconds an agent can experience", 0.1,  3.0),
     // account for crosswalks, vehicle length...
-    ("end_threshold",  10.0, "The end of a traversable is its length - this",  0.1,  3.0),
+    ("end_threshold",   5.0, "The end of a traversable is its length - this",  0.1,  3.0),
     // this kind of gives dimension to cars, actually
     ("follow_dist",     20.0, "Even if stopped, don't get closer than this", 0.1, 1.0),
     ("max_accel",       2.7, "A car's physical capability",                  0.5, 5.0),
