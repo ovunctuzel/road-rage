@@ -1,2 +1,2 @@
 #!/bin/sh
-pdflatex draft.tex
+pdflatex root.tex
