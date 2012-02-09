@@ -1,6 +1,6 @@
 # TODO #
 
-wed goals:
+thurs goals:
   3 sections of paper
   fix remaining bugs
   tweak cfg with units
@@ -38,7 +38,7 @@ BIGGER ISSUES
     - or no, there is no deadlock, since if x is behind y, theyre in the same turn, and those never
       conflict?
   * lane changing
-  * slow down for turns
+  * slow down for turns (stop sign forces this now)
   - is there a way to analytically say "an agent will own this chunk" at some time, and then solve for collisions?
 
 POSSIBLY SIMPLE
@@ -87,7 +87,6 @@ POSSIBLY SIMPLE
     - add extra lanes on either side, dont color them white, but draw the stuff in between?
 - way better pruning of what to (re-draw) using quadtrees
   - but is it even needed?
-- keyboard-grabbing focus is... greedy when minimized
 - dont show arrows when line segs are really clustered
 - ui could show policy's current owner or something
 - draw the orig corner of freehanded polygons differently or something

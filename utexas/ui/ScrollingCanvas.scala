@@ -63,6 +63,7 @@ abstract class ScrollingCanvas extends Component {
       drawing_mode = false
     }
     case e: MousePressed if drawing_mode => {
+      grab_focus
       val x = screen_to_map_x(e.point.x).toInt
       val y = screen_to_map_y(e.point.y).toInt
       polygon.addPoint(x, y)
@@ -102,6 +103,7 @@ abstract class ScrollingCanvas extends Component {
     }
 
     case e: MousePressed => {
+      grab_focus
       click_x = e.point.x
       click_y = e.point.y
     }
@@ -165,6 +167,12 @@ abstract class ScrollingCanvas extends Component {
     }
   }
 
+  protected def grab_focus() = {
+    if (!hasFocus) {
+      requestFocus
+    }
+  }
+
   // begin in the center
   private def reset_window() = {
     x_off = canvas_width / 2
@@ -192,13 +200,16 @@ abstract class ScrollingCanvas extends Component {
     y_off = math.max(0, y_off)
   }
 
+  // TODO swing SuperMixin has a window focus listener...
+  var first_focus = true
+
   override def paintComponent(g2d: Graphics2D) = {
     // clear things
     super.paintComponent(g2d)
 
-    // oh the strange bugginess of swing. make keys work.
-    if (!hasFocus) {
-      requestFocus
+    if (first_focus) {
+      grab_focus
+      first_focus = false
     }
 
     // Perform the transformations to mimic scrolling and zooming

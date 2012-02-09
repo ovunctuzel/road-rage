@@ -494,6 +494,7 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
           }
           case _ =>
         }
+        grab_focus
       }
       case EV_Key_Press(Key.C) if current_edge.isDefined => {
         mode match {
@@ -587,6 +588,9 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
                 }
               }
             }
+
+            // Make the keyboard work again
+            grab_focus
 
             polygon_roads1 = Set()
             polygon_roads2 = Set()
