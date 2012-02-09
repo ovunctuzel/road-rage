@@ -7,7 +7,8 @@ import utexas.map.{Edge, Traversable}
 import utexas.{Util, cfg}
 
 object Generator {
-  val worker_pool = Executors.newFixedThreadPool(2) // TODO
+  // Maybe one less, to dedicate one core for simulation?
+  val worker_pool = Executors.newFixedThreadPool(Runtime.getRuntime.availableProcessors)
 
   def shutdown = worker_pool.shutdown
 }

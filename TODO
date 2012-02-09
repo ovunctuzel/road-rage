@@ -9,12 +9,11 @@ wed goals:
 - tweak cfg now that we have meters
 
 GENERATORS
-  - make it use as many threads as is a good idea..
   - we can do much better with ready agents... max capacity of edges, group them based on where they want to spawn, maybe by generator?
   - a way to turn them off / reap them in the UI
   - color agents from diff generators a certain way
   - a way to save a "scenario"
-  - test at scale.
+  - test at scale, and profile again.
 
 - remaining bugs
   - entering intersections at speed=0, causing deadlock.
