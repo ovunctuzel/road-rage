@@ -14,10 +14,16 @@ object Util {
 
   private var rng: Random = null  // icky...
 
-  def init_rng(seed: Long) = {
+  var seed: Long = -1
+
+  def init_rng(s: Long) = {
+    seed = s
     rng = new Random(seed)
     Util.log("RNG seed: " + seed)
   }
+
+  // Convenient to see this at the very end if it was a long log.
+  scala.sys.ShutdownHookThread({ Util.log("\nRNG seed: " + Util.seed) })
 
   def rand_double(min: Double, max: Double): Double = {
     if (min > max) {

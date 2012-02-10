@@ -16,6 +16,8 @@ GENERATORS
   - test at scale, and profile again.
 
 - remaining bugs
+  - btr 1328839854309, wait for army, 2 agents stalemate because they... disappear?!
+
   - entering intersections at speed=0, causing deadlock.
   - btr, 1000 agents, seed 1328487489724: vert collisions, asking to choose turn now?
   - if we seriously pack people together, we get a traffic jam! try on synthetic.
@@ -45,7 +47,6 @@ POSSIBLY SIMPLE
   - script to scrape osm
   - switch ant to sbt? https://github.com/harrah/xsbt/wiki/Examples
   - drunkard walk endless behavior mode... no planning, just wanders around
-  - print RNG at end of every UI and headless, for convenience.
   - when we speed up, sleep less in UI?
   - ui configurable intersection policies
 
