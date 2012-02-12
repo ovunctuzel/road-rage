@@ -181,10 +181,11 @@ object Agent {
 
 case class Position(val on: Traversable, val dist: Double) {
   assert(dist >= 0)
-  //assert(dist <= on.length)
-  if (dist > on.length) {
+  assert(dist <= on.length)
+  // TODO
+  /*if (dist > on.length) {
     Util.log("safe_spawn_dist must be broken... " + dist + " > " + on.length + " on " + on)
-  }
+  }*/
 
   def location = on.location(dist)
   def dist_left = on.length - dist

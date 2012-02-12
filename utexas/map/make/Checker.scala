@@ -20,6 +20,7 @@ object Checker {
   // This causes agents to "float" over other the map as they chase an edge far
   // away
   def check_turn_length(g: Graph) = {
+    // TODO check for NaN too
     Util.log("Checking length of turns")
     Util.log_push
 

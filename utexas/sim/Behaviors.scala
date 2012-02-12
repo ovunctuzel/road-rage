@@ -278,15 +278,13 @@ class AutonomousBehavior(a: Agent) extends Behavior(a) {
     // TODO why does this or NaN ever happen?
     /*if (desired_speed < 0) {
       Util.log("why neg speed?")
-    } else if (desired_speed.toString == "NaN") {
-      // TODO Double.NaN comparison doesnt seem to work. also, not sure why this
-      // happens, nor exactly how to fix...
+    } else if (desired_speed.isNaN) {
       // try seed 1327894373344 to make it happen, though. synthetic.
       Util.log("NaN speed... a=" + q_a + ", b=" + q_b + ", c=" + q_c)
     }*/
 
     // in the NaN case, just try to stop?
-    val desired_speed = if (try_speed.toString == "NaN")
+    val desired_speed = if (try_speed.isNaN)
                           0
                         else
                           math.max(0, try_speed)

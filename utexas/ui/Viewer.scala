@@ -11,8 +11,8 @@ object Status_Bar {
   val agents     = new Label("0 / 0 / 0 (0 generators)")
   val time       = new Label("0.0 [Paused]")
   val time_speed = new Label("1.0x")
-  val location   = new Label("Nowhere")
   val mode       = new Label("" + Mode.EXPLORE)
+  val location   = new Label("Nowhere")
 
   // TODO could put methods here to set text!
 }

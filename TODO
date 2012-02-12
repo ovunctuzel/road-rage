@@ -16,13 +16,12 @@ GENERATORS
   - test at scale, and profile again.
 
 - remaining bugs
-  - btr 1328839854309, wait for army, 2 agents stalemate because they... disappear?!
-
   - entering intersections at speed=0, causing deadlock.
   - btr, 1000 agents, seed 1328487489724: vert collisions, asking to choose turn now?
   - if we seriously pack people together, we get a traffic jam! try on synthetic.
   - is an agent overshooting its route sometimes? (change assert to warning)
   - collisions in intersection
+  - 'location' in UI gets a bit stuck on agents
 
 BIGGER ISSUES
   - traffic lights
@@ -42,6 +41,9 @@ BIGGER ISSUES
   * lane changing
   * slow down for turns (stop sign forces this now)
   - is there a way to analytically say "an agent will own this chunk" at some time, and then solve for collisions?
+  - nondeterministic.
+    - when running, agents enter at diff times
+    - when paused, threads compute routes in diff orders, then two agents compete to spawn in same spot.
 
 POSSIBLY SIMPLE
   - script to scrape osm

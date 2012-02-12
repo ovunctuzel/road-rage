@@ -59,13 +59,13 @@ object Coordinate {
 
     val radians = math.acos(dot_prod)
 
-    // arc len = radius * theta
-    return radius * radians
-
-    // TODO test it
-    /*// Avoid NaN issues
-    if (c1.equals(c2)) {
-      return 0
-    }*/
+    // When the coordinates are the same, I've observed dot_prod = 1.0 +
+    // epsilon, which makes acos flip out and return NaN. Just catch that here.
+    // We can't simply check 'c1 == c2', because the difference is a weird
+    // floating-point epsilon issue. So ASSUME NaN means same coordinates.
+    return if (radians.isNaN)
+             0.0
+           else
+             radius * radians  // arc len = radius * theta
   }
 }
