@@ -18,6 +18,8 @@ class Agent(val id: Int, val graph: Graph, val start: Edge, val start_dist: Doub
   val behavior = new AutonomousBehavior(this) // TODO who chooses this?
   var idle_since = -1.0   // how long has our speed been 0?
 
+  var upcoming_intersections: Set[Intersection] = Set()
+
   override def toString = "Agent " + id
 
   def step(dt_s: Double) = {
@@ -65,8 +67,16 @@ class Agent(val id: Int, val graph: Graph, val start: Edge, val start_dist: Doub
 
       // tell the intersection
       (current_on, next) match {
-        case (e: Edge, t: Turn) => Agent.sim.intersections(t.vert).enter(this, t)
-        case (t: Turn, e: Edge) => Agent.sim.intersections(t.vert).exit(this, t)
+        case (e: Edge, t: Turn) => {
+          val i = Agent.sim.intersections(t.vert)
+          i.enter(this, t)
+          upcoming_intersections += i
+        }
+        case (t: Turn, e: Edge) => {
+          val i = Agent.sim.intersections(t.vert)
+          i.exit(this, t)
+          upcoming_intersections -= i
+        }
       }
 
       // this lets behaviors make sure their route is being followed
@@ -119,6 +129,10 @@ class Agent(val id: Int, val graph: Graph, val start: Edge, val start_dist: Doub
         // Trust behavior, don't abuse this.
         assert(speed == 0.0)
         exit(at.on)
+        // and don't forget to tell intersections. this is normally just
+        // at.on.vert if at.on is a turn, but it could be more due to lookahead.
+        upcoming_intersections.foreach(i => i.unregister(this))
+        upcoming_intersections = Set()
         return true
       }
     }

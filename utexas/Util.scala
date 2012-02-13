@@ -100,7 +100,8 @@ object cfg {
   ) map {c => c._1 -> new Double_Cfgable(c._2, c._3, c._4, c._5)} toMap
 
   val ints = List(
-    ("max_lanes",  20, "The max total lanes a road could have", 1, 30)
+    ("max_lanes",  20,  "The max total lanes a road could have", 1, 30),
+    ("army_size",  500, "How many agents to spawn by default", 1, 10000)
   ) map {c => c._1 -> new Int_Cfgable(c._2, c._3, c._4, c._5)} toMap
 
   // TODO val colors = ... (I'm not kidding)
@@ -122,6 +123,7 @@ object cfg {
   def pause_at_stop   = doubles("pause_at_stop").value
 
   def max_lanes       = ints("max_lanes").value
+  def army_size       = ints("army_size").value
   
   def dt_s            = doubles("dt_s").value
 }

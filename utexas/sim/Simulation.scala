@@ -25,6 +25,9 @@ class Simulation(roads: List[Road], edges: List[Edge], vertices: List[Vertex],
   private var generator_count = 0   // just for informational/UI purposes
   private var id_cnt = -1
 
+  // Just for debug.
+  var debug_agent: Option[Agent] = None
+
   def next_id(): Int = {
     id_cnt += 1
     return id_cnt
@@ -73,10 +76,10 @@ class Simulation(roads: List[Road], edges: List[Edge], vertices: List[Vertex],
 
   // TODO cfg
   def slow_down() = {
-    time_speed = math.max(0.1, time_speed - 0.1)
+    time_speed = math.max(0.5, time_speed - 0.5)
   }
   def speed_up() = {
-    time_speed += 0.1
+    time_speed += 0.5
   }
 
   def pre_step() = {

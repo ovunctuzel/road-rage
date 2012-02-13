@@ -4,6 +4,7 @@ import utexas.{Util, cfg}
 
 object Headless {
   def process_args(args: Array[String]): Simulation = {
+    // TODO write with 'partition'
     val keys = args.zipWithIndex.filter(p => p._2 % 2 == 0).map(p => p._1)
     val vals = args.zipWithIndex.filter(p => p._2 % 2 == 1).map(p => p._1)
     var fn = "dat/test.map"
@@ -25,21 +26,30 @@ object Headless {
   }
 
   def main(args: Array[String]) = {
+    val n = cfg.army_size
+
     val sim = process_args(args)
-    sim.spawn_army(100)
+    sim.spawn_army(n)
     // This can be optional
-    Util.log("Waiting for all routes to be computed")
+    Util.log("Waiting for " + n + " routes to be computed")
     val t = Util.timer("Computing routes")
     sim.wait_for_all_generators
     t.stop
 
     val timer = Util.timer("running the sim")
     Util.log("Starting simulation with time-steps of " + cfg.dt_s + "s")
-    var last_time = 0.0
+    var last_real_time = 0.0
+    var last_virtual_time = 0.0
     while (!sim.done) {
-      if (sim.tick - last_time >= 1.0) {
-        Util.log("At t=%.1f: %s".format(sim.tick, sim.describe_agents))
-        last_time = sim.tick
+      // Print every 1 literal second
+      val now = timer.so_far
+      //val now = sim.tick    // or every 1 virtual second
+      if (now - last_real_time >= 1.0) {
+        Util.log("At t=%.1f (%.1fs later): %s".format(
+          sim.tick, sim.tick - last_virtual_time, sim.describe_agents
+        ))
+        last_real_time = now
+        last_virtual_time = sim.tick
       }
       sim.step(cfg.dt_s)
     }

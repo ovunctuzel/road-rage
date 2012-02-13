@@ -126,7 +126,11 @@ class AutonomousBehavior(a: Agent) extends Behavior(a) {
           // Stop if we're arriving at destination
           case e if route_left.size == 0 => { stopping_for_destination = true; true }
           // Otherwise, ask the intersection
-          case e: Edge => Agent.sim.intersections(e.to).should_stop(a, next_turn, how_far_away)
+          case e: Edge => {
+            val i = Agent.sim.intersections(e.to)
+            a.upcoming_intersections += i   // remember we've registered here
+            i.should_stop(a, next_turn, how_far_away)
+          }
         })
         if (stop_at_end) {
           keep_stopping = true

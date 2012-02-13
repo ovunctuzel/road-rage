@@ -15,8 +15,11 @@ class Intersection(val v: Vertex) {
   //val policy: Policy = new ReservationPolicy(this)
   //val policy: Policy = new SignalCyclePolicy(this)
 
+  override def toString = "Intersection(" + v + ")"
+
   // Just delegate.
   def should_stop(a: Agent, turn: Turn, far_away: Double) = policy.should_stop(a, turn, far_away)
+  def unregister(a: Agent) = policy.unregister(a)
 
   // Multiple agents can be on the same turn; the corresponding queue will
   // handle collisions. So in fact, we want to track which turns are active...
@@ -69,6 +72,7 @@ abstract class Policy(intersection: Intersection) {
   def should_stop(a: Agent, turn: Turn, far_away: Double): Boolean
   def validate_entry(a: Agent, turn: Turn): Boolean
   def handle_exit(a: Agent, turn: Turn)
+  def unregister(a: Agent)
 
   // TODO common stuff for figuring out first-req
 
@@ -82,6 +86,7 @@ class NeverGoPolicy(intersection: Intersection) extends Policy(intersection) {
   def should_stop(a: Agent, turn: Turn, far_away: Double) = true
   def validate_entry(a: Agent, turn: Turn) = false
   def handle_exit(a: Agent, turn: Turn) = {}
+  def unregister(a: Agent) = {}
 }
 
 // Always stop, then FIFO. Totally unoptimized.
@@ -92,6 +97,24 @@ class StopSignPolicy(intersection: Intersection) extends Policy(intersection) {
   var queue = List[Agent]()
 
   def should_stop(a: Agent, turn: Turn, far_away: Double): Boolean = {
+    Agent.sim.debug_agent match {
+      case Some(agent) if agent == a => {
+        Util.log(a + " wants to go, but locked from " + intersection.v + " by " + current_owner)
+        Util.log("  waiting: " + queue)
+        if (current_owner.isDefined) {
+          Util.log("  locking guy around? " + Agent.sim.agents.contains(current_owner.get))
+          Util.log("  locking guy " + current_owner + " is involved with: " +
+          current_owner.get.upcoming_intersections)
+          // trace this problem.
+          Agent.sim.debug_agent = Some(current_owner.get)
+        } else {
+          Util.log("  so why not now? " + (!current_owner.isDefined) + " " +
+          a.how_long_idle)
+        }
+      }
+      case _ =>
+    }
+
     // Do they have the lock?
     current_owner match {
       case Some(owner) if a == owner => return false
@@ -131,6 +154,19 @@ class StopSignPolicy(intersection: Intersection) extends Policy(intersection) {
     current_owner = None
     // Next time queue.head, if it exists, polls, we'll let them go if they've
     // waited patiently.
+  }
+
+  def unregister(a: Agent) = {
+    current_owner match {
+      case Some(agent) if a == agent => {
+        // release the lock
+        current_owner = None
+      }
+      case _ => {
+        // don't bother with us
+        queue = queue.filter(x => x != a)
+      }
+    }
   }
 }
 
@@ -184,6 +220,8 @@ class ReservationPolicy(intersection: Intersection) extends Policy(intersection)
       }
     }
   }
+
+  def unregister(a: Agent) = {}
 }
 
 // Count how many agents are doing each type of turn, and add turns that don't
@@ -258,4 +296,6 @@ class SignalCyclePolicy(intersection: Intersection) extends Policy(intersection)
   def handle_exit(a: Agent, turn: Turn) = {
     assert(current_cycle(turn))
   }
+
+  def unregister(a: Agent) = {}
 }

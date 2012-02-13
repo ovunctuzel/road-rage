@@ -1,27 +1,32 @@
 # TODO #
 
-thurs goals:
-  3 sections of paper
-  fix remaining bugs
-  tweak cfg with units
-  improve generators
-
-- tweak cfg now that we have meters
-
 GENERATORS
-  - we can do much better with ready agents... max capacity of edges, group them based on where they want to spawn, maybe by generator?
   - a way to turn them off / reap them in the UI
   - color agents from diff generators a certain way
   - a way to save a "scenario"
   - test at scale, and profile again.
 
-- remaining bugs
+BUGS
+  - stagnation still.
+    - interdependent locks.
+    - soln: trylocks first. dont accept lock unless we can grab them all.
+
+    - verts v1 and v2
+    - a1 has a lock on v1, but is waiting on v2
+    - a2 has a lock on v2, but is waiting on v1
+
   - entering intersections at speed=0, causing deadlock.
   - btr, 1000 agents, seed 1328487489724: vert collisions, asking to choose turn now?
   - if we seriously pack people together, we get a traffic jam! try on synthetic.
   - is an agent overshooting its route sometimes? (change assert to warning)
   - collisions in intersection
   - 'location' in UI gets a bit stuck on agents
+  - some A* routes are.. a bit wacky?
+
+PROFILING
+  - we can do much better with ready agents... max capacity of edges, group them based on where they
+    want to spawn, maybe by generator?
+  - dont ask length of a list when not needed...
 
 BIGGER ISSUES
   - traffic lights
@@ -36,16 +41,17 @@ BIGGER ISSUES
     - tell the intersection who we are behind, and make sure our turn will be satisfied after theirs
       in the queue.
     *** but then they will have to schedule their turn first...
-    - or no, there is no deadlock, since if x is behind y, theyre in the same turn, and those never
-      conflict?
+    - or no, there is no deadlock, since if x is behind y, theyre in the same lane, and those never
+      conflict? (just if somebody else shows up first that makes a conflict)
   * lane changing
-  * slow down for turns (stop sign forces this now)
   - is there a way to analytically say "an agent will own this chunk" at some time, and then solve for collisions?
   - nondeterministic.
     - when running, agents enter at diff times
     - when paused, threads compute routes in diff orders, then two agents compete to spawn in same spot.
+  - automated testing strategy.
 
 POSSIBLY SIMPLE
+  - tweak cfg now that we have meters
   - script to scrape osm
   - switch ant to sbt? https://github.com/harrah/xsbt/wiki/Examples
   - drunkard walk endless behavior mode... no planning, just wanders around

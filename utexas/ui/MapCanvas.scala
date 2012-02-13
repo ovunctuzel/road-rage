@@ -12,8 +12,7 @@ import swing.Dialog
 import utexas.map._  // TODO yeah getting lazy.
 import utexas.sim.{Simulation, Agent, FixedSizeGenerator, ContinuousGenerator}
 
-import utexas.cfg
-import utexas.Util
+import utexas.{Util, cfg}
 
 object Mode extends Enumeration {
   type Mode = Value
@@ -32,7 +31,7 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
         val start = System.currentTimeMillis
         // we should fire about 10x/second. optimal/useful rate is going to be
         // related to time_speed and cfg.dt_s   TODO
-        Thread.sleep(100)
+        Thread.sleep(10)
         if (running) {
           sim.step((System.currentTimeMillis - start).toDouble / 1000.0)
         } else {
@@ -433,7 +432,7 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
         handle_ev(EV_Action("toggle-wards"))
       }
       case EV_Action("spawn-army") => {
-        sim.spawn_army(100) // TODO cfg
+        sim.spawn_army(cfg.army_size)
         // TODO when we're paused, poll generators anyway.
         status.agents.text = sim.describe_agents
         repaint
@@ -527,6 +526,7 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
       }
       case EV_Key_Press(Key.A) if current_agent.isDefined => {
         current_agent.get.dump_info
+        sim.debug_agent = current_agent
       }
       // TODO for debug of stalled agents
       case EV_Key_Press(Key.U) => {
