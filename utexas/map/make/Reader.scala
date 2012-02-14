@@ -154,6 +154,12 @@ class Reader(fn: String) {
           edges(e_id) = e
           e.lane_num = e_lane
           e.set_lines(e_lines.toList)
+          // Sucks, but we have some REALLY small edges.
+          if (e.length <= 0.0) {
+            // Cheat. Agents NEED the ability to exist somewhere on this edge.
+            //Util.log("WARNING " + e + " is tiny")
+            e.length = 0.1
+          }
 
           // tell the road about the edge, too
           // TODO edges in the xml will be ordered by their id, which we created

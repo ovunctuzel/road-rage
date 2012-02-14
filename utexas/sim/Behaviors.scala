@@ -180,26 +180,49 @@ class AutonomousBehavior(a: Agent) extends Behavior(a) {
       return Act_Done_With_Route()
     } else {
       // So, three possible constraints.
-      val v1 = stop_how_far_away match {
-        case Some(dist) => accel_to_end(dist)
+      val a1 = stop_how_far_away match {
+        case Some(dist) => {
+          // in most normal circumstances, we take away end_threshold, since
+          // stopping right at the end of the edge makes us technically enter
+          // the intersection
+          // but when we're in the middle of a turn and that would make the
+          // distance be <= 0, we don't want to stop; that causes deadlock. it
+          // means the next edge is tiny. so just stop along it where we can.
+          val go_this_dist = a.at.on match {
+            // just go halfway whatever's available.
+            case t: Turn if dist <= cfg.end_threshold => accel_to_end(dist / 2)
+            case _ => dist - cfg.end_threshold
+          }
+          accel_to_end(go_this_dist)
+        }
         case _          => Double.MaxValue
       }
-      val v2 = follow_agent match {
+      val a2 = follow_agent match {
         case Some(f) => accel_to_follow(f, follow_agent_how_far_away)
         case _       => Double.MaxValue
       }
-      val v3 = accel_to_achieve(min_speed_limit)
+      val a3 = accel_to_achieve(min_speed_limit)
 
-      //if (a.id == 15) {
-      /*Util.log("%s's choices: %s, %s, speed lim %f".format(
-        a, stop_how_far_away, follow_agent, min_speed_limit
-      ))*/
-      /*Util.log("%s's choices: %.3f, %.3f, %.3f".format(
-        a, v1, v2, v3
-      ))*/
-      //}
+      val conservative_accel = math.min(a1, math.min(a2, a3))
 
-      val conservative_accel = math.min(v1, math.min(v2, v3))
+      // let the other intersections that are letting us go know that we
+      // won't be going just yet,
+      // IF we are not going to make a move this tick.
+
+      // This means we're holding a valuable resource...
+      if (a.speed == 0.0 && conservative_accel == 0.0) {
+        /*a.at.on match {
+          case t: Turn if a2 == 0.0 => {
+            // And the cause is an agent in front of us. If this situation persists,
+            // we could enter gridlock.
+            Util.log("Gridlock possible near " + a)
+          }
+          case _ =>
+        }*/
+
+        // let them ignore us if we're not owner
+        a.upcoming_intersections.foreach(p => p.yield_lock(a))
+      }
 
       // As the very last step, clamp based on our physical capabilities.
       return Act_Set_Accel(if (conservative_accel > 0)
@@ -251,32 +274,12 @@ class AutonomousBehavior(a: Agent) extends Behavior(a) {
   }
 
   // This is based on Piyush's proof.
+  // how_far_away already includes end_threshold, if appropriate.
   private def accel_to_end(how_far_away: Double): Double = {
-    // Just a simple short-circuit case.
-    // TODO maybe not needed, and this fails for 1327896599636 on btr at 0.9 dt
-    /*if (a.speed == 0.0) {
-      //assert(a.at_end_of_edge)  // TODO
-      if (!a.at_end_of_edge) {
-        Util.log(a + " isn't moving, but isnt at end of edge")
-      }
-      return 0
-    }*/
-    // TODO TODO ^ i really dont trust this anymore.
-
-    // most rounds, stop dist should == a.at.dist_left, within epsilon or so
-    /*if (a.id == 50) {
-      //Util.log("stop dist " + a.stopping_distance() + ", left " + a.at.dist_left) 
-      if (a.stopping_distance() > how_far_away) {
-        Util.log("  DOOMED? by " + (a.stopping_distance() - a.at.dist_left))
-      }
-    }*/
-
     // a, b, c for a normal quadratic
     val q_a = 1 / a.max_accel
     val q_b = cfg.dt_s
-    // we take away end_threshold, since stopping right at the end of the edge
-    // makes us technically enter the intersection
-    val q_c = (a.speed * cfg.dt_s) - (2 * (how_far_away - cfg.end_threshold))
+    val q_c = (a.speed * cfg.dt_s) - (2 * how_far_away)
     val try_speed = (-q_b + math.sqrt((q_b * q_b) - (4 * q_a * q_c))) / (2 * q_a)
 
     // TODO why does this or NaN ever happen?

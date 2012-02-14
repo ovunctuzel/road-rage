@@ -9,7 +9,7 @@ object Checker {
 
     check_edges(g)
 
-    check_turn_length(g)
+    //check_turn_length(g)
 
     // TODO check connectivity more stringently? really not needed; I trust
     // Tarjan's.
@@ -34,7 +34,7 @@ object Checker {
 
   // This is a weak, but fast, way to measure connectivity
   def check_edges(g: Graph) = {
-    Util.log("Checking edges for connectivity")
+    Util.log("Checking edges for connectivity and length")
     Util.log_push
 
     for (e <- g.edges) {
@@ -43,6 +43,12 @@ object Checker {
       }
       if (e.prev_turns.size == 0) {
         Util.log("Nothing leads to " + e)
+      }
+
+      // Haha, we end up with some REALLY short edges sometimes...
+      if (e.length == 0.0) {
+        Util.log(e + " has ZERO length")
+        Util.log("  Points: " + e.road.points)
       }
     }
 
