@@ -6,7 +6,6 @@ import utexas.{Util, cfg}
 abstract class Behavior(a: Agent) {
   val graph = a.graph
 
-  def give_route(r: List[Traversable])
   // asked every tick after everybody has moved
   def choose_action(): Action
   // only queried when the agent reaches a vertex
@@ -19,8 +18,6 @@ abstract class Behavior(a: Agent) {
 
 // Never speeds up from rest, so effectively never does anything
 class IdleBehavior(a: Agent) extends Behavior(a) {
-  override def give_route(r: List[Traversable]) = {}  // we don't care
-
   override def choose_action() = Act_Set_Accel(0)
 
   override def choose_turn(e: Edge) = e.next_turns.head
@@ -32,55 +29,33 @@ class IdleBehavior(a: Agent) extends Behavior(a) {
   }
 }
 
-// Safe behavior, but it doesn't re-plan or anything fancy.
-class AutonomousBehavior(a: Agent) extends Behavior(a) {
-  // route.head is always our next move
-  var route: List[Traversable] = Nil
+// the actual mechanics of the route are left up to something else, though
+class RouteFollowingBehavior(a: Agent, route: Route) extends Behavior(a) {
   // This is set the first time we choose to begin stopping, and it helps since
   // worst-case analysis says we won't toe the line, but we still want to invoke
   // the same math.
   var keep_stopping = false
 
-  override def give_route(r: List[Traversable]) = { route = r }
-
-  override def choose_action(): Action = {
-    // We disappear in choose_turn, so when route is empty here, just keep
-    // moving so we can reach the end of our destination edge.
-    if (route.size != 0) {
-      // Time to lane-change?
-      // TODO choose the right time for it, once we have a model for lane-changing
-      (a.at, route.head) match {
-        case (Position(e1: Edge, _), e2: Edge) => {
-          return Act_Lane_Change(e2)
-        }
-        case _ =>
-      }
+  override def choose_action(): Action = (a.at, route.next_step) match {
+    case (Position(e1: Edge, _), Some(e2: Edge)) => {
+      // TODO choose the right time
+      return Act_Lane_Change(e2)
     }
-
-    // Plow ahead! (not through cars, hopefully)
-    return max_safe_accel
+    case _ => max_safe_accel
   }
 
-  override def choose_turn(e: Edge): Turn = route match {
-    case ((t: Turn) :: rest) => t
-    case _                   => throw new Exception("Asking " + a + " to choose turn now?!")
+  override def choose_turn(e: Edge): Turn = route.next_step match {
+    case Some(t: Turn) => t
+    case _             => throw new Exception("Asking " + a + " to choose turn now?!")
   }
 
   override def transition(from: Traversable, to: Traversable) = {
-    if (route.head == to) {
-      route = route.tail      // moving right along
-      keep_stopping = false   // reset
-    } else {
-      throw new Exception("We missed a move!")
-    }
+    route.transition(from, to)
+    keep_stopping = false   // reset
   }
 
   override def dump_info() = {
-    Util.log("Autonomous behavior")
-    Util.log("Route:")
-    Util.log_push
-    route.foreach(s => Util.log("" + s + " (length " + s.length + ")"))
-    Util.log_pop
+    Util.log("Route-following behavior")
   }
 
   // Returns Act_Set_Accel almost always.
@@ -96,10 +71,10 @@ class AutonomousBehavior(a: Agent) extends Behavior(a) {
     var looked_ahead_so_far = 0.0   // how far from a.at to beginning of step
     var step = a.at.on
     var dist_left = a.at.dist_left
-    var route_left = route
+    var steps_ahead = 0
     // Only call when next move really is a turn.
-    def next_turn() = route_left.head match {
-      case t: Turn => t
+    def next_turn() = route.lookahead_step(steps_ahead) match {
+      case Some(t: Turn) => t
       case _ => throw new Exception("next_turn() called at wrong time")
     }
 
@@ -124,7 +99,10 @@ class AutonomousBehavior(a: Agent) extends Behavior(a) {
           // Don't stop at the end of a turn
           case t: Turn => false
           // Stop if we're arriving at destination
-          case e if route_left.size == 0 => { stopping_for_destination = true; true }
+          case e if !route.lookahead_step(steps_ahead).isDefined => {
+            stopping_for_destination = true
+            true
+          }
           // Otherwise, ask the intersection
           case e: Edge => {
             val i = Agent.sim.intersections(e.to)
@@ -163,13 +141,14 @@ class AutonomousBehavior(a: Agent) extends Behavior(a) {
 
       // Now, prepare for the next step.
       lookahead -= dist_left
-      if (route_left.isEmpty) {
-        // stop considering possibilities immediately.
+      if (!route.lookahead_step(steps_ahead).isDefined) {
+        // done with route. stop considering possibilities immediately.
         lookahead = -1
       } else {
         looked_ahead_so_far += dist_left
-        step = route_left.head
-        route_left = route_left.tail
+        // order matters... steps_ahead will be what follows this new 'step'
+        step = route.lookahead_step(steps_ahead).get
+        steps_ahead += 1
         // For all but the first step, we have all of its distance left.
         dist_left = step.length
       }

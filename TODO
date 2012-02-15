@@ -4,6 +4,7 @@ TRUE PRIORITIES
 1) paper fleshed out solidly by friday
   - what illustrations?
 2) bugfix <-> test at scale iteration
+  - gridlock
   - optimize
 3) UI fixes
   - rectangular cars that change size
@@ -22,11 +23,11 @@ GENERATORS
 
 BUGS
   - clean up stagnation properly
-    - clean docs, debug, comments...
     - i predict a gridlock-like situation where we have the same problem of stopping in a vert
       due to follow_dist behind agents.
     - implement clean trylock system rather than yielding
       (maybe dont add agents to queue until they're "ready")
+      (is it even necessary?)
 
   - entering intersections at speed=0, causing deadlock.
   - btr, 1000 agents, seed 1328487489724: vert collisions, asking to choose turn now?
@@ -68,7 +69,6 @@ POSSIBLY SIMPLE
   - tweak cfg now that we have meters
   - script to scrape osm
   - switch ant to sbt? https://github.com/harrah/xsbt/wiki/Examples
-  - drunkard walk endless behavior mode... no planning, just wanders around
   - when we speed up, sleep less in UI?
   - ui configurable intersection policies
   - snapshot mode in headless with agents pos, to later render
@@ -99,6 +99,7 @@ POSSIBLY SIMPLE
   - update osm (scripts!)
 - my wards!
   - guarantee some kind of connectedness within a ward
+- play with min span trees for pathing
 
 ### UI ###
 

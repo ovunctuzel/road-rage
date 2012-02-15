@@ -1,6 +1,6 @@
 package utexas.sim
 
-import java.util.concurrent.{Executors, FutureTask, Callable}
+import java.util.concurrent.{Executors, FutureTask}
 
 import utexas.map.{Edge, Traversable}
 
@@ -26,15 +26,13 @@ abstract class Generator(sim: Simulation, desired_starts: List[Edge], val end_ca
   def count_pending = pending.size
 
   def add_specific_agent(start: Edge, end: Edge) = {
-    val a = new Agent(sim.next_id, sim, start, sim.queues(start).safe_spawn_dist)
-    // TODO the work we do here, if any, actually depends on the behavior.
+    // TODO how to decide?!
+    //val route = new StaticRoute()
+    val route = new DrunkenRoute()
+    val a = new Agent(sim.next_id, sim, start, sim.queues(start).safe_spawn_dist, route)
 
-    // schedule some work.
-    val delayed = new FutureTask[List[Traversable]](new Callable[List[Traversable]]() {
-      def call(): List[Traversable] = {
-        return sim.pathfind_astar(start, end)
-      }
-    })
+    // schedule whatever work the route needs done.
+    val delayed = new FutureTask[List[Traversable]](route.request_route(start, end))
     Generator.worker_pool.execute(delayed)
     pending :+= (a, delayed)
   }
@@ -43,7 +41,7 @@ abstract class Generator(sim: Simulation, desired_starts: List[Edge], val end_ca
   def poll(): List[Agent] = {
     val (done, still_pending) = pending.partition(a => a._2.isDone)
     pending = still_pending
-    done.foreach(a => a._1.behavior.give_route(a._2.get()))
+    done.foreach(a => a._1.route.got_route(a._2.get()))
     return done.map(a => a._1)
   }
 

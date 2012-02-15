@@ -6,7 +6,9 @@ import utexas.{Util, cfg}
 // TODO come up with a notion of dimension and movement capability. at first,
 // just use radius bounded by lane widths?
 
-class Agent(val id: Int, val graph: Graph, val start: Edge, val start_dist: Double) {
+class Agent(val id: Int, val graph: Graph, val start: Edge, val start_dist: Double,
+            val route: Route)
+{
   // just until they're introduced!
   var at: Position = null
 
@@ -15,7 +17,8 @@ class Agent(val id: Int, val graph: Graph, val start: Edge, val start_dist: Doub
   val max_accel = cfg.max_accel   // TODO based on vehicle type
   var speed: Double = 0.0   // meters/sec, I believe
   var target_accel: Double = 0  // m/s^2
-  val behavior = new AutonomousBehavior(this) // TODO who chooses this?
+  // TODO who chooses this?
+  val behavior = new RouteFollowingBehavior(this, route)
   var idle_since = -1.0   // how long has our speed been 0?
 
   var upcoming_intersections: Set[Intersection] = Set()
@@ -61,7 +64,11 @@ class Agent(val id: Int, val graph: Graph, val start: Edge, val start_dist: Doub
       current_dist -= current_on.length
       // Are we finishing a turn or starting one?
       val next: Traversable = current_on match {
-        case e: Edge => behavior.choose_turn(e)
+        case e: Edge => {
+          val turn = behavior.choose_turn(e)
+          assert(e.next_turns.contains(turn))    // Verify it was a legal choice
+          turn
+        }
         case t: Turn => t.to
       }
 
