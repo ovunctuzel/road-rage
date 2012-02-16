@@ -32,13 +32,18 @@ TODO Name this thing
 %}
 
 \author{Huibert Kwakernaak$^{1}$ and Pradeep Misra$^{2}$% <-this % stops a space
-\thanks{$^{1}$H. Kwakernaak is with Faculty of Electrical Engineering, Mathematics and Computer Science,
-        University of Twente, 7500 AE Enschede, The Netherlands
-        {\tt\small h.kwakernaak at papercept.net}}%
-\thanks{$^{2}$P. Misra is with the Department of Electrical Engineering, Wright State University,
-        Dayton, OH 45435, USA
-        {\tt\small p.misra at ieee.org}}%
+% \thanks{$^{1}$H. Kwakernaak is with Faculty of Electrical Engineering, Mathematics and Computer Science,
+%         University of Twente, 7500 AE Enschede, The Netherlands
+%         {\tt\small h.kwakernaak at papercept.net}}%
+% \thanks{$^{2}$P. Misra is with the Department of Electrical Engineering, Wright State University,
+%         Dayton, OH 45435, USA
+%         {\tt\small p.misra at ieee.org}}%
 }
+
+\long\def\commentp#1{{\bf **Peter: #1**}}
+\long\def\commentpk#1{{\bf **Piyush: #1**}}
+\long\def\commentm#1{{\bf **Mike: #1**}}
+\long\def\commentd#1{{\bf **Dustin: #1**}}
 
 \begin{document}
 
@@ -56,6 +61,8 @@ Write this.
 
 \section{INTRODUCTION}
 
+\commentpk{This section is still under construction. Do not review.}
+
 % what are our goals with this paper?
 % theme: easy simulation in your city, in 2 minutes!
 % * demonstrate use of OSM and motivate more data collection
@@ -66,7 +73,25 @@ Write this.
 
 % contribution: autonomous car / human car sim on EXISTING INFRASTRUCTURE
 
-Write an intro.
+Autonomous vehicles have seen tremendous progress in recent years. In 2004, no autonomous vehicle was able to complete the course set out in the first DARPA Challenge. By 2007, 5 vehicles finished the course of 130 miles in urban environments. By 2011, autonomous vehicles projects have now touched 160,000 miles and an autonomous car drove for 13,000 miles in Europe. Autonomous cars are here to stay, and this changes how traffic is dealt with in the forseeable future. The infrastructure will change to support autonomous vehicles, but it is hard to say more about our traffic demands. Will we be able to gain more roads in the future. Do we have the space to expand and will autonomous vehicles be able to reach your doorstep.
+
+This paper presents a new methodology for micro-simulating autonomous traffic for such situations where we will continue to use existing roads for autonomous vehicles. We believe that the autonomous traffic will be controlled via an overseer. The overseer can define behaviors for indivudal agents and individual intersections. The overseer itself can be a centralized and decentralized system that is capable for making such decisions in real-time.
+
+To implement such a methodology, we have come up with our own traffic simulator called AORTA. In AORTA we focus on the behavior of agents and intersections. Our simulator is generic enough to take advantage of implementing behaviors for cars which can represent human driving, along with standardized traffic light signals. We believe that that traffic light signals will be able to do better once we start using Autonomous Intersection Managers such as AIM.
+
+To use road data, we can use OpenStreetMap. xml files exported using OSM are directly read by a tool and parsed to create an understandable map. Our simulator then uses this map to create the simulation and can introduce an army of agents to simulate traffic inside the simulator.
+
+\commentpk{Needs introduction to the rest of the paper here}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{RELATED WORKS}
+
+\commentpk{This section is still under construction. Do not review.}
+
+A number of good micro-simulators have been created in the past decade. In this section we compare some of the similarities and differences with other such simulators.
+
+One such 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
