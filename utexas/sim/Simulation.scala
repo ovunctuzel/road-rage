@@ -1,6 +1,7 @@
 package utexas.sim
 
 import scala.annotation.tailrec
+import scala.collection.immutable.{SortedSet, TreeSet}
 import scala.collection.mutable.MutableList
 import scala.collection.mutable.{HashSet => MutableSet}
 
@@ -19,7 +20,7 @@ class Simulation(roads: List[Road], edges: List[Edge], vertices: List[Vertex],
   Util.log("Creating queues and intersections for collision handling...")
   val queues = traversables.map(t => t -> new Queue(t)).toMap
   val intersections = vertices.map(v => v -> new Intersection(v)).toMap
-  val agents = new MutableSet[Agent]
+  var agents: SortedSet[Agent] = new TreeSet[Agent]
   var ready_to_spawn: List[Agent] = Nil
   val generators = new MutableSet[Generator]
   private var generator_count = 0   // just for informational/UI purposes
@@ -118,18 +119,12 @@ class Simulation(roads: List[Road], edges: List[Edge], vertices: List[Vertex],
       // reacting. But that involves trusting that no simulation violations
       // could occur. ;)
 
-      // we only sortBy id to get determinism so we can repeat runs.
-      // TODO maintain a sorted set or something instead
-      //val t1 = Util.timer("sortin")
-      val agents_by_id = agents.toList.sortBy(a => a.id)
-      //t1.stop
-
       //val t2 = Util.timer("queue start")
       active_queues.foreach(q => q.start_step)
       //t2.stop
 
       //val t3 = Util.timer("agent step")
-      agents_by_id.foreach(a => a.step(cfg.dt_s))
+      agents.foreach(a => a.step(cfg.dt_s))
       //t3.stop
 
       //val t4 = Util.timer("queue stop")
@@ -141,7 +136,7 @@ class Simulation(roads: List[Road], edges: List[Edge], vertices: List[Vertex],
       //t5.stop
 
       //val t6 = Util.timer("react")
-      agents_by_id.foreach(a => {
+      agents.foreach(a => {
         // reap the done agents
         if (a.react) {
           agents -= a

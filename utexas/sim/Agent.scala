@@ -7,10 +7,12 @@ import utexas.{Util, cfg}
 // just use radius bounded by lane widths?
 
 class Agent(val id: Int, val graph: Graph, val start: Edge, val start_dist: Double,
-            val route: Route)
+            val route: Route) extends Ordered[Agent]
 {
   // just until they're introduced!
   var at: Position = null
+
+  override def compare(other: Agent) = id.compare(other.id)
 
   // We can only set a target acceleration, which we travel at for the entire
   // duration of timesteps.
