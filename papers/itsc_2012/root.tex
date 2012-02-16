@@ -70,6 +70,7 @@ Write this.
 % * present a pretty naive static planning
 % * motivate and demonstrate wards for hierarchial planning (but also reasoning
 %    about congestion)
+% be sure to emphasize open source!
 
 % contribution: autonomous car / human car sim on EXISTING INFRASTRUCTURE
 
@@ -245,12 +246,36 @@ value and use it to reason about collision avoidance and satisfying other
 constraints, so setting this value to the standard ``reaction time'' of a human
 driver may be appropriate. Each tick, the simulation performs the following
 steps:
-\begin{itemize}
+\begin{enumerate}
   \item Introducing new agents into the map
   \item Updating the position and velocity of agents
   \item Checking for collisions
   \item Allowing each agent to react
-\end{itemize}
+\end{enumerate}
+
+Agents have few enforced constraints -- they cannot exceed their physical
+acceleration capabilities, travel in reverse, or travel past the end of a
+traversable without appearing on the next. Intersection policies and avoiding
+collisions on the same edge are the source of the other constraint in the
+simulation, but it is the job of a behavior to obey. There are three main
+components of the simulation, each configurable by extending default classes:
+agent behaviors, routing strategies, and intersection policies. Each will be
+described below.
+
+
+justify arbitrary constants, like deaccel for cars
+
+scale
+
+systems ideas, or limitations.. trylocks, atomic sim update, deadlock issues
+
+limit: no lane-changing
+
+\subsection{Spawning}
+
+in realtime!
+
+\subsection{Collision checking}
 
 There are two structures to detect collisions. All traversables (edges and the
 straight line-approximation of turns) maintain a queue of occupying agents,
@@ -263,26 +288,41 @@ queue always move first. Since the first agent may cross into the next queue,
 that introduces a depdendency between traversables. A topological sort of a
 directed graph containing circuits is not possible, though, and since we
 guarantee connectedness, there are obviously circuits. Instead, collisions are
-checked after every agent has stepped forward in time. Queues remember the
-original order of agents before a step, and afterwards can verify the order is
-still legal, with new agents on the end and existing agents in the same order.
-Likewise, intersections check for collisions after everybody has moved by
-examining the turn each agent is performing and verifying that no other agent is
-simultaneously performing a conflicting turn.
+checked after every agent has stepped forward in time, guaranteeing that a
+time-step is atomic. Queues remember the original order of agents before a step,
+and afterwards can verify the order is still legal, with new agents on the end
+and existing agents in the same order.  Likewise, intersections check for
+collisions after everybody has moved by examining the turn each agent is
+performing and verifying that no other agent is simultaneously performing a
+conflicting turn.
 
+\section*{Agent Reactions}
 
+Each agent has a ``behavior'' governing it. When the agent travels past the end
+of an edge during its step, the behavior picks the turn to pursue. Each tick,
+the behavior can make the agent react by performing one of two actions:
+disappearing from the map (only when the agent is at rest and is done with its
+route) or setting an acceleration for the next step. In the future, another
+possible action will be initiating a lane-change or merge.
 
-invariants for agents. interface of behavior and intersection policies.
+Currently, the primary behavior used by all agents is the ``route-following
+behavior.'' It is a generalized, baseline behavior that guarantees not to
+collide with another agent or enter an intersection at the wrong time. It avoids
+some forms of deadlock (in which no agent can move due to interdependencies),
+but there is currently one known flaw. This baseline behavior picks the fasrest
+conservative (safe) choice of acceleration at each step. It could be easily
+extended to mimic human drivers by introducing a higher reaction time delay, for
+instance.
 
-lookahead... worst-case stop dist argument is everywhere. safe spawning, too.
+% TODO diagram for lookahead
 
-intersection policies... stop sign, traffic light.
+lookahead... worst-case stop dist argument is everywhere.
 
-justify arbitrary constants, like deaccel for cars
+\section*{Routing Strategies}
 
-scale
+\section*{Intersection Policies}
 
-systems ideas.. trylocks, atomic sim update, deadlock issues
+and future plans
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
