@@ -277,7 +277,12 @@ class RouteFollowingBehavior(a: Agent, route: Route) extends Behavior(a) {
 
     val needed_accel = accel_to_achieve(desired_speed)
 
-    return needed_accel
+    // TODO dumb epsilon bug again. fix this better.
+    val stop_speed = a.speed + (needed_accel * cfg.dt_s)
+    return if (stop_speed < 0)
+             needed_accel + 0.1
+           else
+             needed_accel
   }
 
   // This directly follows from the distance traveled at constant accel

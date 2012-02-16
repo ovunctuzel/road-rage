@@ -110,6 +110,8 @@ class Simulation(roads: List[Road], edges: List[Edge], vertices: List[Vertex],
     // Agents can't react properly in the presence of huge time-steps. So chop
     // up this time-step into exactly consistent/equal pieces, if needed.
     while (dt_accumulated >= cfg.dt_s) {
+      //val t0 = Util.timer("whole step")
+      //Util.log_push
       dt_accumulated -= cfg.dt_s
 
       // If you wanted crazy speedup, disable all but agent stepping and
@@ -118,22 +120,37 @@ class Simulation(roads: List[Road], edges: List[Edge], vertices: List[Vertex],
 
       // we only sortBy id to get determinism so we can repeat runs.
       // TODO maintain a sorted set or something instead
+      //val t1 = Util.timer("sortin")
       val agents_by_id = agents.toList.sortBy(a => a.id)
+      //t1.stop
 
+      //val t2 = Util.timer("queue start")
       active_queues.foreach(q => q.start_step)
+      //t2.stop
 
+      //val t3 = Util.timer("agent step")
       agents_by_id.foreach(a => a.step(cfg.dt_s))
+      //t3.stop
 
+      //val t4 = Util.timer("queue stop")
       active_queues.foreach(q => q.end_step)
+      //t4.stop
 
+      //val t5 = Util.timer("vert check")
       active_intersections.foreach(i => i.end_step)
+      //t5.stop
 
+      //val t6 = Util.timer("react")
       agents_by_id.foreach(a => {
         // reap the done agents
         if (a.react) {
           agents -= a
         }
       })
+      //t6.stop
+      
+      //Util.log_pop
+      //t0.stop
     }
   }
 
@@ -141,8 +158,8 @@ class Simulation(roads: List[Road], edges: List[Edge], vertices: List[Vertex],
   // spawning as well.
   def try_spawn(a: Agent): Boolean = {
     if (queues(a.start).can_spawn_now(a.start_dist)) {
-      agents += a
       a.at = a.enter(a.start, a.start_dist)
+      agents += a
       return true
     } else {
       return false

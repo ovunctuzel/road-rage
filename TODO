@@ -72,6 +72,7 @@ POSSIBLY SIMPLE
   - when we speed up, sleep less in UI?
   - ui configurable intersection policies
   - snapshot mode in headless with agents pos, to later render
+  - dont even hand over future-task for drunkenroute... 5000 take a second, when they shouldnt.
 
 ### Map building ###
 
