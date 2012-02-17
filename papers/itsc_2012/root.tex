@@ -137,6 +137,8 @@ edges are made up of multiple lines.. this could be control pts of a curve
 (hereon, line means line segment)
 (turns are also traversable)
 
+illustration of turn conflicts
+
 \subsection{Pass 1}
 
 The relevant parts of OSM's map model are nodes and ways. A node corresponds to
@@ -281,9 +283,18 @@ limit: no lane-changing
 
 \subsection{Spawning}
 
-in realtime, safely!
+\commentd{architecture review (generators and thread pool)}
 
-and architecture review (generators and thread pool)
+Once an agent's route is ready, the agent waits alongside its starting edge. At
+the beginning of each tick, they enter with zero initial speed, if it is safe to
+do so. The queue for the edge determines safety. Because behaviors must enforce
+speed limit along an edge by the time an agent enters the road, then if there is
+no agent within the worst-case distance (travel distance at the speed limit,
+plus stopping distance) before the spawn point, then the new agent may enter,
+whether the simulation is running or paused. It is unnecessary to predict which
+agents could enter the edge soon. As a result, there is a buffer space at the
+beginning of the edge where a new agent may never spawn. This disqualifies some
+short edges from being spawn points, but this is not an issue.
 
 \subsection{Collision checking}
 
@@ -402,11 +413,38 @@ implementation.
 
 \section{Intersection Policies}
 
-when is an agent waiting?
+Agents and behaviors (on behalf of an agent) poll an intersection as they
+approach it, asking if they should stop or not. A policy is free to prevent
+agents from performing conflicting turns concurrently by any means. Two main
+policies exist already, but implementing the interface for extensions is simple.
 
-and future plans
+The stop sign policy works by maintaining a current owner and a queue of waiting
+agents. An agent can enter the queue only when they are within some threshold of
+the start of their turn (a constraint satisfied by the default lookahead
+behavior), even if that is several (rather short) edges and turns away. After
+the head of the queue has waited for a configurable pause, they obtain the lock
+and have exclusive access to the intersection.
+
+A form of deadlock is possible in a sequence of short edges and turns. Agent
+$A_1$ acquires the lock to intersection $V_1$, but needs the lock to $V_2$ to
+proceed. Meanwhile, $A_2$ has the lock for $V_2$ and needs the lock for $V_1$.
+To deal with this circumstance, an agent's behavior can yield any held locks (a
+notion generalized to any intersection policy) when its speed is $0$ and its
+conservative acceleration is to remain at rest. The stop sign policy only
+removes an agent's lock if it has not started its turn (because otherwise, the
+agent is stalling in the intersection). The next time that agent polls, the
+policy restores the agent to the front of the queue.
+\commentd{hopefully we'll have a neater solution than this soon}
+
+\commentd{describe traffic signal policy, once it's working}
+
+Intersection policies are one of the most intriguing piece of the simulation to
+tweak. Future policies will include stop lights that adaptively learn better
+timings and an AIM-esque reservation system.
 
 \section{Determinism and other simulation properties}
+
+TODO
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -419,6 +457,12 @@ and future plans
 \section{CONCLUSIONS}
 
 Write me.
+
+big future ideas:
+  contraflow
+  microtolling
+  dynamic replanning
+    autonomous intersections
 
 \addtolength{\textheight}{-12cm}  % This command serves to balance the column lengths
                                   % on the last page of the document manually. It shortens
