@@ -84,6 +84,12 @@ To use road data, we can use OpenStreetMap. xml files exported using OSM are dir
 
 \commentpk{Needs introduction to the rest of the paper here}
 
+Section 2 will review other traffic simulators. Section 3 will introduce the
+overall architecture of AORTA. Section 4 describes how OSM maps are used.
+Section 5 explains the simulation engine and the properties AORTA posses that
+are useful for general traffic experiments. Section 6 gives some initial
+results from such an experiment, and Section 7 concludes.
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \section{RELATED WORKS}
@@ -107,7 +113,8 @@ The architecture of AORTA is described below.
 
 thread pools?
 
-programs: build map, UI (describe what it can do), headless
+programs: build map, UI (describe what it can do -- particularly demand
+generation), headless
 
 api / extending it
 maps separate from simulation separate from UI (mostly)
@@ -116,7 +123,7 @@ maps separate from simulation separate from UI (mostly)
 
 \section{MAP CONSTRUCTION FROM OSM}
 
-% TODO briefly introduce OSM, advantages, etc
+\commentd{briefly introduce OSM, advantages, etc}
 
 To run a simulation on a map from OSM, there is a one-time conversion process to
 transform the map into AORTA's format, which is also encoded with XML. It is
@@ -212,8 +219,8 @@ the process is imperfect, so sometimes lines extend too far or not enough.
 
 \subsubsection{Hierarchial divisions of the graph}
 
-% TODO i don't think this'll have much coverage in the rest of the paper; should
-% we describe wards?
+\commentd{i don't think this'll have much coverage in the rest of the paper; should
+ we describe wards?}
 
 \subsection{Limitations}
 
@@ -240,12 +247,13 @@ integrating with what other sources for spawning traffic, placing POI?
 
 AORTA uses microscopic simulation, modeling individual drivers as agents.
 Discrete-time simulation is used, meaning an agent accelerates at a fixed rate
-for the duration of a ``tick'' to achieve a new position and velocity. The tick
-duration $dt$ is configurable and fixed for the simulation. Agents know this
-value and use it to reason about collision avoidance and satisfying other
-constraints, so setting this value to the standard ``reaction time'' of a human
-driver may be appropriate. Each tick, the simulation performs the following
-steps:
+for the duration of a ``tick'' (also referred to as ``step'') to achieve a new
+position and velocity. The tick duration $dt$ is configurable and fixed for the
+simulation. Agents know this value and use it to reason about collision
+avoidance and satisfying other constraints, so setting this value to the
+standard ``reaction time'' of a human driver may be appropriate. Each tick, the
+simulation performs the following steps:
+
 \begin{enumerate}
   \item Introducing new agents into the map
   \item Updating the position and velocity of agents
@@ -273,7 +281,9 @@ limit: no lane-changing
 
 \subsection{Spawning}
 
-in realtime!
+in realtime, safely!
+
+and architecture review (generators and thread pool)
 
 \subsection{Collision checking}
 
@@ -296,7 +306,7 @@ collisions after everybody has moved by examining the turn each agent is
 performing and verifying that no other agent is simultaneously performing a
 conflicting turn.
 
-\section*{Agent Reactions}
+\section{Agent Reactions}
 
 Each agent has a ``behavior'' governing it. When the agent travels past the end
 of an edge during its step, the behavior picks the turn to pursue. Each tick,
@@ -312,17 +322,91 @@ some forms of deadlock (in which no agent can move due to interdependencies),
 but there is currently one known flaw. This baseline behavior picks the fasrest
 conservative (safe) choice of acceleration at each step. It could be easily
 extended to mimic human drivers by introducing a higher reaction time delay, for
-instance.
+instance, or tune rates of acceleration for optimizing fuel efficiency.
 
-% TODO diagram for lookahead
+Since agents know the fixed $dt$ duration, they may reason about what could
+happen during the next tick and avoid collision and illegal intersection entry.
+The conservative analysis is to determine worst case -- how far could an agent
+travel by the end of the next tick? If they accelerate as fast as possible for
+$dt$, this gives them the longest possible traveling distance and highest
+possible speed. Adding the stopping distance for this speed to the traveling
+distance gives the worst-case distance.
+\commentd{how much formula? pretty simple so far, but can certainly include them.
+ should this part be worded like a proof? (because it can be)}
 
-lookahead... worst-case stop dist argument is everywhere.
+The worst-case distance may exceed the distance remaining on the agent's current
+traversable. That means they could start or finish a turn during the next tick.
+Because edges are often extremely short (less than $???$ meters), they may
+travel through several traversables during the next move. Thus, any conservative
+behavior must look ahead until the worst-case distance is exhausted, asking the
+route strategy which turn an agent will choose in the future. At each
+traversable considered, there are 3 constraints to satisfy: obeying the
+intersection, avoiding collision with another agent, and obeying speed limits.
+Each constraint contributes the max acceleration that will obey the limit, so
+ultimately the result of lookahead will be the minimum of these candidates.
 
-\section*{Routing Strategies}
+A behavior's interaction with an intersection policy amounts to polling it with
+the turn the agent wants to perform, the distance along the incoming edge the
+agent will be, and how long the agent has been waiting (so policies can enforce
+a required delay before entering the intersection). The intersection policy
+simply orders the agent to ``stop'' or ``continue.'' The lookahead considers no
+intersections beyond the first that issues ``stop'', since the behavior cannot
+legally proceed past that one anyway.  The acceleration to avoid entering an
+intersection attempts to end a configurable threshold back from the end of a
+traversable to account for crosswalks and as an epsilon value, since achieveing
+a distance along an edge equal to its length means spilling over into the next
+traversable, which the intersection has banned. Sometimes stopping behind this
+threshold is not possible -- namely, when the edge length is shorter -- and in
+that case, anywhere before the end is acceptable.
+\commentd{include some form of piyush's proof about accel to end?}
 
-\section*{Intersection Policies}
+When the lookahead analysis is considering some future traversable, it only has
+to consider the agent closest to the start in the present. An edge may only be
+entered from a turn, so the intersection policy has the burden of ensuring no
+agent performs a turn that leads to the same edge simultaneously. Following an
+agent safely means maintaining a configurable following distance behind the
+agent. Worst-case analysis is again used: the most dangerous move the agent in
+front could perform is decelerating as fast as possible the next tick, and the
+worst-case traveling distance for the agent behind is already known from
+lookahead. Maintaining following distance from agents actually enables a form of
+deadlock in the simulation. If an agent is forced to stop in an intersection
+mid-turn due to its destination edge filling up with other agents, then nobody
+may cross the blocked intersection. With many agents in a small area, this
+situation may occur several times in an interdependent way. The solution
+currently being investigated will require behaviors to ensure a turn may be
+fully completed before starting it. This will prevent intersections from ever
+being blocked.
+\commentd{diagram showing deadlock}
+\commentd{i really hope to fix this issue soon, but it's not an immediately easy
+fix}
+
+Finally, obeying a road's speed limit is a simple constraint. Like many
+parameters of the map, speed limits are inferred from the road type claimed by
+the OSM source.
+
+\commentd{diagram for example of lookahead?}
+
+\commentd{mention epsilon issues?}
+
+\section{Routing Strategies}
+
+Picking accelerations that optimize some objective functions is a separate task
+from picking a path to travel. Thus, the behavior described above can consult
+any route strategy. Currently two simple implementations are available. One
+statically plans a route to some goal using standard the A* search; the other
+performs a drunken walk, making random choices at each intersection. The latter
+lazily plans several steps ahead, only when the behavior's lookahead engine
+needs to know. Future experiments in dynamic replanning or hierarchial planning
+can be performed without modifying any code other than a creating new route
+implementation.
+
+\section{Intersection Policies}
+
+when is an agent waiting?
 
 and future plans
+
+\section{Determinism and other simulation properties}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
