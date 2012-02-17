@@ -45,37 +45,14 @@ object Coordinate {
     val lat2 = math.toRadians(c2.y) + (math.Pi / 2.0)
 
     val radius = 6378100.0  // of earth, in meters
-//
-//    // convert to xyz coord system
-//    val x1 = math.sin(lat1) * math.cos(lon1)
-//    val y1 = math.sin(lat1) * math.sin(lon1)
-//    val z1 = math.cos(lat1)
-//
-//    val x2 = math.sin(lat2) * math.cos(lon2)
-//    val y2 = math.sin(lat2) * math.sin(lon2)
-//    val z2 = math.cos(lat2)
-//
-//    val dot_prod = (x1 * x2) + (y1 * y2) + (z1 * z2)
-//
-//    val radians = math.acos(dot_prod)
-//
-//    // When the coordinates are the same, I've observed dot_prod = 1.0 +
-//    // epsilon, which makes acos flip out and return NaN. Just catch that here.
-//    // We can't simply check 'c1 == c2', because the difference is a weird
-//    // floating-point epsilon issue. So ASSUME NaN means same coordinates.
-//    return if (radians.isNaN)
-//             0.0
-//           else
-//             radius * radians  // arc len = radius * theta
+    val dLat = lat2 - lat1
+    val dLon = lon2 - lon1
     
-    val dLat = (lat2-lat1)
-    val dLon = (lon2-lon1)
-    
-    //a is the square of half the chord length between the points
-    val a = math.pow(math.sin(dLat/2),2) +
-    	math.pow(math.sin(dLon/2),2) * Math.cos(lat1) * Math.cos(lat2)
-    //c is the angular distance in radians
-    val c = 2 * math.atan2(math.sqrt(a), math.sqrt(1-a))
+    // a is the square of half the chord length between the points
+    val a = math.pow(math.sin(dLat / 2), 2) +
+    	      math.pow(math.sin(dLon / 2), 2) * Math.cos(lat1) * Math.cos(lat2)
+    // c is the angular distance in radians
+    val c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
     return radius * c
   }
 }

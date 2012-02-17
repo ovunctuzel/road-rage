@@ -4,12 +4,15 @@ TRUE PRIORITIES
 1) paper fleshed out solidly by friday
   - what illustrations?
 2) bugfix <-> test at scale iteration
+  - how many agents moved during some tick?
   - gridlock
   - optimize
 3) UI fixes
   - rectangular cars that change size
     - position represents FRONT of car
   - edge lines BETWEEN lanes
+    - agents are a bit close to edge.. or vice versa?
+    - offset is going the wrong way... or, half the time.
   - highlight agent with the lease for an intersection
 4) feature: traffic signals
   - just think about dist left, speed, cycle time left... we should be able to cancel their lease.
@@ -64,6 +67,7 @@ BIGGER ISSUES
     - when running, agents enter at diff times
     - when paused, threads compute routes in diff orders, then two agents compete to spawn in same spot.
   - automated testing strategy.
+  - contraction hierarchies for FAST pathing
 
 POSSIBLY SIMPLE
   - tweak cfg now that we have meters
