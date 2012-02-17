@@ -1,6 +1,7 @@
 package utexas.sim
 
 import utexas.{Util, cfg}
+import utexas.map.Coordinate
 
 object Headless {
   def process_args(args: Array[String]): Simulation = {
@@ -26,6 +27,9 @@ object Headless {
   }
 
   def main(args: Array[String]) = {
+//    Util.log("Distance between ACES and RLM: "+Coordinate.gps_dist_in_meters(
+//        new Coordinate(30.28685,-97.73659),new Coordinate(30.28892,-97.73634)))
+    
     val n = cfg.army_size
 
     val sim = process_args(args)
