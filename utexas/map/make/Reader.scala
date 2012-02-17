@@ -13,7 +13,7 @@ import utexas.map.{Coordinate, Road, Vertex, Edge, Direction, Line, TurnType,
                    Turn, Graph, Ward}
 import utexas.sim.Simulation
 
-import utexas.Util
+import utexas.{Util, cfg}
 
 class Reader(fn: String) {
   // per road
@@ -155,7 +155,7 @@ class Reader(fn: String) {
           e.lane_num = e_lane
           e.set_lines(e_lines.toList)
           // Sucks, but we have some REALLY small edges.
-          if (e.length <= 0.0) {
+          if (e.length <= cfg.min_lane_length) {
             // Cheat. Agents NEED the ability to exist somewhere on this edge.
             //Util.log("WARNING " + e + " is tiny")
             e.length = 0.1

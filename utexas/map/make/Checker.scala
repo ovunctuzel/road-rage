@@ -46,8 +46,8 @@ object Checker {
       }
 
       // Haha, we end up with some REALLY short edges sometimes...
-      if (e.length == 0.0) {
-        Util.log(e + " has ZERO length")
+      if (e.length == 0.0 || e.length.isNaN) {
+        Util.log(e + " has length " + e.length)
         Util.log("  Points: " + e.road.points)
       }
     }

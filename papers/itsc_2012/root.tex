@@ -76,6 +76,8 @@ Write this.
 
 Autonomous vehicles have seen tremendous progress in recent years. In 2004, no autonomous vehicle was able to complete the course set out in the first DARPA Challenge. By 2007, 5 vehicles finished the course of 130 miles in urban environments. By 2011, autonomous vehicles projects have now touched 160,000 miles and an autonomous car drove for 13,000 miles in Europe. Autonomous cars are here to stay, and this changes how traffic is dealt with in the forseeable future. The infrastructure will change to support autonomous vehicles, but it is hard to say more about our traffic demands. Will we be able to gain more roads in the future? Do we have the space to expand and will autonomous vehicles be able to reach your doorstep?
 
+\commentd{nevada even made autonomous cars legal:
+http://www.pcmag.com/article2/0,2817,2400400,00.asp}
 This paper presents a new methodology for micro-simulating autonomous traffic for such situations where we will continue to use existing roads for autonomous vehicles. We believe that the autonomous traffic will be controlled via an overseer. The overseer can define behaviors for indivudal agents and individual intersections. The overseer itself can be a centralized or decentralized system that is capable of making such decisions in real-time.
 
 To implement such a methodology, we have come up with our own traffic simulator called AORTA. In AORTA we focus on the behavior of agents and intersections. Our simulator is generic enough to take advantage of implementing behaviors for cars which can represent human driving, along with standardized traffic light signals. We believe that that traffic light signals will be able to do better once we start using Autonomous Intersection Managers such as AIM.
@@ -104,26 +106,41 @@ One such
 
 \section{ARCHITECTURE}
 
+\commentd{UML diagram?}
+
+The architecture and implementation notes of AORTA follow. AORTA is divided into
+roughly three components, each somewhat independent of the others. The map model
+handles everything from building graphs from OSM source to pathfinding. This
+component is cleanly separated from the simulation engine, which adds the notion
+of agents, structures on top of map components that detect collisions, and the
+machinery to implement AORTA's model of car dynamics. If a future experiment
+demands macrosimulation or cellular automata method, no changes to the map
+infrastructure are needed. Finally, there is a UI using Java Swing, which is
+(out of necessity) tied to both the map and simulation components. The software
+has a documented API, is open-source, and contains all of the code for the
+experiments described in Section 6: it is designed for extensibility.
+
 AORTA's implementation uses Scala, a language implemented on the Java Virtual
-Machine. Scala provides the advantage of functional programming constructs
-without imposing them; parts of AORTA or extensions or clients can just as
-easily be written in the more familiar Java.
+Machine. Scala provides the advantage of functional programming constructs while
+still permitting imperative style. Parts of AORTA or extensions or clients can
+just as easily be written in Java.
 
-The architecture of AORTA is described below.
-
-thread pools?
-
-programs: build map, UI (describe what it can do -- particularly demand
-generation), headless
-
-api / extending it
-maps separate from simulation separate from UI (mostly)
+There are three standalone applications in AORTA. The map builder takes an OSM
+file as input and produces an AORTA graph as output. There is a UI, using Swing,
+to interactively explore the map and run simulations. Specific traffic patterns
+can quickly be simulated by selecting a source and destination group of roads in
+the UI. Finally, there is a headless mode that runs some specific experiment
+without the overhead of visualization. The UI and headless mode both take a
+graph as input, meaning the map construction step must be run once per OSM
+input, but the same graph can be reused indefinitely.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \section{MAP CONSTRUCTION FROM OSM}
 
-\commentd{briefly introduce OSM, advantages, etc}
+Our goal is to simulate traffic on existing infrastructure, not contrived,
+randomly generated maps. We do this by utilizing OpenStreetMaps, a community
+project offering user-editable, free maps. 
 
 To run a simulation on a map from OSM, there is a one-time conversion process to
 transform the map into AORTA's format, which is also encoded with XML. It is
@@ -131,13 +148,29 @@ split into 3 passes, each feeding the next.
 
 \subsection{Map Model}
 
-roads, verts, edges, wards, traversables, turns...
+AORTA's map format reflects our map model, which will now be described.
 
-edges are made up of multiple lines.. this could be control pts of a curve
-(hereon, line means line segment)
-(turns are also traversable)
+\commentd{terminology sucks below. suggestions?}
 
-illustration of turn conflicts
+\emph{Roads} are undirected edges between \emph{vertices}, which are
+intersections between multiple roads. A road contains one or two sets of
+directed \emph{edges}, each of which represents a single lane of travel. One-way
+roads are supported. An edge leads from one vertex to another; the second vertex
+then contains a mapping from each incoming edge to some outgoign edge; each pair
+is a \emph{turn}. Strictly speaking, the multigraph consists of \emph{lanes} as
+vertices (this is confusing, because lanes are \emph{edges} in our model) and
+\emph{turns} as edges. \emph{Roads} are a super-structure with meta-data,
+bundling several \emph{lanes} together, and \emph{vertices} serve to bundle
+together \emph{turns}.
+
+Geometrically speaking, a road has a sequence of points defining the line
+segments constituting the center yellow line. These points could also be
+interpreted as control points for a curved road, but AORTA approximates using
+straight lines. Edges mimic this geometry, projecting the center line a lane's
+width away. Turns are modeled with a single straight line connecting the end of
+one edge to the start of another. Since both edges and turns can support
+traffic, they are grouped together as \emph{traversables}, meaning they have
+some sequence of line segments and a total length.
 
 \subsection{Pass 1}
 
@@ -194,6 +227,15 @@ source, this is the best compromise. Finally, the geometry of a turn is
 simplified to a single line between the ends of the edges it connects.
 In the future, a more realistic curve could be drawn.
 
+\commentd{illustration of turn conflicts}
+
+AORTA has a low-granularity model of turn conflict. If two vehicles at any point
+along two different turns could ever come into contact, then the turns are
+always in conflict, no matter where the agent specifically is along that turn.
+The alternative of tiling intersections would provide more granularity, but it
+adds computational complexity and would be impractical for many of the
+intersection geometries inferred from OSM.
+
 \subsubsection{Ensuring connectivity}
 
 Because turns are constructed imperfectly, most large graphs have edges that are
@@ -242,14 +284,14 @@ removing sccs is not ideal
 
 In the future, we intend to support the ability to augment an AORTA map with
 data from non-OSM sources, such as information about the presence of extra lanes
-for left turns.  Using data such as GPS coordinates and road names, we could fuse
+for left turns. Using data such as GPS coordinates and road names, we could fuse
 this extra information into an osm-based AORTA map to make simulations on that map
 that much more realistic.
 
-We are also experimenting with explicitly stating where traffic should spawn and where
-it should go.  This allows more accurate (and consistent) simulations of situations such
-as rush hour.  In the future, we hope to be able to generate these demand descriptions
-from government-collected data about a municipality's road usage.
+Section 5.1 details a way to specify where traffic should originate and move
+towards using the UI. This allows a more accurate simulation of situations such
+as rush hour. In the future, we hope to be able to generate these demand
+descriptions from government-collected data about a municipality's road usage.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -280,18 +322,14 @@ components of the simulation, each configurable by extending default classes:
 agent behaviors, routing strategies, and intersection policies. Each will be
 described below.
 
-
-justify arbitrary constants, like deaccel for cars
-
-scale \commentm{I'm going to change this back to a 1:1 correlation with the real world.  (Hopefully this weekend.)}
-
-systems ideas, or limitations.. trylocks, atomic sim update, deadlock issues
-
-limit: no lane-changing
+\commentd{justify arbitrary constants, like deaccel for cars;
+          systems ideas, or limitations.. trylocks, atomic sim update, deadlock
+          issues;
+          limit: no lane-changing}
 
 \subsection{Spawning}
 
-\commentd{architecture review (generators and thread pool)}
+\commentd{(generators and thread pool)}
 
 Once an agent's route is ready, the agent waits alongside its starting edge. At
 the beginning of each tick, they enter with zero initial speed, if it is safe to
@@ -320,7 +358,7 @@ guarantee connectedness, there are necessarily circuits in most maps. Instead, c
 checked after every agent has stepped forward in time, treating each time-step
 as atomic. Queues remember the original order of agents before a step,
 and afterwards can verify that the order is still legal, with new agents on the end
-and existing agents in the same order.  Likewise, intersections check for
+and existing agents in the same order. Likewise, intersections check for
 collisions after everybody has moved by examining the turn each agent is
 performing and verifying that no other agent is simultaneously performing a
 conflicting turn.
@@ -370,7 +408,7 @@ agent will be, and how long the agent has been waiting (so policies can enforce
 a required delay before entering the intersection). The intersection policy
 simply orders the agent to ``stop'' or ``continue.'' The lookahead considers no
 intersections beyond the first that issues ``stop'', since the behavior cannot
-legally proceed past that one anyway.  The acceleration to avoid entering an
+legally proceed past that one anyway. The acceleration to avoid entering an
 intersection attempts to end a configurable threshold back from the end of a
 traversable to account for crosswalks and as an epsilon value, since achieveing
 a distance along an edge equal to its length means spilling over into the next
@@ -452,7 +490,17 @@ timings and an AIM-esque reservation system.
 
 \section{Determinism and other simulation properties}
 
-TODO
+AORTA is designed for controlled experiments. Consequently, simulations are
+deterministically reprodcible. A single seed for the pseudo-random number
+generator, the input graph, and the generators completely determine the single
+outcome of any simulation. This determinism breaks down when generators use
+worker threads, since routes may be computed in different orders, causing agents
+to be ready to enter the road at different times.
+
+\commentd{and how will we solve this issue with threads and determinism?}
+
+\commentd{give some informal or formal (with numbers) idea of scale / how many
+agents we can simulate in different map sizes}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -488,6 +536,8 @@ Probably stuff about getting and using the code.
 \section*{ACKNOWLEDGMENT}
 
 Dr. Quinlan has certainly been helpful.
+
+What credits do we need to give to OSM?
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
