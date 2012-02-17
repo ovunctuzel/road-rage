@@ -49,9 +49,30 @@ class Road(var id: Int, val points: List[Coordinate], val name: String,
 
   def pairs_of_points = points zip points.tail
 
-  // TODO more of these
   def speed_limit = Util.mph_to_si(road_type match {
-    case "residential" => 30
-    case _             => 50
+    case "residential"		=> 30
+    case "motorway"			=> 80
+    case "motorway_link"	=> 70 //Actually these don't have a speed limit legally...  35 is suggested, but NOBODY does that
+    case "trunk" 			=> 70
+    case "trunk_link"		=> 60
+    case "primary"			=> 65
+    case "primary_link"		=> 55
+    case "secondary"		=> 55
+    case "secondary_link"	=> 45
+    case "tertiary"			=> 45
+    case "tertiary_link"	=> 35
+    
+//    case "unclassified"		=> 40
+//    case "road"				=> 40
+    case "living_street"	=> 20
+    case "service"			=> 10 //This is apparently parking-lots basically, not feeder roads
+    case "services"			=> 10
+//    case "track"			=> 35
+    case "raceway"			=> 300 //I feel the need.  The need for speed.  Where can we find one of these?
+//    case "null"				=> 30
+//    case "proposed"			=> 35
+//    case "construction"		=> 20
+    
+    case _					=> 35 //Generally a safe speed, right?
   })
 }

@@ -151,7 +151,7 @@ imperfect.
 
 Finally, coordinates are normalized from GPS (longitude, latitude) to a planar
 coordinate system with no negative coordinates and the Y coordinate increasing
-upwards. This is done for convenince of manipulation in the UI, but the scale
+upwards. This is done for convenience of manipulation in the UI, but the scale
 and offset used are retained, so a coordinate in the final form of the map can
 still be mapped back to its original GPS form.
 
@@ -170,7 +170,7 @@ which is saved in XML.
 
 Undirected edges are first multiplied into directed lanes. The coordinates from
 a slice of an OSM way are interpreted to be the center line of the road, and
-lanes are placed by projecting the width of a line perpendicularly from the
+lanes are placed by projecting the width of a lane perpendicularly from the
 center line in either direction. OSM encodes one-way streets, so in this case,
 if there are an odd number of one-way lanes, the middle lane is placed where the
 center line would be, and the other lanes are shifted from there. If there are
@@ -189,7 +189,7 @@ lanes all cross into fewer lanes, merging is forced for the rightmost lanes.
 These patterns are attempts at generalizations; this process results in many
 intersections having the incorrect turns. However, without a more detailed
 source, this is the best compromise. Finally, the geometry of a turn is
-extremely simplified as a single line between the ends of the edges it connects.
+simplified to a single line between the ends of the edges it connects.
 In the future, a more realistic curve could be drawn.
 
 \subsubsection{Ensuring connectivity}
@@ -198,7 +198,7 @@ Because turns are constructed imperfectly, most large graphs have edges that are
 not reachable from some portions of the graph. Simulation and pathfinding would
 suffer greatly if this was the case, so pass 3 uses Tarjan's linear-time
 algorithm for locating strongly connected components to remove the components of
-the directed graph with the least members. (There is also a debugging switch to
+the directed graph with the fewest members. (There is also a debugging switch to
 leave these components in and highlight them in the UI.) The algorithm operates
 at the granularity of lanes. If several lanes of many are disconnected within
 one road, then the bad lanes are spliced out. This results in visually
@@ -215,12 +215,14 @@ and have the same length, they also meet in the intersection. This is
 geometrically incorrect; lanes stop along the border of the intersection. Thus,
 pass 3 includes heuristics to trim a lane's lines to the spot where they
 intersect with another lane's lines. This results in a more accurate model, but
-the process is imperfect, so sometimes lines extend too far or not enough.
+the process is imperfect, so sometimes lines extend too far or not far enough.
 
 \subsubsection{Hierarchial divisions of the graph}
 
 \commentd{i don't think this'll have much coverage in the rest of the paper; should
  we describe wards?}
+\commentm{We aren't actually using wards at all yet.  I think we should save this
+for a later paper.}
 
 \subsection{Limitations}
 
@@ -228,18 +230,24 @@ proposals to change OSM to fix these issues
 
 projecting lines sucks... but all it really does is clutter UI
 filtering out invalid ways in pass 1 is really not a clear process
-number of lanes... road types are wacky and wrong
+number of lanes and speed limits... road types are wacky and wrong
 turns are brittle.. detecting right-turn only lane is rare. shared center lane?
   not part of our model, or OSM's.
 removing sccs is not ideal
 
+
 \subsection{Integrating other data sources}
 
-how easy would it be?
+In the future, we intend to support the ability to augment an AORTA map with
+data from non-OSM sources, such as information about the presence of extra lanes
+for left turns.  Using data such as GPS coordinates and road names, we could fuse
+this extra information into an osm-based AORTA map to make simulations on that map
+that much more realistic.
 
-match on gps, or on road metadata like names
-
-integrating with what other sources for spawning traffic, placing POI?
+We are also experimenting with explicitly stating where traffic should spawn and where
+it should go.  This allows more accurate (and consistent) simulations of situations such
+as rush hour.  In the future, we hope to be able to generate these demand descriptions
+from government-collected data about a municipality's road usage.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -273,7 +281,7 @@ described below.
 
 justify arbitrary constants, like deaccel for cars
 
-scale
+scale \commentm{I'm going to change this back to a 1:1 correlation with the real world.  (Hopefully this weekend.)}
 
 systems ideas, or limitations.. trylocks, atomic sim update, deadlock issues
 
@@ -305,11 +313,11 @@ agent moves. However, agents take their steps sequentially and in an effectively
 random order. Ideally they could be reordered so that agents in the front of a
 queue always move first. Since the first agent may cross into the next queue,
 that introduces a depdendency between traversables. A topological sort of a
-directed graph containing circuits is not possible, though, and since we
-guarantee connectedness, there are obviously circuits. Instead, collisions are
-checked after every agent has stepped forward in time, guaranteeing that a
-time-step is atomic. Queues remember the original order of agents before a step,
-and afterwards can verify the order is still legal, with new agents on the end
+directed graph containing circuits is not possible though, and since we
+guarantee connectedness, there are necessarily circuits in most maps. Instead, collisions are
+checked after every agent has stepped forward in time, treating each time-step
+as atomic. Queues remember the original order of agents before a step,
+and afterwards can verify that the order is still legal, with new agents on the end
 and existing agents in the same order.  Likewise, intersections check for
 collisions after everybody has moved by examining the turn each agent is
 performing and verifying that no other agent is simultaneously performing a
@@ -328,7 +336,7 @@ Currently, the primary behavior used by all agents is the ``route-following
 behavior.'' It is a generalized, baseline behavior that guarantees not to
 collide with another agent or enter an intersection at the wrong time. It avoids
 some forms of deadlock (in which no agent can move due to interdependencies),
-but there is currently one known flaw. This baseline behavior picks the fasrest
+but there is currently one known flaw. This baseline behavior picks the fastest
 conservative (safe) choice of acceleration at each step. It could be easily
 extended to mimic human drivers by introducing a higher reaction time delay, for
 instance, or tune rates of acceleration for optimizing fuel efficiency.
@@ -351,7 +359,7 @@ behavior must look ahead until the worst-case distance is exhausted, asking the
 route strategy which turn an agent will choose in the future. At each
 traversable considered, there are 3 constraints to satisfy: obeying the
 intersection, avoiding collision with another agent, and obeying speed limits.
-Each constraint contributes the max acceleration that will obey the limit, so
+Each constraint contributes to the max acceleration that will obey the limit, so
 ultimately the result of lookahead will be the minimum of these candidates.
 
 A behavior's interaction with an intersection policy amounts to polling it with
