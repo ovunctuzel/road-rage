@@ -53,6 +53,10 @@ TODO Name this thing
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+\commentd{sounds fine to me, only thing is that we haven't actually focused on
+  dynamic re-planning or any kind of overseer yet, although theres nothing
+  stopping us from trying that idea again}
+
 \begin{abstract}
 Autonomous vehicles have seen great advancements in recent years and such vehicles are now ever closer to being commercially available. The advent of driver-less cars provides opportunities for optimizing traffic in ways not possible before. This paper introduces an open source multi-agent traffic simulator called AORTA, which stands for \textit{Approximately Orchestrated Road Network Automata}, and demonstrates its usage for optimizing autonomous traffic at a city-wide scale. AORTA creates scale simulations by generating maps using publicly available road data from \textit{OpenStreetMap} (OSM). Simulations can be set up in the few minutes it takes to export data for the region of interest from OSM. AORTA focuses on interactions between agents by defining \textit{behaviors} for individual vehicles and intersections. These behaviors allow agents to interact with each other as well as with an external \textit{overseer} that is responsible for optimizing traffic flow. Overseers can interact with these agents to allow for dynamic route re-planning to reduce traffic load, optimized intersection navigation, and improved car following. \commentpk{rest devoted to application}
 \end{abstract}
@@ -77,9 +81,14 @@ Autonomous vehicle technology has made tremendous progress in the last decade. I
 
 The arrival of driver-less cars presents a number of challenges that need to addressed in the near term. Road infrastructure needs to be updated to better support autonomous vehicles. A number of legal and safety concerns need to be addressed in the context of driver-less cars. Human drivers need new methodologies to interact with autonomous drivers on public roads. At the same time, driver-less cars provide opportunities of solving traffic problems in ways that were never before possible. For instance, autonomous cars can be quickly diverted to make way for emergency vehicles responding to an accident. Even day-to-day traffic issues such as congestion could potentially be greatly reduced by effective management of traffic flow. This work attempts to address some of these problems.
 
-% \commentd{nevada even made autonomous cars legal:
-% http://www.pcmag.com/article2/0,2817,2400400,00.asp}
-% This paper presents a new methodology for micro-simulating autonomous traffic for such situations where we will continue to use existing roads for autonomous vehicles. We believe that the autonomous traffic will be controlled via an overseer. The overseer can define behaviors for indivudal agents and individual intersections. The overseer itself can be a centralized or decentralized system that is capable of making such decisions in real-time.
+\commentd{nevada even made autonomous cars legal:
+http://www.pcmag.com/article2/0,2817,2400400,00.asp}
+
+\commentd{another example long-term usage: fuel. I went to a talk by
+  somebody on the engr side about powermiling and optimizing battery usage}
+
+\commentd{we don't support lane-changing yet, and overseers arent re-implemented
+yet either}
 
 This paper introduces an open source multi-agent microscopic traffic simulator called AORTA, which stands for \textit{Approximately Orchestrated Road Traffic Automata}. The AORTA simulator focuses on the interactions between individual vehicles and intersections, both of which act as \textit{agents} in AORTA's framework. Vehicles interact with other vehicles to pass and change lanes, and interact with intersections to decide when to cross them. Researchers developing applications on top of the AORTA simulator define \textit{behaviors} that these agents follow to interact with one another. To optimize traffic flow, external \textit{overseers} can coordinate with these agents to provide recommendations such as route suggestions or intersection signaling policies. An advantage of such an approach is that by assigning human-like behaviors such as the "car following model" \cite{brackstone1999car} to vehicles and traffic signal like policies to intersection, AORTA can just as easily simulate human traffic.
 
@@ -108,6 +117,9 @@ On the other hand, there are a number of simulators that specifically target aut
 
 Autonomous agents have also been used in the past to model human traffic as well. For instance, an approach models human merging and lane changing behavior through the use of autonomous agents interacting with one another \cite{hidas2002modelling}. Another approach attempted to improve traffic congestion for human drivers by using a network of autonomous intersection. These intersections have the ability to interact with one another and execute a dynamic traffic signal policy minimizing overall wait time \cite{manikonda2001autonomous}.
 
+\commentd{and we can do the above too. we talk about how to make the current
+  behavior more flawed and humanlike in the agent reactions section.}
+
 \commentpk{I suspect there are still more papers that might be more relevant - we'll definitely have some when we write the application}
 
 % In the realm of applications
@@ -117,7 +129,8 @@ Autonomous agents have also been used in the past to model human traffic as well
 
 \section{ARCHITECTURE}
 
-\commentd{UML diagram?}
+\commentd{? UML diagram: 3 components with their capabilities listed inside, and
+arrows of interactions between them?}
 
 The architecture and implementation notes of AORTA follow. AORTA is divided into
 roughly three components, each somewhat independent of the others. The map model
@@ -126,10 +139,11 @@ component is cleanly separated from the simulation engine, which adds the notion
 of agents, structures on top of map components that detect collisions, and the
 machinery to implement AORTA's model of car dynamics. If a future experiment
 demands macrosimulation or cellular automata method, no changes to the map
-infrastructure are needed. Finally, there is a UI using Java Swing, which is
-(out of necessity) tied to both the map and simulation components. The software
-has a documented API, is open-source, and contains all of the code for the
-experiments described in Section 6: it is designed for extensibility.
+infrastructure are needed, due to the software engineering. Finally, there is a
+UI using Java Swing, which is (out of necessity) tied to both the map and
+simulation components. The software has a documented API, is open-source, and
+contains all of the code for the experiments described in Section 6 -- it is
+designed for extensibility.
 
 AORTA's implementation uses Scala, a language implemented on the Java Virtual
 Machine. Scala provides the advantage of functional programming constructs while
@@ -151,61 +165,65 @@ input, but the same graph can be reused indefinitely.
 
 Our goal is to simulate traffic on existing infrastructure, not contrived,
 randomly generated maps. We do this by utilizing OpenStreetMaps, a community
-project offering user-editable, free maps. 
-
-To run a simulation on a map from OSM, there is a one-time conversion process to
-transform the map into AORTA's format, which is also encoded with XML. It is
-split into 3 passes, each feeding the next.
+project offering user-editable, free maps.  To run a simulation on a map from
+OSM, there is a one-time conversion process to transform the map into AORTA's
+format, which is also encoded with XML. It is split into 3 passes, each feeding
+the next.
 
 \subsection{Map Model}
 
-AORTA's map format reflects our map model, which will now be described.
+\commentd{a simple diagram of a road with a few edges connected maybe to a
+one-way}
 
-\commentd{terminology sucks below. suggestions?}
+\commentd{terminology is awkward. if we bold-face our notions of edge and vertex
+every time we use them, would that better distinguish them from a graph's
+verts/edges?}
 
 \emph{Roads} are undirected edges between \emph{vertices}, which are
-intersections between multiple roads. A road contains one or two sets of
+intersections between multiple roads. A \emph{road} contains one or two sets of
 directed \emph{edges}, each of which represents a single lane of travel. One-way
-roads are supported. An edge leads from one vertex to another; the second vertex
-then contains a mapping from each incoming edge to some outgoign edge; each pair
-is a \emph{turn}. Strictly speaking, the multigraph consists of \emph{lanes} as
-vertices (this is confusing, because lanes are \emph{edges} in our model) and
-\emph{turns} as edges. \emph{Roads} are a super-structure with meta-data,
-bundling several \emph{lanes} together, and \emph{vertices} serve to bundle
-together \emph{turns}.
+\emph{roads} are supported. An \emph{edge} leads from one \emph{vertex} to
+another; the second \emph{vertex} then contains a mapping from each incoming
+\emph{edge to some outgoing \emph{edge}; each pair is a \emph{turn}. Strictly
+speaking and with confusing terminology, the multigraph consists of lanes
+(\emph{edges}) as vertices and \emph{turns} as edges. \emph{Roads} are a
+super-structure with meta-data, bundling several \emph{edges} together, and
+\emph{vertices} serve to bundle together \emph{turns}.
 
-Geometrically speaking, a road has a sequence of points defining the line
-segments constituting the center yellow line. These points could also be
-interpreted as control points for a curved road, but AORTA approximates using
-straight lines. Edges mimic this geometry, projecting the center line a lane's
-width away. Turns are modeled with a single straight line connecting the end of
-one edge to the start of another. Since both edges and turns can support
-traffic, they are grouped together as \emph{traversables}, meaning they have
-some sequence of line segments and a total length.
+Geometrically, a road has a sequence of points defining the line segments
+constituting the center yellow line. These points could also be interpreted as
+control points for a curved road, but AORTA approximates using straight lines.
+Edges mimic this geometry, projecting the center line some multiple of a lane's
+width away in the appropriate direction. Turns are modeled with a single
+straight line connecting the end of one edge to the start of another (so right
+turns often have $0$ length). Since both edges and turns can support traffic,
+they are grouped together as \emph{traversables}, meaning they have some
+sequence of line segments and a total length.
 
 \subsection{Pass 1}
 
 The relevant parts of OSM's map model are nodes and ways. A node corresponds to
-a GPS location, and ways are links between many nodes, corresponding to roads
-and other paths. The first pass reads OSM's XML format, gathering ways as a
-series of coordinates. Ways intersect when a node is used by multiple ways.
+a GPS location, and ways are links between many nodes, corresponding to
+driveable streets and other paths. The first pass reads OSM's XML format,
+gathering ways as a series of coordinates. Ways implicitly intersect when a node
+is used by multiple ways.
 
 Since OSM also encodes pedestrian paths, bike routes, and even lakes with ways,
 pass 1 filters out anything that does not seem to be driveable. OSM does not
 seem to provide a unified list of valid roads, so these heuristics are
 imperfect.
 
-Finally, coordinates are normalized from GPS (longitude, latitude) to a planar
-coordinate system with no negative coordinates and the Y coordinate increasing
-upwards. This is done for convenience of manipulation in the UI, but the scale
-and offset used are retained, so a coordinate in the final form of the map can
-still be mapped back to its original GPS form.
+Finally, coordinates are normalized from GPS (longitude, latitude) to a
+Cartesian coordinate system with no negative coordinates and the Y coordinate
+increasing upwards. This is only done for convenience of manipulation in the UI.
+Any coordinate is translated back to its original GPS form when used for
+computing traversable length.
 
 \subsection{Pass 2}
 
-OSM ways only implicitly intersect at common coordinates; AORTA's structure
-demands a traditional definition of edge linking exactly two vertices. Pass 2
-walks along each way's coordinates, dividing it into multiple undirected edges.
+AORTA's structure demands a traditional definition of edge linking exactly two
+vertices, rather than OSM's ways going through many common nodes. Pass 2 walks
+along each way's coordinates, dividing it into multiple undirected edges.
 
 \subsection{Pass 3}
 
@@ -213,6 +231,9 @@ Finally, pass 3 performs successive transformations to produce the final graph,
 which is saved in XML.
 
 \subsubsection{Making Lanes}
+
+\commentd{the geometry was already explained in Map Model; I think it belongs
+there if we have to cut one}
 
 Undirected edges are first multiplied into directed lanes. The coordinates from
 a slice of an OSM way are interpreted to be the center line of the road, and
@@ -234,24 +255,25 @@ edge's original OSM ID matches. U-turns are constructed at dead-ends. If several
 lanes all cross into fewer lanes, merging is forced for the rightmost lanes.
 These patterns are attempts at generalizations; this process results in many
 intersections having the incorrect turns. However, without a more detailed
-source, this is the best compromise. Finally, the geometry of a turn is
-simplified to a single line between the ends of the edges it connects.
-In the future, a more realistic curve could be drawn.
+source, this is the best compromise. At the time of writing, even sources like
+Google Maps lack this information. (TODO how do you cite a lack of something?)
+Finally, the geometry of a turn is simplified to a single line between the ends
+of the edges it connects.  In the future, a more realistic curve could be drawn.
 
 \commentd{illustration of turn conflicts}
 
 AORTA has a low-granularity model of turn conflict. If two vehicles at any point
 along two different turns could ever come into contact, then the turns are
 always in conflict, no matter where the agent specifically is along that turn.
-The alternative of tiling intersections would provide more granularity, but it
-adds computational complexity and would be impractical for many of the
-intersection geometries inferred from OSM.
+The alternative of tiling intersections (like \cite{JAIR08-dresner} does) would
+provide more granularity, but it adds computational complexity and would be
+impractical for many of the complex intersection geometries inferred from OSM.
 
 \subsubsection{Ensuring connectivity}
 
 Because turns are constructed imperfectly, most large graphs have edges that are
 not reachable from some portions of the graph. Simulation and pathfinding would
-suffer greatly if this was the case, so pass 3 uses Tarjan's linear-time
+suffer greatly if this remained the case, so pass 3 uses Tarjan's linear-time
 algorithm for locating strongly connected components to remove the components of
 the directed graph with the fewest members. (There is also a debugging switch to
 leave these components in and highlight them in the UI.) The algorithm operates
@@ -281,6 +303,8 @@ for a later paper.}
 
 \subsection{Limitations}
 
+\commentd{this maybe doesn't belong in this paper}
+
 proposals to change OSM to fix these issues
 
 projecting lines sucks... but all it really does is clutter UI
@@ -290,13 +314,12 @@ turns are brittle.. detecting right-turn only lane is rare. shared center lane?
   not part of our model, or OSM's.
 removing sccs is not ideal
 
-
 \subsection{Integrating other data sources}
 
 In the future, we intend to support the ability to augment an AORTA map with
 data from non-OSM sources, such as information about the presence of extra lanes
 for left turns. Using data such as GPS coordinates and road names, we could fuse
-this extra information into an osm-based AORTA map to make simulations on that map
+this extra information into an OSM-based AORTA map to make simulations on that map
 that much more realistic.
 
 Section 5.1 details a way to specify where traffic should originate and move

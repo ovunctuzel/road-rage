@@ -44,18 +44,22 @@ object Headless {
     Util.log("Starting simulation with time-steps of " + cfg.dt_s + "s")
     var last_real_time = 0.0
     var last_virtual_time = 0.0
+    var max_movements = 0
     while (!sim.done) {
       // Print every 1 literal second
       val now = timer.so_far
       //val now = sim.tick    // or every 1 virtual second
       if (now - last_real_time >= 1.0) {
-        Util.log("At t=%.1f (%.1fs later): %s".format(
-          sim.tick, sim.tick - last_virtual_time, sim.describe_agents
+        Util.log("At t=%.1f (%.1fs later): %s [%d agents moved]".format(
+          sim.tick, sim.tick - last_virtual_time, sim.describe_agents,
+          max_movements
         ))
         last_real_time = now
         last_virtual_time = sim.tick
+        max_movements = 0
       }
-      sim.step(cfg.dt_s)
+      val moves = sim.step(cfg.dt_s)
+      max_movements = math.max(max_movements, moves)
     }
     Util.log("Simulation took " + sim.tick + " virtual seconds")
     timer.stop

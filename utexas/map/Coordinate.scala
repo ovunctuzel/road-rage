@@ -50,7 +50,7 @@ object Coordinate {
     
     // a is the square of half the chord length between the points
     val a = math.pow(math.sin(dLat / 2), 2) +
-    	      math.pow(math.sin(dLon / 2), 2) * Math.cos(lat1) * Math.cos(lat2)
+    	      math.pow(math.sin(dLon / 2), 2) * math.cos(lat1) * math.cos(lat2)
     // c is the angular distance in radians
     val c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
     return radius * c

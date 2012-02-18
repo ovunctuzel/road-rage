@@ -27,7 +27,8 @@ class Agent(val id: Int, val graph: Graph, val start: Edge, val start_dist: Doub
 
   override def toString = "Agent " + id
 
-  def step(dt_s: Double) = {
+  // Returns true if we move or do anything at all
+  def step(dt_s: Double): Boolean = {
     assert(dt_s == cfg.dt_s)
 
     // To confirm determinism, enable one of these (more precision in doubles is
@@ -110,6 +111,7 @@ class Agent(val id: Int, val graph: Graph, val start: Edge, val start_dist: Doub
     }
 
     // TODO deal with lane-changing
+    return new_dist > 0.0
   }
 
   def how_long_idle = if (idle_since == -1.0)

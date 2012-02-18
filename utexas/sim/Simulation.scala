@@ -100,13 +100,16 @@ class Simulation(roads: List[Road], edges: List[Edge], vertices: List[Vertex],
     ready_to_spawn = ready_to_spawn.filter(a => !try_spawn(a))
   }
 
-  def step(dt_s: Double) = {
+  // Returns the number of agents that moved
+  def step(dt_s: Double): Int = {
     pre_step
 
     // This value is dt in simulation time, not real time
     val this_time = dt_s * time_speed
     dt_accumulated += this_time
     tick += this_time
+
+    var moved_count = 0
 
     // Agents can't react properly in the presence of huge time-steps. So chop
     // up this time-step into exactly consistent/equal pieces, if needed.
@@ -124,7 +127,11 @@ class Simulation(roads: List[Road], edges: List[Edge], vertices: List[Vertex],
       //t2.stop
 
       //val t3 = Util.timer("agent step")
-      agents.foreach(a => a.step(cfg.dt_s))
+      agents.foreach(a => {
+        if (a.step(cfg.dt_s)) {
+          moved_count += 1
+        }
+      })
       //t3.stop
 
       //val t4 = Util.timer("queue stop")
@@ -147,6 +154,7 @@ class Simulation(roads: List[Road], edges: List[Edge], vertices: List[Vertex],
       //Util.log_pop
       //t0.stop
     }
+    return moved_count
   }
 
   // True if we've correctly promoted into real agents. Does the work of
