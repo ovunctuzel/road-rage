@@ -1,0 +1,44 @@
+digraph {
+  subgraph cluster_map {
+    label="Map Model";
+
+    node [shape=Mrecord];
+    map [label="{<r> Roads    \
+               | <e> Edges    \
+               | <v> Vertices \
+               | <t> Turns}"];
+
+    Pathfinding [shape=ellipse];
+    Builder [shape=ellipse, label="Map builder"];
+    Builder -> map;
+  };
+  OSM [shape=folder];
+  OSM -> Builder;
+
+  subgraph cluster_sim {
+    label="Micro-simulation";
+
+    node [shape=Mrecord];
+    sim [label="{<a> Agents \
+               | <q> Queues \
+               | <i> Intersections \
+               | <g> Generators}"];
+
+    Behavior [shape=ellipse];
+    Route [shape=ellipse, label="Route Strategy"];
+    Policy [shape=ellipse, label="Intersection Policy"];
+    
+    sim:a -> Behavior [label="have"];
+    sim:a -> Route [label="have"];
+    sim:i -> Policy [label="have"];
+    sim:g -> sim:a [label="creates"];
+
+    Behavior -> Route [label="consults"];
+    Behavior -> sim:q [label="satisfies constraints of"];
+    Behavior -> Policy [label="obeys"];
+  };
+  sim:q -> map:e [label="maintain agents on"];
+  sim:i -> map:v [label="maintain agents on"];
+  Route -> map:t [label="uses"];
+  Route -> Pathfinding [label="uses"];
+}
