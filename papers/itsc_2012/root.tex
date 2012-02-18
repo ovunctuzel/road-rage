@@ -11,36 +11,26 @@
 % on the last page of the document
 
 \usepackage[pdftex]{graphicx}
+% TODO remember we need to take out all the color
+\newcommand{\pix}[3]{
+  \begin{figure}[h]
+    \centering \includegraphics[#3]{#1}
+    \caption{#2}
+  \end{figure}
+}
 
+% TODO better name!
 \title{\LARGE \bf
-TODO Name this thing
+Approximately Orchestrated Road Traffic Automata\\
+a General Traffic Simulation Framework
 }
 
-% TODO which style do we use for authors? and do we list all 4 of us here?
-
-%\author{ \parbox{3 in}{\centering Huibert Kwakernaak*
-%         \thanks{*Use the $\backslash$thanks command to put information here}\\
-%         Faculty of Electrical Engineering, Mathematics and Computer Science\\
-%         University of Twente\\
-%         7500 AE Enschede, The Netherlands\\
-%         {\tt\small h.kwakernaak@autsubmit.com}}
-%         \hspace*{ 0.5 in}
-%         \parbox{3 in}{ \centering Pradeep Misra**
-%         \thanks{**The footnote marks may be inserted manually}\\
-%        Department of Electrical Engineering \\
-%         Wright State University\\
-%         Dayton, OH 45435, USA\\
-%         {\tt\small pmisra@cs.wright.edu}}
-%}
-
-\author{Huibert Kwakernaak$^{1}$ and Pradeep Misra$^{2}$% <-this % stops a space
-% \thanks{$^{1}$H. Kwakernaak is with Faculty of Electrical Engineering, Mathematics and Computer Science,
-%         University of Twente, 7500 AE Enschede, The Netherlands
-%         {\tt\small h.kwakernaak at papercept.net}}%
-% \thanks{$^{2}$P. Misra is with the Department of Electrical Engineering, Wright State University,
-%         Dayton, OH 45435, USA
-%         {\tt\small p.misra at ieee.org}}%
-}
+\author{Dustin Carlino, Mike Depinet, Piyush Khandelwal, and Peter Stone\\
+        Department of Computer Science\\
+        The University of Texas at Austin\\
+        Austin, TX 78712\\
+        % TODO mike, what's your utcs unixname?
+        {\tt \small\{dcarlino,msdepinet,piyushk,pstone\}@cs.utexas.edu}}
 
 \long\def\commentp#1{{\bf **Peter: #1**}}
 \long\def\commentpk#1{{\bf **Piyush: #1**}}
@@ -92,6 +82,8 @@ http://www.pcmag.com/article2/0,2817,2400400,00.asp}
 \commentd{we don't support lane-changing yet, and overseers arent re-implemented
 yet either}
 
+\pix{downtown_atx.png}{A simulation of downtown Austin, Texas.}{scale=0.25}
+
 This paper introduces an open source multi-agent microscopic traffic simulator called AORTA, which stands for \textit{Approximately Orchestrated Road Traffic Automata}. The AORTA simulator focuses on the interactions between individual vehicles and intersections, both of which act as \textit{agents} in AORTA's framework. Vehicles interact with other vehicles to pass and change lanes, and interact with intersections to decide when to cross them. Researchers developing applications on top of the AORTA simulator define \textit{behaviors} that these agents follow to interact with one another. To optimize traffic flow, external \textit{overseers} can coordinate with these agents to provide recommendations such as route suggestions or intersection signaling policies. An advantage of such an approach is that by assigning human-like behaviors such as the "car following model" \cite{brackstone1999car} to vehicles and traffic signal like policies to intersection, AORTA can just as easily simulate human traffic.
 
 Like any other microscopic traffic simulator, AORTA needs maps to run simulations. We generate our maps using road data available from OpenStreetMap (OSM) \cite{osm}, a Wikipedia like interface for world maps. Researchers using AORTA can export the relevant map area from OSM that is then parsed by AORTA to create scale simulations of the real world. Using real world road data is advantageous for a number of reasons. First, researchers using AORTA for human traffic simulations would find it advantageous to also have the ability to use real-world roads. Second, even as infrastructural changes will be made to the road infrastructure to accommodate driver-less cars, it is reasonable to assume that the \textit{same} road network will still be in use. Third, using real-world data from OSM allows setting up simulations for an area of interest in a matter of minutes, thereby allowing easy transfer of research results to any desired region.
@@ -134,13 +126,7 @@ Autonomous agents have also been used in the past to model human traffic as well
 
 \section{ARCHITECTURE}
 
-{ 
-  \begin{center}
-    \setlength\fboxsep{0pt}
-    \setlength\fboxrule{0.5pt}
-    \fbox{\includegraphics[scale=0.3]{architecture.eps}}
-  \end{center}
-}
+\pix{architecture.eps}{An illustration of AORTA's components.}{scale=0.3}
 
 The architecture and implementation notes of AORTA follow. AORTA is divided into
 roughly three components, each somewhat independent of the others. The map model
@@ -182,8 +168,9 @@ the next.
 
 \subsection{Map Model}
 
-\commentd{a simple diagram of a road with a few edges connected maybe to a
-one-way}
+\pix{map_model.png}
+    {Roads contain several edges, and vertices contain several turns between edges.}
+    {scale=0.5}
 
 \commentd{terminology is awkward. if we bold-face our notions of edge and vertex
 every time we use them, would that better distinguish them from a graph's
@@ -270,7 +257,9 @@ Google Maps lack this information. (TODO how do you cite a lack of something?)
 Finally, the geometry of a turn is simplified to a single line between the ends
 of the edges it connects.  In the future, a more realistic curve could be drawn.
 
-\commentd{illustration of turn conflicts}
+\pix{turn_conflicts.png}
+    {An agent cannot turn left while agents on the perpendicular road cross}
+    {scale=0.5}
 
 AORTA has a low-granularity model of turn conflict. If two vehicles at any point
 along two different turns could ever come into contact, then the turns are
