@@ -29,8 +29,7 @@ a General Traffic Simulation Framework
         Department of Computer Science\\
         The University of Texas at Austin\\
         Austin, TX 78712\\
-        % TODO mike, what's your utcs unixname?
-        {\tt \small\{dcarlino,msdepinet,piyushk,pstone\}@cs.utexas.edu}}
+        {\tt \small\{dcarlino,msd775,piyushk,pstone\}@cs.utexas.edu}}
 
 \long\def\commentp#1{{\bf **Peter: #1**}}
 \long\def\commentpk#1{{\bf **Piyush: #1**}}
@@ -71,7 +70,7 @@ Autonomous vehicles have seen great advancements in recent years and such vehicl
 
 Autonomous vehicle technology has made tremendous progress in the last decade. In 2004, the farthest distance traveled by a vehicle autonomously in the DARPA Grand Challenge was $11.9km$ \cite{cnnGrandChallenge2004}. By 2007, six of the competing teams completed the $96km$ course set for the DARPA Urban Challenge \cite{spectrumUrbanChallenge2007}. They did so while following the same traffic laws followed by human drivers, navigating along with other moving vehicles, and following correct intersection precedence order. Since then, Google's driver-less cars have clocked more than $250,000km$ on public roads in urban California, USA \cite{tedThrun2011}. In 2010, researchers from the University of Parma successfully completed an autonomous \textit{intercontinental} run from Parma, Italy to Shanghai, China \cite{cnnVislab2010}. The successful completion of all these milestones indicates that autonomous cars are here to stay, and are ever closer to becoming commercially available. 
 
-The arrival of driver-less cars presents a number of challenges that need to addressed in the near term. Road infrastructure needs to be updated to better support autonomous vehicles. A number of legal and safety concerns need to be addressed in the context of driver-less cars. Human drivers need new methodologies to interact with autonomous drivers on public roads. At the same time, driver-less cars provide opportunities of solving traffic problems in ways that were never before possible. For instance, autonomous cars can be quickly diverted to make way for emergency vehicles responding to an accident. Even day-to-day traffic issues such as congestion could potentially be greatly reduced by effective management of traffic flow. This work attempts to address some of these problems.
+The arrival of driver-less cars presents a number of challenges that need to be addressed in the near term. Road infrastructure needs to be updated to better support autonomous vehicles. A number of legal and safety concerns need to be addressed in the context of driver-less cars. Human drivers need new methodologies to interact with autonomous drivers on public roads. At the same time, driver-less cars provide opportunities of solving traffic problems in ways that were never before possible. For instance, autonomous cars can be quickly diverted to make way for emergency vehicles responding to an accident. Even day-to-day traffic issues such as congestion could potentially be greatly reduced by effective management of traffic flow. This work attempts to address some of these problems.
 
 \commentd{nevada even made autonomous cars legal:
 http://www.pcmag.com/article2/0,2817,2400400,00.asp}
@@ -175,6 +174,10 @@ the next.
 \commentd{terminology is awkward. if we bold-face our notions of edge and vertex
 every time we use them, would that better distinguish them from a graph's
 verts/edges?}
+\commentm{Why don't we limit ourselves to the words used in traffic for our
+structures (intersections, roads, lanes, etc.) and use graph-related terms
+(edges, vertices) to mean their strict graph theory definitions?  Emphasizing
+our structures the first time we use them may be helpful too.}
 
 \emph{Roads} are undirected edges between \emph{vertices}, which are
 intersections between multiple roads. A \emph{road} contains one or two sets of
