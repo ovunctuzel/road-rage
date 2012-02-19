@@ -66,7 +66,7 @@ class Graph(val roads: List[Road], val edges: List[Edge],
         if ((loop && next == from) || !visited.contains(next)) {
           // TODO do we have to relax / handle finding a shorter path?
           // TODO there are probably better heuristics than euclid
-          val heuristic = next.start_pt.euclid_dist(goal_pt)
+          val heuristic = next.start_pt.dist_to(goal_pt)
           open.enqueue(new Step(next, step.dist + next.length + heuristic))
           visited(next) = step.on
         }
