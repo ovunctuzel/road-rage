@@ -35,6 +35,8 @@ object Util {
     }
   }
   def choose_rand[T](from: Seq[T]): T = from(rng.nextInt(from.length))
+  // return true 'p'% of the time. p is [0.0, 1.0]
+  def percent(p: Double) = rand_double(0.0, 1.0) < p
 
   // to meters/sec, that is. SI units.
   def mph_to_si(r: Double) = r * 0.44704

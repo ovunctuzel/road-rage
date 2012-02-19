@@ -3,14 +3,13 @@ package utexas.sim
 import java.util.concurrent.Callable
 import utexas.map.{Edge, Turn, Traversable}
 import utexas.{Util, cfg}
-import scala.util.Sorting
 
 abstract class Route() {
   // Define these
   def lookahead_step(n: Int): Option[Traversable]
   def request_route(from: Edge, to: Edge): Callable[List[Traversable]]
 
-  // Common to most, but can change
+  // Common to most, but can change. Should never become empty after got_route.
   var steps: List[Traversable] = Nil
 
   def transition(from: Traversable, to: Traversable) = {
@@ -44,16 +43,20 @@ class StaticRoute() extends Route() {
 
 // DOOMED TO WALK FOREVER
 class DrunkenRoute() extends Route() {
+  protected def add_step() = {
+    val add = steps.last match {
+      case e: Edge => pick_turn(e)
+      case t: Turn => t.to
+    }
+    // pattern matching gets wonky when these are combined directly
+    steps :+= add
+  }
+
   override def lookahead_step(n: Int): Option[Traversable] = {
     // Lazily fill in steps as we need to
     // TODO write the while with a for so we don't ask size() repeatedly
     while (steps.size <= n) {
-      val add = steps.last match {
-        case e: Edge => pick_turn(e)
-        case t: Turn => t.to
-      }
-      // pattern matching gets wonky when these are combined directly
-      steps :+= add
+      add_step
     }
 
     // TODO when to stop?
@@ -71,22 +74,38 @@ class DrunkenRoute() extends Route() {
   def pick_turn(e: Edge) = Util.choose_rand[Turn](e.next_turns)
 }
 
+// Wanders around slightly less aimlessly by picking directions
 class DirectionalRoute extends DrunkenRoute() {
-  var endPoint: Option[Edge] = None
+  var end_point: Edge = null
   
-  override def lookahead_step(n: Int): Option[Traversable] = if (steps.last == endPoint) None
-    													   else super.lookahead_step(n)
-  override def request_route(from: Edge, to: Edge) = {
-	endPoint = Some(to)
-	new Callable[List[Traversable]]() {
-	  def call(): List[Traversable] = List(pick_turn(from))
-	}
+  override def lookahead_step(n: Int): Option[Traversable] = {
+    if (n < steps.size) {
+      return Some(steps(n))
+    } else {
+      while (steps.size <= n) {
+        if (steps.isEmpty || steps.last == end_point) {
+          // terminate early, do not go past this.
+          // TODO this -may- break if from == to and we're to do a circuit
+          return None
+        } else {
+          add_step
+        }
+      }
+      // if we made it through all, haven't hit end_point yet
+      return Some(steps(n))
+    }
   }
+  
+  override def request_route(from: Edge, to: Edge): Callable[List[Traversable]] = {
+    end_point = to
+    return super.request_route(from, to)
+  }
+
+  // pick the most direct path 75% of the time
   override def pick_turn(e: Edge): Turn = {
-    if (endPoint == None) return super.pick_turn(e)
-    val dists = e.next_turns.map(x => (x.to.to.location.euclid_dist(endPoint.get.from.location)))
-    val choices = e.next_turns.zip(dists).sort((x,y) => x._2 - y._2 < 0)
-    if (Util.rand_double(0.,1.) < .75) return choices.first._1 //Choose the most direct path with probability .75
-    else return Util.choose_rand[Turn](choices.map(x => x._1)) //Choose random other direction with probability .25
+    return if (Util.percent(.75))
+             e.next_turns.sortBy(t => t.to.to.location.dist_to(end_point.to.location)).head
+           else
+             super.pick_turn(e)
   }
 }

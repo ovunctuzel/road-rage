@@ -31,7 +31,9 @@ class Coordinate(val x: Double, val y: Double) extends Ordered[Coordinate] {
   }
 
   def +(other: Coordinate) = new Coordinate(x + other.x, y + other.y)
-  def euclid_dist(o: Coordinate) = scala.math.sqrt(scala.math.pow(x - o.x, 2) + scala.math.pow(y - o.y, 2))
+  def dist_to(o: Coordinate) = Coordinate.gps_dist_in_meters(
+    Graph.world_to_gps(this.x, this.y), Graph.world_to_gps(o.x, o.y)
+  )
 }
 
 object Coordinate {
