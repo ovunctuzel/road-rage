@@ -3,6 +3,7 @@
 # generate graphviz diagrams
 for f in *.dot; do
   dot -Tps2 -o ${f%dot}eps $f
+  epstopdf ${f%dot}eps
 done
 
 pdflatex root.tex

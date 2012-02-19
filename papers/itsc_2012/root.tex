@@ -36,6 +36,11 @@ a General Traffic Simulation Framework
 \long\def\commentm#1{{\bf **Mike: #1**}}
 \long\def\commentd#1{{\bf **Dustin: #1**}}
 
+% \long\def\commentp#1{}
+% \long\def\commentpk#1{}
+% \long\def\commentm#1{}
+% \long\def\commentd#1{}
+
 \begin{document}
 
 \maketitle
@@ -48,8 +53,23 @@ a General Traffic Simulation Framework
   dynamic re-planning or any kind of overseer yet, although theres nothing
   stopping us from trying that idea again}
 
-\begin{abstract}
-Autonomous vehicles have seen great advancements in recent years and such vehicles are now ever closer to being commercially available. The advent of driver-less cars provides opportunities for optimizing traffic in ways not possible before. This paper introduces an open source multi-agent traffic simulator called AORTA, which stands for \textit{Approximately Orchestrated Road Traffic Automata}, and demonstrates its usage for optimizing autonomous traffic at a city-wide scale. AORTA creates scale simulations by generating maps using publicly available road data from \textit{OpenStreetMap} (OSM). Simulations can be set up in the few minutes it takes to export data for the region of interest from OSM. AORTA focuses on interactions between agents by defining \textit{behaviors} for individual vehicles and intersections. These behaviors allow agents to interact with each other as well as with an external \textit{overseer} that is responsible for optimizing traffic flow. Overseers can interact with these agents to allow for dynamic route re-planning to reduce traffic load, optimized intersection navigation, and improved car following. \commentpk{rest devoted to application}
+\begin{abstract} 
+Autonomous vehicles have seen great advancements in recent
+years and such vehicles are now ever closer to being commercially available.
+The advent of driver-less cars provides opportunities for optimizing traffic in
+ways not possible before. This paper introduces an open source multi-agent
+traffic simulator called AORTA, which stands for \textit{Approximately
+Orchestrated Road Traffic Automata}, and demonstrates its usage for optimizing
+autonomous traffic at a city-wide scale. AORTA creates scale simulations by
+generating maps using publicly available road data from \textit{OpenStreetMap}
+(OSM). Simulations can be set up in the few minutes it takes to export data for
+the region of interest from OSM. AORTA focuses on interactions between agents
+by defining \textit{behaviors} for individual vehicles and intersections. These
+behaviors allow agents to interact with each other as well as with an external
+\textit{overseer} that is responsible for optimizing traffic flow. Overseers
+can interact with these agents to allow for dynamic route re-planning to reduce
+traffic load, optimized intersection navigation, and improved car following.
+\commentpk{rest devoted to application} 
 \end{abstract}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -68,9 +88,31 @@ Autonomous vehicles have seen great advancements in recent years and such vehicl
 
 % contribution: autonomous car / human car sim on EXISTING INFRASTRUCTURE
 
-Autonomous vehicle technology has made tremendous progress in the last decade. In 2004, the farthest distance traveled by a vehicle autonomously in the DARPA Grand Challenge was $11.9km$ \cite{cnnGrandChallenge2004}. By 2007, six of the competing teams completed the $96km$ course set for the DARPA Urban Challenge \cite{spectrumUrbanChallenge2007}. They did so while following the same traffic laws followed by human drivers, navigating along with other moving vehicles, and following correct intersection precedence order. Since then, Google's driver-less cars have clocked more than $250,000km$ on public roads in urban California, USA \cite{tedThrun2011}. In 2010, researchers from the University of Parma successfully completed an autonomous \textit{intercontinental} run from Parma, Italy to Shanghai, China \cite{cnnVislab2010}. The successful completion of all these milestones indicates that autonomous cars are here to stay, and are ever closer to becoming commercially available. 
+Autonomous vehicle technology has made tremendous progress in the last decade.
+In 2004, the farthest distance traveled by a vehicle autonomously in the DARPA
+Grand Challenge was $11.9km$ \cite{cnnGrandChallenge2004}. By 2007, six of the
+competing teams completed the $96km$ course set for the DARPA Urban Challenge
+\cite{spectrumUrbanChallenge2007}. They did so while following the same traffic
+laws followed by human drivers, navigating along with other moving vehicles,
+and following correct intersection precedence order. Since then, Google's
+driver-less cars have clocked more than $250,000km$ on public roads in urban
+California, USA \cite{tedThrun2011}. In 2010, researchers from the University
+of Parma successfully completed an autonomous \textit{intercontinental} run
+from Parma, Italy to Shanghai, China \cite{cnnVislab2010}. The successful
+completion of all these milestones indicates that autonomous cars are here to
+stay, and are ever closer to becoming commercially available. 
 
-The arrival of driver-less cars presents a number of challenges that need to be addressed in the near term. Road infrastructure needs to be updated to better support autonomous vehicles. A number of legal and safety concerns need to be addressed in the context of driver-less cars. Human drivers need new methodologies to interact with autonomous drivers on public roads. At the same time, driver-less cars provide opportunities of solving traffic problems in ways that were never before possible. For instance, autonomous cars can be quickly diverted to make way for emergency vehicles responding to an accident. Even day-to-day traffic issues such as congestion could potentially be greatly reduced by effective management of traffic flow. This work attempts to address some of these problems.
+The arrival of driver-less cars presents a number of challenges that need to be
+addressed in the near term. Road infrastructure needs to be updated to better
+support autonomous vehicles. A number of legal and safety concerns need to be
+addressed in the context of driver-less cars. Human drivers need new
+methodologies to interact with autonomous drivers on public roads. At the same
+time, driver-less cars provide opportunities of solving traffic problems in
+ways that were never before possible. For instance, autonomous cars can be
+quickly diverted to make way for emergency vehicles responding to an accident.
+Even day-to-day traffic issues such as congestion could potentially be greatly
+reduced by effective management of traffic flow. This work attempts to address
+some of these problems.
 
 \commentd{nevada even made autonomous cars legal:
 http://www.pcmag.com/article2/0,2817,2400400,00.asp}
@@ -83,14 +125,39 @@ yet either}
 
 \pix{downtown_atx.png}{A simulation of downtown Austin, Texas.}{scale=0.25}
 
-This paper introduces an open source multi-agent microscopic traffic simulator called AORTA, which stands for \textit{Approximately Orchestrated Road Traffic Automata}. The AORTA simulator focuses on the interactions between individual vehicles and intersections, both of which act as \textit{agents} in AORTA's framework. Vehicles interact with other vehicles to pass and change lanes, and interact with intersections to decide when to cross them. Researchers developing applications on top of the AORTA simulator define \textit{behaviors} that these agents follow to interact with one another. To optimize traffic flow, external \textit{overseers} can coordinate with these agents to provide recommendations such as route suggestions or intersection signaling policies. An advantage of such an approach is that by assigning human-like behaviors such as the "car following model" \cite{brackstone1999car} to vehicles and traffic signal like policies to intersection, AORTA can just as easily simulate human traffic.
+This paper introduces an open source multi-agent microscopic traffic simulator
+called AORTA, which stands for \textit{Approximately Orchestrated Road Traffic
+Automata}. The AORTA simulator focuses on the interactions between individual
+vehicles and intersections, both of which act as \textit{agents} in AORTA's
+framework. Vehicles interact with other vehicles to pass and change lanes, and
+interact with intersections to decide when to cross them. Researchers
+developing applications on top of the AORTA simulator define \textit{behaviors}
+that these agents follow to interact with one another. To optimize traffic
+flow, external \textit{overseers} can coordinate with these agents to provide
+recommendations such as route suggestions or intersection signaling policies.
+An advantage of such an approach is that by assigning human-like behaviors such
+as the "car following model" \cite{brackstone1999car} to vehicles and traffic
+signal like policies to intersection, AORTA can just as easily simulate human
+traffic.
 
-Like any other microscopic traffic simulator, AORTA needs maps to run simulations. We generate our maps using road data available from OpenStreetMap (OSM) \cite{osm}, a Wikipedia like interface for world maps. Researchers using AORTA can export the relevant map area from OSM that is then parsed by AORTA to create scale simulations of the real world. Using real world road data is advantageous for a number of reasons. First, researchers using AORTA for human traffic simulations would find it advantageous to also have the ability to use real-world roads. Second, even as infrastructural changes will be made to the road infrastructure to accommodate driver-less cars, it is reasonable to assume that the \textit{same} road network will still be in use. Third, using real-world data from OSM allows setting up simulations for an area of interest in a matter of minutes, thereby allowing easy transfer of research results to any desired region.
+Like any other microscopic traffic simulator, AORTA needs maps to run
+simulations. We generate our maps using road data available from OpenStreetMap
+(OSM) \cite{osm}, a Wikipedia like interface for world maps. Researchers using
+AORTA can export the relevant map area from OSM that is then parsed by AORTA to
+create scale simulations of the real world. Using real world road data is
+advantageous for a number of reasons. First, researchers using AORTA for human
+traffic simulations would find it advantageous to also have the ability to use
+real-world roads. Second, even as infrastructural changes will be made to the
+road infrastructure to accommodate driver-less cars, it is reasonable to assume
+that the \textit{same} road network will still be in use. Third, using
+real-world data from OSM allows setting up simulations for an area of interest
+in a matter of minutes, thereby allowing easy transfer of research results to
+any desired region.
 
 \commentd{The first reason for real world data almost feels too obvious to state
 like that}
 
-\commentpk{Needs 1 more para based on final application, and image on the top right, and introduction to the rest of the paper here once we finalize the sections}
+\commentpk{Needs 1 more para based on final application}
 
 % Section 2 will review other traffic simulators. Section 3 will introduce the
 % overall architecture of AORTA. Section 4 describes how OSM maps are used.
@@ -103,60 +170,113 @@ like that}
 \section{RELATED WORK}
 \label{sec:related_work}
 
-Computational processing power has made excellent advancements in the last two decades. Parallel computing has proved significant for traffic simulation through the use of Geographic Information System (GIS) software \cite{pursula1999simulation}. Advanced computing techniques have enabled microscopic models of traffic simulation to generate results at a meaningful scale (city-wide or greater). As a result, a number of good micro-simulators have come up in the past decade. We review a number of such simulators in this section along with other relevant work.  
+Computational processing power has made excellent advancements in the last two
+decades. Parallel computing has proved significant for traffic simulation
+through the use of Geographic Information System (GIS) software
+\cite{pursula1999simulation}. Advanced computing techniques have enabled
+microscopic models of traffic simulation to generate results at a meaningful
+scale (city-wide or greater). As a result, a number of good micro-simulators
+have come up in the past decade. We review a number of such simulators in this
+section along with other relevant work.  
 
-A number of traffic simulators already make use of OSM data. MATSim is one such multi-agent simulator that focuses on performing large-scale simulations in a relatively small amount of time \cite{balmer2009matsim}. Traffic demand is supplied to MATSim in the form of \textit{plans} that an individual may intend to follow in a given day. MATSim aims to iteratively improve these plans though offline computation to maximize traffic throughput. In other words, it helps individuals understand the best way to go about their daily routine to minimize time spent in transit. This goal is somewhat different from that of AORTA, where the demand supplied by individuals is taken as is. Instead, AORTA aims to reduce traffic congestion through interactions with individuals in real-time based on the current demand.
+A number of traffic simulators already make use of OSM data. MATSim is one such
+multi-agent simulator that focuses on performing large-scale simulations in a
+relatively small amount of time \cite{balmer2009matsim}. Traffic demand is
+supplied to MATSim in the form of \textit{plans} that an individual may intend
+to follow in a given day. MATSim aims to iteratively improve these plans though
+offline computation to maximize traffic throughput. In other words, it helps
+individuals understand the best way to go about their daily routine to minimize
+time spent in transit. This goal is somewhat different from that of AORTA,
+where the demand supplied by individuals is taken as is. Instead, AORTA aims to
+reduce traffic congestion through interactions with individuals in real-time
+based on the current demand.
 
-Another popular open source traffic simulator that can use OSM data is SUMO \cite{SUMO2011}, which shares the same goals as AORTA and is fairly similar at a high level. SUMO has been used to study the effect of automated transportation systems, route planning of individual vehicles, as well as dynamically adapting traffic signal policies to increase traffic efficiency. AORTA and SUMO differ in the manner in which intersections are handled. SUMO uses traditional traffic signals, while AORTA adopts a much more general \textit{reservation} system. A reservation tells a car when it is safe to take its desired path through the intersection. Reservations can be alotted to vehicles through more traditional means such as traffic signals or stop-sign based intersection based precedence, or through more efficient methods designed specificaly for autonomous intersection management \cite{JAIR08-dresner}. \commentpk{does this difference seem a bit pedantic?}  
+Another popular open source traffic simulator that can use OSM data is SUMO
+\cite{SUMO2011}, which shares the same goals as AORTA and is fairly similar at
+a high level. SUMO has been used to study the effect of automated
+transportation systems, route planning of individual vehicles, as well as
+dynamically adapting traffic signal policies to increase traffic efficiency.
+AORTA and SUMO differ in the manner in which intersections are handled. SUMO
+uses traditional traffic signals, while AORTA adopts a much more general
+\textit{reservation} system. A reservation tells a car when it is safe to take
+its desired path through the intersection. Reservations can be allotted to
+vehicles through more traditional means such as traffic signals or stop-sign
+based intersection based precedence, or through more efficient methods designed
+specifically for autonomous intersection management \cite{JAIR08-dresner}.
+\commentpk{does the above difference seem a bit pedantic?}  
 
-On the other hand, there are a number of simulators that specifically target autonomous traffic systems. One such system is AIM \cite{JAIR08-dresner}, which aims to optimize traffic flow between autonomous vehicles at a given intersection. AIM studies problems at the scale of a single intersection, while AORTA has the potential to apply some of the same research at a city-wide scale to real-world road networks. A few simulators focus on autonomous vehicles with sensors and actuators \cite{figueiredo2009approach}. These simulators are used to ensure that autonomous vehicles are behaving correctly while interacting with other vehicles and infrastructure. On the other hand, AORTA assumes that autonomous vehicles are capable of reasonable driving, and focuses on interactions between agents to optimize traffic flow. 
+On the other hand, there are a number of simulators that specifically target
+autonomous traffic systems. One such system is AIM \cite{JAIR08-dresner}, which
+aims to optimize traffic flow between autonomous vehicles at a given
+intersection. AIM studies problems at the scale of a single intersection, while
+AORTA has the potential to apply some of the same research at a city-wide scale
+to real-world road networks. A few simulators focus on autonomous vehicles with
+sensors and actuators \cite{figueiredo2009approach}. These simulators are used
+to ensure that autonomous vehicles are behaving correctly while interacting
+with other vehicles and infrastructure. On the other hand, AORTA assumes that
+autonomous vehicles are capable of reasonable driving, and focuses on
+interactions between agents to optimize traffic flow. 
 
-Autonomous agents have also been used in the past to model human traffic as well. For instance, an approach models human merging and lane changing behavior through the use of autonomous agents interacting with one another \cite{hidas2002modelling}. Another approach attempted to improve traffic congestion for human drivers by using a network of autonomous intersection. These intersections have the ability to interact with one another and execute a dynamic traffic signal policy minimizing overall wait time \cite{manikonda2001autonomous}.
+Autonomous agents have also been used in the past to model human traffic as
+well. For instance, an approach models human merging and lane changing behavior
+through the use of autonomous agents interacting with one another
+\cite{hidas2002modelling}. Another approach attempted to improve traffic
+congestion for human drivers by using a network of autonomous intersection.
+These intersections have the ability to interact with one another and execute a
+dynamic traffic signal policy minimizing overall wait time
+\cite{manikonda2001autonomous}.
 
 \commentd{and we can do the above too. we talk about how to make the current
   behavior more flawed and humanlike in the agent reactions section.}
-
-\commentpk{I suspect there are still more papers that might be more relevant - we'll definitely have some when we write the application}
-
-% In the realm of applications
-% It is also necessary to analyze some other simulators that use GIS data for microscopic traffic simulations, this is because it may be possible to export OSM data so that it can be used by these simulators, though the authors are not aware of such a connection. Incident response has been studied by the following paper (though perhaps only a minor citation as it is an application and does not really compare against AORTA, but it is something we would like to study this as well. \cite{huang2007gis} 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \section{ARCHITECTURE}
 
-\pix{architecture.eps}{An illustration of AORTA's components.}{scale=0.3}
+\pix{architecture.pdf}{An illustration of AORTA's components.}{scale=0.3}
 
-The architecture and implementation notes of AORTA follow. AORTA is divided into
-roughly three components, each somewhat independent of the others. The map model
-handles everything from building graphs from OSM source to pathfinding. This
-component is cleanly separated from the simulation engine, which adds the notion
-of agents, structures on top of map components that detect collisions, and the
-machinery to implement AORTA's model of car dynamics. If a future experiment
-demands macrosimulation or cellular automata method, no changes to the map
-infrastructure are needed, due to the software engineering. Finally, there is a
-UI using Java Swing, which is (out of necessity) tied to both the map and
+\commentpk {This section is needlessly verbose. I recommend reducing the text down to 1 small para.}
+
+The architecture and implementation notes of AORTA follow. AORTA is divided
+into roughly three components, each somewhat independent of the others. The map
+model handles everything from building graphs from OSM source to pathfinding.
+This component is cleanly separated from the simulation engine, which adds the
+notion of agents, structures on top of map components that detect collisions,
+and the machinery to implement AORTA's model of car dynamics. If a future
+experiment demands macro-simulation or cellular automata method, no changes to
+the map infrastructure are needed, due to the software engineering
+\commentpk{just saying software engineering seems a bit odd} . Finally, there
+is a UI using Java Swing, which is (out of necessity) tied to both the map and
 simulation components. The software has a documented API, is open-source, and
 contains all of the code for the experiments described in Section 6 -- it is
-designed for extensibility.
+designed for extensibility. \commentpk{Insert a footnote to the code here instead od using an Appendix}
 
 AORTA's implementation uses Scala, a language implemented on the Java Virtual
 Machine. Scala provides the advantage of functional programming constructs while
 still permitting imperative style. Parts of AORTA or extensions or clients can
 just as easily be written in Java.
 
-There are three standalone applications in AORTA. The map builder takes an OSM
-file as input and produces an AORTA graph as output. There is a UI, using Swing,
-to interactively explore the map and run simulations. Specific traffic patterns
-can quickly be simulated by selecting a source and destination group of roads in
-the UI. Finally, there is a headless mode that runs some specific experiment
-without the overhead of visualization. The UI and headless mode both take a
-graph as input, meaning the map construction step must be run once per OSM
-input, but the same graph can be reused indefinitely.
+\commentpk{the next para could be merged with the first one} There are three
+standalone applications in AORTA. The map builder takes an OSM file as input
+and produces an AORTA graph as output. There is a UI, using Swing, to
+interactively explore the map and run simulations. Specific traffic patterns
+can quickly be simulated by selecting a source and destination group of roads
+in the UI \commentpk{I would emphasize the demand generation a bit more}.
+Finally, there is a headless mode that runs some specific experiment without
+the overhead of visualization. The UI and headless mode both take a graph as
+input, meaning the map construction step must be run once per OSM input, but
+the same graph can be reused indefinitely.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \section{MAP CONSTRUCTION FROM OSM}
+
+\commentpk{Since OSM data has been used in the past in a couple of approaches,
+I would recommend re-writing this entire section down to a 2-3 paragraph
+sub-section. This is sort of the infrastructural hard work that gets swept
+under the rug, but you can write about it in future papers (journal articles
+etc). Remember to explicitly save a copy of the text before editing. I have
+written a few comments that can potentially be used in the future}
 
 Our goal is to simulate traffic on existing infrastructure, not contrived,
 randomly generated maps. We do this by utilizing OpenStreetMaps, a community
@@ -217,12 +337,12 @@ Finally, coordinates are normalized from GPS (longitude, latitude) to a
 Cartesian coordinate system with no negative coordinates and the Y coordinate
 increasing upwards. This is only done for convenience of manipulation in the UI.
 Any coordinate is translated back to its original GPS form when used for
-computing traversable length.
+computing traversable length.\commentpk{Is your cartesian coordinate system arbitrary? If so, I would highly recommend using the UTM system (google wiki UTM). We already have the code to convert to it from lat/long coordinates.}
 
 \subsection{Pass 2}
 
 AORTA's structure demands a traditional definition of edge linking exactly two
-vertices, rather than OSM's ways going through many common nodes. Pass 2 walks
+vertices, rather than OSM's ways going through many common nodes \commentpk{I am not sure what you mean by the first statement}. Pass 2 walks
 along each way's coordinates, dividing it into multiple undirected edges.
 
 \subsection{Pass 3}
@@ -231,6 +351,8 @@ Finally, pass 3 performs successive transformations to produce the final graph,
 which is saved in XML.
 
 \subsubsection{Making Lanes}
+
+\commentpk{see if you can remove the passive voice. Maybe name the utility \textit{map\_builder} and use that instead} 
 
 \commentd{the geometry was already explained in Map Model; I think it belongs
 there if we have to cut one}
@@ -249,7 +371,7 @@ practice as of the time of writing, it is rarely used.
 \subsubsection{Making Turns}
 
 Next, turns are constructed at each vertex between the incoming and outgoing
-edges. This is completely heuristic based: we classify a potential turn as a
+edges. This is completely heuristic based: we \commentpk{don't use we} classify a potential turn as a
 left, right, or straight turn based solely on angles between edges and if the
 edge's original OSM ID matches. U-turns are constructed at dead-ends. If several
 lanes all cross into fewer lanes, merging is forced for the rightmost lanes.
@@ -264,10 +386,10 @@ of the edges it connects.  In the future, a more realistic curve could be drawn.
     {An agent cannot turn left while agents on the perpendicular road cross}
     {scale=0.5}
 
-AORTA has a low-granularity model of turn conflict. If two vehicles at any point
+\commentpk{The following paragraph should not be here. It should be in intersection behaviors}, AORTA has a low-granularity model of turn conflict. If two vehicles at any point
 along two different turns could ever come into contact, then the turns are
 always in conflict, no matter where the agent specifically is along that turn.
-The alternative of tiling intersections (like \cite{JAIR08-dresner} does) would
+The alternative of tiling intersections (like \cite{JAIR08-dresner} \commentpk{I made this same mistake a month ago, dont use citations as a noun} does) would
 provide more granularity, but it adds computational complexity and would be
 impractical for many of the complex intersection geometries inferred from OSM.
 
@@ -277,7 +399,7 @@ Because turns are constructed imperfectly, most large graphs have edges that are
 not reachable from some portions of the graph. Simulation and pathfinding would
 suffer greatly if this remained the case, so pass 3 uses Tarjan's linear-time
 algorithm for locating strongly connected components to remove the components of
-the directed graph with the fewest members. (There is also a debugging switch to
+the directed graph with the fewest members \commentpk{missing citation?}. (There is also a debugging switch to
 leave these components in and highlight them in the UI.) The algorithm operates
 at the granularity of lanes. If several lanes of many are disconnected within
 one road, then the bad lanes are spliced out. This results in visually
@@ -305,7 +427,7 @@ for a later paper.}
 
 \subsection{Limitations}
 
-\commentd{this maybe doesn't belong in this paper}
+\commentd{this maybe doesn't belong in this paper} \commentpk{yes. You can state that OSM data is not perfect, but I would definitely remove this for now}
 
 proposals to change OSM to fix these issues
 
@@ -317,6 +439,8 @@ turns are brittle.. detecting right-turn only lane is rare. shared center lane?
 removing sccs is not ideal
 
 \subsection{Integrating other data sources}
+
+\commentpk{This needs to be removed as well, it should be in future work}
 
 In the future, we intend to support the ability to augment an AORTA map with
 data from non-OSM sources, such as information about the presence of extra lanes
@@ -336,11 +460,12 @@ descriptions from government-collected data about a municipality's road usage.
 AORTA uses microscopic simulation, modeling individual drivers as agents.
 Discrete-time simulation is used, meaning an agent accelerates at a fixed rate
 for the duration of a ``tick'' (also referred to as ``step'') to achieve a new
-position and velocity. The tick duration $dt$ is configurable and fixed for the
-simulation. Agents know this value and use it to reason about collision
-avoidance and satisfying other constraints, so setting this value to the
-average ``reaction time'' of a human driver may be appropriate. Each tick, the
-simulation performs the following steps:
+position and velocity. The tick duration $dt$ is configurable and fixed
+\commentpk{configurable \textit{and} fixed is confusing} for the simulation.
+Agents know this value and use it to reason about collision avoidance and
+satisfying other constraints, so setting this value to the average ``reaction
+time'' of a human driver may be appropriate. Each tick, the simulation performs
+the following steps:
 
 \begin{enumerate}
   \item Introducing new agents into the map
@@ -364,6 +489,8 @@ will be described below.
           limit: no lane-changing}
 
 \subsection{Spawning}
+
+\commentpk{I wonder if demand data generation in the ui should go here.}
 
 To introduce new agents into the simulation in real-time, users create
 \emph{generators} programatically or using the UI. A generator picks a random
@@ -398,7 +525,7 @@ agent on the same queue, or entering a new queue not at the end, immediately
 after an agent moves. However, agents take their steps sequentially and in an
 effectively random order. Ideally they could be reordered so that agents in the
 front of a queue always move first. Since the first agent may cross into the
-next queue, that introduces a depdendency between traversables. A topological
+next queue, that introduces a dependency between traversables. A topological
 sort of a directed graph containing circuits is not possible though, and since
 we guarantee connectedness, there are necessarily circuits in maps.  Instead,
 collisions are checked after every agent has stepped forward in time, treating
@@ -470,7 +597,7 @@ which the intersection has banned. Sometimes stopping behind this threshold is
 not possible -- namely, when the edge length is shorter -- and in that case,
 anywhere before the end is acceptable.
 
-\commentd{include some form of piyush's proof about accel to end?}
+\commentd{include some form of piyush's proof about accel to end?} \commentpk{I would say it is unnecessary}
 
 \subsubsection{Optimal tailgating}
 
@@ -481,7 +608,7 @@ to consider the agent closest to the start of it in the present. An edge may
 only be entered from a turn, so the intersection policy has the burden of
 ensuring no agent performs a turn that leads to the same edge simultaneously.
 Following an agent safely means maintaining a configurable following distance
-behind the agent. Worst-case analysis is again used: the most dangerous move the
+behind the agent \commentpk{not sure what you mean by configurable here}. Worst-case analysis is again used: the most dangerous move the
 agent in front could perform is decelerating as fast as possible the next tick,
 and the worst-case traveling distance for the agent following is already known
 from lookahead (speeding up as much as possible).
@@ -557,7 +684,7 @@ causing agents to be ready to enter the road at different times.
 \commentd{and how will we solve this issue with threads and determinism?}
 
 \commentd{give some informal or formal (with numbers) idea of scale / how many
-agents we can simulate in different map sizes}
+agents we can simulate in different map sizes} \commentpk{I would say that the the last point is fairly important}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
