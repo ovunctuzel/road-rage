@@ -1,8 +1,6 @@
 # TODO #
 
 TRUE PRIORITIES
-1) paper fleshed out solidly by friday
-  - what illustrations?
 2) bugfix <-> test at scale iteration
   - how many agents moved during some tick?
   - gridlock
@@ -47,10 +45,6 @@ PROFILING
   - dont ask length of a list when not needed...
 
 BIGGER ISSUES
-  - traffic lights
-    - accept for 30 seconds into queue, switch when everyone's done?
-    - is there deadlock?
-    - quadratic conflict checking!
   - fix geom of edge lines
   - make sure turns and conflicts are as good as possible
     - randomize num of lanes to test

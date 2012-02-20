@@ -1,9 +1,16 @@
+# class files
 .build
-*.swp
 .scala_dependencies
+
+# vim swapfiles
+*.swp
+
+# in and output maps
 *.osm
 !synthetic.osm
 *.map
+
+# tex stuff
 *.aux
 *.log
 *.pdf
