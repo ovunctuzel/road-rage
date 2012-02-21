@@ -41,32 +41,35 @@ class StaticRoute() extends Route() {
   })
 }
 
-// DOOMED TO WALK FOREVER
+// DOOMED TO WALK FOREVER (until we happen to reach our goal)
 class DrunkenRoute() extends Route() {
-  protected def add_step() = {
-    val add = steps.last match {
-      case e: Edge => pick_turn(e)
-      case t: Turn => t.to
-    }
-    // pattern matching gets wonky when these are combined directly
-    steps :+= add
-  }
+  var end_point: Edge = null
 
   override def lookahead_step(n: Int): Option[Traversable] = {
     // Lazily fill in steps as we need to
     // TODO write the while with a for so we don't ask size() repeatedly
     while (steps.size <= n) {
-      add_step
+      if (steps.isEmpty || steps.last == end_point) {
+        // terminate early, do not go past endpoint
+        // TODO this -may- break if from == to and we're to do a circuit
+        return None
+      } else {
+        val add = steps.last match {
+          case e: Edge => pick_turn(e)
+          case t: Turn => t.to
+        }
+        // pattern matching gets wonky when these are combined directly
+        steps :+= add
+      }
     }
 
-    // TODO when to stop?
-
+    // if we made it through all, haven't hit end_point yet
     return Some(steps(n))
   }
 
-  // Schedule empty work! :P
+  // No actual work to do
   override def request_route(from: Edge, to: Edge): Option[Callable[List[Traversable]]] = {
-    // no actual work to do
+    end_point = to
     steps = List(pick_turn(from))
     return None
   }
@@ -76,32 +79,7 @@ class DrunkenRoute() extends Route() {
 }
 
 // Wanders around slightly less aimlessly by picking directions
-class DirectionalRoute extends DrunkenRoute() {
-  var end_point: Edge = null
-  
-  override def lookahead_step(n: Int): Option[Traversable] = {
-    if (n < steps.size) {
-      return Some(steps(n))
-    } else {
-      while (steps.size <= n) {
-        if (steps.isEmpty || steps.last == end_point) {
-          // terminate early, do not go past this.
-          // TODO this -may- break if from == to and we're to do a circuit
-          return None
-        } else {
-          add_step
-        }
-      }
-      // if we made it through all, haven't hit end_point yet
-      return Some(steps(n))
-    }
-  }
-  
-  override def request_route(from: Edge, to: Edge): Option[Callable[List[Traversable]]] = {
-    end_point = to
-    return super.request_route(from, to)
-  }
-
+class DirectionalRoute extends DrunkenRoute() { 
   // pick the most direct path 75% of the time
   override def pick_turn(e: Edge): Turn = {
     return if (Util.percent(.75))

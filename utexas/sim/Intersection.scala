@@ -352,6 +352,12 @@ class SignalCyclePolicy(intersection: Intersection) extends Policy(intersection)
 
     if (current_cycle(turn)) {
       // can the agent make the light?
+
+      // Keep it really simple. Suppose we let them speed up. If we can't back
+      // out of that situation, then ONLY let them go 
+
+
+
       val dist_they_need = far_away + turn.length
 
       // average-case analysis: assume they keep their current speed
@@ -361,6 +367,9 @@ class SignalCyclePolicy(intersection: Intersection) extends Policy(intersection)
         Util.log(time_left + "s left. should be able to travel " + avg_case_dist + ", they need " + dist_they_need)
         Util.log("and their speed is " + a.speed)
       }
+
+      // TODO, actually just try it if their worst-case stopping after speeding
+      // up still lets them back out. noncommittal/transactional.
 
       val threshold = 0.0 // TODO what should it be?
 
