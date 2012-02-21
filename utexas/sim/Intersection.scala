@@ -351,70 +351,45 @@ class SignalCyclePolicy(intersection: Intersection) extends Policy(intersection)
     }*/
 
     if (current_cycle(turn)) {
-      // can the agent make the light?
+      // if our worst-case speeding-up distance still lets us back out and stop,
+      // then fine, allow it
 
-      // Keep it really simple. Suppose we let them speed up. If we can't back
-      // out of that situation, then ONLY let them go 
+      // TODO please, share this with behavior.
+      val worst_speed = a.speed + (a.max_accel * cfg.dt_s)
+      val worst_travel = Util.dist_at_constant_accel(a.max_accel, cfg.dt_s, a.speed)
+      val worst_stop_dist = a.stopping_distance(worst_speed)
+      val most_dist = worst_travel + worst_stop_dist
 
-
-
-      val dist_they_need = far_away + turn.length
-
-      // average-case analysis: assume they keep their current speed
-      val avg_case_dist = a.speed * time_left
-
-      if (a.id == 7) {
-        Util.log(time_left + "s left. should be able to travel " + avg_case_dist + ", they need " + dist_they_need)
-        Util.log("and their speed is " + a.speed)
-      }
-
-      // TODO, actually just try it if their worst-case stopping after speeding
-      // up still lets them back out. noncommittal/transactional.
-
-      val threshold = 0.0 // TODO what should it be?
-
-      if (avg_case_dist < dist_they_need + threshold) {
-        // so, they won't finish based on what they're doing now. but, let them
-        // TRY to speed up if that doesn't give them a worst-case stopping
-        // distance that's illegal -- basically, give us a chance to back out of
-        // telling them to try.
-        if (a.id == 7) {
-        Util.log("at %.1f; %s needs to cover %.1f but prolly only %.1f".format(Agent.sim.tick, a, dist_they_need, avg_case_dist))
-        }
-
-        // TODO please, share this with behavior.
-        val worst_speed = a.speed + (a.max_accel * cfg.dt_s)
-        val worst_travel = Util.dist_at_constant_accel(a.max_accel, cfg.dt_s, a.speed)
-        val worst_stop_dist = a.stopping_distance(worst_speed)
-        val if_we_let_them_try = worst_travel + worst_stop_dist
-
-        // a different threshold..
-        // TODO but then this is TOO safe, it doesnt take into account whether
-        // we have lots of time left.
-        if (if_we_let_them_try + cfg.end_threshold >= far_away) {
-          // no, if we let them speed up, then there's a chance it might not
-          // work out.
-
-          // BUT, is it somehow too late? how did that happen? when
-          // if_we_let_them_try is much > far_away, then isn't this already a
-          // doomed situation?
-
-
-          if (a.id == 7) {
-          Util.log("  but bad! " + if_we_let_them_try + " >= " + far_away + ", so no")
-          }
-          return false
-        } else {
-          // try it, we can always back out
-          // TODO this is really a systems-inspired process. can we back out of
-          // a transaction?
-          return true
-        }
+      // TODO what thresholds?
+      if (most_dist <= far_away - cfg.end_threshold) {
+        return true
       } else {
-        return true 
+        // this is a critical choice. if they accelerate to the speed limit of
+        // their destination road (which is certainly an upper bound on their
+        // speed), would they make the light?
+        val dist_they_need = far_away + turn.length
+
+        assert(a.speed <= turn.to.road.speed_limit)
+        // vf = v0 + at
+        val time_to_reach_limit = math.max(
+          time_left,
+          (turn.to.road.speed_limit - a.speed) / a.max_accel
+        )
+        val accel_dist = Util.dist_at_constant_accel(a.max_accel, time_to_reach_limit, a.speed)
+        val speed_dist = turn.to.road.speed_limit * (time_left - time_to_reach_limit)
+
+        // TODO what thresholds?
+        if (accel_dist + speed_dist >= dist_they_need) {
+          // let them try it
+          return true
+        } else {
+          // nope, they won't make it. most_dist > far_away, so hopefully we can
+          // still screech to a halt, right? we're not doomed already, are we?
+          return false
+        }
       }
     } else {
-      // No, they definitely need to wait.
+      // No, they definitely need to wait. The light's red for them.
       return false 
     }
   }

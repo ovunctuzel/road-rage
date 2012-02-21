@@ -15,14 +15,18 @@ TRUE PRIORITIES
   - show agents who are currently GOING
   - ui 'current intersection' for debug
 4) feature: traffic signals
-  - why're we asking agents for turn at bad times?
-    - it's not even somebody that had to stop or anything
-    - oh, theyre in the intersection when they shouldnt be. oops..
-    - OHH, they slow down in the intersection and suddenly botch the avg case... why?
-      - why dont they trigger the slow-down behavior at all, or sooner?
-  - ultra conservative analysis... is it at least safe?
-    - no, because nobody moves after being at rest, lol.
-  - do the worst-case thing, and let them speed up sometimes.
+  - an agent barely doesnt make it, because it's trying to take care of following an agent, and that
+    makes it too hard to predict whether we can cross.
+    1) let them cross the forbidden follow_dist zone a bit when they're in a turn?
+    2) introduce some threshold before we 'let them try it'
+    3) make the intersection look at the other agents our candidate has to consider?
+       - thats tying together behavior and doing the wrong job, though.
+    4) solve gridlock too and make the agent figure out if it can complete a turn before
+       it starts one.
+       - but with the additional constraint here of completing it within some time?
+    5) or just cheat... a signal won't move onto the next cycle while there are agents still doing
+       turns. changes as soon as they're all finished, and accept no new ones in the meantime.
+       - if we choose this, count the total time we're delaying and make sure it doesnt climb
 
 GENERATORS
   - a way to turn them off / reap them in the UI
