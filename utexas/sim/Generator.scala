@@ -1,6 +1,6 @@
 package utexas.sim
 
-import java.util.concurrent.{Executors, FutureTask}
+import java.util.concurrent.{Executors, FutureTask, Callable}
 
 import utexas.map.{Edge, Traversable}
 
@@ -18,7 +18,8 @@ abstract class Generator(sim: Simulation, desired_starts: List[Edge], val end_ca
   // Prune the desired_starts for road type and length
   val start_candidates = desired_starts.filter(e => sim.queues(e).ok_to_spawn)
 
-  protected var pending: List[(Agent, FutureTask[List[Traversable]])] = Nil
+  // there may be no task scheduled
+  protected var pending: List[(Agent, Option[FutureTask[List[Traversable]]])] = Nil
 
   // Returns new agents to try to spawn, or boolean means reap this genertor
   def run(): Either[List[Agent], Boolean]
@@ -33,21 +34,43 @@ abstract class Generator(sim: Simulation, desired_starts: List[Edge], val end_ca
     val a = new Agent(sim.next_id, sim, start, sim.queues(start).safe_spawn_dist, route)
 
     // schedule whatever work the route needs done.
-    val delayed = new FutureTask[List[Traversable]](route.request_route(start, end))
-    Generator.worker_pool.execute(delayed)
-    pending :+= (a, delayed)
+    route.request_route(start, end) match {
+      case Some(task) => {
+        val delayed = new FutureTask[List[Traversable]](task)
+        Generator.worker_pool.execute(delayed)
+        pending :+= (a, Some(delayed))
+      }
+      case _ => {
+        // don't schedule anything
+        pending :+= (a, None)
+      }
+    }
   }
 
   // This is a nonblocking poll, of course
   def poll(): List[Agent] = {
-    val (done, still_pending) = pending.partition(a => a._2.isDone)
+    val (done, still_pending) = pending.partition(
+      a => a._2 match {
+        case Some(task) => {
+          if (task.isDone) {
+            a._1.route.got_route(task.get)
+            true
+          } else {
+            false
+          }
+        }
+        case None       => true
+      }
+    )
     pending = still_pending
-    done.foreach(a => a._1.route.got_route(a._2.get()))
     return done.map(a => a._1)
   }
 
   // And the blocking poll
-  def wait_for_all() = pending.foreach(a => a._2.get())
+  def wait_for_all() = pending.foreach(a => a._2 match {
+    case Some(task) => task.get
+    case None       =>
+  })
 
   def create_and_poll(n: Int): List[Agent] = {
     for (i <- (0 until n)) {

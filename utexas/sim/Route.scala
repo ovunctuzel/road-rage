@@ -7,7 +7,7 @@ import utexas.{Util, cfg}
 abstract class Route() {
   // Define these
   def lookahead_step(n: Int): Option[Traversable]
-  def request_route(from: Edge, to: Edge): Callable[List[Traversable]]
+  def request_route(from: Edge, to: Edge): Option[Callable[List[Traversable]]]
 
   // Common to most, but can change. Should never become empty after got_route.
   var steps: List[Traversable] = Nil
@@ -34,11 +34,11 @@ class StaticRoute() extends Route() {
                                         else
                                           Some(steps(n))
   
-  override def request_route(from: Edge, to: Edge) = new Callable[List[Traversable]]() {
+  override def request_route(from: Edge, to: Edge) = Some(new Callable[List[Traversable]]() {
     def call(): List[Traversable] = {
       return Agent.sim.pathfind_astar(from, to)
     }
-  }
+  })
 }
 
 // DOOMED TO WALK FOREVER
@@ -65,9 +65,10 @@ class DrunkenRoute() extends Route() {
   }
 
   // Schedule empty work! :P
-  override def request_route(from: Edge, to: Edge) = new Callable[List[Traversable]]() {
-    // just start with where we are.
-    def call(): List[Traversable] = List(pick_turn(from))
+  override def request_route(from: Edge, to: Edge): Option[Callable[List[Traversable]]] = {
+    // no actual work to do
+    steps = List(pick_turn(from))
+    return None
   }
 
   // TODO choose a random point, or one leading in general direction of goal?
@@ -96,7 +97,7 @@ class DirectionalRoute extends DrunkenRoute() {
     }
   }
   
-  override def request_route(from: Edge, to: Edge): Callable[List[Traversable]] = {
+  override def request_route(from: Edge, to: Edge): Option[Callable[List[Traversable]]] = {
     end_point = to
     return super.request_route(from, to)
   }

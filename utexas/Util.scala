@@ -104,7 +104,7 @@ object cfg {
 
   val ints = List(
     ("max_lanes",  20,  "The max total lanes a road could have", 1, 30),
-    ("army_size",  5000, "How many agents to spawn by default", 1, 10000)
+    ("army_size",  500, "How many agents to spawn by default", 1, 10000)
   ) map {c => c._1 -> new Int_Cfgable(c._2, c._3, c._4, c._5)} toMap
 
   // TODO val colors = ... (I'm not kidding)

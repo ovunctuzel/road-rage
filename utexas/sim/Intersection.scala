@@ -3,6 +3,7 @@ package utexas.sim
 import scala.collection.mutable.{HashMap => MutableMap}
 import scala.collection.mutable.{HashSet => MutableSet}
 import scala.collection.mutable.ListBuffer
+import scala.collection.immutable.{SortedSet, TreeSet}
 
 import utexas.map.{Vertex, Turn}
 
@@ -11,14 +12,14 @@ import utexas.{Util, cfg}
 // Reason about collisions from conflicting simultaneous turns.
 class Intersection(val v: Vertex) {
   //val policy: Policy = new NeverGoPolicy(this)
-  val policy: Policy = new StopSignPolicy(this)
+  //val policy: Policy = new StopSignPolicy(this)
+  val policy: Policy = new SignalCyclePolicy(this)
   //val policy: Policy = new ReservationPolicy(this)
-  //val policy: Policy = new SignalCyclePolicy(this)
 
   override def toString = "Intersection(" + v + ")"
 
   // Just delegate.
-  def should_stop(a: Agent, turn: Turn, far_away: Double) = policy.should_stop(a, turn, far_away)
+  def can_go(a: Agent, turn: Turn, far_away: Double) = policy.can_go(a, turn, far_away)
   def yield_lock(a: Agent) = policy.yield_lock(a)
   def unregister(a: Agent) = policy.unregister(a)
 
@@ -38,7 +39,7 @@ class Intersection(val v: Vertex) {
     // by observing that the conflicts-with relation is symmetric.
     for (t1 <- turns.keys; t2 <- turns.keys if t1.id < t2.id) {
       if (t1.conflicts(t2)) {
-        Util.log("!!! Collision1 in an intersection: " + t1 + " and " + t2)
+        Util.log("!!! Collision in an intersection: " + t1 + " and " + t2)
         assert(t2.conflicts(t1))
       }
     }
@@ -70,7 +71,7 @@ class Intersection(val v: Vertex) {
 }
 
 abstract class Policy(intersection: Intersection) {
-  def should_stop(a: Agent, turn: Turn, far_away: Double): Boolean
+  def can_go(a: Agent, turn: Turn, far_away: Double): Boolean
   def validate_entry(a: Agent, turn: Turn): Boolean
   def handle_exit(a: Agent, turn: Turn)
   def yield_lock(a: Agent)
@@ -85,7 +86,7 @@ abstract class Policy(intersection: Intersection) {
 
 // Great for testing to see if agents listen to this.
 class NeverGoPolicy(intersection: Intersection) extends Policy(intersection) {
-  def should_stop(a: Agent, turn: Turn, far_away: Double) = true
+  def can_go(a: Agent, turn: Turn, far_away: Double) = false
   def validate_entry(a: Agent, turn: Turn) = false
   def handle_exit(a: Agent, turn: Turn) = {}
   def yield_lock(a: Agent) = {}
@@ -100,7 +101,7 @@ class StopSignPolicy(intersection: Intersection) extends Policy(intersection) {
   var queue = List[Agent]()
   val yielders = new MutableSet[Agent]()
 
-  def should_stop(a: Agent, turn: Turn, far_away: Double): Boolean = {
+  def can_go(a: Agent, turn: Turn, far_away: Double): Boolean = {
     // TODO remove once stagnation fixed.
     Agent.sim.debug_agent match {
       case Some(agent) if agent == a => {
@@ -122,7 +123,7 @@ class StopSignPolicy(intersection: Intersection) extends Policy(intersection) {
 
     // Do they have the lock?
     current_owner match {
-      case Some(owner) if a == owner => return false
+      case Some(owner) if a == owner => return true
       case _       =>
     }
 
@@ -146,9 +147,9 @@ class StopSignPolicy(intersection: Intersection) extends Policy(intersection) {
       // promote them!
       current_owner = Some(queue.head)
       queue = queue.tail
-      return false
-    } else {
       return true
+    } else {
+      return false
     }
   }
 
@@ -216,7 +217,7 @@ class StopSignPolicy(intersection: Intersection) extends Policy(intersection) {
   }
 }
 
-// FIFO based on request, batched by non-conflicting turns.
+/*// FIFO based on request, batched by non-conflicting turns.
 // Possible deadlock, since new agents can pour into the current_turns, and the
 // ones that have conflicts wait indefinitely.
 // If we found the optimal number of batches, that would be an instance of graph
@@ -225,14 +226,14 @@ class ReservationPolicy(intersection: Intersection) extends Policy(intersection)
   var current_batch = new TurnBatch()
   var reservations = List[TurnBatch]()
 
-  def should_stop(a: Agent, turn: Turn, far_away: Double): Boolean = {
+  def can_go(a: Agent, turn: Turn, far_away: Double): Boolean = {
     // TODO rethink this idea so that we don't have to put the burden on agents
     // to figure this out.
     val first_req = false
 
     if (first_req) {
       if (current_batch.add_turn(turn)) {
-        return false
+        return true
       } else {
         // A conflicting turn. Add it to the reservations.
 
@@ -245,10 +246,10 @@ class ReservationPolicy(intersection: Intersection) extends Policy(intersection)
           reservations :+= b
         }
 
-        return true
+        return false
       }
     } else {
-      return !current_batch.has_turn(turn)
+      return current_batch.has_turn(turn)
     }
   }
 
@@ -302,7 +303,7 @@ class TurnBatch() {
   }
 
   def all_done = turns.size == 0
-}
+}*/
 
 // A cycle-based light.
 class SignalCyclePolicy(intersection: Intersection) extends Policy(intersection) {
@@ -313,30 +314,101 @@ class SignalCyclePolicy(intersection: Intersection) extends Policy(intersection)
   
   // note that toInt is floor
   def current_cycle = cycles((Agent.sim.tick / duration).toInt % cycles.size)
+  def time_left = duration - (Agent.sim.tick % duration)
 
   // Least number of cycles can be modeled as graph coloring, but we're just
   // going to do a simple greedy approach.
   def find_cycles(): List[Set[Turn]] = {
-    var turns_left = intersection.v.turns.toSet
+    // we need deterministic sets
+    var turns_left: SortedSet[Turn] = new TreeSet[Turn] ++ intersection.v.turns
     val cycle_list = new ListBuffer[Set[Turn]]()
     while (!turns_left.isEmpty) {
-      val canonical = turns_left.head
-      // TODO conflict relation is symmetric, but not transitive... just because
-      // it's fine with the canonical, doesn't mean it's fine with all of em
-      turns_left.partition(t => canonical.conflicts(t)) match {
-        case (more_left, this_group) => {
-          assert(this_group(canonical))
-          cycle_list += this_group
-          turns_left = more_left
+      val this_group = new MutableSet[Turn]()
+      this_group += turns_left.head
+      turns_left = turns_left.tail
+    
+      // conflict relation is symmetric, but not transitive... so do quadratic
+      // conflict checking
+      for (candidate <- turns_left) {
+        if (!this_group.find(t => t.conflicts(candidate)).isDefined) {
+          // found one!
+          this_group += candidate
         }
       }
+
+      turns_left --= this_group
+      cycle_list += this_group.toSet
     }
     return cycle_list.toList
   }
 
-  // TODO need to deal with "yellow lights" -- tell an agent to stop early
-  // enough.
-  def should_stop(a: Agent, turn: Turn, far_away: Double) = !current_cycle(turn)
+  var last_group = cycles.last  // TODO dbug
+  def can_go(a: Agent, turn: Turn, far_away: Double): Boolean = {
+    /*val cur = current_cycle
+    if (cur != last_group) {
+      Util.log("light change! green: " + cur)
+      last_group = cur
+    }*/
+
+    if (current_cycle(turn)) {
+      // can the agent make the light?
+      val dist_they_need = far_away + turn.length
+
+      // average-case analysis: assume they keep their current speed
+      val avg_case_dist = a.speed * time_left
+
+      if (a.id == 7) {
+        Util.log(time_left + "s left. should be able to travel " + avg_case_dist + ", they need " + dist_they_need)
+        Util.log("and their speed is " + a.speed)
+      }
+
+      val threshold = 0.0 // TODO what should it be?
+
+      if (avg_case_dist < dist_they_need + threshold) {
+        // so, they won't finish based on what they're doing now. but, let them
+        // TRY to speed up if that doesn't give them a worst-case stopping
+        // distance that's illegal -- basically, give us a chance to back out of
+        // telling them to try.
+        if (a.id == 7) {
+        Util.log("at %.1f; %s needs to cover %.1f but prolly only %.1f".format(Agent.sim.tick, a, dist_they_need, avg_case_dist))
+        }
+
+        // TODO please, share this with behavior.
+        val worst_speed = a.speed + (a.max_accel * cfg.dt_s)
+        val worst_travel = Util.dist_at_constant_accel(a.max_accel, cfg.dt_s, a.speed)
+        val worst_stop_dist = a.stopping_distance(worst_speed)
+        val if_we_let_them_try = worst_travel + worst_stop_dist
+
+        // a different threshold..
+        // TODO but then this is TOO safe, it doesnt take into account whether
+        // we have lots of time left.
+        if (if_we_let_them_try + cfg.end_threshold >= far_away) {
+          // no, if we let them speed up, then there's a chance it might not
+          // work out.
+
+          // BUT, is it somehow too late? how did that happen? when
+          // if_we_let_them_try is much > far_away, then isn't this already a
+          // doomed situation?
+
+
+          if (a.id == 7) {
+          Util.log("  but bad! " + if_we_let_them_try + " >= " + far_away + ", so no")
+          }
+          return false
+        } else {
+          // try it, we can always back out
+          // TODO this is really a systems-inspired process. can we back out of
+          // a transaction?
+          return true
+        }
+      } else {
+        return true 
+      }
+    } else {
+      // No, they definitely need to wait.
+      return false 
+    }
+  }
 
   def validate_entry(a: Agent, turn: Turn) = current_cycle(turn)
 
@@ -344,6 +416,12 @@ class SignalCyclePolicy(intersection: Intersection) extends Policy(intersection)
     assert(current_cycle(turn))
   }
 
+  // We don't keep track of what any agent wants, so ignore all of these things
+  // And everybody in the other lanes are gonna yield; of course.
   def yield_lock(a: Agent) = {}
-  def unregister(a: Agent) = {}
+  //def unregister(a: Agent) = {}
+
+  def unregister(a: Agent) = {
+    Util.log(a + " trying to unregister")
+  }
 }

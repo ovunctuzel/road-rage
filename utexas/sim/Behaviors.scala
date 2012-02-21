@@ -107,7 +107,7 @@ class RouteFollowingBehavior(a: Agent, route: Route) extends Behavior(a) {
           case e: Edge => {
             val i = Agent.sim.intersections(e.to)
             a.upcoming_intersections += i   // remember we've registered here
-            i.should_stop(a, next_turn, how_far_away)
+            !i.can_go(a, next_turn, how_far_away)
           }
         })
         if (stop_at_end) {

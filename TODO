@@ -12,9 +12,17 @@ TRUE PRIORITIES
     - agents are a bit close to edge.. or vice versa?
     - offset is going the wrong way... or, half the time.
   - highlight agent with the lease for an intersection
+  - show agents who are currently GOING
+  - ui 'current intersection' for debug
 4) feature: traffic signals
-  - just think about dist left, speed, cycle time left... we should be able to cancel their lease.
-  ^ does that change the idea of leases?
+  - why're we asking agents for turn at bad times?
+    - it's not even somebody that had to stop or anything
+    - oh, theyre in the intersection when they shouldnt be. oops..
+    - OHH, they slow down in the intersection and suddenly botch the avg case... why?
+      - why dont they trigger the slow-down behavior at all, or sooner?
+  - ultra conservative analysis... is it at least safe?
+    - no, because nobody moves after being at rest, lol.
+  - do the worst-case thing, and let them speed up sometimes.
 
 GENERATORS
   - a way to turn them off / reap them in the UI
@@ -43,6 +51,7 @@ PROFILING
   - we can do much better with ready agents... max capacity of edges, group them based on where they
     want to spawn, maybe by generator?
   - dont ask length of a list when not needed...
+  - how fast can we generate lots of dumb agents?
 
 BIGGER ISSUES
   - fix geom of edge lines
@@ -70,7 +79,6 @@ POSSIBLY SIMPLE
   - when we speed up, sleep less in UI?
   - ui configurable intersection policies
   - snapshot mode in headless with agents pos, to later render
-  - dont even hand over future-task for drunkenroute... 5000 take a second, when they shouldnt.
 
 ### Map building ###
 

@@ -14,8 +14,10 @@ object TurnType extends Enumeration {
 }
 
 class Turn(val id: Int, val from: Edge, val turn_type: TurnType.TurnType, val to: Edge)
-  extends Traversable
+  extends Traversable with Ordered[Turn]
 {
+  override def compare(other: Turn) = id.compare(other.id)
+
   // id is just for comparisons, not indexing
   def to_xml(out: FileWriter) = {
     out.write(

@@ -6,7 +6,8 @@ import scala.collection.mutable.MutableList
 
 // TODO var id due to tarjan
 class Vertex(val location: Coordinate, var id: Int) {
-  // TODO we could keep a map for faster lookup, sure
+  // TODO we could keep a map for faster lookup, sure, but determinism's cool
+  // too.
   var turns = new MutableList[Turn]
 
   // TODO construction sucks
