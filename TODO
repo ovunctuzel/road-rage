@@ -1,6 +1,8 @@
 # TODO #
 
 TRUE PRIORITIES
+1) gridlock due to agents blocking intersections, right?
+   - don't start a turn if we can't finish it.
 2) bugfix <-> test at scale iteration
   - how many agents moved during some tick?
   - gridlock
@@ -15,18 +17,11 @@ TRUE PRIORITIES
   - show agents who are currently GOING
   - ui 'current intersection' for debug
 4) feature: traffic signals
-  - an agent barely doesnt make it, because it's trying to take care of following an agent, and that
-    makes it too hard to predict whether we can cross.
-    1) let them cross the forbidden follow_dist zone a bit when they're in a turn?
-    2) introduce some threshold before we 'let them try it'
-    3) make the intersection look at the other agents our candidate has to consider?
-       - thats tying together behavior and doing the wrong job, though.
-    4) solve gridlock too and make the agent figure out if it can complete a turn before
-       it starts one.
-       - but with the additional constraint here of completing it within some time?
-    5) or just cheat... a signal won't move onto the next cycle while there are agents still doing
-       turns. changes as soon as they're all finished, and accept no new ones in the meantime.
-       - if we choose this, count the total time we're delaying and make sure it doesnt climb
+  - is the concept of 'yielding' obselete, given the small edge thing was fixed?
+  - share worst-case math.
+  - consider letting intersections react on their own, rather than just from agents
+    simplifies reasoning about traffic signals, but also takes away the sorta clever delay-avoider.
+  - so few agents are moving at a time... the traffic lights are _really_ dumb.
 
 GENERATORS
   - a way to turn them off / reap them in the UI

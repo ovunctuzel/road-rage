@@ -55,8 +55,8 @@ class Intersection(val v: Vertex) {
     turns(t) += 1
     if (!policy.validate_entry(a, t)) {
       Util.log("!!! " + a + " illegally entered intersection, going at " + a.speed)
-      Util.log("  Incident was near " + t.from + " and " + t)
-      Util.log("  Origin lane length: " + t.from.length)
+      Util.log("  Incident was near " + t.from + " and " + t + " (vert " + t.from.to.id + ")")
+      Util.log("  Origin lane length: " + t.from.length + "; time " + Agent.sim.tick)
       assert(false)
     }
   }
@@ -310,11 +310,23 @@ class SignalCyclePolicy(intersection: Intersection) extends Policy(intersection)
   // Assign turns to each cycle
   val cycles: List[Set[Turn]] = find_cycles
   // And have a fixed duration for all of them for now
-  val duration = 20.0   // TODO cfg
+  val duration = 60.0   // TODO cfg
+  // accumulated delay for letting vehicles finish turns.
+  var delay = 0.0
+  // TODO it'd be great to just store agent, but they aren't officially moved to
+  // a turn until too late..
+  // these are the agents we've _accepted_, whether or not they've started their
+  // turn.
+  val current_agents = new MutableSet[(Agent, Turn)]
+  // also gives us our state
+  var start_waiting: Option[Double] = None
   
+  // Must remember we have a delay
+  def cur_time = Agent.sim.tick - delay 
   // note that toInt is floor
-  def current_cycle = cycles((Agent.sim.tick / duration).toInt % cycles.size)
-  def time_left = duration - (Agent.sim.tick % duration)
+  // TODO am i absolutely sure about this math?
+  def current_cycle = cycles((cur_time / duration).toInt % cycles.size)
+  def time_left = duration - (cur_time % duration)
 
   // Least number of cycles can be modeled as graph coloring, but we're just
   // going to do a simple greedy approach.
@@ -342,13 +354,37 @@ class SignalCyclePolicy(intersection: Intersection) extends Policy(intersection)
     return cycle_list.toList
   }
 
-  var last_group = cycles.last  // TODO dbug
+  def state_change = {
+    // figure out if a cycle has ended, but agents are still finishing their
+    // turn. we're just going to let them finish their turn, and move onto the
+    // next cycle after that.
+    if (!start_waiting.isDefined) {
+      // We can detect slow turning agents if any current agent's turn isn't
+      // in the current cycle.
+      if (!current_agents.isEmpty && !current_cycle(current_agents.head._2)) {
+        // Enter the "waiting for slow agents" state
+        start_waiting = Some(Agent.sim.tick)
+      }
+    }
+    // TODO we want delay to be close to 0 mod duration, so maybe poke at
+    // durations every now and then to get back on perfect schedule
+
+    // TODO ooh, this is potentially confusing, but it's a cool cheat:
+    // SINCE we aren't activated till somebody polls us ANYWAY, then we don't
+    // even start counting delay time till somebody new wants to go.
+  }
+
   def can_go(a: Agent, turn: Turn, far_away: Double): Boolean = {
-    /*val cur = current_cycle
-    if (cur != last_group) {
-      Util.log("light change! green: " + cur)
-      last_group = cur
-    }*/
+    // Because the intersection can only act when it's polled here, first we
+    // need to do bookkeeping.
+    state_change
+
+    if (start_waiting.isDefined) {
+      // We're already waiting for old agents to finish. Don't go yet.
+      return false
+    }
+
+    // Otherwise, try to go.
 
     if (current_cycle(turn)) {
       // if our worst-case speeding-up distance still lets us back out and stop,
@@ -362,6 +398,7 @@ class SignalCyclePolicy(intersection: Intersection) extends Policy(intersection)
 
       // TODO what thresholds?
       if (most_dist <= far_away - cfg.end_threshold) {
+        current_agents += ((a, turn))
         return true
       } else {
         // this is a critical choice. if they accelerate to the speed limit of
@@ -369,18 +406,20 @@ class SignalCyclePolicy(intersection: Intersection) extends Policy(intersection)
         // speed), would they make the light?
         val dist_they_need = far_away + turn.length
 
-        assert(a.speed <= turn.to.road.speed_limit)
         // vf = v0 + at
-        val time_to_reach_limit = math.max(
+        // min of 0 to account for when they're currently moving faster than the
+        // limit. (they'll slow down on their own soon)
+        val time_to_reach_limit = math.min(0, math.max(
           time_left,
           (turn.to.road.speed_limit - a.speed) / a.max_accel
-        )
+        ))
         val accel_dist = Util.dist_at_constant_accel(a.max_accel, time_to_reach_limit, a.speed)
         val speed_dist = turn.to.road.speed_limit * (time_left - time_to_reach_limit)
 
         // TODO what thresholds?
         if (accel_dist + speed_dist >= dist_they_need) {
           // let them try it
+          current_agents += ((a, turn))
           return true
         } else {
           // nope, they won't make it. most_dist > far_away, so hopefully we can
@@ -394,10 +433,26 @@ class SignalCyclePolicy(intersection: Intersection) extends Policy(intersection)
     }
   }
 
-  def validate_entry(a: Agent, turn: Turn) = current_cycle(turn)
+  // just make sure they're in the list of current_agents, meaning we accepted
+  // them and it's still their normal cycle, or we're waiting on them but
+  // they've still been told to go
+  def validate_entry(a: Agent, turn: Turn) = current_agents((a, turn))
 
   def handle_exit(a: Agent, turn: Turn) = {
-    assert(current_cycle(turn))
+    assert(current_agents((a, turn)))
+    current_agents -= ((a, turn))
+
+    // Is this one of the slow ones AND we've been polled before?
+    start_waiting match {
+      case Some(time) => {
+        if (current_agents.isEmpty) {
+          // Last one! Finally we can hit the next cycle.
+          delay += Agent.sim.tick - time
+          start_waiting = None
+        }
+      }
+      case None => // nobody was waiting or we aren't late. cool.
+    }
   }
 
   // We don't keep track of what any agent wants, so ignore all of these things
