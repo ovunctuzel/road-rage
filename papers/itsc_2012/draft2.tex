@@ -402,10 +402,10 @@ points, but this is not a big limitation in practice.
 \subsection{Collision checking}
 
 All traversables (edges and the straight line-approximation of turns) maintain
-an ordered \emph{queue} of occupying agents. Agents stepping forward in time
-happens atomically, so collision checking occurs after all agents have moved for
-some tick. This is done because otherwise false positives could occur when an
-agent steps before the agent in front of it, and ordering agents for updates is
+an ordered queue of occupying agents. Agents stepping forward in time happens
+atomically, so collision checking occurs after all agents have moved for some
+tick. This is done because otherwise false positives could occur when an agent
+steps before the agent in front of it, and ordering agents for updates is
 difficult near the crossings between edges. \commentd{Do I need to explain why
 it is difficult, or should I just stop after ``in front of it''?} A collision is
 defined as the reversal of order of agents before and after a step.
@@ -420,7 +420,7 @@ would provide more granularity, but it adds computational complexity and would
 be impractical for many of the complex intersection geometries inferred from
 OSM.
 
-When a collision occurs, the simulator throws warnings or halts, since this
+When a collision occurs, the simulator throws warnings and halts, since this
 indicates a bug in some policy. A future alternative could be to mark the region
 as impassable and re-route other traffic away from the accident.
 
@@ -430,7 +430,7 @@ as impassable and re-route other traffic away from the accident.
 
 \subsection{Agent Reactions}
 
-Each agent has a ``behavior'' governing it. When the agent travels past the end
+Each agent has a \emph{behavior} governing it. When the agent travels past the end
 of an edge during its step, the behavior picks the turn to pursue. Each tick,
 the behavior can make the agent react by performing one of two actions:
 disappearing from the map (only when the agent is at rest and is done with its
@@ -448,8 +448,8 @@ this or to optimize fuel efficiency by tuning acceleration.
 
 \commentd{one diagram probably covers lots of this}
 
-The default behavior maximizes accelerations while obeying speed limits,
-avoiding collisions, and obeying intersections. By consdering the highest speed
+The default behavior maximizes acceleration while obeying speed limits,
+avoiding collisions, and obeying intersections. By considering the highest speed
 achievable at the end of the next tick and the subsequent stopping distance at
 this speed, the behavior can scan sufficiently far ahead along several
 traversables to locate agents to avoid and intersections to query. The analysis
@@ -490,12 +490,12 @@ lights that adaptively learn better timings and an AIM-based reservation system
 Picking accelerations that optimize some objective functions is a separate task
 from picking a path to travel. Behaviors consult a route strategy to pick turns.
 Currently two simple implementations are available. One statically plans a route
-to some goal using standard A* search; the other performs a drunken walk, lazily
-planning random choices at each intersection as the lookahead engine needs to
-know. Future experiments in dynamic replanning or hierarchial planning can be
-performed without modifying any code other than a creating new route
-implementation. Route policies could also interact with a singleton overseer to
-have some sort of global insight.
+to some goal using standard A* search (TODO cite); the other performs a drunken
+walk, lazily planning random choices at each intersection as the lookahead
+engine needs to know. Future experiments in dynamic replanning or hierarchial
+planning can be performed without modifying any code other than a creating new
+route implementation. Route policies could also interact with a singleton
+overseer to have some sort of global insight.
 
 \subsection{Deadlock}
 
