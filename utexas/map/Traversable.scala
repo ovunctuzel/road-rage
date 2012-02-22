@@ -20,7 +20,7 @@ abstract class Traversable() {
       throw new Exception("Negative distance on a location?!")
     }
 
-    // TODO it's late, I am not going to write this functionally...
+    // TODO it's late at night, I am not going to write this functionally...
     var at = dist
     for (l <- lines) {
       if (at > l.length) {
@@ -35,7 +35,7 @@ abstract class Traversable() {
       }
     }
 
-    throw new Exception("Location is past the end of an edge! " + dist + " > " + length)
+    throw new Exception("Location is past the end of an edge! " + dist + " > " + length + "; at (dist left) = " + at + "; there are " + lines.size + "lines")
   }
 
   def start_pt = lines.head.start

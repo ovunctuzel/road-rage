@@ -266,9 +266,10 @@ the map by simply drawing a polygon around each set of roads.
 AORTA's implementation uses Scala, a language implemented on the Java Virtual
 Machine. Scala provides the advantage of functional programming constructs while
 still permitting imperative style. Parts of AORTA, including extensions and clients, can
-just as easily be written in Java. The software has a documented API, is open-source, and
-contains all of the code for the experiments described in Section 6 -- it is
-designed for extensibility\footnote{http://code.google.com/p/road-rage}.
+just as easily be written in Java. The software has a documented API, is
+open-source\footnote{http://code.google.com/p/road-rage}, and contains all of
+the code for the experiments described in Section 6 -- it is designed for
+extensibility.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -298,7 +299,7 @@ map the possible turns from incoming to outgoing lanes. Since both lanes and
 turns support traffic, they are grouped together as the \emph{traversables} or
 edges, meaning they have some total length.
 
-The map also has a geometry interpretation, used for visualization and physical
+The map also has a geometric interpretation, used for visualization and physical
 distances. A road has a sequence of points giving the line segments of the
 center yellow line. These points could also be interpreted as control points for
 a curved road, but AORTA uses straight lines as an approximation. Lanes are
@@ -330,11 +331,12 @@ Map construction is split into several passes, each feeding the next.
         Although inaccurate, these patterns are the best compromise. At the
         time of writing, even sources like Google Maps (TODO cite) lack this
         information.
-  \item The strongly connected components of the digraph with the fewest
-        members are removed. Tarjan's algorithm locates these in linear time
-        (TODO cite). Disconnected lanes are spliced out of larger roads, leaving
-        unappealing geometric gaps, but correctly ensuring connectivity for
-        corner-case free pathfinding.
+  \item Because turns are heuristically placed, the graph is disconnected. The
+        strongly connected components of the digraph with the fewest members are
+        removed. Tarjan's algorithm locates these in linear time (TODO cite).
+        Disconnected lanes are spliced out of larger roads, leaving unappealing
+        geometric gaps, but correctly ensuring connectivity for corner-case free
+        pathfinding.
   \item The builder serializes the graph in a simple XML format.
 \end{enumerate}
 
@@ -345,16 +347,15 @@ Map construction is split into several passes, each feeding the next.
 AORTA uses microscopic simulation, modeling individual drivers as agents.
 Discrete-time simulation is used, meaning an agent accelerates at a fixed rate
 for the duration of a ``tick'' (also referred to as ``step'') to achieve a new
-position and velocity. The tick duration $dt$ is configurable and fixed
-\commentpk{configurable \textit{and} fixed is confusing} for the simulation.
-Agents know this value and use it to reason about collision avoidance and
-satisfying other constraints, so setting this value to the average ``reaction
-time'' of a human driver may be appropriate. Each tick, the simulation performs
-the following steps:
+position and velocity. The tick duration $dt$ is fixed, enabling agents to
+reason about collision avoidance and satisfying other constraints. Setting this
+value to the average ``reaction time'' of a human driver may be appropriate for
+some experiments. Each tick, the simulation performs the following steps:
 
 \begin{enumerate}
   \item Introducing new agents into the map
-  \item Updating the position and velocity of agents
+  \item Updating the position and velocity of agents based on their choice the
+        previous tick
   \item Checking for collisions
   \item Allowing each agent to react
 \end{enumerate}
@@ -362,81 +363,70 @@ the following steps:
 Agents have a few enforced constraints -- they cannot exceed their physical
 acceleration capabilities, travel in reverse, or travel past the end of a
 traversable without appearing on the next. Intersection policies and avoiding
-collisions on the same traversable are the source of the other constraint in the
-simulation, but it is the job of a behavior to satisfy those. There are three
-main components of the simulation, each configurable by extending default
-classes: agent behaviors, routing strategies, and intersection policies. Each
-is described below.
+collisions on the same traversable provide the other constraints, but it is the
+job of an agent's behavior to satisfy those. There are three main components of
+the simulation, each configurable by extending default implementations of an
+interface: agent behaviors, routing strategies, and intersection policies.
 
-\commentd{justify arbitrary constants, like deaccel for cars;
-          systems ideas, or limitations.. trylocks, atomic sim update, deadlock
-          issues;
-          limit: no lane-changing}
+%\commentd{justify arbitrary constants, like deaccel for cars;
+%          systems ideas, or limitations.. trylocks, atomic sim update, deadlock
+%          issues;
+%          limit: no lane-changing}
 
 \subsection{Spawning}
 
-\commentpk{I wonder if demand data generation in the ui should go here.}
-
 To introduce new agents into the simulation in real-time, users create
 \emph{generators} programatically or using the UI. A generator picks a random
-starting position and random goal from two sets of roads chosen by the user. A
-generator may cover the entire map, uniformly distributing traffic everywhere,
-or it can mimic rush-hour scenarios. Every tick, a generator creates some number
-of new agents.  If the agent's route policy needs work to be done (such as
-pathfinding), the generator either performs it immediately (incurring a delay in
-simulation if it is running) or sends it to a pool of worker threads to compute
-in the background. When a generator finishes the work for an agent, it promotes
-it to the ``ready'' state.
+starting position and random goal from two sets of roads chosen by the user,
+selectable by drawing a polygon with the mouse in the UI. A generator may cover
+the entire map, uniformly distributing traffic everywhere, or it can mimic
+rush-hour scenarios.
+
+Every tick, a generator creates some number of new agents. If the agent's route
+policy needs work to be done (such as pathfinding), the generator either
+performs it immediately (incurring a delay in simulation if it is running) or
+sends it to a pool of worker threads to compute in the background.
 
 Once an agent's route is ready, the agent waits alongside its starting edge (as
-if they are in a driveway or parking lot). At the beginning of each tick, they
-enter with zero initial speed, if it is safe to do so. The list of agents
-currently on the edge determines safety. Because behaviors must enforce speed
-limit along an edge by the time an agent enters the road, then if there is no
-agent within the worst-case distance (travel distance at the speed limit, plus
-stopping distance from this speed) before the spawn point, then the new agent
-may enter. To render unnecessary the prediction of which agents could enter the
-edge in the near future, there is a buffer space at the beginning of the edge
-where a new agent may never spawn. This disqualifies some short edges from being
-spawn points, but this is not a big limitation in practice.
+if it is in a driveway or parking lot). When the edge has no agents that could
+potentially crash with the new vehicle, the new agent enters the system with
+zero initial speed.  Because behaviors must enforce speed limit along an edge by
+the time an agent enters the road, then if there is no agent within the
+worst-case distance (traveling distance at the speed limit, plus stopping
+distance from this speed) before the spawn point, then the new agent may enter.
+To render unnecessary the prediction of which agents could enter the edge in the
+near future, there is a buffer space at the beginning of the edge where a new
+agent may never spawn. This disqualifies some short edges from being spawn
+points, but this is not a big limitation in practice.
 
 \subsection{Collision checking}
 
-There are two structures to detect collisions. All traversables (edges and the
-straight line-approximation of turns) maintain a \emph{queue} of occupying
-agents, ordering them so that the agent farthest along is at the head of the
-queue. A naive method of collision detection would detect an agent passing an
-agent on the same queue, or entering a new queue not at the end, immediately
-after an agent moves. However, agents take their steps sequentially and in an
-effectively random order. Ideally they could be reordered so that agents in the
-front of a queue always move first. Since the first agent may cross into the
-next queue, that introduces a dependency between traversables. A topological
-sort of a directed graph containing circuits\commentp{do you mean cycles?} is not possible though, and since
-we guarantee connectedness, there are necessarily circuits in maps.  Instead,
-collisions are checked after every agent has stepped forward in time, treating
-each time-step as atomic. Queues remember the original order of agents before a
-step, and afterwards can verify that the order is still legal, with new agents
-on the end and existing agents in the same order.\commentp{I don't
-  follow the point of the last sentence.}
+All traversables (edges and the straight line-approximation of turns) maintain
+an ordered \emph{queue} of occupying agents. Agents stepping forward in time
+happens atomically, so collision checking occurs after all agents have moved for
+some tick. This is done because otherwise false positives could occur when an
+agent steps before the agent in front of it, and ordering agents for updates is
+difficult near the crossings between edges. \commentd{Do I need to explain why
+it is difficult, or should I just stop after ``in front of it''?} A collision is
+defined as the reversal of order of agents before and after a step.
 
-Likewise, intersections check for collisions after everybody has moved by
-examining the turn each agent is performing and verifying that no other agent is
-simultaneously performing a conflicting turn.
+Likewise, intersections check for collisions by examining the turn each agent is
+performing and verifying that no other agent is simultaneously performing a
+conflicting turn.  AORTA has a low-granularity model of turn conflict. If two
+vehicles at any point along two different turns could ever come into contact,
+then the turns are always in conflict, no matter where the agent specifically is
+along that turn.  The alternative of tiling intersections \cite{JAIR08-dresner}
+would provide more granularity, but it adds computational complexity and would
+be impractical for many of the complex intersection geometries inferred from
+OSM.
 
-\commentpk{The following paragraph should not be here. It should be in intersection behaviors} AORTA has a low-granularity model of turn conflict. If two vehicles at any point
-along two different turns could ever come into contact, then the turns are
-always in conflict, no matter where the agent specifically is along that turn.
-The alternative of tiling intersections (like \cite{JAIR08-dresner} \commentpk{I made this same mistake a month ago, dont use citations as a noun} does) would
-provide more granularity, but it adds computational complexity and would be
-impractical for many of the complex intersection geometries inferred from OSM.
-
+When a collision occurs, the simulator throws warnings or halts, since this
+indicates a bug in some policy. A future alternative could be to mark the region
+as impassable and re-route other traffic away from the accident.
 
 \pix{turn_conflicts.png}
     {An agent cannot turn left while agents on the perpendicular road cross}
     {scale=0.5}
-
-
-\commentp{What happens when a collision is detected? }
 
 \subsection{Agent Reactions}
 
@@ -444,86 +434,70 @@ Each agent has a ``behavior'' governing it. When the agent travels past the end
 of an edge during its step, the behavior picks the turn to pursue. Each tick,
 the behavior can make the agent react by performing one of two actions:
 disappearing from the map (only when the agent is at rest and is done with its
-route) or setting an acceleration for the next step. In the future, another
-possible action will be initiating a lane-change or
-merge.\commentp{Say ``Were lane changing or merging modeled, that
-  would be another possible action.''}
+route) or setting an acceleration for the next step. Were lane changing or
+merging modeled, that would be another possible action.
 
 Currently, the primary behavior used by all agents is the ``route-following
 behavior.'' It is a generalized, baseline behavior that guarantees not to
 collide with another agent or enter an intersection at the wrong time. Since it
-picks the fastest conservative (safe) choice of acceleration at each step, it
-could be easily extended to mimic human drivers by traveling at some random
-speed slower than this or to optimize fuel efficiency by tuning acceleration.
+picks the highest safe choice of acceleration at each step, it could be easily
+extended to mimic human drivers by traveling at some random speed slower than
+this or to optimize fuel efficiency by tuning acceleration.
 
 \subsubsection{Worst-case analysis and lookahead}
 
-Since agents know the fixed $dt$ duration, they may reason about what could
-happen during the next tick to avoid collision and illegal intersection entry.
-The conservative analysis is to determine worst case -- how far could an agent
-travel by the end of the next tick? If they accelerate as fast as possible for
-$dt$, this gives them the longest possible traveling distance and highest
-possible speed. Adding the stopping distance for this speed to the traveling
-distance gives the worst-case distance.
+\commentd{one diagram probably covers lots of this}
 
-\commentd{how much formula? pretty simple so far, but can certainly include them.
- should this part be worded like a proof? (because it can be)}
-\commentp{Use a formula if you can use it to mkae the description more
-  concise (and precise).}
+The default behavior maximizes accelerations while obeying speed limits,
+avoiding collisions, and obeying intersections. By consdering the highest speed
+achievable at the end of the next tick and the subsequent stopping distance at
+this speed, the behavior can scan sufficiently far ahead along several
+traversables to locate agents to avoid and intersections to query. The analysis
+can short-circuit at the first nearby agent and intersection requiring a stop,
+since it would be illegal to pass either.
 
-The worst-case distance may exceed the distance remaining on the agent's current
-traversable. That means they could start or finish a turn during the next tick.
-Because edges are often extremely short due to mis-marked ways in OSM (less than
-$???$ meters), they may travel through several traversables during the next
-move. Thus, any conservative behavior must look ahead until the worst-case
-distance is exhausted, asking the route strategy which turn an agent will choose
-in the future. At each traversable considered, there are 3 constraints to
-satisfy: obeying the intersection, avoiding collision with another agent, and
-obeying speed limits. Each constraint contributes to the max acceleration that
-will obey the limit, so ultimately the result of lookahead will be the minimum
-of these candidates.
+\subsubsection{Interaction with intersections}
 
-Obeying a road's speed limit is a simple constraint. Like many parameters of the
-map, speed limits are inferred from the road type claimed by the OSM
-source.
-
-\commentp{This section seems belabored.  Can't you just say that the
-  agent sets its acceleration to be the maximum possible that satifies
-  3 constraints: staying at or below the speed limit, avoiding
-  collisions, and not entering an intersection illegally.}
-
-\subsubsection{Obeying intersections}
+% TODO regroup? does this belong as a subsection, not subsub?
 
 A behavior's interaction with an intersection policy amounts to polling it with
 the turn the agent wants to perform, the distance away the agent currently is,
 and how long the agent has been waiting (so policies can enforce a required
 delay before entering the intersection). The intersection policy simply orders
-the agent to ``stop'' or ``continue.'' The lookahead considers no intersections
-beyond the first that issues ``stop'', since the behavior cannot legally proceed
-past that one anyway. The acceleration to avoid entering an intersection
+the agent to ``stop'' or ``continue.'' The acceleration to avoid entering an intersection
 attempts to end a configurable threshold back from the end of a traversable to
-account for crosswalks and as an epsilon value, since achieveing a distance
-along an edge equal to its length means spilling over into the next traversable,
-which the intersection has banned. Sometimes stopping behind this threshold is
-not possible -- namely, when the edge length is shorter -- and in that case,
-anywhere before the end is acceptable.
+account for crosswalks.
 
-\commentd{include some form of piyush's proof about accel to end?} \commentpk{I would say it is unnecessary}
+Intersection policies are one of the most intriguing aspects of the simulation
+to tweak, especially in light of autonomous vehicles. Current policies include
+traditional stop signs and traffic signals. Future policies could include stop
+lights that adaptively learn better timings and an AIM-based reservation system
+\cite{JAIR08-dresner}. 
 
-\subsubsection{Optimal tailgating}
+\commentd{Actually, at least the stop sign policy is really mundane. Include its
+  description?}
 
-\commentd{diagram with overlapping distances}
+%The stop sign policy works by maintaining a current owner and a queue of waiting
+%agents. An agent can enter the queue only when it is within some threshold of
+%the start of its turn. After the agent at the head of the queue has waited for a
+%configurable pause, it obtains the lock and has exclusive access to the
+%intersection, releasing it only when it completes its turn.
 
-When the lookahead analysis is considering some future traversable, it only has
-to consider the agent closest to the start of it in the present. An edge may
-only be entered from a turn, so the intersection policy has the burden of
-ensuring no agent performs a turn that leads to the same edge simultaneously.
-Following an agent safely means maintaining a configurable following distance
-behind the agent \commentpk{not sure what you mean by configurable here}. Worst-case analysis is again used: the most dangerous move the
-agent in front could perform is decelerating as fast as possible
-during the next tick,
-and the worst-case traveling distance for the agent following is already known
-from lookahead (speeding up as much as possible).
+\commentd{describe traffic signal policy, once it's working fully}
+
+\subsection{Routing Strategies}
+
+Picking accelerations that optimize some objective functions is a separate task
+from picking a path to travel. Behaviors consult a route strategy to pick turns.
+Currently two simple implementations are available. One statically plans a route
+to some goal using standard A* search; the other performs a drunken walk, lazily
+planning random choices at each intersection as the lookahead engine needs to
+know. Future experiments in dynamic replanning or hierarchial planning can be
+performed without modifying any code other than a creating new route
+implementation. Route policies could also interact with a singleton overseer to
+have some sort of global insight.
+
+\subsection{Deadlock}
 
 Maintaining following distance from agents actually enables a form of deadlock
 in the simulation. If an agent is forced to stop in an intersection mid-turn due
@@ -533,65 +507,28 @@ occur several times in interdependent ways. The solution currently being
 investigated will require behaviors to ensure a turn may be fully completed
 before starting it. This will prevent intersections from ever being blocked.
 
-\commentd{diagram showing deadlock, or lookahead in gen eral}
-\commentd{i really hope to fix this issue soon, but it's not an immediately easy
-fix}
-\commentp{Cite (and ideally use ideas from) paper commented out in latex file
+%\commentp{Cite (and ideally use ideas from) paper commented out in latex file
     % @inproceedings{AAAI11-au,
     % Author = {Tsz-Chiu Au and Neda Shahidi and Peter Stone},
     % Booktitle= {Proceedings of the Twenty-Fifth Conference on Artificial Intelligence},
     % Title = {Enforcing Liveness in Autonomous Traffic Management},
     % Year = {2011},
     % Month= {August},
-}
+%}
 
+% TODO solve the above case, then figure out what to describe.
 
-\subsection{Routing Strategies}
+%A form of deadlock is possible in a sequence of short edges and turns. Agent
+%$A_1$ acquires the lock to intersection $V_1$, but needs the lock to $V_2$ to
+%proceed. Meanwhile, $A_2$ has the lock for $V_2$ and needs the lock for $V_1$.
+%To deal with this circumstance, an agent's behavior can yield any held locks (a
+%notion generalized to any intersection policy) when its speed is $0$ and its
+%conservative acceleration is to remain at rest. The stop sign policy only
+%removes an agent's lock if it has not started its turn (because otherwise, the
+%agent is stalling in the intersection). The next time that agent polls, the
+%policy restores the agent to the front of the queue.
 
-Picking accelerations that optimize some objective functions is a separate task
-from picking a path to travel. Thus, the behavior described above can consult
-any route strategy. Currently two simple implementations are available. One
-statically plans a route to some goal using standard A* search; the other
-performs a drunken walk, lazily planning random choices at each intersection as
-the lookahead engine needs to know. Future experiments in dynamic replanning or
-hierarchial planning can be performed without modifying any code other than a
-creating new route implementation. Route policies could also interact with a
-singleton overseer to have some sort of global insight.
-
-% TODO and mike's variant that wanders in the right direction
-
-\subsection{Intersection Policies}
-
-Agents and behaviors (on behalf of an agent) poll an intersection as they
-approach it, asking if they should stop or not. A policy is free to prevent
-agents from performing conflicting turns concurrently by any means. Two main
-policies exist already, but implementing the interface for extensions is simple.
-
-The stop sign policy works by maintaining a current owner and a queue of waiting
-agents. An agent can enter the queue only when it is within some threshold of
-the start of its turn (a constraint satisfied by the default lookahead
-behavior), even if that is several (rather short) edges and turns away. After
-the agent at the head of the queue has waited for a configurable pause, it obtains the lock
-and has exclusive access to the intersection, releasing it only when it
-completes its turn.
-
-A form of deadlock is possible in a sequence of short edges and turns. Agent
-$A_1$ acquires the lock to intersection $V_1$, but needs the lock to $V_2$ to
-proceed. Meanwhile, $A_2$ has the lock for $V_2$ and needs the lock for $V_1$.
-To deal with this circumstance, an agent's behavior can yield any held locks (a
-notion generalized to any intersection policy) when its speed is $0$ and its
-conservative acceleration is to remain at rest. The stop sign policy only
-removes an agent's lock if it has not started its turn (because otherwise, the
-agent is stalling in the intersection). The next time that agent polls, the
-policy restores the agent to the front of the queue.
-
-\commentd{hopefully we'll have a neater solution than the above soon}
-
-\commentd{describe traffic signal policy, once it's working}
-
-Intersection policies are one of the most intriguing aspects of the simulation to
-tweak, especially in light of autonomous vehicles. Future policies could include stop lights that adaptively learn better
-timings and an AIM-based reservation system \cite{JAIR08-dresner}.
+%\commentd{hopefully we'll have a neater solution than the above soon}
 
 \subsection{Determinism and other simulation properties}
 
@@ -601,8 +538,6 @@ generator, the input graph, and the generators' configuration completely
 determine the outcome of any simulation. This determinism does break down when
 generators use worker threads, since routes may be computed in different orders,
 causing agents to be ready to enter the road at different times.
-
-TODO and cautious use of sorted sets
 
 \commentd{saving a ``scenario'' can soon be a feature}
 

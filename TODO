@@ -22,6 +22,7 @@ TRUE PRIORITIES
   - consider letting intersections react on their own, rather than just from agents
     simplifies reasoning about traffic signals, but also takes away the sorta clever delay-avoider.
   - so few agents are moving at a time... the traffic lights are _really_ dumb.
+    - make sure the turns grouped together are all from the same source; that REALLY improves things.
 
 GENERATORS
   - a way to turn them off / reap them in the UI
