@@ -83,8 +83,10 @@ class Simulation(roads: List[Road], edges: List[Edge], vertices: List[Vertex],
     time_speed += 0.5
   }
 
-  def pre_step() = {
+  // Returns true if at least one generator is active
+  def pre_step(): Boolean = {
     // First, give generators a chance to introduce more agents into the system
+    var changed = false
     var reap = new MutableSet[Generator]()
     generator_count = 0
     generators.foreach(g => {
@@ -93,11 +95,13 @@ class Simulation(roads: List[Road], edges: List[Edge], vertices: List[Vertex],
         case Right(_)      => { reap += g }
       }
       generator_count += g.count_pending
+      changed = true
     })
     generators --= reap
 
     // Then, introduce any new agents that are ready to spawn into the system
     ready_to_spawn = ready_to_spawn.filter(a => !try_spawn(a))
+    return changed
   }
 
   // Returns the number of agents that moved

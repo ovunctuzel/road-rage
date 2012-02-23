@@ -34,11 +34,15 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
         Thread.sleep(10)
         if (running) {
           sim.step((System.currentTimeMillis - start).toDouble / 1000.0)
+          // always render
+          handle_ev(EV_Action("step"))
         } else {
           // poll the generators
-          sim.pre_step
+          if (sim.pre_step) {
+            // only render when a generator did something
+            handle_ev(EV_Action("step"))
+          }
         }
-        handle_ev(EV_Action("step"))
       }
     }
   }.start

@@ -12,7 +12,6 @@ TRUE PRIORITIES
     - agents are a bit close to edge.. or vice versa?
     - offset is going the wrong way... or, half the time.
   - show agents who are currently GOING
-  - why're we eating CPU when idling?
 4) feature: traffic signals
   - is the concept of 'yielding' obselete, given the small edge thing was fixed?
   - share worst-case math.

@@ -35,7 +35,12 @@ abstract class Traversable() {
       }
     }
 
-    throw new Exception("Location is past the end of an edge! " + length)
+    // Here's the deal. Normally this would be a bug, but actually,
+    // map.make.Reader artificially bumps up tiny edges to a min of 0.1 meters
+    // to avoid breaking lookahead. So just... cheat and claim they're at the
+    // end of the tiny, tiny edge.
+    assert(length == 0.1)
+    return (lines.last, lines.last.length)
   }
 
   def start_pt = lines.head.start
