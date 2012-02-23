@@ -29,6 +29,8 @@ class Agent(val id: Int, val graph: Graph, val start: Edge, val start_dist: Doub
 
   // Returns true if we move or do anything at all
   def step(dt_s: Double): Boolean = {
+    Agent.a_step_timer.start
+
     assert(dt_s == cfg.dt_s)
 
     // To confirm determinism, enable one of these (more precision in doubles is
@@ -60,7 +62,6 @@ class Agent(val id: Int, val graph: Graph, val start: Edge, val start_dist: Doub
     var current_on = start_on
     var current_dist = old_dist + new_dist
 
-    // TODO
     while (current_dist >= current_on.length) {
       current_dist -= current_on.length
       // Are we finishing a turn or starting one?
@@ -101,6 +102,7 @@ class Agent(val id: Int, val graph: Graph, val start: Edge, val start_dist: Doub
     }
 
     // TODO deal with lane-changing
+    Agent.a_step_timer.stop
     return new_dist > 0.0
   }
 
@@ -111,6 +113,8 @@ class Agent(val id: Int, val graph: Graph, val start: Edge, val start_dist: Doub
 
   // Returns true if we're done
   def react(): Boolean = {
+    Agent.a_react_timer.start
+
     behavior.choose_action match {
       case Act_Set_Accel(new_accel) => {
         // we have physical limits
@@ -119,11 +123,13 @@ class Agent(val id: Int, val graph: Graph, val start: Edge, val start_dist: Doub
         assert(speed + (new_accel * cfg.dt_s) >= 0)
 
         target_accel = new_accel
+        Agent.a_react_timer.stop
         return false
       }
       case Act_Lane_Change(lane) => {
         // TODO ensure it's a valid request
         Util.log("TODO lanechange")
+        Agent.a_react_timer.stop
         return false
       }
       case Act_Done_With_Route() => {
@@ -134,6 +140,7 @@ class Agent(val id: Int, val graph: Graph, val start: Edge, val start_dist: Doub
         // at.on.vert if at.on is a turn, but it could be more due to lookahead.
         upcoming_intersections.foreach(i => i.unregister(this))
         upcoming_intersections = Set()
+        Agent.a_react_timer.stop
         return true
       }
     }
@@ -186,6 +193,17 @@ class Agent(val id: Int, val graph: Graph, val start: Edge, val start_dist: Doub
 // the singleton just lets us get at the simulation to look up queues
 object Agent {
   var sim: Simulation = null
+
+  val q_start_timer = Util.stopwatch
+  q_start_timer.stop
+  val q_stop_timer = Util.stopwatch
+  q_stop_timer.stop
+  val a_step_timer = Util.stopwatch
+  a_step_timer.stop
+  val a_react_timer = Util.stopwatch
+  a_react_timer.stop
+  val i_check_timer = Util.stopwatch
+  i_check_timer.stop
 }
 
 ////////////////////////////////////////////////////////////////////////////////

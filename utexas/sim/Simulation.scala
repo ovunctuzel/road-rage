@@ -26,6 +26,9 @@ class Simulation(roads: List[Road], edges: List[Edge], vertices: List[Vertex],
   private var generator_count = 0   // just for informational/UI purposes
   private var id_cnt = -1
 
+  // For efficiency.
+  val active_queues = new MutableSet[Queue]
+
   // Just for debug.
   var debug_agent: Option[Agent] = None
 
@@ -46,7 +49,6 @@ class Simulation(roads: List[Road], edges: List[Edge], vertices: List[Vertex],
   // It's expensive to go through every one of these without reason every
   // time. This banks on the fact that the number of agents is smaller, and
   // they're not evenly distributed through a huge map.
-  def active_queues(): Set[Queue] = agents.map(a => queues(a.at.on)).toSet
   def active_intersections(): Set[Intersection] = agents.flatMap(
     a => a.at.on match {
       case t: Turn => Some(intersections(t.vert))
@@ -106,7 +108,12 @@ class Simulation(roads: List[Road], edges: List[Edge], vertices: List[Vertex],
 
   // Returns the number of agents that moved
   def step(dt_s: Double): Int = {
+    val t0 = Util.timer("whole step")
+    Util.log_push
+
+    val tp = Util.timer("pre step")
     pre_step
+    tp.stop
 
     // This value is dt in simulation time, not real time
     val this_time = dt_s * time_speed
@@ -118,46 +125,56 @@ class Simulation(roads: List[Road], edges: List[Edge], vertices: List[Vertex],
     // Agents can't react properly in the presence of huge time-steps. So chop
     // up this time-step into exactly consistent/equal pieces, if needed.
     while (dt_accumulated >= cfg.dt_s) {
-      //val t0 = Util.timer("whole step")
-      //Util.log_push
       dt_accumulated -= cfg.dt_s
 
       // If you wanted crazy speedup, disable all but agent stepping and
       // reacting. But that involves trusting that no simulation violations
       // could occur. ;)
 
-      //val t2 = Util.timer("queue start")
+      val t2 = Util.timer("queue start")
       active_queues.foreach(q => q.start_step)
-      //t2.stop
+      t2.stop
+      Util.log("  actual work: " + Agent.q_start_timer.seconds)
+      Agent.q_start_timer.reset
 
-      //val t3 = Util.timer("agent step")
+      val t3 = Util.timer("agent step")
       agents.foreach(a => {
         if (a.step(cfg.dt_s)) {
           moved_count += 1
         }
       })
-      //t3.stop
+      t3.stop
+      Util.log("  actual work: " + Agent.a_step_timer.seconds)
+      Agent.a_step_timer.reset
 
-      //val t4 = Util.timer("queue stop")
+      val t4 = Util.timer("queue stop")
       active_queues.foreach(q => q.end_step)
-      //t4.stop
+      t4.stop
+      Util.log("  actual work: " + Agent.q_stop_timer.seconds)
+      Agent.q_stop_timer.reset
+      Util.log("  " + active_queues.size + " was # of queues")
 
-      //val t5 = Util.timer("vert check")
+      val t5 = Util.timer("vert check")
       active_intersections.foreach(i => i.end_step)
-      //t5.stop
+      t5.stop
+      Util.log("  actual work: " + Agent.i_check_timer.seconds)
+      Agent.i_check_timer.reset
 
-      //val t6 = Util.timer("react")
+      val t6 = Util.timer("react")
       agents.foreach(a => {
         // reap the done agents
         if (a.react) {
           agents -= a
         }
       })
-      //t6.stop
-      
-      //Util.log_pop
-      //t0.stop
+      t6.stop
+      Util.log("  actual work: " + Agent.a_react_timer.seconds)
+      Agent.a_react_timer.reset
     }
+
+    Util.log_pop
+    t0.stop
+    Util.log("")
     return moved_count
   }
 

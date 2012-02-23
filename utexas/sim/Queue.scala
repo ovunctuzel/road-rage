@@ -16,16 +16,20 @@ class Queue(t: Traversable) {
   def last = agents.lastOption
 
   def start_step() = {
+    Agent.q_start_timer.start
     prev_agents = agents
+    Agent.q_start_timer.stop
   }
   
   // Check for collisions by detecting abnormal changes in ordering.
   def end_step(): Unit = {
+    Agent.q_stop_timer.start
     // TODO if an agent ever looped around to the same edge again in one step,
     // this breaks badly.
 
     // Everything's fine.
     if (agents.size == 0) {
+      Agent.q_stop_timer.stop
       return
     }
 
@@ -49,11 +53,13 @@ class Queue(t: Traversable) {
     if (!agents.zip(agents.tail).forall(pair => pair._1.at.dist > pair._2.at.dist)) {
       Util.log("!!! Agents on " + t + " aren't in a valid order!")
     }
+    Agent.q_stop_timer.stop
   }
 
   def enter(a: Agent, dist: Double): Position = {
-    // Just find our spot.
+    Agent.sim.active_queues += this
 
+    // Just find our spot.
     val (ahead, behind) = agents.partition(c => c.at.dist > dist)
     agents = ahead ++ List(a) ++ behind
 
@@ -62,6 +68,9 @@ class Queue(t: Traversable) {
 
   def exit(a: Agent) = {
     agents = agents.filter(c => c != a)
+    if (agents.isEmpty) {
+      Agent.sim.active_queues -= this
+    }
   }
 
   def move(a: Agent, new_dist: Double): Position = {

@@ -1,0 +1,21 @@
+# TODO get averages of these numbers
+# TODO calculate iteration time automatically
+
+# raw
+
+  "pre step": 0.002s 
+  "queue start": 0.025s
+    actual work: 0.007586668999999705
+  "agent step": 0.032s
+    actual work: 0.021403664000000527
+  "queue stop": 0.037s
+    actual work: 0.01241918299999996
+  "vert check": 0.003s
+    actual work: 0.0
+  "react": 0.035s
+    actual work: 0.025238798999999628
+"whole step": 0.136s
+
+conclusion: iterating through the active queues takes 70% of that time
+            iterating through agents takes about 30% of that time.
+  (need better averages, but maintaining active queues MAY have improved things)

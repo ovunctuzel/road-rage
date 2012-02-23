@@ -31,7 +31,9 @@ class Intersection(val v: Vertex) {
 
   // Check for collisions by detecting agents abnormal changes in ordering.
   def end_step(): Unit = {
+    Agent.i_check_timer.start
     if (turns.size < 2) {
+      Agent.i_check_timer.stop
       return
     }
 
@@ -46,6 +48,7 @@ class Intersection(val v: Vertex) {
 
     // TODO something more clever with equivalence sets, even though this isn't
     // a transitive relation?
+    Agent.i_check_timer.stop
   }
 
   def enter(a: Agent, t: Turn) = {
