@@ -76,6 +76,7 @@ abstract class Policy(intersection: Intersection) {
   def handle_exit(a: Agent, turn: Turn)
   def yield_lock(a: Agent)
   def unregister(a: Agent)
+  def current_greens(): Set[Turn] = Set()
 
   // TODO common stuff for figuring out first-req
 
@@ -453,6 +454,11 @@ class SignalCyclePolicy(intersection: Intersection) extends Policy(intersection)
       }
       case None => // nobody was waiting or we aren't late. cool.
     }
+  }
+
+  override def current_greens = start_waiting match {
+    case Some(t) => Set() // nobody can go right now
+    case _ => current_cycle
   }
 
   // We don't keep track of what any agent wants, so ignore all of these things

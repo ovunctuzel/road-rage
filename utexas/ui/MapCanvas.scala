@@ -186,6 +186,15 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
         case Some(e) => draw_intersection(g2d, e)
         case None    => {}
       }
+
+      current_vert match {
+        case Some(v) => {
+          for (t <- sim.intersections(v).policy.current_greens) {
+            draw_turn(g2d, t, Color.GREEN)
+          }
+        }
+        case None =>
+      }
     }
 
     // When an agent is doing a turn, it's not any edge's agent queue. Because
