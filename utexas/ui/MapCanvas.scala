@@ -140,6 +140,8 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
   // pre-compute; we don't have more than max_lanes
   private val strokes = (0 until cfg.max_lanes).map(n => new BasicStroke(lane_width * n.toFloat))
 
+  def zoomed_in = zoom > cfg.zoom_threshold
+
   // TODO colors for everything belong in cfg.
 
   def render_canvas(g2d: Graphics2D) = {
@@ -165,7 +167,7 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
 
     // don't show tiny details when it doesn't matter (and when it's expensive
     // to render them all)
-    if (zoom > cfg.zoom_threshold) {
+    if (zoomed_in) {
       // then the second layer (lanes)
       // TODO this is ugly and maybe inefficient?
       //for (l <- fg_lines if l.line.intersects(window))
@@ -200,7 +202,13 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
     // When an agent is doing a turn, it's not any edge's agent queue. Because
     // of that and because they're seemingly so cheap to draw anyway, just
     // always...
-    sim.agents.foreach(a => draw_agent(g2d, a))
+    sim.agents.foreach(a => {
+      // Do a cheap intersection test before potentially expensive rendering
+      // work
+      if (agent_bubble(a).intersects(window)) {
+        draw_agent(g2d, a)
+      }
+    })
 
     // Finally, if the user is free-handing a region, show their work.
     g2d.setColor(Color.RED)
@@ -259,7 +267,31 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
       agent_colors(a) = GeomFactory.rand_color
     }
     g2d.setColor(agent_colors(a))
-    g2d.fill(agent_bubble(a))
+    if (zoomed_in) {
+      // TODO cfg. just tweak these by sight.
+      val vehicle_length = 0.5  // along the edge
+      val vehicle_width = 0.25  // perpendicular
+
+      val (line, front_dist) = a.at.on.current_pos(a.at.dist)
+      val front_pt = line.point_on(front_dist)
+
+      // the front center of the vehicle is where the location is. ascii
+      // diagrams are hard, but line up width-wise
+      val rect = new Rectangle2D.Double(
+        front_pt.x - vehicle_length, front_pt.y - (vehicle_width / 2),
+        vehicle_length, vehicle_width
+      )
+      // play rotation tricks
+      // TODO val g2d_rot = g2d.create
+      // rotate about the front center point, aka, keep that point fixed/pivot
+      g2d.rotate(-line.angle, front_pt.x, front_pt.y)
+      g2d.fill(rect)
+      // TODO undoing it this way is dangerous... try to make a new g2d context
+      // and dispose of it
+      g2d.rotate(line.angle, front_pt.x, front_pt.y)
+    } else {
+      g2d.fill(agent_bubble(a))
+    }
   }
 
   def color_road(r: Road): Color = {
@@ -372,7 +404,11 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
   }
 
   def mouseover_agent(x: Double, y: Double): Option[Agent] = {
-    val cursor_bubble = new Rectangle2D.Double(x - eps, y - eps, eps * 2, eps * 2)
+    // this is kinda wrong cause we rotate when zoomed in, but no biggie, just
+    // make cursor bubble a bit bigger to account for it
+    val radius = eps * 2
+    val cursor_bubble = new Rectangle2D.Double(x - radius, y - radius, radius * 2, radius * 2)
+    // TODO ideally, center agent bubble where the vehicle center is drawn.
     return sim.agents.find(a => agent_bubble(a).intersects(cursor_bubble))
   }
 
@@ -397,7 +433,7 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
         // Don't do the work of looking until we have to.
         lazy val cur_a = mouseover_agent(x, y)
         lazy val cur_w = if (show_wards) mouseover_ward(x, y) else None
-        lazy val cur_e = if (zoom > cfg.zoom_threshold) mouseover_edge(x, y) else None
+        lazy val cur_e = if (zoomed_in) mouseover_edge(x, y) else None
         lazy val cur_v = mouseover_vert(x, y)
 
         // TODO but do we lazily match? i don't think so.

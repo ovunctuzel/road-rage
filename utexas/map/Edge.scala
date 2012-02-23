@@ -164,6 +164,15 @@ class Line(var x1: Double, var y1: Double, var x2: Double, var y2: Double) {
       return Some(new Coordinate(num_x / denom, num_y / denom))
     }
   }
+
+  // where are we on this line? even handles negative distances
+  def point_on(dist_along: Double): Coordinate = {
+    val percent = dist_along / length
+    return new Coordinate(
+      x1 + (width * percent),
+      y1 + (height * percent)
+    )
+  }
 }
 
 object Direction extends Enumeration {

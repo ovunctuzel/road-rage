@@ -3,7 +3,6 @@ package utexas.ui
 import swing._  // TODO figure out exactly what
 import swing.event._
 import java.awt.{Color, RenderingHints, Polygon}
-import java.awt.geom.AffineTransform
 import java.awt.geom.Rectangle2D
 
 import utexas.Util
@@ -213,10 +212,8 @@ abstract class ScrollingCanvas extends Component {
     }
 
     // Perform the transformations to mimic scrolling and zooming
-    val transform = new AffineTransform()
-    transform.translate(-x_off, -y_off)
-    transform.scale(zoom, zoom)
-    g2d.transform(transform)
+    g2d.translate(-x_off, -y_off)
+    g2d.scale(zoom, zoom)
 
     // TODO antialias cfg
     // ew, clunky old java crap.

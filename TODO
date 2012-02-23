@@ -8,8 +8,6 @@ TRUE PRIORITIES
   - gridlock
   - optimize
 3) UI fixes
-  - rectangular cars that change size
-    - position represents FRONT of car
   - edge lines BETWEEN lanes
     - agents are a bit close to edge.. or vice versa?
     - offset is going the wrong way... or, half the time.
