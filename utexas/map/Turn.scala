@@ -62,6 +62,11 @@ class Turn(val id: Int, val from: Edge, val turn_type: TurnType.TurnType, val to
         // TODOthis doesnt handle multiple lanes, its too conservative
         val perps = vert.perp_roads(from.road)
         set ++= vert.turns.filter(t => t.turn_type == TurnType.CROSS && perps(t.from.road))
+        // also the other side's crossings
+        // TODO cleaner way of finding this opposite lane... this is a mess again
+        for (opposite <- vert.turns_to(to).filter(t => t.turn_type == TurnType.RIGHT)) {
+          set ++= opposite.from.other_lanes.flatMap(e => e.crosses)
+        }
       }
 
       case TurnType.CROSS_MERGE => {

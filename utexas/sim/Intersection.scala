@@ -330,19 +330,24 @@ class SignalCyclePolicy(intersection: Intersection) extends Policy(intersection)
   def time_left = duration - (cur_time % duration)
 
   // Least number of cycles can be modeled as graph coloring, but we're just
-  // going to do a simple greedy approach.
+  // going to do a simple greedy approach, with the heuristic of trying to
+  // include lots of turns from the same edge.
   def find_cycles(): List[Set[Turn]] = {
     // we need deterministic sets
     var turns_left: SortedSet[Turn] = new TreeSet[Turn] ++ intersection.v.turns
     val cycle_list = new ListBuffer[Set[Turn]]()
     while (!turns_left.isEmpty) {
       val this_group = new MutableSet[Turn]()
-      this_group += turns_left.head
+      val canonical = turns_left.head
+      this_group += canonical
       turns_left = turns_left.tail
     
       // conflict relation is symmetric, but not transitive... so do quadratic
       // conflict checking
-      for (candidate <- turns_left) {
+      // start with other turns from the same lane as the canonical. really
+      // helps throughput.
+      //for (candidate <- turns_left) {
+      for (candidate <- canonical.from.next_turns ++ turns_left if !this_group(candidate)) {
         if (!this_group.find(t => t.conflicts(candidate)).isDefined) {
           // found one!
           this_group += candidate
