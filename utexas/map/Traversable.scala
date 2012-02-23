@@ -35,7 +35,7 @@ abstract class Traversable() {
       }
     }
 
-    throw new Exception("Location is past the end of an edge! " + dist + " > " + length + "; at (dist left) = " + at + "; there are " + lines.size + "lines")
+    throw new Exception("Location is past the end of an edge! " + dist + " > " + length + "; at (dist left) = " + at + "; there are " + lines.size + "lines. the whole structure is " + this)
   }
 
   def start_pt = lines.head.start

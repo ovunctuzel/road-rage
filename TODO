@@ -15,12 +15,13 @@ TRUE PRIORITIES
     - offset is going the wrong way... or, half the time.
   - highlight agent with the lease for an intersection
   - show agents who are currently GOING
-  - ui 'current intersection' for debug
+  - why're we eating CPU when idling?
 4) feature: traffic signals
   - is the concept of 'yielding' obselete, given the small edge thing was fixed?
   - share worst-case math.
   - consider letting intersections react on their own, rather than just from agents
     simplifies reasoning about traffic signals, but also takes away the sorta clever delay-avoider.
+  - show currently allowed turns.
   - so few agents are moving at a time... the traffic lights are _really_ dumb.
     - make sure the turns grouped together are all from the same source; that REALLY improves things.
 

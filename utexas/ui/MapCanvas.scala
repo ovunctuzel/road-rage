@@ -59,6 +59,7 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
   private var current_agent: Option[Agent] = None
   private var polygon_roads1: Set[Road] = Set()
   private var polygon_roads2: Set[Road] = Set()
+  private var current_vert: Option[Vertex] = None
 
   // this is like static config, except it's a function of the map and rng seed
   private val special_ward_color = Color.BLACK
@@ -244,11 +245,6 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
     //sim.queues(l.edge).agents.foreach(a => draw_agent(g2d, a))
   }
 
-  def agent_bubble(a: Agent): Ellipse2D = {
-    val loc = a.at.location
-    return new Ellipse2D.Double(loc.x - eps, loc.y - eps, eps * 2, eps * 2)
-  }
-
   def draw_agent(g2d: Graphics2D, a: Agent) = {
     if (!agent_colors.contains(a)) {
       agent_colors(a) = GeomFactory.rand_color
@@ -332,6 +328,12 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
 
   // the radius of a small epsilon circle for the cursor
   def eps = 5.0 / zoom
+  // TODO but we want to... cache this and not recall it in each mouseover_
+  // matcher.
+  //def cursor_bubble = new Rectangle2D.Double(x - eps, y - eps, eps * 2, eps * 2)
+  def bubble(pt: Coordinate) = new Ellipse2D.Double(pt.x - eps, pt.y - eps, eps * 2, eps * 2)
+  def agent_bubble(a: Agent) = bubble(a.at.location)
+  def vert_bubble(v: Vertex) = bubble(v.location)
 
   def mouseover_edge(x: Double, y: Double): Option[Edge] = {
     val window = viewing_window
@@ -365,43 +367,49 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
     return sim.agents.find(a => agent_bubble(a).intersects(cursor_bubble))
   }
 
+  def mouseover_vert(x: Double, y: Double): Option[Vertex] = {
+    val cursor_bubble = new Rectangle2D.Double(x - eps, y - eps, eps * 2, eps * 2)
+    return sim.vertices.find(v => vert_bubble(v).intersects(cursor_bubble))
+  }
+
   def handle_ev(ev: UI_Event) = {
     ev match {
       case EV_Mouse_Moved(x, y) => {
-        // always reset this
+        // always reset everything
+        current_edge = None
         current_turn = -1
+        current_ward = None
+        current_agent = None
+        current_vert = None
 
         // Are we mouse-overing something? ("mousing over")
-        current_agent = mouseover_agent(x, y)
+        // Order: agents, wards, edges, vertices
 
-        current_agent match {
-          case Some(a) => {
-            status.location.text = "" + a
-            current_ward = None
-            current_edge = None
+        // Don't do the work of looking until we have to.
+        lazy val cur_a = mouseover_agent(x, y)
+        lazy val cur_w = if (show_wards) mouseover_ward(x, y) else None
+        lazy val cur_e = if (zoom > cfg.zoom_threshold) mouseover_edge(x, y) else None
+        lazy val cur_v = mouseover_vert(x, y)
+
+        // TODO but do we lazily match? i don't think so.
+        status.location.text = (cur_a, cur_w, cur_e, cur_v) match {
+          case (Some(a), _, _, _) => {
+            current_agent = cur_a
+            "" + a
           }
-          case None => {
-            if (show_wards) {
-              current_ward = mouseover_ward(x, y)
-              // TODO fall back to looking for edges if None?
-              status.location.text = current_ward match {
-                case Some(w) => "" + w
-                case None    => "Nowhere"
-              }
-              current_edge = None
-              current_agent = None
-            } else if (zoom > cfg.zoom_threshold) {
-              current_edge = mouseover_edge(x, y)
-              status.location.text = current_edge match {
-                case Some(e) => "" + e
-                case None    => "Nowhere"
-              }
-              current_ward = None
-              current_agent = None
-            } else {
-              status.location.text = "Nowhere"
-            }
+          case (None, Some(w), _, _) => {
+            current_ward = cur_w
+            "" + w
           }
+          case (None, None, Some(e), _) => {
+            current_edge = cur_e
+            "" + e
+          }
+          case (None, None, None, Some(v)) => {
+            current_vert = cur_v
+            "" + v
+          }
+          case _ => "Nowhere"
         }
 
         // TODO only on changes?
