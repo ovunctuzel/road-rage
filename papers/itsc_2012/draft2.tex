@@ -305,11 +305,9 @@ The map also has a geometric interpretation, used for visualization and physical
 distances. A road has a sequence of points giving the line segments of the
 center yellow line. These points could also be interpreted as control points for
 a curved road, but AORTA uses straight lines as an approximation. Lanes are
-physically placed a lane's width away from and parallel to the center line. (In
-the case of one-ways, there is no center line; instead, the lanes simply cluster
-around the invisible center lane, all pointing the same way.) Turns are modeled
-with a single straight line connecting the end of one edge to the start of
-another (so right turns often have $0$ length). 
+parallel to the center line, some width apart from one another.  Turns are
+modeled with a single straight line connecting the end of one edge to the start
+of another (so right turns often have $0$ length). 
 
 \subsection{Map Construction Passes}
 

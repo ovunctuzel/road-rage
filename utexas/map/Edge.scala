@@ -173,6 +173,17 @@ class Line(var x1: Double, var y1: Double, var x2: Double, var y2: Double) {
       y1 + (height * percent)
     )
   }
+
+  def shift_line(off: Double): Line = {
+    // just move in the direction of the road (as given by the ordering of the
+    // points) plus 90 degrees clockwise
+    // TODO why does the angle() that respects inversion fail?
+    val theta = broken_angle + (math.Pi / 2)
+    val dx = off * cfg.lane_width * math.cos(theta)
+    val dy = off * cfg.lane_width * math.sin(theta)
+
+    return new Line(x1 + dx, y1 + dy, x2 + dx, y2 + dy)
+  }
 }
 
 object Direction extends Enumeration {

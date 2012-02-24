@@ -117,7 +117,8 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
   private def build_fg_lines(): List[EdgeLine] = {
     val list = new ListBuffer[EdgeLine]()
     for (e <- sim.edges; l <- e.lines) {
-      val line = new EdgeLine(l, e)
+      // draw the lines on the borders of lanes, not in the middle
+      val line = new EdgeLine(l.shift_line(0.5), e)
       edge2lines.addBinding(e, line)
       list += line
     }
@@ -135,14 +136,14 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
   private val center_stroke     = new BasicStroke(0.1f)
   private val route_lane_stroke = new BasicStroke(0.45f)
   private val lane_stroke       = new BasicStroke(0.05f)
-  private val lane_width = 0.6f
   // TODO make this look cooler.
   private val drawing_stroke = new BasicStroke(
     5.0f, BasicStroke.CAP_BUTT, BasicStroke.JOIN_MITER, 1.0f, Array(1.0f), 0.0f
   )
 
   // pre-compute; we don't have more than max_lanes
-  private val strokes = (0 until cfg.max_lanes).map(n => new BasicStroke(lane_width * n.toFloat))
+  private val lane_line_width = 0.6f  // TODO cfg
+  private val strokes = (0 until cfg.max_lanes).map(n => new BasicStroke(lane_line_width * n.toFloat))
 
   def zoomed_in = zoom > cfg.zoom_threshold
 
@@ -183,7 +184,7 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
       // and the third layer (dashed center lines)
       g2d.setColor(Color.YELLOW)
       g2d.setStroke(center_stroke)
-      for (l <- roads_seen if !l.road.is_oneway) {
+      for (l <- roads_seen) {
         g2d.draw(l.line)
       }
 
@@ -247,7 +248,7 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
   def draw_road(g2d: Graphics2D, l: RoadLine) = {
     g2d.setColor(color_road(l.road))
     g2d.setStroke(strokes(l.road.num_lanes))
-    g2d.draw(l.line)
+    g2d.draw(l.bg_line)
   }
 
   def draw_edge(g2d: Graphics2D, l: EdgeLine) = {
@@ -763,11 +764,19 @@ sealed trait ScreenLine {
   val line: Line2D.Double
 }
 final case class RoadLine(a: Coordinate, b: Coordinate, road: Road) extends ScreenLine {
+  // center
   val line = new Line2D.Double(a.x, a.y, b.x, b.y)
+  // special for one-ways
+  val bg_line = if (road.is_oneway) {
+                      val l = new Line(a, b).shift_line(road.num_lanes / 2.0)
+                      new Line2D.Double(l.x1, l.y1, l.x2, l.y2)
+                    } else {
+                      line
+                    }
 }
 final case class EdgeLine(l: Line, edge: Edge) extends ScreenLine {
   val line = new Line2D.Double(l.x1, l.y1, l.x2, l.y2)
-  val arrow = GeomFactory.draw_arrow(l, 1)  // TODO 3? THREE?!
+  val arrow = GeomFactory.draw_arrow(l, 1)  // TODO cfg
 }
 // and, separately...
 class WardBubble(val ward: Ward) {

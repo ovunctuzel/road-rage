@@ -8,16 +8,9 @@ TRUE PRIORITIES
   - force them to re-route to avoid this? prediction is hard.
   - this problem could also theoretically occur, once we avoid blocking turns, when
     two agents block one another. how to deal with there?
-
-
 2) bugfix <-> test at scale iteration
   - optimize
-3) UI fixes
-  - edge lines BETWEEN lanes
-    - agents are a bit close to edge.. or vice versa?
-    - offset is going the wrong way... or, half the time.
-  - show agents who are currently GOING
-4) feature: traffic signals
+3) feature: traffic signals
   - is the concept of 'yielding' obselete, given the small edge thing was fixed?
   - share worst-case math.
   - consider letting intersections react on their own, rather than just from agents
@@ -106,6 +99,9 @@ POSSIBLY SIMPLE
 
 ### UI ###
 
+- agents in middle of road makes ends of lines once again look sucky.
+- show agents who are currently GOING
+  - ui could show policy's current owner or something
 - show routes better
 - config
 - menu items doing stuff
@@ -116,9 +112,7 @@ POSSIBLY SIMPLE
 - way better pruning of what to (re-draw) using quadtrees
   - but is it even needed?
 - dont show arrows when line segs are really clustered
-- ui could show policy's current owner or something
 - draw the orig corner of freehanded polygons differently or something
-- whoa, timer isnt thread safe? (mouse over an agent without a position!)
 
 ### Agents ###
 

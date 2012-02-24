@@ -89,7 +89,7 @@ object cfg {
 
   // all distances should be in meters
   val doubles = List(
-    ("lane_width",     0.05, "Width of a lane", 0.01, 0.1),
+    ("lane_width",      0.5, "Width of a lane in meters", 0.01, 0.1),
     ("zoom_threshold",  5.0, "How close to zoom in before drawing details",    1.0, 15.0),
     ("epsilon",     0.00001, "What do we take as zero due to FP imprecision?", 0.0,  1.0),
     ("dt_s",            0.1, "The only dt in seconds an agent can experience", 0.1,  3.0),

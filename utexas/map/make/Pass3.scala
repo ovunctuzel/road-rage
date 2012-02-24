@@ -11,7 +11,7 @@ import scala.collection.mutable.MutableList
 import utexas.map.{Road, Edge, Vertex, Turn, TurnType, Line, Coordinate, Ward,
                    Traversable}
 
-import utexas.Util
+import utexas.{Util, cfg}
 
 class Pass3(old_graph: PreGraph2) {
   Util.log("Multiplying and directing " + old_graph.edges.length + " edges")
@@ -33,32 +33,16 @@ class Pass3(old_graph: PreGraph2) {
       roads_per_vert.addBinding(r.v2, r)
 
       // pre-compute lines constituting the edges
-      if (r.is_oneway) {
-        val num = r.oneway_lanes.size
-        // These always make the oneway lanes center around the road's center
-        val offsets = if (num % 2 == 0)
-                        // even
-                        (-0.5 - ((num / 2) - 1)) until (0.5 + (num / 2)) by 1.0
-                      else
-                        // odd
-                        -(num / 2).toDouble until ((num / 2) + 1).toDouble by 1.0
-
-        // reverse because the most positive shift should be the rightmost lane
-        for ((e, offset) <- r.oneway_lanes.zip(offsets.reverse)) {
-          e.set_lines(for ((from, to) <- r.pairs_of_points)
-                      yield shift_line(offset, from, to))
-        }
-      } else {
-        for (e <- r.pos_lanes) {
-          e.set_lines(for ((from, to) <- r.pairs_of_points)
-                      yield shift_line(e.lane_offset, from, to))
-        }
-        for (e <- r.neg_lanes) {
-          val ls = for ((from, to) <- r.pairs_of_points)
-                   yield shift_line(e.lane_offset, to, from)
-          // TODO inefficient just because i wanted a two-liner?
-          e.set_lines(ls.reverse)
-        }
+      // the -0.5 lets there be nice lane lines between lanes
+      for (e <- r.pos_lanes) {
+        e.set_lines(for ((from, to) <- r.pairs_of_points)
+                    yield new Line(from, to).shift_line(e.lane_offset - 0.5))
+      }
+      for (e <- r.neg_lanes) {
+        val ls = for ((from, to) <- r.pairs_of_points)
+                 yield new Line(to, from).shift_line(e.lane_offset - 0.5)
+        // TODO inefficient just because i wanted a two-liner?
+        e.set_lines(ls.reverse)
       }
 
       // force line segments to meet up on the inside
@@ -319,24 +303,6 @@ class Pass3(old_graph: PreGraph2) {
     {
       Util.log("Warning: nothing leads to " + dst)
     }
-  }
-
-  private def shift_line(off: Double, pt1: Coordinate, pt2: Coordinate): Line = {
-    // This used to be much more complex, generating two lines and seeing which
-    // one was 'less' wrong from a point we projected. Apparently it's MUCH
-    // simpler than that.
-
-    val width = 0.5   // TODO maplane-width cfg
-
-    // just move in the direction of the road (as given by the ordering of the
-    // points) plus 90 degrees clockwise
-    val road_line = new Line(pt1.x, pt1.y, pt2.x, pt2.y)
-    // TODO why does the angle() that respects inversion fail?
-    val theta = road_line.broken_angle + (math.Pi / 2)
-    val dx = off * width * math.cos(theta)
-    val dy = off * width * math.sin(theta)
-
-    return new Line(pt1.x + dx, pt1.y + dy, pt2.x + dx, pt2.y + dy)
   }
 
   private def adjust_segments(e: Edge) = {
