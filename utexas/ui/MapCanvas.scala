@@ -532,7 +532,7 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
         route_members = Set[Edge]()
         repaint
       }
-      case EV_Action("teleport") => {
+      case EV_Action("teleport-edge") => {
         prompt_int("What edge ID do you seek?") match {
           case Some(id) => {
             try {
@@ -546,6 +546,28 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
               repaint
             } catch {
               case _ => Util.log("Bad edge ID " + id)
+            }
+          }
+          case _ =>
+        }
+        grab_focus
+      }
+      case EV_Action("teleport-agent") => {
+        prompt_int("What agent ID do you seek?") match {
+          case Some(id) => {
+            try {
+              sim.agents.find(a => a.id == id.toInt) match {
+                case Some(a) => {
+                  Util.log("Here's " + a)
+                  val pt = a.at.location
+                  x_off = pt.x * zoom
+                  y_off = pt.y * zoom
+                  repaint
+                }
+                case _ => Util.log("Didn't find " + id)
+              }
+            } catch {
+              case _ => Util.log("Bad agent ID " + id)
             }
           }
           case _ =>
@@ -581,21 +603,48 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
         sim.speed_up
         status.time_speed.text = "%.1fx".format(sim.time_speed)
       }
-      case EV_Key_Press(Key.A) if current_agent.isDefined => {
-        current_agent.get.dump_info
-        sim.debug_agent = current_agent
+      // general debug based on whatever you're hovering over
+      case EV_Key_Press(Key.D) => {
+        (current_edge, current_agent, current_vert) match {
+          case (Some(e), _, _) => {
+            Util.log(e.road + " is a " + e.road.road_type + " of length " + e.length + " meters")
+          }
+          case (None, Some(a), _) => {
+            a.dump_info
+            sim.debug_agent = current_agent
+          }
+          case (None, None, Some(v)) => {
+            val i = sim.intersections(v)
+
+            Util.log("Current turns allowed:")
+            Util.log_push
+            i.policy.current_greens.foreach(g => Util.log("" + g))
+            Util.log_pop
+
+            Util.log("Current turns active:")
+            Util.log_push
+            i.turns.foreach(pair => Util.log(pair._2 + " doing " + pair._1))
+            Util.log_pop
+          }
+          // This is what pressing 'd' when highlighting nothing means
+          case _ => {
+            sim.debug_agent = None
+          }
+        }
       }
-      // TODO for debug of stalled agents
-      case EV_Key_Press(Key.U) => {
-        for (a <- sim.agents) {
-          Util.log("we have " + a + " at " + a.at + " zooming at " + a.speed)
-          Util.log("  but " + a.at.on.length + " is len")
-        } 
-      } 
-      case EV_Key_Press(Key.D) if current_edge.isDefined => {
-        val r = current_edge.get.road
-        Util.log(r + " is a " + r.road_type + " of length " +
-                 current_edge.get.length + " meters")
+      case EV_Key_Press(Key.X) if current_agent.isDefined => {
+        if (running) {
+          Util.log("Cannot nuke agents while simulation is running!")
+        } else {
+          val a = current_agent.get
+          current_agent = None
+          Util.log("WARNING: Nuking " + a)
+          // simulate being done
+          a.exit(a.at.on)
+          a.upcoming_intersections.foreach(i => i.unregister(a))
+          a.upcoming_intersections = Set()
+          sim.agents -= a
+        }
       }
       case EV_Select_Polygon() => {
         // Let's find all vertices inside the polygon.

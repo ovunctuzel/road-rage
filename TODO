@@ -3,9 +3,14 @@
 TRUE PRIORITIES
 1) gridlock due to agents blocking intersections, right?
    - don't start a turn if we can't finish it.
+    - find the agent we're following. wait until they're at least follow_dist past the end of our turn?
+  - fancy detection by finding a graph of "who is waiting on who" and seeing if it has a cycle
+  - force them to re-route to avoid this? prediction is hard.
+  - this problem could also theoretically occur, once we avoid blocking turns, when
+    two agents block one another. how to deal with there?
+
+
 2) bugfix <-> test at scale iteration
-  - how many agents moved during some tick?
-  - gridlock
   - optimize
 3) UI fixes
   - edge lines BETWEEN lanes
@@ -32,20 +37,17 @@ BUGS
       (maybe dont add agents to queue until they're "ready")
       (is it even necessary?)
 
-  - entering intersections at speed=0, causing deadlock.
-  - btr, 1000 agents, seed 1328487489724: vert collisions, asking to choose turn now?
-  - if we seriously pack people together, we get a traffic jam! try on synthetic.
-  - is an agent overshooting its route sometimes? (change assert to warning)
-  - collisions in intersection
-  - 'location' in UI gets a bit stuck on agents
-  - some A* routes are.. a bit wacky?
-  - mouseover agent in UI before it has its location or something.. threadsafety fail?
-
 PROFILING
   - we can do much better with ready agents... max capacity of edges, group them based on where they
     want to spawn, maybe by generator?
   - dont ask length of a list when not needed...
   - how fast can we generate lots of dumb agents?
+
+  1) is caching properties of linked list hurting us for iterating through big things?
+  2) maintain active queues/intersections in-place as we do steps
+    - run a test to make sure the two actually are the same.
+  3) ... increase dt, of course
+  4) optimize step/react -- those take the most work time
 
 BIGGER ISSUES
   - fix geom of edge lines

@@ -190,14 +190,14 @@ class RouteFollowingBehavior(a: Agent, route: Route) extends Behavior(a) {
 
       // This means we're holding a valuable resource...
       if (a.speed == 0.0 && conservative_accel == 0.0) {
-        /*a.at.on match {
-          case t: Turn if a2 == 0.0 => {
+        a.at.on match {
+          case t: Turn if a2 == 0.0 && a.how_long_idle >= 30.0 => {
             // And the cause is an agent in front of us. If this situation persists,
             // we could enter gridlock.
-            Util.log("Gridlock possible near " + a)
+            Util.log("Gridlock possible near %s, who is %.1f away from %s".format(a, follow_agent_how_far_away, follow_agent))
           }
           case _ =>
-        }*/
+        }
 
         // let them ignore us if we're not owner
         a.upcoming_intersections.foreach(p => p.yield_lock(a))
