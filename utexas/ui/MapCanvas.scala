@@ -34,6 +34,17 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
         Thread.sleep(10)
         if (running) {
           sim.step((System.currentTimeMillis - start).toDouble / 1000.0)
+          camera_agent match {
+            case Some(a) => {
+              if (sim.agents.contains(a)) {
+                center_on(a.at.location)
+              } else {
+                Util.log(a + " is done; the camera won't stalk them anymore")
+                camera_agent = None
+              }
+            }
+            case None =>
+          }
           // always render
           handle_ev(EV_Action("step"))
         } else {
@@ -64,6 +75,7 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
   private var polygon_roads1: Set[Road] = Set()
   private var polygon_roads2: Set[Road] = Set()
   private var current_vert: Option[Vertex] = None
+  private var camera_agent: Option[Agent] = None
 
   // this is like static config, except it's a function of the map and rng seed
   private val special_ward_color = Color.BLACK
@@ -541,8 +553,7 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
               // TODO center on some part of the edge and zoom in, rather than just
               // vaguely moving that way
               Util.log("Here's " + e)
-              x_off = e.lines.head.x1 * zoom
-              y_off = e.lines.head.y1 * zoom
+              center_on(e.lines.head.start)
               chosen_edge2 = Some(e)  // just kind of use this to highlight it
               repaint
             } catch {
@@ -560,9 +571,7 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
               sim.agents.find(a => a.id == id.toInt) match {
                 case Some(a) => {
                   Util.log("Here's " + a)
-                  val pt = a.at.location
-                  x_off = pt.x * zoom
-                  y_off = pt.y * zoom
+                  center_on(a.at.location)
                   repaint
                 }
                 case _ => Util.log("Didn't find " + id)
@@ -633,6 +642,7 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
           }
         }
       }
+      case EV_Key_Press(Key.F) => { camera_agent = current_agent }
       case EV_Key_Press(Key.X) if current_agent.isDefined => {
         if (running) {
           Util.log("Cannot nuke agents while simulation is running!")

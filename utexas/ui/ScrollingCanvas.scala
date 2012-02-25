@@ -5,6 +5,8 @@ import swing.event._
 import java.awt.{Color, RenderingHints, Polygon}
 import java.awt.geom.Rectangle2D
 
+import utexas.map.Coordinate
+
 import utexas.Util
 
 // TODO we can't hear the tab key until we figure out how to
@@ -197,6 +199,11 @@ abstract class ScrollingCanvas extends Component {
     // the lower logical bounds are, of course, the origin
     x_off = math.max(0, x_off)
     y_off = math.max(0, y_off)
+  }
+
+  def center_on(pt: Coordinate) = {
+    x_off = (pt.x * zoom) - (size.width / 2)
+    y_off = (pt.y * zoom) - (size.height / 2)
   }
 
   // TODO swing SuperMixin has a window focus listener...

@@ -114,6 +114,7 @@ POSSIBLY SIMPLE
 
 ### UI ###
 
+- show 'fps' in viewer
 - agents in middle of road makes ends of lines once again look sucky.
 - show agents who are currently GOING
   - ui could show policy's current owner or something
