@@ -20,9 +20,6 @@ cleanup:
   - intersections could penalize agents who call ahead and are close, but have another
     intersection to pass first.
 
-  - drunk route with memory?
-
-
 TRUE PRIORITIES
 1) gridlock due to agents blocking intersections, right?
    - don't start a turn if we can't finish it.

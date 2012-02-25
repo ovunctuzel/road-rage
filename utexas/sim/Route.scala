@@ -1,5 +1,6 @@
 package utexas.sim
 
+import scala.collection.mutable.{HashMap => MutableMap}
 import java.util.concurrent.Callable
 import utexas.map.{Edge, Turn, Traversable}
 import utexas.{Util, cfg}
@@ -79,12 +80,27 @@ class DrunkenRoute() extends Route() {
 }
 
 // Wanders around slightly less aimlessly by picking directions
-class DirectionalRoute extends DrunkenRoute() { 
+class DirectionalDrunkRoute extends DrunkenRoute() { 
+  def heuristic(t: Turn) = t.to.to.location.dist_to(end_point.to.location)
+
   // pick the most direct path 75% of the time
   override def pick_turn(e: Edge): Turn = {
     return if (Util.percent(.75))
-             e.next_turns.sortBy(t => t.to.to.location.dist_to(end_point.to.location)).head
+             e.next_turns.sortBy(heuristic).head
            else
              super.pick_turn(e)
+  }
+}
+
+// Don't keep picking the same turn
+class DrunkenExplorerRoute extends DirectionalDrunkRoute() {
+  var past = new MutableMap[Edge, Int]()
+  override def pick_turn(e: Edge): Turn = {
+    // break ties by the heuristic of distance to goal
+    val choice = e.next_turns.sortBy(
+      t => (past.getOrElse(t.to, -1) + Util.rand_int(0, 5), heuristic(t))
+    ).head
+    past(choice.to) = past.getOrElse(choice.to, 0) + 1
+    return choice
   }
 }
