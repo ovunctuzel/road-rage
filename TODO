@@ -29,6 +29,7 @@ TRUE PRIORITIES
   - this problem could also theoretically occur, once we avoid blocking turns, when
     two agents block one another. how to deal with there?
 2) bugfix <-> test at scale iteration
+  - observed collision with reservation policy in btr 1330135736449 with 500
   - optimize
 3) feature: traffic signals
   - consider letting intersections react on their own, rather than just from agents
@@ -61,13 +62,6 @@ BIGGER ISSUES
   - fix geom of edge lines
   - make sure turns and conflicts are as good as possible
     - randomize num of lanes to test
-  - reservation policy
-    - we do deadlock!
-    - tell the intersection who we are behind, and make sure our turn will be satisfied after theirs
-      in the queue.
-    *** but then they will have to schedule their turn first...
-    - or no, there is no deadlock, since if x is behind y, theyre in the same lane, and those never
-      conflict? (just if somebody else shows up first that makes a conflict)
   * lane changing
   - is there a way to analytically say "an agent will own this chunk" at some time, and then solve for collisions?
   - nondeterministic.

@@ -12,9 +12,9 @@ import utexas.{Util, cfg}
 // Reason about collisions from conflicting simultaneous turns.
 class Intersection(val v: Vertex) {
   //val policy: Policy = new NeverGoPolicy(this)
-  val policy: Policy = new StopSignPolicy(this)
+  //val policy: Policy = new StopSignPolicy(this)
   //val policy: Policy = new SignalCyclePolicy(this)
-  //val policy: Policy = new ReservationPolicy(this)
+  val policy: Policy = new ReservationPolicy(this)
 
   override def toString = "Intersection(" + v + ")"
 
@@ -77,8 +77,6 @@ abstract class Policy(intersection: Intersection) {
   def yield_lock(a: Agent)
   def unregister(a: Agent)
   def current_greens(): Set[Turn] = Set()
-
-  // TODO common stuff for figuring out first-req
 
   // Since we lookahead over small edges, we maybe won't/can't stop on the edge
   // right before the turn. As long as we validly stopped for us, then fine.
@@ -218,33 +216,33 @@ class StopSignPolicy(intersection: Intersection) extends Policy(intersection) {
   }
 }
 
-/*// FIFO based on request, batched by non-conflicting turns.
-// Possible deadlock, since new agents can pour into the current_turns, and the
-// ones that have conflicts wait indefinitely.
+// FIFO based on request, batched by non-conflicting turns.  Possible liveness
+// violation, since new agents can pour into the current_turns, and the ones
+// that have conflicts wait indefinitely.
 // If we found the optimal number of batches, that would be an instance of graph
 // coloring.
 class ReservationPolicy(intersection: Intersection) extends Policy(intersection) {
   var current_batch = new TurnBatch()
   var reservations = List[TurnBatch]()
+  // used to determine if it's an agent's first requent or not
+  val current_agents = new MutableSet[Agent]()
 
   def can_go(a: Agent, turn: Turn, far_away: Double): Boolean = {
-    // TODO rethink this idea so that we don't have to put the burden on agents
-    // to figure this out.
-    val first_req = false
+    val first_req = !current_agents.contains(a)
 
     if (first_req) {
+      current_agents += a
       if (current_batch.add_turn(turn)) {
         return true
       } else {
         // A conflicting turn. Add it to the reservations.
 
         // Is there an existing batch of reservations that doesn't conflict?
-        val batch = reservations.find(r => r.add_turn(turn))
-        if (!batch.isDefined) {
+        if (!reservations.find(r => r.add_turn(turn)).isDefined) {
           // new batch!
-          val b = new TurnBatch()
-          b.add_turn(turn)
-          reservations :+= b
+          val batch = new TurnBatch()
+          batch.add_turn(turn)
+          reservations :+= batch
         }
 
         return false
@@ -259,6 +257,7 @@ class ReservationPolicy(intersection: Intersection) extends Policy(intersection)
   def handle_exit(a: Agent, turn: Turn) = {
     assert(current_batch.has_turn(turn))
     current_batch.remove_turn(turn)
+    current_agents -= a
     if (current_batch.all_done) {
       // Time for the next reservation! If there is none, then keep
       // current_batch because it's empty anyway.
@@ -268,6 +267,8 @@ class ReservationPolicy(intersection: Intersection) extends Policy(intersection)
       }
     }
   }
+
+  override def current_greens = current_batch.turns.keys.toSet
 
   def yield_lock(a: Agent) = {}
   def unregister(a: Agent) = {}
@@ -303,8 +304,8 @@ class TurnBatch() {
     }
   }
 
-  def all_done = turns.size == 0
-}*/
+  def all_done = turns.isEmpty
+}
 
 // A cycle-based light.
 class SignalCyclePolicy(intersection: Intersection) extends Policy(intersection) {
