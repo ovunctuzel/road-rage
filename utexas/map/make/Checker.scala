@@ -9,6 +9,8 @@ object Checker {
 
     check_edges(g)
 
+    check_turn_conflicts(g)
+
     //check_turn_length(g)
 
     // TODO check connectivity more stringently? really not needed; I trust
@@ -53,5 +55,18 @@ object Checker {
     }
 
     Util.log_pop
+  }
+
+  def check_turn_conflicts(g: Graph) = {
+    // conflicts should be symmetric
+    for (e <- g.edges) {
+      for (t1 <- e.next_turns) {
+        for (t2 <- t1.conflicts) {
+          if (!t2.conflicts(t1)) {
+            Util.log("Asymmetric turn conflict between " + t1 + " and " + t2)
+          }
+        }
+      }
+    }
   }
 }

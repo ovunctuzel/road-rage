@@ -1,5 +1,8 @@
 # TODO #
 
+--- ASYMMETRIC TURNS CAUSE COLLISION
+  (and cul-de-sacs arent looking great)
+
 cleanup:
   - is yielding for stop signs needed? if we have one lock but not the next, we should correctly
     inch forward now.
@@ -29,7 +32,6 @@ TRUE PRIORITIES
   - this problem could also theoretically occur, once we avoid blocking turns, when
     two agents block one another. how to deal with there?
 2) bugfix <-> test at scale iteration
-  - observed collision with reservation policy in btr 1330135736449 with 500
   - optimize
 3) feature: traffic signals
   - consider letting intersections react on their own, rather than just from agents

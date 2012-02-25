@@ -48,13 +48,14 @@ class Turn(val id: Int, val from: Edge, val turn_type: TurnType.TurnType, val to
     set ++= (to.prev_turns.toSet - this)
 
     turn_type match {
-      // All crossings and lefts from perpendicular roads
+      // All crossings from perpendicular roads
+      // and lefts, except from us
       // TODO anything in or out of the road to our right?
       case TurnType.CROSS => {
         val perps = vert.perp_roads(from.road)
         set ++= vert.turns.filter(
-          t => (t.turn_type == TurnType.CROSS || t.turn_type == TurnType.LEFT)
-               && perps(t.from.road)
+          t => (t.turn_type == TurnType.CROSS && perps(t.from.road))
+             || (t.turn_type == TurnType.LEFT && t.from != from)
         )
       }
 
