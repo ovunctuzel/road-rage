@@ -1,5 +1,28 @@
 # TODO #
 
+cleanup:
+  - is yielding for stop signs needed? if we have one lock but not the next, we should correctly
+    inch forward now.
+    - and nix 'upcoming intersections' and whatever else is useless. unregister.
+    - BUT one situation we do seem to need it:
+      somebody wont inch forward because he's on an edge, not a turn. 
+      - and if we generalize, people entering intersections really slowly... wtf.
+        (makes sense why. somebody in stable position creeps forward.)
+      - maybe keep the current logic (which accel_to_end()s negatives sometimes)
+        but make an exception when it's not the first lookahead step? so hackish.
+
+      - only creep forward from an edge when your move is from an edge to a DIFFERENT edge?
+      - and when speed is 0?
+    (1330135736449 on btr)
+    *** remove the TODOs
+
+  - share worst-case math.
+  - intersections could penalize agents who call ahead and are close, but have another
+    intersection to pass first.
+
+  - drunk route with memory?
+
+
 TRUE PRIORITIES
 1) gridlock due to agents blocking intersections, right?
    - don't start a turn if we can't finish it.
@@ -11,8 +34,6 @@ TRUE PRIORITIES
 2) bugfix <-> test at scale iteration
   - optimize
 3) feature: traffic signals
-  - is the concept of 'yielding' obselete, given the small edge thing was fixed?
-  - share worst-case math.
   - consider letting intersections react on their own, rather than just from agents
     simplifies reasoning about traffic signals, but also takes away the sorta clever delay-avoider.
 
@@ -26,9 +47,6 @@ BUGS
   - clean up stagnation properly
     - i predict a gridlock-like situation where we have the same problem of stopping in a vert
       due to follow_dist behind agents.
-    - implement clean trylock system rather than yielding
-      (maybe dont add agents to queue until they're "ready")
-      (is it even necessary?)
 
 PROFILING
   - we can do much better with ready agents... max capacity of edges, group them based on where they

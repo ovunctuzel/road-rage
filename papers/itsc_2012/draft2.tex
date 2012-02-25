@@ -290,16 +290,12 @@ format, which is also encoded with XML.
      between lanes.}
     {scale=0.5}
 
-\commentd{is this clear now? it's not a multigraph and there are no loops, since
-  edges are lanes and turns. I have to think a bit about intersections as
-  vertices strictly, though...}
-
-A map is represented as a directed graph with \emph{lanes} and \emph{turns} as edges and
-\emph{intersections} as vertices. A \emph{road} groups one or two groups of
-lanes together, each group being a different direction of travel. Intersections
-map the possible turns from incoming to outgoing lanes. Since both lanes and
-turns support traffic, they are grouped together as the \emph{traversables} or
-edges, meaning they have some total length.
+A map is represented as a directed graph with \emph{lanes} as edges and
+\emph{turns} as vertices. A \emph{road} groups one or two groups of lanes
+together, each group being a different direction of travel.
+\emph{Intersections} map the possible turns from incoming to outgoing lanes.
+Since both lanes and turns support traffic, they are grouped together as the
+\emph{traversables}, meaning they have some geometric total length.
 
 The map also has a geometric interpretation, used for visualization and physical
 distances. A road has a sequence of points giving the line segments of the
