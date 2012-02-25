@@ -1,8 +1,5 @@
 # TODO #
 
---- ASYMMETRIC TURNS CAUSE COLLISION
-  (and cul-de-sacs arent looking great)
-
 cleanup:
   - is yielding for stop signs needed? if we have one lock but not the next, we should correctly
     inch forward now.
@@ -73,6 +70,9 @@ BIGGER ISSUES
   - contraction hierarchies for FAST pathing
 
 POSSIBLY SIMPLE
+  - slow down for turns (a speed limit)
+  - follow dist variable based on speed, so when a light goes green,
+    everyone starts simultaneously
   - tweak cfg now that we have meters
   - script to scrape osm
   - switch ant to sbt? https://github.com/harrah/xsbt/wiki/Examples
