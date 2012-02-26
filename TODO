@@ -1,5 +1,8 @@
 # TODO #
 
+- stats
+  a general way to average timing info, agent completion time, idling time...
+
 cleanup:
   - is yielding for stop signs needed? if we have one lock but not the next, we should correctly
     inch forward now.
@@ -16,18 +19,17 @@ cleanup:
     (1330135736449 on btr)
     *** remove the TODOs
 
-  - share worst-case math.
+  *** missing a conflict between lefts from perps.
+  - make reservation policy handle unregistering agents so we can nuke em
+
   - intersections could penalize agents who call ahead and are close, but have another
     intersection to pass first.
 
 TRUE PRIORITIES
-1) gridlock due to agents blocking intersections, right?
-   - don't start a turn if we can't finish it.
-    - find the agent we're following. wait until they're at least follow_dist past the end of our turn?
-  - fancy detection by finding a graph of "who is waiting on who" and seeing if it has a cycle
-  - force them to re-route to avoid this? prediction is hard.
-  - this problem could also theoretically occur, once we avoid blocking turns, when
-    two agents block one another. how to deal with there?
+1) gridlock
+  - btr, lights, 3 stuck with seed 1330238430082
+  - when things are truly at capacity, nothing that _can_ be done.
+  - describe in paper.
 2) bugfix <-> test at scale iteration
   - optimize
 3) feature: traffic signals
@@ -51,11 +53,15 @@ PROFILING
   - dont ask length of a list when not needed...
   - how fast can we generate lots of dumb agents?
 
+  0) now that we maintain following dist from agents, could we test for collisions in queues
+     non-atomically?
+    - if we detect one, put it on the list to check at the end.
   1) is caching properties of linked list hurting us for iterating through big things?
   2) maintain active queues/intersections in-place as we do steps
     - run a test to make sure the two actually are the same.
   3) ... increase dt, of course
   4) optimize step/react -- those take the most work time
+    - if an agent is dependent on another and nothing changed with them, dont even bother?
 
 BIGGER ISSUES
   - fix geom of edge lines
@@ -67,7 +73,7 @@ BIGGER ISSUES
     - when running, agents enter at diff times
     - when paused, threads compute routes in diff orders, then two agents compete to spawn in same spot.
   - automated testing strategy.
-  - contraction hierarchies for FAST pathing
+  - contraction hierarchies for FAST pathing, or wards
 
 POSSIBLY SIMPLE
   - slow down for turns (a speed limit)
@@ -106,6 +112,7 @@ POSSIBLY SIMPLE
   - update osm (scripts!)
 - my wards!
   - guarantee some kind of connectedness within a ward
+  - except in vs out edges to the whole neighborhood?
 - play with min span trees for pathing
 
 ### UI ###

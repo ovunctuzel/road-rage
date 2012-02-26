@@ -79,7 +79,7 @@ object Viewer extends SimpleSwingApplication {
       }
 
       contents += new Menu("Simulate") {
-        contents += new MenuItem("Spawn Agent") // TODO
+        //contents += new MenuItem("Spawn Agent") // TODO
         contents += new MenuItem(Action("Spawn Army") {
           canvas.handle_ev(EV_Action("spawn-army"))
         })

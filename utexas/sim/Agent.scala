@@ -166,7 +166,6 @@ class Agent(val id: Int, val graph: Graph, val start: Edge, val start_dist: Doub
     Util.log("At: " + at)
     Util.log("Speed: " + speed)
     Util.log("Next step's acceleration: " + target_accel)
-    Util.log("At end of edge? " + at_end_of_edge)
     Util.log("How long idle? " + how_long_idle)
     behavior.dump_info
     Util.log_pop
@@ -174,13 +173,20 @@ class Agent(val id: Int, val graph: Graph, val start: Edge, val start_dist: Doub
 
   def cur_queue = Agent.sim.queues(at.on)
 
+  // math queries for lookahead and such
+
   // stopping time comes from v_f = v_0 + a*t
   // negative accel because we're slowing down.
   def stopping_distance(s: Double = speed) = Util.dist_at_constant_accel(-max_accel, s / max_accel, s)
+  def max_next_speed = speed + (max_accel * cfg.dt_s)
+  def max_next_dist = Util.dist_at_constant_accel(max_accel, cfg.dt_s, speed)
+  // TODO clamp v_f at 0, since they cant deaccelerate into negative speed.
+  def min_next_dist = Util.dist_at_constant_accel(-max_accel, cfg.dt_s, speed)
+  def max_lookahead_dist = max_next_dist + stopping_distance(max_next_speed)
 
-  // If at.dist == at.on.length, then we'd actually end up on the next
-  // traversable. So accept something a few meters back.
-  def at_end_of_edge = at.dist_left <= cfg.end_threshold
+  def accel_to_achieve(target_speed: Double) = Util.accel_to_achieve(speed, target_speed)
+  // This directly follows from the distance traveled at constant accel
+  def accel_to_cover(dist: Double) = 2 * (dist - (speed * cfg.dt_s)) / (cfg.dt_s * cfg.dt_s)
 }
 
 // the singleton just lets us get at the simulation to look up queues

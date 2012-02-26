@@ -28,10 +28,10 @@ abstract class Generator(sim: Simulation, desired_starts: List[Edge], val end_ca
 
   def add_specific_agent(start: Edge, end: Edge) = {
     // TODO how to decide?!
-    //val route = new StaticRoute()
+    val route = new StaticRoute()
     //val route = new DrunkenRoute()
     //val route = new DirectionalDrunkRoute()
-    var route = new DrunkenExplorerRoute()
+    //var route = new DrunkenExplorerRoute()
     val a = new Agent(sim.next_id, sim, start, sim.queues(start).safe_spawn_dist, route)
 
     // schedule whatever work the route needs done.

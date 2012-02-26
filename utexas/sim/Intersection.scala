@@ -13,8 +13,8 @@ import utexas.{Util, cfg}
 class Intersection(val v: Vertex) {
   //val policy: Policy = new NeverGoPolicy(this)
   //val policy: Policy = new StopSignPolicy(this)
-  //val policy: Policy = new SignalCyclePolicy(this)
-  val policy: Policy = new ReservationPolicy(this)
+  val policy: Policy = new SignalCyclePolicy(this)
+  //val policy: Policy = new ReservationPolicy(this)
 
   override def toString = "Intersection(" + v + ")"
 
@@ -77,6 +77,7 @@ abstract class Policy(intersection: Intersection) {
   def yield_lock(a: Agent)
   def unregister(a: Agent)
   def current_greens(): Set[Turn] = Set()
+  def dump_info() = {}
 
   // Since we lookahead over small edges, we maybe won't/can't stop on the edge
   // right before the turn. As long as we validly stopped for us, then fine.
@@ -271,7 +272,11 @@ class ReservationPolicy(intersection: Intersection) extends Policy(intersection)
   override def current_greens = current_batch.turns.keys.toSet
 
   def yield_lock(a: Agent) = {}
-  def unregister(a: Agent) = {}
+  def unregister(a: Agent) = {
+    if (current_agents.contains(a)) {
+      // TODO what turn do they want to do? decrement that counter...
+    }
+  }
 }
 
 // Count how many agents are doing each type of turn, and add turns that don't
@@ -373,6 +378,22 @@ class SignalCyclePolicy(intersection: Intersection) extends Policy(intersection)
         start_waiting = Some(Agent.sim.tick)
       }
     }
+
+    if (start_waiting.isDefined) {
+      // Filter our agents who haven't started their turn and are not moving;
+      // although we told them they could go in this cycle, we can cancel --
+      // there's no danger of them entering because it's too late, since
+      // they've stopped.
+      for (pair <- current_agents) {
+        val a = pair._1
+        val t = pair._2
+        if (a.at.on != t && a.speed == 0.0) {
+          //Util.log("canceling " + pair)
+          current_agents -= pair
+        }
+        finish_waiting
+      }
+    }
     // TODO we want delay to be close to 0 mod duration, so maybe poke at
     // durations every now and then to get back on perfect schedule
 
@@ -387,8 +408,7 @@ class SignalCyclePolicy(intersection: Intersection) extends Policy(intersection)
     state_change
 
     if (start_waiting.isDefined) {
-      // We're already waiting for old agents to finish. Don't go yet.
-      return false
+      return current_agents((a, turn))
     }
 
     // Otherwise, try to go.
@@ -396,12 +416,7 @@ class SignalCyclePolicy(intersection: Intersection) extends Policy(intersection)
     if (current_cycle(turn)) {
       // if our worst-case speeding-up distance still lets us back out and stop,
       // then fine, allow it
-
-      // TODO please, share this with behavior.
-      val worst_speed = a.speed + (a.max_accel * cfg.dt_s)
-      val worst_travel = Util.dist_at_constant_accel(a.max_accel, cfg.dt_s, a.speed)
-      val worst_stop_dist = a.stopping_distance(worst_speed)
-      val most_dist = worst_travel + worst_stop_dist
+      val most_dist = a.max_lookahead_dist
 
       // TODO what thresholds?
       if (most_dist <= far_away - cfg.end_threshold) {
@@ -448,17 +463,18 @@ class SignalCyclePolicy(intersection: Intersection) extends Policy(intersection)
   def handle_exit(a: Agent, turn: Turn) = {
     assert(current_agents((a, turn)))
     current_agents -= ((a, turn))
+    // Possibly done waiting.
+    finish_waiting
+  }
 
-    // Is this one of the slow ones AND we've been polled before?
+  def finish_waiting() = {
     start_waiting match {
-      case Some(time) => {
-        if (current_agents.isEmpty) {
-          // Last one! Finally we can hit the next cycle.
-          delay += Agent.sim.tick - time
-          start_waiting = None
-        }
+      case Some(time) if current_agents.isEmpty => {
+        // Last one! Finally we can hit the next cycle.
+        delay += Agent.sim.tick - time
+        start_waiting = None
       }
-      case None => // nobody was waiting or we aren't late. cool.
+      case _ =>
     }
   }
 
@@ -474,5 +490,11 @@ class SignalCyclePolicy(intersection: Intersection) extends Policy(intersection)
 
   def unregister(a: Agent) = {
     Util.log(a + " trying to unregister")
+  }
+
+  override def dump_info() = {
+    if (start_waiting.isDefined) {
+      Util.log("Waiting on: " + current_agents)
+    }
   }
 }

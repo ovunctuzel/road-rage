@@ -635,6 +635,9 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
             Util.log_push
             i.turns.foreach(pair => Util.log(pair._2 + " doing " + pair._1))
             Util.log_pop
+
+            // anything else
+            i.policy.dump_info
           }
           // This is what pressing 'd' when highlighting nothing means
           case _ => {
