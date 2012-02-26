@@ -27,7 +27,7 @@ cleanup:
 
 TRUE PRIORITIES
 1) gridlock
-  - btr, lights, 3 stuck with seed 1330238430082
+  - reservation policy stalemates.
   - when things are truly at capacity, nothing that _can_ be done.
   - describe in paper.
 2) bugfix <-> test at scale iteration
@@ -41,11 +41,6 @@ GENERATORS
   - color agents from diff generators a certain way
   - a way to save a "scenario"
   - test at scale, and profile again.
-
-BUGS
-  - clean up stagnation properly
-    - i predict a gridlock-like situation where we have the same problem of stopping in a vert
-      due to follow_dist behind agents.
 
 PROFILING
   - we can do much better with ready agents... max capacity of edges, group them based on where they
@@ -74,6 +69,9 @@ BIGGER ISSUES
     - when paused, threads compute routes in diff orders, then two agents compete to spawn in same spot.
   - automated testing strategy.
   - contraction hierarchies for FAST pathing, or wards
+  - group crazy intersections together and have S-turns.
+    - relatedly, have a notion of "I'm done with the turn, but I'm protruding into the intersection"
+      by requiring not only we're done with a turn but also some dist along the new edge.
 
 POSSIBLY SIMPLE
   - slow down for turns (a speed limit)

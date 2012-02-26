@@ -76,11 +76,11 @@ class Simulation(roads: List[Road], edges: List[Edge], vertices: List[Vertex],
   var time_speed = 1.0
 
   // TODO cfg
-  def slow_down() = {
-    time_speed = math.max(0.5, time_speed - 0.5)
+  def slow_down(amount: Double = 0.5) = {
+    time_speed = math.max(0.5, time_speed - amount)
   }
-  def speed_up() = {
-    time_speed += 0.5
+  def speed_up(amount: Double = 0.5) = {
+    time_speed += amount
   }
 
   // Returns true if at least one generator is active

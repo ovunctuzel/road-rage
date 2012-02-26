@@ -56,6 +56,12 @@ class RouteFollowingBehavior(a: Agent, route: Route) extends Behavior(a) {
 
   override def dump_info() = {
     Util.log("Route-following behavior")
+    // Just show a few steps ahead
+    Util.log_push
+    for (i <- 0 until 5) {
+      Util.log("Step: " + route.lookahead_step(i))
+    }
+    Util.log_pop
   }
 
   // Just a struct to encode all of this info
@@ -143,6 +149,7 @@ class RouteFollowingBehavior(a: Agent, route: Route) extends Behavior(a) {
 
     // the output.
     var stop_how_far_away: Option[Double] = None
+    var stop_at: Option[Traversable] = None
     var stopping_for_destination = false
     var follow_agent: Option[Agent] = None
     var follow_agent_how_far_away = 0.0   // gets set when follow_agent does.
@@ -210,12 +217,8 @@ class RouteFollowingBehavior(a: Agent, route: Route) extends Behavior(a) {
               // haven't started their turn yet, so wait for them to completely
               // finish first.
               case Some(a) => true
-              case _ => {
-                val gridlock_possible = check_for_gridlock(step)
-
-                // TODO so yield?
-                gridlock_possible
-              }
+              // TODO so yield?
+              case _ => check_for_gridlock(step)
             })
 
             stop_for_policy || stop_for_gridlock
@@ -224,6 +227,7 @@ class RouteFollowingBehavior(a: Agent, route: Route) extends Behavior(a) {
         if (stop_at_end) {
           keep_stopping = true
           stop_how_far_away = Some(how_far_away)
+          stop_at = Some(step.at)
         }
       }
 
@@ -241,17 +245,16 @@ class RouteFollowingBehavior(a: Agent, route: Route) extends Behavior(a) {
       // So, three possible constraints.
       val a1 = stop_how_far_away match {
         case Some(dist) => {
-          // in most normal circumstances, we take away end_threshold, since
-          // stopping right at the end of the edge makes us technically enter
-          // the intersection
-          // but when we're in the middle of a turn and that would make the
-          // distance be <= 0, we don't want to stop; that causes deadlock. it
-          // means the next edge is tiny. so just stop along it where we can.
-          // TODO lol uh, silly bug below? it's been there a while...
-          val go_this_dist = a.at.on match {
-            // just go halfway whatever's available.
-            case t: Turn if dist <= cfg.end_threshold => accel_to_end(dist / 2)
-            case _ => dist - cfg.end_threshold
+          // Stop 'end_threshold' short of where we should when we can, but when
+          // our destination is an edge, compromise and stop anywhere along it
+          // we can. This handles a few stalemate cases with sequences of short
+          // edges and possibly out-of-sync intersection policies.
+          val last_stop = stop_at.get
+          val go_this_dist = last_stop match {
+            // creep forward to halfway along the shorty edge.
+            case e: Edge if dist <= cfg.end_threshold => dist - (last_stop.length / 2.0)
+            // stop back appropriately.
+            case _                                    => dist - cfg.end_threshold
           }
           accel_to_end(go_this_dist)
         }

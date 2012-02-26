@@ -606,11 +606,19 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
         repaint
       }
       case EV_Key_Press(Key.OpenBracket) => {
-        sim.slow_down
+        sim.slow_down()
         status.time_speed.text = "%.1fx".format(sim.time_speed)
       }
       case EV_Key_Press(Key.CloseBracket) => {
-        sim.speed_up
+        sim.speed_up()
+        status.time_speed.text = "%.1fx".format(sim.time_speed)
+      }
+      case EV_Key_Press(Key.Minus) => {
+        sim.slow_down(10)
+        status.time_speed.text = "%.1fx".format(sim.time_speed)
+      }
+      case EV_Key_Press(Key.Equals) => {
+        sim.speed_up(10)
         status.time_speed.text = "%.1fx".format(sim.time_speed)
       }
       // general debug based on whatever you're hovering over
