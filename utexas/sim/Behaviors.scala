@@ -217,7 +217,6 @@ class RouteFollowingBehavior(a: Agent, route: Route) extends Behavior(a) {
               // haven't started their turn yet, so wait for them to completely
               // finish first.
               case Some(a) => true
-              // TODO so yield?
               case _ => check_for_gridlock(step)
             })
 
@@ -272,24 +271,8 @@ class RouteFollowingBehavior(a: Agent, route: Route) extends Behavior(a) {
       // won't be going just yet,
       // IF we are not going to make a move this tick.
 
-      // This means we're holding a valuable resource...
-      // TODO Pretty sure this is no longer a problem! :D
-      if (a.speed == 0.0 && conservative_accel == 0.0) {
-        a.at.on match {
-          case t: Turn if a2 == 0.0 && a.how_long_idle >= 30.0 => {
-            // And the cause is an agent in front of us. If this situation persists,
-            // we could enter gridlock.
-            // Don't keep spamming the same message.
-            if (a.how_long_idle == 30.0) {
-              Util.log("Gridlock possible near %s, who is %.1f away from %s".format(a, follow_agent_how_far_away, follow_agent))
-            }
-          }
-          case _ =>
-        }
-
-        // let them ignore us if we're not owner
-        a.upcoming_intersections.foreach(p => p.yield_lock(a))
-      }
+      // No longer a problem, but detect a cause for gridlock here: when speed
+      // and conservative_accel are nil, especially when we're in a turn.
 
       // As the very last step, clamp based on our physical capabilities.
       return Act_Set_Accel(if (conservative_accel > 0)

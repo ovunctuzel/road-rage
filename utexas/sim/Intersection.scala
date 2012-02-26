@@ -12,15 +12,14 @@ import utexas.{Util, cfg}
 // Reason about collisions from conflicting simultaneous turns.
 class Intersection(val v: Vertex) {
   //val policy: Policy = new NeverGoPolicy(this)
-  //val policy: Policy = new StopSignPolicy(this)
-  val policy: Policy = new SignalCyclePolicy(this)
+  val policy: Policy = new StopSignPolicy(this)
+  //val policy: Policy = new SignalCyclePolicy(this)
   //val policy: Policy = new ReservationPolicy(this)
 
   override def toString = "Intersection(" + v + ")"
 
   // Just delegate.
   def can_go(a: Agent, turn: Turn, far_away: Double) = policy.can_go(a, turn, far_away)
-  def yield_lock(a: Agent) = policy.yield_lock(a)
   def unregister(a: Agent) = policy.unregister(a)
 
   // Multiple agents can be on the same turn; the corresponding queue will
@@ -74,7 +73,6 @@ abstract class Policy(intersection: Intersection) {
   def can_go(a: Agent, turn: Turn, far_away: Double): Boolean
   def validate_entry(a: Agent, turn: Turn): Boolean
   def handle_exit(a: Agent, turn: Turn)
-  def yield_lock(a: Agent)
   def unregister(a: Agent)
   def current_greens(): Set[Turn] = Set()
   def dump_info() = {}
@@ -89,7 +87,6 @@ class NeverGoPolicy(intersection: Intersection) extends Policy(intersection) {
   def can_go(a: Agent, turn: Turn, far_away: Double) = false
   def validate_entry(a: Agent, turn: Turn) = false
   def handle_exit(a: Agent, turn: Turn) = {}
-  def yield_lock(a: Agent) = {}
   def unregister(a: Agent) = {}
 }
 
@@ -99,40 +96,12 @@ class StopSignPolicy(intersection: Intersection) extends Policy(intersection) {
   // case, the first person has to pause a bit longer before continuing.
   var current_owner: Option[Agent] = None
   var queue = List[Agent]()
-  val yielders = new MutableSet[Agent]()
 
   def can_go(a: Agent, turn: Turn, far_away: Double): Boolean = {
-    // TODO remove once stagnation fixed.
-    Agent.sim.debug_agent match {
-      case Some(agent) if agent == a => {
-        Util.log(a + " wants to go, but locked from " + intersection.v + " by " + current_owner)
-        Util.log("  waiting: " + queue)
-        if (current_owner.isDefined) {
-          Util.log("  locking guy around? " + Agent.sim.agents.contains(current_owner.get))
-          Util.log("  locking guy " + current_owner + " is involved with: " +
-          current_owner.get.upcoming_intersections)
-          // trace this problem.
-          Agent.sim.debug_agent = Some(current_owner.get)
-        } else {
-          Util.log("  so why not now? " + (!current_owner.isDefined) + " " +
-          a.how_long_idle)
-        }
-      }
-      case _ =>
-    }
-
     // Do they have the lock?
     current_owner match {
       case Some(owner) if a == owner => return true
       case _       =>
-    }
-
-    // Did they have the lock, but temporarily yielded it to break deadlock? If
-    // so, give them the lock again if available by placing them on the front of
-    // the queue and letting the rest of our promotion logic handle it
-    if (yielders(a)) {
-      queue = a :: queue
-      yielders -= a
     }
 
     // Schedule them if needed and if they're at the end of the edge.
@@ -170,34 +139,6 @@ class StopSignPolicy(intersection: Intersection) extends Policy(intersection) {
     // waited patiently.
   }
 
-  def yield_lock(a: Agent): Unit = {
-    // Ignore them if they don't have the lock.
-    if (current_owner.isDefined && current_owner.get == a) {
-      // Don't do this if theyre already in their turn...
-      a.at.on match {
-        case t: Turn => {
-          if (t.vert == intersection.v) {
-            //Util.log(a + " trying to yield lock while doing turn, not letting them")
-            return
-          }
-        }
-        case _ =>
-      }
-
-      // Release the lock, but remember we did this and gain the front of the
-      // queue next time we poll
-      
-      // If nobody's waiting, don't bother
-      if (!queue.isEmpty) {
-        // Let multiple people yield?
-        yielders += a
-        current_owner = None
-
-        //Util.log(a + " yielded lock")
-      }
-    }
-  }
-
   def unregister(a: Agent) = {
     current_owner match {
       case Some(agent) if a == agent => {
@@ -208,11 +149,6 @@ class StopSignPolicy(intersection: Intersection) extends Policy(intersection) {
         // don't bother with us
         queue = queue.filter(x => x != a)
       }
-    }
-    if (yielders(a)) {
-      // TODO REALLY weird, I wouldnt expect this
-      Util.log("a yielder " + a + " is quitting")
-      yielders -= a
     }
   }
 }
@@ -271,7 +207,6 @@ class ReservationPolicy(intersection: Intersection) extends Policy(intersection)
 
   override def current_greens = current_batch.turns.keys.toSet
 
-  def yield_lock(a: Agent) = {}
   def unregister(a: Agent) = {
     if (current_agents.contains(a)) {
       // TODO what turn do they want to do? decrement that counter...
@@ -483,14 +418,7 @@ class SignalCyclePolicy(intersection: Intersection) extends Policy(intersection)
     case _ => current_cycle
   }
 
-  // We don't keep track of what any agent wants, so ignore all of these things
-  // And everybody in the other lanes are gonna yield; of course.
-  def yield_lock(a: Agent) = {}
-  //def unregister(a: Agent) = {}
-
-  def unregister(a: Agent) = {
-    Util.log(a + " trying to unregister")
-  }
+  def unregister(a: Agent) = {}
 
   override def dump_info() = {
     if (start_waiting.isDefined) {
