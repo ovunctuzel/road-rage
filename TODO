@@ -2,9 +2,9 @@
 
 - stats
   a general way to average timing info, agent completion time, idling time...
-*** missing a conflict between lefts from perps.
-- make reservation policy handle unregistering agents so we can nuke em
-- reservation policy stalemates.
+- missing a conflict between lefts from perps.
+- improve pre-emption in stop lights + reservation policies. agent in front of them better be
+  approved too.
 
 TRUE PRIORITIES
 1) bugfix <-> test at scale iteration
