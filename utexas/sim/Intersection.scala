@@ -20,7 +20,7 @@ class Intersection(val v: Vertex) {
 
   override def toString = "Intersection(" + v + ")"
 
-  // Just delegate.
+  // Just delegate. TODO or make caller do that themselves.
   def can_go(a: Agent, turn: Turn, far_away: Double) = policy.can_go(a, turn, far_away)
   def unregister(a: Agent) = policy.unregister(a)
 
@@ -51,6 +51,14 @@ class Intersection(val v: Vertex) {
 
   def enter(a: Agent, t: Turn) = {
     if (!turns.contains(t)) {
+      // We don't care until there are at least two... and this only changes when
+      // we add a new one...
+      // It's not really that much better to do the checking in-place and only
+      // atomic-check when there could be a problem.
+      if (turns.size == 1) {
+        Agent.sim.active_intersections += this
+      }
+
       turns(t) = 0
     }
     turns(t) += 1
@@ -66,6 +74,10 @@ class Intersection(val v: Vertex) {
     turns(t) -= 1
     if (turns(t) == 0) {
       turns -= t
+      // Potentially we now don't care...
+      if (turns.size == 1) {
+        Agent.sim.active_intersections -= this
+      }
     }
     policy.handle_exit(a, t)
   }

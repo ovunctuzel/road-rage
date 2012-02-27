@@ -32,8 +32,6 @@ PROFILING
   - how fast can we generate lots of dumb agents?
 
   1) is caching properties of linked list hurting us for iterating through big things?
-  2) maintain active queues/intersections in-place as we do steps
-    - run a test to make sure the two actually are the same.
   3) ... increase dt, of course
   4) optimize step/react -- those take the most work time
     - if an agent is dependent on another and nothing changed with them, dont even bother?

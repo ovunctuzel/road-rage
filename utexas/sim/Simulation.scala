@@ -46,14 +46,8 @@ class Simulation(roads: List[Road], edges: List[Edge], vertices: List[Vertex],
   // Added by a queue that does an in-place check and thinks there could be an
   // issue.
   val active_queues = new MutableSet[Queue]   // TODO list?
-  // It's expensive to go through every one of these without reason every
-  // time. This banks on the fact that the number of agents is smaller, and
-  // they're not evenly distributed through a huge map.
-  def active_intersections(): Set[Intersection] = agents.flatMap(
-    a => a.at.on match {
-      case t: Turn => Some(intersections(t.vert))
-      case _       => None
-    }).toSet
+  // All intersections with agents in them.
+  val active_intersections = new MutableSet[Intersection]
 
   // Just a convenience method.
   def spawn_army(total: Int) = {
