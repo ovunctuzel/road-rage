@@ -1,8 +1,14 @@
 # TODO #
 
 - stats
-  a general way to average timing info, agent completion time, idling time...
-- missing a conflict between lefts from perps.
+  - Util should own it
+  - how fine-tuned? (time, speed of each agent) or (time, average speed now)
+  - stream to a logfile
+
+  - how long did simulation run (just one value)
+  - how long did each agent take to complete a trip?
+  - how long did each agent idle total?
+
 - improve pre-emption in stop lights + reservation policies. agent in front of them better be
   approved too.
 
