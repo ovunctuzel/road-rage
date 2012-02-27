@@ -43,10 +43,12 @@ class Simulation(roads: List[Road], edges: List[Edge], vertices: List[Vertex],
     agents.size, ready_to_spawn.size, generator_count, generators.size
   )
 
+  // Added by a queue that does an in-place check and thinks there could be an
+  // issue.
+  val active_queues = new MutableSet[Queue]   // TODO list?
   // It's expensive to go through every one of these without reason every
   // time. This banks on the fact that the number of agents is smaller, and
   // they're not evenly distributed through a huge map.
-  def active_queues(): Set[Queue] = agents.map(a => queues(a.at.on)).toSet
   def active_intersections(): Set[Intersection] = agents.flatMap(
     a => a.at.on match {
       case t: Turn => Some(intersections(t.vert))
@@ -126,9 +128,8 @@ class Simulation(roads: List[Road], edges: List[Edge], vertices: List[Vertex],
       // reacting. But that involves trusting that no simulation violations
       // could occur. ;)
 
-      //val t2 = Util.timer("queue start")
-      active_queues.foreach(q => q.start_step)
-      //t2.stop
+      // Queues will lazily start_step, remembering their current state, when
+      // they need to.
 
       //val t3 = Util.timer("agent step")
       agents.foreach(a => {
@@ -138,6 +139,7 @@ class Simulation(roads: List[Road], edges: List[Edge], vertices: List[Vertex],
       })
       //t3.stop
 
+      // Just check the ones we need to.
       //val t4 = Util.timer("queue stop")
       active_queues.foreach(q => q.end_step)
       //t4.stop
@@ -157,6 +159,9 @@ class Simulation(roads: List[Road], edges: List[Edge], vertices: List[Vertex],
       
       //Util.log_pop
       //t0.stop
+
+      // reset queues that need to be checked
+      active_queues.clear
     }
     return moved_count
   }

@@ -11,12 +11,17 @@ import utexas.{Util, cfg}
 class Queue(t: Traversable) {
   // Descending by distance: head of list is front of traversable.
   var agents = List[Agent]()
+  var last_tick = -1.0              // last observed
   var prev_agents = List[Agent]()   // to verify no collisions occurred in a step
 
   def last = agents.lastOption
 
+  // Called lazily.
   def start_step() = {
-    prev_agents = agents
+    if (last_tick != Agent.sim.tick) {
+      prev_agents = agents
+      last_tick = Agent.sim.tick
+    }
   }
   
   // Check for collisions by detecting abnormal changes in ordering.
@@ -54,13 +59,27 @@ class Queue(t: Traversable) {
   def enter(a: Agent, dist: Double): Position = {
     // Just find our spot.
 
+    start_step  // lazily, if needed
+
     val (ahead, behind) = agents.partition(c => c.at.dist > dist)
     agents = ahead ++ List(a) ++ behind
+
+    // In-place check: we should enter at the end of the queue
+    if (!behind.isEmpty) {
+      Agent.sim.active_queues += this
+    }
 
     return Position(t, dist)
   }
 
   def exit(a: Agent) = {
+    start_step  // lazily, if needed
+
+    // In-place check: we should leave from the front of the queue
+    if (agents.head != a) {
+      Agent.sim.active_queues += this
+    }
+
     agents = agents.filter(c => c != a)
   }
 

@@ -31,15 +31,13 @@ PROFILING
   - dont ask length of a list when not needed...
   - how fast can we generate lots of dumb agents?
 
-  0) now that we maintain following dist from agents, could we test for collisions in queues
-     non-atomically?
-    - if we detect one, put it on the list to check at the end.
   1) is caching properties of linked list hurting us for iterating through big things?
   2) maintain active queues/intersections in-place as we do steps
     - run a test to make sure the two actually are the same.
   3) ... increase dt, of course
   4) optimize step/react -- those take the most work time
     - if an agent is dependent on another and nothing changed with them, dont even bother?
+    - when nothing changes, short-circuit lots of stuff?
 
 BIGGER ISSUES
   - fix geom of edge lines
@@ -123,6 +121,8 @@ POSSIBLY SIMPLE
 - spawning specifically in UI
 - structuring policy stuff as a state machine and events may be more elegant...
 - give lanes/roads/etc the ability to be closed
+- we could check less queues atomically if we could step agents in some cool order
+  - or when we mess with an agent, see if they've moved yet this round?
 
 ### Scalaisms ###
 
