@@ -1,4 +1,4 @@
-package utexas.sim
+package utexas.sim.policies
 
 import scala.collection.mutable.PriorityQueue
 import scala.collection.mutable.{HashSet => MutableSet}
@@ -6,6 +6,7 @@ import scala.collection.mutable.MutableList
 import scala.collection.mutable.{HashMap => MutableMap}
 
 import utexas.map.Turn
+import utexas.sim.{Simulation, Intersection}
 
 import utexas.Util
 

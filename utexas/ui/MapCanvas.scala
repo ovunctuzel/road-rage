@@ -10,8 +10,8 @@ import swing.event.Key
 import swing.Dialog
 
 import utexas.map._  // TODO yeah getting lazy.
-import utexas.sim.{Simulation, Agent, FixedSizeGenerator, ContinuousGenerator,
-                   GreenFlood, Cycle}
+import utexas.sim.{Simulation, Agent, FixedSizeGenerator, ContinuousGenerator}
+import utexas.sim.policies.{GreenFlood, Cycle}
 
 import utexas.{Util, cfg}
 
