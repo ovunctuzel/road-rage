@@ -1,6 +1,7 @@
 # TODO #
 
 - stats
+  - commandline to enable/disable it
   - Util should own it
   - how fine-tuned? (time, speed of each agent) or (time, average speed now)
   - stream to a logfile
@@ -8,22 +9,56 @@
   - how long did simulation run (just one value)
   - how long did each agent take to complete a trip?
   - how long did each agent idle total?
+  - throughput of intersections (agents completing a turn per...)
+  - total distance by all vehicles
+  - if an agent was the only car and never had to stop and did speed limit, what would they get? difference from that is delay per agent.
 
 - improve pre-emption in stop lights + reservation policies. agent in front of them better be
   approved too.
 
-TRUE PRIORITIES
-1) bugfix <-> test at scale iteration
-  - optimize
-2) feature: traffic signals
-  - consider letting intersections react on their own, rather than just from agents
-    simplifies reasoning about traffic signals, but also takes away the sorta clever delay-avoider.
+- implement standard civeng phasal traffic signal behavior
 
-GENERATORS
-  - a way to turn them off / reap them in the UI
-  - color agents from diff generators a certain way
-  - a way to save a "scenario"
-  - test at scale, and profile again.
+- how fast can we generate lots of dumb agents?
+  maybe print progress
+
+- consider letting intersections react on their own, rather than just from agents
+  simplifies reasoning about traffic signals, but also takes away the sorta clever delay-avoider.
+
+TRAFFIC SIGNAL
+  - each intersection has a sequence of cyclic 'cycles' and an 'offset':
+    - cycle = (a set of non-conflicting turns, a duration)
+    - initial offset = all signals start with first at the first cycle at 0 seconds + this extra time
+
+  1) fixed allocation
+    - no offsets, common delay, arbitrary sets (maybe try to group all from same lane)
+  2) random allocation
+    - random offset and delay within some bound, arbitrary sets
+  3) green-wave forwards allocation ("greenflood")
+    - goal: get through one green and keep going
+    - pick one green cycle with random duration, offset
+    - lookahead to all lanes that cycle leads to
+    - offset of each of those intersectiosn = orig offset + travel time along that road
+    - duration = same
+    - turns = everything leading from that lane
+    - sort each of these lanes by how important/big they are (or just randomly), then
+      repeat.
+    - so no decay: in theory the agents starting behind this first light never stop for a light?
+
+    ??? after doing that for one super-cycle, pick the next cycle of turns from that first (or any?)
+      offset will be orig offset + duration of first super-cycle. start again.
+      when we hit an intersection that already has a cycle scheduled, maybe have to shift the
+      start-time a bit.
+
+    - in theory, wave behind the first magic light never stop?
+      kind of partitions agents into disjoint sets of agents that can move at a time.
+
+    - visualize by flooding greenness in lanes/turns.
+  4) diffused backwards allocation
+    - same idea, but goal: make one critical intersection super efficient
+    - what lanes lead to / feed the lanes that can do turns? repeat for those.
+
+BUGS
+  - (50,000; drunken behavior; BTR; seed 1330434688570; time ~18.6) illegal entry by a2192
 
 PROFILING
   - we can do much better with ready agents... max capacity of edges, group them based on where they
@@ -36,6 +71,12 @@ PROFILING
   4) optimize step/react -- those take the most work time
     - if an agent is dependent on another and nothing changed with them, dont even bother?
     - when nothing changes, short-circuit lots of stuff?
+
+GENERATORS
+  - a way to turn them off / reap them in the UI
+  - color agents from diff generators a certain way
+  - a way to save a "scenario"
+  - test at scale, and profile again.
 
 BIGGER ISSUES
   - fix geom of edge lines

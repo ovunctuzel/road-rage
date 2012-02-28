@@ -39,6 +39,17 @@ object Util {
   // return true 'p'% of the time. p is [0.0, 1.0]
   def percent(p: Double) = rand_double(0.0, 1.0) < p
 
+  // due to internationalization, printf doesn't have a way of adding commas
+  // after every 3 orders of mag
+  def comma_num(n: Int, pad: Boolean = true): String = {
+    return if (n < 1000 && pad)
+             "%03d".format(n)
+           else if (n < 1000)
+             "" + n
+           else
+             comma_num(n / 1000, pad = false) + "," + comma_num(n % 1000)
+  }
+
   // to meters/sec, that is. SI units.
   def mph_to_si(r: Double) = r * 0.44704
 

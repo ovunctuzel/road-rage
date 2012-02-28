@@ -66,7 +66,8 @@ class Intersection(val v: Vertex) {
       Util.log("!!! " + a + " illegally entered intersection, going at " + a.speed)
       Util.log("  Incident was near " + t.from + " and " + t + " (vert " + t.from.to.id + ")")
       Util.log("  Origin lane length: " + t.from.length + "; time " + Agent.sim.tick)
-      assert(false)
+      Util.log("  Happened at " + Agent.sim.tick)
+      sys.exit
     }
   }
 

@@ -206,6 +206,9 @@ where the demand supplied by individuals is taken as is. Instead, AORTA aims to
 reduce traffic congestion through interactions with individuals in real-time
 based on the current demand.
 
+\commentd{last sentence above... we're not not doing that yet, and we dont
+  discuss it further here.}
+
 Another popular open source traffic simulator that can use OSM data is SUMO
 \cite{SUMO2011}, which shares the same goals as AORTA and is fairly similar at
 a high level. SUMO has been used to study the effect of automated
@@ -347,6 +350,8 @@ position and velocity. The tick duration $dt$ is fixed, enabling agents to
 reason about collision avoidance and satisfying other constraints. Setting this
 value to the average ``reaction time'' of a human driver may be appropriate for
 some experiments. Each tick, the simulation performs the following steps:
+
+\commentd{space continuous? get terminology right}
 
 \begin{enumerate}
   \item Introducing new agents into the map
@@ -547,6 +552,15 @@ causing agents to be ready to enter the road at different times.
 
 \commentd{give some informal or formal (with numbers) idea of scale / how many
 agents we can simulate in different map sizes} \commentpk{I would say that the the last point is fairly important}
+
+\commentd{http://sumo.sourceforge.net/pdf/mieec1.pdf gives their measure as
+  agent updates / second. This is indep of dt and num of agents, assuming
+  nothing grows nonlinearly with more agents. our initial result on my box is
+  about 150,000 moves / second. so with 500 agents, runs 30x faster than
+  reality. with 5,000, runs about 3x faster. with 50,000 (yes, this works!),
+  runs at 1/3 the speed of reality (it takes 1 real second to simulate 0.3
+  seconds)}
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
