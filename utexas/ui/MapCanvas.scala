@@ -635,8 +635,7 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
             val gw = new GreenFlood(sim)
 
             // make a 1-minute cycle with all turns from this lane
-            val cycle = new Cycle(0, 60)
-            e.next_turns.foreach(t => cycle.add_turn(t))
+            val cycle = Cycle.cycle_for_edge(e, 0, 60)
 
             // then the fun part. color every edge that benefits from this green
             // turn... green?

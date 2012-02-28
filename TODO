@@ -35,11 +35,13 @@ TRAFFIC SIGNAL
   2) random allocation
     - random offset and delay within some bound, arbitrary sets
   3) green-wave forwards allocation ("greenflood")
-    - prefer turns to major roads first (or major->major is better than minor->major?)
-      (or alternate between these preferences)
     - make the abstraction for SignalPolicy to have a CycleConfig, then fill it out
+      - test and make sure it produces exact same results
     - real-time viz as the lights change
       - requires overseer, unless cars are at that intersection
+    - finish greenflood
+      - prefer turns to major roads first (or major->major is better than minor->major?)
+        (or alternate between these preferences)
 
   4) diffused backwards allocation
     - same idea, but goal: make one critical intersection super efficient

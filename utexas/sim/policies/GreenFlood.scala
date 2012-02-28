@@ -10,23 +10,6 @@ import utexas.sim.{Simulation, Intersection}
 
 import utexas.Util
 
-class Cycle(val offset: Double, val duration: Double) {
-  val turns = new MutableSet[Turn]()
-
-  // returns false if it conflicts
-  // assumes turn is from the correct intersection.
-  def add_turn(turn: Turn): Boolean = {
-    val conflicts = turn.conflicts  // Cache it
-    if (turns.find(t => conflicts(t)).isDefined) {
-      // conflict
-      return false
-    } else {
-      turns += turn
-      return true
-    }
-  }
-}
-
 // the name comes from http://en.wikipedia.org/wiki/Green_wave
 class GreenFlood(sim: Simulation) {
   // This is only used internally right now. Weight is just for ranking "4 turns
