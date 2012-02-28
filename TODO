@@ -23,6 +23,7 @@
 
 - consider letting intersections react on their own, rather than just from agents
   simplifies reasoning about traffic signals, but also takes away the sorta clever delay-avoider.
+  - optimization: intersections schedule events "hey wake me up >= this tick" so we dont poll all
 
 TRAFFIC SIGNAL
   - each intersection has a sequence of cyclic 'cycles' and an 'offset':
@@ -34,25 +35,12 @@ TRAFFIC SIGNAL
   2) random allocation
     - random offset and delay within some bound, arbitrary sets
   3) green-wave forwards allocation ("greenflood")
-    - goal: get through one green and keep going
-    - pick one green cycle with random duration, offset
-    - lookahead to all lanes that cycle leads to
-    - offset of each of those intersectiosn = orig offset + travel time along that road
-    - duration = same
-    - turns = everything leading from that lane
-    - sort each of these lanes by how important/big they are (or just randomly), then
-      repeat.
-    - so no decay: in theory the agents starting behind this first light never stop for a light?
+    - prefer turns to major roads first (or major->major is better than minor->major?)
+      (or alternate between these preferences)
+    - make the abstraction for SignalPolicy to have a CycleConfig, then fill it out
+    - real-time viz as the lights change
+      - requires overseer, unless cars are at that intersection
 
-    ??? after doing that for one super-cycle, pick the next cycle of turns from that first (or any?)
-      offset will be orig offset + duration of first super-cycle. start again.
-      when we hit an intersection that already has a cycle scheduled, maybe have to shift the
-      start-time a bit.
-
-    - in theory, wave behind the first magic light never stop?
-      kind of partitions agents into disjoint sets of agents that can move at a time.
-
-    - visualize by flooding greenness in lanes/turns.
   4) diffused backwards allocation
     - same idea, but goal: make one critical intersection super efficient
     - what lanes lead to / feed the lanes that can do turns? repeat for those.

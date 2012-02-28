@@ -10,7 +10,8 @@ import swing.event.Key
 import swing.Dialog
 
 import utexas.map._  // TODO yeah getting lazy.
-import utexas.sim.{Simulation, Agent, FixedSizeGenerator, ContinuousGenerator}
+import utexas.sim.{Simulation, Agent, FixedSizeGenerator, ContinuousGenerator,
+                   GreenFlood, Cycle}
 
 import utexas.{Util, cfg}
 
@@ -76,6 +77,7 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
   private var polygon_roads2: Set[Road] = Set()
   private var current_vert: Option[Vertex] = None
   private var camera_agent: Option[Agent] = None
+  private var greenflood_members = Set[Edge]()
 
   // this is like static config, except it's a function of the map and rng seed
   private val special_ward_color = Color.BLACK
@@ -334,6 +336,8 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
       return Color.BLUE
     } else if (chosen_edge2.isDefined && chosen_edge2.get == e) {
       return Color.RED
+    } else if (greenflood_members(e)) {
+      return Color.GREEN
     } else if (route_members(e)) {
       return Color.GREEN
     } else if (e.doomed) {
@@ -626,6 +630,17 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
         (current_edge, current_agent, current_vert) match {
           case (Some(e), _, _) => {
             Util.log(e.road + " is a " + e.road.road_type + " of length " + e.length + " meters")
+
+            // TODO Test green-flood
+            val gw = new GreenFlood(sim)
+
+            // make a 1-minute cycle with all turns from this lane
+            val cycle = new Cycle(0, 60)
+            e.next_turns.foreach(t => cycle.add_turn(t))
+
+            // then the fun part. color every edge that benefits from this green
+            // turn... green?
+            greenflood_members = gw.flood(cycle).map(t => t.to).toSet
           }
           case (None, Some(a), _) => {
             a.dump_info
