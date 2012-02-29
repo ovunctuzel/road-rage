@@ -107,64 +107,78 @@ class SignalCyclePolicy(intersection: Intersection) extends Policy(intersection)
     expect_offset - initial_offset // this is now the total duration
   }
 
-  // accumulated delay for letting vehicles finish turns.
+  // accumulated delay for letting vehicles finish turns. just for statistics
+  // for now, eventually for modifying timings to get back on schedule.
   var delay = 0.0
   // TODO it'd be great to just store agent, but they aren't officially moved to
   // a turn until too late..
   // these are the agents we've _accepted_, whether or not they've started their
   // turn.
   val current_agents = new MutableSet[(Agent, Turn)]
-  // also gives us our state
+  // TODO perhaps be Either[Double, Cycle].
+  // when None, we're in a normal cycle.
   var start_waiting: Option[Double] = None
-  
-  // Must remember we have a delay
-  def cur_time = Agent.sim.tick - delay - initial_offset
+  // nil cycle for when we're waiting.
+  var current_cycle = Cycle.nil_cycle
+  var next_cycles: List[Cycle] = cycles
+  // find the cycle that should be active right now and how long it should last
+  var end_at = 0.0
+  def time_left = end_at - Agent.sim.tick
 
-  // TODO when we move to overseer-style / intersections as agents too, then
-  // don't need to find it, since we'll maintain it
-  private def current: (Cycle, Double) = {
-    // TODO write functionally
-    var time = cur_time % total_duration  // TODO make it > 0 too!
-    for (cycle <- cycles) {
-      if (time < cycle.duration) {
-        return (cycle, time)
+  def schedule(at: Double) = {
+    end_at = at
+    Agent.sim.schedule(at, { this.cycle_change })
+  }
+
+  {
+    var time = (Agent.sim.tick - initial_offset) % total_duration  // TODO make it > 0 too?
+    while (current_cycle == Cycle.nil_cycle) {
+      val c = next_cycles.head
+      next_cycles = next_cycles.tail
+      if (time < c.duration) {
+        current_cycle = c
       } else {
-        time -= cycle.duration
+        time -= c.duration
       }
     }
-    throw new Exception("mod fails")
+    // we can also compute the tick when this cycle should finish
+    // so if all goes well, make the simulation poke us when we should change
+    // cycles / when this cycle should finish
+    schedule(Agent.sim.tick + (current_cycle.duration - time))
   }
 
-  def current_cycle = current._1
-  def time_left: Double = {
-    val cur = current
-    return cur._1.duration - cur._2
-  }
-
-  // TODO tmp until we're changing cycle by callbacks
-  var last_cycle: Cycle = Cycle.nil_cycle
-  def cycle_changed() = {
-    val cur = current_cycle // TODO cache it until we dont do this at all
-    if (cur != last_cycle) {
-      Agent.sim.tell_listeners(EV_Signal_Change(last_cycle.turns.toSet, cur.turns.toSet))
-      last_cycle = cur
+  def cycle_change(): Unit = {
+    if (Agent.sim.tick < end_at) {
+      return
     }
-  }
-  cycle_changed // compute for the first time
 
-  def state_change = {
-    // figure out if a cycle has ended, but agents are still finishing their
-    // turn. we're just going to let them finish their turn, and move onto the
-    // next cycle after that.
-    if (!start_waiting.isDefined) {
-      // We can detect slow turning agents if any current agent's turn isn't
-      // in the current cycle.
-      if (!current_agents.isEmpty && !current_cycle.has(current_agents.head._2)) {
-        // Enter the "waiting for slow agents" state
-        start_waiting = Some(Agent.sim.tick)
+    // Are there slow agents?
+    if (!current_agents.isEmpty) {
+      // Yup. Gotta wait for them.
+      start_waiting = Some(Agent.sim.tick)
+      current_cycle = Cycle.nil_cycle
+    } else {
+      // switch to the next cycle
+      if (next_cycles.isEmpty) {
+        // cycle around
+        next_cycles = cycles
       }
-    }
 
+      // callback for UI usually
+      Agent.sim.tell_listeners(
+        EV_Signal_Change(current_cycle.turns.toSet, next_cycles.head.turns.toSet)
+      )
+
+      current_cycle = next_cycles.head
+      next_cycles = next_cycles.tail
+      // schedule the next trigger
+      // TODO could account for delay here by adjusting duration.
+      schedule(Agent.sim.tick + current_cycle.duration)
+    }
+  }
+
+  def can_go(a: Agent, turn: Turn, far_away: Double): Boolean = {
+    // Flush out stalled slowpokes.
     if (start_waiting.isDefined) {
       // Filter our agents who haven't started their turn and are not moving;
       // although we told them they could go in this cycle, we can cancel --
@@ -180,24 +194,11 @@ class SignalCyclePolicy(intersection: Intersection) extends Policy(intersection)
         finish_waiting
       }
     }
-    // TODO we want delay to be close to 0 mod duration, so maybe poke at
-    // durations every now and then to get back on perfect schedule
 
-    // TODO ooh, this is potentially confusing, but it's a cool cheat:
-    // SINCE we aren't activated till somebody polls us ANYWAY, then we don't
-    // even start counting delay time till somebody new wants to go.
-  }
-
-  def can_go(a: Agent, turn: Turn, far_away: Double): Boolean = {
-    // Because the intersection can only act when it's polled here, first we
-    // need to do bookkeeping.
-    state_change
-
+    // Still waiting?
     if (start_waiting.isDefined) {
       return current_agents((a, turn))
     }
-
-    cycle_changed
 
     // Otherwise, try to go.
 
@@ -264,6 +265,8 @@ class SignalCyclePolicy(intersection: Intersection) extends Policy(intersection)
       }
       case _ =>
     }
+    // we could be ready to change
+    cycle_change
   }
 
   override def current_greens = start_waiting match {

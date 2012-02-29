@@ -35,10 +35,10 @@ TRAFFIC SIGNAL
   2) random allocation
     - random offset and delay within some bound, arbitrary sets
   3) green-wave forwards allocation ("greenflood")
-    - intersections need to schedule their transitions, but when we're delaying... harder.)
-      - this will fix the viz for when agents arent there.
+    - new callback is NOT same as old method, but both work and seem correct... just check.
     - visualize the green/red better, and make it configurable!
       - maybe turns, not lanes... or a degree of thickness based on how many lanes can go
+      - or thicker lines
     - finish greenflood
       - prefer turns to major roads first (or major->major is better than minor->major?)
         (or alternate between these preferences)

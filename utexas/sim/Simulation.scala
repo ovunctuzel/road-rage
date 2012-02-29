@@ -19,6 +19,13 @@ class Simulation(roads: List[Road], edges: List[Edge], vertices: List[Vertex],
   var listeners: List[Sim_Event => Unit] = Nil
   def tell_listeners(ev: Sim_Event) = listeners.foreach(l => l(ev))
 
+  // functions that take nothing and return nothing, and the tick time
+  class Callback(val at: Double, val cb: () => Unit) extends Ordered[Callback] {
+    // small weights first
+    def compare(other: Callback) = other.at.compare(at)
+  }
+  val events = new PriorityQueue[Callback]()
+
   /////////// Agent management
   Agent.sim = this  // let them get to us
   Util.log("Creating queues and intersections for collision handling...")
@@ -75,13 +82,6 @@ class Simulation(roads: List[Road], edges: List[Edge], vertices: List[Vertex],
   // WE CAN GO FASTER
   var time_speed = 1.0
 
-  // functions that take nothing and return nothing, and the tick time
-  class Callback(val at: Double, val cb: () => Unit) extends Ordered[Callback] {
-    // small weights first
-    def compare(other: Callback) = other.at.compare(at)
-  }
-  val events = new PriorityQueue[Callback]()
-
   // TODO cfg
   def slow_down(amount: Double = 0.5) = {
     time_speed = math.max(0.5, time_speed - amount)
@@ -111,7 +111,7 @@ class Simulation(roads: List[Road], edges: List[Edge], vertices: List[Vertex],
 
     // Finally, fire any scheduled callbacks (usually intersections or
     // overseers)
-    while (!events.isEmpty && events.head.at >= tick) {
+    while (!events.isEmpty && tick >= events.head.at) {
       val ev = events.dequeue
       ev.cb()
     }
