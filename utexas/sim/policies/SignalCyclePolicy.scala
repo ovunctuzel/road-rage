@@ -11,7 +11,7 @@ import utexas.{Util, cfg}
 
 // TODO name 'Phase'?
 class Cycle(val offset: Double, val duration: Double) {
-  assert(offset > 0)
+  assert(offset >= 0)
   assert(duration > 0)
   // TODO only mutable because we build this incrementally
   val turns = new MutableSet[Turn]()

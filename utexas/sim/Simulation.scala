@@ -2,7 +2,7 @@ package utexas.sim
 
 import scala.annotation.tailrec
 import scala.collection.immutable.{SortedSet, TreeSet}
-import scala.collection.mutable.MutableList
+import scala.collection.mutable.{MutableList, PriorityQueue}
 import scala.collection.mutable.{HashSet => MutableSet}
 
 import utexas.map.{Graph, Road, Edge, Vertex, Ward, Turn}
@@ -71,6 +71,13 @@ class Simulation(roads: List[Road], edges: List[Edge], vertices: List[Vertex],
   // WE CAN GO FASTER
   var time_speed = 1.0
 
+  // functions that take nothing and return nothing, and the tick time
+  class Callback(val at: Double, val cb: () => Unit) extends Ordered[Callback] {
+    // small weights first
+    def compare(other: Callback) = other.at.compare(at)
+  }
+  val events = new PriorityQueue[Callback]()
+
   // TODO cfg
   def slow_down(amount: Double = 0.5) = {
     time_speed = math.max(0.5, time_speed - amount)
@@ -97,7 +104,19 @@ class Simulation(roads: List[Road], edges: List[Edge], vertices: List[Vertex],
 
     // Then, introduce any new agents that are ready to spawn into the system
     ready_to_spawn = ready_to_spawn.filter(a => !try_spawn(a))
+
+    // Finally, fire any scheduled callbacks (usually intersections or
+    // overseers)
+    while (!events.isEmpty && events.head.at >= tick) {
+      val ev = events.dequeue
+      ev.cb()
+    }
+
     return changed
+  }
+
+  def schedule(at: Double, callback: () => Unit) {
+    events.enqueue(new Callback(at, callback))
   }
 
   // Returns (the number of agents that moved, total number of agents processed)
