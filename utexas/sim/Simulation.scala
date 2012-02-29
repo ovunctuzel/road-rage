@@ -15,6 +15,10 @@ class Simulation(roads: List[Road], edges: List[Edge], vertices: List[Vertex],
                  wards: List[Ward], special_ward: Ward)
   extends Graph(roads, edges, vertices, wards, special_ward)
 {
+  ////////////// Misc
+  var listeners: List[Sim_Event => Unit] = Nil
+  def tell_listeners(ev: Sim_Event) = listeners.foreach(l => l(ev))
+
   /////////// Agent management
   Agent.sim = this  // let them get to us
   Util.log("Creating queues and intersections for collision handling...")
@@ -193,6 +197,10 @@ class Simulation(roads: List[Road], edges: List[Edge], vertices: List[Vertex],
     }
   }
 }
+
+sealed trait Sim_Event {}
+// TODO maybe have this not here, since a client could make these up?
+final case class EV_Signal_Change(reds: Set[Turn], greens: Set[Turn]) extends Sim_Event {}
 
 object Simulation {
   def load(fn: String) = (new Reader(fn)).load_simulation

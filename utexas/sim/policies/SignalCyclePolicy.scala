@@ -5,7 +5,7 @@ import scala.collection.mutable.{HashSet => MutableSet}
 import scala.collection.mutable.ListBuffer
 
 import utexas.map.{Turn, Edge}
-import utexas.sim.{Intersection, Policy, Agent}
+import utexas.sim.{Intersection, Policy, Agent, EV_Signal_Change}
 
 import utexas.{Util, cfg}
 
@@ -34,6 +34,8 @@ class Cycle(val offset: Double, val duration: Double) {
 
 // factory methods for cycles
 object Cycle {
+  val nil_cycle = new Cycle(0, 1)
+
   // SignalCyclePolicy asks us, so we can do some one-time work and dole out the
   // results or lazily compute
   def cycles_for(i: Intersection): List[Cycle] = {
@@ -139,6 +141,17 @@ class SignalCyclePolicy(intersection: Intersection) extends Policy(intersection)
     return cur._1.duration - cur._2
   }
 
+  // TODO tmp until we're changing cycle by callbacks
+  var last_cycle: Cycle = Cycle.nil_cycle
+  def cycle_changed() = {
+    val cur = current_cycle // TODO cache it until we dont do this at all
+    if (cur != last_cycle) {
+      Agent.sim.tell_listeners(EV_Signal_Change(last_cycle.turns.toSet, cur.turns.toSet))
+      last_cycle = cur
+    }
+  }
+  cycle_changed // compute for the first time
+
   def state_change = {
     // figure out if a cycle has ended, but agents are still finishing their
     // turn. we're just going to let them finish their turn, and move onto the
@@ -183,6 +196,8 @@ class SignalCyclePolicy(intersection: Intersection) extends Policy(intersection)
     if (start_waiting.isDefined) {
       return current_agents((a, turn))
     }
+
+    cycle_changed
 
     // Otherwise, try to go.
 

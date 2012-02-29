@@ -10,7 +10,8 @@ import swing.event.Key
 import swing.Dialog
 
 import utexas.map._  // TODO yeah getting lazy.
-import utexas.sim.{Simulation, Agent, FixedSizeGenerator, ContinuousGenerator}
+import utexas.sim.{Simulation, Agent, FixedSizeGenerator, ContinuousGenerator,
+                   Sim_Event, EV_Signal_Change}
 import utexas.sim.policies.{GreenFlood, Cycle}
 
 import utexas.{Util, cfg}
@@ -77,7 +78,8 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
   private var polygon_roads2: Set[Road] = Set()
   private var current_vert: Option[Vertex] = None
   private var camera_agent: Option[Agent] = None
-  private var greenflood_members = Set[Edge]()
+  // edge to how many currently green turns are leading to it
+  private var green_edges = new HashMap[Edge, Int]()
 
   // this is like static config, except it's a function of the map and rng seed
   private val special_ward_color = Color.BLACK
@@ -160,6 +162,32 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
   private val strokes = (0 until cfg.max_lanes).map(n => new BasicStroke(lane_line_width * n.toFloat))
 
   def zoomed_in = zoom > cfg.zoom_threshold
+
+  // Register to hear events
+  sim.listeners :+= ((ev: Sim_Event) => { ev match {
+    case EV_Signal_Change(reds, greens) => {
+      for (r <- reds) {
+        val e = r.from
+        green_edges(e) -= 1
+        if (green_edges(e) == 0) {
+          green_edges -= e
+        }
+      }
+
+      for (g <- greens) {
+        green_edges(g.from) = green_edges.getOrElse(g.from, 0) + 1
+      }
+    }
+  } })
+
+  // At this point, signal policies have already fired up and sent the first
+  // round of greens. We missed it, so compute manually the first time.
+  // TODO better solution
+  for (intersection <- sim.intersections.values) {
+    for (g <- intersection.policy.current_greens) {
+      green_edges(g.from) = green_edges.getOrElse(g.from, 0) + 1
+    }
+  }
 
   // TODO colors for everything belong in cfg.
 
@@ -336,7 +364,7 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
       return Color.BLUE
     } else if (chosen_edge2.isDefined && chosen_edge2.get == e) {
       return Color.RED
-    } else if (greenflood_members(e)) {
+    } else if (green_edges.contains(e)) {
       return Color.GREEN
     } else if (route_members(e)) {
       return Color.GREEN
@@ -630,16 +658,6 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
         (current_edge, current_agent, current_vert) match {
           case (Some(e), _, _) => {
             Util.log(e.road + " is a " + e.road.road_type + " of length " + e.length + " meters")
-
-            // TODO Test green-flood
-            val gw = new GreenFlood(sim)
-
-            // make a 1-minute cycle with all turns from this lane
-            val cycle = Cycle.cycle_for_edge(e, 0, 60)
-
-            // then the fun part. color every edge that benefits from this green
-            // turn... green?
-            greenflood_members = gw.flood(cycle).map(t => t.to).toSet
           }
           case (None, Some(a), _) => {
             a.dump_info
