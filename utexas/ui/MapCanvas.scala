@@ -4,6 +4,7 @@ import scala.collection.mutable.MultiMap
 import scala.collection.mutable.ListBuffer
 import scala.collection.mutable.HashMap
 import scala.collection.mutable.{Set => MutableSet}
+import scala.collection.mutable.{HashSet => MutableHashSet}
 import java.awt.{Graphics2D, Shape, BasicStroke, Color}
 import java.awt.geom._
 import swing.event.Key
@@ -78,8 +79,8 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
   private var polygon_roads2: Set[Road] = Set()
   private var current_vert: Option[Vertex] = None
   private var camera_agent: Option[Agent] = None
-  // edge to how many currently green turns are leading to it
-  private var green_edges = new HashMap[Edge, Int]()
+  private val green_turns = new HashMap[Turn, Shape]()
+  private var show_green = false
 
   // this is like static config, except it's a function of the map and rng seed
   private val special_ward_color = Color.BLACK
@@ -166,16 +167,9 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
   // Register to hear events
   sim.listeners :+= ((ev: Sim_Event) => { ev match {
     case EV_Signal_Change(reds, greens) => {
-      for (r <- reds) {
-        val e = r.from
-        green_edges(e) -= 1
-        if (green_edges(e) == 0) {
-          green_edges -= e
-        }
-      }
-
-      for (g <- greens) {
-        green_edges(g.from) = green_edges.getOrElse(g.from, 0) + 1
+      green_turns --= reds
+      for (t <- greens) {
+        green_turns(t) = GeomFactory.curved_turn(t)
       }
     }
   } })
@@ -184,8 +178,8 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
   // round of greens. We missed it, so compute manually the first time.
   // TODO better solution
   for (intersection <- sim.intersections.values) {
-    for (g <- intersection.policy.current_greens) {
-      green_edges(g.from) = green_edges.getOrElse(g.from, 0) + 1
+    for (t <- intersection.policy.current_greens) {
+      green_turns(t) = GeomFactory.curved_turn(t)
     }
   }
 
@@ -243,6 +237,16 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
           }
         }
         case None =>
+      }
+
+      // Show traffic signal stuff
+      if (show_green) {
+        g2d.setStroke(center_stroke)
+        g2d.setColor(Color.GREEN)
+        //green_turns.values.foreach(t => if (t.intersects(window)) { g2d.draw(t) })
+        green_turns.foreach(
+          t => if (t._2.intersects(window)) { draw_turn(g2d, t._1, Color.GREEN) }
+        )
       }
     }
 
@@ -364,8 +368,6 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
       return Color.BLUE
     } else if (chosen_edge2.isDefined && chosen_edge2.get == e) {
       return Color.RED
-    } else if (green_edges.contains(e)) {
-      return Color.GREEN
     } else if (route_members(e)) {
       return Color.GREEN
     } else if (e.doomed) {
@@ -385,15 +387,12 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
   )
 
   def draw_turn(g2d: Graphics2D, turn: Turn, color: Color) = {
-    val pt1 = turn.from.shifted_end_pt
-    val pt2 = turn.from.to.location
-    val pt3 = turn.to.shifted_start_pt
-    val curve = new CubicCurve2D.Double(
-      pt1.x, pt1.y, pt2.x, pt2.y, pt2.x, pt2.y, pt3.x, pt3.y
-    )
+    val curve = GeomFactory.curved_turn(turn)
     g2d.setColor(color)
-    // draw the directed turn
     g2d.draw(curve)
+    // This is math copied from curved_turn :P
+    val pt2 = turn.from.to.location
+    val pt3 = turn.to.shifted_start_pt(l = turn.to.lines.head.shift_line(0.5))
     g2d.fill(
       GeomFactory.draw_arrow(new Line(pt2.x, pt2.y, pt3.x, pt3.y), 3)
     )
@@ -700,6 +699,9 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
           sim.agents -= a
         }
       }
+      case EV_Key_Press(Key.G) => {
+        show_green = !show_green
+      }
       case EV_Select_Polygon() => {
         // Let's find all vertices inside the polygon.
         val rds = sim.vertices.filter(v => polygon.contains(v.location.x, v.location.y)).flatMap(v => v.roads).toSet
@@ -873,6 +875,15 @@ object GeomFactory {
     arrow.lineTo(mid.x + cos_perp1, mid.y + sin_perp1)
     arrow.lineTo(mid.x + cos_perp2, mid.y + sin_perp2)
     return arrow
+  }
+
+  def curved_turn(turn: Turn): Shape = {
+    val pt1 = turn.from.shifted_end_pt(l = turn.from.lines.last.shift_line(0.5))
+    val pt2 = turn.from.to.location
+    val pt3 = turn.to.shifted_start_pt(l = turn.to.lines.head.shift_line(0.5))
+    return new CubicCurve2D.Double(
+      pt1.x, pt1.y, pt2.x, pt2.y, pt2.x, pt2.y, pt3.x, pt3.y
+    )
   }
 
   def rand_color() = new Color(

@@ -92,12 +92,10 @@ class Edge(var id: Int, val road: Road, val dir: Direction.Direction) extends Tr
   private def shift_pt(x: Double, y: Double, theta: Double) = new Coordinate(
     x + (shift_mag * math.cos(theta)), y - (shift_mag * math.sin(theta))
   )
-  def shifted_start_pt: Coordinate = {
-    val l = lines.head
+  def shifted_start_pt(l: Line = lines.head): Coordinate = {
     return shift_pt(l.x1, l.y1, l.angle)
   }
-  def shifted_end_pt: Coordinate = {
-    val l = lines.last
+  def shifted_end_pt(l: Line = lines.last): Coordinate = {
     return shift_pt(l.x2, l.y2, l.angle + math.Pi)  // reverse the angle
   }
 }

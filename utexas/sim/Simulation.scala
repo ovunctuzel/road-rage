@@ -16,7 +16,7 @@ class Simulation(roads: List[Road], edges: List[Edge], vertices: List[Vertex],
   extends Graph(roads, edges, vertices, wards, special_ward)
 {
   ////////////// Misc
-  var listeners: List[Sim_Event => Unit] = Nil
+  var listeners: List[Sim_Event => Any] = Nil
   def tell_listeners(ev: Sim_Event) = listeners.foreach(l => l(ev))
 
   // functions that take nothing and return nothing, and the tick time
