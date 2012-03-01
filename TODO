@@ -36,11 +36,23 @@ TRAFFIC SIGNAL
     - random offset and delay within some bound, arbitrary sets
   3) green-wave forwards allocation ("greenflood")
     - finish greenflood
+      - 7 cycles?! so many small floods.
+        1) force standard 3-phasal at each intersection
+           let flooding decide each timing? how?
+        2) there is NO reason not to include as many turns in a cycle as possible, right?
+           it can be in multiple cycles... see if that helps. (change counting)
+      - test it against the fixed policy :P
+
+      - when a new turn doesnt fit into existing cycle, then... remember it and try again later,
+        or do just ONE flooding maybe?
       - prefer turns to major roads first (or major->major is better than minor->major?)
         (or alternate between these preferences)
     - new callback is NOT same as old method, but both work and seem correct... just check.
     - visualize the green/red better
       - do something with lanes still
+      - what i was imagining was picking some edge at some point in time, then flooding out
+        from there at some rate.
+    - support mixed intersection types and handle.
 
   4) diffused backwards allocation
     - same idea, but goal: make one critical intersection super efficient

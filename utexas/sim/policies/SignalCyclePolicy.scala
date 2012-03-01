@@ -3,8 +3,9 @@ package utexas.sim.policies
 import scala.collection.immutable.{SortedSet, TreeSet}
 import scala.collection.mutable.{HashSet => MutableSet}
 import scala.collection.mutable.ListBuffer
+import scala.collection.mutable.{HashMap => MutableMap}
 
-import utexas.map.{Turn, Edge}
+import utexas.map.{Turn, Edge, Vertex}
 import utexas.sim.{Intersection, Policy, Agent, EV_Signal_Change}
 
 import utexas.{Util, cfg}
@@ -30,18 +31,32 @@ class Cycle(val offset: Double, val duration: Double) {
   }
 
   def has(turn: Turn) = turns(turn)
+
+  def vert() = turns.head.vert
 }
 
 // factory methods for cycles
 object Cycle {
   val nil_cycle = new Cycle(0, 1)
+  // TODO not necessarily the nicest way to group all of this or dole it out
+  // can't comptue this now; Agent.sim may not exist yet.
+  var greenflood_assignments: Map[Vertex, ListBuffer[Cycle]] = null
 
   // SignalCyclePolicy asks us, so we can do some one-time work and dole out the
   // results or lazily compute
   def cycles_for(i: Intersection): List[Cycle] = {
+    if (greenflood_assignments == null) {
+      Util.log("Green-flooding from " + i)
+      Util.log_push
+      // Start from any edge leading to this intersection
+      greenflood_assignments = GreenFlood.assign(Agent.sim, i.v.turns.head.from)
+      Util.log_pop
+    }
+
+    return greenflood_assignments(i.v).toList
+
     // for now...
-    // TODO cfg
-    return arbitrary_cycles(i, 0, 60)
+    //return arbitrary_cycles(i, 0, 60)   // TODO cfg
   }
 
   // all of an edge's turns

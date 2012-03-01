@@ -60,7 +60,6 @@ class Agent(val id: Int, val graph: Graph, val start: Edge, val start_dist: Doub
     var current_on = start_on
     var current_dist = old_dist + new_dist
 
-    // TODO
     while (current_dist >= current_on.length) {
       current_dist -= current_on.length
       // Are we finishing a turn or starting one?
