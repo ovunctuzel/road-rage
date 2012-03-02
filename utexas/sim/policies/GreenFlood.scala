@@ -23,32 +23,28 @@ class GreenFlood(sim: Simulation) {
   val red_turns = new MutableSet[Turn]()
   red_turns ++= sim.turns
 
-  // TODO ultimately i don't think we need visited explicitly...
-  // TODO and if we have this per flood, it would mean a turn could be green
-  // during multiple cycles, not just one. could that ever be undesirable?
-  // doesn't seem that way with the current strategy.
-  val visited = new MutableSet[Turn]()
+  // TODO the 'include as many turns as possible, even in multiple cycles'
+  // strategy means we could actually speed this up by BFS on vertices, not
+  // turns. just make sure to add the right seeder turns to the cycle at a
+  // vertex.
 
   def compute(start_at: Edge): Map[Vertex, ListBuffer[Cycle]] = {
     val duration = 60   // TODO cfg
-    var turns_left = red_turns.size
     var start_cycle = Cycle.cycle_for_edge(start_at, 0, duration)
     cycles(start_cycle.vert) += start_cycle
 
     var flood_cnt = 0
-    while (turns_left > 0) {
+    while (!red_turns.isEmpty) {
       flood_cnt += 1
       val new_greens = flood(start_cycle)
-      turns_left -= new_greens
-      Util.log(new_greens + " green turns during this flood; " + turns_left + " remaining")
+      Util.log(new_greens + " green turns during this flood; " + red_turns.size + " remaining")
 
-      if (turns_left != 0) {
+      if (!red_turns.isEmpty) {
         // Pick the next start cycle.
 
         // TODO probably some much better heuristics than this.
 
-        // Pick a random turn, find every unscheduled turn at that intersection,
-        // and append a cycle there.
+        // Start a new flood with a new cycle containing a random unscheduled turn
         val vert = red_turns.head.vert
         // TODO it could certainly work out that there are no cycles scheduled
         // here yet (if the previous floods never even reach this vert). does it
@@ -56,8 +52,10 @@ class GreenFlood(sim: Simulation) {
         // 'simultaneously' with another flood group?
         start_cycle = new Cycle(next_offset(vert, 0), duration)
         cycles(vert) += start_cycle
-        vert.turns.filter(t => red_turns(t)).foreach(t => start_cycle.add_turn(t))
-        assert(!start_cycle.turns.isEmpty)
+        // make sure the cycle includes at least one red turn
+        start_cycle.add_turn(red_turns.head)
+        // now add any that fit, whether green or red
+        vert.turns.foreach(t => start_cycle.add_turn(t))
       }
     }
     val max_cycles = cycles.values.foldLeft(0)((a, b) => math.max(a, b.size))
@@ -86,10 +84,15 @@ class GreenFlood(sim: Simulation) {
   def flood(start: Cycle): Int = {
     // Don't forget this
     red_turns --= start.turns
-    var green_cnt = start.turns.size
+    var green_cnt = start.turns.size  // may be repeats of already scheduled turns
 
     // We've created a new cycle for which vertices during this flooding?
     val member_cycles = new MutableSet[Vertex]()
+
+    // TODO ultimately i don't think we need visited explicitly...
+    // so, allow a turn to be in multiple cycles by not having one master
+    // visited list for all floods
+    val visited = new MutableSet[Turn]()
 
     // Initialize
     val queue = new PriorityQueue[Step]()
@@ -139,9 +142,13 @@ class GreenFlood(sim: Simulation) {
         // is it compatible?
         if (cycle.add_turn(next)) {
           green_cnt += 1
-          red_turns -= next
-          // continue flooding
-          queue.enqueue(new Step(next, desired_offset, step.weight + 1))
+          // only continue flooding if this was a new turn; otherwise, we're
+          // going to make lots of redundant cycles
+          if (red_turns(next)) {
+            red_turns -= next
+            // continue flooding
+            queue.enqueue(new Step(next, desired_offset, step.weight + 1))
+          }
         } else {
           // work on it later (TODO may change this later to only do one
           // flooding... after all, if we know offsets...)
