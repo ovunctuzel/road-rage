@@ -14,19 +14,8 @@ paper:
 
 code: get signals a fair contender to stop signs
   - measure idle time
-    - define it
-      - 1st reques to entering? that's travel time too
-      - can_go = no to can_go = yes? that answer could change, still have to follow.
-      - how_long_idle when we first hit can_go = yes? but we still have to follow.
-      - time spent on edge total - (speed lim * dist)!
-    - record it
-      - commandline to enable it
-      - ("wasted time", agent 42, vert 35, time X)
-      - care about per-agent and per-intersection totals/averages/variances
-    - other values
-      - how long did simulation run? (one value)
-      - how long for each agent to complete a trip?
-      - throughput of intersections... (agents exiting per minute)
+    - throughput of intersections... (agents exiting per minute)
+    - process it: care about per-agent and per-intersection totals/averages/variances
   - increase num of agents until signals matter
 
 code: seemingly unavoidable gridlock... agents locking edges, not verts.
@@ -36,7 +25,6 @@ code: seemingly unavoidable gridlock... agents locking edges, not verts.
 code: bugs
   - in sugarland, oneway bg lines arent thick enough
   - get rid of arrows, make roads transparent
-  - lots of gridlock. why? is it avoidable?
 
 ###################
 
@@ -59,6 +47,8 @@ PROFILING
     want to spawn, maybe by generator?
   - dont ask length of a list when not needed...
   - how fast can we generate lots of dumb agents?
+  - measure profiling things
+    - how long did simulation run? (one value)
 
   1) is caching properties of linked list hurting us for iterating through big things?
   3) ... increase dt, of course
@@ -70,7 +60,6 @@ GENERATORS
   - a way to turn them off / reap them in the UI
   - color agents from diff generators a certain way
   - a way to save a "scenario"
-  - test at scale, and profile again.
 
 BIGGER ISSUES
   - fix geom of edge lines

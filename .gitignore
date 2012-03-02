@@ -17,3 +17,6 @@
 *.bbl
 *.blg
 *.eps
+
+# experiment data
+stats_log

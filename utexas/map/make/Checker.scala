@@ -17,6 +17,8 @@ object Checker {
     // Tarjan's.
 
     // TODO check for self-loops
+
+    check_roads(g)
   }
 
   // This causes agents to "float" over other the map as they chase an edge far
@@ -68,5 +70,16 @@ object Checker {
         }
       }
     }
+  }
+
+  def check_roads(g: Graph) = {
+    Util.log("Making sure there are roads for every intersection")
+    Util.log_push
+    for (v <- g.vertices) {
+      if (v.roads.isEmpty) {
+        Util.log(v + " has no roads!")
+      }
+    }
+    Util.log_pop
   }
 }

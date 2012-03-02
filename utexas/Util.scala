@@ -1,6 +1,7 @@
 package utexas
 
 import scala.util.Random
+import java.io.FileWriter
 
 object Util {
   def timer(msg: String) = new Timer(msg)
@@ -23,7 +24,10 @@ object Util {
   }
 
   // Convenient to see this at the very end if it was a long log.
-  scala.sys.ShutdownHookThread({ Util.log("\nRNG seed: " + Util.seed) })
+  scala.sys.ShutdownHookThread({
+    Util.log("\nRNG seed: " + Util.seed)
+    Stats.shutdown
+  })
 
   def rand_double(min: Double, max: Double): Double = {
     if (min > max) {
@@ -58,6 +62,26 @@ object Util {
     = (initial_speed * time) + (0.5 * accel * (time * time))
   def accel_to_achieve(cur_speed: Double, target_speed: Double)
     = (target_speed - cur_speed) / cfg.dt_s
+  // accelerate first, then cruise at constant
+  def two_phase_time(speed_i: Double = 0, speed_f: Double = 0, dist: Double = 0,
+                     accel: Double = 0): Double =
+  {
+    // v_f = v_i + a*t
+    val time_to_cruise = (speed_f - speed_i) / accel
+    val dist_during_accel = dist_at_constant_accel(accel, time_to_cruise, speed_i)
+
+    if (dist_during_accel < dist) {
+      // so then the remainder happens at constant cruisin speed
+      return time_to_cruise + ((dist - dist_during_accel) / speed_f)
+    } else {
+      // We spent the whole time accelerating
+      // solve dist = a(t^2) + (v_i)t
+      val discrim = math.sqrt((speed_i * speed_i) + (4 * accel * dist))
+      val time = (-speed_i + discrim) / (2 * accel) // this is the positive root
+      assert(time >= 0)   // make sure we have the right solution to this
+      return time
+    }
+  }
 }
 
 class Timer(msg: String) {
@@ -157,4 +181,37 @@ class Double_Cfgable(default: Double, descr: String, min: Double, max: Double) {
 
 class Int_Cfgable(default: Int, descr: String, min: Int, max: Int) {
   var value = default
+}
+
+sealed trait Measurement {}
+final case class Wasted_Time_Stat(agent: Int, intersection: Int, lag: Double) extends Measurement {
+  override def toString = "s1 %d %d %.2f".format(agent, intersection, lag)
+}
+final case class Trip_Time_Stat(agent: Int, time: Double) extends Measurement {
+  override def toString = "s2 %d %.2f".format(agent, time)
+}
+
+object Stats {
+  var log: FileWriter = null
+  var use_log = false
+  var use_print = false
+
+  def record(item: Measurement) = {
+    if (use_log) {
+      if (log == null) {
+        log = new FileWriter("stats_log")   // TODO use right buffering
+      }
+      log.write(item.toString + "\n")
+    }
+    if (use_print) {
+      Util.log("Stat: " + item)
+    }
+  }
+
+  // flush any logs we were writing
+  def shutdown() = {
+    if (log != null) {
+      log.close
+    }
+  }
 }

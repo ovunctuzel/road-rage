@@ -1,7 +1,7 @@
 package utexas.sim
 
 import utexas.map.{Edge, Coordinate, Turn, Traversable, Graph}
-import utexas.{Util, cfg}
+import utexas.{Util, cfg, Stats, Wasted_Time_Stat}
 
 // TODO come up with a notion of dimension and movement capability. at first,
 // just use radius bounded by lane widths?
@@ -21,7 +21,11 @@ class Agent(val id: Int, val graph: Graph, val start: Edge, val start_dist: Doub
   var target_accel: Double = 0  // m/s^2
   // TODO who chooses this?
   val behavior = new RouteFollowingBehavior(this, route)
+
+  // stats stuff
   var idle_since = -1.0   // how long has our speed been 0?
+  var entered_last = (-1.0, -1.0, -1.0)  // time, distance, speed
+  var started_trip_at = -1.0
 
   var upcoming_intersections: Set[Intersection] = Set()
 
@@ -163,8 +167,39 @@ class Agent(val id: Int, val graph: Graph, val start: Edge, val start_dist: Doub
   }
 
   // Delegate to the queues and intersections that simulation manages
-  def enter(t: Traversable, dist: Double) = Agent.sim.queues(t).enter(this, dist)
-  def exit(t: Traversable): Unit = Agent.sim.queues(t).exit(this)
+  def enter(t: Traversable, dist: Double): Position = {
+    // Remember for stats
+    entered_last = (Agent.sim.tick, dist, speed)
+    Agent.sim.queues(t).enter(this, dist)
+  }
+  def exit(t: Traversable) = {
+    // If we were on an edge, how long were we idling about?
+    t match {
+      case e: Edge => {
+        val time_spent = Agent.sim.tick - entered_last._1
+        // suppose nobody was in our way because the intersection did a good
+        // job, and it also let us go immediately. we should be able to traverse
+        // this edge at _about_ its speed limit (accounting for acceleration).
+        val optimal_time = Util.two_phase_time(
+          speed_i = entered_last._3, speed_f = e.road.speed_limit,
+          dist = e.length - entered_last._2, accel = max_accel
+        )
+        //assert(time_spent >= optimal_time)  // TODO we shouldn't have sped
+        val wasted_time = time_spent - optimal_time
+        // The alternatives for this measurement all suck:
+        // - from 1st request till entering (includes legit travel time too)
+        // - can_go = no to = yes (could change, still misses following delay)
+        // - how_long_idle when can_go becomes = yes (same problem)
+        if (wasted_time >= 0) {
+          // TODO this number still seems off (it's not 0 even when nobody
+          // stops, it's occasionally negative)
+          Stats.record(Wasted_Time_Stat(id, e.to.id, wasted_time))
+        }
+      }
+      case _ =>
+    }
+    Agent.sim.queues(t).exit(this)
+  }
   def move(t: Traversable, dist: Double)  = Agent.sim.queues(t).move(this, dist)
 
   def dump_info() = {
