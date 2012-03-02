@@ -20,14 +20,18 @@ class Cycle(val offset: Double, val duration: Double) {
   // returns false if it conflicts
   // assumes turn is from the correct intersection.
   def add_turn(turn: Turn): Boolean = {
-    val conflicts = turn.conflicts  // Cache it
-    if (turns.find(t => conflicts(t)).isDefined) {
-      // conflict
-      return false
-    } else {
+    if (could_add_turn(turn)) {
       turns += turn
       return true
+    } else {
+      return false
     }
+  }
+
+  // Don't actually add turn, just see if it would conflict or not
+  def could_add_turn(turn: Turn): Boolean = {
+    val conflicts = turn.conflicts  // Cache it
+    return !turns.find(t => conflicts(t)).isDefined
   }
 
   def has(turn: Turn) = turns(turn)
