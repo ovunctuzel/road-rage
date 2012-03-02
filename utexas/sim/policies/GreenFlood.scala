@@ -32,32 +32,42 @@ class GreenFlood(sim: Simulation) {
   def compute(start_at: Edge): Map[Vertex, ListBuffer[Cycle]] = {
     val duration = 60   // TODO cfg
     var turns_left = red_turns.size
-    var start_cycle = Cycle.cycle_for_edge(start_at, 0, duration)
-    cycles(start_cycle.vert) += start_cycle
+    var start_cycles = List(Cycle.cycle_for_edge(start_at, 0, duration))
+    start_cycles.foreach(c => cycles(c.vert) += c)
+    
+    // TODO try starting from multiple cycles!
+    val seeds = 5
 
     var flood_cnt = 0
     while (turns_left > 0) {
       flood_cnt += 1
-      val new_greens = flood(start_cycle)
+      val new_greens = flood(start_cycles)
       turns_left -= new_greens
-      Util.log(new_greens + " green turns during this flood; " + turns_left + " remaining")
+      Util.log(new_greens + " green turns during this flood using " + start_cycles.size + " seeds; " + turns_left + " remaining")
 
-      if (turns_left != 0) {
+      start_cycles = Nil
+
+      for (i <- 0 until math.min(seeds, turns_left)) {
         // Pick the next start cycle.
 
         // TODO probably some much better heuristics than this.
+        val vert = Util.choose_rand[Turn](red_turns.toList).vert
+        // don't pick the same vertex twice, of course. if we happen to do it,
+        // no worries, just have one seed this flood.
+        if (!start_cycles.find(c => c.vert == vert).isDefined) {
+          // Find every unscheduled turn at that intersection, and append a cycle
+          // there.
 
-        // Pick a random turn, find every unscheduled turn at that intersection,
-        // and append a cycle there.
-        val vert = red_turns.head.vert
-        // TODO it could certainly work out that there are no cycles scheduled
-        // here yet (if the previous floods never even reach this vert). does it
-        // make sense to try to start with an offset and be in effect
-        // 'simultaneously' with another flood group?
-        start_cycle = new Cycle(next_offset(vert, 0), duration)
-        cycles(vert) += start_cycle
-        vert.turns.filter(t => red_turns(t)).foreach(t => start_cycle.add_turn(t))
-        assert(!start_cycle.turns.isEmpty)
+          // TODO it could certainly work out that there are no cycles scheduled
+          // here yet (if the previous floods never even reach this vert). does it
+          // make sense to try to start with an offset and be in effect
+          // 'simultaneously' with another flood group?
+          val seed = new Cycle(next_offset(vert, 0), duration)
+          cycles(vert) += seed
+          vert.turns.filter(t => red_turns(t)).foreach(t => seed.add_turn(t))
+          assert(!seed.turns.isEmpty)
+          start_cycles :+= seed
+        }
       }
     }
     val max_cycles = cycles.values.foldLeft(0)((a, b) => math.max(a, b.size))
@@ -83,21 +93,25 @@ class GreenFlood(sim: Simulation) {
     def compare(other: Step) = other.weight.compare(weight)
   }
 
-  def flood(start: Cycle): Int = {
-    // Don't forget this
-    red_turns --= start.turns
-    var green_cnt = start.turns.size
+  def flood(seeds: List[Cycle]): Int = {
+    // Initialize
+    val duration = seeds.head.duration
+    val queue = new PriorityQueue[Step]()
+    var green_cnt = 0
+
+    for (c <- seeds) {
+      red_turns --= c.turns
+      green_cnt += c.turns.size
+
+      for (t <- c.turns) {
+        // initial offset is that of the start cycle
+        queue.enqueue(new Step(t, c.offset, 0))
+        visited += t
+      }
+    }
 
     // We've created a new cycle for which vertices during this flooding?
     val member_cycles = new MutableSet[Vertex]()
-
-    // Initialize
-    val queue = new PriorityQueue[Step]()
-    for (t <- start.turns) {
-      // initial offset is that of the start cycle
-      queue.enqueue(new Step(t, start.offset, 0))
-      visited += t
-    }
 
     // breadth-first search
     while (!queue.isEmpty) {
@@ -130,7 +144,7 @@ class GreenFlood(sim: Simulation) {
                         // offset > desired => potential congestion; wait more
 
                         // TODO I think it makes sense to keep the same.
-                        val c = new Cycle(offset, start.duration)
+                        val c = new Cycle(offset, duration)
                         member_cycles += next.vert
                         cycles(next.vert) += c
                         c
