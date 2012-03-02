@@ -5,7 +5,7 @@ import scala.collection.mutable.{HashSet => MutableSet}
 import scala.collection.mutable.ListBuffer
 import scala.collection.mutable.{HashMap => MutableMap}
 
-import utexas.map.{Turn, Edge, Vertex}
+import utexas.map.{Turn, Edge, Vertex, Road, TurnType}
 import utexas.sim.{Intersection, Policy, Agent, EV_Signal_Change}
 
 import utexas.{Util, cfg}
@@ -33,6 +33,7 @@ class Cycle(val offset: Double, val duration: Double) {
   def has(turn: Turn) = turns(turn)
 
   def vert() = turns.head.vert
+  
 }
 
 // factory methods for cycles
@@ -57,7 +58,22 @@ object Cycle {
 
     // for now...
     //return arbitrary_cycles(i, 0, 60)   // TODO cfg
+//    return cyclesFromTurnSets(i)
   }
+  
+//  def cyclesFromTurnSets(i: Intersection): List[Cycle] = {
+//    var counter = 0
+//    val duration = 30
+//    val turnSets = getTurnSets(i.v)
+//    var cycles:List[Cycle] = Nil
+//    for (cycle <- turnSets){
+//      val c = new Cycle(counter*duration, duration)
+//      cycle.foreach(t => c.add_turn(t))
+//      counter += 1
+//      cycles :+= c
+//    }
+//    return cycles
+//  }
 
   // all of an edge's turns
   def cycle_for_edge(e: Edge, offset: Double, duration: Double): Cycle = {
@@ -97,6 +113,66 @@ object Cycle {
     }
     return cycle_list.toList
   }
+  
+//    def getTurnSetsGeneral(intersection: Vertex):MutableSet[MutableSet[Turn]] = {
+//    if (intersection.turns.map(t => t.id).contains(0)){
+//      println(""+intersection.roads)
+//    }
+//    val result = new MutableSet[MutableSet[Turn]]()
+//    assert (intersection.roads.size>0)
+//    for (road <- intersection.roads){
+//      val cycle = new MutableSet[Turn]()
+//      for (edge <- road.incoming_lanes(intersection)){
+//        cycle ++= edge.leads_to
+//      }
+//      result += cycle
+//    }
+//    return result
+//  }
+//  
+//  def getTurnSetsInitial(intersection: Vertex):MutableSet[MutableSet[Turn]] = {
+//    if (intersection.roads.size != 4) return getTurnSetsGeneral(intersection);
+//    val result = new MutableSet[MutableSet[Turn]]()
+//    val roads:Set[(Road,Set[Road])] = intersection.roads.map(r => (r, intersection.parallel_roads(r)))
+//    println("" + roads)
+//    val roadsSeen = new MutableSet[Road]()
+//    for ((r, parallel) <- roads if !roadsSeen.contains(r)){
+//      if(parallel.size != 1) return getTurnSetsGeneral(intersection)
+//      val cyclePrimary = new MutableSet[Turn]()
+//      val cycleLefts = new MutableSet[Turn]()
+//      for (edge <- r.incoming_lanes(intersection)){
+//        cyclePrimary ++= edge.leads_to.filter(t => t.turn_type != TurnType.LEFT)
+//        cycleLefts ++= edge.leads_to.filter(t => t.turn_type == TurnType.LEFT)
+//      }
+//      for (edge <- parallel.first.incoming_lanes(intersection)){
+//        cyclePrimary ++= edge.leads_to.filter(t => t.turn_type != TurnType.LEFT)
+//        cycleLefts ++= edge.leads_to.filter(t => t.turn_type == TurnType.LEFT)
+//      }
+//      result += cyclePrimary
+//      result += cycleLefts
+//      roadsSeen += r
+//      roadsSeen += parallel.first
+//    }
+//    return result
+//  }
+//  
+//  def getTurnSets(intersection: Vertex):Set[Set[Turn]] = {
+//    val turnSets = getTurnSetsGeneral(intersection)
+//    val result = new MutableSet[Set[Turn]]()
+//    for (cycle <- turnSets){
+//      for (turn <- intersection.turns){
+//        val conflicts = turn.conflicts  // Cache it
+//        if (cycle.find(turn => conflicts(turn)).isDefined) {
+//          //Do nothing (i.e. continue...)
+//        }
+//        else {
+//        	cycle += turn
+//        }
+//      }
+//      result += cycle.toSet
+//    }
+//    return result.toSet
+//  }
 }
 
 // A cycle-based light.
@@ -117,6 +193,7 @@ class SignalCyclePolicy(intersection: Intersection) extends Policy(intersection)
       turns_seen ++= cycle.turns
     }
 
+    if (turns_seen.size != intersection.v.turns.size) println("" + (intersection.v.turns.toList -- turns_seen.toList))
     assert(turns_seen.size == intersection.v.turns.size)
 
     expect_offset - initial_offset // this is now the total duration
