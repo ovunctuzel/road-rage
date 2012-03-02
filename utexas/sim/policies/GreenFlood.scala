@@ -1,6 +1,7 @@
 package utexas.sim.policies
 
 import scala.collection.mutable.PriorityQueue
+import scala.collection.immutable.{SortedSet, TreeSet}
 import scala.collection.mutable.{HashSet => MutableSet}
 import scala.collection.mutable.{MutableList, ListBuffer}
 import scala.collection.mutable.{HashMap => MutableMap}
@@ -13,6 +14,9 @@ import utexas.Util
 // the name comes from http://en.wikipedia.org/wiki/Green_wave
 class GreenFlood(sim: Simulation) {
   val cycles = sim.vertices.map(v => (v, new ListBuffer[Cycle]())).toMap
+
+  // TODO non-deterministic results!!! sorted set implementation is SLOW though.
+  //var red_turns: SortedSet[Turn] = new TreeSet[Turn]()
 
   // when we hit a turn that can't be green, just remember so we can do more
   // flooding later

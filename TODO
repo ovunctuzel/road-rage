@@ -71,7 +71,6 @@ PROFILING
   3) ... increase dt, of course
   4) optimize step/react -- those take the most work time
     - if an agent is dependent on another and nothing changed with them, dont even bother?
-    - when nothing changes, short-circuit lots of stuff?
 
 GENERATORS
   - a way to turn them off / reap them in the UI
