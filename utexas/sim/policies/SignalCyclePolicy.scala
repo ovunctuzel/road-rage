@@ -52,7 +52,7 @@ object Cycle {
   // SignalCyclePolicy asks us, so we can do some one-time work and dole out the
   // results or lazily compute
   def cycles_for(i: Intersection): List[Cycle] = {
-    /*if (greenflood_assignments == null) {
+    if (greenflood_assignments == null) {
       Util.log("Green-flooding from " + i)
       Util.log_push
       // Start from any edge leading to this intersection
@@ -60,13 +60,13 @@ object Cycle {
       Util.log_pop
     }
 
-    return greenflood_assignments(i.v).toList*/
+    return greenflood_assignments(i.v).toList
 
     // for now...
     //return arbitrary_cycles(i, 0, 60)   // TODO cfg
 
     // test standard-phase cycles
-    return turn_sets_to_cycles(standard_turn_sets(i.v))
+    //return turn_sets_to_cycles(standard_turn_sets(i.v))
   }
   
   def turn_sets_to_cycles(sets: Set[Set[Turn]]): List[Cycle] = {

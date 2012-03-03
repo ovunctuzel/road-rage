@@ -21,6 +21,7 @@ class Vertex(val location: Coordinate, var id: Int) {
 
   def roads = turns.flatMap(t => List(t.from.road, t.to.road)).toSet
   def edges = turns.flatMap(t => List(t.from, t.to))
+  def in_edges = turns.map(t => t.from)
 
   // these may prove useful; just remember roads are undirected.
   // TODO test for one-ways?
@@ -33,6 +34,8 @@ class Vertex(val location: Coordinate, var id: Int) {
   def perp_roads(r: Road)     = find_roads(r, Set(TurnType.LEFT, TurnType.RIGHT))
   def left_roads(r: Road)     = find_roads(r, Set(TurnType.LEFT))
   def right_roads(r: Road)    = find_roads(r, Set(TurnType.RIGHT))
+  
+  def get_priority = roads.foldLeft(0.0)((a,b) => a+b.speed_limit) //Priority of vertex is sum of the speed limits leading into/out of it
 
   // Somewhere due to unordered hashes, the turns list winds up in an
   // inconsistent order. To make diffs of output be the same for the same code,

@@ -13,8 +13,8 @@ import utexas.{Util, cfg}
 class Intersection(val v: Vertex) {
   //val policy: Policy = new NeverGoPolicy(this)
   //val policy: Policy = new StopSignPolicy(this)
-  val policy: Policy = new SignalCyclePolicy(this)
-  //val policy: Policy = new ReservationPolicy(this)
+  //val policy: Policy = new SignalCyclePolicy(this)
+  val policy: Policy = new ReservationPolicy(this)
 
   override def toString = "Intersection(" + v + ")"
 
