@@ -24,9 +24,6 @@ class GreenFlood(sim: Simulation) {
     cycles(start_cycle.vert) += start_cycle
     flood(start_cycle)
 
-    val max_cycles = cycles.values.foldLeft(0)((a, b) => math.max(a, b.size))
-    Util.log("All intersections have <= " + max_cycles + " cycles")
-
     return cycles
   }
 

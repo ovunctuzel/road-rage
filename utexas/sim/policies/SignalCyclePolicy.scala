@@ -38,6 +38,8 @@ class Cycle(val offset: Double, val duration: Double) {
 
   def vert() = turns.head.vert
   
+  // expand to include any turns that don't conflict
+  def add_all_turns() = vert.turns.foreach(t => add_turn(t))
 }
 
 // factory methods for cycles
@@ -50,7 +52,7 @@ object Cycle {
   // SignalCyclePolicy asks us, so we can do some one-time work and dole out the
   // results or lazily compute
   def cycles_for(i: Intersection): List[Cycle] = {
-    if (greenflood_assignments == null) {
+    /*if (greenflood_assignments == null) {
       Util.log("Green-flooding from " + i)
       Util.log_push
       // Start from any edge leading to this intersection
@@ -58,26 +60,25 @@ object Cycle {
       Util.log_pop
     }
 
-    return greenflood_assignments(i.v).toList
+    return greenflood_assignments(i.v).toList*/
 
     // for now...
     //return arbitrary_cycles(i, 0, 60)   // TODO cfg
-//    return cyclesFromTurnSets(i)
+
+    // test standard-phase cycles
+    return turn_sets_to_cycles(standard_turn_sets(i.v))
   }
   
-//  def cyclesFromTurnSets(i: Intersection): List[Cycle] = {
-//    var counter = 0
-//    val duration = 30
-//    val turnSets = getTurnSets(i.v)
-//    var cycles:List[Cycle] = Nil
-//    for (cycle <- turnSets){
-//      val c = new Cycle(counter*duration, duration)
-//      cycle.foreach(t => c.add_turn(t))
-//      counter += 1
-//      cycles :+= c
-//    }
-//    return cycles
-//  }
+  def turn_sets_to_cycles(sets: Set[Set[Turn]]): List[Cycle] = {
+    val duration = 30  // TODO cfg
+    var offset = 0
+    return sets.toList.map(set => {
+      val c = new Cycle(offset, duration)
+      set.foreach(t => assert(c.add_turn(t)))
+      offset += duration
+      c
+    })
+  }
 
   // all of an edge's turns
   def cycle_for_edge(e: Edge, offset: Double, duration: Double): Cycle = {
@@ -105,7 +106,6 @@ object Cycle {
       // conflict checking
       // start with other turns from the same lane as the canonical. really
       // helps throughput.
-      //for (candidate <- turns_left) {
       for (candidate <- canonical.from.next_turns ++ turns_left) {
         if (this_cycle.add_turn(candidate)) {
           turns_left -= candidate
@@ -118,70 +118,84 @@ object Cycle {
     return cycle_list.toList
   }
   
-//    def getTurnSetsGeneral(intersection: Vertex):MutableSet[MutableSet[Turn]] = {
-//    if (intersection.turns.map(t => t.id).contains(0)){
-//      println(""+intersection.roads)
-//    }
-//    val result = new MutableSet[MutableSet[Turn]]()
-//    assert (intersection.roads.size>0)
-//    for (road <- intersection.roads){
-//      val cycle = new MutableSet[Turn]()
-//      for (edge <- road.incoming_lanes(intersection)){
-//        cycle ++= edge.leads_to
-//      }
-//      result += cycle
-//    }
-//    return result
-//  }
-//  
-//  def getTurnSetsInitial(intersection: Vertex):MutableSet[MutableSet[Turn]] = {
-//    if (intersection.roads.size != 4) return getTurnSetsGeneral(intersection);
-//    val result = new MutableSet[MutableSet[Turn]]()
-//    val roads:Set[(Road,Set[Road])] = intersection.roads.map(r => (r, intersection.parallel_roads(r)))
-//    println("" + roads)
-//    val roadsSeen = new MutableSet[Road]()
-//    for ((r, parallel) <- roads if !roadsSeen.contains(r)){
-//      if(parallel.size != 1) return getTurnSetsGeneral(intersection)
-//      val cyclePrimary = new MutableSet[Turn]()
-//      val cycleLefts = new MutableSet[Turn]()
-//      for (edge <- r.incoming_lanes(intersection)){
-//        cyclePrimary ++= edge.leads_to.filter(t => t.turn_type != TurnType.LEFT)
-//        cycleLefts ++= edge.leads_to.filter(t => t.turn_type == TurnType.LEFT)
-//      }
-//      for (edge <- parallel.first.incoming_lanes(intersection)){
-//        cyclePrimary ++= edge.leads_to.filter(t => t.turn_type != TurnType.LEFT)
-//        cycleLefts ++= edge.leads_to.filter(t => t.turn_type == TurnType.LEFT)
-//      }
-//      result += cyclePrimary
-//      result += cycleLefts
-//      roadsSeen += r
-//      roadsSeen += parallel.first
-//    }
-//    return result
-//  }
-//  
-//  def getTurnSets(intersection: Vertex):Set[Set[Turn]] = {
-//    val turnSets = getTurnSetsGeneral(intersection)
-//    val result = new MutableSet[Set[Turn]]()
-//    for (cycle <- turnSets){
-//      for (turn <- intersection.turns){
-//        val conflicts = turn.conflicts  // Cache it
-//        if (cycle.find(turn => conflicts(turn)).isDefined) {
-//          //Do nothing (i.e. continue...)
-//        }
-//        else {
-//        	cycle += turn
-//        }
-//      }
-//      result += cycle.toSet
-//    }
-//    return result.toSet
-//  }
+  // each set will have all turns from some incoming edge
+  // TODO refactor / share code with arbitrary
+  def split_turn_set(input: List[Turn]): Set[Set[Turn]] = {
+    var turns_left = input
+    val groups = new MutableSet[Set[Turn]]()
+    while (!turns_left.isEmpty) {
+      val this_group = new MutableSet[Turn]()
+      this_group += turns_left.head
+      turns_left = turns_left.tail
+
+      // conflict relation is symmetric, but not transitive... so do quadratic
+      // conflict checking
+      for (candidate <- turns_left) {
+        val conflicts = candidate.conflicts // cache
+        if (!this_group.find(t => conflicts(t)).isDefined) {
+          this_group += candidate
+          turns_left = turns_left.filter(t => t != candidate)
+        }
+      }
+
+      groups += this_group.toSet
+    }
+    return groups.toSet
+  }
+
+  // it's only necessary to split because of merging
+  def standard_turn_sets(vert: Vertex): Set[Set[Turn]] = vert.roads.flatMap(
+    r => split_turn_set(r.incoming_lanes(vert).flatMap(l => l.leads_to).toList)
+  ).toSet
+
+  /*def getTurnSetsInitial(intersection: Vertex):MutableSet[MutableSet[Turn]] = {
+    if (intersection.roads.size != 4) return getTurnSetsGeneral(intersection);
+    val result = new MutableSet[MutableSet[Turn]]()
+    val roads:Set[(Road,Set[Road])] = intersection.roads.map(r => (r, intersection.parallel_roads(r)))
+    println("" + roads)
+    val roadsSeen = new MutableSet[Road]()
+    for ((r, parallel) <- roads if !roadsSeen.contains(r)){
+      if(parallel.size != 1) return getTurnSetsGeneral(intersection)
+      val cyclePrimary = new MutableSet[Turn]()
+      val cycleLefts = new MutableSet[Turn]()
+      for (edge <- r.incoming_lanes(intersection)){
+        cyclePrimary ++= edge.leads_to.filter(t => t.turn_type != TurnType.LEFT)
+        cycleLefts ++= edge.leads_to.filter(t => t.turn_type == TurnType.LEFT)
+      }
+      for (edge <- parallel.first.incoming_lanes(intersection)){
+        cyclePrimary ++= edge.leads_to.filter(t => t.turn_type != TurnType.LEFT)
+        cycleLefts ++= edge.leads_to.filter(t => t.turn_type == TurnType.LEFT)
+      }
+      result += cyclePrimary
+      result += cycleLefts
+      roadsSeen += r
+      roadsSeen += parallel.first
+    }
+    return result
+  }*/
+
+  private var max_cycles_seen = 0
+  private var verts_assigned = 0
+  private var verts_expecting = -1
+  def max_cycles(candidate: Int) = {
+    if (verts_expecting == -1) {
+      verts_expecting = Agent.sim.vertices.size
+    }
+    max_cycles_seen = math.max(max_cycles_seen, candidate)
+    verts_assigned += 1
+    if (verts_assigned == verts_expecting) {
+      Util.log("Every intersection has <= " + max_cycles_seen + " cycles")
+    }
+  }
 }
 
 // A cycle-based light.
 class SignalCyclePolicy(intersection: Intersection) extends Policy(intersection) {
   val cycles = Cycle.cycles_for(intersection)
+  Cycle.max_cycles(cycles.size)
+  if (cycles.size > 4) {
+    Util.log(intersection.v.edges.head + " has " + cycles.size)
+  }
   val initial_offset = cycles.head.offset
 
   // Do some verification... make sure offsets are strictly increasing,
@@ -197,7 +211,6 @@ class SignalCyclePolicy(intersection: Intersection) extends Policy(intersection)
       turns_seen ++= cycle.turns
     }
 
-    if (turns_seen.size != intersection.v.turns.size) println("" + (intersection.v.turns.toList -- turns_seen.toList))
     assert(turns_seen.size == intersection.v.turns.size)
 
     expect_offset - initial_offset // this is now the total duration

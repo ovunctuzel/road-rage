@@ -39,9 +39,10 @@ TRAFFIC SIGNAL
       - 7 cycles?! so many small floods.
         1) force standard 3-phasal at each intersection
            let flooding decide each timing? how?
-        2) there is NO reason not to include as many turns in a cycle as possible, right?
-           it can be in multiple cycles... see if that helps. (change counting)
-      - test it against the fixed policy :P
+        2) start a flood from two red turns at once, or more...
+          - with double inclusion or not? for now, no.
+          - start from multiple sources
+      - spawn agents specifically on the blessed first flood... does it really help?
 
       - when a new turn doesnt fit into existing cycle, then... remember it and try again later,
         or do just ONE flooding maybe?
@@ -70,7 +71,8 @@ PROFILING
   1) is caching properties of linked list hurting us for iterating through big things?
   3) ... increase dt, of course
   4) optimize step/react -- those take the most work time
-    - if an agent is dependent on another and nothing changed with them, dont even bother?
+    - remember what agent we're following and what intersection we're waiting on
+      if both havent changed, short-circuit
 
 GENERATORS
   - a way to turn them off / reap them in the UI
