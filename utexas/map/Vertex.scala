@@ -35,7 +35,8 @@ class Vertex(val location: Coordinate, var id: Int) {
   def left_roads(r: Road)     = find_roads(r, Set(TurnType.LEFT))
   def right_roads(r: Road)    = find_roads(r, Set(TurnType.RIGHT))
   
-  def get_priority = roads.foldLeft(0.0)((a,b) => a+b.speed_limit) //Priority of vertex is sum of the speed limits leading into/out of it
+  // Priority of a vertex is the sum of speed limits of roads surrounding it
+  def get_priority = roads.foldLeft(0.0)((a,b) => a + b.speed_limit)
 
   // Somewhere due to unordered hashes, the turns list winds up in an
   // inconsistent order. To make diffs of output be the same for the same code,

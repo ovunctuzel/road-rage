@@ -36,9 +36,11 @@ object Headless {
     sim.spawn_army(n)
     // This can be optional
     Util.log("Waiting for " + n + " routes to be computed")
+    Util.log_push
     val t = Util.timer("Computing routes")
     sim.wait_for_all_generators
     t.stop
+    Util.log_pop
 
     val timer = Util.timer("running the sim")
     Util.log("Starting simulation with time-steps of " + cfg.dt_s + "s")

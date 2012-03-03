@@ -68,10 +68,18 @@ abstract class Generator(sim: Simulation, desired_starts: List[Edge], val end_ca
   }
 
   // And the blocking poll
-  def wait_for_all() = pending.foreach(a => a._2 match {
-    case Some(task) => task.get
-    case None       =>
-  })
+  def wait_for_all() = {
+    var cnt = 0
+    pending.foreach(a => {
+      print("\r" + Util.indent + "Done with " + cnt + " routes")
+      a._2 match {
+        case Some(task) => task.get
+        case None       =>
+      }
+      cnt += 1
+    })
+    Util.log("")
+  }
 
   def create_and_poll(n: Int): List[Agent] = {
     for (i <- (0 until n)) {

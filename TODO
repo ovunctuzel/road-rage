@@ -1,61 +1,53 @@
 # TODO #
 
-- stats
-  - commandline to enable/disable it
-  - Util should own it
-  - how fine-tuned? (time, speed of each agent) or (time, average speed now)
-  - stream to a logfile
+paper:
+  - fix diagrams
+  - emphasize configurability for sim section more
+  - name could either rework AORTA or be japanese
+  - rename lanes/intersections in code too? at least everywhere in paper consistently.
+  - passive voice everywhere
+  - more critique in related works...
 
-  - how long did simulation run (just one value)
-  - how long did each agent take to complete a trip?
-  - how long did each agent idle total?
-  - throughput of intersections (agents completing a turn per...)
-  - total distance by all vehicles
-  - if an agent was the only car and never had to stop and did speed limit, what would they get? difference from that is delay per agent.
+  - decide specifics of application/experiment
+    - are we converting stop signs to signals? how?
+    - mixed-mode policies
 
-- improve pre-emption in stop lights + reservation policies. agent in front of them better be
-  approved too.
+code: get signals a fair contender to stop signs
+  - measure idle time
+    - define it
+      - 1st reques to entering? that's travel time too
+      - can_go = no to can_go = yes? that answer could change, still have to follow.
+      - how_long_idle when we first hit can_go = yes? but we still have to follow.
+      - time spent on edge total - (speed lim * dist)!
+    - record it
+      - commandline to enable it
+      - ("wasted time", agent 42, vert 35, time X)
+      - care about per-agent and per-intersection totals/averages/variances
+    - other values
+      - how long did simulation run? (one value)
+      - how long for each agent to complete a trip?
+      - throughput of intersections... (agents exiting per minute)
+  - increase num of agents until signals matter
 
-- implement standard civeng phasal traffic signal behavior
+code: seemingly unavoidable gridlock... agents locking edges, not verts.
+  - detect with dependency graph
+  - make them re-route?
 
-- how fast can we generate lots of dumb agents?
-  maybe print progress
+code: bugs
+  - in sugarland, oneway bg lines arent thick enough
+  - get rid of arrows, make roads transparent
+  - lots of gridlock. why? is it avoidable?
 
-- consider letting intersections react on their own, rather than just from agents
-  simplifies reasoning about traffic signals, but also takes away the sorta clever delay-avoider.
-  - optimization: intersections schedule events "hey wake me up >= this tick" so we dont poll all
+###################
 
 TRAFFIC SIGNAL
-  - each intersection has a sequence of cyclic 'cycles' and an 'offset':
-    - cycle = (a set of non-conflicting turns, a duration)
-    - initial offset = all signals start with first at the first cycle at 0 seconds + this extra time
-
-  1) fixed allocation
-    - no offsets, common delay, arbitrary sets (maybe try to group all from same lane)
-  2) random allocation
-    - random offset and delay within some bound, arbitrary sets
-  3) green-wave forwards allocation ("greenflood")
-    - finish greenflood
-      - 7 cycles?! so many small floods.
-        1) force standard 3-phasal at each intersection
-           let flooding decide each timing? how?
-        2) start a flood from two red turns at once, or more...
-          - with double inclusion or not? for now, no.
-          - start from multiple sources
-      - spawn agents specifically on the blessed first flood... does it really help?
-
-      - when a new turn doesnt fit into existing cycle, then... remember it and try again later,
-        or do just ONE flooding maybe?
-      - prefer turns to major roads first (or major->major is better than minor->major?)
-        (or alternate between these preferences)
-    - new callback is NOT same as old method, but both work and seem correct... just check.
-    - visualize the green/red better
-      - do something with lanes still
-      - what i was imagining was picking some edge at some point in time, then flooding out
-        from there at some rate.
-    - support mixed intersection types and handle.
-
-  4) diffused backwards allocation
+  - random allocation policy
+  - visualize the green/red better
+    - do something with lanes still
+    - what i was imagining was picking some edge at some point in time, then flooding out
+      from there at some rate.
+  - improve/clean up greenflood
+  - diffused backwards allocation
     - same idea, but goal: make one critical intersection super efficient
     - what lanes lead to / feed the lanes that can do turns? repeat for those.
 
@@ -85,10 +77,12 @@ BIGGER ISSUES
   - make sure turns and conflicts are as good as possible
     - randomize num of lanes to test
   * lane changing
-  - is there a way to analytically say "an agent will own this chunk" at some time, and then solve for collisions?
+  - is there a way to analytically say "an agent will own this chunk" at some time, and then solve
+    for collisions?
   - nondeterministic.
     - when running, agents enter at diff times
-    - when paused, threads compute routes in diff orders, then two agents compete to spawn in same spot.
+    - when paused, threads compute routes in diff orders, then two agents compete to spawn in same
+      spot.
   - automated testing strategy.
   - contraction hierarchies for FAST pathing, or wards
   - group crazy intersections together and have S-turns.
@@ -105,6 +99,8 @@ POSSIBLY SIMPLE
   - when we speed up, sleep less in UI?
   - ui configurable intersection policies
   - snapshot mode in headless with agents pos, to later render
+  - improve pre-emption in stop lights + reservation policies. agent in front of them better be
+    approved too.
 
 ### Map building ###
 

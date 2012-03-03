@@ -39,7 +39,7 @@ class Cycle(val offset: Double, val duration: Double) {
   def vert() = turns.head.vert
   
   // expand to include any turns that don't conflict
-  def add_all_turns() = vert.turns.foreach(t => add_turn(t))
+  def expand_all_turns() = vert.turns.foreach(t => add_turn(t))
 }
 
 // factory methods for cycles
@@ -63,10 +63,15 @@ object Cycle {
     return greenflood_assignments(i.v).toList
 
     // for now...
-    //return arbitrary_cycles(i, 0, 60)   // TODO cfg
+    //return arbitrary_cycles(i.v)
 
-    // test standard-phase cycles
-    //return turn_sets_to_cycles(standard_turn_sets(i.v))
+    // test standard-phase cycles... or enhanced with grouped lefts
+    /*
+    //val cycles = turn_sets_to_cycles(standard_turn_sets(i.v))
+    val cycles = turn_sets_to_cycles(grouped_left_turn_sets(i.v))
+    // no reason not to let more things move...
+    cycles.foreach(c => c.expand_all_turns)
+    return cycles*/
   }
   
   def turn_sets_to_cycles(sets: Set[Set[Turn]]): List[Cycle] = {
@@ -90,37 +95,11 @@ object Cycle {
   // Least number of cycles can be modeled as graph coloring, but we're just
   // going to do a simple greedy approach, with the heuristic of trying to
   // include lots of turns from the same edge.
-  def arbitrary_cycles(i: Intersection, initial_offset: Double, duration: Double): List[Cycle] =
-  {
-    // we need sorted sets to keep determinism
-    var turns_left: SortedSet[Turn] = new TreeSet[Turn] ++ i.v.turns
-    val cycle_list = new ListBuffer[Cycle]()
-    var offset = initial_offset
-    while (!turns_left.isEmpty) {
-      val this_cycle = new Cycle(offset, duration)
-      val canonical = turns_left.head
-      this_cycle.add_turn(canonical)
-      turns_left = turns_left.tail
-    
-      // conflict relation is symmetric, but not transitive... so do quadratic
-      // conflict checking
-      // start with other turns from the same lane as the canonical. really
-      // helps throughput.
-      for (candidate <- canonical.from.next_turns ++ turns_left) {
-        if (this_cycle.add_turn(candidate)) {
-          turns_left -= candidate
-        }
-      }
-        
-      cycle_list += this_cycle
-      offset += duration
-    }
-    return cycle_list.toList
-  }
-  
+  def arbitrary_cycles(vert: Vertex) = turn_sets_to_cycles(split_turn_set(vert.turns))
+
   // each set will have all turns from some incoming edge
-  // TODO refactor / share code with arbitrary
-  def split_turn_set(input: List[Turn]): Set[Set[Turn]] = {
+  // this just factors in conflicts that occur due to merging
+  def split_turn_set(input: Iterable[Turn]): Set[Set[Turn]] = {
     var turns_left = input
     val groups = new MutableSet[Set[Turn]]()
     while (!turns_left.isEmpty) {
@@ -144,36 +123,45 @@ object Cycle {
   }
 
   // it's only necessary to split because of merging
+  // these are the standard turn sets... all turns from each incoming group of
+  // lanes can go
   def standard_turn_sets(vert: Vertex): Set[Set[Turn]] = vert.roads.flatMap(
-    r => split_turn_set(r.incoming_lanes(vert).flatMap(l => l.leads_to).toList)
+    r => split_turn_set(r.incoming_lanes(vert).flatMap(l => l.leads_to))
   ).toSet
 
-  /*def getTurnSetsInitial(intersection: Vertex):MutableSet[MutableSet[Turn]] = {
-    if (intersection.roads.size != 4) return getTurnSetsGeneral(intersection);
-    val result = new MutableSet[MutableSet[Turn]]()
-    val roads:Set[(Road,Set[Road])] = intersection.roads.map(r => (r, intersection.parallel_roads(r)))
-    println("" + roads)
-    val roadsSeen = new MutableSet[Road]()
-    for ((r, parallel) <- roads if !roadsSeen.contains(r)){
-      if(parallel.size != 1) return getTurnSetsGeneral(intersection)
-      val cyclePrimary = new MutableSet[Turn]()
-      val cycleLefts = new MutableSet[Turn]()
-      for (edge <- r.incoming_lanes(intersection)){
-        cyclePrimary ++= edge.leads_to.filter(t => t.turn_type != TurnType.LEFT)
-        cycleLefts ++= edge.leads_to.filter(t => t.turn_type == TurnType.LEFT)
-      }
-      for (edge <- parallel.first.incoming_lanes(intersection)){
-        cyclePrimary ++= edge.leads_to.filter(t => t.turn_type != TurnType.LEFT)
-        cycleLefts ++= edge.leads_to.filter(t => t.turn_type == TurnType.LEFT)
-      }
-      result += cyclePrimary
-      result += cycleLefts
-      roadsSeen += r
-      roadsSeen += parallel.first
+  def grouped_left_turn_sets(vert: Vertex): Set[Set[Turn]] = {
+    // Don't attempt this if it's not a 4-way stop
+    if (vert.roads.size != 4) {
+      return standard_turn_sets(vert)
     }
-    return result
-  }*/
+    // for both pairs of parallel roads, group the lefts
+    val parallel1: Set[Road] = Set(vert.roads.head) ++ vert.parallel_roads(vert.roads.head)
+    val parallel2: Set[Road] = vert.roads -- parallel1
+    // but if this is a weird intersection, again, don't even bother trying
+    if (parallel1.size != 2 || parallel2.size != 2) {
+      return standard_turn_sets(vert)
+    }
 
+    // for every incoming road, group the non-left turns
+    val groups = new ListBuffer[Set[Turn]]()
+    for (r <- vert.roads) {
+      groups ++= split_turn_set(r.incoming_lanes(vert).flatMap(e => e.next_turns.filter(t => t.turn_type != TurnType.LEFT)))
+    }
+
+    // TODO these guaranteed to not conflict?
+    // group the lefts. unfortunately, some may still conflict...
+    val size_before = groups.size
+    groups ++= split_turn_set(parallel1.flatMap(r => r.incoming_lanes(vert).flatMap(l => l.left_turns)))
+    groups ++= split_turn_set(parallel2.flatMap(r => r.incoming_lanes(vert).flatMap(l => l.left_turns)))
+    // Why weren't these parallel lefts fine?
+    /*if (groups.size - size_before != 2) {
+      Util.log(groups.size + ", not " + size_before + " for " + parallel1 + " and " + parallel2)
+    }*/
+
+    return groups.toSet
+  }
+
+  // TODO this is a lot of work for maybe not that much benefit
   private var max_cycles_seen = 0
   private var verts_assigned = 0
   private var verts_expecting = -1
@@ -193,9 +181,6 @@ object Cycle {
 class SignalCyclePolicy(intersection: Intersection) extends Policy(intersection) {
   val cycles = Cycle.cycles_for(intersection)
   Cycle.max_cycles(cycles.size)
-  if (cycles.size > 4) {
-    Util.log(intersection.v.edges.head + " has " + cycles.size)
-  }
   val initial_offset = cycles.head.offset
 
   // Do some verification... make sure offsets are strictly increasing,

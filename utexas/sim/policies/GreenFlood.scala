@@ -14,7 +14,7 @@ import utexas.Util
 
 // the name comes from http://en.wikipedia.org/wiki/Green_wave
 class GreenFlood(sim: Simulation) {
-  val stdPhases = sim.vertices.map(v => (v, Cycle.standard_turn_sets(v))).toMap
+  val stdPhases = sim.vertices.map(v => (v, Cycle.grouped_left_turn_sets(v))).toMap
   val cycles = sim.vertices.map(v => (v, new ListBuffer[Cycle]())).toMap
 
   // TODO non-deterministic results!!! sorted set implementation is SLOW though.
@@ -27,10 +27,8 @@ class GreenFlood(sim: Simulation) {
     cycles(start_at.to) ++= startCycles
     flood(start_at.to)
 
-    val max_cycles = cycles.values.foldLeft(0)((a, b) => math.max(a, b.size))
-    Util.log("All intersections have <= " + max_cycles + " cycles")
-
-    cycles.values.flatten.foreach(c => c.add_all_turns)
+    // expand
+    cycles.values.flatten.foreach(c => c.expand_all_turns)
     
     return cycles
   }
