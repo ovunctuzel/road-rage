@@ -13,8 +13,9 @@ paper:
     - mixed-mode policies
 
 code: get signals a fair contender to stop signs
-  - measure idle time
+  - measurements
     - throughput of intersections... (agents exiting per minute)
+    - how many agents active at any time? (when continuous gen is going)
     - process it: care about per-agent and per-intersection totals/averages/variances
   - increase num of agents until signals matter
 

@@ -4,6 +4,9 @@ import utexas.{Util, cfg, Stats}
 import utexas.map.Coordinate
 
 object Headless {
+  // cut off some simulations by time
+  var run_for: Double = -1.0
+
   def process_args(args: Array[String]): Simulation = {
     // TODO write with 'partition'
     val keys = args.zipWithIndex.filter(p => p._2 % 2 == 0).map(p => p._1)
@@ -21,6 +24,7 @@ object Headless {
         case "--rng"         => { rng = value.toLong }
         case "--print_stats" => { Stats.use_print = value == "1" }
         case "--log_stats"   => { Stats.use_log = value == "1" }
+        case "--run_for"     => { run_for = value.toDouble }
         case _               => { Util.log("Unknown argument: " + key); sys.exit }
       }
     }
@@ -47,7 +51,13 @@ object Headless {
     var last_virtual_time = 0.0
     var max_movements = 0
     var total_agent_steps = 0
-    while (!sim.done) {
+
+    def done() = if (run_for == -1.0)
+                   sim.done
+                 else
+                   sim.tick >= run_for
+
+    while (!done) {
       // Print every 1 literal second
       val now = timer.so_far
       //val now = sim.tick    // or every 1 virtual second

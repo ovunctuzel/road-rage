@@ -115,26 +115,25 @@ class FixedSizeGenerator(sim: Simulation, starts: List[Edge], ends: List[Edge], 
 }
 
 class ContinuousGenerator(sim: Simulation, starts: List[Edge], ends: List[Edge],
-                          rate: Double, num: Int) extends Generator(sim, starts, ends)
+                          spawn_every: Double) extends Generator(sim, starts, ends)
 {
-  val num_per_tick = ((rate / cfg.dt_s) * num).toInt
+  var last_tick = Agent.sim.tick
+  var accumulated_time = 0.0
 
   override def run(): Either[List[Agent], Boolean] = {
-    if (num_per_tick == 0) {
-      // TODO figure out how to spawn per 2 ticks, or whatever
-      Util.log("Generator won't spawn anything! (Choose more agents per time)")
-      return Right(true)
-    } else if (start_candidates.isEmpty) {
+    accumulated_time += Agent.sim.tick - last_tick
+    last_tick = Agent.sim.tick
+
+    if (start_candidates.isEmpty) {
       Util.log("Generator has no viable starting edges!")
       return Right(true)
     } else {
-      // TODO fine tune this policy a bit. basically, dont schedule TOO many
-      // routes to be found if we can't keep up computationally.
-      if (pending.size >= num_per_tick * 2) {
-        return Left(poll)
-      } else {
-        return Left(create_and_poll(num_per_tick))
+      var new_agents: List[Agent] = Nil
+      while (accumulated_time >= spawn_every) {
+        accumulated_time -= spawn_every
+        new_agents ++= create_and_poll(1)
       }
+      return Left(new_agents)
     }
   }
 }

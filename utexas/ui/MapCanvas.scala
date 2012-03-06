@@ -739,19 +739,14 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
               }
               case Dialog.Result.No => {
                 // Continuous
-                prompt_double("How often (in simulation-time seconds) do you want more agents?") match {
-                  case Some(rate) => {
-                    prompt_int("How many agents?") match {
-                      case Some(num) => {
-                        sim.generators += new ContinuousGenerator(
-                          sim,
-                          polygon_roads1.toList.flatMap(r => r.all_lanes),
-                          polygon_roads2.toList.flatMap(r => r.all_lanes),
-                          rate, num
-                        )
-                      }
-                      case _ =>
-                    }
+                prompt_double("How often (in simulation-time seconds) do you want one new agent?") match {
+                  case Some(time) => {
+                    sim.generators += new ContinuousGenerator(
+                      sim,
+                      polygon_roads1.toList.flatMap(r => r.all_lanes),
+                      polygon_roads2.toList.flatMap(r => r.all_lanes),
+                      time
+                    )
                   }
                   case _ =>
                 }
