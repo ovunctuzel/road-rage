@@ -326,7 +326,7 @@ Map construction is split into several passes, each feeding the next.
         the angles between lanes. When several lanes all cross into fewer lanes,
         merging is arbitrarily forced on the rightmost lanes.  Although inaccurate,
         these patterns are the best compromise. At the time of writing, even sources
-        like Google Maps \commentd{TODO cite} lack this information.
+        like Google Maps \cite{googleMaps} lack this information.
   \item Because turns are heuristically placed, the graph is usually
         disconnected. Since the largest resulting map is desirable, the strongly
         connected components of the digraph with the fewest members are removed.
@@ -474,9 +474,9 @@ adapt timings and refinements to the autonomous reservation policy.
 Picking accelerations that optimize objective functions is a separate task from
 picking a path to travel. Agent behaviors consult a route strategy to pick
 turns. Currently two simple implementations are available. One statically plans
-a route to some goal using standard A* search (\commentd{TODO cite}); the other
-performs a drunken walk, lazily planning random choices at each intersection as
-the lookahead engine needs to know. Future experiments in dynamic replanning or
+a route to some goal using standard A* search \cite{astar}; the other performs a
+drunken walk, lazily planning random choices at each intersection as the
+lookahead engine needs to know. Future experiments in dynamic replanning or
 hierarchial planning can be performed without modifying any code other than a
 creating new route implementation. Route policies could also interact with a
 singleton overseer to gain some sort of global insight or with smart
@@ -490,16 +490,15 @@ block other traffic. The default behavior prevents this by refusing to start a
 turn before the lookahead engine guarantees no agent will trigger a premature
 stop.
 
-\commentd{wiki has a page naming gridlock. cite that for the name?}
-
 However, with very high volumes of traffic, it is possible for waiting agents to
 accumulate and fill lanes to their capacity. When this happens in a circular
 manner so that the agent at the front of each lane is waiting to perform a turn
-into another full lane with the same such head agent, gridlock occurs; no agent
-in the system will make progress unless an agent at the front decides to pick a
-different turn. At best, AORTA can detect this by maintaining a dependency graph
-that encodes the ``is following'' relation and finding cycles. It is not clear
-how to prevent or mend the deadlock without forcing agents to re-route.
+into another full lane with the same such head agent, gridlock \cite{gridlock}
+occurs; no agent in the system will make progress unless an agent at the front
+decides to pick a different turn. At best, AORTA can detect this by maintaining
+a dependency graph that encodes the ``is following'' relation and finding
+cycles. It is not clear how to prevent or mend the deadlock without forcing
+agents to re-route.
 
 \commentd{is the above clear and an acceptable limitation? should i find other
 sources that have the same troubles?}
@@ -546,9 +545,10 @@ Street Maps, AORTA allows researchers to repeat an experiment in any number of
 places with minimal effort. Future work will exploit the flexible infrastructure
 of interactions between agent behaviors and intersections by exploring dynamic
 replanning and adaptable signal timings. On top of these structures,
-applications could experiment with contra-flow \commentd{cite these all} and
-micro-tolling. There will also be an effort to improve AORTA as a framework by
-including a lane-changing model and preventing gridlock.
+applications could experiment with dynamic contra-flow \cite{ITSC11-hausknecht}
+and micro-tolling \commentd{need a cite}. There will also be an effort to
+improve AORTA as a framework by including a lane-changing model and preventing
+gridlock.
 
 AORTA's map construction process, although flexible, is fraught with heuristics,
 motivating proposed changes to OSM. Road type annotations imprecisely estimate
@@ -579,6 +579,8 @@ What credits do we need to give to OSM?
 \commentp{Just citing it is good enough.}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\commentd{Er, these don't look like they're alphabetically sorted.}
 
 \bibliographystyle{IEEEtran}
 \bibliography{root}

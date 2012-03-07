@@ -6,12 +6,9 @@ paper:
     - intro
     - related work
       - compare to MATsim some more
-    + map model
+    - map model
       - map model approach can cite SUMO paper; we do similar things
-      - cite google maps
-    + simulation
-      - cite A*
-      - cite gridlock?
+    - simulation
       - give scale
     - results
 

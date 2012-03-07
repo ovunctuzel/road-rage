@@ -13,7 +13,7 @@ for f in *.dot; do
 done
 
 pdflatex $INPUT
-bibtex ${INPUT%tex}
+bibtex ${INPUT%.tex}
 # pretty sure we have to re-run this twice to include the newly generated bib
 # and references
 pdflatex $INPUT
