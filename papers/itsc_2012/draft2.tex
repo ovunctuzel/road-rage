@@ -152,24 +152,12 @@ simulate human traffic.
 Like any other microscopic traffic simulator, AORTA needs maps to run
 simulations. One of AORTA's key features is that it generates maps using road data available from OpenStreetMap
 (OSM) \cite{osm}, a Wikipedia-like interface for world maps. Researchers using
-AORTA can export the relevant map area from OSM that is then parsed by AORTA to
-create scale simulations of the real world. Using real world road data is
-advantageous for a number of reasons. First, researchers using AORTA for human
-traffic simulations would find it advantageous to also have the ability to use
-real-world roads. Second, even as infrastructural changes will be made to the
-road infrastructure to accommodate driver-less cars, it is reasonable to assume
-that the \textit{same} road network will still be in use.\commentp{I
-  don't understand this second point} Third, using
-real-world data from OSM allows setting up simulations for an area of interest
-in a matter of minutes, thereby allowing easy transfer of research results to
-any desired region.
-
-\commentd{The first reason for real world data almost feels too obvious to state
-like that}
-\commentp{I think all 3 reasons are similar.  I'd just say simplty
-  that AORTA's key features are being open source, easy to install and
-  get running, and flexibility to quickly and easily incorporate
-  models from real road networks around the world.}
+AORTA can export any relevant map area from OSM. This map is then parsed by AORTA to
+create scale simulations of the real world. A researcher employing AORTA can have a simulation
+of any part of the world for which OSM has data running in about five minutes
+(allowing for download time).  AORTA also has the advantage of being open source and
+easy to install so that researchers can make any tweaks they find necessary.
+\footnote{http://code.google.com/p/road-rage}
 
 \commentpk{Needs 1 more para based on final application}
 
@@ -261,9 +249,9 @@ minimizing overall wait time \cite{manikonda2001autonomous}.
     {scale=0.2}
 
 AORTA is divided into three modular components: the map model, micro-simulation
-engine, and UI. The map model transforms OSM maps into AORTA graphs, then
+engine, and user interface (UI). The map model transforms OSM maps into AORTA graphs, then
 answers pathfinding and geometry queries. The simulation engine adds a notion of
-agents, vehicle dynamics, and collisions. Finally, the UI, which uses Swing, can
+agents, vehicle dynamics, and collisions. Finally, the UI can
 interactively render the map and agents. A headless mode also enables running
 experiments without the overhead of visualization.
 
@@ -280,7 +268,7 @@ the code for the experiments described in Section \ref{sec:results}.
 \section{MAP CONSTRUCTION FROM OSM}
 \label{sec:map}
 
-Our goal is to simulate traffic on existing infrastructure, not contrived,
+One advantage of AORTA is that it simulates traffic on existing infrastructure rather than contrived,
 randomly generated maps. Utilizing OpenStreetMaps, a community project offering
 user-editable, free XML-based maps, enables this. To run a simulation on a map
 from OSM, there is a one-time conversion process to transform the map into
@@ -294,8 +282,8 @@ AORTA's format, which is also encoded with XML.
     {scale=0.5}
 
 A map is represented as a directed graph with \emph{lanes} as edges and
-\emph{turns} as vertices. A \emph{road} groups one or two groups of lanes
-together, each group being a different direction of travel.
+\emph{turns} as vertices. A \emph{road} groups one or two sets of lanes
+together, one set for each direction of travel.
 \emph{Intersections} map the possible turns from incoming to outgoing lanes.
 Since both lanes and turns support traffic, they are grouped together as
 \emph{traversables}, meaning agents may exist on them.
@@ -312,24 +300,24 @@ of another (so right turns often have $0$ length).
 
 Map construction is split into several passes, each feeding the next.
 \begin{enumerate}
-  \item OSM encodes many paths besides driveable roads, so these are first
-        filtered out. GPS locations common to multiple roads are marked, since
+  \item OSM encodes many paths besides driveable roads, so the builder first filters
+        these out. Next the builder marks GPS locations common to multiple roads, since
         they implicitly indicate intersections.
   \item OSM \emph{ways} (sequences of GPS locations) include many
         intersections, so the builder next splits ways into undirected
         segments of roads between exactly two intersections.
-  \item Undirected roads are multiplied into directed lanes in each direction
-        (unless the road is marked one-way). The number of lanes is guessed from
-        OSM's ``road type'' tag or an explicit number of lanes, when given.
-  \item Turns are next constructed between incoming and outgoing lanes at each
-        vertex. Left, right, straight, and U-turns are heuristically chosen based on
-        the angles between lanes. When several lanes all cross into fewer lanes,
-        merging is arbitrarily forced on the rightmost lanes.  Although inaccurate,
+  \item The builder multiplies undirected roads into directed lanes in each direction
+        (unless the road is marked one-way). The builder guesses the number of lanes based on
+        OSM's ``road type'' tag or an explicit number of lanes, when that data is available.
+  \item The builder constructs turns between incoming and outgoing lanes at each
+        vertex. The builder uses an angle heuristic to choose between left, right, straight,
+        and U-turns. When several lanes all cross into fewer lanes,
+        the builder forces merging of the rightmost lanes.  Although inaccurate,
         these patterns are the best compromise. At the time of writing, even sources
         like Google Maps \cite{googleMaps} lack this information.
-  \item Because turns are heuristically placed, the graph is usually
-        disconnected. Since the largest resulting map is desirable, the strongly
-        connected components of the digraph with the fewest members are removed.
+  \item Because turns are heuristically placed, the graph is often
+        disconnected. In order to ensure that an agent will be able to reach any point in the map,
+        the builder removes all but the largest strongly connected component of the digraph.
         Disconnected lanes are spliced out of larger roads, leaving unappealing
         geometric gaps, but correctly ensuring connectivity for corner-case free
         pathfinding.
@@ -351,31 +339,31 @@ driver may be appropriate for some experiments. Each step, the simulation
 performs the following:
 
 \begin{enumerate}
-  \item Introducing new agents into the map
-  \item Updating the position and velocity of agents based on their choice the
-        previous step
-  \item Checking for collisions
-  \item Allowing each agent to react
+  \item Introduce new agents into the map
+  \item Update the position and velocity of agents based on their choice of
+  acceleration in the previous step
+  \item Check for collisions
+  \item Allow each agent to choose a reaction for the next step
 \end{enumerate}
 
 Agents have a few enforced constraints -- they cannot exceed their physical
 acceleration capabilities, travel in reverse, or travel past the end of a
 traversable without appearing on the next. Intersection policies and avoiding
 collisions on the same traversable provide the other constraints, but the
-agent's behavior must satisfy these. There are three main components of the
+agent's behavior is responsible for obeying these. There are three main components of the
 simulation, each configurable by extending built-in implementations of an
 interface: agent behaviors, routing strategies, and intersection policies.
 
-Currently lane-changing is not supported. Merging lanes is accomplished by
+Currently agents cannot switch lanes. AORTA allows merging lanes by
 treating the merge point as an intersection.
 
 \subsection{Spawning new agents}
 
 To introduce new agents into the simulation in real-time, users can create
 \emph{generators} programatically or using the UI. A generator picks a random
-starting position and goal from two sets of roads. These roads can be selected
-by mouse with a bounding polygon in the UI, letting specific traffic patterns
-like rush-hour scenarios easily be constructed between two regions. A generator
+starting position and goal from two sets of roads. Users can select these roads 
+by mouse with a bounding polygon in the UI, allowing specific traffic patterns
+like rush-hour scenarios to be easily simulated. A generator
 may also cover the entire map, uniformly distributing traffic everywhere.
 
 Every step, a generator creates some number of new agents. If the agent's route
@@ -387,9 +375,9 @@ Once an agent's route is ready, the agent waits alongside its starting lane (as
 if it is in a driveway or parking lot). When the lane has no agents that could
 potentially crash with the new vehicle, the new agent enters the system with
 zero initial speed.  Because behaviors must enforce speed limit along a lane 
-from the moment an agent enters the road, then if there is no agent within the
-worst-case distance (traveling distance at the speed limit, plus stopping
-distance from this speed) before the spawn point, then the new agent may enter.
+from the moment an agent enters a road, it is safe for a new agent to enter a road
+if there is no other agent within the worst-case distance (traveling distance at the
+speed limit, plus stopping distance from this speed) preceeding the spawn point.
 To avoid predicting which agents might enter the lane in the near future, there
 is a buffer space at the beginning of the lane where a new agent may never
 spawn. This disqualifies some short lanes from being spawn points, but this is
@@ -399,16 +387,15 @@ not a big limitation in practice.
 
 All traversables (lanes and the straight line-approximation of turns) maintain
 an ordered queue of occupying agents. One simulation step happens atomically,
-eaning collision checking occurs after all agents have moved. If this was not
-done, false positives could occur when an agent steps before the agent in front
-of it. A collision is defined as the reversal of order of agents before and
-after a step.
+meaning collision checking occurs after all agents have moved. If this were not
+the case, false positives could occur when an agent steps before the agent in front
+of it. A collision is defined as the reversal of order of agents during a step.
 
 Likewise, intersections check for collisions by examining the turn each agent is
 performing and verifying that no other agent is simultaneously performing a
 conflicting turn. AORTA has a low-granularity model of turn conflict. If two
 vehicles at any point along two different turns could ever come into contact,
-then the turns are always in conflict, no matter where the agent specifically is
+then the turns are always in conflict, no matter where the agents actually are
 along that turn. The alternative of tiling intersections \cite{JAIR08-dresner}
 would provide more granularity, but it adds computational complexity and would
 be impractical for many of the complex intersection geometries inferred from
@@ -425,17 +412,18 @@ as impassable and re-route other traffic away from the accident.
 \subsection{Agent Reactions}
 
 Each agent has a \emph{behavior} governing it. When the agent travels past the end
-of a lane during its step, the behavior picks the turn to pursue. Each step,
+of a lane during its step, the behavior picks the turn to take. At each step,
 the behavior can make the agent react by performing one of two actions:
-disappearing from the map (only when the agent is at rest and is done with its
+disappearing from the map (when the agent is at rest and is done with its
 route) or setting an acceleration for the next step. Were lane changing or
 merging modeled, that would be another possible action.
+\commentm{What's the difference between lane changing and merging?}
 
-Currently, the primary behavior used by all agents is a generalized, baseline
+Currently, all agents use a primary behavior that is a generalized, baseline
 behavior that guarantees not to collide with another agent or enter an
 intersection at the wrong time. Since it picks the highest safe choice of
-acceleration at each step, it could be easily extended to mimic human drivers by
-traveling at some random slower acceleration or to optimize fuel efficiency
+acceleration at each step, it could easily be extended to mimic human drivers by
+traveling at some random lesser acceleration or to optimize fuel efficiency
 by tuning movement.
 
 \commentd{one diagram probably covers lots of this}
@@ -446,7 +434,7 @@ achievable at the end of the next step and the subsequent stopping distance at
 this speed, the behavior can scan sufficiently far ahead along several
 traversables to locate agents to avoid and intersections to query. The analysis
 short-circuits at the first nearby agent and intersection requiring a stop,
-since it would be illegal to pass another anyway.
+since it would be illegal to drive further anyway.
 
 \subsection{Intersection Policies}
 
@@ -474,11 +462,12 @@ adapt timings and refinements to the autonomous reservation policy.
 Picking accelerations that optimize objective functions is a separate task from
 picking a path to travel. Agent behaviors consult a route strategy to pick
 turns. Currently two simple implementations are available. One statically plans
-a route to some goal using standard A* search \cite{astar}; the other performs a
+a route to some goal using standard A* search \cite{astar}. The other performs a
 drunken walk, lazily planning random choices at each intersection as the
-lookahead engine needs to know. Future experiments in dynamic replanning or
-hierarchial planning can be performed without modifying any code other than a
-creating new route implementation. Route policies could also interact with a
+lookahead engine requires, choosing the direction that minimizes the Euclidean
+distance to the goal with 75\% probability. Researchers can experiment with
+dynamic replanning or hierarchial planning without modifying any code other than
+creating a new route implementation. Route policies could also interact with a
 singleton overseer to gain some sort of global insight or with smart
 intersections to avoid congestion.
 
@@ -497,7 +486,7 @@ into another full lane with the same such head agent, gridlock \cite{gridlock}
 occurs; no agent in the system will make progress unless an agent at the front
 decides to pick a different turn. At best, AORTA can detect this by maintaining
 a dependency graph that encodes the ``is following'' relation and finding
-cycles. It is not clear how to prevent or mend the deadlock without forcing
+cycles. It is not clear how to prevent or mend deadlock without forcing
 agents to re-route.
 
 \commentd{is the above clear and an acceptable limitation? should i find other
@@ -507,7 +496,7 @@ sources that have the same troubles?}
 
 AORTA is designed for controlled experiments. Consequently, simulations are
 deterministically reproducible. A seed for the pseudo-random number generator,
-the input graph, and the generators' configuration determine the outcome of any
+the input graph, and the generators' configuration fully determine the outcome of any
 simulation. This determinism may break down when generators use worker threads,
 since routes may be computed in different orders, causing agents to enter the
 road at different times.
@@ -526,6 +515,9 @@ agents we can simulate in different map sizes} \commentpk{I would say that the t
   reality. with 5,000, runs about 3x faster. with 50,000 (yes, this works!),
   runs at 1/3 the speed of reality (it takes 1 real second to simulate 0.3
   seconds)}
+\commentm{I typically have 160k-170k agent steps per second on my machine.  The
+	highest I have seen is upwards of 300k, but that was because most agents had
+	gridlocked...}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -549,6 +541,7 @@ applications could experiment with dynamic contra-flow \cite{ITSC11-hausknecht}
 and micro-tolling \commentd{need a cite}. There will also be an effort to
 improve AORTA as a framework by including a lane-changing model and preventing
 gridlock.
+\commentm{Perhaps mention concurency plans (with TACC) to simulate arbitrarily large maps?}
 
 AORTA's map construction process, although flexible, is fraught with heuristics,
 motivating proposed changes to OSM. Road type annotations imprecisely estimate
@@ -561,6 +554,8 @@ If OSM could encode this, the performance of intersection policies such as
 traffic signals would vastly improve in those regions.
 
 \commentd{Er, so how do I finally end this?}
+\commentm{We still have a bit of passive voice.  How much is acceptable?  I think
+	it sounds fine, but I imagine an English professor may disagree.}
 
 \addtolength{\textheight}{-12cm}  % This command serves to balance the column lengths
                                   % on the last page of the document manually. It shortens
