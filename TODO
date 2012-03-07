@@ -13,10 +13,6 @@ paper:
     - results
 
   - diagrams
-    - deal with color!
-    - architecture
-      - clean it up
-      - list examples of each type of thing, if relevant (policies, behaviors)
     - map model
     - lookahead
     - gridlock
@@ -36,7 +32,7 @@ code: seemingly unavoidable gridlock... agents locking edges, not verts.
     - be clever: not between agents, but between lanes.
   - make them re-route?
 
-- rename lanes/intersections in code too? at least everywhere in paper consistently.
+- rename lanes/intersections/junctions in code too? at least everywhere in paper consistently.
 
 ###################
 

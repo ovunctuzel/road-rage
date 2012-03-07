@@ -11,7 +11,8 @@
 % on the last page of the document
 
 \usepackage[pdftex]{graphicx}
-% TODO remember we need to take out all the color
+% TODO remember we need to meet color compliance:
+% http://its.papercept.net/conferences/support/general.php
 \newcommand{\pix}[3]{
   \begin{figure}[h]
     \centering \includegraphics[#3]{#1}
@@ -244,9 +245,10 @@ minimizing overall wait time \cite{manikonda2001autonomous}.
 
 \commentd{consider re-grouping sections... maybe this is all 'methodology'?}
 
+% Diagrma made with gliffy.com. architecture.gxml should enable editing.
 \pix{architecture.png}
     {An illustration of AORTA's components.}
-    {scale=0.2}
+    {scale=0.18}
 
 AORTA is divided into three modular components: the map model, micro-simulation
 engine, and user interface (UI). The map model transforms OSM maps into AORTA graphs, then
@@ -310,7 +312,7 @@ Map construction is split into several passes, each feeding the next.
         (unless the road is marked one-way). The builder guesses the number of lanes based on
         OSM's ``road type'' tag or an explicit number of lanes, when that data is available.
   \item The builder constructs turns between incoming and outgoing lanes at each
-        vertex. The builder uses an angle heuristic to choose between left, right, straight,
+        junction. The builder uses an angle heuristic to choose between left, right, straight,
         and U-turns. When several lanes all cross into fewer lanes,
         the builder forces merging of the rightmost lanes.  Although inaccurate,
         these patterns are the best compromise. At the time of writing, even sources
@@ -336,14 +338,14 @@ space-continuous, meaning roads are not tiled. The step duration $dt$ is fixed,
 enabling agents to reason about collision avoidance and satisfying other
 constraints. Setting this value to the average ``reaction time'' of a human
 driver may be appropriate for some experiments. Each step, the simulation
-performs the following:
+does the following:
 
 \begin{enumerate}
-  \item Introduce new agents into the map
-  \item Update the position and velocity of agents based on their choice of
+  \item Introduces new agents into the map
+  \item Updates the position and velocity of agents based on their choice of
   acceleration in the previous step
-  \item Check for collisions
-  \item Allow each agent to choose a reaction for the next step
+  \item Checks for collisions
+  \item Allows each agent to choose a reaction for the next step
 \end{enumerate}
 
 Agents have a few enforced constraints -- they cannot exceed their physical
@@ -414,10 +416,9 @@ as impassable and re-route other traffic away from the accident.
 Each agent has a \emph{behavior} governing it. When the agent travels past the end
 of a lane during its step, the behavior picks the turn to take. At each step,
 the behavior can make the agent react by performing one of two actions:
-disappearing from the map (when the agent is at rest and is done with its
-route) or setting an acceleration for the next step. Were lane changing or
-merging modeled, that would be another possible action.
-\commentm{What's the difference between lane changing and merging?}
+disappearing from the map (when the agent is at rest and is done with its route)
+or setting an acceleration for the next step. Were lane changing modeled, that
+would be another possible action.
 
 Currently, all agents use a primary behavior that is a generalized, baseline
 behavior that guarantees not to collide with another agent or enter an
@@ -538,9 +539,9 @@ places with minimal effort. Future work will exploit the flexible infrastructure
 of interactions between agent behaviors and intersections by exploring dynamic
 replanning and adaptable signal timings. On top of these structures,
 applications could experiment with dynamic contra-flow \cite{ITSC11-hausknecht}
-and micro-tolling \commentd{need a cite}. There will also be an effort to
-improve AORTA as a framework by including a lane-changing model and preventing
-gridlock.
+and micro-tolling \commentd{Dr. Stone, should we just not mention this yet since
+it's not well-published?}. There will also be an effort to improve AORTA as a
+framework by including a lane-changing model and preventing gridlock.
 \commentm{Perhaps mention concurency plans (with TACC) to simulate arbitrarily large maps?}
 
 AORTA's map construction process, although flexible, is fraught with heuristics,
