@@ -1,21 +1,36 @@
 # TODO #
 
 paper:
-  - fix diagrams
-  - emphasize configurability for sim section more
-  - name could either rework AORTA or be japanese
-  - rename lanes/intersections in code too? at least everywhere in paper consistently.
-  - passive voice everywhere
-  - more critique in related works...
+  - sections
+    - abstract
+    - intro
+    - related work
+      - compare to MATsim some more
+    + map model
+      - map model approach can cite SUMO paper; we do similar things
+      - cite google maps
+    + simulation
+      - cite A*
+      - cite gridlock?
+      - give scale
+    - results
+    - conclusion
 
-  - decide specifics of application/experiment
-    - are we converting stop signs to signals? how?
-    - mixed-mode policies
+  - diagrams
+    - architecture
+      - clean it up
+      - list examples of each type of thing, if relevant (policies, behaviors)
+    - map model
+    - lookahead
+    - gridlock
+
+  - proofread / clean passive voice
+  - name could either rework AORTA or be japanese
 
 code: get signals a fair contender to stop signs
   - measurements
     - throughput of intersections... (agents exiting per minute)
-    - how many agents active at any time? (when continuous gen is going)
+    - how many agents active at any time? (when continuous gen is going) (poll max every min)
     - process it: care about per-agent and per-intersection totals/averages/variances
   - increase num of agents until signals matter
 
@@ -23,9 +38,7 @@ code: seemingly unavoidable gridlock... agents locking edges, not verts.
   - detect with dependency graph
   - make them re-route?
 
-code: bugs
-  - in sugarland, oneway bg lines arent thick enough
-  - get rid of arrows, make roads transparent
+- rename lanes/intersections in code too? at least everywhere in paper consistently.
 
 ###################
 
@@ -123,6 +136,8 @@ POSSIBLY SIMPLE
 
 ### UI ###
 
+- in sugarland, oneway bg lines arent thick enough
+- get rid of arrows, make roads transparent, change colors, something.
 - show 'fps' in viewer
 - agents in middle of road makes ends of lines once again look sucky.
 - show agents who are currently GOING
