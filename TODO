@@ -14,9 +14,9 @@ paper:
       - cite gridlock?
       - give scale
     - results
-    - conclusion
 
   - diagrams
+    - deal with color!
     - architecture
       - clean it up
       - list examples of each type of thing, if relevant (policies, behaviors)
@@ -36,6 +36,7 @@ code: get signals a fair contender to stop signs
 
 code: seemingly unavoidable gridlock... agents locking edges, not verts.
   - detect with dependency graph
+    - be clever: not between agents, but between lanes.
   - make them re-route?
 
 - rename lanes/intersections in code too? at least everywhere in paper consistently.
@@ -93,6 +94,7 @@ BIGGER ISSUES
       by requiring not only we're done with a turn but also some dist along the new edge.
 
 POSSIBLY SIMPLE
+  - "S turns" when osm ID matches up?
   - slow down for turns (a speed limit)
   - follow dist variable based on speed, so when a light goes green,
     everyone starts simultaneously

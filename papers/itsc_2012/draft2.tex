@@ -537,28 +537,30 @@ agents we can simulate in different map sizes} \commentpk{I would say that the t
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\section{CONCLUSIONS}
+\section{CONCLUSION}
 \label{sec:conclusion}
 
-Write me. big future ideas:
+This paper has presented AORTA, a new city-scale traffic simulation framework
+that focuses on ease-of-use and policy configurability. In conjunction with Open
+Street Maps, AORTA allows researchers to repeat an experiment in any number of
+places with minimal effort. Future work will exploit the flexible infrastructure
+of interactions between agent behaviors and intersections by exploring dynamic
+replanning and adaptable signal timings. On top of these structures,
+applications could experiment with contra-flow \commentd{cite these all} and
+micro-tolling. There will also be an effort to improve AORTA as a framework by
+including a lane-changing model and preventing gridlock.
 
-\commentp{Proposed improvements to OSM data would be great for a
-  discussion or conclusion section at the end of the paper.}
-proposals to change OSM to fix these issues
-  projecting lines sucks... but all it really does is clutter UI
-  filtering out invalid ways in pass 1 is really not a clear process
-  number of lanes and speed limits... road types are wacky and wrong
-  turns are brittle.. detecting right-turn only lane is rare. shared center lane?
-    not part of our model, or OSM's.
-  removing sccs is not ideal
+AORTA's map construction process, although flexible, is fraught with heuristics,
+motivating proposed changes to OSM. Road type annotations imprecisely estimate
+the number of lanes and typical speed limits, resulting in incorrect graphs.
+Guessing the turns at each intersection makes common road features like right
+turn-only lanes and shared center left turn lanes hard to detect. There are many
+circumstances where AORTA simulates one intersection as several in close
+proximity because roads do not geometrically line up, but semantically they do.
+If OSM could encode this, the performance of intersection policies such as
+traffic signals would vastly improve in those regions.
 
-contraflow
-
-microtolling
-
-dynamic replanning
-
-autonomous intersections
+\commentd{Er, so how do I finally end this?}
 
 \addtolength{\textheight}{-12cm}  % This command serves to balance the column lengths
                                   % on the last page of the document manually. It shortens
@@ -575,16 +577,6 @@ Dr. Quinlan has certainly been helpful.
 
 What credits do we need to give to OSM?
 \commentp{Just citing it is good enough.}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-% Notes.
-
-%possible background/links
-
-%http://www.caliper.com/transmodeler/default.htm
-%http://ieeexplore.ieee.org/stamp/stamp.jsp?tp=&arnumber=6082793
-%https://www.google.com/search?sourceid=chrome&ie=UTF-8&q=Agent-Based+Traffic+Simulation+and+Traffic+Signal+Timing+Optimization+with+GPU
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
