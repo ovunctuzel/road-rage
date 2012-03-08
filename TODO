@@ -6,16 +6,10 @@ paper:
     - intro
     - related work
       - compare to MATsim some more
-    - map model
-      - map model approach can cite SUMO paper; we do similar things
-    - simulation
-      - give scale
     - results
 
   - diagrams
     - map model
-    - lookahead
-    - reconsider turn conflict photo...
 
   - proofread / clean passive voice
   - name could either rework AORTA or be japanese
@@ -30,6 +24,7 @@ code: get signals a fair contender to stop signs
 code: seemingly unavoidable gridlock... agents locking edges, not verts.
   - detect with dependency graph
     - be clever: not between agents, but between lanes.
+    - incorporate optimizations when speed=0
   - make them re-route?
 
 - rename lanes/intersections/junctions in code too? at least everywhere in paper consistently.
@@ -57,6 +52,7 @@ PROFILING
   - how fast can we generate lots of dumb agents?
   - measure profiling things
     - how long did simulation run? (one value)
+  *** in react if speed is still 0, see if follow_agent or intersection has changed.
 
   1) is caching properties of linked list hurting us for iterating through big things?
   3) ... increase dt, of course
