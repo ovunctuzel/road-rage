@@ -25,7 +25,7 @@ class ReservationPolicy(intersection: Intersection) extends Policy(intersection)
     if (current_batch.all_done) {
       // Time for the next reservation! If there is none, then keep
       // current_batch because it's empty anyway.
-      if (reservations.size != 0) {
+      if (!reservations.isEmpty) {
         current_batch = reservations.head
         reservations = reservations.tail
       }
@@ -107,7 +107,7 @@ class TurnBatch() {
       // existing turn
       tickets.addBinding(t, a)
       return true
-    } else if (tickets.keys.filter(c => t.conflicts(c)).size == 0) {
+    } else if (tickets.keys.filter(c => t.conflicts(c)).isEmpty) {
       // new turn that doesn't conflict
       tickets.addBinding(t, a)
       return true

@@ -249,11 +249,15 @@ class RouteFollowingBehavior(a: Agent, route: Route) extends Behavior(a) {
           // we can. This handles a few stalemate cases with sequences of short
           // edges and possibly out-of-sync intersection policies.
           val last_stop = stop_at.get
+          assert(dist > cfg.end_epsilon)  // we should never get THIS close...
           val go_this_dist = last_stop match {
             // creep forward to halfway along the shorty edge.
-            case e: Edge if dist <= cfg.end_threshold => dist - (last_stop.length / 2.0)
+            case e: Edge if dist <= cfg.end_threshold => dist - cfg.end_epsilon
             // stop back appropriately.
             case _                                    => dist - cfg.end_threshold
+          }
+          if (a.id == 55) {
+            Util.log("... stopping " + go_this_dist)
           }
           accel_to_end(go_this_dist)
         }
@@ -264,6 +268,10 @@ class RouteFollowingBehavior(a: Agent, route: Route) extends Behavior(a) {
         case _       => Double.MaxValue
       }
       val a3 = a.accel_to_achieve(min_speed_limit)
+
+      if (a.id == 55) {
+        //Util.log("%.1f, %.1f, %.1f".format(a1, a2, a3))
+      }
 
       val conservative_accel = math.min(a1, math.min(a2, a3))
 
@@ -342,14 +350,25 @@ class RouteFollowingBehavior(a: Agent, route: Route) extends Behavior(a) {
                         else
                           math.max(0, try_speed)
 
-    val needed_accel = a.accel_to_achieve(desired_speed)
+    var needed_accel = a.accel_to_achieve(desired_speed)
 
     // TODO dumb epsilon bug again. fix this better.
-    val stop_speed = a.speed + (needed_accel * cfg.dt_s)
-    return if (stop_speed < 0)
-             needed_accel + 0.1
-           else
-             needed_accel
+    def stop_speed = a.speed + (needed_accel * cfg.dt_s)
+    def stop_dist = Util.dist_at_constant_accel(needed_accel, cfg.dt_s, a.speed) + a.stopping_distance(desired_speed)
+
+    while (stop_dist > how_far_away) {
+      Util.log(a.id + " slow to avoid too far... " + (how_far_away - stop_dist))
+      needed_accel -= cfg.epsilon
+      Util.log("now " + needed_accel + " compared to " + a.max_accel)
+    }
+    while (stop_speed < 0) {
+      //Util.log(a.id + " speed to avoid neg speed... " + stop_speed)
+      needed_accel += cfg.epsilon
+    }
+    // Hopefully these don't conflict? Make sure this is OK.
+    assert(stop_dist <= how_far_away)
+    
+    return needed_accel
   }
 }
 

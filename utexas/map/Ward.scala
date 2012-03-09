@@ -172,7 +172,7 @@ object Ward {
 
     def consider(ls: Set[Road]) = {
       // & is intersection, if unclear
-      if ((ls & major.toSet).size == 0) {
+      if ((ls & major.toSet).isEmpty) {
         for (r <- ls if !set(r)) {
           stack.push(r)
         }

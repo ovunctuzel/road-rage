@@ -42,10 +42,10 @@ object Checker {
     Util.log_push
 
     for (e <- g.edges) {
-      if (e.next_turns.size == 0) {
+      if (e.next_turns.isEmpty) {
         Util.log(e + " leads nowhere")
       }
-      if (e.prev_turns.size == 0) {
+      if (e.prev_turns.isEmpty) {
         Util.log("Nothing leads to " + e)
       }
 

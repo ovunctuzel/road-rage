@@ -30,7 +30,7 @@ class Queue(t: Traversable) {
     // this breaks badly.
 
     // Everything's fine.
-    if (agents.size == 0) {
+    if (agents.isEmpty) {
       return
     }
 
@@ -45,7 +45,7 @@ class Queue(t: Traversable) {
 
     // If anybody from the old crowd is still here, that means all new agents
     // must be at the end. It suffices to check this:
-    if (old_crowd.size > 0 && old_crowd.head != agents.head) {
+    if ((!old_crowd.isEmpty) && old_crowd.head != agents.head) {
       Util.log("!!! New agents on " + t + " aren't at the tail!")
     }
 

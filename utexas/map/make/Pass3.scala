@@ -122,7 +122,7 @@ class Pass3(old_graph: PreGraph2) {
         val neg_lanes = r.neg_lanes.filter(l => !doomed_edges(l))
 
         // We can completely nix this road otherwise
-        if (pos_lanes.size != 0 || neg_lanes.size != 0) {
+        if ((!pos_lanes.isEmpty) || (!neg_lanes.isEmpty)) {
           // This will end up looking weird (gaps in roads), but just get rid of
           // the bad lanes. Gotta clean up lane numbers right now, IDs later.
           r.pos_lanes.clear
@@ -147,7 +147,7 @@ class Pass3(old_graph: PreGraph2) {
       for (v <- graph.vertices) {
         val turns = v.turns.filter(t => !doomed_turns(t))
         // If there are no turns left, nix this vertex completely
-        if (turns.size != 0) {
+        if (!turns.isEmpty) {
           v.turns.clear
           v.turns ++= turns
           keep_verts += v
