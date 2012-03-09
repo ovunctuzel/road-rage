@@ -2,6 +2,13 @@
 
 paper:
   - mention "how many agents can be comfortably simulated in realtime"
+    - fix the dumb illegal entry epsilon bugs.
+      - why was the hack in map.make.Checker needed?
+      - a conflict between a too-big stopping distance and acceleration into negative speed...
+        - suggests it was an impossible request anyway?
+        - why cant this be done?
+    - ... then crank up dt and get a good number.
+
   - reference gridlock paper.
   - sections
     - abstract
@@ -36,8 +43,6 @@ code: seemingly unavoidable gridlock... agents locking edges, not verts.
 
 - set up website / good build instructions / code licenses
 
-- make the epsilon stuff depend on dt
-
 ###################
 
 TRAFFIC SIGNAL
@@ -53,12 +58,11 @@ TRAFFIC SIGNAL
 
 BUGS
   - (50,000; drunken behavior; BTR; seed 1330434688570; time ~18.6) illegal entry by a2192
+    (possibly the epsilon issue again)
 
 PROFILING
   - we can do much better with ready agents... max capacity of edges, group them based on where they
     want to spawn, maybe by generator?
-  - dont ask length of a list when not needed...
-  - how fast can we generate lots of dumb agents?
   - measure profiling things
     - how long did simulation run? (one value)
   *** in react if speed is still 0, see if follow_agent or intersection has changed.

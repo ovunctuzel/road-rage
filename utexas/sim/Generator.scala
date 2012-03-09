@@ -72,7 +72,9 @@ abstract class Generator(sim: Simulation, desired_starts: List[Edge], ends: List
   // And the blocking poll
   def wait_for_all() = {
     var cnt = 0
-    pending.foreach(a => {
+    // go in reverse because we're prepending to pending (haha) now, and the
+    // first scheduled is probably the first to be done
+    pending.reverse.foreach(a => {
       print("\r" + Util.indent + "Done with " + cnt + " routes")
       a._2 match {
         case Some(task) => task.get
