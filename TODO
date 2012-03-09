@@ -1,6 +1,8 @@
 # TODO #
 
 paper:
+  - mention "how many agents can be comfortably simulated in realtime"
+  - reference gridlock paper.
   - sections
     - abstract
     - intro
@@ -20,6 +22,9 @@ code: get signals a fair contender to stop signs
     - how many agents active at any time? (when continuous gen is going) (poll max every min)
     - process it: care about per-agent and per-intersection totals/averages/variances
   - increase num of agents until signals matter
+  - improve reservation policy
+    - make it switch every cycle_time if theres others waiting
+    - but true measure would be, which side has more depending on it?
 
 code: seemingly unavoidable gridlock... agents locking edges, not verts.
   - detect with dependency graph
@@ -28,6 +33,10 @@ code: seemingly unavoidable gridlock... agents locking edges, not verts.
   - make them re-route?
 
 - rename lanes/intersections/junctions in code too? at least everywhere in paper consistently.
+
+- set up website / good build instructions / code licenses
+
+- make the epsilon stuff depend on dt
 
 ###################
 

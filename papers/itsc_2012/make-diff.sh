@@ -1,7 +1,7 @@
 #!/bin/sh
 
-V1=draft1.tex
-V2=peter.tex
+V1=peter.tex
+V2=draft2.tex
 
 latexdiff $V1 $V2 > diff.tex
 

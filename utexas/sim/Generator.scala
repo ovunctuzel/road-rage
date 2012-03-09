@@ -13,10 +13,12 @@ object Generator {
   def shutdown = worker_pool.shutdown
 }
 
-abstract class Generator(sim: Simulation, desired_starts: List[Edge], val end_candidates: List[Edge])
+abstract class Generator(sim: Simulation, desired_starts: List[Edge], ends: List[Edge])
 {
-  // Prune the desired_starts for road type and length
-  val start_candidates = desired_starts.filter(e => sim.queues(e).ok_to_spawn)
+  // Prune the desired_starts for road type and length. Arrays have random
+  // access.
+  val start_candidates = desired_starts.filter(e => sim.queues(e).ok_to_spawn).toArray
+  val end_candidates = ends.toArray
 
   // there may be no task scheduled
   protected var pending: List[(Agent, Option[FutureTask[List[Traversable]]])] = Nil
@@ -39,11 +41,11 @@ abstract class Generator(sim: Simulation, desired_starts: List[Edge], val end_ca
       case Some(task) => {
         val delayed = new FutureTask[List[Traversable]](task)
         Generator.worker_pool.execute(delayed)
-        pending :+= (a, Some(delayed))
+        pending = (a, Some(delayed)) :: pending
       }
       case _ => {
         // don't schedule anything
-        pending :+= (a, None)
+        pending = (a, None) :: pending
       }
     }
   }

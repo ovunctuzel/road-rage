@@ -84,10 +84,11 @@ object Util {
   }
 }
 
+// use nanoseconds for both; it's nice and sensitive
 class Timer(msg: String) {
-  val start = System.currentTimeMillis
+  val start = System.nanoTime
 
-  def so_far = (System.currentTimeMillis - start) / 1000.0
+  def so_far = (System.nanoTime - start) / 1000000000.0
 
   def stop = {
     Util.log("\"" + msg + "\": " + so_far + "s")
@@ -95,7 +96,6 @@ class Timer(msg: String) {
 }
 
 class Stopwatch() {
-  // accumulation is more sensitive; use nanoseconds
   var from: Long = System.nanoTime
   var seconds: Double = 0.0
 

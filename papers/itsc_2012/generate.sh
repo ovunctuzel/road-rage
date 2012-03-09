@@ -3,7 +3,7 @@
 if [[ $# -eq 1 ]]; then
   INPUT=$1
 else
-  INPUT=draft2.tex
+  INPUT=final.tex
 fi
 
 # generate graphviz diagrams
