@@ -128,7 +128,7 @@ object cfg {
     ("lane_width",      0.5, "Width of a lane in meters", 0.01, 0.1),
     ("zoom_threshold",  5.0, "How close to zoom in before drawing details",    1.0, 15.0),
     ("epsilon",     0.00001, "What do we take as zero due to FP imprecision?", 0.0,  1.0),
-    ("dt_s",            0.1, "The only dt in seconds an agent can experience", 0.1,  3.0),
+    ("dt_s",            1.0, "The only dt in seconds an agent can experience", 0.1,  3.0),
     // account for crosswalks, vehicle length...
     ("end_threshold",   5.0, "The end of a traversable is its length - this",  0.1,  3.0),
     // this kind of gives dimension to cars, actually
@@ -140,7 +140,7 @@ object cfg {
 
   val ints = List(
     ("max_lanes",  20,  "The max total lanes a road could have", 1, 30),
-    ("army_size",  500, "How many agents to spawn by default", 1, 10000),
+    ("army_size",  5000, "How many agents to spawn by default", 1, 10000),
     ("signal_duration",  120, "How long for a traffic signal to go through all of its cycles", 4, 1200)
   ) map {c => c._1 -> new Int_Cfgable(c._2, c._3, c._4, c._5)} toMap
 

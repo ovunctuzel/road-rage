@@ -6,7 +6,12 @@ paper:
       - why was the hack in map.make.Checker needed?
       - a conflict between a too-big stopping distance and acceleration into negative speed...
         - suggests it was an impossible request anyway?
-        - why cant this be done?
+
+      - directly compute the accel to end in dist.
+      - lookahead by end_thres more than current.
+      - why are we EVER doomed?!
+      - why are we EVER requesting negative accel_to_end distances?
+
     - ... then crank up dt and get a good number.
 
   - reference gridlock paper.

@@ -534,7 +534,14 @@ mention all the fixed nuances, like pause time at stop sign
   out, or somehow count how many people are on lanes in the queued groups.
   ideally we'd even recurse and factor in 
 
-\commentd{upgrading stop signs to signals, optimizing timing?}
+controlled factors: several maps, agent spawning pattern
+independent: every intersection has 1 of 3 main policies, each can have tweaks
+output: average/total/whatever wasted time and intersection thruput
+
+key: all of this code is separated out, easy to edit, 200 lines. even if results
+suck, thats fine, we'll work on em. different results in diff places is maybe
+even good! one size doesnt fit all, suggests we need a mix and some adapting to
+maps. future experiment could be upgrading few at a time.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 

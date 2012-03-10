@@ -12,9 +12,9 @@ import utexas.{Util, cfg}
 // Reason about collisions from conflicting simultaneous turns.
 class Intersection(val v: Vertex) {
   //val policy: Policy = new NeverGoPolicy(this)
-  //val policy: Policy = new StopSignPolicy(this)
+  val policy: Policy = new StopSignPolicy(this)
   //val policy: Policy = new SignalCyclePolicy(this)
-  val policy: Policy = new ReservationPolicy(this)
+  //val policy: Policy = new ReservationPolicy(this)
 
   override def toString = "Intersection(" + v + ")"
 
@@ -64,7 +64,7 @@ class Intersection(val v: Vertex) {
       Util.log("!!! " + a + " illegally entered intersection, going at " + a.speed)
       Util.log("  Incident was near " + t.from + " and " + t + " (vert " + t.from.to.id + ")")
       Util.log("  Origin lane length: " + t.from.length + "; time " + Agent.sim.tick)
-      Util.log("  Happened at " + Agent.sim.tick)
+      //policy.dump_info
       sys.exit
     }
   }

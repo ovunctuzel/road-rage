@@ -12,6 +12,11 @@ class StopSignPolicy(intersection: Intersection) extends Policy(intersection) {
   var current_owner: Option[Agent] = None
   var queue = List[Agent]()
 
+  override def dump_info() = {
+    Util.log("Current owner: " + current_owner)
+    Util.log("Queue: " + queue)
+  }
+
   def can_go(a: Agent, turn: Turn, far_away: Double): Boolean = {
     // Do they have the lock?
     current_owner match {

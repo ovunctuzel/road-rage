@@ -265,6 +265,10 @@ class RouteFollowingBehavior(a: Agent, route: Route) extends Behavior(a) {
       }
       val a3 = a.accel_to_achieve(min_speed_limit)
 
+      if (a.id == 1472) {
+        Util.log("  ~ %.1f, %.1f, %.1f".format(a1, a2, a3))
+      }
+
       val conservative_accel = math.min(a1, math.min(a2, a3))
 
       // let the other intersections that are letting us go know that we
@@ -322,6 +326,46 @@ class RouteFollowingBehavior(a: Agent, route: Route) extends Behavior(a) {
   // This is based on Piyush's proof.
   // how_far_away already includes end_threshold, if appropriate.
   private def accel_to_end(how_far_away: Double): Double = {
+    if (a.id == 1472) {
+      Util.log(" -- cover " + how_far_away + " from speed " + a.speed)
+    }
+
+    if (how_far_away > 0) {
+      // See if it's even possible, or if we're doomed.
+      // In other words, if we slam on our breaks now, how far do we travel?
+      val stop_dist_now = Util.dist_at_constant_accel(-a.max_accel, cfg.dt_s, a.speed)
+      if (stop_dist_now >= how_far_away) {
+        Util.log("!!!!!!! " + a.id + " is doomed: " + (how_far_away - stop_dist_now))
+      }
+    }
+
+    // What accel do we feed dist_at_constant_accel that makes it be equal to
+    // how_far_away?
+    // dist = (1/2)a(t^2) + (v_i)t
+    val direct_accel = 2.0 * (math.max(0.0, how_far_away) - (cfg.dt_s * a.speed)) / (cfg.dt_s * cfg.dt_s)
+    // make sure 1) this travels the correct amount
+      //assert(Util.dist_at_constant_accel(direct_accel, cfg.dt_s, a.speed) <= math.max(0.0, how_far_away))
+      val goal_dist = math.max(0.0, how_far_away)
+      // this does: (v_i)t + (1/2)a(t^2)
+      val would_dist = Util.dist_at_constant_accel(direct_accel, cfg.dt_s, a.speed)
+      if (would_dist > goal_dist) {
+        Util.log(would_dist + " exceeds " + goal_dist)
+      }
+    // make sure 2) this stops at speed 0
+      //assert(a.speed + (direct_accel * cfg.dt_s) >= 0.0)
+      val end_spd = a.speed + (direct_accel * cfg.dt_s)
+      if (end_spd < 0.0) {
+        Util.log("end speed " + end_spd)
+        Util.log("       " + how_far_away + " dist")
+        Util.log("       " + a.speed + " init speed")
+        Util.log("       " + cfg.dt_s +  "dt")
+        Util.log("       " + direct_accel + " was chosen accel")
+      }
+
+
+    // TODO and also make sure this is either within max accel, or if it's not,
+    // we can keep stopping from there and not exceed.
+
     // a, b, c for a normal quadratic
     val q_a = 1 / a.max_accel
     val q_b = cfg.dt_s
@@ -346,10 +390,16 @@ class RouteFollowingBehavior(a: Agent, route: Route) extends Behavior(a) {
 
     // TODO dumb epsilon bug again. fix this better.
     val stop_speed = a.speed + (needed_accel * cfg.dt_s)
-    return if (stop_speed < 0)
-             needed_accel + 0.1
-           else
-             needed_accel
+    val choice_accel = if (stop_speed < 0)
+                         needed_accel + 0.1
+                       else
+                         needed_accel
+
+    if (a.id == 1472) {
+      Util.log("  returning " + choice_accel + " but direct " + direct_accel)
+    }
+
+    return choice_accel
   }
 }
 
