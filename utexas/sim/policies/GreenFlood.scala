@@ -39,7 +39,7 @@ class GreenFlood(sim: Simulation) {
     val turn_groups = Cycle.grouped_left_turn_sets(edge.to)
 
     // Schedule all cycles equally
-    val duration: Double = cfg.sig_duration / turn_groups.size.toDouble
+    val duration: Double = cfg.signal_duration / turn_groups.size.toDouble
 
     // Find the group including the turn our starting edge leads to
     val first_group = turn_groups.find(g => g.contains(edge.leads_to.head)).get

@@ -6,7 +6,12 @@ paper:
       - why was the hack in map.make.Checker needed?
       - a conflict between a too-big stopping distance and acceleration into negative speed...
         - suggests it was an impossible request anyway?
-        - why cant this be done?
+
+      - directly compute the accel to end in dist.
+      - lookahead by end_thres more than current.
+      - why are we EVER doomed?!
+      - why are we EVER requesting negative accel_to_end distances?
+
     - ... then crank up dt and get a good number.
 
   - reference gridlock paper.
@@ -23,25 +28,27 @@ paper:
   - proofread / clean passive voice
   - name could either rework AORTA or be japanese
 
+- find specific scenarios that don't deadlock
+  - a way to save a "scenario"
+
 code: get signals a fair contender to stop signs
   - measurements
     - throughput of intersections... (agents exiting per minute)
     - how many agents active at any time? (when continuous gen is going) (poll max every min)
     - process it: care about per-agent and per-intersection totals/averages/variances
-  - increase num of agents until signals matter
-  - improve reservation policy
-    - make it switch every cycle_time if theres others waiting
-    - but true measure would be, which side has more depending on it?
+      - then make sure stuff like reservation pre-emption helps!
 
 code: seemingly unavoidable gridlock... agents locking edges, not verts.
   - detect with dependency graph
     - be clever: not between agents, but between lanes.
     - incorporate optimizations when speed=0
   - make them re-route?
+  - can we avoid with better A*ing? feels like dumb routes are being chosen.
 
 - rename lanes/intersections/junctions in code too? at least everywhere in paper consistently.
 
 - set up website / good build instructions / code licenses
+  - osm scraper script
 
 ###################
 

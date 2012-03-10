@@ -8,7 +8,7 @@ import scala.collection.mutable.{HashSet => MutableHashSet}
 import utexas.sim.{Intersection, Policy, Agent}
 import utexas.map.Turn
 
-import utexas.Util
+import utexas.{Util, cfg}
 
 // FIFO based on request, batched by non-conflicting turns.  Possible liveness
 // violation, since new agents can pour into the current_turns, and the ones
@@ -17,17 +17,26 @@ import utexas.Util
 // coloring.
 class ReservationPolicy(intersection: Intersection) extends Policy(intersection) {
   var current_batch = new TurnBatch()
+  var lock_cur_batch = false    // because we're trying to preempt
   var reservations = List[TurnBatch]()
   // used to determine if it's an agent's first requent or not
   val current_agents = new MutableHashSet[Agent]()
+  // When did the first group of reservations start waiting?
+  private var others_started_waiting = -1.0
 
   def shift_batches() = {
     if (current_batch.all_done) {
+      lock_cur_batch = false
       // Time for the next reservation! If there is none, then keep
       // current_batch because it's empty anyway.
       if (reservations.size != 0) {
         current_batch = reservations.head
         reservations = reservations.tail
+        if (!reservations.isEmpty) {
+          // If we had a previous preempt notification on the way, just ignore
+          // it when it arrives
+          dont_be_greedy
+        }
       }
     }
   }
@@ -46,7 +55,7 @@ class ReservationPolicy(intersection: Intersection) extends Policy(intersection)
 
     if (first_req) {
       current_agents += a
-      if (current_batch.add_ticket(a, turn)) {
+      if ((!lock_cur_batch) && current_batch.add_ticket(a, turn)) {
         return true
       } else {
         // A conflicting turn. Add it to the reservations.
@@ -56,6 +65,11 @@ class ReservationPolicy(intersection: Intersection) extends Policy(intersection)
           // new batch!
           val batch = new TurnBatch()
           batch.add_ticket(a, turn)
+          // Make sure these guys don't wait too long. Schedule the event system
+          // to poke us after a certain delay.
+          if (reservations.isEmpty) {
+            dont_be_greedy
+          }
           reservations :+= batch
         }
 
@@ -92,6 +106,32 @@ class ReservationPolicy(intersection: Intersection) extends Policy(intersection)
       Util.log(t + ": " + current_batch.tickets(t))
     }
     Util.log_pop
+  }
+
+  def dont_be_greedy() = {
+    // TODO swap based on recursive dependency count
+    others_started_waiting = Agent.sim.tick
+    // TODO there are similarities with signal cycle policy. perhaps refactor.
+    Agent.sim.schedule(Agent.sim.tick + cfg.signal_duration, { this.preempt })
+  }
+
+  // Delay the current cycle, they're hogging unfairly
+  def preempt() = {
+    if (Agent.sim.tick - others_started_waiting >= cfg.signal_duration
+        && !reservations.isEmpty && lock_cur_batch == false)
+    {
+      // it's quite the edge case when there are no current_agents... because
+      // then the intersection would have shifted to the next anyway.
+      assert(!current_batch.all_done)
+
+      // cant do it if there are some that can't stop. aka, just lock current
+      // cycle.
+      lock_cur_batch = true
+      //Util.log("locking " + intersection + " for preemption")
+      
+      // then all the other handling is normal, just don't let agents enter
+      // current_batch
+    }
   }
 }
 

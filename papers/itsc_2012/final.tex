@@ -485,6 +485,9 @@ stop.
 \pix{gridlock.png}{Each of the red agents wants to turn left, so none of them
 can. The traffic jam will slowly build up around this intersection.}{scale=0.25}
 
+% TODO in fact, this is caused by lack of lane changing!!!
+% but that's scary... bad routes really do cause it.
+
 However, with very high volumes of traffic, it is possible for waiting agents to
 accumulate and fill lanes to their capacity. When this happens in a circular
 manner so that the agent at the front of each lane is waiting to perform a turn
@@ -532,9 +535,16 @@ mention all the fixed nuances, like pause time at stop sign
 
   autonomous reservation: the greedy approach is a bit wretched. either time
   out, or somehow count how many people are on lanes in the queued groups.
-  ideally we'd even recurse and factor in 
+  ideally we'd even recurse and factor in all agents "dependent" on something
 
-\commentd{upgrading stop signs to signals, optimizing timing?}
+controlled factors: several maps, agent spawning pattern
+independent: every intersection has 1 of 3 main policies, each can have tweaks
+output: average/total/whatever wasted time and intersection thruput
+
+key: all of this code is separated out, easy to edit, 200 lines. even if results
+suck, thats fine, we'll work on em. different results in diff places is maybe
+even good! one size doesnt fit all, suggests we need a mix and some adapting to
+maps. future experiment could be upgrading few at a time.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
