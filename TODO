@@ -1,9 +1,5 @@
 # TODO #
 
-*** improve loading speed by usign arrays for all that silly stuff.
-  - and building too? arraylist?
-1.5) trip time also includes distance.
-
 1) find scenarios that dont deadlock
 2) post-proc measurements, include in paper
   s1, intersection, agent, lag

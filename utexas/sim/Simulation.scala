@@ -12,10 +12,10 @@ import scala.xml.pull._
 import utexas.map.{Graph, Road, Edge, Vertex, Ward, Turn}
 import utexas.map.make.Reader
 
-import utexas.{Util, cfg, Stats, Trip_Time_Stat}
+import utexas.{Util, cfg, Stats, Total_Trip_Stat}
 
 // This just adds a notion of agents
-class Simulation(roads: List[Road], edges: List[Edge], vertices: List[Vertex],
+class Simulation(roads: Array[Road], edges: Array[Edge], vertices: Array[Vertex],
                  wards: List[Ward], special_ward: Ward)
   extends Graph(roads, edges, vertices, wards, special_ward)
 {
@@ -183,7 +183,7 @@ class Simulation(roads: List[Road], edges: List[Edge], vertices: List[Vertex],
         // reap the done agents
         if (a.react) {
           agents -= a
-          Stats.record(Trip_Time_Stat(a.id, tick - a.started_trip_at))
+          Stats.record(Total_Trip_Stat(a.id, tick - a.started_trip_at, a.total_dist))
         }
       })
       //t6.stop

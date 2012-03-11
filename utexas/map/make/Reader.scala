@@ -232,11 +232,11 @@ class Reader(fn: String) {
 
     if (with_agents) {
       return Left(new Simulation(
-        roads.toList, edges.toList, verts.toList, wards, special_ward
+        roads, edges, verts, wards, special_ward
       ))
     } else {
       return Right(new Graph(
-        roads.toList, edges.toList, verts.toList, wards, special_ward
+        roads, edges, verts, wards, special_ward
       ))
     }
     // TODO anything to more explicitly free up?

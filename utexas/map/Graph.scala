@@ -6,8 +6,8 @@ import utexas.map.make.Reader
 
 import utexas.Util
 
-class Graph(val roads: List[Road], val edges: List[Edge],
-            val vertices: List[Vertex], val wards: List[Ward],
+class Graph(val roads: Array[Road], val edges: Array[Edge],
+            val vertices: Array[Vertex], val wards: List[Ward],
             val special_ward: Ward)
 {
   val turns = vertices.foldLeft(List[Turn]())((l, v) => v.turns.toList ++ l)

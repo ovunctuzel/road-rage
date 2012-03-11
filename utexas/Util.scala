@@ -25,7 +25,9 @@ object Util {
 
   // Convenient to see this at the very end if it was a long log.
   scala.sys.ShutdownHookThread({
-    Util.log("\nRNG seed: " + Util.seed)
+    if (seed != -1) {
+      Util.log("\nRNG seed: " + Util.seed)
+    }
     Stats.shutdown
   })
 
@@ -189,8 +191,10 @@ sealed trait Measurement {}
 final case class Wasted_Time_Stat(agent: Int, intersection: Int, lag: Double) extends Measurement {
   override def toString = "s1 %d %d %.2f".format(agent, intersection, lag)
 }
-final case class Trip_Time_Stat(agent: Int, time: Double) extends Measurement {
-  override def toString = "s2 %d %.2f".format(agent, time)
+final case class Total_Trip_Stat(agent: Int, time: Double, dist: Double) extends Measurement
+{
+  // TODO want average speed?
+  override def toString = "s2 %d %.2f %.2f".format(agent, time, dist)
 }
 final case class Intersection_Throughput_Stat(intersection: Int, requests: Int,
                                               entered: Int, timespan: Double)

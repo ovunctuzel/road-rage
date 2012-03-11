@@ -26,6 +26,7 @@ class Agent(val id: Int, val graph: Graph, val start: Edge, val start_dist: Doub
   var idle_since = -1.0   // how long has our speed been 0?
   var entered_last = (-1.0, -1.0, -1.0)  // time, distance, speed
   var started_trip_at = -1.0
+  var total_dist = 0.0
 
   var upcoming_intersections: Set[Intersection] = Set()
 
@@ -54,6 +55,7 @@ class Agent(val id: Int, val graph: Graph, val start: Edge, val start_dist: Doub
     // Do physics to update current speed and figure out how far we've traveled in
     // this timestep.
     val new_dist = update_kinematics(dt_s)
+    total_dist += new_dist
 
     idle_since = if (speed == 0.0 && idle_since == -1.0)
                    Agent.sim.tick   // we've started idling
