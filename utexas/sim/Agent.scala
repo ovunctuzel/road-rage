@@ -143,7 +143,7 @@ class Agent(val id: Int, val graph: Graph, val start: Edge, val start_dist: Doub
         exit(at.on)
         // and don't forget to tell intersections. this is normally just
         // at.on.vert if at.on is a turn, but it could be more due to lookahead.
-        upcoming_intersections.foreach(i => i.unregister(this))
+        upcoming_intersections.foreach(i => i.policy.unregister(this))
         upcoming_intersections = Set()
         return true
       }

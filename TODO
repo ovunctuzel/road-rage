@@ -1,5 +1,9 @@
 # TODO #
 
+1) save scenarios
+2) find scenarios that dont deadlock
+3) post-proc measurements, include in paper
+
 paper:
   - mention "how many agents can be comfortably simulated in realtime"
     - fix the dumb illegal entry epsilon bugs.
@@ -33,7 +37,6 @@ paper:
 
 code: get signals a fair contender to stop signs
   - measurements
-    - throughput of intersections... (agents exiting per minute)
     - how many agents active at any time? (when continuous gen is going) (poll max every min)
     - process it: care about per-agent and per-intersection totals/averages/variances
       - then make sure stuff like reservation pre-emption helps!
@@ -44,6 +47,8 @@ code: seemingly unavoidable gridlock... agents locking edges, not verts.
     - incorporate optimizations when speed=0
   - make them re-route?
   - can we avoid with better A*ing? feels like dumb routes are being chosen.
+    - but then it's still always possible...
+    - lack of lane-changing is to blame!
 
 - rename lanes/intersections/junctions in code too? at least everywhere in paper consistently.
 
@@ -90,6 +95,16 @@ BIGGER ISSUES
   - make sure turns and conflicts are as good as possible
     - randomize num of lanes to test
   * lane changing
+    - logically, geometrically
+    - when is it safe?
+      - dont try it too close to the end
+      - guarantee to avoid agents
+      - atomic; dont start without finishing
+      - dont attempt on short lanes
+    - how does the agent look during it?
+      - how long does it take? is it a fxn of speed?
+      - stay in both queues during
+    - how are routes affected if it's missed/impossible?
   - is there a way to analytically say "an agent will own this chunk" at some time, and then solve
     for collisions?
   - nondeterministic.

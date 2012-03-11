@@ -1,11 +1,12 @@
 package utexas.sim
 
 import scala.collection.mutable.{HashMap => MutableMap}
+import scala.collection.mutable.{HashSet => MutableSet}
 
 import utexas.sim.policies._
 import utexas.map.{Vertex, Turn}
 
-import utexas.{Util, cfg}
+import utexas.{Util, cfg, Stats, Intersection_Throughput_Stat}
 
 // Common stuff goes here, particular implementations are in utexas.sim.policies
 
@@ -18,9 +19,26 @@ class Intersection(val v: Vertex) {
 
   override def toString = "Intersection(" + v + ")"
 
-  // Just delegate. TODO or make caller do that themselves.
-  def can_go(a: Agent, turn: Turn, far_away: Double) = policy.can_go(a, turn, far_away)
+  // For stats.
+  var started_counting: Option[Double] = None
+  var stats_requested = new MutableSet[Agent]()
+  var cnt_entered = 0
+
+  // Delegate and log.
   def unregister(a: Agent) = policy.unregister(a)
+  def can_go(a: Agent, turn: Turn, far_away: Double): Boolean = {
+    stats_requested += a
+    started_counting match {
+      case Some(time) =>
+      case None => {
+        started_counting = Some(Agent.sim.tick)
+        Agent.sim.schedule(
+          Agent.sim.tick + cfg.thruput_stat_time, { this.count_stat }
+        )
+      }
+    }
+    return policy.can_go(a, turn, far_away)
+  }
 
   // Multiple agents can be on the same turn; the corresponding queue will
   // handle collisions. So in fact, we want to track which turns are active...
@@ -48,6 +66,7 @@ class Intersection(val v: Vertex) {
   }
 
   def enter(a: Agent, t: Turn) = {
+    cnt_entered += 1
     if (!turns.contains(t)) {
       // We don't care until there are at least two... and this only changes when
       // we add a new one...
@@ -79,6 +98,18 @@ class Intersection(val v: Vertex) {
       }
     }
     policy.handle_exit(a, t)
+  }
+
+  def count_stat() = {
+    // TODO I'm also not convinced this is the best way to measure this idea.
+    Stats.record(Intersection_Throughput_Stat(
+      v.id, stats_requested.size, cnt_entered, Agent.sim.tick - started_counting.get
+    ))
+    started_counting = None
+    stats_requested.clear
+    cnt_entered = 0
+    // if there are others that have requested and not entered, they'll be
+    // re-added during the next interval correctly.
   }
 }
 

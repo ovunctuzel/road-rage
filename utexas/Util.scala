@@ -135,7 +135,8 @@ object cfg {
     ("follow_dist",     20.0, "Even if stopped, don't get closer than this", 0.1, 1.0),
     ("max_accel",       2.7, "A car's physical capability",                  0.5, 5.0),
     ("pause_at_stop",   1.0, "Wait this long at a stop sign before going",   0.5, 5.0),
-    ("min_lane_length", 0.1, "It's unreasonable to have anything shorter",   0.0, 1.0)
+    ("min_lane_length", 0.1, "It's unreasonable to have anything shorter",   0.0, 1.0),
+    ("thruput_stat_time", 60.0, "Record throughput per this time",   0.5, 5.0)
   ) map {c => c._1 -> new Double_Cfgable(c._2, c._3, c._4, c._5)} toMap
 
   val ints = List(
@@ -162,6 +163,7 @@ object cfg {
   def max_accel       = doubles("max_accel").value
   def pause_at_stop   = doubles("pause_at_stop").value
   def min_lane_length = doubles("min_lane_length").value
+  def thruput_stat_time = doubles("thruput_stat_time").value
 
   def max_lanes       = ints("max_lanes").value
   def army_size       = ints("army_size").value
@@ -189,6 +191,12 @@ final case class Wasted_Time_Stat(agent: Int, intersection: Int, lag: Double) ex
 }
 final case class Trip_Time_Stat(agent: Int, time: Double) extends Measurement {
   override def toString = "s2 %d %.2f".format(agent, time)
+}
+final case class Intersection_Throughput_Stat(intersection: Int, requests: Int,
+                                              entered: Int, timespan: Double)
+  extends Measurement
+{
+  override def toString = "s3 %d %d %d %.1f".format(intersection, requests, entered, timespan)
 }
 
 object Stats {
