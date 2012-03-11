@@ -11,20 +11,49 @@ object Generator {
   val worker_pool = Executors.newFixedThreadPool(Runtime.getRuntime.availableProcessors)
 
   def shutdown = worker_pool.shutdown
+
+  var next_id = 0
+
+  def unserialize(sim: Simulation, params: (String => String)) = {
+    val starts = params("starts").split(",").map(e => sim.edges(e.toInt))
+    val ends = params("ends").split(",").map(e => sim.edges(e.toInt))
+
+    // TODO a bit fixed based on the two types of generators we have, but adding
+    // a new class doesn't entail too much new work
+    val g = params("type") match {
+      case "fixed"      => new FixedSizeGenerator(sim, starts, ends, params("total").toInt)
+      case "continuous" => new ContinuousGenerator(sim, starts, ends, params("spawn_every").toDouble)
+      case _            => throw new Exception("Weird serialized generator with type " + params("type"))
+    }
+
+    def make_gen(): Unit = sim.add_gen(g)
+    sim.schedule(params("time").toDouble, make_gen)
+  }
 }
 
-abstract class Generator(sim: Simulation, desired_starts: List[Edge], ends: List[Edge])
+abstract class Generator(sim: Simulation, desired_starts: Seq[Edge], ends: Seq[Edge])
+extends Ordered[Generator]
 {
+  val id = Generator.next_id
+  Generator.next_id += 1
+  val created_at = Agent.sim.tick   // needed for resimulation
+
+  def compare(other: Generator) = other.id.compare(id)
+
   // Prune the desired_starts for road type and length. Arrays have random
   // access.
   val start_candidates = desired_starts.filter(e => sim.queues(e).ok_to_spawn).toArray
   val end_candidates = ends.toArray
+
+  def serialize_ls(ls: Array[Edge]) = ls.map(e => e.id).mkString(",")
 
   // there may be no task scheduled
   protected var pending: List[(Agent, Option[FutureTask[List[Traversable]]])] = Nil
 
   // Returns new agents to try to spawn, or boolean means reap this genertor
   def run(): Either[List[Agent], Boolean]
+  // For resimulation. Spit out something in XML.
+  def serialize(): String
 
   def count_pending = pending.size
 
@@ -98,7 +127,7 @@ abstract class Generator(sim: Simulation, desired_starts: List[Edge], ends: List
 // TODO there's further refactorings that should happen between these two...
 // Fixed is really a degenerate case of continuous.
 
-class FixedSizeGenerator(sim: Simulation, starts: List[Edge], ends: List[Edge], total: Int)
+class FixedSizeGenerator(sim: Simulation, starts: Seq[Edge], ends: Seq[Edge], total: Int)
   extends Generator(sim, starts, ends)
 {
   var num_to_spawn = total
@@ -116,9 +145,13 @@ class FixedSizeGenerator(sim: Simulation, starts: List[Edge], ends: List[Edge], 
       return Left(create_and_poll(n))
     }
   }
+
+  override def serialize() = "<generator type=\"fixed\" time=\"%f\" starts=\"%s\" ends=\"%s\" total=\"%d\"/>".format(
+    created_at, serialize_ls(start_candidates), serialize_ls(end_candidates), total
+  )
 }
 
-class ContinuousGenerator(sim: Simulation, starts: List[Edge], ends: List[Edge],
+class ContinuousGenerator(sim: Simulation, starts: Seq[Edge], ends: Seq[Edge],
                           spawn_every: Double) extends Generator(sim, starts, ends)
 {
   var last_tick = Agent.sim.tick
@@ -140,4 +173,9 @@ class ContinuousGenerator(sim: Simulation, starts: List[Edge], ends: List[Edge],
       return Left(new_agents)
     }
   }
+
+  override def serialize() = "<generator type=\"continuous\" time=\"%f\" starts=\"%s\" ends=\"%s\" spawn_every=\"%f\"/>".format(
+    created_at, serialize_ls(start_candidates), serialize_ls(end_candidates),
+    spawn_every
+  )
 }

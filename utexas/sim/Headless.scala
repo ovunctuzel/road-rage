@@ -13,6 +13,8 @@ object Headless {
     val vals = args.zipWithIndex.filter(p => p._2 % 2 == 1).map(p => p._1)
     var fn = "dat/test.map"
     var rng = System.currentTimeMillis
+    var diff_rng = false
+    var load_scenario = ""
 
     if (args.size % 2 != 0) {
       Util.log("Command-line parameters must be pairs of key => value")
@@ -21,15 +23,26 @@ object Headless {
     for ((key, value) <- keys.zip(vals)) {
       key match {
         case "--input"       => { fn = value }
-        case "--rng"         => { rng = value.toLong }
+        case "--rng"         => { rng = value.toLong; diff_rng = true }
         case "--print_stats" => { Stats.use_print = value == "1" }
         case "--log_stats"   => { Stats.use_log = value == "1" }
         case "--run_for"     => { run_for = value.toDouble }
+        case "--scenario"    => { load_scenario = value }
         case _               => { Util.log("Unknown argument: " + key); sys.exit }
       }
     }
-    Util.init_rng(rng)
-    return Simulation.load(fn)
+
+    if (load_scenario.isEmpty) {
+      Util.init_rng(rng)
+      return Simulation.load(fn)
+    } else {
+      val sim = Simulation.load_scenario(load_scenario)
+      // It's useful to retry a scenario with a new seed.
+      if (diff_rng) {
+        Util.init_rng(rng)
+      }
+      return sim
+    }
   }
 
   def main(args: Array[String]) = {

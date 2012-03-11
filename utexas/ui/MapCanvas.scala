@@ -727,12 +727,12 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
                 // Fixed
                 prompt_int("How many agents?") match {
                   case Some(num) => {
-                    sim.generators += new FixedSizeGenerator(
+                    sim.add_gen(new FixedSizeGenerator(
                       sim,
                       polygon_roads1.toList.flatMap(r => r.all_lanes),
                       polygon_roads2.toList.flatMap(r => r.all_lanes),
                       num
-                    )
+                    ))
                   }
                   case _ =>
                 }
@@ -741,12 +741,12 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
                 // Continuous
                 prompt_double("How often (in simulation-time seconds) do you want one new agent?") match {
                   case Some(time) => {
-                    sim.generators += new ContinuousGenerator(
+                    sim.add_gen(new ContinuousGenerator(
                       sim,
                       polygon_roads1.toList.flatMap(r => r.all_lanes),
                       polygon_roads2.toList.flatMap(r => r.all_lanes),
                       time
-                    )
+                    ))
                   }
                   case _ =>
                 }

@@ -1,8 +1,23 @@
 # TODO #
 
-1) save scenarios
-2) find scenarios that dont deadlock
-3) post-proc measurements, include in paper
+*** improve loading speed by usign arrays for all that silly stuff.
+  - and building too? arraylist?
+1.5) trip time also includes distance.
+
+1) find scenarios that dont deadlock
+2) post-proc measurements, include in paper
+  s1, intersection, agent, lag
+    => 1) total time wasted for each agent
+       2) average total time wasted by agents
+       3) total time wasted at each intersection
+       4) average total wasted by intersections
+       5) average time wasted per agent per intersection
+  s2, agent, trip time
+    => 1) average trip time
+  s3, intersection, requests, entered, timespan (usually fixed)
+    => 1) average ratio per intersection
+       2) average ratio for all intersections
+3) rework first 3 sections
 
 paper:
   - mention "how many agents can be comfortably simulated in realtime"

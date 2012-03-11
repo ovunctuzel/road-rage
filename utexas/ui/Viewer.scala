@@ -2,6 +2,7 @@ package utexas.ui
 
 import swing._  // TODO figure out exactly what
 import java.awt.Color
+import swing.Dialog
 
 import utexas.sim.{Simulation, Headless}
 import utexas.Util
@@ -40,6 +41,11 @@ object Viewer extends SimpleSwingApplication {
       contents += new Menu("File") {
         contents += new MenuItem(Action("Configuration") {
           popup_config
+        })
+        contents += new MenuItem(Action("Save scenario for later resimulation") {
+          val fn = "resim_log"
+          Simulation.save_log(fn)
+          Dialog.showMessage(message = "Scenario saved in '" + fn + "'")
         })
         contents += new Separator
         contents += new MenuItem(Action("Quit") {

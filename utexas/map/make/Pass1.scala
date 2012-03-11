@@ -47,7 +47,7 @@ class Pass1(fn: String) {
 
   def run(): PreGraph1 = {
     // fill out graph with roads and collect all info
-    match_events( new XMLEventReader( Source.fromFile(fn) ) )
+    match_events( new XMLEventReader(Source.fromFile(fn)))
 
     Util.log("Normalizing graph coordinates")
     graph.normalize()
@@ -209,7 +209,7 @@ class Pass1(fn: String) {
           }
         }
 
-        case _ => {}
+        case _ =>
       }
     })
     Util.log("")

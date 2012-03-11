@@ -2,8 +2,12 @@ package utexas.sim
 
 import scala.annotation.tailrec
 import scala.collection.immutable.{SortedSet, TreeSet}
-import scala.collection.mutable.{MutableList, PriorityQueue}
+import scala.collection.mutable.{MutableList, PriorityQueue, ListBuffer}
 import scala.collection.mutable.{HashSet => MutableSet}
+import java.io.FileWriter
+import scala.io.Source
+import scala.xml.MetaData
+import scala.xml.pull._
 
 import utexas.map.{Graph, Road, Edge, Vertex, Ward, Turn}
 import utexas.map.make.Reader
@@ -33,7 +37,7 @@ class Simulation(roads: List[Road], edges: List[Edge], vertices: List[Vertex],
   val intersections = vertices.map(v => v -> new Intersection(v)).toMap
   var agents: SortedSet[Agent] = new TreeSet[Agent]
   var ready_to_spawn: List[Agent] = Nil
-  val generators = new MutableSet[Generator]
+  private var generators: SortedSet[Generator] = new TreeSet[Generator]
   private var generator_count = 0   // just for informational/UI purposes
   private var id_cnt = -1
 
@@ -43,6 +47,11 @@ class Simulation(roads: List[Road], edges: List[Edge], vertices: List[Vertex],
   def next_id(): Int = {
     id_cnt += 1
     return id_cnt
+  }
+
+  def add_gen(g: Generator) = {
+    generators += g
+    Simulation.generators += g
   }
 
   // Be sure to call pre_step at least once to poke all the generators
@@ -62,7 +71,7 @@ class Simulation(roads: List[Road], edges: List[Edge], vertices: List[Vertex],
 
   // Just a convenience method.
   def spawn_army(total: Int) = {
-    generators += new FixedSizeGenerator(this, edges, edges, total)
+    add_gen(new FixedSizeGenerator(this, edges, edges, total))
   }
 
   def wait_for_all_generators() = {
@@ -92,7 +101,16 @@ class Simulation(roads: List[Road], edges: List[Edge], vertices: List[Vertex],
 
   // Returns true if at least one generator is active
   def pre_step(): Boolean = {
-    // First, give generators a chance to introduce more agents into the system
+    // First, fire any scheduled callbacks (usually intersections or
+    // overseers)
+    // (It's good to do this first because they might create generators as part
+    // of resimulation)
+    while (!events.isEmpty && tick >= events.head.at) {
+      val ev = events.dequeue
+      ev.cb()
+    }
+
+    // Then, give generators a chance to introduce more agents into the system
     var changed = false
     var reap = new MutableSet[Generator]()
     generator_count = 0
@@ -106,15 +124,8 @@ class Simulation(roads: List[Road], edges: List[Edge], vertices: List[Vertex],
     })
     generators --= reap
 
-    // Then, introduce any new agents that are ready to spawn into the system
+    // Finally, introduce any new agents that are ready to spawn into the system
     ready_to_spawn = ready_to_spawn.filter(a => !try_spawn(a))
-
-    // Finally, fire any scheduled callbacks (usually intersections or
-    // overseers)
-    while (!events.isEmpty && tick >= events.head.at) {
-      val ev = events.dequeue
-      ev.cb()
-    }
 
     return changed
   }
@@ -205,5 +216,47 @@ sealed trait Sim_Event {}
 final case class EV_Signal_Change(reds: Set[Turn], greens: Set[Turn]) extends Sim_Event {}
 
 object Simulation {
-  def load(fn: String) = (new Reader(fn)).load_simulation
+  // maintain a log of the simulation here
+  var map_fn: String = ""
+  // every generator that was ever in existence
+  val generators = new ListBuffer[Generator]()
+
+  // start a new simulation
+  def load(fn: String): Simulation = {
+    map_fn = fn
+    return (new Reader(fn)).load_simulation
+  }
+
+  // TODO major limit: we don't yet encode spawning an army and waiting for
+  // threads to compute routes.
+
+  def save_log(fn: String) = {
+    val out = new FileWriter(fn)
+    out.write("<scenario map=\"%s\" seed=\"%d\">\n".format(map_fn, Util.seed))
+    generators.foreach(g => out.write("  " + g.serialize + "\n"))
+    out.write("</scenario>\n")
+    out.close
+  }
+
+  def load_scenario(fn: String): Simulation = {
+    // TODO probably a better way to unpack than casting to string
+    def get_attrib(attribs: MetaData, key: String): String = attribs.get(key).head.text
+
+    var sim: Simulation = null
+
+    new XMLEventReader(Source.fromFile(fn)).foreach(ev => ev match {
+      case EvElemStart(_, "scenario", attribs, _) => {
+        sim = load(get_attrib(attribs, "map"))
+        Util.init_rng(get_attrib(attribs, "seed").toLong)
+      }
+      case EvElemStart(_, "generator", attribs, _) => {
+        // huzzah for closures!
+        def retriever(key: String) = get_attrib(attribs, key)
+        Generator.unserialize(sim, retriever)
+      }
+      case _ =>
+    })
+
+    return sim
+  }
 }
