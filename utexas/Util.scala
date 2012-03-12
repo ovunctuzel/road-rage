@@ -200,6 +200,7 @@ final case class Intersection_Throughput_Stat(intersection: Int, requests: Int,
                                               entered: Int, timespan: Double)
   extends Measurement
 {
+  // TODO should entered > requests?
   override def toString = "s3 %d %d %d %.1f".format(intersection, requests, entered, timespan)
 }
 

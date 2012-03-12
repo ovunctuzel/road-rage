@@ -1,19 +1,9 @@
 # TODO #
 
-1) find scenarios that dont deadlock
-2) post-proc measurements, include in paper
-  s1, intersection, agent, lag
-    => 1) total time wasted for each agent
-       2) average total time wasted by agents
-       3) total time wasted at each intersection
-       4) average total wasted by intersections
-       5) average time wasted per agent per intersection
-  s2, agent, trip time
-    => 1) average trip time
-  s3, intersection, requests, entered, timespan (usually fixed)
-    => 1) average ratio per intersection
-       2) average ratio for all intersections
-3) rework first 3 sections
+1) find scenarios that dont deadlock, write results section
+  - run the same scenario a few times with a couple of seeds
+    but when comparing, exact same demand data
+2) rework first 3 sections
 
 paper:
   - mention "how many agents can be comfortably simulated in realtime"
