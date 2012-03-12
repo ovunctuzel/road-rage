@@ -195,7 +195,7 @@ class Agent(val id: Int, val graph: Graph, val start: Edge, val start_dist: Doub
         if (wasted_time >= 0) {
           // TODO this number still seems off (it's not 0 even when nobody
           // stops, it's occasionally negative)
-          Stats.record(Wasted_Time_Stat(id, e.to.id, wasted_time))
+          Stats.record(Wasted_Time_Stat(id, e.to.id, wasted_time, Agent.sim.tick))
         }
       }
       case _ =>

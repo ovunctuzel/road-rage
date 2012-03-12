@@ -12,7 +12,7 @@ import scala.xml.pull._
 import utexas.map.{Graph, Road, Edge, Vertex, Ward, Turn}
 import utexas.map.make.Reader
 
-import utexas.{Util, cfg, Stats, Total_Trip_Stat}
+import utexas.{Util, cfg, Stats, Total_Trip_Stat, Active_Agents_Stat}
 
 // This just adds a notion of agents
 class Simulation(roads: Array[Road], edges: Array[Edge], vertices: Array[Vertex],
@@ -161,12 +161,17 @@ class Simulation(roads: Array[Road], edges: Array[Edge], vertices: Array[Vertex]
       // they need to.
 
       //val t3 = Util.timer("agent step")
+      var active_cnt = 0
       agents.foreach(a => {
         if (a.step(cfg.dt_s)) {
           moved_count += 1
         }
-        total_count += 1
+        active_cnt += 1
       })
+      total_count += active_cnt
+      if (tick.toInt % 5 == 0) {
+        Stats.record(Active_Agents_Stat(tick.toInt, active_cnt))
+      }
       //t3.stop
 
       // Just check the ones we need to.
@@ -229,6 +234,7 @@ object Simulation {
 
   // TODO major limit: we don't yet encode spawning an army and waiting for
   // threads to compute routes.
+  // TODO also encode time limit run_for?
 
   def save_log(fn: String) = {
     val out = new FileWriter(fn)

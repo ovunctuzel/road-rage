@@ -188,8 +188,8 @@ class Int_Cfgable(default: Int, descr: String, min: Int, max: Int) {
 }
 
 sealed trait Measurement {}
-final case class Wasted_Time_Stat(agent: Int, intersection: Int, lag: Double) extends Measurement {
-  override def toString = "s1 %d %d %.2f".format(agent, intersection, lag)
+final case class Wasted_Time_Stat(agent: Int, intersection: Int, lag: Double, time: Double) extends Measurement {
+  override def toString = "s1 %d %d %.2f %d".format(agent, intersection, lag, time.toInt)
 }
 final case class Total_Trip_Stat(agent: Int, time: Double, dist: Double) extends Measurement
 {
@@ -197,11 +197,15 @@ final case class Total_Trip_Stat(agent: Int, time: Double, dist: Double) extends
   override def toString = "s2 %d %.2f %.2f".format(agent, time, dist)
 }
 final case class Intersection_Throughput_Stat(intersection: Int, requests: Int,
-                                              entered: Int, timespan: Double)
+                                              entered: Int, time: Double)
   extends Measurement
 {
   // TODO should entered > requests?
-  override def toString = "s3 %d %d %d %.1f".format(intersection, requests, entered, timespan)
+  override def toString = "s3 %d %d %d %d".format(intersection, requests, entered, time.toInt)
+}
+final case class Active_Agents_Stat(time: Int, cnt: Int) extends Measurement
+{
+  override def toString = "s4 %d %d".format(time, cnt)
 }
 
 object Stats {

@@ -13,9 +13,9 @@ import utexas.{Util, cfg, Stats, Intersection_Throughput_Stat}
 // Reason about collisions from conflicting simultaneous turns.
 class Intersection(val v: Vertex) {
   //val policy: Policy = new NeverGoPolicy(this)
-  //val policy: Policy = new StopSignPolicy(this)
+  val policy: Policy = new StopSignPolicy(this)
   //val policy: Policy = new SignalCyclePolicy(this)
-  val policy: Policy = new ReservationPolicy(this)
+  //val policy: Policy = new ReservationPolicy(this)
 
   override def toString = "Intersection(" + v + ")"
 
@@ -103,7 +103,7 @@ class Intersection(val v: Vertex) {
   def count_stat() = {
     // TODO I'm also not convinced this is the best way to measure this idea.
     Stats.record(Intersection_Throughput_Stat(
-      v.id, stats_requested.size, cnt_entered, Agent.sim.tick - started_counting.get
+      v.id, stats_requested.size, cnt_entered, Agent.sim.tick
     ))
     started_counting = None
     stats_requested.clear
