@@ -1,7 +1,6 @@
 # TODO #
 
-1) find scenarios that dont deadlock, write results section
-2) rework first 3 sections
+1) rework first 3 sections
 
 paper:
   - mention "how many agents can be comfortably simulated in realtime"
@@ -17,22 +16,17 @@ paper:
 
     - ... then crank up dt and get a good number.
 
-  - reference gridlock paper.
   - sections
     - abstract
     - intro
     - related work
       - compare to MATsim some more
-    - results
 
   - diagrams
     - map model
 
   - proofread / clean passive voice
   - name could either rework AORTA or be japanese
-
-- find specific scenarios that don't deadlock
-  - a way to save a "scenario"
 
 code: get signals a fair contender to stop signs
   - measurements

@@ -314,6 +314,7 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
   }
 
   def draw_agent(g2d: Graphics2D, a: Agent) = {
+    // TODO and idle time is at least a second
     if (a.speed == 0.0) {
       g2d.setColor(Color.RED)
     } else {

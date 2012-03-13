@@ -37,10 +37,10 @@ a General Traffic Simulation Framework
 \long\def\commentm#1{{\bf **Mike: #1**}}
 \long\def\commentd#1{{\bf **Dustin: #1**}}
 
-% \long\def\commentp#1{}
-% \long\def\commentpk#1{}
-% \long\def\commentm#1{}
-% \long\def\commentd#1{}
+%\long\def\commentp#1{}
+%\long\def\commentpk#1{}
+%\long\def\commentm#1{}
+%\long\def\commentd#1{}
 
 \begin{document}
 
@@ -280,10 +280,10 @@ transform the map into AORTA's format, which is also encoded with XML.
 
 \subsection{Map Model}
 
-\pix{map_model.png}
-    {Roads contain several lanes, and intersections contain several turns
-     between lanes.}
-    {scale=0.5}
+%\pix{map_model.png}
+%    {Roads contain several lanes, and intersections contain several turns
+%     between lanes.}
+%    {scale=0.5}
 
 A map is represented as a directed graph with \emph{lanes} as edges and
 \emph{turns} as vertices. A \emph{road} groups one or two sets of lanes
@@ -493,13 +493,15 @@ accumulate and fill lanes to their capacity. When this happens in a circular
 manner so that the agent at the front of each lane is waiting to perform a turn
 into another full lane with the same such head agent, gridlock \cite{gridlock}
 occurs; no agent in the system will make progress unless an agent at the front
-decides to pick a different turn. At best, AORTA can detect this by maintaining
-a dependency graph that encodes the ``is following'' relation and finding
-cycles. It is not clear how to prevent or mend deadlock without forcing
-agents to re-route.
+decides to pick a different turn. AORTA can detect this by finding cycles in the
+graph of the ``is following'' relation.
 
-\commentd{is the above clear and an acceptable limitation? should i find other
-sources that have the same troubles?}
+In many observed cases, the gridlock is caused by AORTA's present lack of
+lane-changing support: agents loop around these intersections in order to enter
+a lane adjacent to their original lane. Since these routes are still legal, it
+is desirable to prevent or mend this without forcing different routes. The
+conditions under which every vehicle eventually may proceed are known.
+\cite{AAAI11-au}.
 
 \subsection{Determinism and scale}
 
@@ -529,41 +531,75 @@ better.}
 \section{EXPERIMENTAL RESULTS}
 \label{sec:results}
 
-mention all the fixed nuances, like pause time at stop sign
+A particular focus of AORTA is intersection policies. To demonstrate how much
+policy affects agent performance, three policies are evaluated: stop sign,
+traffic signal, and autonomous reservation. These are compared with all other
+parameters fixed:
 
-  stop sign: FCFS, judged by stopping for the right time within the right dist of
-  the end of the intersection.
+\begin{enumerate}
+  \item the map (a $6$ by $7$ mile slice of downtown Austin, Texas
+        \footnote{bounded by the Mopac and Springdale Road horizontally,
+        and Oltorf Street and Koenig Lane vertically})
+  \item $dt = 0.1$ seconds
+  \item the agents spawned and their routes -- a continuous generator creates
+        one new agent every $1$ simulation second, with a uniformly random
+        starting position and goal
+  \item the duration of the experiment: one hour
+\end{enumerate}
 
-  traffic signal: duration matters, turns grouped together, how timings are
-  propagated.
+\subsection{Experiment parameters}
 
-  autonomous reservation: the greedy approach has a timeout, but ideally we'd
-  ount how many people are on lanes in the queued groups.  and recurse and
-  factor in all agents "dependent" on something
+Each policy has parameters, so the configuration used is relevant. Stop signs
+accept agents FCFS, refusing agents until they have idled at $0$ speed for $1$
+second. This delay approximates human reaction time. The traffic signal policy
+requires timings and groups of simultaneous turns for each intersection. The
+configuration tested here uses a breadth-first search from one major road's
+lanes to try to synchronize green signals for the agents near that lane to not
+stop for several intersections. This heuristic needs improvement in how it
+handles the remaining groups of turns that are scheduled after the first
+sequence. Finally, the autonomous reservation policy allows new agents to join
+existing groups of agents if their turn is compatible with the others. To
+prevent one heavy direction of traffic from hogging the intersection
+indefinitely, a timeout preempts and cycles through reservations. Ideally this
+should be based on the relative numbers of agents depending on their
+reservation.
 
-controlled factors: several maps, agent spawning pattern
-independent: every intersection has 1 of 3 main policies, each can have tweaks
-output: average/total/whatever wasted time and intersection thruput
+\subsection{Results}
 
+\pix{avg_lag_agent_atx.png}
+    {The distribution of average delay reveals that traffic signals can cause the most lag.}
+    {scale=0.35}
 
+If an intersection immediately permits an agent to proceed and grants other
+agents in the same lane similar access (because this new agent must still follow
+these others), then the new agent may simply proceed at full speed limit without
+pausing. This gives the least possible delay spent along some lane, so any extra
+time is defined as lag and is used to measure intersection performance. On
+average, reservation policies cause less than $1$ second of delay at each
+intersection, stop signs cause about $7$ seconds lag, and traffic signals cause
+$16$ seconds.
 
-map:
+\pix{agent_cnt_atx.png}
+    {Autonomous reservations outperform stop signs, and traffic signal gridlocked.}
+    {scale=0.35}
 
-contunuous gen, 1 new /sec. so stabe agent num is testament to policy.
+The number of agents changes because the continuous generator introduces a new
+agent every second. This count reaches a steady state when the generator
+introduces an agent at the same rate as older agents finish their route. As one
+measure of intersection policy efficiency, it reveals that autonomous
+reservations are twice as efficient as the competition, with a steady-state of
+about $400$ agents. The count for traffic signals continues to increase because
+gridlock occurred in one segment of the map, causing agents to not finish their
+route. Unexpected starvation was also observed: although the signals cycle
+through turns regularly, agents cannot proceed when the previous cycle caused a
+destination lane to fill and become blocked.
 
-
-stop sign: stable around 800
-signal: noticed one side can be starved for a long time. even when it's their
-        cycle, theres no room in the first guy's dest lane, so they all waste the cycle.
-        stable around 1200.
-reservation: stable around 400. nobody's ever stopping.
-
-key: all of this code is separated out, easy to edit, 200 lines. even if results
-suck, thats fine, we'll work on em. different results in diff places is maybe
-even good! one size doesnt fit all, suggests we need a mix and some adapting to
-maps. future experiment could be upgrading few at a time.
-
-
+Each policy has its trade-offs in terms of performance and physical hardware
+cost, suggesting a mixed approach, perhaps with intersection policies adapting
+as traffic conditions shift. Researchers could conduct this experiment and many
+others without needing to understand most of AORTA's code-base. The largest
+intersection policy, traffic signals with the flooding heuristic for timing
+assignment, is only $400$ lines of Scala.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
