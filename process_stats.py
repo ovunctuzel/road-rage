@@ -79,9 +79,9 @@ def average(dat):
   return [np.mean(ls) for ls in dat.values()]
 
 # Results from s1
-hgram(average, lag_per_a, "Average lag per agent", "agents")
-hgram(average, lag_per_i, "Average lag per intersection", "intersections")
-hgram(identity, all_lags, "Average lag", "events")
+hgram(average, lag_per_a, "Average lag per agent (seconds)", "agents")
+hgram(average, lag_per_i, "Average lag per intersection (seconds)", "intersections")
+hgram(identity, all_lags, "Average lag (seconds)", "events")
 # Results from s2
 hgram(identity, avg_speed, "Average speed (m/s) of each agent", "agents")
 # Results from s3

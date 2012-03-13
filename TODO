@@ -1,32 +1,26 @@
 # TODO #
 
-1) rework first 3 sections
+- name
+  MORTIS (mostly orchestrated routing & traffic infrastructure simulator)
+  AORTA (approximately orchestrated routing & traffic aggregator)
+- fix all critique of map + arch
+- rework first 3 sections
+  - compare to MATsim some more
+  - add notes about SUMO
 
-paper:
-  - mention "how many agents can be comfortably simulated in realtime"
-    - fix the dumb illegal entry epsilon bugs.
-      - why was the hack in map.make.Checker needed?
-      - a conflict between a too-big stopping distance and acceleration into negative speed...
-        - suggests it was an impossible request anyway?
 
-      - directly compute the accel to end in dist.
-      - lookahead by end_thres more than current.
-      - why are we EVER doomed?!
-      - why are we EVER requesting negative accel_to_end distances?
 
-    - ... then crank up dt and get a good number.
+- revise "how many agents can be comfortably simulated in realtime"
+  - fix the dumb illegal entry epsilon bugs.
+    - why was the hack in map.make.Checker needed?
+    - a conflict between a too-big stopping distance and acceleration into negative speed...
+      - suggests it was an impossible request anyway?
 
-  - sections
-    - abstract
-    - intro
-    - related work
-      - compare to MATsim some more
-
-  - diagrams
-    - map model
-
-  - proofread / clean passive voice
-  - name could either rework AORTA or be japanese
+    - directly compute the accel to end in dist.
+    - lookahead by end_thres more than current.
+    - why are we EVER doomed?!
+    - why are we EVER requesting negative accel_to_end distances?
+  - ... then crank up dt and get a good number.
 
 code: get signals a fair contender to stop signs
   - measurements

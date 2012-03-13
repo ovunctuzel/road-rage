@@ -13,12 +13,6 @@
 \usepackage[pdftex]{graphicx}
 % TODO remember we need to meet color compliance:
 % http://its.papercept.net/conferences/support/general.php
-\newcommand{\pix}[3]{
-  \begin{figure}[h]
-    \centering \includegraphics[#3]{#1}
-    \caption{#2}
-  \end{figure}
-}
 
 % TODO better name!
 \title{\LARGE \bf
@@ -56,7 +50,7 @@ a General Traffic Simulation Framework
 \commentp{If it's not implemented, we shouldn't talk about it.}
 
 \begin{abstract} 
-Autonomous vehicles have seen great advancements in recent years and
+Autonomous vehicles have seen great advancements in recent years, and
 such vehicles are now ever closer to being commercially available.
 The advent of driver-less cars provides opportunities for optimizing
 traffic in ways not possible before. This paper introduces an open
@@ -131,7 +125,14 @@ yet either}
 
 \commentp{legal issues are addressed here:  http://www.path.berkeley.edu/PATH/Publications/PDF/PRR/2009/PRR-2009-28.pdf}
 
-\pix{downtown_atx.png}{A simulation of downtown Austin, Texas.}{scale=0.25}
+\begin{figure}[h]
+  \centering \includegraphics[width=\linewidth]{downtown_atx.png}
+  \caption{A simulation of downtown Austin, Texas.}
+  \label{fig:ui_screenshot}
+  \vspace{-10pt}
+\end{figure}
+
+% TODO reference the screenshot
 
 This paper introduces an open source multi-agent microscopic traffic
 simulator called AORTA, which stands for \textit{Approximately
@@ -245,19 +246,21 @@ minimizing overall wait time \cite{manikonda2001autonomous}.
 \section{ARCHITECTURE}
 \label{sec:arch}
 
-\commentd{consider re-grouping sections... maybe this is all 'methodology'?} \commentpk{I think it is fine as it is}
-
-% Diagrma made with gliffy.com. architecture.gxml should enable editing.
-\pix{architecture.png}
-    {An illustration of AORTA's components.}
-    {scale=0.18}
+% Diagram made with gliffy.com. architecture.gxml should enable editing.
+\begin{figure*}
+  \centering \includegraphics[scale=0.3]{architecture.png}
+  \caption{A summary of AORTA's components.}
+  \label{fig:arch}
+  \vspace{-20pt}
+\end{figure*}
 
 AORTA is divided into three modular components: the map model, micro-simulation
 engine, and user interface (UI). The map model transforms OSM maps into AORTA graphs, then
 answers pathfinding and geometry queries. The simulation engine adds a notion of
 agents, vehicle dynamics, and collisions. Finally, the UI can
 interactively render the map and agents. A headless mode also enables running
-experiments without the overhead of visualization.
+experiments without the overhead of visualization. The interaction between
+modules is visualized in figure \ref{fig:arch}.
 
 AORTA's implementation uses Scala, a language implemented on the Java Virtual
 Machine \commentpk{cite a link to Scala here}. Scala provides the advantage of
@@ -273,9 +276,6 @@ instance, the} The stop sign policy used in Section \ref{sec:results}'s
 experiments \commentpk{Sec VI's experiments is awk, maybe "used in experiments
 described in Sec VI"} is implemented in just $70$ \commentpk{remove \$\$ in
 latex code, here and elsewhere} lines of code.
-
-\commentpk{need to reference the architecture figure here. the text in the
-figure also needs to be bigger}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -441,18 +441,21 @@ performing and verifying that no other agent is simultaneously performing a
 conflicting turn. AORTA has a low-granularity model of turn conflict. If two
 vehicles at any point along two different turns could ever come into contact,
 then the turns are always in conflict, no matter where the agents actually are
-along that turn. The alternative of tiling intersections \cite{JAIR08-dresner}
-would provide more granularity, but it adds computational complexity and would
-be impractical for many of the complex intersection geometries inferred from
-OSM.
+along that turn. This is visualized in figure \ref{fig:conflicts}. The
+alternative of tiling intersections \cite{JAIR08-dresner} would provide more
+granularity, but it adds computational complexity and would be impractical for
+many of the complex intersection geometries inferred from OSM.
 
 When a collision occurs, the simulator throws warnings and halts, since this
 indicates a bug in some policy. A future alternative could be to mark the region
 as impassable and re-route other traffic away from the accident.
 
-\pix{turn_conflicts.png}
-    {An agent cannot turn left while agents on the perpendicular road cross}
-    {scale=0.5}
+\begin{figure}[h]
+  \centering \includegraphics[scale=0.5]{turn_conflicts.png}
+  \caption{An agent cannot turn left while agents on the perpendicular road cross}
+  \label{fig:conflicts}
+  \vspace{-15pt}
+\end{figure}
 
 \subsection{Agent Reactions}
 
@@ -523,19 +526,22 @@ block other traffic. The default behavior prevents this by refusing to start a
 turn before the lookahead engine guarantees no agent will trigger a premature
 stop.
 
-\pix{gridlock.png}{Each of the red agents wants to turn left, so none of them
-can. The traffic jam will slowly build up around this intersection.}{scale=0.25}
-
-% TODO in fact, this is caused by lack of lane changing!!!
-% but that's scary... bad routes really do cause it.
-
 However, with very high volumes of traffic, it is possible for waiting agents to
 accumulate and fill lanes to their capacity. When this happens in a circular
 manner so that the agent at the front of each lane is waiting to perform a turn
 into another full lane with the same such head agent, gridlock \cite{gridlock}
 occurs; no agent in the system will make progress unless an agent at the front
-decides to pick a different turn. AORTA can detect this by finding cycles in the
-graph of the ``is following'' relation.
+decides to pick a different turn. Figure \ref{fig:gridlock} demonstrates this.
+AORTA can detect this by finding cycles in the graph of the ``is following''
+relation.
+
+\begin{figure}[h]
+  \centering \includegraphics[scale=0.25]{gridlock.png}
+  \caption{Each of the red agents wants to turn left, so none of them
+           can. The traffic jam will slowly build up around this intersection.}
+  \label{fig:gridlock}
+  \vspace{-10pt}
+\end{figure}
 
 In many observed cases, the gridlock is caused by AORTA's present lack of
 lane-changing support: agents loop around these intersections in order to enter
@@ -601,35 +607,43 @@ handles the remaining groups of turns that are scheduled after the first
 sequence. Finally, the autonomous reservation policy allows new agents to join
 existing groups of agents if their turn is compatible with the others. To
 prevent one heavy direction of traffic from hogging the intersection
-indefinitely, a timeout preempts and cycles through reservations. Ideally this
+indefinitely, a timeout preemptively cycles through reservations. Ideally this
 should be based on the relative numbers of agents depending on their
-reservation.
+group of reservations.
 
 \subsection{Results}
 
-\pix{avg_lag_agent_atx.png}
-    {The distribution of average delay reveals that traffic signals can cause the most lag.}
-    {scale=0.35}
+\begin{figure}[h]
+  \centering \includegraphics[width=\linewidth]{avg_lag_agent_atx.png}
+  \caption{The distribution of average delay reveals that traffic signals can
+           cause the most lag.}
+  \label{fig:avg_lag}
+  \vspace{-10pt}
+\end{figure}
 
 If an intersection immediately permits an agent to proceed and grants other
 agents in the same lane similar access (because this new agent must still follow
 these others), then the new agent may simply proceed at full speed limit without
 pausing. This gives the least possible delay spent along some lane, so any extra
-time is defined as lag and is used to measure intersection performance. On
-average, reservation policies cause less than $1$ second of delay at each
-intersection, stop signs cause about $7$ seconds lag, and traffic signals cause
-$16$ seconds.
+time is defined as lag and is used to measure intersection performance. Figure
+\ref{fig:avg_lag} graphs the average of this delay per agent. On average,
+reservation policies cause less than $1$ second of delay at each intersection,
+stop signs cause about $7$ seconds lag, and traffic signals cause $16$ seconds.
 
-\pix{agent_cnt_atx.png}
-    {Autonomous reservations outperform stop signs, and traffic signal gridlocked.}
-    {scale=0.35}
+\begin{figure}[h]
+  \centering \includegraphics[width=\linewidth]{agent_cnt_atx.png}
+  \caption{Autonomous reservations outperform stop signs, and traffic signal
+           gridlocked.}
+  \label{fig:agent_cnt}
+  \vspace{-10pt}
+\end{figure}
 
 The number of agents changes because the continuous generator introduces a new
 agent every second. This count reaches a steady state when the generator
-introduces an agent at the same rate as older agents finish their route. As one
-measure of intersection policy efficiency, it reveals that autonomous
-reservations are twice as efficient as the competition, with a steady-state of
-about $400$ agents. The count for traffic signals continues to increase because
+introduces an agent at the same rate as older agents finish their route. Figure
+\ref{agent_cnt} reveals that autonomous reservations let agents reach their
+destination twice as quickly as the competition, with a steady-state of about
+$400$ agents. The count for traffic signals continues to increase because
 gridlock occurred in one segment of the map, causing agents to not finish their
 route. Unexpected starvation was also observed: although the signals cycle
 through turns regularly, agents cannot proceed when the previous cycle caused a
