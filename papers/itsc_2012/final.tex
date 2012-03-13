@@ -245,7 +245,7 @@ minimizing overall wait time \cite{manikonda2001autonomous}.
 \section{ARCHITECTURE}
 \label{sec:arch}
 
-\commentd{consider re-grouping sections... maybe this is all 'methodology'?}
+\commentd{consider re-grouping sections... maybe this is all 'methodology'?} \commentpk{I think it is fine as it is}
 
 % Diagrma made with gliffy.com. architecture.gxml should enable editing.
 \pix{architecture.png}
@@ -260,12 +260,22 @@ interactively render the map and agents. A headless mode also enables running
 experiments without the overhead of visualization.
 
 AORTA's implementation uses Scala, a language implemented on the Java Virtual
-Machine. Scala provides the advantage of functional programming constructs while
-still permitting imperative style. Parts of AORTA, including extensions and
-clients, can easily be written in Java or Scala. The software is
-open-source\footnote{http://code.google.com/p/road-rage} and easily extensible.
-The stop sign policy used in Section \ref{sec:results}'s experiments is
-implemented in just $70$ lines of code.
+Machine \commentpk{cite a link to Scala here}. Scala provides the advantage of
+functional programming constructs while still permitting imperative style.
+Parts of AORTA, including extensions and clients, can easily be written in Java
+or Scala. The software is
+open-source\footnote{http://code.google.com/p/road-rage} and easily extensible
+\commentpk{maybe "Extensions and clients built on top of AORTA can be written
+in either Java or Scala, as the software is
+open-source\footnote{\commentpk{needs more description}
+http://code.google.com/p/road-rage} and easily extensible}. \commentpk {For
+instance, the} The stop sign policy used in Section \ref{sec:results}'s
+experiments \commentpk{Sec VI's experiments is awk, maybe "used in experiments
+described in Sec VI"} is implemented in just $70$ \commentpk{remove \$\$ in
+latex code, here and elsewhere} lines of code.
+
+\commentpk{need to reference the architecture figure here. the text in the
+figure also needs to be bigger}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -273,10 +283,14 @@ implemented in just $70$ lines of code.
 \label{sec:map}
 
 One advantage of AORTA is that it simulates traffic on existing infrastructure
-rather than contrived, randomly generated maps. Utilizing OpenStreetMaps, a
-community project offering user-editable, free XML-based maps, enables this. To
-run a simulation on a map from OSM, there is a one-time conversion process to
-transform the map into AORTA's format, which is also encoded with XML.
+rather than contrived, randomly \commentpk{"contrived, randomly" is a bit
+weird, maybe "contrived or randomly"?} generated maps. Utilizing OpenStreetMaps
+\commentpk{remove trailing s in OpenStreetMaps}, a community project offering
+user-editable, free XML-based maps, enables this. To run a simulation on a map
+from OSM, there is a one-time conversion process to transform the map into
+AORTA's format, which is also encoded with XML. \commentpk{why convert it to
+another XML format? you might want to put an additional line outlining the
+purpose of this step}
 
 \subsection{Map Model}
 
@@ -292,33 +306,38 @@ together, one set for each direction of travel.
 Since both lanes and turns support traffic, they are grouped together as
 \emph{traversables}, meaning agents may exist on them.
 
-The map also has a geometric interpretation, used for visualization and physical
-distances. A road contains a sequence of points giving the line segments of the
-center yellow line. These points could also be interpreted as control points for
-a curved road, but AORTA uses straight lines as an approximation. Lanes are
-parallel to the center line, some fixed width apart from one another. Turns are
-modeled with a single straight line connecting the end of one lane to the start
-of another (so right turns often have $0$ length). 
+The map also has a geometric interpretation, used for visualization and
+\commentpk{measuring?} physical distances. A road contains a sequence of points
+giving the line segments of the center yellow line \commentpk{if you want to
+use "yellow", you need to reference a figure. I would recommend putting it this
+way "center line of the road (yellow lines in Fig. XX)"}. These points could
+also be interpreted as control points for a curved road, but AORTA uses
+straight lines as an approximation. Lanes are parallel to the center line, some
+fixed width apart from one another \commentpk{no need to mention that the roads
+could be interpreted as a spline, instead say "AORTA interprets roads as
+straight lines between these points, and projects parallel lanes out using a
+fixed width"}. Turns are modeled with a single straight line connecting the end
+of one lane to the start of another (so right turns often have $0$ length). 
 
 \subsection{Map Construction Passes}
 
 Map construction is split into several passes, each feeding the next.
 \begin{enumerate}
   \item OSM encodes many paths besides driveable roads, so the builder first filters
-        these out. Next the builder marks GPS locations common to multiple roads, since
-        they implicitly indicate intersections.
+        these out. Next the builder \commentpk{you have not mentioned a builder before, maybe mention it in the last line of the intro to this section} marks GPS locations common to multiple roads, since
+        they implicitly indicate intersections \commentpk{do you guys use GPS locations or OSM unique identifiers, what about overpasses etc.?}.
   \item OSM \emph{ways} (sequences of GPS locations) include many
         intersections, so the builder next splits ways into undirected
         segments of roads between exactly two intersections.
   \item The builder multiplies undirected roads into directed lanes in each direction
         (unless the road is marked one-way). The builder guesses the number of lanes based on
-        OSM's ``road type'' tag or an explicit number of lanes, when that data is available.
+        OSM's ``road type'' \commentpk{If you have space, elaborate that you use heuristics on the road type attribute, and the 4 different road types are residential etc.} tag or an explicit number of lanes, when that data is available.
   \item The builder constructs turns between incoming and outgoing lanes at each
-        junction. The builder uses an angle heuristic to choose between left, right, straight,
-        and U-turns. When several lanes all cross into fewer lanes,
+        junction \commentpk{intersection, keep the terminology constant}. The builder uses an angle heuristic to choose between left, right, straight,
+        and U-turns \commentpk{preceding sentence unclear to me}. When several lanes all cross into fewer lanes,
         the builder forces merging of the rightmost lanes.  Although inaccurate,
         these patterns are the best compromise. At the time of writing, even sources
-        like Google Maps \cite{googleMaps} lack this information.
+        like Google Maps \cite{googleMaps} lack this information \commentpk{the last sentence is tricky. unless you have a source that states this, I would avoid this claim. Linking to google maps directly is not correct}.
   \item Because turns are heuristically placed, the graph is often
         disconnected. In order to ensure that an agent will be able to reach any point in the map,
         the builder removes all but the largest strongly connected component of the digraph.
