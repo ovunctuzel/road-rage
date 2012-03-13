@@ -262,10 +262,10 @@ experiments without the overhead of visualization.
 AORTA's implementation uses Scala, a language implemented on the Java Virtual
 Machine. Scala provides the advantage of functional programming constructs while
 still permitting imperative style. Parts of AORTA, including extensions and
-clients, can easily be written in Java or Scala. The software, designed for
-extensibility, has a documented API, is
-open-source\footnote{http://code.google.com/p/road-rage}, and contains all of
-the code for the experiments described in Section \ref{sec:results}.
+clients, can easily be written in Java or Scala. The software is
+open-source\footnote{http://code.google.com/p/road-rage} and easily extensible.
+The stop sign policy used in Section \ref{sec:results}'s experiments is
+implemented in just $70$ lines of code.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -537,18 +537,33 @@ mention all the fixed nuances, like pause time at stop sign
   traffic signal: duration matters, turns grouped together, how timings are
   propagated.
 
-  autonomous reservation: the greedy approach is a bit wretched. either time
-  out, or somehow count how many people are on lanes in the queued groups.
-  ideally we'd even recurse and factor in all agents "dependent" on something
+  autonomous reservation: the greedy approach has a timeout, but ideally we'd
+  ount how many people are on lanes in the queued groups.  and recurse and
+  factor in all agents "dependent" on something
 
 controlled factors: several maps, agent spawning pattern
 independent: every intersection has 1 of 3 main policies, each can have tweaks
 output: average/total/whatever wasted time and intersection thruput
 
+
+
+map:
+
+contunuous gen, 1 new /sec. so stabe agent num is testament to policy.
+
+
+stop sign: stable around 800
+signal: noticed one side can be starved for a long time. even when it's their
+        cycle, theres no room in the first guy's dest lane, so they all waste the cycle.
+        stable around 1200.
+reservation: stable around 400. nobody's ever stopping.
+
 key: all of this code is separated out, easy to edit, 200 lines. even if results
 suck, thats fine, we'll work on em. different results in diff places is maybe
 even good! one size doesnt fit all, suggests we need a mix and some adapting to
 maps. future experiment could be upgrading few at a time.
+
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 

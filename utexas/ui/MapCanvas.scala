@@ -314,10 +314,14 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
   }
 
   def draw_agent(g2d: Graphics2D, a: Agent) = {
-    if (!agent_colors.contains(a)) {
-      agent_colors(a) = GeomFactory.rand_color
+    if (a.speed == 0.0) {
+      g2d.setColor(Color.RED)
+    } else {
+      if (!agent_colors.contains(a)) {
+        agent_colors(a) = GeomFactory.rand_color
+      }
+      g2d.setColor(agent_colors(a))
     }
-    g2d.setColor(agent_colors(a))
     if (zoomed_in) {
       // TODO cfg. just tweak these by sight.
       val vehicle_length = 0.5  // along the edge

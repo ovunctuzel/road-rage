@@ -213,11 +213,19 @@ object Stats {
   var use_log = false
   var use_print = false
 
+  def experiment_name(name: String) = {
+    if (use_log) {
+      assert(log == null)
+      log = new FileWriter("stats_log")   // TODO use right buffering
+      log.write(name + "\n")
+    }
+    if (use_print) {
+      Util.log("Experiment name: " + name)
+    }
+  }
+
   def record(item: Measurement) = {
     if (use_log) {
-      if (log == null) {
-        log = new FileWriter("stats_log")   // TODO use right buffering
-      }
       log.write(item.toString + "\n")
     }
     if (use_print) {

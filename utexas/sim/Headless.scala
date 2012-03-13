@@ -15,6 +15,7 @@ object Headless {
     var rng = System.currentTimeMillis
     var diff_rng = false
     var load_scenario = ""
+    var exp_name = "Experiment " + rng
 
     if (args.size % 2 != 0) {
       Util.log("Command-line parameters must be pairs of key => value")
@@ -28,9 +29,12 @@ object Headless {
         case "--log_stats"   => { Stats.use_log = value == "1" }
         case "--run_for"     => { run_for = value.toDouble }
         case "--scenario"    => { load_scenario = value }
+        case "--name"        => { exp_name = value }
         case _               => { Util.log("Unknown argument: " + key); sys.exit }
       }
     }
+
+    Stats.experiment_name(exp_name)
 
     if (load_scenario.isEmpty) {
       Util.init_rng(rng)

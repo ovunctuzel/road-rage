@@ -1,10 +1,6 @@
 # TODO #
 
 1) find scenarios that dont deadlock, write results section
-  - have a 'sparse' and a 'dense' scenario?
-  - run the same scenario a few times with a couple of seeds
-    but when comparing, exact same demand data
-  - comparison graphs would probably rock
 2) rework first 3 sections
 
 paper:
