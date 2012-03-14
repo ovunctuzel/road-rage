@@ -393,7 +393,7 @@ reverse order after a time step has completed.
   of every vehicle aren't too close to any other vehicle. It would just be
   needlessly expensive, and we trust the following-distance behavior.}
 
-Likewise, intersections check for collisions by examining the turn each agent is
+Intersections check for collisions by examining the turn each agent is
 performing and verifying that no other agent is simultaneously performing a
 conflicting turn. AORTA has a low-granularity model of turn conflict. If two
 vehicles at any point along two different turns could ever come into contact,
@@ -429,9 +429,10 @@ A behavior's interaction with an intersection policy amounts to polling it with
 the turn the agent wants to perform, the distance away the agent currently is,
 and how long the agent has been waiting (so policies can enforce a required
 delay before entering the intersection). The intersection policy simply orders
-the agent to ``stop'' or ``proceed.'' The acceleration chosen to avoid entering
-an intersection attempts to account for crosswalks by ending a configurable
-threshold before the end of a traversable.
+the agent to ``stop'' or ``proceed.'' \commentd{I'm not sure this fits in the
+default behavior later anymore; just delete it?} The acceleration chosen to
+avoid entering an intersection attempts to account for crosswalks by ending a
+configurable threshold before the end of a traversable.
 
 \subsection{Simulation Limitations}
 
@@ -478,7 +479,7 @@ There are three main components of the simulation, each configurable by
 extending built-in implementations of an interface: agent behaviors, routing
 strategies, and intersection policies.
 
-\section{Agent Behaviors}
+\subsection{Agent Behaviors}
 
 Currently, all agents use a primary behavior that is a generalized, baseline
 behavior that guarantees not to collide with another agent or enter an
@@ -497,14 +498,6 @@ The analysis short-circuits at the first nearby agent and intersection requiring
 a stop, since it would be illegal to drive further anyway.
 
 \subsection{Intersection Policies}
-
-A behavior's interaction with an intersection policy amounts to polling it with
-the turn the agent wants to perform, the distance away the agent currently is,
-and how long the agent has been waiting (so policies can enforce a required
-delay before entering the intersection). The intersection policy simply orders
-the agent to ``stop'' or ``proceed.'' The acceleration chosen to avoid entering
-an intersection attempts to account for crosswalks by ending a configurable
-threshold before the end of a traversable.
 
 Intersection policies are one of the most intriguing aspects of the simulation
 to tweak, especially in light of autonomous vehicles. Current policies include
