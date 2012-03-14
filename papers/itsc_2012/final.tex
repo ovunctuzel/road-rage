@@ -485,27 +485,24 @@ with smart intersections to avoid congestion.
 A particular focus of AORTA is intersection policies. To demonstrate how much
 policy affects agent performance \commentd{performance is a vague term, but I
 don't want to talk about dependent vars just yet}, three policies are evaluated: stop sign,
-traffic signal, and autonomous reservation. These are compared with all other
-parameters fixed:
+traffic signal, and autonomous reservation.
 
-\begin{enumerate}
-  \item the map (a 6 by 7 mile slice of downtown Austin, Texas
-        \footnote{bounded by the Mopac and Springdale Road horizontally,
-        and Oltorf Street and Koenig Lane vertically})
-  \item dt = 0.1 seconds
-  \item the agents spawned and their routes -- a continuous generator creates
-        one new agent every 1 simulation second, with a uniformly random
-        starting position and goal
-  \item the duration of the experiment: one hour
-\end{enumerate}
+\subsection{Experimental Setup}
 
-Each experiment is deterministically reproducible. A seed for the pseudo-random
-number generator, the input graph, and the generators' configuration fully
-determine the outcome of any simulation \footnote{This determinism may break
-  down when generators use worker threads, since routes may be computed in
-different orders, causing agents to enter the road at different times.}. After
-setting up a scenario in the UI, users can save this configuration for
-resimulation.
+The experiment simulates a 6 by 7 mile slice of downtown Austin,
+Texas\footnote{bounded by the Mopac and Springdale Road horizontally, and Oltorf
+Street and Koenig Lane vertically}, for one hour. The step duration is fixed at
+0.1 seconds. While the intersection policies vary, the agents spawned and their
+routes remain the same. A generator creates one new agent every 1 simulation
+second, with a uniformly random starting position and goal.
+
+These experiments are deterministically reproducible. A seed for the
+pseudo-random number generator, the input graph, and the generators'
+configuration fully determine the outcome of any simulation \footnote{This
+  determinism may break down when generators use worker threads, since routes
+  may be computed in different orders, causing agents to enter the road at
+different times.}. After setting up a scenario in the UI, users can save this
+configuration for resimulation.
 
 The speed of simulation depends on the step duration dt, the map size, and the
 number of agents. A measure independent of these factors is the number of agent
