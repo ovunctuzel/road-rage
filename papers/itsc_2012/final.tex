@@ -61,7 +61,7 @@ defining \textit{behaviors} for individual vehicles and
 intersections. These behaviors allow agents to interact with each
 other as well as local intersections in any manner required for a
 simulation of interest.  This is demonstrated in a simple experiment
-for autonomous vehicles demonstrated at the end of this paper.
+for autonomous vehicles presented at the end of this paper.
 \end{abstract}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -92,9 +92,9 @@ addressed in the near term. Road infrastructure changes could provide important
 improvements to traffic involving autonomous vehicles. A number of legal and
 safety concerns need to be addressed in the context of driver-less cars. Human
 drivers need new methodologies to interact with autonomous drivers on public roads.
-AORTA aims to solve some of these problems by providing a sandbox in which such
+This work aims to solve some of these problems by providing a sandbox in which such
 methodologies can be found and tested for safety and efficiency before being
-deployed in the real world.  In this manner, AORTA aids in the effort to find
+deployed in the real world.  In this manner, the present work aids in the effort to find
 intermediate stages between entirely human and entirely autonomous traffic.
 
 \begin{figure}[h]
@@ -115,13 +115,11 @@ interact with other vehicles to pass and change lanes, and interact
 with intersections to decide when to cross them. Researchers
 developing applications on top of the AORTA simulator define
 \textit{behaviors} that these agents follow to interact with one
-another. To optimize traffic flow, external \textit{overseers} can
-coordinate with these agents to provide recommendations such as route
-suggestions or intersection signaling policies.  An advantage of such
-an approach is that by assigning human-like behaviors such as the
-``car following model'' \cite{brackstone1999car} to vehicles, and
-traffic-signal-like policies to intersection, AORTA can just as easily
-simulate human traffic.
+another. An advantage of such an approach is that by assigning
+human-like behaviors such as the ``car following model''
+\cite{brackstone1999car} to vehicles, and traffic-signal-like
+policies to intersections, AORTA can just as easily simulate human
+traffic.
 
 Like any other microscopic traffic simulator, AORTA needs maps to run
 simulations. One of AORTA's key features is that it generates maps using road
@@ -134,13 +132,13 @@ download time).  AORTA also has the advantage of being open source and easy to
 install so that researchers can make any tweaks they find necessary.
 \footnote{http://code.google.com/p/road-rage}
 
-\commentpk{Needs 1 more para based on final application}
-
-% Section 2 will review other traffic simulators. Section 3 will introduce the
-% overall architecture of AORTA. Section 4 describes how OSM maps are used.
-% Section 5 explains the simulation engine and the properties AORTA posses that
-% are useful for general traffic experiments. Section 6 gives some initial
-% results from such an experiment, and Section 7 concludes.
+After exploring the state of the art in section \ref{sec:related_work} and explaining
+the architecture of AORTA (section \ref{sec:arch}) as well as its use of OSM (section \ref{sec:map}),
+we will describe simulation in AORTA and how to extend it in sections \ref{sec:simulation} and
+\ref{sec:config} respectively. We conclude with an example experiment in section \ref{sec:results}.
+In this final experiment, AORTA shows the benefits of an AIM-inspired
+\cite{JAIR08-dresner} reservation intersection policy over traditional
+traffic signals and stop signs.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
