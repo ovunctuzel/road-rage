@@ -349,11 +349,6 @@ acceleration before being able to choose a different acceleration. Setting
 \textit{dt} to the ``reaction time'' of a human driver may be appropriate for
 experiments modeling humans.
 
-Currently agents cannot switch lanes. AORTA allows merging lanes by treating
-the merge point as an intersection. \commentpk{move this to the limitations
-section, and rename the section to "Current limitations". Explain gridlock as a
-main limitation, and put this in somewhere}
-
 Each step, the simulation does the following:
 
 \begin{enumerate}
@@ -382,15 +377,14 @@ Every step, a generator creates some number of new agents. If the agent's route
 policy needs computation like pathfinding to operate, the generator either
 performs it immediately (incurring a delay in simulation if it is running) or,
 if possible, sends it to a pool of worker threads to process in the background.
-
 Once an agent's route is ready, the agent waits alongside its starting lane (as
 if it is in a driveway or parking lot). When the lane has no agents that could
 potentially crash with the new vehicle, the new agent enters the system with
-zero initial speed. \commentpk {For space, remove the following sentence as well, and merge this paragraph into thr previous one} Because behaviors must enforce speed limit along a lane
-from the moment an agent enters a road, it is safe for a new agent to enter a
-road if there is no other agent within the worst-case distance (traveling
-distance at the speed limit, plus stopping distance from this speed) preceeding
-the spawn point. % To avoid predicting which agents might enter the lane in the
+zero initial speed. % Because behaviors must enforce speed limit along a lane
+%from the moment an agent enters a road, it is safe for a new agent to enter a
+%road if there is no other agent within the worst-case distance (traveling
+%distance at the speed limit, plus stopping distance from this speed) preceeding
+%the spawn point. To avoid predicting which agents might enter the lane in the
 %near future, there is a buffer space at the beginning of the lane where a new
 %agent may never spawn. This disqualifies some short lanes from being spawn
 %points, but this is not a big limitation in practice. \commentpk{I understand
@@ -400,10 +394,12 @@ the spawn point. % To avoid predicting which agents might enter the lane in the
 \subsection{Collision checking}
 
 All traversables (lanes and the straight line-approximation of turns) maintain
-an ordered queue of occupying agents. \commentpk{remove the following 2 sentences} One simulation step happens atomically,
-meaning collision checking occurs after all agents have moved. If this were not
-the case, false positives could occur when an agent steps before the agent in front
-of it. A collision is defined as the reversal of order of agents during a step. \commentpk{maybe change this to "A collision is detected as the reversal of order of agents after a time step has completed. Also do we still have point vehicles only?}
+an ordered queue of occupying agents. A collision is detected when two agents
+reverse order after a time step has completed.
+\commentpk{Also do we still have point vehicles only?}
+\commentd{Technically yes, but we could add in a check to make sure the fronts
+  of every vehicle aren't too close to any other vehicle. It would just be
+  needlessly expensive, and we trust the following-distance behavior.}
 
 Likewise, intersections check for collisions by examining the turn each agent is
 performing and verifying that no other agent is simultaneously performing a
@@ -427,34 +423,29 @@ as impassable and re-route other traffic away from the accident.
 \end{figure}
 
 \subsection{Agent Behavior}
-\label{sec:behaviors}
 
 Each agent has a \emph{behavior} governing it, responsible for obeying
 intersection policies and avoiding collisions. When the agent travels past the
 end of a lane during its step, the behavior picks the turn to take. At each
 step, the behavior can make the agent react by performing one of two actions:
 disappearing from the map (when the agent is at rest and is done with its route)
-or setting an acceleration for the next step. Were lane changing modeled, that
-would be another possible action. \commentpk {remove last line - we'll bundle it up in limitations}
+or setting an acceleration for the next step.
 
-Currently, all agents use a primary behavior that is a generalized, baseline
-behavior that guarantees not to collide with another agent or enter an
-intersection at the wrong time. Since it picks the highest safe choice of
-acceleration at each step, it could easily be extended to mimic human drivers by
-traveling at some random lesser acceleration or to optimize fuel efficiency
-by tuning movement.
+\subsection{Intersection Policies}
 
-The default behavior maximizes acceleration while obeying speed limits,
-avoiding collisions, and obeying intersections. By considering the highest speed
-achievable at the end of the next step and the subsequent stopping distance at
-this speed, the behavior's lookahead engine can scan sufficiently far ahead
-along several traversables to locate agents to avoid and intersections to query.
-The analysis short-circuits at the first nearby agent and intersection requiring
-a stop, since it would be illegal to drive further anyway.
+A behavior's interaction with an intersection policy amounts to polling it with
+the turn the agent wants to perform, the distance away the agent currently is,
+and how long the agent has been waiting (so policies can enforce a required
+delay before entering the intersection). The intersection policy simply orders
+the agent to ``stop'' or ``proceed.'' The acceleration chosen to avoid entering
+an intersection attempts to account for crosswalks by ending a configurable
+threshold before the end of a traversable.
 
-\commentpk{The last 2 paragraphs need to move into the configurability section, as they are not part of the simulator directly. Similarly there should be a subsection on intersection behaviors here}
+\subsection{Simulation Limitations}
 
-\subsection{Simulation Limitations: Gridlock}
+Currently agents cannot change lanes. However, AORTA supports roads forcibly
+merging by treating the merge point as an intersection. The lack of
+lane-changing causes a second issue: gridlock.
 
 Agents maintain a safe following distance from the next agent. If a lane is
 filled, then an agent may be forced to stop in an intersection mid-turn and
@@ -493,8 +484,25 @@ conditions under which every vehicle eventually may proceed are known.
 
 There are three main components of the simulation, each configurable by
 extending built-in implementations of an interface: agent behaviors, routing
-strategies, and intersection policies. Behaviors have been described already in
-section \ref{sec:behaviors}.
+strategies, and intersection policies.
+
+\section{Agent Behaviors}
+
+Currently, all agents use a primary behavior that is a generalized, baseline
+behavior that guarantees not to collide with another agent or enter an
+intersection at the wrong time. Since it picks the highest safe choice of
+acceleration at each step, it could easily be extended to mimic human drivers by
+traveling at some random lesser acceleration or to optimize fuel efficiency
+by tuning movement.
+
+\commentd{So is this paragraph below still relevant?}
+The default behavior maximizes acceleration while obeying speed limits,
+avoiding collisions, and obeying intersections. By considering the highest speed
+achievable at the end of the next step and the subsequent stopping distance at
+this speed, the behavior's lookahead engine can scan sufficiently far ahead
+along several traversables to locate agents to avoid and intersections to query.
+The analysis short-circuits at the first nearby agent and intersection requiring
+a stop, since it would be illegal to drive further anyway.
 
 \subsection{Intersection Policies}
 
@@ -511,11 +519,8 @@ to tweak, especially in light of autonomous vehicles. Current policies include
 traditional stop signs, traffic signals, and an AIM-inspired autonomous
 reservation system \cite{JAIR08-dresner}. The traffic signals are further
 extensible by assigning groups of non-conflicting turns at each intersection
-with some duration and offset. The experiment in section \ref{sec:results}
-features standard turn grouping (turns from parallel incoming directions are
-scheduled simultaneously, and left turns are grouped) and a breadth-first search
-heuristic for propagating timings. Future policies could include signals that
-adapt timings and refinements to the autonomous reservation policy.
+with some duration and offset. Future policies could include signals that adapt
+timings and refinements to the autonomous reservation policy.
 
 \subsection{Routing Strategies}
 
@@ -567,22 +572,27 @@ steps per second. On a 2.4 GHz machine, this can be observed to average at about
 = 0.1 seconds, this means 15,000 agents can be comfortably simulated in
 real-time. Further optimizations are planned.
 
-\subsection{Experiment parameters}
+\subsection{Intersection Policies Evaluated}
 
-Each policy has parameters, so the configuration used is relevant. Stop signs
-accept agents FCFS, refusing agents until they have idled at 0 speed for 1
-second. This delay approximates human reaction time. The traffic signal policy
-requires timings and groups of simultaneous turns for each intersection. The
-configuration tested here uses a breadth-first search from one major road's
-lanes to try to synchronize green signals for the agents near that lane to not
-stop for several intersections. This heuristic needs improvement in how it
-handles the remaining groups of turns that are scheduled after the first
-sequence. Finally, the autonomous reservation policy allows new agents to join
-existing groups of agents if their turn is compatible with the others. To
-prevent one heavy direction of traffic from hogging the intersection
-indefinitely, a timeout preemptively cycles through reservations. Ideally this
-should be based on the relative numbers of agents depending on their
-group of reservations.
+Stop signs accept agents FCFS, refusing agents until they have idled at 0 speed
+for 1 second. This delay approximates human reaction time.
+
+The traffic signal policy requires timings and groups of simultaneous turns for
+each intersection. The heuristic evaluated uses standard turn groups (turns from
+parallel incoming directions are scheduled simultaneously, and left turns are
+grouped) and employs propagates timings with a breadth-first search. The goal is
+to synchronize green signals so agents in some lanes do not stop for several
+intersections.
+
+\commentd{advice on wording?}
+Finally, in anticipation of the advent of autonomous vehicles, an autonomous
+reservation policy inspired by AIM \cite{JAIR08-dresner} is tested. This policy
+allows new agents to join existing groups of agents if their turn is compatible
+with the others. To prevent one heavy direction of traffic from hogging the
+intersection indefinitely, a timeout preemptively cycles through reservations.
+Ideally this should be based on the relative numbers of agents depending on
+their group of reservations. \commentd{take out the last sentence? all of the
+policies could use some work.}
 
 \subsection{Results}
 
