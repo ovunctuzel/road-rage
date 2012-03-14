@@ -388,10 +388,6 @@ zero initial speed. % Because behaviors must enforce speed limit along a lane
 All traversables (lanes and the straight line-approximation of turns) maintain
 an ordered queue of occupying agents. A collision is detected when two agents
 reverse order after a time step has completed.
-\commentpk{Also do we still have point vehicles only?}
-\commentd{Technically yes, but we could add in a check to make sure the fronts
-  of every vehicle aren't too close to any other vehicle. It would just be
-  needlessly expensive, and we trust the following-distance behavior.}
 
 Intersections check for collisions by examining the turn each agent is
 performing and verifying that no other agent is simultaneously performing a
@@ -488,15 +484,6 @@ acceleration at each step, it could easily be extended to mimic human drivers by
 traveling at some random lesser acceleration or to optimize fuel efficiency
 by tuning movement.
 
-\commentd{So is this paragraph below still relevant?}
-The default behavior maximizes acceleration while obeying speed limits,
-avoiding collisions, and obeying intersections. By considering the highest speed
-achievable at the end of the next step and the subsequent stopping distance at
-this speed, the behavior's lookahead engine can scan sufficiently far ahead
-along several traversables to locate agents to avoid and intersections to query.
-The analysis short-circuits at the first nearby agent and intersection requiring
-a stop, since it would be illegal to drive further anyway.
-
 \subsection{Intersection Policies}
 
 Intersection policies are one of the most intriguing aspects of the simulation
@@ -509,17 +496,13 @@ timings and refinements to the autonomous reservation policy.
 
 \subsection{Routing Strategies}
 
-Picking accelerations that optimize objective functions is a separate task from
-picking a path to travel. Agent behaviors consult a route strategy to pick
-turns. Currently two simple implementations are available. One statically plans
-a route to some goal using standard A* search \cite{astar}. The other performs a
-drunken walk, lazily planning random choices at each intersection as the
-lookahead engine requires, choosing the direction that minimizes the Euclidean
-distance to the goal with 75\% probability. Researchers can experiment with
-dynamic replanning or hierarchial planning without modifying any code other than
-creating a new route implementation. Route policies could also interact with a
-singleton overseer to gain some sort of global insight or with smart
-intersections to avoid congestion.
+To pick turns, agent behaviors consult a route strategy. Two simple
+implementations exist already: a static route using A* \cite{astar} and a
+drunken walk that probabilistically moves towards the destination.  Researchers
+can experiment with dynamic replanning or hierarchial planning without modifying
+any code other than creating a new route implementation. Route policies could
+also interact with a singleton overseer to gain some sort of global insight or
+with smart intersections to avoid congestion.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -527,7 +510,8 @@ intersections to avoid congestion.
 \label{sec:results}
 
 A particular focus of AORTA is intersection policies. To demonstrate how much
-policy affects agent performance, three policies are evaluated: stop sign,
+policy affects agent performance \commentd{performance is a vague term, but I
+don't want to talk about dependent vars just yet}, three policies are evaluated: stop sign,
 traffic signal, and autonomous reservation. These are compared with all other
 parameters fixed:
 
@@ -565,8 +549,8 @@ for 1 second. This delay approximates human reaction time.
 The traffic signal policy requires timings and groups of simultaneous turns for
 each intersection. The heuristic evaluated uses standard turn groups (turns from
 parallel incoming directions are scheduled simultaneously, and left turns are
-grouped) and employs propagates timings with a breadth-first search. The goal is
-to synchronize green signals so agents in some lanes do not stop for several
+grouped) and employs breadth-first search to propagate timings. The goal is to
+synchronize green signals so agents in some lanes do not stop for several
 intersections.
 
 \commentd{advice on wording?}
@@ -618,11 +602,12 @@ turns regularly, agents cannot proceed when the previous cycle caused a
 destination lane to fill and become blocked.
 
 Each policy has its trade-offs in terms of performance and physical hardware
-cost, suggesting a mixed approach, perhaps with intersection policies adapting
-as traffic conditions shift. Researchers could conduct this experiment and many
-others without needing to understand most of AORTA's code-base. The largest
-intersection policy, traffic signals with the flooding heuristic for timing
-assignment, is only 400 lines of Scala.
+cost \commentd{do we want to raise this issue?}, suggesting a mixed approach,
+perhaps with intersection policies adapting as traffic conditions shift.
+Researchers could conduct this experiment and many others without needing to
+understand most of AORTA's code-base. The largest intersection policy, traffic
+signals with the flooding heuristic for timing assignment, is only 400 lines of
+Scala.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
