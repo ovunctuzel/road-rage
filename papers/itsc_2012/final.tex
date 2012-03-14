@@ -31,10 +31,10 @@ a General Traffic Simulation Framework
 \long\def\commentm#1{{\bf **Mike: #1**}}
 \long\def\commentd#1{{\bf **Dustin: #1**}}
 
-%\long\def\commentp#1{}
-%\long\def\commentpk#1{}
-%\long\def\commentm#1{}
-%\long\def\commentd#1{}
+% \long\def\commentp#1{}
+% \long\def\commentpk#1{}
+% \long\def\commentm#1{}
+% \long\def\commentd#1{}
 
 \begin{document}
 
@@ -152,13 +152,14 @@ traffic-signal-like policies to intersection, AORTA can just as easily
 simulate human traffic.
 
 Like any other microscopic traffic simulator, AORTA needs maps to run
-simulations. One of AORTA's key features is that it generates maps using road data available from OpenStreetMap
-(OSM) \cite{osm}, a Wikipedia-like interface for world maps. Researchers using
-AORTA can export any relevant map area from OSM. This map is then parsed by AORTA to
-create scale simulations of the real world. A researcher employing AORTA can have a simulation
-of any part of the world for which OSM has data running in about five minutes
-(allowing for download time).  AORTA also has the advantage of being open source and
-easy to install so that researchers can make any tweaks they find necessary.
+simulations. One of AORTA's key features is that it generates maps using road
+data available from OpenStreetMap (OSM) \cite{osm}, a Wikipedia-like interface
+for world maps. Researchers using AORTA can export any relevant map area from
+OSM. This map is then parsed by AORTA to create scale simulations of the real
+world. A researcher employing AORTA can have a simulation of any part of the
+world for which OSM has data running in about five minutes (allowing for
+download time).  AORTA also has the advantage of being open source and easy to
+install so that researchers can make any tweaks they find necessary.
 \footnote{http://code.google.com/p/road-rage}
 
 \commentpk{Needs 1 more para based on final application}
@@ -255,9 +256,9 @@ minimizing overall wait time \cite{manikonda2001autonomous}.
 \end{figure*}
 
 AORTA is divided into three modular components: the map model, micro-simulation
-engine, and user interface (UI). The map model transforms OSM maps into AORTA graphs, then
-answers pathfinding and geometry queries. The simulation engine adds a notion of
-agents, vehicle dynamics, and collisions. Finally, the UI can
+engine, and user interface (UI). The map model transforms OSM maps into AORTA
+graphs, then answers pathfinding and geometry queries. The simulation engine
+adds a notion of agents, vehicle dynamics, and collisions. Finally, the UI can
 interactively render the map and agents. A headless mode also enables running
 experiments without the overhead of visualization. The interaction between
 modules is visualized in figure \ref{fig:arch}.
@@ -349,8 +350,9 @@ acceleration before being able to choose a different acceleration. Setting
 experiments modeling humans.
 
 Currently agents cannot switch lanes. AORTA allows merging lanes by treating
-the merge point as an intersection. \commentpk{i take it this is an orphan
-paragraph?} \commentd{yeah, where should it belong?}
+the merge point as an intersection. \commentpk{move this to the limitations
+section, and rename the section to "Current limitations". Explain gridlock as a
+main limitation, and put this in somewhere}
 
 Each step, the simulation does the following:
 
@@ -384,11 +386,11 @@ if possible, sends it to a pool of worker threads to process in the background.
 Once an agent's route is ready, the agent waits alongside its starting lane (as
 if it is in a driveway or parking lot). When the lane has no agents that could
 potentially crash with the new vehicle, the new agent enters the system with
-zero initial speed. Because behaviors must enforce speed limit along a lane
+zero initial speed. \commentpk {For space, remove the following sentence as well, and merge this paragraph into thr previous one} Because behaviors must enforce speed limit along a lane
 from the moment an agent enters a road, it is safe for a new agent to enter a
 road if there is no other agent within the worst-case distance (traveling
 distance at the speed limit, plus stopping distance from this speed) preceeding
-the spawn point.% To avoid predicting which agents might enter the lane in the
+the spawn point. % To avoid predicting which agents might enter the lane in the
 %near future, there is a buffer space at the beginning of the lane where a new
 %agent may never spawn. This disqualifies some short lanes from being spawn
 %points, but this is not a big limitation in practice. \commentpk{I understand
@@ -398,10 +400,10 @@ the spawn point.% To avoid predicting which agents might enter the lane in the
 \subsection{Collision checking}
 
 All traversables (lanes and the straight line-approximation of turns) maintain
-an ordered queue of occupying agents. One simulation step happens atomically,
+an ordered queue of occupying agents. \commentpk{remove the following 2 sentences} One simulation step happens atomically,
 meaning collision checking occurs after all agents have moved. If this were not
 the case, false positives could occur when an agent steps before the agent in front
-of it. A collision is defined as the reversal of order of agents during a step.
+of it. A collision is defined as the reversal of order of agents during a step. \commentpk{maybe change this to "A collision is detected as the reversal of order of agents after a time step has completed. Also do we still have point vehicles only?}
 
 Likewise, intersections check for collisions by examining the turn each agent is
 performing and verifying that no other agent is simultaneously performing a
@@ -433,7 +435,7 @@ end of a lane during its step, the behavior picks the turn to take. At each
 step, the behavior can make the agent react by performing one of two actions:
 disappearing from the map (when the agent is at rest and is done with its route)
 or setting an acceleration for the next step. Were lane changing modeled, that
-would be another possible action.
+would be another possible action. \commentpk {remove last line - we'll bundle it up in limitations}
 
 Currently, all agents use a primary behavior that is a generalized, baseline
 behavior that guarantees not to collide with another agent or enter an
@@ -449,6 +451,8 @@ this speed, the behavior's lookahead engine can scan sufficiently far ahead
 along several traversables to locate agents to avoid and intersections to query.
 The analysis short-circuits at the first nearby agent and intersection requiring
 a stop, since it would be illegal to drive further anyway.
+
+\commentpk{The last 2 paragraphs need to move into the configurability section, as they are not part of the simulator directly. Similarly there should be a subsection on intersection behaviors here}
 
 \subsection{Simulation Limitations: Gridlock}
 
