@@ -3,10 +3,19 @@
 - name
   MORTIS (mostly orchestrated routing & traffic infrastructure simulator)
   AORTA (approximately orchestrated routing & traffic aggregator)
-- fix all critique of map + arch
 - rework first 3 sections
   - compare to MATsim some more
   - add notes about SUMO
+
+  - introduce subsections better
+  sim
+    - intro with the list
+    - spawning, collisions, reactions
+    - gridlock
+  configurability
+    - intersection
+    - routing
+  - move determinism to experiment
 
 
 

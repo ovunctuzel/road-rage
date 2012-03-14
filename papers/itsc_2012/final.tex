@@ -268,7 +268,7 @@ constructs while still permitting imperative style.  Extensions and clients
 built on top of AORTA can be written in either Java or Scala. The software is
 open-source \footnote{source code at http://code.google.com/p/road-rage} and
 easily extensible. For instance, the stop sign sign policy used in experiments
-described in section \ref{sec:result} is implemented in just 70 lines of code.
+described in section \ref{sec:results} is implemented in just 70 lines of code.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -339,80 +339,61 @@ with each pass feeding the next.
 \label{sec:simulation}
 
 AORTA uses microscopic simulation, modeling individual drivers as agents.
-Simulation is discrete-time, meaning an agent accelerates at a fixed rate for
-the duration of a ``step'' to achieve a new position and velocity, and
-space-continuous, meaning roads are not tiled \commentpk{recommend breaking up
-preceding sentence into 2. I lost track haflway}. The step duration dt is
-fixed, enabling agents to reason about collision avoidance and satisfying other
-constraints \commentpk{preceding sentence is unclear}. Setting this value to
-the average ``reaction time'' of a human driver may be appropriate for some
-\commentpk{"human driver" instead of some?} experiments. Each step, the
-simulation does the following:
+Time is modeled discretely, meaning an agent accelerates at a fixed rate for
+the duration of a ``step'' to achieve a new position and velocity. Space is
+continuous, meaning agents occupy a moving interval of a lane, rather than one
+fixed tile of the road. Each step lasts the same fixed duration \textit{dt}.
+This lets agents reason about how far they will travel for a given choice of
+acceleration before being able to choose a different acceleration. Setting
+\textit{dt} to the ``reaction time'' of a human driver may be appropriate for
+experiments modeling humans.
+
+Currently agents cannot switch lanes. AORTA allows merging lanes by treating
+the merge point as an intersection. \commentpk{i take it this is an orphan
+paragraph?} \commentd{yeah, where should it belong?}
+
+Each step, the simulation does the following:
 
 \begin{enumerate}
   \item Introduces new agents into the map
   \item Updates the position and velocity of agents based on their choice of
-  acceleration in the previous step
+        acceleration in the previous step
   \item Checks for collisions
-  \item Allows each agent to choose a reaction \commentpk {should be action} for the next step
+  \item Allows each agent to choose an action for the next step
 \end{enumerate}
 
-Agents have a few enforced constraints -- they cannot exceed their physical
-acceleration capabilities, travel in reverse, or travel past the end of a
-traversable without appearing on the next. Intersection policies and avoiding
-collisions on the same traversable provide the other constraints, but the
-agent's behavior is responsible for obeying these \commentpk{if these "other"
-constraints are not enforced, clearly specify. Something like "Agent behaviors
-are responsible for following intersection policies as directed by an
-intersection, and are responsible for not colliding with other agents" probably
-sounds a bit better}. There are three main components of the simulation, each
-configurable by extending built-in implementations of an interface: agent
-behaviors, routing strategies, and intersection policies.
-
-Currently agents cannot switch lanes. AORTA allows merging lanes by treating
-the merge point as an intersection. \commentpk{i take it this is an orphan
-paragraph?}
-
-\commentpk{this section is a bit incoherent, and might need to be reorganized.
-should the constraints be mentioned here explicitly, or maybe just added to
-agent behaviors? What are you introducing in the next few subsections? I can
-see A-E working together as an explanation of the workings of the simulator,
-and would make more sense right after the enumeration above. Section G can be
-moved into the experiments section. Once you are done with this primary
-explanation, Section F should be talked about separately under something along
-the lines of current limitations of the simulator.}
+Each step (except 2) will be described below, followed by limitations of the
+simulator. Section \ref{sec:config} will describe how researchers may easily
+modify relevant portions of AORTA.
 
 \subsection{Spawning new agents}
 
 To introduce new agents into the simulation in real-time, users can create
-\emph{generators} programatically or using the UI. A generator picks a random
-starting position and goal from two sets of roads \commentpk{preceding sentence
-is ambiguous, maybe go with "The generator produces a desired amount of traffic
-by initializing agents from random locations inside a \textit{start} polygon to
-random destinations inside a \textit{goal} polygon, as demarcated by the
-user"}. Users can select these roads by mouse with a bounding polygon in the
-UI, allowing specific traffic patterns like rush-hour scenarios to be easily
-simulated.  A generator \commentpk{polygon} may also cover the entire map,
-uniformly distributing traffic everywhere.
+\emph{generators} programatically or using the UI. The generator produces the
+desired amount of traffic by initializing agents from random locations inside a
+\textit{start} polygon to random destinations within a \textit{goal} polygon.
+Users can draw these polyons by mouse in the UI, allowing specific traffic
+patterns like rush-hour scenarios to be easily simulated. A generator polygon
+may also cover the entire map, uniformly distributing traffic everywhere.
 
 Every step, a generator creates some number of new agents. If the agent's route
 policy needs computation like pathfinding to operate, the generator either
-performs it immediately (incurring a delay in simulation if it is running) or
-sends it to a pool of worker threads to process in the background \commentpk{if multiple threads are available?}.
+performs it immediately (incurring a delay in simulation if it is running) or,
+if possible, sends it to a pool of worker threads to process in the background.
 
 Once an agent's route is ready, the agent waits alongside its starting lane (as
 if it is in a driveway or parking lot). When the lane has no agents that could
 potentially crash with the new vehicle, the new agent enters the system with
-zero initial speed.  Because behaviors must enforce speed limit along a lane
+zero initial speed. Because behaviors must enforce speed limit along a lane
 from the moment an agent enters a road, it is safe for a new agent to enter a
 road if there is no other agent within the worst-case distance (traveling
 distance at the speed limit, plus stopping distance from this speed) preceeding
-the spawn point.  To avoid predicting which agents might enter the lane in the
-near future, there is a buffer space at the beginning of the lane where a new
-agent may never spawn. This disqualifies some short lanes from being spawn
-points, but this is not a big limitation in practice. \commentpk{I understand
-your concern about explaining the entire methodology, but the last 2 lines are
-unnecessary and somewhat distracting}
+the spawn point.% To avoid predicting which agents might enter the lane in the
+%near future, there is a buffer space at the beginning of the lane where a new
+%agent may never spawn. This disqualifies some short lanes from being spawn
+%points, but this is not a big limitation in practice. \commentpk{I understand
+%your concern about explaining the entire methodology, but the last 2 lines are
+%unnecessary and somewhat distracting}
 
 \subsection{Collision checking}
 
@@ -444,10 +425,12 @@ as impassable and re-route other traffic away from the accident.
 \end{figure}
 
 \subsection{Agent Reactions}
+\label{sec:behaviors}
 
-Each agent has a \emph{behavior} governing it. When the agent travels past the end
-of a lane during its step, the behavior picks the turn to take. At each step,
-the behavior can make the agent react by performing one of two actions:
+Each agent has a \emph{behavior} governing it, responsible for obeying
+intersection policies and avoiding collisions. When the agent travels past the
+end of a lane during its step, the behavior picks the turn to take. At each
+step, the behavior can make the agent react by performing one of two actions:
 disappearing from the map (when the agent is at rest and is done with its route)
 or setting an acceleration for the next step. Were lane changing modeled, that
 would be another possible action.
@@ -459,8 +442,6 @@ acceleration at each step, it could easily be extended to mimic human drivers by
 traveling at some random lesser acceleration or to optimize fuel efficiency
 by tuning movement.
 
-\commentd{one diagram probably covers lots of this}
-
 The default behavior maximizes acceleration while obeying speed limits,
 avoiding collisions, and obeying intersections. By considering the highest speed
 achievable at the end of the next step and the subsequent stopping distance at
@@ -468,6 +449,48 @@ this speed, the behavior's lookahead engine can scan sufficiently far ahead
 along several traversables to locate agents to avoid and intersections to query.
 The analysis short-circuits at the first nearby agent and intersection requiring
 a stop, since it would be illegal to drive further anyway.
+
+\subsection{Simulation Limitations: Gridlock}
+
+Agents maintain a safe following distance from the next agent. If a lane is
+filled, then an agent may be forced to stop in an intersection mid-turn and
+block other traffic. The default behavior prevents this by refusing to start a
+turn before the lookahead engine guarantees no agent will trigger a premature
+stop.
+
+However, with very high volumes of traffic, it is possible for waiting agents to
+accumulate and fill lanes to their capacity. When this happens in a circular
+manner so that the agent at the front of each lane is waiting to perform a turn
+into another full lane with the same such head agent, gridlock \cite{gridlock}
+occurs; no agent in the system will make progress unless an agent at the front
+decides to pick a different turn. Figure \ref{fig:gridlock} demonstrates this.
+AORTA can detect this by finding cycles in the graph of the ``is following''
+relation.
+
+\begin{figure}[h]
+  \centering \includegraphics[scale=0.25]{gridlock.png}
+  \caption{Each of the red agents wants to turn left, so none of them
+           can. The traffic jam will slowly build up around this intersection.}
+  \label{fig:gridlock}
+  \vspace{-10pt}
+\end{figure}
+
+In many observed cases, the gridlock is caused by AORTA's present lack of
+lane-changing support: agents loop around these intersections in order to enter
+a lane adjacent to their original lane. Since these routes are still legal, it
+is desirable to prevent or mend this without forcing different routes. The
+conditions under which every vehicle eventually may proceed are known.
+\cite{AAAI11-au}.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{CONFIGURABILITY}
+\label{sec:config}
+
+There are three main components of the simulation, each configurable by
+extending built-in implementations of an interface: agent behaviors, routing
+strategies, and intersection policies. Behaviors have been described already in
+section \ref{sec:behaviors}.
 
 \subsection{Intersection Policies}
 
@@ -504,61 +527,6 @@ creating a new route implementation. Route policies could also interact with a
 singleton overseer to gain some sort of global insight or with smart
 intersections to avoid congestion.
 
-\subsection{Gridlock}
-
-Agents maintain a safe following distance from the next agent. If a lane is
-filled, then an agent may be forced to stop in an intersection mid-turn and
-block other traffic. The default behavior prevents this by refusing to start a
-turn before the lookahead engine guarantees no agent will trigger a premature
-stop.
-
-However, with very high volumes of traffic, it is possible for waiting agents to
-accumulate and fill lanes to their capacity. When this happens in a circular
-manner so that the agent at the front of each lane is waiting to perform a turn
-into another full lane with the same such head agent, gridlock \cite{gridlock}
-occurs; no agent in the system will make progress unless an agent at the front
-decides to pick a different turn. Figure \ref{fig:gridlock} demonstrates this.
-AORTA can detect this by finding cycles in the graph of the ``is following''
-relation.
-
-\begin{figure}[h]
-  \centering \includegraphics[scale=0.25]{gridlock.png}
-  \caption{Each of the red agents wants to turn left, so none of them
-           can. The traffic jam will slowly build up around this intersection.}
-  \label{fig:gridlock}
-  \vspace{-10pt}
-\end{figure}
-
-In many observed cases, the gridlock is caused by AORTA's present lack of
-lane-changing support: agents loop around these intersections in order to enter
-a lane adjacent to their original lane. Since these routes are still legal, it
-is desirable to prevent or mend this without forcing different routes. The
-conditions under which every vehicle eventually may proceed are known.
-\cite{AAAI11-au}.
-
-\subsection{Determinism and scale}
-
-AORTA is designed for controlled experiments. Consequently, simulations are
-deterministically reproducible. A seed for the pseudo-random number generator,
-the input graph, and the generators' configuration fully determine the outcome of any
-simulation. This determinism may break down when generators use worker threads,
-since routes may be computed in different orders, causing agents to enter the
-road at different times.
-
-\commentd{saving a ``scenario'' can soon be a feature}
-
-\commentd{and how will we solve this issue with threads and determinism?}
-
-The speed of simulation depends on the step duration dt, the map size, and the
-number of agents. A measure independent of these factors is the number of agent
-steps per second. On a 2.4 GHz machine, this can be observed to average at
-about 150,000, a number comparable to existing simulators \cite{SUMOthesis}.
-When dt = 0.1 seconds, this means 15,000 agents can be comfortably simulated
-in real-time.  Further optimizations are planned.
-
-\commentd{if i have a day after the paper's done, I can make this number
-better.}
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \section{EXPERIMENTAL RESULTS}
@@ -579,6 +547,21 @@ parameters fixed:
         starting position and goal
   \item the duration of the experiment: one hour
 \end{enumerate}
+
+Each experiment is deterministically reproducible. A seed for the pseudo-random
+number generator, the input graph, and the generators' configuration fully
+determine the outcome of any simulation \footnote{This determinism may break
+  down when generators use worker threads, since routes may be computed in
+different orders, causing agents to enter the road at different times.}. After
+setting up a scenario in the UI, users can save this configuration for
+resimulation.
+
+The speed of simulation depends on the step duration dt, the map size, and the
+number of agents. A measure independent of these factors is the number of agent
+steps per second. On a 2.4 GHz machine, this can be observed to average at about
+150,000, a number comparable to existing simulators \cite{SUMOthesis}. When dt
+= 0.1 seconds, this means 15,000 agents can be comfortably simulated in
+real-time. Further optimizations are planned.
 
 \subsection{Experiment parameters}
 
@@ -627,12 +610,12 @@ stop signs cause about 7 seconds lag, and traffic signals cause 16 seconds.
 The number of agents changes because the continuous generator introduces a new
 agent every second. This count reaches a steady state when the generator
 introduces an agent at the same rate as older agents finish their route. Figure
-\ref{agent_cnt} reveals that autonomous reservations let agents reach their
+\ref{fig:agent_cnt} reveals that autonomous reservations let agents reach their
 destination twice as quickly as the competition, with a steady-state of about
-400 agents. The count for traffic signals continues to increase because
-gridlock occurred in one segment of the map, causing agents to not finish their
-route. Unexpected starvation was also observed: although the signals cycle
-through turns regularly, agents cannot proceed when the previous cycle caused a
+400 agents. The count for traffic signals continues to increase because gridlock
+occurred in one segment of the map, causing agents to not finish their route.
+Unexpected starvation was also observed: although the signals cycle through
+turns regularly, agents cannot proceed when the previous cycle caused a
 destination lane to fill and become blocked.
 
 Each policy has its trade-offs in terms of performance and physical hardware
