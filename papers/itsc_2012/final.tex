@@ -44,11 +44,6 @@ a General Traffic Simulation Framework
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\commentd{sounds fine to me, only thing is that we haven't actually focused on
-  dynamic re-planning or any kind of overseer yet, although theres nothing
-  stopping us from trying that idea again}
-\commentp{If it's not implemented, we shouldn't talk about it.}
-
 \begin{abstract} 
 Autonomous vehicles have seen great advancements in recent years, and
 such vehicles are now ever closer to being commercially available.
@@ -64,10 +59,8 @@ up in the few minutes it takes to export data for the region of
 interest from OSM. AORTA focuses on interactions between agents by
 defining \textit{behaviors} for individual vehicles and
 intersections. These behaviors allow agents to interact with each
-other as well as with an external \textit{overseer} that is
-responsible for optimizing traffic flow. Overseers can interact with
-these agents to allow for dynamic route re-planning to reduce traffic
-load, optimized intersection navigation, and improved car following.
+other as well as local intersections in any manner required for a
+simulation of interest.
 \commentpk{rest devoted to application}
 \end{abstract}
 
@@ -95,12 +88,11 @@ completion of all these milestones suggests that autonomous cars are here to
 stay, and are ever closer to becoming commercially available. 
 
 The arrival of driver-less cars presents several challenges that need to be
-addressed in the near term. Road infrastructure needs to be updated to better
-support autonomous vehicles.\commentp{Is this necessarily the case?
-  It may be useful, but is it a need?} A number of legal and safety concerns need to be
+addressed in the near term. Road infrastructure changes could provide important
+improvements for autonomous vehicles. A number of legal and safety concerns need to be
 addressed in the context of driver-less cars. Human drivers need new
 methodologies to interact with autonomous drivers on public roads. At the same
-time, driver-less cars provide opportunities of solving traffic problems in
+time, driver-less cars provide opportunities for solving traffic problems in
 ways that were never before possible. For instance, autonomous cars can be
 quickly diverted to make way for emergency vehicles responding to an accident.
 Even day-to-day traffic issues such as congestion could potentially be greatly
