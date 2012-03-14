@@ -6,6 +6,7 @@
 - rework first 3 sections
   - compare to MATsim some more
   - add notes about SUMO
+- line plot needs shapes if color isnt available
 
 - revise "how many agents can be comfortably simulated in realtime"
   - fix the dumb illegal entry epsilon bugs.

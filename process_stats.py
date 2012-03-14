@@ -52,15 +52,15 @@ for line in fileinput.input():
 colors = ['b', 'r', 'g']
 
 def hgram(transform, data, xlabel, yobject):
-  pylab.xlabel(xlabel)
-  pylab.ylabel("Number of " + yobject + " in this range")
+  pylab.xlabel(xlabel, fontsize='x-large')
+  pylab.ylabel("Number of " + yobject + " in this range", fontsize='x-large')
   alpha = 1
   alpha_step = 0.9 / len(data)
   color = iter(colors)
   for exp, dat in data.items():
     ls = transform(dat)
     pylab.hist(ls, bins=50, histtype='stepfilled', label=exp, alpha=alpha,
-               color=next(color))
+               color=next(color), range=(0, 25))
     alpha -= alpha_step
     print exp + ": " + xlabel
     print "-" * len(xlabel)
@@ -89,8 +89,8 @@ hgram(average, thruput_per_i,
       "Average throughput (entered / requests for some duration) per intersection",
       "intersections")
 # Results from s4
-pylab.xlabel("Time (seconds)")
-pylab.ylabel("Number of active agents")
+pylab.xlabel("Time (seconds)", fontsize='x-large')
+pylab.ylabel("Number of active agents", fontsize='x-large')
 for exp in experiments:
   pylab.plot(active_per_time_x[exp], active_per_time_y[exp], label=exp)
 pylab.legend()
