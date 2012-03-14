@@ -165,12 +165,8 @@ to follow in a given day. MATSim aims to iteratively improve these plans though
 offline computation to maximize traffic throughput. In other words, it helps
 individuals understand the best way to go about their daily routine to minimize
 time spent in transit. This goal is somewhat different from that of AORTA,
-where the demand supplied by individuals is taken as is. Instead, AORTA aims to
-reduce traffic congestion through interactions with individuals in real-time
-based on the current demand.
-
-\commentd{last sentence above... we're not not doing that yet, and we dont
-  discuss it further here.}
+where the demand supplied by individuals is taken as is.  Rather than simply improving
+routes, AORTA allows entirely different behaviors for both vehicles and intersections.
 
 Another popular open source traffic simulator that can use OSM data is SUMO
 \cite{SUMO2011}, which shares the same goals as AORTA and is fairly similar at
@@ -183,22 +179,24 @@ uses traditional traffic signals, while AORTA adopts a much more general
 its desired path through the intersection. Reservations can be allotted to
 vehicles through more traditional means such as traffic signals or stop-sign
 based intersection precedence, or through more efficient methods designed
-specifically for autonomous vehicles \cite{JAIR08-dresner}.
-%\commentpk{does the above difference seem a bit pedantic?}  
+specifically for autonomous vehicles \cite{JAIR08-dresner}. Based on experience
+with SUMO, AORTA also displays more robust handling of data exported directly from OSM. 
 
 On the other hand, there are a number of simulators that specifically
 target autonomous traffic systems. One such system is AIM
-\cite{JAIR08-dresner}, which aims to optimize traffic flow between
+\cite{JAIR08-dresner}, which aims to optimize traffic flow of
 autonomous vehicles at a given intersection. AIM studies problems at
 the scale of roughly a dozen intersections arranged in a regular grid,
 while AORTA has the potential to apply some of the same research at a
-city-wide scale to real-world road networks. A few simulators focus on
-autonomous vehicles with sensors and actuators
+city-wide scale to real-world road networks.
+
+A few simulators focus on autonomous vehicles with sensors and actuators
 \cite{figueiredo2009approach}. These simulators are used to ensure
 that autonomous vehicles are behaving correctly while interacting with
 other vehicles and infrastructure. On the other hand, AORTA assumes
-that autonomous vehicles are capable of reasonable driving, and
-focuses on interactions between agents to optimize traffic flow.
+that autonomous vehicles have reasonable sensory input and mechanical
+output, and instead focuses on interactions between an agent and its
+surrounding agents and intersections.
 
 Autonomous agents have also been used in the past to model human
 traffic. For instance, one approach models human merging and lane
@@ -208,9 +206,6 @@ to improve traffic congestion for human drivers by using a network of
 autonomous intersections.  These intersections have the ability to
 interact with one another and execute a dynamic traffic signal policy
 minimizing overall wait time \cite{manikonda2001autonomous}.
-
-\commentd{and we can do the above too. we talk about how to make the current
-  behavior more flawed and humanlike in the agent reactions section.}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
