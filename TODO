@@ -7,18 +7,6 @@
   - compare to MATsim some more
   - add notes about SUMO
 
-  - introduce subsections better
-  sim
-    - intro with the list
-    - spawning, collisions, reactions
-    - gridlock
-  configurability
-    - intersection
-    - routing
-  - move determinism to experiment
-
-
-
 - revise "how many agents can be comfortably simulated in realtime"
   - fix the dumb illegal entry epsilon bugs.
     - why was the hack in map.make.Checker needed?
