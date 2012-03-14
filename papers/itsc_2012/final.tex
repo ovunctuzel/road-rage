@@ -359,7 +359,7 @@ Each step, the simulation does the following:
   \item Updates the position and velocity of agents based on their choice of
         acceleration in the previous step
   \item Checks for collisions
-  \item Allows each agent to choose an action for the next step
+  \item Allows each agent's behavior to choose an action for the next step
 \end{enumerate}
 
 Each step (except 2) will be described below, followed by limitations of the
@@ -424,7 +424,7 @@ as impassable and re-route other traffic away from the accident.
   \vspace{-15pt}
 \end{figure}
 
-\subsection{Agent Reactions}
+\subsection{Agent Behavior}
 \label{sec:behaviors}
 
 Each agent has a \emph{behavior} governing it, responsible for obeying
