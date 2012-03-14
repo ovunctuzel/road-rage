@@ -263,19 +263,12 @@ experiments without the overhead of visualization. The interaction between
 modules is visualized in figure \ref{fig:arch}.
 
 AORTA's implementation uses Scala, a language implemented on the Java Virtual
-Machine \commentpk{cite a link to Scala here}. Scala provides the advantage of
-functional programming constructs while still permitting imperative style.
-Parts of AORTA, including extensions and clients, can easily be written in Java
-or Scala. The software is
-open-source\footnote{http://code.google.com/p/road-rage} and easily extensible
-\commentpk{maybe "Extensions and clients built on top of AORTA can be written
-in either Java or Scala, as the software is
-open-source\footnote{\commentpk{needs more description}
-http://code.google.com/p/road-rage} and easily extensible}. \commentpk {For
-instance, the} The stop sign policy used in Section \ref{sec:results}'s
-experiments \commentpk{Sec VI's experiments is awk, maybe "used in experiments
-described in Sec VI"} is implemented in just $70$ \commentpk{remove \$\$ in
-latex code, here and elsewhere} lines of code.
+Machine \cite{scala}. Scala provides the advantage of functional programming
+constructs while still permitting imperative style.  Extensions and clients
+built on top of AORTA can be written in either Java or Scala. The software is
+open-source \footnote{source code at http://code.google.com/p/road-rage} and
+easily extensible. For instance, the stop sign sign policy used in experiments
+described in section \ref{sec:result} is implemented in just 70 lines of code.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -283,14 +276,11 @@ latex code, here and elsewhere} lines of code.
 \label{sec:map}
 
 One advantage of AORTA is that it simulates traffic on existing infrastructure
-rather than contrived, randomly \commentpk{"contrived, randomly" is a bit
-weird, maybe "contrived or randomly"?} generated maps. Utilizing OpenStreetMaps
-\commentpk{remove trailing s in OpenStreetMaps}, a community project offering
-user-editable, free XML-based maps, enables this. To run a simulation on a map
-from OSM, there is a one-time conversion process to transform the map into
-AORTA's format, which is also encoded with XML. \commentpk{why convert it to
-another XML format? you might want to put an additional line outlining the
-purpose of this step}
+rather than randomly generated maps. Utilizing OpenStreetMap \cite{osm}, a
+community project offering user-editable, free XML-based maps, enables this. To
+run a simulation on a map from OSM, there is a one-time conversion process to
+transform the map into AORTA's format, which encodes information about lanes and
+turns not contained in the OSM source.
 
 \subsection{Map Model}
 
@@ -307,43 +297,39 @@ Since both lanes and turns support traffic, they are grouped together as
 \emph{traversables}, meaning agents may exist on them.
 
 The map also has a geometric interpretation, used for visualization and
-\commentpk{measuring?} physical distances. A road contains a sequence of points
-giving the line segments of the center yellow line \commentpk{if you want to
-use "yellow", you need to reference a figure. I would recommend putting it this
-way "center line of the road (yellow lines in Fig. XX)"}. These points could
-also be interpreted as control points for a curved road, but AORTA uses
-straight lines as an approximation. Lanes are parallel to the center line, some
-fixed width apart from one another \commentpk{no need to mention that the roads
-could be interpreted as a spline, instead say "AORTA interprets roads as
-straight lines between these points, and projects parallel lanes out using a
-fixed width"}. Turns are modeled with a single straight line connecting the end
-of one lane to the start of another (so right turns often have $0$ length). 
+measuring physical distances. A road contains a sequence of points, defining the
+center line that divides the road into two directions of travel. AORTA
+interprets these points as straight lines and projects parallel lanes out using
+a fixed width. Turns are modeled with a single straight line connecting the end
+of one lane to the start of another (so right turns often have 0 length).
 
 \subsection{Map Construction Passes}
 
-Map construction is split into several passes, each feeding the next.
+The builder works by incrementally transforming OSM graphs into AORTA graphs,
+with each pass feeding the next.
 \begin{enumerate}
   \item OSM encodes many paths besides driveable roads, so the builder first filters
-        these out. Next the builder \commentpk{you have not mentioned a builder before, maybe mention it in the last line of the intro to this section} marks GPS locations common to multiple roads, since
-        they implicitly indicate intersections \commentpk{do you guys use GPS locations or OSM unique identifiers, what about overpasses etc.?}.
+        these out. Next the builder marks GPS nodes common to multiple roads, since
+        they implicitly indicate intersections. Overpasses do not share nodes
+        with the roads they cross \cite{osmOverpass}.
   \item OSM \emph{ways} (sequences of GPS locations) include many
         intersections, so the builder next splits ways into undirected
         segments of roads between exactly two intersections.
-  \item The builder multiplies undirected roads into directed lanes in each direction
-        (unless the road is marked one-way). The builder guesses the number of lanes based on
-        OSM's ``road type'' \commentpk{If you have space, elaborate that you use heuristics on the road type attribute, and the 4 different road types are residential etc.} tag or an explicit number of lanes, when that data is available.
+  \item The builder multiplies undirected roads into directed lanes in each
+        direction (unless the road is marked one-way). The builder guesses the
+        number of lanes based on OSM's ``road type'' tag or an explicit number of
+        lanes, when that data is available.
   \item The builder constructs turns between incoming and outgoing lanes at each
-        junction \commentpk{intersection, keep the terminology constant}. The builder uses an angle heuristic to choose between left, right, straight,
-        and U-turns \commentpk{preceding sentence unclear to me}. When several lanes all cross into fewer lanes,
-        the builder forces merging of the rightmost lanes.  Although inaccurate,
-        these patterns are the best compromise. At the time of writing, even sources
-        like Google Maps \cite{googleMaps} lack this information \commentpk{the last sentence is tricky. unless you have a source that states this, I would avoid this claim. Linking to google maps directly is not correct}.
-  \item Because turns are heuristically placed, the graph is often
-        disconnected. In order to ensure that an agent will be able to reach any point in the map,
-        the builder removes all but the largest strongly connected component of the digraph.
-        Disconnected lanes are spliced out of larger roads, leaving unappealing
-        geometric gaps, but correctly ensuring connectivity for corner-case free
-        pathfinding.
+        intersection. The angle between the two lanes determines whether the turn is
+        a left, right, straight, or U-turn. When several lanes all cross into fewer
+        lanes, the builder forces merging of the rightmost lanes. Although
+        inaccurate, these patterns are the best compromise with the available data.
+  \item Because turns are heuristically placed, the graph is often disconnected.
+        In order to ensure that an agent will be able to reach any point in the map,
+        the builder removes all but the largest strongly connected component of the
+        digraph.  Disconnected lanes are spliced out of larger roads, leaving
+        unappealing geometric gaps, but correctly ensuring connectivity for
+        corner-case free pathfinding.
   \item The builder serializes the graph in a simple XML format.
 \end{enumerate}
 
@@ -356,7 +342,7 @@ AORTA uses microscopic simulation, modeling individual drivers as agents.
 Simulation is discrete-time, meaning an agent accelerates at a fixed rate for
 the duration of a ``step'' to achieve a new position and velocity, and
 space-continuous, meaning roads are not tiled \commentpk{recommend breaking up
-preceding sentence into 2. I lost track haflway}. The step duration $dt$ is
+preceding sentence into 2. I lost track haflway}. The step duration dt is
 fixed, enabling agents to reason about collision avoidance and satisfying other
 constraints \commentpk{preceding sentence is unclear}. Setting this value to
 the average ``reaction time'' of a human driver may be appropriate for some
@@ -563,11 +549,11 @@ road at different times.
 
 \commentd{and how will we solve this issue with threads and determinism?}
 
-The speed of simulation depends on the step duration $dt$, the map size, and the
+The speed of simulation depends on the step duration dt, the map size, and the
 number of agents. A measure independent of these factors is the number of agent
-steps per second. On a $2.4$ GHz machine, this can be observed to average at
-about $150,000$, a number comparable to existing simulators \cite{SUMOthesis}.
-When $dt = 0.1$ seconds, this means $15,000$ agents can be comfortably simulated
+steps per second. On a 2.4 GHz machine, this can be observed to average at
+about 150,000, a number comparable to existing simulators \cite{SUMOthesis}.
+When dt = 0.1 seconds, this means 15,000 agents can be comfortably simulated
 in real-time.  Further optimizations are planned.
 
 \commentd{if i have a day after the paper's done, I can make this number
@@ -584,12 +570,12 @@ traffic signal, and autonomous reservation. These are compared with all other
 parameters fixed:
 
 \begin{enumerate}
-  \item the map (a $6$ by $7$ mile slice of downtown Austin, Texas
+  \item the map (a 6 by 7 mile slice of downtown Austin, Texas
         \footnote{bounded by the Mopac and Springdale Road horizontally,
         and Oltorf Street and Koenig Lane vertically})
-  \item $dt = 0.1$ seconds
+  \item dt = 0.1 seconds
   \item the agents spawned and their routes -- a continuous generator creates
-        one new agent every $1$ simulation second, with a uniformly random
+        one new agent every 1 simulation second, with a uniformly random
         starting position and goal
   \item the duration of the experiment: one hour
 \end{enumerate}
@@ -597,7 +583,7 @@ parameters fixed:
 \subsection{Experiment parameters}
 
 Each policy has parameters, so the configuration used is relevant. Stop signs
-accept agents FCFS, refusing agents until they have idled at $0$ speed for $1$
+accept agents FCFS, refusing agents until they have idled at 0 speed for 1
 second. This delay approximates human reaction time. The traffic signal policy
 requires timings and groups of simultaneous turns for each intersection. The
 configuration tested here uses a breadth-first search from one major road's
@@ -627,8 +613,8 @@ these others), then the new agent may simply proceed at full speed limit without
 pausing. This gives the least possible delay spent along some lane, so any extra
 time is defined as lag and is used to measure intersection performance. Figure
 \ref{fig:avg_lag} graphs the average of this delay per agent. On average,
-reservation policies cause less than $1$ second of delay at each intersection,
-stop signs cause about $7$ seconds lag, and traffic signals cause $16$ seconds.
+reservation policies cause less than 1 second of delay at each intersection,
+stop signs cause about 7 seconds lag, and traffic signals cause 16 seconds.
 
 \begin{figure}[h]
   \centering \includegraphics[width=\linewidth]{agent_cnt_atx.png}
@@ -643,7 +629,7 @@ agent every second. This count reaches a steady state when the generator
 introduces an agent at the same rate as older agents finish their route. Figure
 \ref{agent_cnt} reveals that autonomous reservations let agents reach their
 destination twice as quickly as the competition, with a steady-state of about
-$400$ agents. The count for traffic signals continues to increase because
+400 agents. The count for traffic signals continues to increase because
 gridlock occurred in one segment of the map, causing agents to not finish their
 route. Unexpected starvation was also observed: although the signals cycle
 through turns regularly, agents cannot proceed when the previous cycle caused a
@@ -654,7 +640,7 @@ cost, suggesting a mixed approach, perhaps with intersection policies adapting
 as traffic conditions shift. Researchers could conduct this experiment and many
 others without needing to understand most of AORTA's code-base. The largest
 intersection policy, traffic signals with the flooding heuristic for timing
-assignment, is only $400$ lines of Scala.
+assignment, is only 400 lines of Scala.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
