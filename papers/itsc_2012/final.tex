@@ -473,20 +473,23 @@ avoid congestion.
 \section{EXPERIMENTAL RESULTS}
 \label{sec:results}
 
-To demonstrate how easily AORTA can be utilized to evaluate different
-intersection policies, this section presents a simple experiment showing how
-different policies affect the throughput of intersections. In this experiment,
-every intersection in the map uses either a stop sign, traffic signal, or
-autonomous reservation policy.
+This section presents a simple experiment showing how different policies affect
+the throughput of intersections. In this experiment, every intersection in the
+map uses either a stop sign, traffic signal, or autonomous reservation policy.
+The results demonstrate that policies affect total system performance and that
+AORTA is a useful tool for evaluating this relation.
 
 \subsection{Experimental Setup}
 
 The experiment simulates a 9$\times$11km$^{2}$ slice of downtown Austin,
 Texas\footnote{bounded by the Mopac and Springdale Road horizontally, and Oltorf
-Street and Koenig Lane vertically}, for one hour. The step duration is fixed at
-0.1 seconds. While the intersection policies vary, the agents spawned and their
-routes remain the same. A generator creates one new agent every 1 simulation
-second, with a uniformly random starting position and goal.
+Street and Koenig Lane vertically}, and a 15$\times$13km$^{2}$ slice of downtown
+Houston, Texas \footnote{bounded by Ella Boulevard and Eastex Freeway
+horizontally, and West Alabama Street and Crosstimbers Street vertically}, for
+one hour. The step duration is fixed at 0.1 seconds. While the intersection
+policies vary, the agents spawned and their routes remain the same.  A generator
+creates one new agent every 1 simulation second, with a uniformly random
+starting position and goal.
 
 These experiments are deterministically reproducible. A seed for the
 pseudo-random number generator, the input graph, and the generators'
@@ -553,17 +556,18 @@ intersection indefinitely, a timeout preemptively cycles through reservations.
   %\vspace{-10pt}
 \end{figure*}
 
-If an intersection immediately permits an agent to proceed and grants other
-agents in the same lane similar access (because this new agent must still follow
-these others), then the new agent may simply proceed at full speed limit without
-pausing. This gives the least possible delay spent along some lane, so any extra
-time is defined as lag and is used to measure intersection performance. Figure
-\ref{fig:avg_lag} graphs the average of this delay per agent. On average,
-reservation policies cause less than 1 second of delay at each intersection,
-stop signs cause about 7 seconds lag, and traffic signals using the heuristic
-described above cause 16 seconds. These results will vary with different
-traffic levels and policy configurations, so the important demonstration is that
-AORTA can be used as a framework for evaluating these policies.
+If an agent travels along a lane at the speed limit and does not slow down to
+wait at an intersection, then it traverses the lane in an optimal amount of
+time. If the intersection orders it to stop or if other agents in the same lane
+have slowed down by the intersection's orders, then the intersection has caused
+some delay. This delay can be used as one measure of intersection performance.
+Figures \ref{fig:avg_lag_atx} and \ref{fig:avg_lag_houston} graph the average of
+this delay per agent. On average, reservation policies cause less than 1 second
+of delay at each intersection, stop signs cause about 7 seconds lag, and traffic
+signals using the heuristic described above cause 16 seconds. These results will
+vary with different traffic levels and policy configurations, so the important
+demonstration is that AORTA can be used as a framework for evaluating these
+policies.
 
 The number of agents driving at some time changes because the continuous
 generator introduces a new agent every second. This count reaches a steady
