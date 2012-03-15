@@ -282,7 +282,7 @@ with each pass feeding the next. The map model is then stored in an XML format.
   \item Because turns are heuristically placed, the graph is often disconnected.
         In order to ensure that an agent will be able to reach any point in the map,
         the builder removes all but the largest strongly connected component of the
-        digraph. Disconnected lanes are spliced out of larger roads, leaving
+        directed graph. Disconnected lanes are spliced out of larger roads, leaving
         geometric gaps, but correctly ensuring connectivity.
 \end{enumerate}
 
@@ -418,10 +418,10 @@ stop.
 However, with very high volumes of traffic, it is possible for waiting agents to
 accumulate and fill lanes to their capacity. When this happens in a circular
 manner so that the agent at the front of each lane is waiting to perform a turn
-into another full lane with the same such head agent, gridlock \cite{AAAI11-au}
-occurs: no agent in the system will make progress unless an agent at the front
-decides to pick a different turn.  AORTA can detect this by finding cycles in
-the graph of the ``is following'' relation.
+into another full lane with a similar agent at the front, gridlock
+\cite{AAAI11-au} occurs: no agent in the system will make progress unless an
+agent at the front decides to pick a different turn. AORTA has the ability to
+find such cycles.
 
 \begin{figure}[h]
   \centering \includegraphics[scale=0.25]{gridlock.png}
