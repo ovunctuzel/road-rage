@@ -167,16 +167,22 @@ OSM data has been used by traffic simulators in the past. MATSim is one such
 multiagent simulator that focuses on performing large-scale simulations in a
 relatively small amount of time \cite{balmer2009matsim}. Traffic demand is
 supplied to MATSim in the form of \textit{plans} that an individual may intend
-to follow in a given day. MATSim aims to iteratively improve these plans to
-minimize traffic delays while minimizing the total amount of time by which
-agents are late to their destinations. This goal is somewhat different from
-that of AORTA, where the routes (demand) supplied by individuals is taken as is
-and does not have a pre-determined ideal time of arrival. Rather than improving
-agent routes, AORTA allows creating entirely different behaviors for both
-vehicles and intersections in order to simulate a different environment instead
-of optimizing plans for a society in a static environment \commentpk{I think
-MIke made these changes last night, but I am not sure if the last few sentences
-are clear to me}.
+to follow in a given day. MATSim aims to improve these plans by attempting to
+minimize the total amount of time by which individuals are late to their
+destinations. This goal is somewhat different from that of AORTA, where the
+routes (demand) supplied by individuals is taken as is, and each agent has a
+specified destination at a given point in time. Instead, AORTA focuses on
+vehicle behaviors and intersection policies that can help this agent reach its
+destination faster.
+
+% This goal is somewhat different from that of AORTA, where the
+% routes (demand) supplied by individuals is taken as is and does not have a
+% pre-determined ideal time of arrival. Rather than improving agent routes, AORTA
+% allows creating entirely different behaviors for both vehicles and
+% intersections in order to simulate a different environment instead of
+% optimizing plans for a society in a static environment \commentpk{I think MIke
+% made these changes last night, but I am not sure if the last few sentences are
+% clear to me}.
 
 Another popular open source traffic simulator that can use OSM data is SUMO
 \cite{SUMO2011}, which shares many similar goals with AORTA. SUMO has been used to
