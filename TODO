@@ -1,8 +1,5 @@
 # TODO #
 
-- check mikes edits, handle SUMO comparison
-- final spell check?
-
 - revise "how many agents can be comfortably simulated in realtime"
   - fix the dumb illegal entry epsilon bugs.
     - why was the hack in map.make.Checker needed?
