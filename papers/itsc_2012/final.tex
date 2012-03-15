@@ -473,6 +473,30 @@ avoid congestion.
 \section{EXPERIMENTAL RESULTS}
 \label{sec:results}
 
+\begin{figure*}[t]
+  \centering
+  \subfloat[Average delay in Austin]{
+    \label{fig:avg_lag_atx}
+    \includegraphics[width=0.4\textwidth]{avg_lag_agent_atx.png}
+  }\,
+  \subfloat[Average delay in Houston]{
+    \label{fig:avg_lag_houston}
+    \includegraphics[width=0.4\textwidth]{avg_lag_agent_houston.png}
+  }\\
+  \subfloat[Number of agents driving in Austin]{
+    \label{fig:agent_cnt_atx}
+    \includegraphics[width=0.4\textwidth]{agent_cnt_atx.png}
+  }\,
+  \subfloat[Number of agents driving in Houston]{
+    \label{fig:agent_cnt_houston}
+    \includegraphics[width=0.4\textwidth]{agent_cnt_houston.png}
+  }
+  \caption{Autonomous reservations outperform stop signs and traffic signals in
+           these experiments.}
+  \label{fig:results}
+  \vspace{-15pt}
+\end{figure*}
+
 To demonstrate how easily AORTA can be utilized to evaluate different
 intersection policies, this section presents a simple experiment showing how
 different policies affect the throughput of intersections. In this experiment,
@@ -528,30 +552,6 @@ intersection indefinitely, a timeout preemptively cycles through reservations.
 
 \subsection{Results}
 
-\begin{figure*}[h]
-  \centering
-  \subfloat[Average delay in Austin]{
-    \includegraphics[width=0.5\linewidth]{avg_lag_agent_atx.png}
-    \label{fig:avg_lag_atx}
-  }
-  \subfloat[Average delay in Houston]{
-    \includegraphics[width=0.5\linewidth]{avg_lag_agent_houston.png}
-    \label{fig:avg_lag_houston}
-  }
-\end{figure*}
-\begin{figure*}[h]
-  \subfloat[Number of agents driving in Austin]{
-    \includegraphics[width=0.5\linewidth]{agent_cnt_atx.png}
-    \label{fig:agent_cnt_atx}
-  }
-  \subfloat[Number of agents driving in Houston]{
-    \includegraphics[width=0.5\linewidth]{agent_cnt_houston.png}
-    \label{fig:agent_cnt_houston}
-  }
-  \caption{Autonomous reservations outperform stop signs and traffic signals in
-           these experiments.}
-  %\vspace{-10pt}
-\end{figure*}
 
 If an intersection immediately permits an agent to proceed and grants other
 agents in the same lane similar access (because this new agent must still follow
