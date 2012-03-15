@@ -152,16 +152,13 @@ with a discussion on future work.
 % just draw differences between us and them
 
 Computational processing power has made excellent advancements in the last two
-decades. Parallel computing has proved significant for traffic simulation
-through the use of Geographic Information System (GIS) software
-\cite{pursula1999simulation}. \commentpk{preceding sentence doesnt paraphrase
-the ref correctly. double check}. Advanced computing techniques have enabled
-microscopic models of traffic simulation to generate results at a meaningful
-scale (city-wide or greater). As a result, a number of good micro-simulators
-have been introduced in the past decade. We review a number of such simulators
-in this section along with other relevant work.
+decades. Parallel computing and the use of GPUs have enabled microscopic models
+of traffic simulation to generate results at a meaningful scale (city-wide or
+greater) \cite{nagel1994microscopic,shen2011agent}. As a result, a number of
+multi-agent micro-simulators have been introduced in the past decade. We review
+relevant simulators and other related work in this section.
 
-A number of traffic simulators already make use of OSM data. MATSim is one such
+OSM data has been used by traffic simulators in the past. MATSim is one such
 multiagent simulator that focuses on performing large-scale simulations in a
 relatively small amount of time \cite{balmer2009matsim}. Traffic demand is
 supplied to MATSim in the form of \textit{plans} that an individual may intend
@@ -174,28 +171,24 @@ improving routes, AORTA allows creating entirely different behaviors for both
 vehicles and intersections.
 
 Another popular open source traffic simulator that can use OSM data is SUMO
-\cite{SUMO2011}, which shares the same goals as AORTA and is fairly similar at
-a high level. SUMO has been used to study the effect of automated
-transportation systems, route planning of individual vehicles, as well as
-dynamically adapting traffic signal policies to increase traffic efficiency.
-AORTA and SUMO differ in the manner in which intersections are handled. SUMO
-uses traditional traffic signals, while AORTA adopts a much more general
-\textit{reservation} system. A reservation tells a car when it is safe to take
-its desired path through the intersection. Reservations can be allotted to
-vehicles through more traditional means such as traffic signals or stop-sign
-based intersection precedence, or through more efficient methods designed
-specifically for autonomous vehicles \cite{JAIR08-dresner}. Based on experience
-with SUMO, AORTA also displays more robust handling of data exported directly
-from OSM. \commentpk{I am worried about the last line. It might be true, but it
-is a fairly strong claim - we should put a citation of us handling something
-that has been documented as not being handled via SUMO} 
+\cite{SUMO2011}, which shares the similar goals as AORTA. SUMO has been used to
+study the effect of automated transportation systems, route planning of
+individual vehicles, as well as dynamically adapting traffic signal policies to
+increase traffic efficiency.  AORTA and SUMO differ in the manner in which
+intersections are handled. SUMO uses traditional traffic signals, while AORTA
+adopts a much more general \textit{reservation} system. A reservation tells a
+car when it is safe to take its desired path through the intersection.
+Reservations can be allotted to vehicles through more traditional means such as
+traffic signals or stop-sign based intersection precedence, or through more
+efficient methods designed specifically for autonomous vehicles
+\cite{JAIR08-dresner}.
 
-On the other hand, there are a number of simulators that specifically target
-autonomous traffic systems. One such system is AIM \cite{JAIR08-dresner}, which
-aims to optimize traffic flow of autonomous vehicles at a given intersection.
-AIM studies problems at the scale of roughly a dozen intersections arranged in
-a regular grid, while AORTA has the potential to apply some of the same
-research at a city-wide scale to real-world road networks.
+Efforts have been made to optimize traffic flow in the context of autonomous
+vehicles. AIM \cite{JAIR08-dresner} is one such approach that aims to optimize
+traffic flow of autonomous vehicles at a given intersection. The AIM approach
+has been applied to a regular grid of four intersections
+\cite{IROS11-hausknecht}, while AORTA has the potential to apply some of the
+same research at a city-wide scale to real-world road networks.
 
 Simulators have also focused on autonomous vehicles with sensors and actuators
 \cite{figueiredo2009approach}. These simulators are used to ensure that
@@ -631,9 +624,17 @@ identified similar issues before \cite{Krajzewicz_Hertkorn_Ringel_Wagner_2005}.
 
 \section*{ACKNOWLEDGMENTS}
 
+This work has taken place in the Learning Agents Research Group (LARG) at the
+Artificial Intelligence Laboratory, The University of Texas at Austin. LARG
+research is supported in part by grants from the National Science Foundation
+(IIS-0917122), ONR (N00014-09-1-0658), and the Federal Highway Administration
+(DTFH61-07-H-00030). 
+
 The authors would like to thank Dr. Michael Quinlan for his support during the
-seminal stages of AORTA and all OpenStreetMap contributers for providing free
-maps.
+seminal stages of AORTA and all OpenStreetMap contributers for collecting the
+map data used in this work. Efforts by the Freshman Research Initiative,
+College of Natural Sciences, UT Austin have allowed for the development of this
+research.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 

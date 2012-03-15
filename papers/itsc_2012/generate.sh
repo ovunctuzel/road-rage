@@ -1,6 +1,6 @@
 #!/bin/sh
 
-if [[ $# -eq 1 ]]; then
+if [ $# -eq 1 ]; then
   INPUT=$1
 else
   INPUT=final.tex
