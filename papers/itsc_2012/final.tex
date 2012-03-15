@@ -520,20 +520,38 @@ could be improved, perhaps by incorporating packages such as SYNCHRO
 \cite{synchro}.
 
 The last policy tested is an autonomous reservation policy inspired by AIM
-\cite{JAIR08-dresner}. This policy groups agents with compatible turns together,
-allowing new agents to join existing groups. To prevent one heavy direction of
-traffic from hogging the intersection indefinitely, a timeout preemptively
-cycles through reservations.
+\cite{JAIR08-dresner}. Because agents explicitly communicate with intersections
+to schedule their turn, this policy is only suitable for autonomous drivers.
+This policy groups agents with compatible turns together, allowing new agents to
+join existing groups. To prevent one heavy direction of traffic from hogging the
+intersection indefinitely, a timeout preemptively cycles through reservations.
 
 \subsection{Results}
 
-\begin{figure}[h]
-  \centering \includegraphics[width=\linewidth]{avg_lag_agent_atx.png}
-  \caption{The distribution of average delay reveals that traffic signals can
-           cause the most lag.}
-  \label{fig:avg_lag}
-  \vspace{-10pt}
-\end{figure}
+\begin{figure*}[h]
+  \centering
+  \subfloat[Average delay in Austin]{
+    \includegraphics[width=0.5\linewidth]{avg_lag_agent_atx.png}
+    \label{fig:avg_lag_atx}
+  }
+  \subfloat[Average delay in Houston]{
+    \includegraphics[width=0.5\linewidth]{avg_lag_agent_houston.png}
+    \label{fig:avg_lag_houston}
+  }
+\end{figure*}
+\begin{figure*}[h]
+  \subfloat[Number of agents driving in Austin]{
+    \includegraphics[width=0.5\linewidth]{agent_cnt_atx.png}
+    \label{fig:agent_cnt_atx}
+  }
+  \subfloat[Number of agents driving in Houston]{
+    \includegraphics[width=0.5\linewidth]{agent_cnt_houston.png}
+    \label{fig:agent_cnt_houston}
+  }
+  \caption{Autonomous reservations outperform stop signs and traffic signals in
+           these experiments.}
+  %\vspace{-10pt}
+\end{figure*}
 
 If an intersection immediately permits an agent to proceed and grants other
 agents in the same lane similar access (because this new agent must still follow
@@ -546,14 +564,6 @@ stop signs cause about 7 seconds lag, and traffic signals using the heuristic
 described above cause 16 seconds. These results will vary with different
 traffic levels and policy configurations, so the important demonstration is that
 AORTA can be used as a framework for evaluating these policies.
-
-\begin{figure}[h]
-  \centering \includegraphics[width=\linewidth]{agent_cnt_atx.png}
-  \caption{Autonomous reservations outperform stop signs, and traffic signal
-           gridlocked.}
-  \label{fig:agent_cnt}
-  \vspace{-10pt}
-\end{figure}
 
 The number of agents driving at some time changes because the continuous
 generator introduces a new agent every second. This count reaches a steady
