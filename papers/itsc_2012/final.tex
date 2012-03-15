@@ -355,16 +355,6 @@ process in the background.  Once an agent's route is ready, the agent waits
 alongside its starting lane (as if it is in a driveway or parking lot). When the
 lane has no agents that could potentially crash with the new vehicle, the new
 agent enters the system.
-%with zero initial speed. Because behaviors must enforce speed limit along a lane
-%from the moment an agent enters a road, it is safe for a new agent to enter a
-%road if there is no other agent within the worst-case distance (traveling
-%distance at the speed limit, plus stopping distance from this speed) preceeding
-%the spawn point. To avoid predicting which agents might enter the lane in the
-%near future, there is a buffer space at the beginning of the lane where a new
-%agent may never spawn. This disqualifies some short lanes from being spawn
-%points, but this is not a big limitation in practice. \commentpk{I understand
-%your concern about explaining the entire methodology, but the last 2 lines are
-%unnecessary and somewhat distracting}
 
 \subsection{Collision checking}
 
@@ -418,13 +408,13 @@ lane by consulting a route strategy that finds a path to the destination.
 
 A behavior interacts with an intersection policy by sending it the agent's
 desired turn, the agent's speed, the current distance from the start of the
-intersection, and the length of time the agent has been idling at zero speed.
-The policy replies by ordering the agent to ``stop'' or ``proceed''. The
-behavior will continue to statelessly poll the policy every step until the agent
-begins the turn. The policy may approve an agent for entry one step and deny it
-the next, so long as the agent could safely brake without danger of entering the
-intersection. The policy is free to allow concurrent turns in any arrangement
-by different agents as long as no two simultaneous turns conflict.
+intersection, and the length of time the agent has been idling at rest. The
+policy replies by ordering the agent to ``stop'' or ``proceed''. The behavior
+will continue to statelessly poll the policy every step until the agent begins
+the turn. The policy may approve an agent for entry one step and deny it the
+next, so long as the agent could safely brake without danger of entering the
+intersection. The policy is free to allow concurrent turns in any arrangement by
+different agents as long as no two simultaneous turns conflict.
 
 \subsection{Current Limitations}
 
@@ -458,11 +448,10 @@ relation.
 In many observed cases, the gridlock is caused by AORTA's present lack of
 lane-changing support: agents loop around these intersections in order to enter
 a lane adjacent to their original lane. Since these routes are still legal, it
-is desirable to prevent or mend this without forcing different routes. However,
-choosing alternative moves (by changing lanes or rerouting) is one sufficient,
-but not necessarily required, condition for liveness \cite{AAAI11-au}.
-\commentd{I misinterpreted the results of the paper originally. Is this a safer
-and more relevant claim to make?}
+is desirable to prevent or mend this without forcing different routes.
+However, choosing alternative moves (by changing lanes or rerouting) is an
+important constituent of a sufficient condition for the liveness of a road
+network cite{AAAI11-au}.
 
 \subsection{Extending AORTA}
 \label{sec:config}
@@ -500,21 +489,19 @@ avoid congestion.
 \section{EXPERIMENTAL RESULTS}
 \label{sec:results}
 
-A particular focus of AORTA is intersection policies. To demonstrate how much
+A particular focus of AORTA is intersection policies. To demonstrate how
 policy affects the throughput of intersections and total performance of the
 transportation system, three policies are evaluated: stop sign, traffic signal,
 and autonomous reservation. Every intersection uses the same policy.
 
 \subsection{Experimental Setup}
 
-The experiment simulates a 6 by 7 mile slice of downtown Austin,
+The experiment simulates a 9$\times$11km$^{2}$ slice of downtown Austin,
 Texas\footnote{bounded by the Mopac and Springdale Road horizontally, and Oltorf
 Street and Koenig Lane vertically}, for one hour. The step duration is fixed at
 0.1 seconds. While the intersection policies vary, the agents spawned and their
 routes remain the same. A generator creates one new agent every 1 simulation
 second, with a uniformly random starting position and goal.
-\commentd{Chiu asked about the distribution of incoming agents. Is ``uniformly
-random start and end'' not clear?}
 
 These experiments are deterministically reproducible. A seed for the
 pseudo-random number generator, the input graph, and the generators'
@@ -534,28 +521,24 @@ real-time. Further optimizations are planned.
 \subsection{Intersection Policies Evaluated}
 
 Stop signs accept agents first-come, first-served, refusing agents until they
-have idled at 0 speed for 1 second. This delay approximates human reaction time.
+have idled at rest for 1 second. This delay approximates human reaction time.
 
 The traffic signal policy requires timings and groups of simultaneous turns for
-each intersection. The heuristic evaluated uses standard turn groups (turns from
-parallel incoming directions are scheduled simultaneously, and left turns are
-grouped) and employs breadth-first search to propagate timings. The goal is to
-synchronize green signals so agents in some lanes do not stop for several
-intersections.
-\commentd{chiu recommends more details with how we propagate timings. Thoughts,
-Mike?}
-\commentc{You can mention about using optimized traffic signal timings generated
-  by commercial traffic signal optimization packages such as SYNCHRO (cite
-  Husch, D. and Albeck, J. (2004) Trafficware Synchro 6 User Guide, TrafficWare,
-  Albany, California.)
-}
+each intersection. The heuristic currently assigning these arbitrarily picks one
+major road, schedules turns from that road to others, then repeats the process
+from all reachable roads using a breadth-first search. By estimating how long
+performing one turn and traveling along the next lane takes, the timing of the
+next intersection can be scheduled so that agents from the first road continue
+traveling without stopping for several consecutive intersections. This heuristic
+is far from optimal, meaning the performance of traffic signals described below
+could be improved, perhaps by incorporating packages such as SYNCHRO
+\cite{synchro}.
 
-\commentd{advice on wording?}
-Finally, in anticipation of the advent of autonomous vehicles, an autonomous
-reservation policy inspired by AIM \cite{JAIR08-dresner} is tested. This policy
-groups agents with compatible turns together, allowing new agents to join
-existing groups. To prevent one heavy direction of traffic from hogging the
-intersection indefinitely, a timeout preemptively cycles through reservations.
+The last policy tested is an autonomous reservation policy inspired by AIM
+\cite{JAIR08-dresner}. This policy groups agents with compatible turns together,
+allowing new agents to join existing groups. To prevent one heavy direction of
+traffic from hogging the intersection indefinitely, a timeout preemptively
+cycles through reservations.
 
 \subsection{Results}
 
@@ -579,9 +562,10 @@ pausing. This gives the least possible delay spent along some lane, so any extra
 time is defined as lag and is used to measure intersection performance. Figure
 \ref{fig:avg_lag} graphs the average of this delay per agent. On average,
 reservation policies cause less than 1 second of delay at each intersection,
-stop signs cause about 7 seconds lag, and traffic signals cause 16 seconds.
-\commentd{We need to be clear that our traffic lights suck, so this number is
-pretty biased.}
+stop signs cause about 7 seconds lag, and traffic signals using the heuristic
+described above cause 16 seconds. These results will vary with different
+traffic levels and policy configurations, so the important demonstration is that
+AORTA can be used as a framework for evaluating these policies.
 
 \commentc{Reviewers will certainly complain the lack of the details of the
   parameters you used, which implies your results can be somewhat ``biased''.
