@@ -522,13 +522,13 @@ AORTA is a useful tool for evaluating this relation.
 
 The experiment simulates one hour of traffic in two cities: a
 9$\times$11km$^{2}$ slice of downtown Austin, Texas\footnote{bounded by the
-Mopac and Springdale Road horizontally, and Oltorf Street and Koenig Lane
-vertically}, and a 15$\times$13km$^{2}$ slice of downtown Houston, Texas
-\footnote{bounded by Ella Boulevard and Eastex Freeway horizontally, and West
-Alabama Street and Crosstimbers Street vertically}.  The step duration is fixed
-at 0.1 seconds. While the intersection policies vary, the agents spawned and
-their routes remain the same.  A generator creates one new agent every 1
-simulation second, with a uniformly random starting position and goal.
+Mopac, Springdale Road, Oltorf Street and Koenig Lane}, and a
+15$\times$13km$^{2}$ slice of downtown Houston, Texas\footnote{bounded by Ella
+Boulevard, Eastex Freeway, West Alabama Street and Crosstimbers Street}.  The
+step duration is fixed at 0.1 seconds. While the intersection policies vary,
+the agents spawned and their routes remain the same.  A generator creates one
+new agent every 1 simulation second, with a uniformly random starting position
+and goal.
 
 These experiments are deterministically reproducible. A seed for the
 pseudo-random number generator, the input graph, and the generators'
@@ -536,14 +536,14 @@ configuration fully determine the outcome of any simulation \footnote{This
 determinism may break down when generators use worker threads, since routes
 may be computed in different orders, causing agents to enter the road at
 different times.}. After setting up a scenario in the UI, users can save this
-configuration for resimulation.
+configuration for re-simulation.
 
 The speed of simulation depends on the step duration dt, the map size, and the
 number of agents. A measure independent of these factors is the number of agent
-steps per second. On a 2.4 GHz machine, this can be observed to average at about
-150,000, a number comparable to existing simulators \cite{SUMOthesis}. When dt
-= 0.1 seconds, this means 15,000 agents can be comfortably simulated in
-real-time. Further optimizations are planned.
+steps per second. On a 2.4 GHz machine, this can be observed to average at
+about 150,000, a number comparable to existing simulators \cite{SUMOthesis}.
+When the time step is 0.1 seconds, this means 15,000 agents can be comfortably
+simulated in real-time. Further optimizations are planned.
 
 \subsection{Intersection Policies Evaluated}
 
@@ -618,10 +618,10 @@ agent behaviors and intersections by exploring dynamic replanning and adaptable
 signal timings. On top of these structures, applications could experiment with
 ideas such dynamic contra-flow \cite{ITSC11-hausknecht}.  There will also be an
 effort to improve AORTA as a framework by including a lane-changing model,
-preventing gridlock, and supporting the resources of supercomputing clusters.
+preventing gridlock, and supporting more agents through parallel computing.
 
 AORTA's map construction process, although flexible, cannot completely account
-for incompletedness in OSM data. Road type annotations imprecisely imply the
+for incompleteness in OSM data. Road type annotations imprecisely imply the
 number of lanes and typical speed limits. Heuristically enumerating the turns at
 each intersection often misses common features like right turn-only lanes and
 shared center left turn lanes. There are many circumstances where AORTA
@@ -631,14 +631,12 @@ performance of intersection policies and the realism of the simulation would
 improve. Other simulators have identified similar issues before
 \cite{Krajzewicz_Hertkorn_Ringel_Wagner_2005}.
 
-\commentd{Er, so how do I finally end this?}
-
-\addtolength{\textheight}{-12cm}  % This command serves to balance the column lengths
-                                  % on the last page of the document manually. It shortens
-                                  % the textheight of the last page by a suitable amount.
-                                  % This command does not take effect until the next page
-                                  % so it should come on the page before the last. Make
-                                  % sure that you do not shorten the textheight too much.
+% \addtolength{\textheight}{-12cm}  % This command serves to balance the column lengths
+%                                   % on the last page of the document manually. It shortens
+%                                   % the textheight of the last page by a suitable amount.
+%                                   % This command does not take effect until the next page
+%                                   % so it should come on the page before the last. Make
+%                                   % sure that you do not shorten the textheight too much.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \small
