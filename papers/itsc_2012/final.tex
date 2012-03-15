@@ -119,15 +119,10 @@ behaviors to interact with one another, follow intersection policies, and decide
 on both long term and short term actions. AORTA allows for the creation of
 intersection policies that designate when agents can cross the intersection.
 AORTA's goal is to allow for the definition of new agent behaviors and
-intersection policies to optimize autonomous traffic.  Additionally, by
+intersection policies to optimize autonomous traffic. Additionally, by
 assigning human-like behaviors such as the ``car following model''
 \cite{brackstone1999car} to agents, and traffic-signal-like policies to
 intersections, AORTA could potentially simulate human traffic.
-\commentd{Previously, ``AORTA allows for the creation of intersection policies
-  on top of a reservation based intersection manager \cite{JAIR08-dresner}, and
-  these policies designate when agents can cross the intersection.'' Actually,
-  reservations are just one policy. Do we want to focus on the general case
-here, or autonomous specifically?}
 
 Like any other microscopic traffic simulator, AORTA needs maps to run
 simulations. One of AORTA's key features is that it generates maps using real
@@ -182,19 +177,11 @@ study the effect of automated transportation systems, route planning of
 individual vehicles, as well as dynamically adapting traffic signal policies to
 increase traffic efficiency.  AORTA and SUMO differ in the manner in which
 intersections are handled. SUMO uses traditional traffic signals, while AORTA
-adopts a much more general \textit{reservation} system. A reservation tells a
-car when it is safe to take its desired path through the intersection.
-Reservations can be allotted to vehicles through more traditional means such as
-traffic signals or stop-sign based intersection precedence, or through more
-efficient methods designed specifically for autonomous vehicles
-\cite{JAIR08-dresner}.
-\commentm{Given that SUMO is also open-source and seems to be used fairly commonly
-in the traffic community, our only real advantage over it is actually our choice
-of language.  AORTA is much easier to use and extend primarily because we use
-a higher level language.  (As we mention, our intersections are also more general,
-but I think that's actually less important.)  I'm not sure of how to handle this.}
-\commentd{Again, ``reservation'' feels like an overloaded term here, meaning the
-general notion of being able to cross, as opposed to the specific policy.}
+allows intersections to grant agents entry by any general policy. These policies
+can use traditional schemes such as traffic signals or stop-sign based
+precedence, or more efficient methods designed specifically for autonomous
+vehicles \cite{JAIR08-dresner}.
+\commentd{Are we sure SUMO is not easily configurable in this way?}
 
 Efforts have been made to optimize traffic flow in the context of autonomous
 vehicles. AIM \cite{JAIR08-dresner} is one such approach that aims to optimize
@@ -418,25 +405,26 @@ intersection is shown in figure \ref{fig:crazyIntersection}.
 
 \subsection{Agent Behaviors}
 
-\commentd{Mike, I left off here.}
-
 Each agent has a \emph{behavior} governing it, responsible for obeying
-intersection policies and avoiding collisions. When the agent travels past the
-end of a lane during its step, the behavior picks the turn to take. At each
-step, the behavior can make the agent react by performing one of two actions:
-disappearing from the map (when the agent is at rest and is done with its route)
-or setting an acceleration for the next step.
+intersection policies and avoiding collisions. Before each step, the behavior
+chooses one of two actions for the agent to perform: disappearing from the map
+(when the agent is at rest and is done with its route) or accelerating at some
+rate. Behaviors query current and upcoming lanes and intersections to find
+other nearby agents and determine all constraints that must be satisfied for a
+safe choice. The behavior also picks turns once an agent reaches the end of a
+lane by consulting a route strategy that finds a path to the destination.
 
 \subsection{Intersection Policies}
 
-A behavior's interaction with an intersection policy amounts to polling it with
-the turn the agent wants to perform, the distance away the agent currently is,
-and how long the agent has been waiting (so policies can enforce a required
-delay before entering the intersection). The intersection policy simply orders
-the agent to ``stop'' or ``proceed.'' \commentd{I'm not sure this fits in the
-default behavior later anymore; just delete it?} The acceleration chosen to
-avoid entering an intersection attempts to account for crosswalks by ending a
-configurable threshold before the end of a traversable.
+A behavior interacts with an intersection policy by sending it the agent's
+desired turn, the agent's speed, the current distance from the start of the
+intersection, and the length of time the agent has been idling at zero speed.
+The policy replies by ordering the agent to ``stop'' or ``proceed''. The
+behavior will continue to statelessly poll the policy every step until the agent
+begins the turn. The policy is responsible for never changing a reply of
+approval to denial when the agent could not safely honor the change. The policy
+is free to allow concurrent turns in any arrangement by different agents as long
+as no two simultaneous turns conflict.
 
 \subsection{Simulation Limitations}
 
