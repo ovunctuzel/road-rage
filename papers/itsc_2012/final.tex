@@ -11,13 +11,13 @@
 % on the last page of the document
 
 \usepackage[pdftex]{graphicx}
-\usepackage{subfig}
+\usepackage[font={footnotesize}]{caption,subfig}
 % TODO remember we need to meet color compliance:
 % http://its.papercept.net/conferences/support/general.php
 
 % TODO better name!
 \title{\LARGE \bf
-Approximately Orchestrated Road Traffic Automata:\\
+Approximately Orchestrated Routing and Transportation Analyzer:\\
 Large-scale Traffic Simulation for Autonomous Vehicles
 }
 
@@ -50,22 +50,21 @@ Large-scale Traffic Simulation for Autonomous Vehicles
 \begin{abstract} 
 
 Autonomous vehicles have seen great advancements in recent years, and such
-vehicles are now ever closer to being commercially available.  The advent of
+vehicles are now ever closer to being commercially available. The advent of
 driverless cars provides opportunities for optimizing traffic in ways not
 possible before. This paper introduces an open source multiagent microscopic
 traffic simulator called AORTA, which stands for \textit{Approximately
-Orchestrated Road Traffic Automata}, designed for optimizing autonomous traffic
-at a city-wide scale. AORTA creates scale simulations of the real world by
-generating maps using publicly available road data from \textit{OpenStreetMap}
-(OSM). This allows simulations to be set up through AORTA for a desired region
-anywhere in the world in a matter of minutes. AORTA allows for optimizing
-traffic by creating more intelligent behaviors for individual drivers (agents),
-as well as by defining new intersection policies that can be followed by these
-autonomous agents. These agent behaviors define how agents interact with one
-another, follow intersection policies, and select the next action to take. This
-paper demonstrates a simple applications using AORTA through an experiment
-testing an intersection policy designed for autonomous vehicles at a city-wide
-scale.
+Orchestrated Routing and Transportation Analyzer}, designed for optimizing
+autonomous traffic at a city-wide scale. AORTA creates scale simulations of the
+real world by generating maps using publicly available road data from
+\textit{OpenStreetMap} (OSM). This allows simulations to be set up through AORTA
+for a desired region anywhere in the world in a matter of minutes. AORTA allows
+for traffic optimization by creating intelligent behaviors for individual driver
+agents and intersection policies to be followed by these agents. These behaviors
+and policies define how agents interact with one another, control when they
+cross intersections, and route agents to their destination. This paper
+demonstrates a simple application using AORTA through an experiment testing an
+intersection policy designed for autonomous vehicles at a city-wide scale.
 
 \end{abstract}
 
@@ -74,26 +73,24 @@ scale.
 \section{INTRODUCTION}
 \label{sec:introduction}
 
-% theme: easy simulation in your city, in 2 minutes!
-% be sure to emphasize open source!
-% contribution: autonomous car / human car sim on EXISTING INFRASTRUCTURE
+% TODO theme: easy simulation in your city, in 2 minutes!
 
 Autonomous vehicle technology has made tremendous progress in the last decade.
 In 2004, the farthest distance traveled by a vehicle autonomously in the DARPA
 Grand Challenge was 11.9km \cite{cnnGrandChallenge2004}. By 2007, six of the
 competing teams completed the 96km course set for the DARPA Urban Challenge
-\cite{spectrumUrbanChallenge2007}. They did so while following the same traffic
-laws followed by human drivers, navigating along with other moving vehicles,
-and following correct intersection precedence order. Since then, Google's
-driverless cars have clocked more than 250,000km on public roads in urban
-California, USA \cite{tedThrun2011}. In 2010, researchers from the University
-of Parma successfully completed an autonomous \textit{intercontinental} run
-from Parma, Italy to Shanghai, China \cite{cnnVislab2010}. The successful
-completion of all these milestones suggests that autonomous cars are here to
-stay, and are ever closer to becoming commercially available. With the arrival
-of autonomous cars, it also becomes possible to optimize traffic in ways not
-possible for human drivers. 
-\commentd{If we need space, I agree with Dr Chiu, some of this could be trimmed}
+\cite{spectrumUrbanChallenge2007}. They did so while obeying the traffic laws
+followed by human drivers, navigating along with other moving vehicles, and
+following correct intersection precedence order. Since then, Google's driverless
+cars have clocked more than 250,000km on public roads in urban California, USA
+\cite{tedThrun2011}. In 2010, researchers from the University of Parma
+successfully completed an autonomous \textit{intercontinental} run from Parma,
+Italy to Shanghai, China \cite{cnnVislab2010}. The successful completion of all
+these milestones suggests that autonomous cars are here to stay, and are ever
+closer to becoming commercially available. With the arrival of autonomous cars,
+it also becomes possible to optimize traffic in ways not possible for human
+drivers. 
+%\commentd{If we need space, I agree with Dr Chiu, some of this could be trimmed}
 
 % The arrival of driverless cars presents several challenges that need to be
 % addressed in the near term. Road infrastructure changes could provide important
@@ -115,22 +112,22 @@ possible for human drivers.
 % TODO reference the screenshot
 
 This paper introduces an open source multigent microscopic traffic simulator
-called AORTA, which stands for \textit{Approximately Orchestrated Road Traffic
-Automata}, a platform designed for testing autonomous vehicle behaviors and
-intersection policies. Autonomous vehicles, termed agents, use
-behaviors to interact with one another, follow intersection policies, and
-decide on both long term and short term actions. AORTA allows for the creation
-of intersection policies that designate when agents can cross the
-intersection. AORTA's goal is to allow for the definition of new agent
-behaviors and intersection policies to optimize autonomous traffic.
-Additionally, by assigning human-like behaviors such as the ``car following
-model'' \cite{brackstone1999car} to agents, and traffic-signal-like policies to
+called AORTA, which stands for \textit{Approximately Orchestrated Routing and
+Transportation Analyzer}, a platform designed for testing autonomous vehicle
+behaviors and intersection policies. Autonomous vehicles, termed agents, use
+behaviors to interact with one another, follow intersection policies, and decide
+on both long term and short term actions. AORTA allows for the creation of
+intersection policies that designate when agents can cross the intersection.
+AORTA's goal is to allow for the definition of new agent behaviors and
+intersection policies to optimize autonomous traffic.  Additionally, by
+assigning human-like behaviors such as the ``car following model''
+\cite{brackstone1999car} to agents, and traffic-signal-like policies to
 intersections, AORTA could potentially simulate human traffic.
-\commentd{Previously, ``AORTA allows for the creation
-of intersection policies on top of a reservation based intersection manager
-\cite{JAIR08-dresner}, and these policies designate when agents can cross the
-intersection.'' Actually, reservations are just one policy. Do we want to focus
-on the general case here, or autonomous specifically?}
+\commentd{Previously, ``AORTA allows for the creation of intersection policies
+  on top of a reservation based intersection manager \cite{JAIR08-dresner}, and
+  these policies designate when agents can cross the intersection.'' Actually,
+  reservations are just one policy. Do we want to focus on the general case
+here, or autonomous specifically?}
 
 Like any other microscopic traffic simulator, AORTA needs maps to run
 simulations. One of AORTA's key features is that it generates maps using real
@@ -331,8 +328,10 @@ with each pass feeding the next. The map model is then stored in an XML format.
 \section{SIMULATION}
 \label{sec:simulation}
 
-\commentd{Is this incomplete?}
-Different elements of the simulator are described as follows:
+This section describes the simulator's agent model and its mechanisms for
+creating agents, verifying safety, and allowing agents and intersections to
+control themselves. Comments on current limitations and how to extend the
+simulator follow.
 
 \subsection{Simulation Dynamics} 
 
@@ -344,14 +343,6 @@ a moving interval of a lane, rather than one fixed tile of the road. Each time
 step lasts for the same fixed duration, and the simulation does the following
 for each time step:
 
-% \textit{dt}.
-% This lets agents reason about how far they will travel for a given choice of
-% acceleration before being able to choose a different acceleration. Setting
-% \textit{dt} to the ``reaction time'' of a human driver may be appropriate for
-% experiments modeling humans.
-% 
-% Each step, the simulation does the following:
-
 \begin{enumerate}
   \item Introduces new agents into the map
   \item Updates the position and velocity of agents based on their choice of
@@ -359,8 +350,6 @@ for each time step:
   \item Checks for collisions
   \item Allows each agent's behavior to choose an action for the next step
 \end{enumerate}
-
-\commentpk{need to check the ordering of above enumeration}
 
 \subsection{Spawning new agents}
 
@@ -372,14 +361,14 @@ Users can draw these polyons by mouse in the UI, allowing specific traffic
 patterns like rush-hour scenarios to be easily simulated. A generator polygon
 may also cover the entire map, uniformly distributing traffic everywhere.
 
-Every step, a generator creates some number of new agents. If the agent's route
-policy needs computation like pathfinding to operate, the generator either
-performs it immediately (incurring a delay in simulation if it is running) or,
-if possible, sends it to a pool of worker threads to process in the background.
-Once an agent's route is ready, the agent waits alongside its starting lane (as
-if it is in a driveway or parking lot). When the lane has no agents that could
-potentially crash with the new vehicle, the new agent enters the system. % with
-%zero initial speed. Because behaviors must enforce speed limit along a lane
+Every step, a generator creates some number of new agents. The generator either
+immediately performs any timely computation required by the agent's route
+policy, such as pathfinding, or delegates it to a pool of worker threads to
+process in the background.  Once an agent's route is ready, the agent waits
+alongside its starting lane (as if it is in a driveway or parking lot). When the
+lane has no agents that could potentially crash with the new vehicle, the new
+agent enters the system.
+%with zero initial speed. Because behaviors must enforce speed limit along a lane
 %from the moment an agent enters a road, it is safe for a new agent to enter a
 %road if there is no other agent within the worst-case distance (traveling
 %distance at the speed limit, plus stopping distance from this speed) preceeding
@@ -392,19 +381,18 @@ potentially crash with the new vehicle, the new agent enters the system. % with
 
 \subsection{Collision checking}
 
-All traversables (lanes and the straight line-approximation of turns) maintain
-an ordered queue of occupying agents. A collision is detected when two agents
-reverse order after a time step has completed.
+All traversables (lanes and turns) maintain an ordered queue of occupying
+agents. A collision is detected when two agents reverse order after a time step
+has completed.
 
-Intersections check for collisions by examining the turn each agent is
-performing and verifying that no other agent is simultaneously performing a
-conflicting turn. AORTA has a low-granularity model of turn conflict. If two
-vehicles at any point along two different turns could ever come into contact,
-then the turns are always in conflict, no matter where the agents actually are
-along that turn. This is visualized in figure \ref{fig:conflicts}. Further work
-is required before higher granularity can be introduced through space-time
-tiling intersections \cite{JAIR08-dresner}, due to some of the complex
-intersection geometries inferred from OSM. An example of such a difficult
+Intersections check for collisions by verifying no two agents are simultaenously
+performing a conflicting turn. AORTA has a low-granularity model of turn
+conflict. If two vehicles at any point along two different turns could ever come
+into contact, then the turns are always in conflict, no matter where the agents
+actually are along that turn. This is visualized in figure \ref{fig:conflicts}.
+Further work is required before higher granularity can be introduced through
+space-time tiling intersections \cite{JAIR08-dresner}, due to some of the
+complex intersection geometries inferred from OSM. An example of such a complex
 intersection is shown in figure \ref{fig:crazyIntersection}.
 
 % When a collision occurs, the simulator throws warnings and halts, since this

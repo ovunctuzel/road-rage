@@ -6,6 +6,7 @@
 - chius high level comments
 - agent behaviors and other APIish things need more details?
 - check mikes edits, handle SUMO comparison
+- final spell check?
 
 - revise "how many agents can be comfortably simulated in realtime"
   - fix the dumb illegal entry epsilon bugs.
