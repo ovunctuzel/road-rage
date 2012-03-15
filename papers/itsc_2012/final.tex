@@ -412,8 +412,9 @@ different agents as long as no two simultaneous turns conflict.
 \subsection{Current Limitations}
 
 Currently agents cannot change lanes. However, AORTA supports roads forcibly
-merging by treating the merge point as an intersection. The lack of
-lane-changing causes a second issue: gridlock.
+merging by treating the merge point as an intersection \commentpk{preceding
+statement is somewhat unclear}. The lack of lane-changing causes a second
+issue: gridlock.
 
 Each agent maintains a safe following distance from the next. If a lane is
 filled, then an agent may be forced to stop in an intersection mid-turn and
@@ -462,7 +463,7 @@ by tuning movement.
 Intersection policies are one of the most interesting aspects of the simulation
 to tweak, especially in light of autonomous vehicles. Current policies include
 traditional stop signs, traffic signals, and an AIM-inspired autonomous
-reservation system \cite{JAIR08-dresner}. The traffic signals are further
+reservation policy \cite{JAIR08-dresner}. The traffic signals are further
 extensible by assigning groups of non-conflicting turns at each intersection
 with some duration and offset. Future policies could include signals that adapt
 timings and refinements to the autonomous reservation policy.
