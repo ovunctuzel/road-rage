@@ -164,16 +164,17 @@ OSM data has been used by traffic simulators in the past. MATSim is one such
 multiagent simulator that focuses on performing large-scale simulations in a
 relatively small amount of time \cite{balmer2009matsim}. Traffic demand is
 supplied to MATSim in the form of \textit{plans} that an individual may intend
-to follow in a given day. MATSim aims to iteratively improve these plans though
-offline computation to maximize traffic throughput. In other words, it helps
-individuals understand the best way to go about their daily routine to minimize
-time spent in transit. This goal is somewhat different from that of AORTA,
-where the demand supplied by individuals is taken as is. Rather than simply
-improving routes, AORTA allows creating entirely different behaviors for both
-vehicles and intersections.
+to follow in a given day. MATSim aims to iteratively improve these plans to
+minimize traffic delays while minimizing the total amount of time by which agents
+are late to their destinations. This goal is somewhat different from that of AORTA,
+where the routes (demand) supplied by individuals is taken as is and does not have
+a pre-determined ideal time of arrival. Rather than improving agent routes, AORTA
+allows creating entirely different behaviors for both vehicles and intersections
+in order to simulate a different environment instead of optimizing plans for a
+society in a static environment.
 
 Another popular open source traffic simulator that can use OSM data is SUMO
-\cite{SUMO2011}, which shares the similar goals as AORTA. SUMO has been used to
+\cite{SUMO2011}, which shares many similar goals with AORTA. SUMO has been used to
 study the effect of automated transportation systems, route planning of
 individual vehicles, as well as dynamically adapting traffic signal policies to
 increase traffic efficiency.  AORTA and SUMO differ in the manner in which
@@ -184,6 +185,11 @@ Reservations can be allotted to vehicles through more traditional means such as
 traffic signals or stop-sign based intersection precedence, or through more
 efficient methods designed specifically for autonomous vehicles
 \cite{JAIR08-dresner}.
+\commentm{Given that SUMO is also open-source and seems to be used fairly commonly
+in the traffic community, our only real advantage over it is actually our choice
+of language.  AORTA is much easier to use and extend primarily because we use
+a higher level language.  (As we mention, our intersections are also more general,
+but I think that's actually less important.)  I'm not sure of how to handle this.}
 
 Efforts have been made to optimize traffic flow in the context of autonomous
 vehicles. AIM \cite{JAIR08-dresner} is one such approach that aims to optimize
