@@ -57,14 +57,14 @@ traffic simulator called AORTA, which stands for \textit{Approximately
 Orchestrated Routing and Transportation Analyzer}, designed for optimizing
 autonomous traffic at a city-wide scale. AORTA creates scale simulations of the
 real world by generating maps using publicly available road data from
-\textit{OpenStreetMap} (OSM). This allows simulations to be set up through AORTA
-for a desired region anywhere in the world in a matter of minutes. AORTA allows
-for traffic optimization by creating intelligent behaviors for individual driver
-agents and intersection policies to be followed by these agents. These behaviors
-and policies define how agents interact with one another, control when they
-cross intersections, and route agents to their destination. This paper
-demonstrates a simple application using AORTA through an experiment testing an
-intersection policy designed for autonomous vehicles at a city-wide scale.
+\textit{OpenStreetMap} (OSM). This allows simulations to be set up through
+AORTA for a desired region anywhere in the world in a matter of minutes. AORTA
+allows for traffic optimization by creating intelligent behaviors for
+individual driver agents and intersection policies to be followed by these
+agents. These behaviors and policies define how agents interact with one
+another, control when they cross intersections, and route agents to their
+destination. This paper demonstrates a simple application using AORTA through
+an experiment testing intersection policies at a city-wide scale.
 
 \end{abstract}
 
@@ -75,22 +75,25 @@ intersection policy designed for autonomous vehicles at a city-wide scale.
 
 % TODO theme: easy simulation in your city, in 2 minutes!
 
+% In 2004, the farthest distance traveled by a vehicle autonomously in the DARPA
+% Grand Challenge was 11.9km \cite{cnnGrandChallenge2004}. By 2007, six of the
+
 Autonomous vehicle technology has made tremendous progress in the last decade.
-In 2004, the farthest distance traveled by a vehicle autonomously in the DARPA
-Grand Challenge was 11.9km \cite{cnnGrandChallenge2004}. By 2007, six of the
-competing teams completed the 96km course set for the DARPA Urban Challenge
-\cite{spectrumUrbanChallenge2007}. They did so while obeying the traffic laws
-followed by human drivers, navigating along with other moving vehicles, and
-following correct intersection precedence order. Since then, Google's driverless
-cars have clocked more than 250,000km on public roads in urban California, USA
-\cite{tedThrun2011}. In 2010, researchers from the University of Parma
-successfully completed an autonomous \textit{intercontinental} run from Parma,
-Italy to Shanghai, China \cite{cnnVislab2010}. The successful completion of all
-these milestones suggests that autonomous cars are here to stay, and are ever
-closer to becoming commercially available. With the arrival of autonomous cars,
-it also becomes possible to optimize traffic in ways not possible for human
-drivers. 
-%\commentd{If we need space, I agree with Dr Chiu, some of this could be trimmed}
+In 2007, six of the competing teams completed the 96km course set for the DARPA
+Urban Challenge In 2004, the farthest distance traveled by a vehicle
+autonomously in the DARPA \cite{spectrumUrbanChallenge2007}. They did so while
+obeying the traffic laws followed by human drivers, navigating along with other
+moving vehicles, and following correct intersection precedence order. Since
+then, Google's driverless cars have clocked more than 250,000km on public roads
+in urban California, USA \cite{tedThrun2011}. In 2010, researchers from the
+University of Parma successfully completed an autonomous
+\textit{intercontinental} run from Parma, Italy to Shanghai, China
+\cite{cnnVislab2010}. The successful completion of all these milestones
+suggests that autonomous cars are here to stay, and are ever closer to becoming
+commercially available. With the arrival of autonomous cars, it also becomes
+possible to optimize traffic in ways not possible for human drivers. 
+%\commentd{If we need space, I agree with Dr Chiu, some of this could be
+%trimmed}
 
 % The arrival of driverless cars presents several challenges that need to be
 % addressed in the near term. Road infrastructure changes could provide important
@@ -104,7 +107,7 @@ drivers.
 
 \begin{figure}[t]
   \centering \includegraphics[width=\linewidth]{downtown_atx.png}
-  \caption{A simulation of downtown Austin, Texas.}
+  \caption{A simulation of autonomous agents in downtown Austin, Texas, as visualized through the UI available within the AORTA simulator}
   \label{fig:ui_screenshot}
   \vspace{-15pt}
 \end{figure}
@@ -115,34 +118,37 @@ This paper introduces an open source multigent microscopic traffic simulator
 called AORTA, which stands for \textit{Approximately Orchestrated Routing and
 Transportation Analyzer}, a platform designed for testing autonomous vehicle
 behaviors and intersection policies. Autonomous vehicles, termed agents, use
-behaviors to interact with one another, follow intersection policies, and decide
-on both long term and short term actions. AORTA allows for the creation of
-intersection policies that designate when agents can cross the intersection.
-AORTA's goal is to allow for the definition of new agent behaviors and
-intersection policies to optimize autonomous traffic. Additionally, by
-assigning human-like behaviors such as the ``car following model''
-\cite{brackstone1999car} to agents, and traffic-signal-like policies to
-intersections, AORTA could potentially simulate human traffic.
+behaviors to interact with one another, follow intersection policies, and
+decide on both long term and short term actions. Intersection policies
+deisgnate when it is safe for an agent to cross an intersection.  AORTA's goal
+is to allow for the definition of new agent behaviors and intersection policies
+to optimize autonomous traffic. Additionally, by assigning human-like behaviors
+such as the ``car following model'' \cite{brackstone1999car} to agents, and
+traffic-signal-like policies to intersections, AORTA could potentially simulate
+human traffic.
+
+% AORTA allows for the creation of
+% intersection policies that designate when agents can cross the intersection.
 
 Like any other microscopic traffic simulator, AORTA needs maps to run
 simulations. One of AORTA's key features is that it generates maps using real
 road data available from OpenStreetMap (OSM) \cite{osm}, a moderated,
 user-editable interface for world maps. A map for any desired city in the world
-can be downloaded, which is then parsed by AORTA to set up a scale simulation of
-the real world in a few minutes. AORTA is available open-source and is easily
-extensible \footnote{Code available at
-\texttt{http://code.google.com/p/road-rage}} \commentpk{could also change this
-to a citation}, making it easier for users to test out a number of agent
-behaviors and intersection policies.
+can be downloaded, which is then parsed by AORTA to set up a scale simulation
+of the real world in a few minutes. AORTA is available open-source and is
+easily extensible \footnote{Code available at
+\texttt{http://code.google.com/p/road-rage}}, making it easier for users to
+test out a number of agent behaviors and intersection policies in a short
+timespan.
 
 This paper explores the state-of-the-art in traffic simulators in section
 \ref{sec:related_work}, followed by a description of AORTA's architecture in
 section \ref{sec:arch}.  Use of OSM data in AORTA is explained in section
-\ref{sec:map}, along with a description of the simulator and the default
-behaviors available in AORTA in section \ref{sec:simulation}. An experiment
-investigating the benefit of an alternate intersection policy designed for
-autonomous vehicles is presented in \ref{sec:results}. The paper then concludes
-with a discussion on future work.
+\ref{sec:map}, along with a description of the simulator in section
+\ref{sec:simulation}. A simple experiment is presented in section
+\ref{sec:results} demonstrating an application built on top of AORTA, that
+evaluates different intersection policies in a large scale scenario. The paper
+then concludes with a discussion on future work.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -163,13 +169,15 @@ multiagent simulator that focuses on performing large-scale simulations in a
 relatively small amount of time \cite{balmer2009matsim}. Traffic demand is
 supplied to MATSim in the form of \textit{plans} that an individual may intend
 to follow in a given day. MATSim aims to iteratively improve these plans to
-minimize traffic delays while minimizing the total amount of time by which agents
-are late to their destinations. This goal is somewhat different from that of AORTA,
-where the routes (demand) supplied by individuals is taken as is and does not have
-a pre-determined ideal time of arrival. Rather than improving agent routes, AORTA
-allows creating entirely different behaviors for both vehicles and intersections
-in order to simulate a different environment instead of optimizing plans for a
-society in a static environment.
+minimize traffic delays while minimizing the total amount of time by which
+agents are late to their destinations. This goal is somewhat different from
+that of AORTA, where the routes (demand) supplied by individuals is taken as is
+and does not have a pre-determined ideal time of arrival. Rather than improving
+agent routes, AORTA allows creating entirely different behaviors for both
+vehicles and intersections in order to simulate a different environment instead
+of optimizing plans for a society in a static environment \commentpk{I think
+MIke made these changes last night, but I am not sure if the last few sentences
+are clear to me}.
 
 Another popular open source traffic simulator that can use OSM data is SUMO
 \cite{SUMO2011}, which shares many similar goals with AORTA. SUMO has been used to
@@ -190,13 +198,13 @@ has been applied to a regular grid of four intersections
 \cite{IROS11-hausknecht}, while AORTA has the potential to apply some of the
 same research at a city-wide scale to real-world road networks.
 
-Simulators have also focused on autonomous vehicles with sensors and actuators
-\cite{figueiredo2009approach}. These simulators are used to ensure that
-autonomous vehicles are behaving correctly while interacting with other
-vehicles and infrastructure, given their configuration of sensors and
-actuators. On the other hand, AORTA assumes that autonomous vehicles have
-reasonable sensory input and mechanical output, and instead focuses on
-interactions between an agent and its surrounding agents and intersections.
+% Simulators have also focused on autonomous vehicles with sensors and actuators
+% \cite{figueiredo2009approach}. These simulators are used to ensure that
+% autonomous vehicles are behaving correctly while interacting with other
+% vehicles and infrastructure, given their configuration of sensors and
+% actuators. On the other hand, AORTA assumes that autonomous vehicles have
+% reasonable sensory input and mechanical output, and instead focuses on
+% interactions between an agent and its surrounding agents and intersections.
 
 Autonomous agents have also been used in the past to model human traffic. For
 instance, one approach models human merging and lane changing behavior through
@@ -217,7 +225,7 @@ dynamic traffic signal policy minimizing overall wait time
   \centering \includegraphics[scale=0.3]{architecture.png}
   \caption{A summary of AORTA's components.}
   \label{fig:arch}
-  \vspace{-20pt}
+  \vspace{-15pt}
 \end{figure}
 
 AORTA is divided into three modular components: the map model, micro-simulation
@@ -365,13 +373,13 @@ intersection is shown in figure \ref{fig:crazyIntersection}.
   \centering
   \subfloat[An agent cannot turn left while agents on the perpendicular road
   cross]{
-    \includegraphics[scale=0.4]{turn_conflicts.png}
+    \includegraphics[width=0.42\columnwidth]{turn_conflicts.png}
     \label{fig:conflicts}
   }
   ~ % horizontal spacing, mostly for the sake of the captions
   \subfloat[A difficult intersection to tile in New Orleans, Louisiana. Note
   there are no overpasses pictured.]{
-    \includegraphics[scale=0.4]{crazy_intersection.png}
+    \includegraphics[width=0.4\columnwidth]{crazy_intersection.png}
     \label{fig:crazyIntersection}
   }
   \caption{Examples of AORTA's modeling of intersections and turns}
