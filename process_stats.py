@@ -53,14 +53,14 @@ colors = ['b', 'r', 'g']
 
 def hgram(transform, data, xlabel, yobject):
   pylab.xlabel(xlabel, fontsize='x-large')
-  pylab.ylabel("Number of " + yobject + " in this range", fontsize='x-large')
+  pylab.ylabel("Number of " + yobject, fontsize='x-large')
   alpha = 1
   alpha_step = 0.9 / len(data)
   color = iter(colors)
   for exp, dat in data.items():
     ls = transform(dat)
     pylab.hist(ls, bins=50, histtype='stepfilled', label=exp, alpha=alpha,
-               color=next(color), range=(0, 25))
+               color=next(color))
     alpha -= alpha_step
     print exp + ": " + xlabel
     print "-" * len(xlabel)
@@ -79,9 +79,9 @@ def average(dat):
   return [np.mean(ls) for ls in dat.values()]
 
 # Results from s1
-hgram(average, lag_per_a, "Average lag per agent (seconds)", "agents")
-hgram(average, lag_per_i, "Average lag per intersection (seconds)", "intersections")
-hgram(identity, all_lags, "Average lag (seconds)", "events")
+hgram(average, lag_per_a, "Average delay per agent (seconds)", "agents")
+hgram(average, lag_per_i, "Average delay per intersection (seconds)", "intersections")
+hgram(identity, all_lags, "Average delay (seconds)", "events")
 # Results from s2
 hgram(identity, avg_speed, "Average speed (m/s) of each agent", "agents")
 # Results from s3
@@ -90,8 +90,8 @@ hgram(average, thruput_per_i,
       "intersections")
 # Results from s4
 pylab.xlabel("Time (seconds)", fontsize='x-large')
-pylab.ylabel("Number of active agents", fontsize='x-large')
+pylab.ylabel("Number of agents in the map", fontsize='x-large')
 for exp in experiments:
-  pylab.plot(active_per_time_x[exp], active_per_time_y[exp], label=exp)
+  pylab.plot(active_per_time_x[exp], active_per_time_y[exp], label=exp, linewidth=6)
 pylab.legend()
 pylab.show()
