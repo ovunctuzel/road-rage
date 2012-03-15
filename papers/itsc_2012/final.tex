@@ -421,12 +421,12 @@ desired turn, the agent's speed, the current distance from the start of the
 intersection, and the length of time the agent has been idling at zero speed.
 The policy replies by ordering the agent to ``stop'' or ``proceed''. The
 behavior will continue to statelessly poll the policy every step until the agent
-begins the turn. The policy is responsible for never changing a reply of
-approval to denial when the agent could not safely honor the change. The policy
-is free to allow concurrent turns in any arrangement by different agents as long
-as no two simultaneous turns conflict.
+begins the turn. The policy may approve an agent for entry one step and deny it
+the next, so long as the agent could safely brake without danger of entering the
+intersection. The policy is free to allow concurrent turns in any arrangement
+by different agents as long as no two simultaneous turns conflict.
 
-\subsection{Simulation Limitations}
+\subsection{Current Limitations}
 
 Currently agents cannot change lanes. However, AORTA supports roads forcibly
 merging by treating the merge point as an intersection. The lack of
@@ -485,23 +485,15 @@ reservation system \cite{JAIR08-dresner}. The traffic signals are further
 extensible by assigning groups of non-conflicting turns at each intersection
 with some duration and offset. Future policies could include signals that adapt
 timings and refinements to the autonomous reservation policy.
-\commentc{You can mention about using optimized traffic signal timings generated
-  by commercial traffic signal optimization packages such as SYNCHRO (cite
-  Husch, D. and Albeck, J. (2004) Trafficware Synchro 6 User Guide, TrafficWare,
-  Albany, California.)
-}
 
 To pick turns, agent behaviors consult a route strategy. Two simple
 implementations exist already: a static route using A* \cite{astar} and a
-drunken walk that probabilistically moves towards the destination.  Researchers
-can experiment with dynamic replanning or hierarchial planning without modifying
-any code other than creating a new route implementation. Route policies could
-also interact with a single central manager to gain some sort of global insight or
-with autonomous intersections to avoid congestion.
-\commentd{I can cite a paper for hierarchial planning. As for why, the 2
-  mentioned are just examples of future work we intend to do, and I want to make
-  the point that implementing both would be easy from a software engineering
-  perspective.}
+drunken walk that probabilistically moves towards the destination. Researchers
+can experiment with dynamic replanning or hierarchial planning
+\cite{Botea04nearoptima} without modifying any code other than creating a new
+route implementation. Route policies could also interact with a single central
+manager to gain some sort of global insight or with autonomous intersections to
+avoid congestion.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -552,6 +544,11 @@ synchronize green signals so agents in some lanes do not stop for several
 intersections.
 \commentd{chiu recommends more details with how we propagate timings. Thoughts,
 Mike?}
+\commentc{You can mention about using optimized traffic signal timings generated
+  by commercial traffic signal optimization packages such as SYNCHRO (cite
+  Husch, D. and Albeck, J. (2004) Trafficware Synchro 6 User Guide, TrafficWare,
+  Albany, California.)
+}
 
 \commentd{advice on wording?}
 Finally, in anticipation of the advent of autonomous vehicles, an autonomous
