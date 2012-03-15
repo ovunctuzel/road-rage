@@ -1,14 +1,13 @@
 # TODO #
 
 - name
-  MORTIS (mostly orchestrated routing & traffic infrastructure simulator)
-  AORTA (approximately orchestrated routing & traffic aggregator)
+  AORTA (approximately orchestrated routing & traffic/transportation ...)
+  aperture, accelerator, accessory, alternative, analyzer/analyist, application
 - line plot needs shapes if color isnt available
 - and thick lines
 - chius high level comments
-- image for straight turns
-- image for complex intersection
 - agent behaviors and other APIish things need more details?
+- check mikes edits, handle SUMO comparison
 
 - revise "how many agents can be comfortably simulated in realtime"
   - fix the dumb illegal entry epsilon bugs.

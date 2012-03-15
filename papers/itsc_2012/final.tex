@@ -11,6 +11,7 @@
 % on the last page of the document
 
 \usepackage[pdftex]{graphicx}
+\usepackage{subfig}
 % TODO remember we need to meet color compliance:
 % http://its.papercept.net/conferences/support/general.php
 
@@ -294,8 +295,7 @@ measuring physical distances. A road contains a sequence of points, defining
 the center line that divides the road into two directions of travel. AORTA
 interprets these points as straight lines and projects parallel lanes out using
 a fixed width. Turns are modeled with a single straight line connecting the end
-of one lane to the start of another. \commentc{Illustrate through a figure?}
-\commentd{maybe a subfloat by the turn conflicts, sure}
+of one lane to the start of another.
 
 \subsection{Map Construction Passes}
 \label{sec:mapconstruction}
@@ -404,18 +404,27 @@ then the turns are always in conflict, no matter where the agents actually are
 along that turn. This is visualized in figure \ref{fig:conflicts}. Further work
 is required before higher granularity can be introduced through space-time
 tiling intersections \cite{JAIR08-dresner}, due to some of the complex
-intersection geometries inferred from OSM \commentpk{If there is an image for
-one such complex intersection geometry, we can place it next to the current fig
-3 using a subfloat}.
+intersection geometries inferred from OSM. An example of such a difficult
+intersection is shown in figure \ref{fig:crazyIntersection}.
 
 % When a collision occurs, the simulator throws warnings and halts, since this
 % indicates a bug in some policy. A future alternative could be to mark the region
 % as impassable and re-route other traffic away from the accident.
 
 \begin{figure}[h]
-  \centering \includegraphics[scale=0.5]{turn_conflicts.png}
-  \caption{An agent cannot turn left while agents on the perpendicular road cross}
-  \label{fig:conflicts}
+  \centering
+  \subfloat[An agent cannot turn left while agents on the perpendicular road
+  cross]{
+    \includegraphics[scale=0.4]{turn_conflicts.png}
+    \label{fig:conflicts}
+  }
+  ~ % horizontal spacing, mostly for the sake of the captions
+  \subfloat[A difficult intersection to tile in New Orleans, Louisiana. Note
+  there are no overpasses pictured.]{
+    \includegraphics[scale=0.4]{crazy_intersection.png}
+    \label{fig:crazyIntersection}
+  }
+  \caption{Examples of AORTA's modeling of intersections and turns}
   \vspace{-15pt}
 \end{figure}
 
