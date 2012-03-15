@@ -49,7 +49,7 @@ Large-scale Traffic Simulation for Autonomous Vehicles
 \begin{abstract} 
 
 Autonomous vehicles have seen great advancements in recent years, and such
-vehicles are now ever closer to being commercially available. The advent of
+vehicles are now closer than ever to being commercially available. The advent of
 driverless cars provides opportunities for optimizing traffic in ways not
 possible before. This paper introduces an open source multiagent microscopic
 traffic simulator called AORTA, which stands for \textit{Approximately
@@ -114,7 +114,7 @@ decide on both long term and short term actions. Intersection policies designate
 when it is safe for an agent to cross an intersection.  AORTA's goal is to allow
 for the definition of new agent behaviors and intersection policies to optimize
 autonomous traffic. Additionally, by assigning human-like behaviors such as the
-``car following model'' \cite{brackstone1999car} to agents, and
+``car following model'' \cite{brackstone1999car} to agents and
 traffic-signal-like policies to intersections, AORTA could potentially simulate
 human traffic.
 
@@ -238,8 +238,9 @@ One of the key features of AORTA is the simulation of traffic on existing road
 network data from OpenStreetMap \cite{osm}. The data from OSM is not directly
 suitable for running a simulation and is pre-processed through a \emph{map
 builder} utility. Section \ref{sec:mapmodel} describes the map model generated
-by the builder, and section \ref{sec:mapconstruction} describes the process of
-refining OSM data.
+by the builder, section \ref{sec:mapconstruction} describes the process of
+refining OSM data, and section \ref{sec:osmlimits} describes limitations with
+this process.
 
 \subsection{Map Model}
 \label{sec:mapmodel}
@@ -286,6 +287,7 @@ with each pass feeding the next. The map model is then stored in an XML format.
 \end{enumerate}
 
 \subsection{Limitations with OSM}
+\label{sec:osmlimits}
 
 AORTA's map construction process, although flexible, cannot completely account
 for incompleteness in OSM data. Road type annotations imprecisely imply the
@@ -340,7 +342,7 @@ immediately performs any timely computation required by the agent's route
 policy, such as pathfinding, or delegates it to a pool of worker threads to
 process in the background.  Once an agent's route is ready, the agent waits
 alongside its starting lane (as if it is in a driveway or parking lot). When the
-lane has no agents that could potentially crash with the new vehicle, the new
+lane has no agents that could potentially crash into the new vehicle, the new
 agent enters the system.
 
 \subsection{Collision checking}
@@ -397,7 +399,7 @@ lane by consulting a route strategy that finds a path to the destination.
 A behavior interacts with an intersection policy by sending it the agent's
 desired turn, the agent's speed, the current distance from the start of the
 intersection, and the length of time the agent has been idling at rest. The
-policy replies by ordering the agent to ``stop'' or ``proceed''. The behavior
+policy replies by ordering the agent to \textit{stop} or \textit{proceed}. The behavior
 will continue to statelessly poll the policy every step until the agent begins
 the turn. The policy may approve an agent for entry one step and deny it the
 next, as long as the agent could safely brake without danger of entering the
@@ -406,11 +408,7 @@ different agents as long as no two simultaneous turns conflict.
 
 \subsection{Current Limitations}
 
-Currently agents cannot change lanes. However, AORTA supports roads forcibly
-merging by treating the merge point as an intersection \commentpk{preceding
-statement is somewhat unclear}. The lack of lane-changing causes a second
-issue: gridlock.
-
+Currently agents cannot change lanes. This causes a second issue: gridlock.
 Each agent maintains a safe following distance from the next. If a lane is
 filled, then an agent may be forced to stop in an intersection mid-turn and
 block other traffic. The default behavior prevents this by refusing to start a
@@ -523,7 +521,7 @@ These experiments are deterministically reproducible. A seed for the
 pseudo-random number generator, the input graph, and the generators'
 configuration fully determine the outcome of any simulation \footnote{This
 determinism may break down when generators use worker threads, since routes
-may be computed in different orders, causing agents to enter the road at
+could be computed in different orders, causing agents to enter the road at
 different times.}. After setting up a scenario in the UI, users can save this
 configuration for re-simulation.
 
