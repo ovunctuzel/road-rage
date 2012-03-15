@@ -3,10 +3,12 @@
 - name
   MORTIS (mostly orchestrated routing & traffic infrastructure simulator)
   AORTA (approximately orchestrated routing & traffic aggregator)
-- rework first 3 sections
-  - compare to MATsim some more
-  - add notes about SUMO
 - line plot needs shapes if color isnt available
+- and thick lines
+- chius high level comments
+- image for straight turns
+- image for complex intersection
+- agent behaviors and other APIish things need more details?
 
 - revise "how many agents can be comfortably simulated in realtime"
   - fix the dumb illegal entry epsilon bugs.

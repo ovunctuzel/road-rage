@@ -51,7 +51,7 @@ Large-scale Traffic Simulation for Autonomous Vehicles
 Autonomous vehicles have seen great advancements in recent years, and such
 vehicles are now ever closer to being commercially available.  The advent of
 driverless cars provides opportunities for optimizing traffic in ways not
-possible before. This paper introduces an open source multi-agent microscopic
+possible before. This paper introduces an open source multiagent microscopic
 traffic simulator called AORTA, which stands for \textit{Approximately
 Orchestrated Road Traffic Automata}, designed for optimizing autonomous traffic
 at a city-wide scale. AORTA creates scale simulations of the real world by
@@ -92,6 +92,7 @@ completion of all these milestones suggests that autonomous cars are here to
 stay, and are ever closer to becoming commercially available. With the arrival
 of autonomous cars, it also becomes possible to optimize traffic in ways not
 possible for human drivers. 
+\commentd{If we need space, I agree with Dr Chiu, some of this could be trimmed}
 
 % The arrival of driverless cars presents several challenges that need to be
 % addressed in the near term. Road infrastructure changes could provide important
@@ -112,26 +113,30 @@ possible for human drivers.
 
 % TODO reference the screenshot
 
-This paper introduces an open source multi-agent microscopic traffic simulator
+This paper introduces an open source multigent microscopic traffic simulator
 called AORTA, which stands for \textit{Approximately Orchestrated Road Traffic
 Automata}, a platform designed for testing autonomous vehicle behaviors and
-intersection policies. Autonomous vehicles, termed \textit{agents}, use
+intersection policies. Autonomous vehicles, termed agents, use
 behaviors to interact with one another, follow intersection policies, and
 decide on both long term and short term actions. AORTA allows for the creation
-of intersection policies on top of a reservation based intersection manager
-\cite{JAIR08-dresner}, and these policies designate when agents can cross the
+of intersection policies that designate when agents can cross the
 intersection. AORTA's goal is to allow for the definition of new agent
 behaviors and intersection policies to optimize autonomous traffic.
 Additionally, by assigning human-like behaviors such as the ``car following
 model'' \cite{brackstone1999car} to agents, and traffic-signal-like policies to
 intersections, AORTA could potentially simulate human traffic.
+\commentd{Previously, ``AORTA allows for the creation
+of intersection policies on top of a reservation based intersection manager
+\cite{JAIR08-dresner}, and these policies designate when agents can cross the
+intersection.'' Actually, reservations are just one policy. Do we want to focus
+on the general case here, or autonomous specifically?}
 
 Like any other microscopic traffic simulator, AORTA needs maps to run
 simulations. One of AORTA's key features is that it generates maps using real
-road data available from OpenStreetMap (OSM) \cite{osm}, a Wikipedia-like
-interface for world maps. A map for any desired city in the world can be
-downloaded, which is then parsed by AORTA to set up a scale simulation of the
-real world in a few minutes. AORTA is available open-source and is easily
+road data available from OpenStreetMap (OSM) \cite{osm}, a moderated,
+user-editable interface for world maps. A map for any desired city in the world
+can be downloaded, which is then parsed by AORTA to set up a scale simulation of
+the real world in a few minutes. AORTA is available open-source and is easily
 extensible \footnote{Code available at
 \texttt{http://code.google.com/p/road-rage}} \commentpk{could also change this
 to a citation}, making it easier for users to test out a number of agent
@@ -157,7 +162,7 @@ Computational processing power has made excellent advancements in the last two
 decades. Parallel computing and the use of GPUs have enabled microscopic models
 of traffic simulation to generate results at a meaningful scale (city-wide or
 greater) \cite{nagel1994microscopic,shen2011agent}. As a result, a number of
-multi-agent micro-simulators have been introduced in the past decade. We review
+multiagent micro-simulators have been introduced in the past decade. We review
 relevant simulators and other related work in this section.
 
 OSM data has been used by traffic simulators in the past. MATSim is one such
@@ -184,6 +189,8 @@ Reservations can be allotted to vehicles through more traditional means such as
 traffic signals or stop-sign based intersection precedence, or through more
 efficient methods designed specifically for autonomous vehicles
 \cite{JAIR08-dresner}.
+\commentd{Again, ``reservation'' feels like an overloaded term here, meaning the
+general notion of being able to cross, as opposed to the specific policy.}
 
 Efforts have been made to optimize traffic flow in the context of autonomous
 vehicles. AIM \cite{JAIR08-dresner} is one such approach that aims to optimize
@@ -258,6 +265,9 @@ builder} utility. The map model generated by the builder is described in sec.
 
 \commentpk{I remember you guys mentioning there was a paper for SUMO describing
 a similar process, we should ref it as to why OSM data is not directly suitable}
+\commentd{We cite it in the conclusion because they had similar critiques about
+  OSM. I don't think we have a source for why OSM isn't directly suitable,
+  although that source also describes a conversion process.}
 
 % \pix{map_model.png}
 %    {Roads contain several lanes, and intersections contain several turns
@@ -270,6 +280,8 @@ for each direction of travel. \emph{Intersections} map the possible turns from
 incoming to outgoing lanes.  Since both lanes and turns support traffic, they
 are grouped together as \emph{traversables}, meaning agents may exist on them.
 \commentc{What about parking lots?}
+\commentd{They're not something relevant for us to model. I don't think we need
+to mention this.}
 
 The map also has a geometric interpretation, used for visualization and
 measuring physical distances. A road contains a sequence of points, defining
@@ -277,6 +289,7 @@ the center line that divides the road into two directions of travel. AORTA
 interprets these points as straight lines and projects parallel lanes out using
 a fixed width. Turns are modeled with a single straight line connecting the end
 of one lane to the start of another. \commentc{Illustrate through a figure?}
+\commentd{maybe a subfloat by the turn conflicts, sure}
 
 \subsection{Map Construction Passes}
 \label{sec:mapconstruction}
@@ -312,18 +325,18 @@ with each pass feeding the next. The map model is then stored in an XML format.
 \section{SIMULATION}
 \label{sec:simulation}
 
+\commentd{Is this incomplete?}
 Different elements of the simulator are described as follows:
 
 \subsection{Simulation Dynamics} 
 
 AORTA uses microscopic simulation, modeling individual drivers as point agents
-following a simple acceleration-based dynamics model \commentpk{need ideas on
-framing the last sentence better}.  Time is modeled discretely, and an
-agent accelerates at a fixed rate for the duration of a ``step'' to achieve a
-new position and velocity. Space is continuous, meaning agents occupy a moving
-interval of a lane, rather than one fixed tile of the road. Each time step
-lasts for the same fixed duration, and the simulation does the following after
-each time step:
+with a simple acceleration-based dynamics model. Time is modeled discretely,
+and an agent accelerates at a fixed rate for the duration of a ``step'' to
+achieve a new position and velocity. Space is continuous, meaning agents occupy
+a moving interval of a lane, rather than one fixed tile of the road. Each time
+step lasts for the same fixed duration, and the simulation does the following
+for each time step:
 
 % \textit{dt}.
 % This lets agents reason about how far they will travel for a given choice of
@@ -402,6 +415,8 @@ one such complex intersection geometry, we can place it next to the current fig
 
 \subsection{Agent Behaviors}
 
+\commentd{Mike, I left off here.}
+
 Each agent has a \emph{behavior} governing it, responsible for obeying
 intersection policies and avoiding collisions. When the agent travels past the
 end of a lane during its step, the behavior picks the turn to take. At each
@@ -435,7 +450,7 @@ stop.
 However, with very high volumes of traffic, it is possible for waiting agents to
 accumulate and fill lanes to their capacity. When this happens in a circular
 manner so that the agent at the front of each lane is waiting to perform a turn
-into another full lane with the same such head agent, gridlock \cite{gridlock}
+into another full lane with the same such head agent, gridlock \cite{AAAI11-au}
 occurs; no agent in the system will make progress unless an agent at the front
 decides to pick a different turn. Figure \ref{fig:gridlock} demonstrates this.
 AORTA can detect this by finding cycles in the graph of the ``is following''
@@ -452,16 +467,18 @@ relation.
 In many observed cases, the gridlock is caused by AORTA's present lack of
 lane-changing support: agents loop around these intersections in order to enter
 a lane adjacent to their original lane. Since these routes are still legal, it
-is desirable to prevent or mend this without forcing different routes. The
-conditions under which every vehicle eventually may proceed are known.
-\cite{AAAI11-au}.
+is desirable to prevent or mend this without forcing different routes. However,
+choosing alternative moves (by changing lanes or rerouting) is one sufficient,
+but not necessarily required, condition for liveness \cite{AAAI11-au}.
+\commentd{I misinterpreted the results of the paper originally. Is this a safer
+and more relevant claim to make?}
 
 \subsection{Extending AORTA}
 \label{sec:config}
 
-There are three main components of the simulation, each configurable by
-extending built-in implementations of an interface: agent behaviors, routing
-strategies, and intersection policies.
+There are three main configurable components of the simulation, each with at
+least one existing implementation: agent behaviors, routing strategies, and
+intersection policies.
 
 Currently, all agents use a primary behavior that is a generalized, baseline
 behavior that guarantees not to collide with another agent or enter an
@@ -470,21 +487,30 @@ acceleration at each step, it could easily be extended to mimic human drivers by
 traveling at some random lesser acceleration or to optimize fuel efficiency
 by tuning movement.
 
-Intersection policies are one of the most intriguing aspects of the simulation
+Intersection policies are one of the most interesting aspects of the simulation
 to tweak, especially in light of autonomous vehicles. Current policies include
 traditional stop signs, traffic signals, and an AIM-inspired autonomous
 reservation system \cite{JAIR08-dresner}. The traffic signals are further
 extensible by assigning groups of non-conflicting turns at each intersection
 with some duration and offset. Future policies could include signals that adapt
 timings and refinements to the autonomous reservation policy.
+\commentc{You can mention about using optimized traffic signal timings generated
+  by commercial traffic signal optimization packages such as SYNCHRO (cite
+  Husch, D. and Albeck, J. (2004) Trafficware Synchro 6 User Guide, TrafficWare,
+  Albany, California.)
+}
 
 To pick turns, agent behaviors consult a route strategy. Two simple
 implementations exist already: a static route using A* \cite{astar} and a
 drunken walk that probabilistically moves towards the destination.  Researchers
 can experiment with dynamic replanning or hierarchial planning without modifying
 any code other than creating a new route implementation. Route policies could
-also interact with a singleton overseer to gain some sort of global insight or
-with smart intersections to avoid congestion.
+also interact with a single central manager to gain some sort of global insight or
+with autonomous intersections to avoid congestion.
+\commentd{I can cite a paper for hierarchial planning. As for why, the 2
+  mentioned are just examples of future work we intend to do, and I want to make
+  the point that implementing both would be easy from a software engineering
+  perspective.}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -492,9 +518,9 @@ with smart intersections to avoid congestion.
 \label{sec:results}
 
 A particular focus of AORTA is intersection policies. To demonstrate how much
-policy affects agent performance \commentd{performance is a vague term, but I
-don't want to talk about dependent vars just yet}, three policies are evaluated: stop sign,
-traffic signal, and autonomous reservation.
+policy affects the throughput of intersections and total performance of the
+transportation system, three policies are evaluated: stop sign, traffic signal,
+and autonomous reservation. Every intersection uses the same policy.
 
 \subsection{Experimental Setup}
 
@@ -504,6 +530,8 @@ Street and Koenig Lane vertically}, for one hour. The step duration is fixed at
 0.1 seconds. While the intersection policies vary, the agents spawned and their
 routes remain the same. A generator creates one new agent every 1 simulation
 second, with a uniformly random starting position and goal.
+\commentd{Chiu asked about the distribution of incoming agents. Is ``uniformly
+random start and end'' not clear?}
 
 These experiments are deterministically reproducible. A seed for the
 pseudo-random number generator, the input graph, and the generators'
@@ -522,8 +550,8 @@ real-time. Further optimizations are planned.
 
 \subsection{Intersection Policies Evaluated}
 
-Stop signs accept agents FCFS, refusing agents until they have idled at 0 speed
-for 1 second. This delay approximates human reaction time.
+Stop signs accept agents first-come, first-served, refusing agents until they
+have idled at 0 speed for 1 second. This delay approximates human reaction time.
 
 The traffic signal policy requires timings and groups of simultaneous turns for
 each intersection. The heuristic evaluated uses standard turn groups (turns from
@@ -531,16 +559,15 @@ parallel incoming directions are scheduled simultaneously, and left turns are
 grouped) and employs breadth-first search to propagate timings. The goal is to
 synchronize green signals so agents in some lanes do not stop for several
 intersections.
+\commentd{chiu recommends more details with how we propagate timings. Thoughts,
+Mike?}
 
 \commentd{advice on wording?}
 Finally, in anticipation of the advent of autonomous vehicles, an autonomous
 reservation policy inspired by AIM \cite{JAIR08-dresner} is tested. This policy
-allows new agents to join existing groups of agents if their turn is compatible
-with the others. To prevent one heavy direction of traffic from hogging the
+groups agents with compatible turns together, allowing new agents to join
+existing groups. To prevent one heavy direction of traffic from hogging the
 intersection indefinitely, a timeout preemptively cycles through reservations.
-Ideally this should be based on the relative numbers of agents depending on
-their group of reservations. \commentd{take out the last sentence? all of the
-policies could use some work.}
 
 \subsection{Results}
 
@@ -551,6 +578,13 @@ policies could use some work.}
   \label{fig:avg_lag}
   \vspace{-10pt}
 \end{figure}
+\commentc{This figure only shows the distributions for a particular
+  traffic level only. People would wonder what is the traffic level.
+Actually people are more interested to see how it varies with
+different traffic levels so a few more graphs like this at
+different traffic level is helpful.}
+\commentc{Remove ``In this range'' in the y-label.}
+\commentc{Replace ``lag'' with ``delay'' in the x-label}}
 
 If an intersection immediately permits an agent to proceed and grants other
 agents in the same lane similar access (because this new agent must still follow
@@ -560,33 +594,44 @@ time is defined as lag and is used to measure intersection performance. Figure
 \ref{fig:avg_lag} graphs the average of this delay per agent. On average,
 reservation policies cause less than 1 second of delay at each intersection,
 stop signs cause about 7 seconds lag, and traffic signals cause 16 seconds.
+\commentd{We need to be clear that our traffic lights suck, so this number is
+pretty biased.}
+
+\commentc{Reviewers will certainly complain the lack of the details of the
+  parameters you used, which implies your results can be somewhat ``biased''.
+  Honestly, I don't think you should show this results in
+  this paper because it is somewhere irrelevant to the topic.  Perhaps
+  you should emphasize that these experiments intend to show what you can do
+with your simulator.
+}
 
 \begin{figure}[h]
   \centering \includegraphics[width=\linewidth]{agent_cnt_atx.png}
   \caption{Autonomous reservations outperform stop signs, and traffic signal
-           gridlocked.}
+           gridlocked. \commentc{This label is not helpful. Clarify ``active'' in y label.}}
   \label{fig:agent_cnt}
   \vspace{-10pt}
 \end{figure}
 
-The number of agents changes because the continuous generator introduces a new
-agent every second. This count reaches a steady state when the generator
-introduces an agent at the same rate as older agents finish their route. Figure
-\ref{fig:agent_cnt} reveals that autonomous reservations let agents reach their
-destination twice as quickly as the competition, with a steady-state of about
-400 agents. The count for traffic signals continues to increase because gridlock
-occurred in one segment of the map, causing agents to not finish their route.
-Unexpected starvation was also observed: although the signals cycle through
-turns regularly, agents cannot proceed when the previous cycle caused a
-destination lane to fill and become blocked.
+The number of agents driving at some time changes because the continuous
+generator introduces a new agent every second. This count reaches a steady
+state when the generator introduces an agent at the same rate as older agents
+finish their route. Figure \ref{fig:agent_cnt} reveals that autonomous
+reservations let agents reach their destination twice as quickly as the
+competition, with a steady-state of about 400 agents. The count for traffic
+signals continues to increase because gridlock occurred in one segment of the
+map, causing agents to not finish their route.  Unexpected starvation was also
+observed: although the signals cycle through turns regularly, agents cannot
+proceed when the previous cycle caused a destination lane to fill and become
+blocked.
 
 Each policy has its trade-offs in terms of performance and physical hardware
-cost \commentd{do we want to raise this issue?}, suggesting a mixed approach,
-perhaps with intersection policies adapting as traffic conditions shift.
-Researchers could conduct this experiment and many others without needing to
-understand most of AORTA's code-base. The largest intersection policy, traffic
-signals with the flooding heuristic for timing assignment, is only 400 lines of
-Scala.
+cost \commentd{do we want to raise this issue?}, suggesting an approach that
+controls different intersections with different polices, perhaps adapting
+policies adapting as traffic conditions shift.  Researchers could conduct this
+experiment and many others without needing to understand most of AORTA's
+code-base. The largest intersection policy, traffic signals with the flooding
+heuristic for timing assignment, is only 400 lines of code in Scala.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -605,12 +650,12 @@ improve AORTA as a framework by including a lane-changing model and preventing
 gridlock. \commentm{Perhaps mention concurency plans (with TACC) to simulate
 arbitrarily large maps?}
 
-AORTA's map construction process, although flexible, is fraught with heuristics,
-motivating proposed changes to OSM. Road type annotations imprecisely estimate
+AORTA's map construction process, although flexible, cannot completely account
+for incompletedness in OSM data.  Road type annotations imprecisely estimate
 the number of lanes and typical speed limits, resulting in incorrect graphs.
 Guessing the turns at each intersection makes common road features like right
-turn-only lanes and shared center left turn lanes hard to detect. There are many
-circumstances where AORTA simulates one intersection as several in close
+turn-only lanes and shared center left turn lanes hard to detect. There are
+many circumstances where AORTA simulates one intersection as several in close
 proximity because roads do not geometrically line up, but semantically they do.
 If OSM could encode this, the performance of intersection policies such as
 traffic signals would vastly improve in those regions. Other simulators have
