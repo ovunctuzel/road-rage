@@ -110,7 +110,7 @@ called AORTA, which stands for \textit{Approximately Orchestrated Routing and
 Transportation Analyzer}. AORTA is a platform designed for testing autonomous
 vehicle behaviors and intersection policies. Autonomous vehicles, termed agents,
 use behaviors to interact with one another, follow intersection policies, and
-decide on both long term and short term actions. Intersection policies deisgnate
+decide on both long term and short term actions. Intersection policies designate
 when it is safe for an agent to cross an intersection.  AORTA's goal is to allow
 for the definition of new agent behaviors and intersection policies to optimize
 autonomous traffic. Additionally, by assigning human-like behaviors such as the
@@ -127,7 +127,7 @@ of the real world in a few minutes. AORTA is available open-source and is
 easily extensible \footnote{Code available at
 \texttt{http://code.google.com/p/road-rage}}, making it easier for users to
 test out a number of agent behaviors and intersection policies in a short
-timespan.
+time span.
 
 This paper explores the state-of-the-art in traffic simulators in section
 \ref{sec:related_work}, followed by a description of AORTA's architecture in
@@ -263,7 +263,7 @@ of one lane to the start of another.
 The builder works incrementally while parsing OSM graphs into the map model,
 with each pass feeding the next. The map model is then stored in an XML format.
 \begin{enumerate}
-  \item OSM encodes many paths besides driveable roads, so the builder first filters
+  \item OSM encodes many paths besides drivable roads, so the builder first filters
         these out. Next, the builder marks OSM nodes common to multiple roads, since
         they implicitly indicate intersections. Overpasses do not share nodes
         with the roads they cross \cite{osmOverpass}.
@@ -331,7 +331,7 @@ To introduce new agents into the simulation in real-time, users can create
 \emph{generators} programatically or using the UI. The generator produces the
 desired amount of traffic by initializing agents from random locations inside a
 \textit{start} polygon to random destinations within a \textit{goal} polygon.
-Users can draw these polyons by mouse in the UI, allowing specific traffic
+Users can draw these polygons by mouse in the UI, allowing specific traffic
 patterns like rush-hour scenarios to be easily simulated. A generator polygon
 may also cover the entire map, uniformly distributing traffic everywhere.
 
@@ -349,7 +349,7 @@ All traversables (lanes and turns) maintain an ordered queue of occupying
 agents. A collision is detected when two agents reverse order after a time step
 has completed.
 
-Intersections check for collisions by verifying no two agents are simultaenously
+Intersections check for collisions by verifying no two agents are simultaneously
 performing a conflicting turn. AORTA has a low-granularity model of turn
 conflict. If two vehicles at any point along two different turns could ever come
 into contact, then the turns are always in conflict, no matter where the agents
@@ -466,7 +466,7 @@ timings and refinements to the autonomous reservation policy.
 To pick turns, agent behaviors consult a route strategy. Two simple
 implementations exist already: a static route using A* \cite{astar} and a
 drunken walk that probabilistically moves towards the destination. Users can
-experiment with dynamic replanning or hierarchial planning
+experiment with dynamic replanning or hierarchical planning
 \cite{Botea04nearoptimal} without modifying any code other than creating a new
 route implementation. Route policies could also interact with a single central
 manager to gain some sort of global insight or with autonomous intersections to
@@ -527,7 +527,7 @@ may be computed in different orders, causing agents to enter the road at
 different times.}. After setting up a scenario in the UI, users can save this
 configuration for re-simulation.
 
-The speed of simulation depends on the step duration dt, the map size, and the
+The speed of simulation depends on the step duration $dt$, the map size, and the
 number of agents. A measure independent of these factors is the number of agent
 steps per second. On a 2.4 GHz machine, this can be observed to average at
 about 150,000, a number comparable to existing simulators \cite{SUMOthesis}.
@@ -581,7 +581,7 @@ let agents reach their destination twice as quickly as the competition in
 Austin, with a steady-state of about 400 agents. There, the count for traffic
 signals continues to increase because gridlock occurred in one segment of the
 map, causing agents to not finish their route. Figure
-\ref{fig:agent_cnt_houston} revals a similar trend in Houston, except that
+\ref{fig:agent_cnt_houston} reveals a similar trend in Houston, except that
 gridlock occurred both during the trial with traffic signals and stop signs.
 Unexpected starvation was also observed: although the signals cycle through
 turns regularly, agents cannot proceed when the previous cycle caused a
@@ -627,7 +627,7 @@ research is supported in part by grants from the National Science Foundation
 (DTFH61-07-H-00030). 
 
 The authors would like to thank Dr. Michael Quinlan for his support during the
-seminal stages of AORTA and all OpenStreetMap contributers for collecting the
+seminal stages of AORTA and all OpenStreetMap contributors for collecting the
 map data used in this work. Efforts by the Freshman Research Initiative,
 College of Natural Sciences, UT Austin have allowed for the development of this
 research.
