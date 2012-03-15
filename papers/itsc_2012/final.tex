@@ -398,6 +398,7 @@ safe choice. The behavior also picks turns once an agent reaches the end of a
 lane by consulting a route strategy that finds a path to the destination.
 
 \subsection{Intersection Policies}
+\label{sec:policies}
 
 A behavior interacts with an intersection policy by sending it the agent's
 desired turn, the agent's speed, the current distance from the start of the
@@ -514,15 +515,15 @@ AORTA is a useful tool for evaluating this relation.
 
 \subsection{Experimental Setup}
 
-The experiment simulates a 9$\times$11km$^{2}$ slice of downtown Austin,
-Texas\footnote{bounded by the Mopac and Springdale Road horizontally, and Oltorf
-Street and Koenig Lane vertically}, and a 15$\times$13km$^{2}$ slice of downtown
-Houston, Texas \footnote{bounded by Ella Boulevard and Eastex Freeway
-horizontally, and West Alabama Street and Crosstimbers Street vertically}, for
-one hour. The step duration is fixed at 0.1 seconds. While the intersection
-policies vary, the agents spawned and their routes remain the same.  A generator
-creates one new agent every 1 simulation second, with a uniformly random
-starting position and goal.
+The experiment simulates one hour of traffic in two cities: a
+9$\times$11km$^{2}$ slice of downtown Austin, Texas\footnote{bounded by the
+Mopac and Springdale Road horizontally, and Oltorf Street and Koenig Lane
+vertically}, and a 15$\times$13km$^{2}$ slice of downtown Houston, Texas
+\footnote{bounded by Ella Boulevard and Eastex Freeway horizontally, and West
+Alabama Street and Crosstimbers Street vertically}.  The step duration is fixed
+at 0.1 seconds. While the intersection policies vary, the agents spawned and
+their routes remain the same.  A generator creates one new agent every 1
+simulation second, with a uniformly random starting position and goal.
 
 These experiments are deterministically reproducible. A seed for the
 pseudo-random number generator, the input graph, and the generators'
@@ -564,36 +565,40 @@ intersection indefinitely, a timeout preemptively cycles through reservations.
 
 \subsection{Results}
 
-
 If an agent travels along a lane at the speed limit and does not slow down to
 wait at an intersection, then it traverses the lane in an optimal amount of
 time. If the intersection orders it to stop or if other agents in the same lane
 have slowed down by the intersection's orders, then the intersection has caused
 some delay. This delay can be used as one measure of intersection performance.
 Figures \ref{fig:avg_lag_atx} and \ref{fig:avg_lag_houston} graph the average of
-this delay per agent. On average, reservation policies cause less than 1 second
-of delay at each intersection, stop signs cause about 7 seconds lag, and traffic
-signals using the heuristic described above cause 16 seconds. These results will
-vary with different traffic levels and policy configurations, so the important
+this delay per agent. Similar trends are observed in both cities: an average of
+less than 1 second of delay at autonomous reservation intersections, 7 (Austin)
+or 8 (Houston) seconds at stop signs, and 16 (Austin) or 17 (Houston) seconds at
+traffic signals using the heuristic described above.  These results will vary
+with different traffic levels and policy configurations, so the important
 demonstration is that AORTA can be used as a framework for evaluating these
 policies.
 
 The number of agents driving at some time changes because the continuous
-generator introduces a new agent every second. This count reaches a steady
-state when the generator introduces an agent at the same rate as older agents
-finish their route. Figure \ref{fig:agent_cnt} reveals that autonomous
-reservations let agents reach their destination twice as quickly as the
-competition, with a steady-state of about 400 agents. The count for traffic
+generator introduces a new agent every second. This count reaches a steady state
+when the generator introduces an agent at the same rate as older agents finish
+their route. Figure \ref{fig:agent_cnt_atx} reveals that autonomous reservations
+let agents reach their destination twice as quickly as the competition in
+Austin, with a steady-state of about 400 agents. There, the count for traffic
 signals continues to increase because gridlock occurred in one segment of the
-map, causing agents to not finish their route.  Unexpected starvation was also
-observed: although the signals cycle through turns regularly, agents cannot
-proceed when the previous cycle caused a destination lane to fill and become
-blocked.
+map, causing agents to not finish their route. Figure
+\ref{fig:agent_cnt_houston} revals a similar trend in Houston, except that
+gridlock occurred both during the trial with traffic signals and stop signs.
+Unexpected starvation was also observed: although the signals cycle through
+turns regularly, agents cannot proceed when the previous cycle caused a
+destination lane to fill and become blocked.
 
-Users could conduct this experiment and many others without needing to
-understand most of AORTA's code-base. The largest intersection policy, traffic
-signals with the flooding heuristic for timing assignment, is only 400 lines of
-code in Scala.
+Repeating this or other experiments in more locations only requires those
+locations to be exported from the OSM website. Editing the intersection policies
+is similarly convenient, as users can ignore most of AORTA's code-base and just
+change the logic described in section \ref{sec:policies}.  For reference, the
+most complex intersection policy, traffic signals with the flooding heuristic
+for timing assignment, is only 400 lines of code in Scala.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
