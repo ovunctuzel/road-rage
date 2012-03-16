@@ -1,6 +1,6 @@
 #!/bin/bash
 
-SRCS=`ls utexas/*.scala utexas/*/*.scala utexas/*/*/*.scala`
+SRCS=`find utexas/ -name '*.scala' -print | xargs`
 SWING="/usr/share/java/scala-swing.jar"
 #SWING="/usr/share/scala/lib/scala-swing.jar"
 BUILD_OPTS="-d .build -deprecation -unchecked -cp $SWING"

@@ -2,4 +2,4 @@
 
 ant
 
-scala -cp .build utexas.sim.Headless $@
+scala -cp .build utexas.aorta.sim.Headless $@

@@ -2,4 +2,4 @@
 
 ant
 
-scala -cp .build utexas.map.make.Checker $@
+scala -cp .build utexas.aorta.map.make.Checker $@

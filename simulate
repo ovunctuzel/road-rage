@@ -2,4 +2,4 @@
 
 ant
 
-scala -cp .build:/usr/share/java/scala-swing.jar utexas.ui.Viewer $@
+scala -cp .build:/usr/share/java/scala-swing.jar utexas.aorta.ui.Viewer $@

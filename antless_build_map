@@ -2,4 +2,4 @@
 
 . common_antless
 
-scala -cp .build utexas.map.make.Builder $@
+scala -cp .build utexas.aorta.map.make.Builder $@

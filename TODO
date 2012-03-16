@@ -7,7 +7,6 @@
   - wiki docs
   - scaladoc
 - rename lanes/intersections/junctions in code too?
-- code needs package names
 - is there a way to analytically say "an agent will own this chunk" at some time, and
   then solve for collisions?
 - switch ant to sbt? https://github.com/harrah/xsbt/wiki/Examples
