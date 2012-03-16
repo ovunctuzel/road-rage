@@ -30,7 +30,7 @@ abstract class ScrollingCanvas extends Component {
 
   // this defines the current viewing window. these values are arbitrary;
   // reset_window will clobber them.
-  protected var zoom = 1.0
+  var zoom = 1.0    // public for Snapshot
   protected var x_off, y_off = 0.0
   reset_window
 
@@ -236,7 +236,7 @@ abstract class ScrollingCanvas extends Component {
     g2d.setRenderingHints(antialiasing)
 
     // do the actual work
-    render_canvas(g2d)
+    render_canvas(g2d, viewing_window)
   }
 
   // what logical coordinates are in view?
@@ -249,7 +249,7 @@ abstract class ScrollingCanvas extends Component {
   }
 
   // implement these
-  def render_canvas(g2d: Graphics2D)
+  def render_canvas(g2d: Graphics2D, window: Rectangle2D.Double)
   def canvas_width: Int
   def canvas_height: Int
   def handle_ev(ev: UI_Event)

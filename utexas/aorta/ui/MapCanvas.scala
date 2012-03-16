@@ -189,10 +189,7 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
 
   // TODO colors for everything belong in cfg.
 
-  def render_canvas(g2d: Graphics2D) = {
-    // a window of our logical bounds
-    val window = viewing_window
-
+  def render_canvas(g2d: Graphics2D, window: Rectangle2D.Double) = {
     // remember these so we can draw center lines more efficiently
     val roads_seen = new ListBuffer[RoadLine]
 

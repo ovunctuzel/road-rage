@@ -109,6 +109,7 @@
   by requiring not only we're done with a turn but also some dist along the new edge.
 - slow down for turns (a speed limit)
 - snapshot mode in headless with agents pos, to later render
+  (solve memory issue)
 - tweak cfg now that we have meters
 - give lanes/roads/etc the ability to be closed
 - lots of things break if we have a vertex with a self-loop
