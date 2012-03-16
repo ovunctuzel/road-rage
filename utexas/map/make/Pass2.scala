@@ -1,3 +1,7 @@
+// AORTA is copyright (C) 2012 Dustin Carlino, Mike Depinet, and Piyush
+// Khandelwal of UT Austin
+// License: GNU GPL v2
+
 package utexas.map.make
 
 // This is a totally useless class now

@@ -1,129 +1,132 @@
 # TODO #
 
-- revise "how many agents can be comfortably simulated in realtime"
-  - fix the dumb illegal entry epsilon bugs.
-    - why was the hack in map.make.Checker needed?
-    - a conflict between a too-big stopping distance and acceleration into negative speed...
-      - suggests it was an impossible request anyway?
+# Administrative
+- website
+  - build instructions (with scala and such)
+  - osm scraper script
+  - wiki docs
+  - scaladoc
+- rename lanes/intersections/junctions in code too?
+- code needs package names
+- is there a way to analytically say "an agent will own this chunk" at some time, and
+  then solve for collisions?
+- switch ant to sbt? https://github.com/harrah/xsbt/wiki/Examples
 
-    - directly compute the accel to end in dist.
-    - lookahead by end_thres more than current.
-    - why are we EVER doomed?!
-    - why are we EVER requesting negative accel_to_end distances?
-  - ... then crank up dt and get a good number.
-
-code: get signals a fair contender to stop signs
-  - measurements
-    - how many agents active at any time? (when continuous gen is going) (poll max every min)
-    - process it: care about per-agent and per-intersection totals/averages/variances
-      - then make sure stuff like reservation pre-emption helps!
-
-code: seemingly unavoidable gridlock... agents locking edges, not verts.
+# Problems
+- fix the dumb illegal entry epsilon bugs.
+  - why was the hack in map.make.Checker needed?
+  - a conflict between a too-big stopping distance and acceleration into negative speed...
+    - suggests it was an impossible request anyway?
+  - directly compute the accel to end in dist.
+  - lookahead by end_thres more than current.
+  - why are we EVER doomed?!
+  - why are we EVER requesting negative accel_to_end distances?
+- gridlock
   - detect with dependency graph
     - be clever: not between agents, but between lanes.
     - incorporate optimizations when speed=0
   - make them re-route?
-  - can we avoid with better A*ing? feels like dumb routes are being chosen.
-    - but then it's still always possible...
-    - lack of lane-changing is to blame!
+  - verify lane-changing is the problem
 
-- rename lanes/intersections/junctions in code too? at least everywhere in paper consistently.
-
-- set up website / good build instructions / code licenses
-  - osm scraper script
-
-###################
-
-TRAFFIC SIGNAL
-  - random allocation policy
+# Intersection Policies
+- traffic signal
   - visualize the green/red better
     - do something with lanes still
     - what i was imagining was picking some edge at some point in time, then flooding out
       from there at some rate.
-  - improve/clean up greenflood
+  - improve greenflood
   - diffused backwards allocation
     - same idea, but goal: make one critical intersection super efficient
     - what lanes lead to / feed the lanes that can do turns? repeat for those.
+- improve pre-emption in stop lights + reservation policies. agent in front of them better
+  be approved too.
+- structuring policy stuff as a state machine and events may be more elegant...
 
-BUGS
-  - (50,000; drunken behavior; BTR; seed 1330434688570; time ~18.6) illegal entry by a2192
-    (possibly the epsilon issue again)
+# Profiling
+- we can do much better with ready agents... max capacity of edges, group them based on
+  where they want to spawn, maybe by generator?
+- measure profiling things
+  - how long did simulation run? (one value)
+- in react if speed is still 0, see if follow_agent or intersection has changed.
+- is caching properties of linked list hurting us for iterating through big things?
+- think about parallelizing
+- contraction hierarchies for FAST pathing, or wards
+- we could check less queues atomically if we could step agents in some cool order
+  - or when we mess with an agent, see if they've moved yet this round?
 
-PROFILING
-  - we can do much better with ready agents... max capacity of edges, group them based on where they
-    want to spawn, maybe by generator?
-  - measure profiling things
-    - how long did simulation run? (one value)
-  *** in react if speed is still 0, see if follow_agent or intersection has changed.
+# UI
+- turn off generators
+- color agents from diff generators a certain way
+- when we speed up, sleep less in UI?
+- configurable intersection policies
+- in sugarland, oneway bg lines arent thick enough
+- get rid of arrows, make roads transparent, change colors, something.
+  - dont show arrows when line segs are really clustered
+- show 'fps' in viewer
+- agents in middle of road makes ends of lines once again look sucky.
+- show agents who are currently GOING
+  - ui could show policy's current owner or something
+- show routes better
+- config
+- black road backgrounds dont meet up smoothly since we go by line segment
+  - add extra lanes on either side, dont color them white, but draw the stuff in between?
+- way better pruning of what to (re-draw) using quadtrees
+  - but is it even needed?
+- draw the orig corner of freehanded polygons differently or something
 
-  1) is caching properties of linked list hurting us for iterating through big things?
-  3) ... increase dt, of course
-  4) optimize step/react -- those take the most work time
-    - remember what agent we're following and what intersection we're waiting on
-      if both havent changed, short-circuit
-
-GENERATORS
-  - a way to turn them off / reap them in the UI
-  - color agents from diff generators a certain way
-  - a way to save a "scenario"
-
-BIGGER ISSUES
-  - fix geom of edge lines
-  - make sure turns and conflicts are as good as possible
-    - randomize num of lanes to test
-  * lane changing
-    - logically, geometrically
-    - when is it safe?
-      - dont try it too close to the end
-      - guarantee to avoid agents
-      - atomic; dont start without finishing
-      - dont attempt on short lanes
-    - how does the agent look during it?
-      - how long does it take? is it a fxn of speed?
-      - stay in both queues during
-    - how are routes affected if it's missed/impossible?
-  - is there a way to analytically say "an agent will own this chunk" at some time, and then solve
-    for collisions?
-  - nondeterministic.
-    - when running, agents enter at diff times
-    - when paused, threads compute routes in diff orders, then two agents compete to spawn in same
-      spot.
-  - automated testing strategy.
-  - contraction hierarchies for FAST pathing, or wards
-  - group crazy intersections together and have S-turns.
-    - relatedly, have a notion of "I'm done with the turn, but I'm protruding into the intersection"
-      by requiring not only we're done with a turn but also some dist along the new edge.
-
-POSSIBLY SIMPLE
-  - "S turns" when osm ID matches up?
-  - slow down for turns (a speed limit)
-  - follow dist variable based on speed, so when a light goes green,
-    everyone starts simultaneously
-  - tweak cfg now that we have meters
-  - script to scrape osm
-  - switch ant to sbt? https://github.com/harrah/xsbt/wiki/Examples
-  - when we speed up, sleep less in UI?
-  - ui configurable intersection policies
-  - snapshot mode in headless with agents pos, to later render
-  - improve pre-emption in stop lights + reservation policies. agent in front of them better be
-    approved too.
-
-### Map building ###
-
+# Map Gen
+- fix geom of edge lines
+- make sure turns and conflicts are as good as possible
+  - randomize num of lanes to test
+- group crazy intersections together and have S-turns.
+  - when osm ID matches up?
 - our pruning of pedestrian ways seems to be a bit too enthusiastic (see Guadalupe St)
-- deterministic construction is still wonky, with both ward IDs and lines (due to meeting up)
+- deterministic construction is still wonky, with ward IDs and lines (due to meeting up)
 - make line segs meet up better.
 - style: xml out could be string.format or xml and then stringify, or use lazy?
 - cul-de-sac handling in p2... needed?
   - Claus Circle in BR... has no outgoing turns.
-- pregraph3 vs final graph structure?
 - multi-lane situations dont have enough turns, and we need to do more trimming!
-- lane reversal
+
+# Lane changing
+- logically, geometrically
+- when is it safe?
+  - dont try it too close to the end
+  - guarantee to avoid agents
+  - atomic; dont start without finishing
+  - dont attempt on short lanes
+- how does the agent look during it?
+  - how long does it take? is it a fxn of speed?
+  - stay in both queues during
+- how are routes affected if it's missed/impossible?
+
+# General Simulation
+- nondeterminism with worker threads
+  - when running, agents enter at diff times
+  - when paused, threads compute routes in diff orders, then two agents compete to
+    spawn in same spot.
+- automated testing strategy.
+- have a notion of "I'm done with the turn, but I'm protruding into the intersection"
+  by requiring not only we're done with a turn but also some dist along the new edge.
+- slow down for turns (a speed limit)
+- snapshot mode in headless with agents pos, to later render
+- tweak cfg now that we have meters
+- give lanes/roads/etc the ability to be closed
+- lots of things break if we have a vertex with a self-loop
+
+# Applications
+- follow dist variable based on speed, so when a light goes green,
+  everyone starts simultaneously
+- contraflow
   1) Traversable.location starts from the other end (distances, queues all stay same)
   2) dynamically recalculating turns
+- dynamic replanning + hierarchial planning
+- microtolling (not trolling)
+- traffic signals that learn
+- promoting stop signs -> lights
+  - mixing intersections!
 
-### Wards ###
-
+# Wards
 - whats broken with mikes?
   - length
   - overall strategy
@@ -135,66 +138,11 @@ POSSIBLY SIMPLE
 - my wards!
   - guarantee some kind of connectedness within a ward
   - except in vs out edges to the whole neighborhood?
-- play with min span trees for pathing
 
-### UI ###
-
-- in sugarland, oneway bg lines arent thick enough
-- get rid of arrows, make roads transparent, change colors, something.
-- show 'fps' in viewer
-- agents in middle of road makes ends of lines once again look sucky.
-- show agents who are currently GOING
-  - ui could show policy's current owner or something
-- show routes better
-- config
-- menu items doing stuff
-- make it look nicer
-  - UI polishing
-  - black road backgrounds dont meet up smoothly since we go by line segment
-    - add extra lanes on either side, dont color them white, but draw the stuff in between?
-- way better pruning of what to (re-draw) using quadtrees
-  - but is it even needed?
-- dont show arrows when line segs are really clustered
-- draw the orig corner of freehanded polygons differently or something
-
-### Agents ###
-
-- post-mortem queue checker still misses scary things in between, like when merging.
-- lots of things break if we have a vertex with a self-loop
-- make them slow down for turns
-- lanechanging model
-- spawning specifically in UI
-- structuring policy stuff as a state machine and events may be more elegant...
-- give lanes/roads/etc the ability to be closed
-- we could check less queues atomically if we could step agents in some cool order
-  - or when we mess with an agent, see if they've moved yet this round?
-
-### Scalaisms ###
-
+# Code Cleanup
 - move all configable things to Util
-- use ListBuffers more.
-- make more immutable things
-- reduce more vars to vals
+- make more immutable things / reduce more vars to vals
 - make everything possible immutable, but then have to figure out how to build
   inter-referential things
   - Mutable subclasses of everything used during construction..
   - have more ids and methods that access based on those. that'll break it.
-- explicitly override hashcode?
-
-### Simulation ###
-
-- tolling (not trolling)
-- lane reversal
-- traffic signals
-- dynamic traffic signals
-- spawning realistic traffic patterns
-  http://sumo.sourceforge.net/doc/current/docs/userdoc/Demand/Introduction_to_demand_modelling_in_SUMO.html
-  http://sumo.sourceforge.net/doc/current/docs/userdoc/Data/Traffic_Data.html
-- promoting stop signs -> lights
-- mixing intersections!
-
-### Administrative ###
-
-- documentation
-- API and code freeze
-- paper
