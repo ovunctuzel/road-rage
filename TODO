@@ -21,13 +21,12 @@
   - why are we EVER doomed?!
   - why are we EVER requesting negative accel_to_end distances?
 - gridlock
-  - detect with dependency graph
-    - be clever: not between agents, but between lanes.
-    - incorporate optimizations when speed=0
+  - be clever: not between agents, but between lanes.
   - make them re-route?
   - verify lane-changing is the problem
+- an agent blocking themselves on dumb cul-de-sacs
 
-# Intersection Policies
+# Behaviors, Policies, & Strategies
 - traffic signal
   - visualize the green/red better
     - do something with lanes still

@@ -5,6 +5,7 @@
 package utexas.aorta.sim
 
 import utexas.aorta.map.{Edge, Turn, Traversable}
+import utexas.aorta.sim.analysis.Gridlock
 import utexas.aorta.{Util, cfg}
 
 abstract class Behavior(a: Agent) {
@@ -110,8 +111,8 @@ class RouteFollowingBehavior(a: Agent, route: Route) extends Behavior(a) {
     return steps
   }
 
-  // true if it could happen
-  def check_for_gridlock(step: LookaheadStep): Boolean = {
+  // Finds the culprit, if they exist
+  def check_for_blocked_turn(step: LookaheadStep): Option[Agent] = {
     // Look ahead from the start of the turn until follow_dist
     // after the end of it too see if anybody's there.
     val cautious_turn = route.lookahead_step(step.steps_ahead) match {
@@ -129,9 +130,8 @@ class RouteFollowingBehavior(a: Agent, route: Route) extends Behavior(a) {
     )
 
     // If any of these have an agent, see where they are...
-    return (check_steps.find(step => {
-      val worry_about = Agent.sim.queues(step.at).last
-      worry_about match {
+    for (step <- check_steps) {
+      Agent.sim.queues(step.at).last match {
         case Some(check_me) => {
           // the dist they are "away from start of lookahead" will
           // be from the start of the turn... subtract that turn's
@@ -139,11 +139,16 @@ class RouteFollowingBehavior(a: Agent, route: Route) extends Behavior(a) {
           // end of the turn. make sure THAT'S a nice comfy value.
           val dist_from_end_of_turn = step.looked_ahead_so_far + check_me.at.dist - cautious_turn.length
           // TODO some epsilon?
-          dist_from_end_of_turn <= cfg.follow_dist  // they too close?
+          // they too close?
+          if (dist_from_end_of_turn <= cfg.follow_dist) {
+            return Some(check_me)
+          }
         }
-        case None => false  // nobody's there, fine
+        case None =>
       }
-    }).isDefined)
+    }
+    // Nobody potentially dangerous
+    return None
   }
 
   // Returns Act_Set_Accel almost always.
@@ -155,6 +160,7 @@ class RouteFollowingBehavior(a: Agent, route: Route) extends Behavior(a) {
     var stop_how_far_away: Option[Double] = None
     var stop_at: Option[Traversable] = None
     var stopping_for_destination = false
+    var turn_blocked_by: Option[Agent] = None
     var follow_agent: Option[Agent] = None
     var follow_agent_how_far_away = 0.0   // gets set when follow_agent does.
     var min_speed_limit = Double.MaxValue
@@ -180,8 +186,7 @@ class RouteFollowingBehavior(a: Agent, route: Route) extends Behavior(a) {
         }
       }
 
-      // Do agent first to avoid doing some extra lookahead to avoid a form of
-      // gridlock.
+      // Do agent first to avoid doing some extra lookahead.
 
       // 2) Stopping at the end
       if (!stop_how_far_away.isDefined) {
@@ -208,23 +213,22 @@ class RouteFollowingBehavior(a: Agent, route: Route) extends Behavior(a) {
             val stop_for_policy = !i.can_go(a, next_turn, how_far_away)
 
             // Stop for somebody if they could cause us problems
-            val stop_for_gridlock = if (stop_for_policy)
-                                      false // don't bother computing, OR
-                                    else (follow_agent match
-            {
-              // If we've already found somebody we're following, they must be
-              // somewhere on the edge leading up to this intersection, so they
-              // haven't started their turn yet. So there's a danger they could
-              // take the same turn we're doing and cause us to not finish our
-              // turn cleanly, possibly leading to gridlock.
-              // In other words, it doesn't matter how far away they are -- they
-              // haven't started their turn yet, so wait for them to completely
-              // finish first.
-              case Some(a) => true
-              case _ => check_for_gridlock(step)
-            })
+            turn_blocked_by = if (stop_for_policy)
+                                None   // can't go anyway
+                              else if (follow_agent.isDefined)
+                                None  // case described below
+                              else
+                                check_for_blocked_turn(step)
+            // If we've already found somebody we're following, they must be
+            // somewhere on the edge leading up to this intersection, so they
+            // haven't started their turn yet. So there's a danger they could
+            // take the same turn we're doing and cause us to not finish our
+            // turn cleanly, possibly leading to gridlock.
+            // In other words, it doesn't matter how far away they are -- they
+            // haven't started their turn yet, so wait for them to completely
+            // finish first.
 
-            stop_for_policy || stop_for_gridlock
+            stop_for_policy || turn_blocked_by.isDefined
           }
         })
         if (stop_at_end) {
@@ -271,12 +275,8 @@ class RouteFollowingBehavior(a: Agent, route: Route) extends Behavior(a) {
 
       val conservative_accel = math.min(a1, math.min(a2, a3))
 
-      // let the other intersections that are letting us go know that we
-      // won't be going just yet,
-      // IF we are not going to make a move this tick.
-
-      // No longer a problem, but detect a cause for gridlock here: when speed
-      // and conservative_accel are nil, especially when we're in a turn.
+      // TODO better way to separate this out?
+      Gridlock.handle_agent(a, conservative_accel, follow_agent, turn_blocked_by)
 
       // As the very last step, clamp based on our physical capabilities.
       return Act_Set_Accel(if (conservative_accel > 0)
