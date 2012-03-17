@@ -22,9 +22,9 @@
   - why are we EVER requesting negative accel_to_end distances?
 - gridlock
   - be clever: not between agents, but between lanes.
+  - no, not all of the cases getting detected... (i broke something)
   - make them re-route?
   - verify lane-changing is the problem
-- an agent blocking themselves on dumb cul-de-sacs
 
 # Behaviors, Policies, & Strategies
 - traffic signal

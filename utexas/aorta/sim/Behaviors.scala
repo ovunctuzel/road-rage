@@ -132,7 +132,8 @@ class RouteFollowingBehavior(a: Agent, route: Route) extends Behavior(a) {
     // If any of these have an agent, see where they are...
     for (step <- check_steps) {
       Agent.sim.queues(step.at).last match {
-        case Some(check_me) => {
+        // We can't block ourselves, even if we think we can
+        case Some(check_me) if check_me != a => {
           // the dist they are "away from start of lookahead" will
           // be from the start of the turn... subtract that turn's
           // length; that gives us how far away they are from the
@@ -144,7 +145,7 @@ class RouteFollowingBehavior(a: Agent, route: Route) extends Behavior(a) {
             return Some(check_me)
           }
         }
-        case None =>
+        case _ =>
       }
     }
     // Nobody potentially dangerous
@@ -178,6 +179,8 @@ class RouteFollowingBehavior(a: Agent, route: Route) extends Behavior(a) {
                          a.cur_queue.ahead_of(a)
                        else
                          Agent.sim.queues(step.at).last
+        // We don't seem too need to check that we're not trying to follow
+        // ourselves here too.
         follow_agent_how_far_away = follow_agent match {
           // A bit of a special case, that looked_ahead_so_far doesn't cover well.
           case Some(f) if f.at.on == a.at.on => f.at.dist - a.at.dist

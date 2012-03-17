@@ -35,6 +35,8 @@ object Gridlock {
     deps(a1) = a2
   }
 
+  // TODO need to call this when an agent finishes? remove their dep, not
+  // someone's dep on them.
   def remove_dep(a1: Agent, a2: Agent) = {
     assert(deps.contains(a1) && deps(a1) == a2)
     deps -= a1
@@ -54,7 +56,8 @@ object Gridlock {
         val this_group = new MutableSet[Agent]()
         // as soon as we hit an agent we've already visited, we know there can't
         // be a cycle -- UNLESS this_group also contains them!
-        while (deps.contains(cur) && (!visited(a) || this_group(a))) {
+        var found_gridlock = false
+        while (!found_gridlock && deps.contains(cur) && (!visited(a) || this_group(a))) {
           visited += cur
           // Detect self-cycles
           if (cur == deps(cur)) {
@@ -63,8 +66,8 @@ object Gridlock {
           if (this_group(cur)) {
             // Cycle! Gridlock!
             Util.log("Gridlock detected among: " + this_group)
-            return
-            // TODO pause if we're in UI
+            found_gridlock = true   // break the loop
+            // TODO pause if we're in UI?
           }
           this_group += cur
           cur = deps(cur)
