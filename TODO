@@ -1,5 +1,9 @@
 # TODO #
 
+1 restore total determinism
+2 find reproducible case where gridlock detection fails
+3 possibly fix by improving yielding/pre-emption in various policies
+
 # Administrative
 - video
 - website
@@ -8,6 +12,7 @@
   - wiki docs
   - scaladoc
 - rename lanes/intersections/junctions in code too?
+  - rename policy -> controller
 - is there a way to analytically say "an agent will own this chunk" at some time, and
   then solve for collisions?
 - switch ant to sbt? https://github.com/harrah/xsbt/wiki/Examples
@@ -26,9 +31,10 @@
     - no false positives, correct?
   - prints many messages for one detected case
     - does it print enough when multiple cases occur?
+  - sometimes, problem is preemption not happening right
+    - in stop signs, yielding could fix
   - make them re-route?
   - verify lane-changing is the problem
-- are threads botching determinism?
 
 # Behaviors, Policies, & Strategies
 - traffic signal
@@ -79,11 +85,12 @@
 - draw the orig corner of freehanded polygons differently or something
 
 # Map Gen
+- group crazy intersections together and have S-turns.
+  - when osm ID matches up?
+- use http://wiki.openstreetmap.org/wiki/Relation:restriction
 - fix geom of edge lines
 - make sure turns and conflicts are as good as possible
   - randomize num of lanes to test
-- group crazy intersections together and have S-turns.
-  - when osm ID matches up?
 - our pruning of pedestrian ways seems to be a bit too enthusiastic (see Guadalupe St)
 - deterministic construction is still wonky, with ward IDs and lines (due to meeting up)
 - make line segs meet up better.
@@ -105,10 +112,6 @@
 - how are routes affected if it's missed/impossible?
 
 # General Simulation
-- nondeterminism with worker threads
-  - when running, agents enter at diff times
-  - when paused, threads compute routes in diff orders, then two agents compete to
-    spawn in same spot.
 - automated testing strategy.
 - have a notion of "I'm done with the turn, but I'm protruding into the intersection"
   by requiring not only we're done with a turn but also some dist along the new edge.
@@ -118,6 +121,7 @@
 - tweak cfg now that we have meters
 - give lanes/roads/etc the ability to be closed
 - lots of things break if we have a vertex with a self-loop
+- determinism: worker threads while running (can't help this)
 
 # Applications
 - follow dist variable based on speed, so when a light goes green,

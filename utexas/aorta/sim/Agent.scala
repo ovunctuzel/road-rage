@@ -40,6 +40,11 @@ class Agent(val id: Int, val graph: Graph, val start: Edge, val start_dist: Doub
   def step(dt_s: Double): Boolean = {
     assert(dt_s == cfg.dt_s)
 
+    // To confirm determinism, enable one of these (more precision in doubles is
+    // more likely to differ) and diff the logs.
+    //Util.log(this + " at " + Agent.sim.tick + " is at " + at)
+    //Util.log(this + " at " + "%.1f".format(Agent.sim.tick) + " is at " + at.on + " len " + "%.1f".format(at.dist))
+
     if (speed == 0.0 && target_accel == 0.0) {
       if (idle_since == -1.0) {
         idle_since = Agent.sim.tick
@@ -47,11 +52,6 @@ class Agent(val id: Int, val graph: Graph, val start: Edge, val start_dist: Doub
       // short-circuit... we're not going anywhere.
       return false
     }
-
-    // To confirm determinism, enable one of these (more precision in doubles is
-    // more likely to differ) and diff the logs.
-    //Util.log(this + " at " + Agent.sim.tick + " is at " + at)
-    //Util.log(this + " at " + "%.1f".format(Agent.sim.tick) + " is at " + at.on + " len " + "%.1f".format(at.dist))
 
     val start_on = at.on
     val old_dist = at.dist

@@ -5,6 +5,7 @@
 package utexas.aorta.sim
 
 import java.util.concurrent.{Executors, FutureTask, Callable}
+import scala.collection.mutable.ListBuffer
 
 import utexas.aorta.map.{Edge, Traversable}
 
@@ -52,7 +53,7 @@ extends Ordered[Generator]
   def serialize_ls(ls: Array[Edge]) = ls.map(e => e.id).mkString(",")
 
   // there may be no task scheduled
-  protected var pending: List[(Agent, Option[FutureTask[List[Traversable]]])] = Nil
+  protected var pending = new ListBuffer[(Agent, Option[FutureTask[List[Traversable]]])]
 
   // Returns new agents to try to spawn, or boolean means reap this genertor
   def run(): Either[List[Agent], Boolean]
@@ -74,19 +75,24 @@ extends Ordered[Generator]
       case Some(task) => {
         val delayed = new FutureTask[List[Traversable]](task)
         Generator.worker_pool.execute(delayed)
-        pending = (a, Some(delayed)) :: pending
+        pending += ((a, Some(delayed)))
       }
       case _ => {
         // don't schedule anything
-        pending = (a, None) :: pending
+        pending += ((a, None))
       }
     }
   }
 
   // This is a nonblocking poll, of course
   def poll(): List[Agent] = {
-    val (done, still_pending) = pending.partition(
-      a => a._2 match {
+    // Even though worker threads will complete tasks out of order, can force
+    // determinism by scanning through in order and stopping at the first that
+    // isn't done
+    val done = new ListBuffer[Agent]()
+    while (!pending.isEmpty) {
+      val a = pending.head
+      val ready = a._2 match {
         case Some(task) => {
           if (task.isDone) {
             a._1.route.got_route(task.get)
@@ -97,17 +103,21 @@ extends Ordered[Generator]
         }
         case None       => true
       }
-    )
-    pending = still_pending
-    return done.map(a => a._1)
+      if (ready) {
+        done += a._1
+        pending = pending.tail
+      } else {
+        // stop immediately!
+        return done.toList
+      }
+    }
+    return done.toList
   }
 
   // And the blocking poll
   def wait_for_all() = {
     var cnt = 0
-    // go in reverse because we're prepending to pending (haha) now, and the
-    // first scheduled is probably the first to be done
-    pending.reverse.foreach(a => {
+    pending.foreach(a => {
       print("\r" + Util.indent + "Done with " + cnt + " routes")
       a._2 match {
         case Some(task) => task.get

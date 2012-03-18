@@ -519,9 +519,9 @@ and goal.
 These experiments are deterministically reproducible. A seed for the
 pseudo-random number generator, the input graph, and the generators'
 configuration fully determine the outcome of any simulation \footnote{This
-determinism may break down when generators use worker threads, since routes
-could be computed in different orders, causing agents to enter the road at
-different times.}. After setting up a scenario in the UI, users can save this
+determinism may break down when generators use worker threads while the
+simulation is running, since tasks may finish and agents may enter the road at
+different times}. After setting up a scenario in the UI, users can save this
 configuration for re-simulation.
 
 The speed of simulation depends on the step duration $dt$, the map size, and the
