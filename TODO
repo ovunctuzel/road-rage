@@ -1,8 +1,7 @@
 # TODO #
 
-1 restore total determinism
-2 find reproducible case where gridlock detection fails
-3 possibly fix by improving yielding/pre-emption in various policies
+1 find reproducible case where gridlock detection fails
+2 possibly fix by improving yielding/pre-emption in various policies
 
 # Administrative
 - video
