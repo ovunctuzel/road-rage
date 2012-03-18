@@ -1,6 +1,7 @@
 # TODO #
 
 # Administrative
+- video
 - website
   - build instructions (with scala and such)
   - osm scraper script
@@ -21,10 +22,13 @@
   - why are we EVER doomed?!
   - why are we EVER requesting negative accel_to_end distances?
 - gridlock
-  - be clever: not between agents, but between lanes.
-  - no, not all of the cases getting detected... (i broke something)
+  - verify accuracy
+    - no false positives, correct?
+  - prints many messages for one detected case
+    - does it print enough when multiple cases occur?
   - make them re-route?
   - verify lane-changing is the problem
+- are threads botching determinism?
 
 # Behaviors, Policies, & Strategies
 - traffic signal
@@ -38,6 +42,8 @@
     - what lanes lead to / feed the lanes that can do turns? repeat for those.
 - improve pre-emption in stop lights + reservation policies. agent in front of them better
   be approved too.
+  - or use dep graph
+  - is reservation policy broken?
 - structuring policy stuff as a state machine and events may be more elegant...
 
 # Profiling

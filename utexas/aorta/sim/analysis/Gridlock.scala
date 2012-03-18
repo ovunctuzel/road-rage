@@ -7,39 +7,47 @@ package utexas.aorta.sim.analysis
 import scala.collection.mutable.{HashMap => MutableMap}
 import scala.collection.mutable.{HashSet => MutableSet}
 import utexas.aorta.sim.Agent
+import utexas.aorta.map.{Edge, Turn}
 
 import utexas.aorta.{Util, cfg}
 
-// Maintain a graph of what agents are not moving due to other agents, whether
-// because they're directly following them or they're blocked from completing a
-// turn by them
+// Maintain a graph of what lanes depend on another due to agents in one
+// blocking the turns in another.
 object Gridlock {
-  // TODO reduce size by caring about head agents only
-
-  // An agent can only depend on one other agent. Thus, our representation can
-  // be really simple.
-  val deps = new MutableMap[Agent, Agent]()
-  val last_stalled_by = new MutableMap[Agent, Option[Agent]]()
+  // A lane can only depend on one other lane. Thus, our representation can be
+  // really simple.
+  val deps = new MutableMap[Edge, Edge]()
+  // But because of the weird order for adding and removing, "blame" the
+  // dependency on multiple agents and maintain that here.
+  val dep_counter = new MutableMap[(Edge, Edge), Int]()
+  // Agent => (where they were, what lane they were stalled by)
+  val last_stalled_by = new MutableMap[Agent, (Edge, Edge)]()
 
   // We'd do it here statically, but simulation probably doesn't exist yet
   var schedule_check = true
   val check_time = 5.0 // TODO cfg
 
-  def add_dep(a1: Agent, a2: Agent) = {
+  def add_dep(e1: Edge, e2: Edge) = {
     if (schedule_check) {
       Agent.sim.schedule(Agent.sim.tick + check_time, { Gridlock.detect_cycles })
       schedule_check = false
     }
 
-    assert(!deps.contains(a1))  // did they call remove_dep first?
-    deps(a1) = a2
+    deps(e1) = e2
+    if (!dep_counter.contains((e1, e2))) {
+      dep_counter((e1, e2)) = 0
+    }
+    dep_counter((e1, e2)) += 1
   }
 
   // TODO need to call this when an agent finishes? remove their dep, not
   // someone's dep on them.
-  def remove_dep(a1: Agent, a2: Agent) = {
-    assert(deps.contains(a1) && deps(a1) == a2)
-    deps -= a1
+  def remove_dep(e1: Edge, e2: Edge) = {
+    dep_counter((e1, e2)) -= 1
+    if (dep_counter((e1, e2)) == 0) {
+      dep_counter -= ((e1, e2))
+      deps -= e1
+    }
   }
 
   // Tarjan's isn't needed; there's a really simple degenerate case if every
@@ -48,16 +56,16 @@ object Gridlock {
     // First and foremost...
     Agent.sim.schedule(Agent.sim.tick + check_time, { Gridlock.detect_cycles })
 
-    val visited = new MutableSet[Agent]()
-    for (a <- deps.keys) {
-      if (!visited(a)) {
+    val visited = new MutableSet[Edge]()
+    for (e <- deps.keys) {
+      if (!visited(e)) {
         // flood from a
-        var cur = a
-        val this_group = new MutableSet[Agent]()
-        // as soon as we hit an agent we've already visited, we know there can't
+        var cur = e
+        val this_group = new MutableSet[Edge]()
+        // as soon as we hit a lane we've already visited, we know there can't
         // be a cycle -- UNLESS this_group also contains them!
         var found_gridlock = false
-        while (!found_gridlock && deps.contains(cur) && (!visited(a) || this_group(a))) {
+        while (!found_gridlock && deps.contains(cur) && (!visited(e) || this_group(e))) {
           visited += cur
           // Detect self-cycles
           if (cur == deps(cur)) {
@@ -65,7 +73,7 @@ object Gridlock {
           }
           if (this_group(cur)) {
             // Cycle! Gridlock!
-            Util.log("Gridlock detected among: " + this_group)
+            Util.log("Gridlock detected at " + Agent.sim.tick + " among: " + this_group)
             found_gridlock = true   // break the loop
             // TODO pause if we're in UI?
           }
@@ -78,43 +86,36 @@ object Gridlock {
 
   // Record dependencies between agents in case gridlock could occur
   def handle_agent(a: Agent, accel: Double, follow_agent: Option[Agent],
-                   turn_blocked_by: Option[Agent]) =
+                   turn_blocked_by: Option[Agent]): Unit =
   {
-    // TODO garbage collect these when the agent goes away
-    if (!last_stalled_by.contains(a)) {
-      last_stalled_by(a) = None
+    // Do we need to remove an old dependency?
+    if (last_stalled_by.contains(a)) {
+      last_stalled_by(a) match {
+        case (e1: Edge, e2: Edge) => {
+          remove_dep(e1, e2)
+        }
+      }
+      last_stalled_by -= a
     }
 
-    // TODO it'd rock to clean this up by separating it and the required state
-    // out
-    val is_stalled = a.speed == 0.0 && accel == 0.0
-    if (is_stalled) {
-      // It's either one or the other, or neither if it's the intersection.
-      val now_stalled_by = if (follow_agent.isDefined)
-                             follow_agent
-                           else if (turn_blocked_by.isDefined)
-                             turn_blocked_by
-                           else
-                             None
-      // So record the change
-      (last_stalled_by(a), now_stalled_by) match {
-        case (Some(old), Some(now)) if old != now => {
-          // a change! that was quick
-          remove_dep(a, old)
-          add_dep(a, now)
-        }
-        case (Some(old), None) => remove_dep(a, old)
-        case (None, Some(now)) => add_dep(a, now)
-        case _ => // No change; last_stalled_by == now_stalled_by already
+    if (a.speed == 0.0 && accel == 0.0 && a.cur_queue.head.get == a) {
+      val now_lane = a.at.on match {
+        case e: Edge => e
+        case _       => return  // woo, hope we're not blocked in a turn ;)
       }
-      last_stalled_by(a) = now_stalled_by
-    } else {
-      last_stalled_by(a) match {                                           
-        case Some(other) => {
-          remove_dep(a, other)
-          last_stalled_by(a) = None
+      // follow_agent is never relevant at the front of the queue
+      (turn_blocked_by match {
+        case Some(other) => other.at.on match {
+          case e: Edge => Some(e)
+          case t: Turn => Some(t.to)  // this can happen temporarily, but not permanently
         }
-        case None =>
+        case None => None
+      }) match {
+        case Some(now_blocked) => {
+          add_dep(now_lane, now_blocked)
+          last_stalled_by(a) = (now_lane, now_blocked)
+        }
+        case None => // an intersection, then
       }
     }
   }

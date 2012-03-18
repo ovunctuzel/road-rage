@@ -18,6 +18,7 @@ class Queue(t: Traversable) {
   var last_tick = -1.0              // last observed
   var prev_agents = List[Agent]()   // to verify no collisions occurred in a step
 
+  def head = agents.headOption
   def last = agents.lastOption
 
   // Called lazily.

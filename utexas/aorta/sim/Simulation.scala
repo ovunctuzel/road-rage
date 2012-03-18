@@ -47,6 +47,10 @@ class Simulation(roads: Array[Road], edges: Array[Edge], vertices: Array[Vertex]
 
   // Just for debug.
   var debug_agent: Option[Agent] = None
+  def debug(a: Agent) = debug_agent match {
+    case Some(special) if a == special => true
+    case _ => false
+  }
 
   def next_id(): Int = {
     id_cnt += 1
@@ -143,9 +147,7 @@ class Simulation(roads: Array[Road], edges: Array[Edge], vertices: Array[Vertex]
     pre_step
 
     // This value is dt in simulation time, not real time
-    val this_time = dt_s * time_speed
-    dt_accumulated += this_time
-    tick += this_time
+    dt_accumulated += dt_s * time_speed
 
     var moved_count = 0
     var total_count = 0
@@ -156,6 +158,7 @@ class Simulation(roads: Array[Road], edges: Array[Edge], vertices: Array[Vertex]
       //val t0 = Util.timer("whole step")
       //Util.log_push
       dt_accumulated -= cfg.dt_s
+      tick += cfg.dt_s
 
       // If you wanted crazy speedup, disable all but agent stepping and
       // reacting. But that involves trusting that no simulation violations
