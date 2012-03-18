@@ -42,9 +42,7 @@ object Headless {
 
     if (load_scenario.isEmpty) {
       Util.init_rng(rng)
-      val sim = Simulation.load(fn)
-      sim.spawn_army(cfg.army_size)
-      return sim
+      return Simulation.load(fn)
     } else {
       val sim = Simulation.load_scenario(load_scenario)
       // It's useful to retry a scenario with a new seed.
@@ -57,6 +55,9 @@ object Headless {
 
   def main(args: Array[String]) = {
     val sim = process_args(args)
+    if (sim.num_generators == 0) {
+      sim.spawn_army(cfg.army_size)
+    }
     // We don't have to wait, but it's better for determinism if we do.
     // TODO hard to get the # of routes now
     Util.log("Waiting for all routes to be computed")

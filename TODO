@@ -1,10 +1,13 @@
 # TODO #
 
-1 find reproducible case where gridlock detection fails
-2 possibly fix by improving yielding/pre-emption in various policies
+1 possibly fix by improving yielding/pre-emption in various policies
+  - dont accept until "COULD go"
+    - pretend we accept them. anybody in front of them? (but would they poll us then?)
+      is turn blocked? maybe even ask that before we poll...
 
 # Administrative
 - video
+- improve scripts to not rebuild maps often
 - website
   - build instructions (with scala and such)
   - osm scraper script

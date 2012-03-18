@@ -56,11 +56,10 @@ object Gridlock {
     // First and foremost...
     Agent.sim.schedule(Agent.sim.tick + check_time, { Gridlock.detect_cycles })
 
-    /*for (e <- deps.keys) {
+    for (e <- deps.keys) {
       Util.log(e.id + " depends on " + deps(e).id + " with cnt " + dep_counter((e, deps(e))))
     }
     Util.log("")
-    */
 
     val visited = new MutableSet[Edge]()
     val in_gridlock = new MutableSet[Edge]()

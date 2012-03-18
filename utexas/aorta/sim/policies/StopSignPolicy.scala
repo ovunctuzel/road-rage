@@ -70,4 +70,9 @@ class StopSignPolicy(intersection: Intersection) extends Policy(intersection) {
       }
     }
   }
+
+  override def dump_info() = {
+    Util.log("Current owner: " + current_owner)
+    Util.log("Queue: " + queue)
+  }
 }

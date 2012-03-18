@@ -44,6 +44,7 @@ class Simulation(roads: Array[Road], edges: Array[Edge], vertices: Array[Vertex]
   private var generators: SortedSet[Generator] = new TreeSet[Generator]
   private var generator_count = 0   // just for informational/UI purposes
   private var id_cnt = -1
+  def num_generators = generators.size
 
   // Just for debug.
   var debug_agent: Option[Agent] = None
