@@ -51,9 +51,6 @@ class ReservationPolicy(intersection: Intersection) extends Policy(intersection)
     // check everyone in the current batch. if any are not moving and not in their
     // turn, then cancel them -- they're almost definitely stuck behind somebody
     // who wants to do something different.
-    // TODO alternative is to not schedule them until there's nobody else in front
-    // trying to do something different. this is hard because agents don't call us
-    // in any particular order.
     current_agents --= current_batch.flush_stalled
     shift_batches
 

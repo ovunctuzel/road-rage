@@ -26,6 +26,7 @@
 - gridlock
   - make them re-route?
   - verify lane-changing is the problem
+  - maybe only report once per incident?
 
 # Behaviors, Policies, & Strategies
 - traffic signal
@@ -38,8 +39,6 @@
     - same idea, but goal: make one critical intersection super efficient
     - what lanes lead to / feed the lanes that can do turns? repeat for those.
 - structuring policy stuff as a state machine and events may be more elegant...
-- get approved/put on a queue, then get blocked... it happens.
-  (both lanes backed up near gridlock shouldnt happen)
 
 # Profiling
 - we can do much better with ready agents... max capacity of edges, group them based on

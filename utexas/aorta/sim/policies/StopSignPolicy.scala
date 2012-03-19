@@ -23,6 +23,12 @@ class StopSignPolicy(intersection: Intersection) extends Policy(intersection) {
       case _       =>
     }
 
+    // Flush queue of stalled agents. Anybody in this queue has not started the
+    // turn yet, by definition, so they're safe to cancel. Assume the
+    // current_owner will never stall because they wouldn't poll us if they're
+    // blocked.
+    queue = queue.filter(a => a.speed != 0.0)
+
     // Schedule them if needed and if they're at the end of the edge.
     if (!queue.contains(a) && is_waiting(a, turn, far_away)) {
       queue :+= a
