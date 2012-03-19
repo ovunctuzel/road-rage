@@ -56,10 +56,10 @@ object Gridlock {
     // First and foremost...
     Agent.sim.schedule(Agent.sim.tick + check_time, { Gridlock.detect_cycles })
 
-    for (e <- deps.keys) {
+    /*for (e <- deps.keys) {
       Util.log(e.id + " depends on " + deps(e).id + " with cnt " + dep_counter((e, deps(e))))
     }
-    Util.log("")
+    Util.log("")*/
 
     val visited = new MutableSet[Edge]()
     val in_gridlock = new MutableSet[Edge]()
@@ -83,8 +83,6 @@ object Gridlock {
             // already-reported gridlock. & is intersect.
             if ((in_gridlock & this_group).isEmpty) {
               Util.log("Gridlock detected at " + Agent.sim.tick + " among: " + this_group)
-            } else {
-              Util.log("not reporting new case with " + cur)
             }
             found_gridlock = true   // break the loop
             in_gridlock ++= this_group

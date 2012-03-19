@@ -189,7 +189,8 @@ class RouteFollowingBehavior(a: Agent, route: Route) extends Behavior(a) {
         }
       }
 
-      // Do agent first to avoid doing some extra lookahead.
+      // Do agent first to avoid doing some extra lookahead when looking for
+      // turn_blocked_by.
 
       // 2) Stopping at the end
       if (!stop_how_far_away.isDefined) {
@@ -207,21 +208,18 @@ class RouteFollowingBehavior(a: Agent, route: Route) extends Behavior(a) {
           }
           // Otherwise, ask the intersection
           case e: Edge => {
-            val i = Agent.sim.intersections(e.to)
-            a.upcoming_intersections += i   // remember we've registered here
-            val next_turn = route.lookahead_step(step.steps_ahead) match {
-              case Some(t: Turn) => t
-              case _ => throw new Exception("next_turn() called at wrong time")
-            }
-            val stop_for_policy = !i.can_go(a, next_turn, how_far_away)
+            // BEFORE we ask the intersection, make sure nobody could prevent us
+            // from completing the turn we want to do. This includes if we're
+            // following some agent.
 
-            // Stop for somebody if they could cause us problems
-            turn_blocked_by = if (stop_for_policy)
-                                None   // can't go anyway
-                              else if (follow_agent.isDefined)
-                                None  // case described below
-                              else
-                                check_for_blocked_turn(step)
+            // TODO could this cause starvation of somebody that never talks to
+            // the intersection fast enough?
+            // TODO could it ever work out so that we're approved (meaning
+            // nobody was blocking us) but then another step, somebody new
+            // blocks us?
+            // TODO a decent invariant to verify: once an intersection improves
+            // an agent, they shouldn't stall due to somebody blocking them
+
             // If we've already found somebody we're following, they must be
             // somewhere on the edge leading up to this intersection, so they
             // haven't started their turn yet. So there's a danger they could
@@ -230,8 +228,25 @@ class RouteFollowingBehavior(a: Agent, route: Route) extends Behavior(a) {
             // In other words, it doesn't matter how far away they are -- they
             // haven't started their turn yet, so wait for them to completely
             // finish first.
+            turn_blocked_by = if (follow_agent.isDefined)
+                                None
+                              else
+                                check_for_blocked_turn(step)
 
-            stop_for_policy || turn_blocked_by.isDefined
+            if (turn_blocked_by.isDefined || follow_agent.isDefined) {
+              true  // stop
+            } else {
+              // Only now is it fair to ask the intersection. We aren't blocked
+              // by any agent.
+              assert(a.cur_queue.head.get == a)
+              val i = Agent.sim.intersections(e.to)
+              a.upcoming_intersections += i   // remember we've registered here
+              val next_turn = route.lookahead_step(step.steps_ahead) match {
+                case Some(t: Turn) => t
+                case _ => throw new Exception("next_turn() called at wrong time")
+              }
+              !i.can_go(a, next_turn, how_far_away)
+            }
           }
         })
         if (stop_at_end) {

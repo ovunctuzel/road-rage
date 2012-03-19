@@ -1,10 +1,5 @@
 # TODO #
 
-1 possibly fix by improving yielding/pre-emption in various policies
-  - dont accept until "COULD go"
-    - pretend we accept them. anybody in front of them? (but would they poll us then?)
-      is turn blocked? maybe even ask that before we poll...
-
 # Administrative
 - video
 - improve scripts to not rebuild maps often
@@ -29,12 +24,6 @@
   - why are we EVER doomed?!
   - why are we EVER requesting negative accel_to_end distances?
 - gridlock
-  - verify accuracy
-    - no false positives, correct?
-  - prints many messages for one detected case
-    - does it print enough when multiple cases occur?
-  - sometimes, problem is preemption not happening right
-    - in stop signs, yielding could fix
   - make them re-route?
   - verify lane-changing is the problem
 
@@ -48,11 +37,9 @@
   - diffused backwards allocation
     - same idea, but goal: make one critical intersection super efficient
     - what lanes lead to / feed the lanes that can do turns? repeat for those.
-- improve pre-emption in stop lights + reservation policies. agent in front of them better
-  be approved too.
-  - or use dep graph
-  - is reservation policy broken?
 - structuring policy stuff as a state machine and events may be more elegant...
+- get approved/put on a queue, then get blocked... it happens.
+  (both lanes backed up near gridlock shouldnt happen)
 
 # Profiling
 - we can do much better with ready agents... max capacity of edges, group them based on
