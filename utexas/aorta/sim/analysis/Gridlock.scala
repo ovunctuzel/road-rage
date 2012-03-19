@@ -22,6 +22,8 @@ object Gridlock {
   val dep_counter = new MutableMap[(Edge, Edge), Int]()
   // Agent => (where they were, what lane they were stalled by)
   val last_stalled_by = new MutableMap[Agent, (Edge, Edge)]()
+  // Once an edge is involved in a shitfest, it stays that way
+  val already_reported = new MutableSet[Edge]()
 
   // We'd do it here statically, but simulation probably doesn't exist yet
   var schedule_check = true
@@ -62,7 +64,6 @@ object Gridlock {
     Util.log("")*/
 
     val visited = new MutableSet[Edge]()
-    val in_gridlock = new MutableSet[Edge]()
     for (e <- deps.keys) {
       if (!visited(e)) {
         // flood from a
@@ -81,11 +82,11 @@ object Gridlock {
             // Cycle! Gridlock!
             // Don't report it if we're discovering more things that lead to
             // already-reported gridlock. & is intersect.
-            if ((in_gridlock & this_group).isEmpty) {
+            if ((already_reported & this_group).isEmpty) {
               Util.log("Gridlock detected at " + Agent.sim.tick + " among: " + this_group)
             }
             found_gridlock = true   // break the loop
-            in_gridlock ++= this_group
+            already_reported ++= this_group
             // TODO pause if we're in UI?
           }
           this_group += cur

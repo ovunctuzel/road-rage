@@ -26,7 +26,6 @@
 - gridlock
   - make them re-route?
   - verify lane-changing is the problem
-  - maybe only report once per incident?
 
 # Behaviors, Policies, & Strategies
 - traffic signal
