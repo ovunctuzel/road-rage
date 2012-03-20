@@ -17,9 +17,10 @@ class Edge(var id: Int, val road: Road, val dir: Direction.Direction) extends Tr
   // This is diagnostic.
   var doomed = false
 
-  //def leads_to = next_turns ++ List(shift_left, shift_right).flatten
-  // TODO until lane-changing works.
+  // no lane-changing
   def leads_to = next_turns
+  // with lane-changing
+  //def leads_to = next_turns ++ List(shift_left, shift_right).flatten
 
   def other_lanes = if (dir == Direction.POS) road.pos_lanes else road.neg_lanes
   def other_vert(v: Vertex) = road.other_vert(v)

@@ -78,6 +78,9 @@ object Viewer extends SimpleSwingApplication {
         contents += new MenuItem(Action("Teleport to Agent") {
           canvas.handle_ev(EV_Action("teleport-agent"))
         })
+        contents += new MenuItem(Action("Teleport to Vertex") {
+          canvas.handle_ev(EV_Action("teleport-vertex"))
+        })
         
         // TODO these are kind of toggleable...
         contents += new MenuItem(Action("Pathfind") {

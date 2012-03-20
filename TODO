@@ -1,5 +1,14 @@
 # TODO #
 
+- "Meta Intersection"?
+- compute S turns and find conflicts (perhaps store conflicts?)
+- record in xml (optional tag on verts, then list s turns later)
+
+- doesnt make a policy for individual, makes one for total
+  - doesnt even make an intersection for each vert?
+  - can the policies still do the same thing with the MetaI?
+  - if we have S-turns and a notion of conflict, then probably.
+
 # Administrative
 - video
 - improve scripts to not rebuild maps often
@@ -72,8 +81,6 @@
 - draw the orig corner of freehanded polygons differently or something
 
 # Map Gen
-- group crazy intersections together and have S-turns.
-  - when osm ID matches up?
 - use http://wiki.openstreetmap.org/wiki/Relation:restriction
 - fix geom of edge lines
 - make sure turns and conflicts are as good as possible
@@ -87,9 +94,11 @@
 - multi-lane situations dont have enough turns, and we need to do more trimming!
 
 # Lane changing
+- key: pathfind by directed roads (clumps of lanes), leave specific turns and lanes up to
+  behavior. still allow for re-planning (if we miss road entirely or part of road explodes).
 - logically, geometrically
 - when is it safe?
-  - dont try it too close to the end
+  - dont try it too close to the end or beginning
   - guarantee to avoid agents
   - atomic; dont start without finishing
   - dont attempt on short lanes
@@ -97,6 +106,11 @@
   - how long does it take? is it a fxn of speed?
   - stay in both queues during
 - how are routes affected if it's missed/impossible?
+  - is it OK to stall forever and wait to merge in?
+- wacky cases of 2 side-by-side agents wanting to swap places?
+- purpose
+  - for now, just routing
+  - much later, a behavior could do it within constraints of route to pass slow?
 
 # General Simulation
 - automated testing strategy.

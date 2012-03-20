@@ -130,7 +130,7 @@ object Cycle {
   // these are the standard turn sets... all turns from each incoming group of
   // lanes can go
   def standard_turn_sets(vert: Vertex): Set[Set[Turn]] = vert.roads.flatMap(
-    r => split_turn_set(r.incoming_lanes(vert).flatMap(l => l.leads_to))
+    r => split_turn_set(r.incoming_lanes(vert).flatMap(l => l.next_turns))
   ).toSet
 
   def grouped_left_turn_sets(vert: Vertex): Set[Set[Turn]] = {

@@ -315,8 +315,8 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
   }
 
   def draw_agent(g2d: Graphics2D, a: Agent) = {
-    // TODO and idle time is at least a second
-    if (a.speed == 0.0) {
+    // try to avoid flashing red, this feature is used to visually spot true clumps
+    if (a.speed == 0.0 && a.idle_since >= 5.0) {
       g2d.setColor(Color.RED)
     } else {
       if (!agent_colors.contains(a)) {
@@ -613,6 +613,22 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
                 }
                 case _ => Util.log("Didn't find " + id)
               }
+            } catch {
+              case _ => Util.log("Bad agent ID " + id)
+            }
+          }
+          case _ =>
+        }
+        grab_focus
+      }
+      case EV_Action("teleport-vertex") => {
+        prompt_int("What vertex ID do you seek?") match {
+          case Some(id) => {
+            try {
+              val v = sim.vertices(id.toInt)
+              Util.log("Here's " + v)
+              center_on(v.location)
+              repaint
             } catch {
               case _ => Util.log("Bad agent ID " + id)
             }

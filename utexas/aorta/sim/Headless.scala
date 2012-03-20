@@ -23,6 +23,7 @@ object Headless {
 
     if (args.size % 2 != 0) {
       Util.log("Command-line parameters must be pairs of key => value")
+      sys.exit
     }                                                                     
 
     for ((key, value) <- keys.zip(vals)) {

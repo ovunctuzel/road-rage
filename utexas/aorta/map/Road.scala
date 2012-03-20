@@ -16,12 +16,17 @@ class Road(var id: Int, val points: List[Coordinate], val name: String,
            var road_type: String, val osm_id: Int, val v1: Vertex,
            val v2: Vertex)
 {
-  // an invariant: v1 = vertex at points.first, v2 = vertex at points.last
+  // an invariant
+  assert(v1.location == points.head)
+  assert(v2.location == points.last)
 
   // + lanes go from v1->v2; - lanes go from v2->v1
   // pass 3 doesn't set this, only Reader does. kinda sucks how we do it now.
   val pos_lanes = new MutableList[Edge]
   val neg_lanes = new MutableList[Edge]
+  val length = points.zip(points.tail).map(p => new Line(p._1, p._2)).foldLeft(0.0)(
+    (a, b) => a + b.length
+  )
 
   // This is fixed, but we don't know it immediately...
   var ward: Ward = null

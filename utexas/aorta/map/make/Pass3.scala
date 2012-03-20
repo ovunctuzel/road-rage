@@ -8,6 +8,7 @@ import scala.collection.mutable.HashMap
 import scala.collection.mutable.HashSet
 import scala.collection.mutable.Stack
 import scala.collection.mutable.{Set => MutableSet}
+import scala.collection.mutable.{HashSet => MutableHashSet}
 import scala.collection.mutable.MultiMap
 import scala.collection.mutable.ListBuffer
 import scala.collection.mutable.MutableList
@@ -30,6 +31,9 @@ class Pass3(old_graph: PreGraph2) {
   val in_stack = new HashSet[Traversable]  // yay linear-time Tarjan's
   val t_stack = new Stack[Traversable]
   var dfs = 0   // counter numbering
+
+  // for intersection grouping
+  val seen = new MutableHashSet[Vertex]()
 
   def run(show_dead: Boolean): PreGraph3 = {
     for (r <- graph.roads) {
@@ -59,12 +63,8 @@ class Pass3(old_graph: PreGraph2) {
     Util.log_push
     // TODO return the mapping in the future?
     for (v <- graph.vertices) {
-      if (roads_per_vert.contains(v)) {
-        connect_vertex(v, roads_per_vert(v))
-      } else {
-        // TODO not sure I see this happen ever
-        Util.log("WARNING nothing refs vert " + v)
-      }
+      assert(roads_per_vert.contains(v))
+      connect_vertex(v, roads_per_vert(v))
     }
     Util.log_pop
 
@@ -206,6 +206,17 @@ class Pass3(old_graph: PreGraph2) {
     }
     Util.log("The map has " + (wards.size + 1) + " wards")
     Util.log_pop
+
+    // Discover groups of nearby intersections (with abysmally short roads
+    // between them)
+    for (v <- graph.vertices) {
+      if (!seen.contains(v)) {
+        val clump = flood_clump(v)
+        if (!clump.isEmpty) {
+          //Util.log("clump of verts: " + clump)
+        }
+      }
+    }
 
     return graph
   }
@@ -435,5 +446,30 @@ class Pass3(old_graph: PreGraph2) {
         }
       }
     }
+  }
+
+  val max_len = 50.0 // meters. TODO cfg
+
+  def flood_clump(from: Vertex): Set[Vertex] = {
+    val this_clump = new MutableHashSet[Vertex]()
+    var queue: List[Vertex] = List(from)
+
+    // a DFS to find intersections clumped together
+    while (!queue.isEmpty) {
+      val cur = queue.head
+      queue = queue.tail
+      seen += cur
+      this_clump += cur
+      for (r <- cur.roads if r.length <= max_len) {
+        val next = r.other_vert(cur)
+        if (!seen.contains(next)) {
+          queue = next :: queue
+        }
+      }
+    }
+    return if (this_clump.size > 1)
+             this_clump.toSet
+           else
+             Nil.toSet
   }
 }
