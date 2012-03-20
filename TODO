@@ -1,13 +1,20 @@
 # TODO #
 
-- "Meta Intersection"?
-- compute S turns and find conflicts (perhaps store conflicts?)
-- record in xml (optional tag on verts, then list s turns later)
+- "UberSection"
+- record in xml (optional tag on verts, then list uberturns later and conflicts)
+- visualize or otherwise check?
+
+- do we have to make uberturns for all internal destinations too?
+- when we pathfind, do we use uberturns?
+  - does any client, even policies, see uberturns at all? may need to tweak some things so
+    ubersection can determine entire uberturn from route
 
 - doesnt make a policy for individual, makes one for total
   - doesnt even make an intersection for each vert?
   - can the policies still do the same thing with the MetaI?
-  - if we have S-turns and a notion of conflict, then probably.
+  - if we have uberturns and a notion of conflict, then probably.
+  - either install the same policy everywhere (delegate to it) or make a dummy one
+  - this changes the notion of 'is our turn blocked' how?
 
 # Administrative
 - video

@@ -92,3 +92,32 @@ class Turn(val id: Int, val from: Edge, val turn_type: TurnType.TurnType, val to
     return set.toSet
   }
 }
+
+// a sequence of turns within an UberSection
+class UberTurn(val id: Int, val turns: List[Turn]) {
+  def from: Edge = turns.head.from
+  def to: Edge = turns.last.to
+  def edges_to: Set[Edge] = turns.map(t => t.to).toSet
+
+  def does_conflict(other: UberTurn): Boolean = {
+    // if they share any edge, they conflict
+    // TODO but what about subpaths of bigger paths?
+    if (!(edges_to & other.edges_to).isEmpty) {
+      return true
+    }
+
+    // for any common vertex, check for conflicting turns.
+    // note an uber-turn could repeat a vertex (rarely)
+    // TODO this search is quadratic, it could probably be better
+    for (t1 <- turns) {
+      for (t2 <- other.turns.filter(t => t.vert == t1.vert)) {
+        if (t1.conflicts(t2)) {
+          return true
+        }
+      }
+    }
+
+    // no problems
+    return false
+  }
+}
