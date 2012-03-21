@@ -6,7 +6,8 @@ package utexas.aorta.map
 
 import java.io.FileWriter
 
-import scala.collection.mutable.MutableList
+import scala.collection.mutable.{MutableList, ListBuffer}
+import scala.collection.mutable.{HashSet => MutableSet}
 
 // TODO var id due to tarjan
 class Vertex(val location: Coordinate, var id: Int) {
@@ -59,5 +60,73 @@ class Vertex(val location: Coordinate, var id: Int) {
   override def equals(other: Any) = other match {
     case other: Vertex => { id == other.id }
     case _ => false
+  }
+}
+
+// A clump of propinquous vertices logically grouped
+class UberSection(verts: List[Vertex]) {
+  val uber_turns = UberSection.make_turns(verts)
+
+  def to_xml(out: FileWriter) = {
+    out.write("  <ubersection verts=\"" + verts.map(_.id).mkString(",") + "\">\n")
+    uber_turns.foreach(t => t.to_xml(out))
+    out.write("  </ubersection/>\n")
+  }
+}
+
+object UberSection {
+  var next_id = 0
+
+  def make_turns(verts: List[Vertex]): List[UberTurn] = {
+    // find all turns incoming into this clump
+    val in_turns = verts.flatMap(v => v.turns).filter(t => !verts.contains(t.from.from))
+
+    // for each in-turn, flood from it till we leave the clump. remember every
+    // path as an uberturn.
+    return in_turns.flatMap(t => flood_turns(t, verts))
+
+    // figure out conflicts between uberturns. this is based on the idea we may
+    // want to precompute a matrix of this once instead of computing at runtime
+    /*val conflicts = new ListBuffer[(UberTurn, UberTurn)]()
+    for (uber1 <- uber_turns) {
+      // conflicts are symmetric, so avoid repeats
+      for (uber2 <- uber_turns if uber1.id < uber2.id) {
+        // TODO quite slow and produces... lots of conflicts
+        if (uber1.does_conflict(uber2)) {
+          conflicts += ((uber1, uber2))
+        }
+      }
+    }*/
+  }
+
+  private def flood_turns(from: Turn, clump: List[Vertex]): List[UberTurn] = {
+    val uber_turns = new ListBuffer[UberTurn]()
+    val visited = new MutableSet[Turn]()
+    visited += from
+    // a queue of paths, given by a list of turns
+    var queue: List[List[Turn]] = List(List(from))
+    while (!queue.isEmpty) {
+      val cur_path = queue.head
+      queue = queue.tail
+      //uber_turns += new UberTurn(next_uber_id, cur_path)
+      //next_uber_id += 1
+
+      // expand unless we're already at the border
+      if (clump.contains(cur_path.last.to.to)) {
+        for (next <- cur_path.last.to.next_turns) {
+          if (!visited(next)) {
+            visited += next
+            // not efficient to append to end of list, but these paths will be
+            // short
+            queue = (cur_path ++ List(next)) :: queue
+          }
+        }
+      } else {
+        // only add uberturns from outside->outside ubersection?
+        uber_turns += new UberTurn(UberSection.next_id, cur_path)
+        UberSection.next_id += 1
+      }
+    }
+    return uber_turns.toList
   }
 }

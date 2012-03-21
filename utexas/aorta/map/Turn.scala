@@ -120,4 +120,8 @@ class UberTurn(val id: Int, val turns: List[Turn]) {
     // no problems
     return false
   }
+
+  def to_xml(out: FileWriter) = {
+    out.write("    <uberturn id=\"" + id + "\" turns=\"" + turns.map(_.id).mkString(",") + "\"/>\n")
+  }
 }

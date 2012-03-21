@@ -14,7 +14,7 @@ import scala.collection.mutable.ListBuffer
 import scala.collection.mutable.MutableList
 
 import utexas.aorta.map.{Road, Edge, Vertex, Turn, TurnType, Line, Coordinate, Ward,
-                         Traversable, UberTurn}
+                         Traversable, UberSection}
 
 import utexas.aorta.{Util, cfg}
 
@@ -212,14 +212,18 @@ class Pass3(old_graph: PreGraph2) {
     // Discover groups of nearby intersections (with abysmally short roads
     // between them)
     Util.log("Clumping close intersections together into UberSections...")
+    val ubers = new ListBuffer[UberSection]()
     for (v <- graph.vertices) {
       if (!seen.contains(v)) {
         val clump = flood_clump(v)
         if (!clump.isEmpty) {
-          clump_intersections(clump)
+          val uber = new UberSection(clump)
+          //Util.log("clump has " + clump.size + " verts (with " + clump.flatMap(_.turns).size + " turns total), " + uber_turns.size + " uberturns, and " + conflicts.size + " conflicts")
+          ubers += uber
         }
       }
     }
+    graph.ubersections = ubers.toList
 
     return graph
   }
@@ -453,8 +457,8 @@ class Pass3(old_graph: PreGraph2) {
 
   val max_len = 50.0 // meters. TODO cfg
 
-  def flood_clump(from: Vertex): Set[Vertex] = {
-    val this_clump = new MutableHashSet[Vertex]()
+  def flood_clump(from: Vertex): List[Vertex] = {
+    val this_clump = new ListBuffer[Vertex]()
     var queue: List[Vertex] = List(from)
 
     // a DFS to find intersections clumped together
@@ -471,61 +475,8 @@ class Pass3(old_graph: PreGraph2) {
       }
     }
     return if (this_clump.size > 1)
-             this_clump.toSet
+             this_clump.toList
            else
-             Nil.toSet
-  }
-
-  // make uberturns
-  var next_uber_id = 0
-  def clump_intersections(clump: Set[Vertex]) = {
-    // find all turns incoming into this clump
-    val in_turns = clump.flatMap(v => v.turns).filter(t => !clump.contains(t.from.from))
-
-    // for each in-turn, flood from it till we leave the clump. remember every
-    // path as an uberturn.
-    val uber_turns = in_turns.flatMap(t => flood_turns(t, clump))
-    val conflicts = new ListBuffer[(UberTurn, UberTurn)]()
-
-    // figure out conflicts between uberturns. this is based on the idea we may
-    // want to precompute a matrix of this once instead of computing at runtime
-    for (uber1 <- uber_turns) {
-      // conflicts are symmetric, so avoid repeats
-      for (uber2 <- uber_turns if uber1.id < uber2.id) {
-        // TODO quite slow and produces... lots of conflicts
-        /*if (uber1.does_conflict(uber2)) {
-          conflicts += ((uber1, uber2))
-        }*/
-      }
-    }
-
-    Util.log("clump has " + clump.size + " verts, " + uber_turns.size + " uberturns, and " + conflicts.size + " conflicts")
-  }
-
-  def flood_turns(from: Turn, clump: Set[Vertex]): List[UberTurn] = {
-    val uber_turns = new ListBuffer[UberTurn]()
-    val visited = new MutableHashSet[Turn]()
-    visited += from
-    // a queue of paths, given by a list of turns
-    var queue: List[List[Turn]] = List(List(from))
-    while (!queue.isEmpty) {
-      val cur_path = queue.head
-      queue = queue.tail
-      uber_turns += new UberTurn(next_uber_id, cur_path)
-      next_uber_id += 1
-
-      // expand unless we're already at the border
-      if (clump.contains(cur_path.last.to.to)) {
-        for (next <- cur_path.last.to.next_turns) {
-          if (!visited(next)) {
-            visited += next
-            // not efficient to append to end of list, but these paths will be
-            // short
-            queue = (cur_path ++ List(next)) :: queue
-          }
-        }
-      }
-    }
-    return uber_turns.toList
+             Nil
   }
 }
