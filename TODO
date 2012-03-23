@@ -1,6 +1,6 @@
 # TODO #
 
-- visualize or otherwise check?
+- ubersections arent really found/placed well yet.
 
 - intersections inside an ubersection have a dummy delegate policy
   - first encounter with an agent? polls their route until an uberturn is detected

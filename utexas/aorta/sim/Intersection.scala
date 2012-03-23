@@ -129,18 +129,8 @@ abstract class Policy(val intersection: Intersection) {
   // right before the turn. As long as we validly stopped for us, then fine.
   def is_waiting(a: Agent, t: Turn, far_away: Double) = far_away <= cfg.end_threshold
   val agentTurnMap = new MutableMap[Agent, List[Turn]]()
-  def get_agent_turn_start(a: Agent) = {
-    agentTurnMap.get(a) match{
-      case l: List[Turn] => l(0)
-      case _ => None
-    }
-  }
-  def get_agent_turn_end(a: Agent) = {
-    agentTurnMap.get(a) match{
-      case l: List[Turn] => l.last
-      case _ => None
-    }
-  }
+  def get_agent_turn_start(a: Agent) = agentTurnMap.getOrElse(a, Nil).headOption
+  def get_agent_turn_end(a: Agent) = agentTurnMap.getOrElse(a, Nil).lastOption
   def get_agent_turn_set(a: Agent) = agentTurnMap.get(a)
   def set_agent_turn_set(a: Agent, t: List[Turn]) = agentTurnMap.put(a, t)
 }

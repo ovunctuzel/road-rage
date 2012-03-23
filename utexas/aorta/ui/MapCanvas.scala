@@ -9,7 +9,7 @@ import scala.collection.mutable.ListBuffer
 import scala.collection.mutable.HashMap
 import scala.collection.mutable.{Set => MutableSet}
 import scala.collection.mutable.{HashSet => MutableHashSet}
-import java.awt.{Graphics2D, Shape, BasicStroke, Color}
+import java.awt.{Graphics2D, Shape, BasicStroke, Color, Polygon}
 import java.awt.geom._
 import swing.event.Key
 import swing.Dialog
@@ -266,6 +266,38 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
     g2d.setColor(Color.RED)
     g2d.setStroke(drawing_stroke)
     g2d.draw(polygon)
+
+    // Debug ubersections
+    g2d.setColor(new Color(255, 0, 0, 128))   // transparent
+    for (u <- sim.ubersections) {
+      // make a wacky polygon around it, maybe not in a convex way
+      /*val poly = new Polygon()
+      val r = 0.5
+      for (v <- u.verts) {
+        poly.addPoint(v.location.x.toInt, v.location.y.toInt)
+        g2d.fill(new Ellipse2D.Double(v.location.x - r, v.location.y - r, r * 2, r * 2))
+      }
+      g2d.fill(poly)*/
+
+      // find the bounding box of it
+      var min_x = u.verts.head.location.x
+      var max_x = u.verts.head.location.x
+      var min_y = u.verts.head.location.y
+      var max_y = u.verts.head.location.y
+      val r = 0.5
+      for (v <- u.verts) {
+        val x = v.location.x
+        val y = v.location.y
+        min_x = math.min(min_x, x)
+        max_x = math.max(max_x, x)
+        min_y = math.min(min_y, y)
+        max_y = math.max(max_y, y)
+        g2d.fill(new Ellipse2D.Double(x - r, y - r, r * 2, r * 2))
+      }
+      g2d.fill(new Rectangle2D.Double(min_x, min_y, max_x - min_x, max_y - min_y))
+
+      // TODO ideally, we want the convex hull
+    }
   }
 
   // we return any new roads seen

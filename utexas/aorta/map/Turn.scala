@@ -110,11 +110,7 @@ class UberTurn(val turns: List[Turn]) {
     // note an uber-turn could repeat a vertex (rarely)
     // TODO this search is quadratic, it could probably be better
     for (t1 <- turns) {
-      for (t2 <- other.turns.filter(t => t.vert == t1.vert)) {
-        if (t1.conflicts(t2)) {
-          return true
-        }
-      }
+      return other.turns.find(t2 => t2.vert == t1.vert && t1.conflicts(t2)).isDefined
     }
 
     // no problems
