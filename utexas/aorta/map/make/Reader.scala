@@ -14,7 +14,7 @@ import scala.collection.mutable.MultiMap
 import scala.collection.mutable.{Set => MutableSet}
 
 import utexas.aorta.map.{Coordinate, Road, Vertex, Edge, Direction, Line, TurnType,
-                   Turn, Graph, Ward}
+                   Turn, Graph, Ward, UberSection}
 import utexas.aorta.sim.Simulation
 
 import utexas.aorta.{Util, cfg}
@@ -42,13 +42,15 @@ class Reader(fn: String) {
     // was when I didn't understand Option.
     def get_attrib(attribs: MetaData, key: String): String = attribs.get(key).head.text
     def has_attrib(attribs: MetaData, key: String) = attribs.get(key).isDefined
-    def get_ints(attribs: MetaData) = get_attrib(attribs, (_: String)).toInt
-    def get_doubles(attribs: MetaData) = get_attrib(attribs, (_: String)).toDouble
+    def get_int(attribs: MetaData) = get_attrib(attribs, (_: String)).toInt
+    def get_double(attribs: MetaData) = get_attrib(attribs, (_: String)).toDouble
 
     // per graph
     var roads: Array[Road] = null
     var edges: Array[Edge] = null
     var verts: Array[Vertex] = null
+    var ubersections: Array[UberSection] = null
+
     val wards_map = new HashMap[Int, MutableSet[Road]] with MultiMap[Int, Road]
     var special_ward_id: Int = -1
 
@@ -77,25 +79,27 @@ class Reader(fn: String) {
 
       ev match {
         case EvElemStart(_, "graph", attribs, _) => {
-          val width  = get_doubles(attribs)("width")
-          val height = get_doubles(attribs)("height")
-          val xoff = get_doubles(attribs)("xoff")
-          val yoff = get_doubles(attribs)("yoff")
-          val scale = get_doubles(attribs)("scale")
+          val width  = get_double(attribs)("width")
+          val height = get_double(attribs)("height")
+          val xoff = get_double(attribs)("xoff")
+          val yoff = get_double(attribs)("yoff")
+          val scale = get_double(attribs)("scale")
           // Set this as early as possible! length() of any lines we make needs
           // it.
           Graph.set_params(width, height, xoff, yoff, scale)
 
-          special_ward_id = get_ints(attribs)("special_ward")
+          special_ward_id = get_int(attribs)("special_ward")
 
-          val num_roads = get_ints(attribs)("roads")
-          val num_edges = get_ints(attribs)("edges")
-          val num_verts = get_ints(attribs)("verts")
+          val num_roads = get_int(attribs)("roads")
+          val num_edges = get_int(attribs)("edges")
+          val num_verts = get_int(attribs)("verts")
+          val num_ubers = get_int(attribs)("ubersections")
 
           // set up all the temporary things to accumulate stuff
           roads = new Array[Road](num_roads)
           edges = new Array[Edge](num_edges)
           verts = new Array[Vertex](num_verts)
+          ubersections = new Array[UberSection](num_ubers)
 
           vertLinks = new Array[List[TmpLink]](num_verts)
         }
@@ -103,11 +107,11 @@ class Reader(fn: String) {
         case EvElemStart(_, "road", attribs, _) => {
           rd_name = get_attrib(attribs, "name")
           rd_type = get_attrib(attribs, "type")
-          rd_osm = get_ints(attribs)("osmid")
-          rd_id = get_ints(attribs)("id")
-          rd_ward = get_ints(attribs)("ward")
-          rd_v1 = get_ints(attribs)("v1")
-          rd_v2 = get_ints(attribs)("v2")
+          rd_osm = get_int(attribs)("osmid")
+          rd_id = get_int(attribs)("id")
+          rd_ward = get_int(attribs)("ward")
+          rd_v1 = get_int(attribs)("v1")
+          rd_v2 = get_int(attribs)("v2")
           rd_pts = new MutableList[Coordinate]
         }
         case EvElemEnd(_, "road") => {
@@ -132,15 +136,15 @@ class Reader(fn: String) {
 
         case EvElemStart(_, "pt", attribs, _) => {
           rd_pts += new Coordinate(
-            get_doubles(attribs)("x"), get_doubles(attribs)("y")
+            get_double(attribs)("x"), get_double(attribs)("y")
           )
         }
 
         case EvElemStart(_, "edge", attribs, _) => {
-          e_id = get_ints(attribs)("id")
-          e_rd = get_ints(attribs)("road")
+          e_id = get_int(attribs)("id")
+          e_rd = get_int(attribs)("road")
           val dir = get_attrib(attribs, "dir")(0)
-          e_lane = get_ints(attribs)("laneNum")
+          e_lane = get_int(attribs)("laneNum")
 
           e_doomed = has_attrib(attribs, "doomed")
 
@@ -181,14 +185,14 @@ class Reader(fn: String) {
         }
 
         case EvElemStart(_, "line", attribs, _) => {
-          val List(x1, y1, x2, y2) = List("x1", "y1", "x2", "y2") map get_doubles(attribs)
+          val List(x1, y1, x2, y2) = List("x1", "y1", "x2", "y2") map get_double(attribs)
           e_lines += new Line(x1, y1, x2, y2)
         }
 
         case EvElemStart(_, "vertex", attribs, _) => {
-          v_id = get_ints(attribs)("id")
-          v_x = get_doubles(attribs)("x")
-          v_y = get_doubles(attribs)("y")
+          v_id = get_int(attribs)("id")
+          v_x = get_double(attribs)("x")
+          v_y = get_double(attribs)("y")
 
           v_links = new MutableList[TmpLink]
         }
@@ -205,12 +209,18 @@ class Reader(fn: String) {
 
         case EvElemStart(_, "link", attribs, _) => {
           v_links += new TmpLink(
-            get_ints(attribs)("id"), get_ints(attribs)("from"), get_ints(attribs)("to"),
+            get_int(attribs)("id"), get_int(attribs)("from"), get_int(attribs)("to"),
             TurnType.withName(get_attrib(attribs, "type"))
           )
         }
 
-        case _ => {}
+        case EvElemStart(_, "ubersection", attribs, _) => {
+          val id = get_int(attribs)("id")
+          val group = get_attrib(attribs, "verts").split(",").map(v => verts(v.toInt))
+          ubersections(id) = new UberSection(id, group.toSet)
+        }
+
+        case _ =>
       }
     })
     Util.log("")
@@ -220,7 +230,7 @@ class Reader(fn: String) {
     // turns just want edges, doesn't matter what trait they're endowed with
     for (v <- verts) {
       for (link <- vertLinks(v.id)) {
-        v.turns += new Turn(link.id, edges(link.from), link.link_type, edges(link.to))
+        v.ls_turns += new Turn(link.id, edges(link.from), link.link_type, edges(link.to))
       }
     }
 
@@ -236,11 +246,11 @@ class Reader(fn: String) {
 
     if (with_agents) {
       return Left(new Simulation(
-        roads, edges, verts, wards, special_ward
+        roads, edges, verts, wards, special_ward, ubersections
       ))
     } else {
       return Right(new Graph(
-        roads, edges, verts, wards, special_ward
+        roads, edges, verts, wards, special_ward, ubersections
       ))
     }
     // TODO anything to more explicitly free up?

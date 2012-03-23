@@ -1,20 +1,18 @@
 # TODO #
 
-- "UberSection"
-- record in xml (optional tag on verts, then list uberturns later and conflicts)
 - visualize or otherwise check?
 
-- do we have to make uberturns for all internal destinations too?
-- when we pathfind, do we use uberturns?
-  - does any client, even policies, see uberturns at all? may need to tweak some things so
-    ubersection can determine entire uberturn from route
+- intersections inside an ubersection have a dummy delegate policy
+  - first encounter with an agent? polls their route until an uberturn is detected
+    (they leave the ubersection)
+  - dont allow routes with cycles inside our ubersection
+  - then just pass it along to one master normal policy for the whole ubersection
 
-- doesnt make a policy for individual, makes one for total
-  - doesnt even make an intersection for each vert?
-  - can the policies still do the same thing with the MetaI?
-  - if we have uberturns and a notion of conflict, then probably.
-  - either install the same policy everywhere (delegate to it) or make a dummy one
-  - this changes the notion of 'is our turn blocked' how?
+- this changes our notion of 'is our turn blocked' because they have to just
+  look after the end of the uberturn. uberturns conflict if they share edges? so
+  dont need to look along uberturn.
+
+- if route changes during ubersection, problems
 
 # Administrative
 - video

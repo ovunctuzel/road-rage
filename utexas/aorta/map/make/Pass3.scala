@@ -14,7 +14,7 @@ import scala.collection.mutable.ListBuffer
 import scala.collection.mutable.MutableList
 
 import utexas.aorta.map.{Road, Edge, Vertex, Turn, TurnType, Line, Coordinate, Ward,
-                         Traversable, UberTurn}
+                         Traversable, UberSection}
 
 import utexas.aorta.{Util, cfg}
 
@@ -154,8 +154,8 @@ class Pass3(old_graph: PreGraph2) {
         val turns = v.turns.filter(t => !doomed_turns(t))
         // If there are no turns left, nix this vertex completely
         if (turns.size != 0) {
-          v.turns.clear
-          v.turns ++= turns
+          v.ls_turns.clear
+          v.ls_turns ++= turns
           keep_verts += v
         }
       }
@@ -211,15 +211,20 @@ class Pass3(old_graph: PreGraph2) {
 
     // Discover groups of nearby intersections (with abysmally short roads
     // between them)
+    var uber_id = 0
     Util.log("Clumping close intersections together into UberSections...")
+    val ubers = new ListBuffer[UberSection]()
     for (v <- graph.vertices) {
       if (!seen.contains(v)) {
         val clump = flood_clump(v)
         if (!clump.isEmpty) {
-          clump_intersections(clump)
+          //Util.log("clump has " + clump.size + " verts")
+          ubers += new UberSection(uber_id, clump)
+          uber_id += 1
         }
       }
     }
+    graph.ubersections = ubers.toList
 
     return graph
   }
@@ -239,7 +244,7 @@ class Pass3(old_graph: PreGraph2) {
       // link corresponding lane numbers
       val r = roads.head
       for ((from, to) <- r.incoming_lanes(v) zip r.outgoing_lanes(v)) {
-        v.turns += new Turn(next_id, from, TurnType.UTURN, to)
+        v.ls_turns += new Turn(next_id, from, TurnType.UTURN, to)
       }
     }
 
@@ -281,15 +286,15 @@ class Pass3(old_graph: PreGraph2) {
 
         if (lane_diff == 0) {
           // exact 1:1 mapping
-          v.turns ++= from_edges.zip(to_edges).map(cross_turn)
+          v.ls_turns ++= from_edges.zip(to_edges).map(cross_turn)
         } else if (lane_diff < 0) {
           // more to less. the rightmost will all have to merge.
           // we have 'to_edges.length - 1' regular dsts.
           val (mergers, regulars) = from_edges.splitAt(from_edges.length - (to_edges.length - 1))
           assert(regulars.length == to_edges.length - 1)
 
-          v.turns ++= mergers.map(from => new Turn(next_id, from, TurnType.CROSS_MERGE, to_edges.head))
-          v.turns ++= regulars.zip(to_edges.tail).map(cross_turn)
+          v.ls_turns ++= mergers.map(from => new Turn(next_id, from, TurnType.CROSS_MERGE, to_edges.head))
+          v.ls_turns ++= regulars.zip(to_edges.tail).map(cross_turn)
         } else if (lane_diff > 0) {
           // less to more. the leftmost gets to pick many destinations.
           val lucky_src = from_edges.last
@@ -298,15 +303,15 @@ class Pass3(old_graph: PreGraph2) {
           val (regular_dsts, choices) = to_edges.splitAt(to_edges.size - lane_diff - 1)
           assert(regular_srcs.size == regular_dsts.size)
           
-          v.turns ++= regular_srcs.zip(regular_dsts).map(cross_turn)
-          v.turns ++= choices.map(to => new Turn(next_id, lucky_src, TurnType.CROSS, to))
+          v.ls_turns ++= regular_srcs.zip(regular_dsts).map(cross_turn)
+          v.ls_turns ++= choices.map(to => new Turn(next_id, lucky_src, TurnType.CROSS, to))
         }
       } else if (angle_btwn < 0) {
         // no multiple turn lanes supported yet. it's just too hard to know when
         // this is the case.
-        v.turns += new Turn(next_id, from_rep.leftmost_lane, TurnType.LEFT, to_rep.leftmost_lane)
+        v.ls_turns += new Turn(next_id, from_rep.leftmost_lane, TurnType.LEFT, to_rep.leftmost_lane)
       } else {
-        v.turns += new Turn(next_id, from_rep.rightmost_lane, TurnType.RIGHT, to_rep.rightmost_lane)
+        v.ls_turns += new Turn(next_id, from_rep.rightmost_lane, TurnType.RIGHT, to_rep.rightmost_lane)
       }
     }
 
@@ -454,7 +459,7 @@ class Pass3(old_graph: PreGraph2) {
   val max_len = 50.0 // meters. TODO cfg
 
   def flood_clump(from: Vertex): Set[Vertex] = {
-    val this_clump = new MutableHashSet[Vertex]()
+    val this_clump = new ListBuffer[Vertex]()
     var queue: List[Vertex] = List(from)
 
     // a DFS to find intersections clumped together
@@ -473,59 +478,6 @@ class Pass3(old_graph: PreGraph2) {
     return if (this_clump.size > 1)
              this_clump.toSet
            else
-             Nil.toSet
-  }
-
-  // make uberturns
-  var next_uber_id = 0
-  def clump_intersections(clump: Set[Vertex]) = {
-    // find all turns incoming into this clump
-    val in_turns = clump.flatMap(v => v.turns).filter(t => !clump.contains(t.from.from))
-
-    // for each in-turn, flood from it till we leave the clump. remember every
-    // path as an uberturn.
-    val uber_turns = in_turns.flatMap(t => flood_turns(t, clump))
-    val conflicts = new ListBuffer[(UberTurn, UberTurn)]()
-
-    // figure out conflicts between uberturns. this is based on the idea we may
-    // want to precompute a matrix of this once instead of computing at runtime
-    for (uber1 <- uber_turns) {
-      // conflicts are symmetric, so avoid repeats
-      for (uber2 <- uber_turns if uber1.id < uber2.id) {
-        // TODO quite slow and produces... lots of conflicts
-        /*if (uber1.does_conflict(uber2)) {
-          conflicts += ((uber1, uber2))
-        }*/
-      }
-    }
-
-    Util.log("clump has " + clump.size + " verts, " + uber_turns.size + " uberturns, and " + conflicts.size + " conflicts")
-  }
-
-  def flood_turns(from: Turn, clump: Set[Vertex]): List[UberTurn] = {
-    val uber_turns = new ListBuffer[UberTurn]()
-    val visited = new MutableHashSet[Turn]()
-    visited += from
-    // a queue of paths, given by a list of turns
-    var queue: List[List[Turn]] = List(List(from))
-    while (!queue.isEmpty) {
-      val cur_path = queue.head
-      queue = queue.tail
-      uber_turns += new UberTurn(next_uber_id, cur_path)
-      next_uber_id += 1
-
-      // expand unless we're already at the border
-      if (clump.contains(cur_path.last.to.to)) {
-        for (next <- cur_path.last.to.next_turns) {
-          if (!visited(next)) {
-            visited += next
-            // not efficient to append to end of list, but these paths will be
-            // short
-            queue = (cur_path ++ List(next)) :: queue
-          }
-        }
-      }
-    }
-    return uber_turns.toList
+             Set()
   }
 }

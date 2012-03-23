@@ -94,12 +94,12 @@ class Turn(val id: Int, val from: Edge, val turn_type: TurnType.TurnType, val to
 }
 
 // a sequence of turns within an UberSection
-class UberTurn(val id: Int, val turns: List[Turn]) {
+class UberTurn(val turns: List[Turn]) {
   def from: Edge = turns.head.from
   def to: Edge = turns.last.to
   def edges_to: Set[Edge] = turns.map(t => t.to).toSet
 
-  def does_conflict(other: UberTurn): Boolean = {
+  def conflicts(other: UberTurn): Boolean = {
     // if they share any edge, they conflict
     // TODO but what about subpaths of bigger paths?
     if (!(edges_to & other.edges_to).isEmpty) {
