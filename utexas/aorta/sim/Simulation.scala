@@ -13,15 +13,16 @@ import scala.io.Source
 import scala.xml.MetaData
 import scala.xml.pull._
 
-import utexas.aorta.map.{Graph, Road, Edge, Vertex, Ward, Turn}
+import utexas.aorta.map.{Graph, Road, Edge, Vertex, Ward, Turn, UberSection}
 import utexas.aorta.map.make.Reader
 
 import utexas.aorta.{Util, cfg, Stats, Total_Trip_Stat, Active_Agents_Stat}
 
 // This just adds a notion of agents
 class Simulation(roads: Array[Road], edges: Array[Edge], vertices: Array[Vertex],
-                 wards: List[Ward], special_ward: Ward)
-  extends Graph(roads, edges, vertices, wards, special_ward)
+                 wards: List[Ward], special_ward: Ward,
+                 ubersections: Array[UberSection])
+  extends Graph(roads, edges, vertices, wards, special_ward, ubersections)
 {
   ////////////// Misc
   var listeners: List[Sim_Event => Any] = Nil
