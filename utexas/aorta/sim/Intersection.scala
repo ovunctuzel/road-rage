@@ -117,7 +117,7 @@ class Intersection(val v: Vertex) {
   }
 }
 
-abstract class Policy(intersection: Intersection) {
+abstract class Policy(val intersection: Intersection) {
   def can_go(a: Agent, turn: Turn, far_away: Double): Boolean
   def validate_entry(a: Agent, turn: Turn): Boolean
   def handle_exit(a: Agent, turn: Turn)
@@ -128,6 +128,21 @@ abstract class Policy(intersection: Intersection) {
   // Since we lookahead over small edges, we maybe won't/can't stop on the edge
   // right before the turn. As long as we validly stopped for us, then fine.
   def is_waiting(a: Agent, t: Turn, far_away: Double) = far_away <= cfg.end_threshold
+  val agentTurnMap = new MutableMap[Agent, List[Turn]]()
+  def get_agent_turn_start(a: Agent) = {
+    agentTurnMap.get(a) match{
+      case l: List[Turn] => l(0)
+      case _ => None
+    }
+  }
+  def get_agent_turn_end(a: Agent) = {
+    agentTurnMap.get(a) match{
+      case l: List[Turn] => l.last
+      case _ => None
+    }
+  }
+  def get_agent_turn_set(a: Agent) = agentTurnMap.get(a)
+  def set_agent_turn_set(a: Agent, t: List[Turn]) = agentTurnMap.put(a, t)
 }
 
 // Simplest base-line ever.

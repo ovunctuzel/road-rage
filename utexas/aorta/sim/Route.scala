@@ -30,6 +30,29 @@ abstract class Route() {
   }
 
   def next_step = lookahead_step(0)
+  
+  //TODO Make this a proper iterator
+  def next_turn(t: Turn):Option[Turn] = {
+    var step = lookahead_step(0)
+    var i = 1
+    while (step.isDefined && step != t){
+      step = lookahead_step(i)
+      i += 1
+    }
+    if (step != t) return None
+    step = lookahead_step(i)
+    i += 1
+    while (step.isDefined){
+      step match{
+        case t: Turn => return Some(t)
+        case _ =>
+      }
+      step = lookahead_step(i)
+      i += 1
+    }
+    return None
+    
+  }
 }
 
 // It's all there, all at once... just look at it
