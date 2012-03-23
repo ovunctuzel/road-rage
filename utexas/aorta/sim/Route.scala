@@ -30,29 +30,15 @@ abstract class Route() {
   }
 
   def next_step = lookahead_step(0)
-  
-  //TODO Make this a proper iterator
-  def next_turn(t: Turn):Option[Turn] = {
-    var step = lookahead_step(0)
-    var i = 1
-    while (step.isDefined && step != t){
-      step = lookahead_step(i)
-      i += 1
-    }
-    if (step != t) return None
-    step = lookahead_step(i)
-    i += 1
-    while (step.isDefined){
-      step match{
-        case t: Turn => return Some(t)
-        case _ =>
-      }
-      step = lookahead_step(i)
-      i += 1
-    }
-    return None
-    
+
+  def find_idx(of: Traversable, idx: Int = 0): Int = lookahead_step(idx) match {
+    case Some(t) if t == of => idx
+    case None => throw new Exception("Route doesn't contain " + of)
+    case _ => find_idx(of, idx + 1)
   }
+
+  // TODO a lazy iterator would rock... it just wouldn't be really efficient
+  // unless we keep implementation-specific state about where we are in lists.
 }
 
 // It's all there, all at once... just look at it

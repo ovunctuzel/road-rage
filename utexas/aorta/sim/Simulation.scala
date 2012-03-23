@@ -8,21 +8,24 @@ import scala.annotation.tailrec
 import scala.collection.immutable.{SortedSet, TreeSet}
 import scala.collection.mutable.{MutableList, PriorityQueue, ListBuffer}
 import scala.collection.mutable.{HashSet => MutableSet}
+import scala.collection.mutable.{HashMap => MutableMap}
 import java.io.FileWriter
 import scala.io.Source
 import scala.xml.MetaData
 import scala.xml.pull._
 
-import utexas.aorta.map.{Graph, Road, Edge, Vertex, Ward, Turn, UberSection}
+import utexas.aorta.map.{Graph, Road, Edge, Vertex, Ward, Turn, UberVertex,
+                         TurnLike}
 import utexas.aorta.map.make.Reader
+import utexas.aorta.sim.policies._
 
 import utexas.aorta.{Util, cfg, Stats, Total_Trip_Stat, Active_Agents_Stat}
 
 // This just adds a notion of agents
 class Simulation(roads: Array[Road], edges: Array[Edge], vertices: Array[Vertex],
                  wards: List[Ward], special_ward: Ward,
-                 ubersections: Array[UberSection])
-  extends Graph(roads, edges, vertices, wards, special_ward, ubersections)
+                 ubervertices: Array[UberVertex])
+  extends Graph(roads, edges, vertices, wards, special_ward, ubervertices)
 {
   ////////////// Misc
   var listeners: List[Sim_Event => Any] = Nil
@@ -39,7 +42,7 @@ class Simulation(roads: Array[Road], edges: Array[Edge], vertices: Array[Vertex]
   Agent.sim = this  // let them get to us
   Util.log("Creating queues and intersections for collision handling...")
   val queues = traversables.map(t => t -> new Queue(t)).toMap
-  val intersections = vertices.map(v => v -> new Intersection(v)).toMap
+  val intersections = create_intersections
   var agents: SortedSet[Agent] = new TreeSet[Agent]
   var ready_to_spawn: List[Agent] = Nil
   private var generators: SortedSet[Generator] = new TreeSet[Generator]
@@ -52,6 +55,30 @@ class Simulation(roads: Array[Road], edges: Array[Edge], vertices: Array[Vertex]
   def debug(a: Agent) = debug_agent match {
     case Some(special) if a == special => true
     case _ => false
+  }
+
+  private def create_intersections(): Map[Vertex, Intersection] = {
+    val mapping = new MutableMap[Vertex, Intersection]()
+
+    // create dummy policies for members of ubervertices, and one policy to
+    // actually rule them all
+    for (u <- ubervertices) {
+      val master = Simulation.choose_policy(new UberSection(u))
+      // and the delegates
+      for (v <- u.verts) {
+        val i = new Intersection(v)
+        i.policy = new UberDelegatePolicy(i, master)
+        mapping(v) = i
+      }
+    }
+
+    // then fill out the rest
+    for (v <- vertices if !mapping.contains(v)) {
+      val i = new Intersection(v)
+      i.policy = Simulation.choose_policy(i)
+      mapping(v) = i
+    }
+    return mapping.toMap
   }
 
   def next_id(): Int = {
@@ -227,7 +254,7 @@ class Simulation(roads: Array[Road], edges: Array[Edge], vertices: Array[Vertex]
 
 sealed trait Sim_Event {}
 // TODO maybe have this not here, since a client could make these up?
-final case class EV_Signal_Change(reds: Set[Turn], greens: Set[Turn]) extends Sim_Event {}
+final case class EV_Signal_Change(reds: Set[TurnLike], greens: Set[TurnLike]) extends Sim_Event {}
 
 object Simulation {
   // maintain a log of the simulation here
@@ -273,5 +300,21 @@ object Simulation {
     })
 
     return sim
+  }
+
+  def choose_policy(j: Junction): Policy = {
+    // TODO how to choose?
+    //return new NeverGoPolicy(j)
+    return new StopSignPolicy(j)
+    //return new SignalCyclePolicy(j)
+    //return new ReservationPolicy(j)
+  }
+
+  def choose_route(): Route = {
+    // TODO how to decide?!
+    return new StaticRoute()
+    //return new DrunkenRoute()
+    //return new DirectionalDrunkRoute()
+    //return new DrunkenExplorerRoute()
   }
 }

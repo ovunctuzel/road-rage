@@ -8,17 +8,11 @@ import java.io.FileWriter
 
 import scala.collection.mutable.MutableList
 
-// TODO better OOP structure?
-abstract class Junction {
-  def turns: scala.collection.immutable.Traversable[Turn]
-}
-
 // TODO var id due to tarjan
-class Vertex(val location: Coordinate, var id: Int) extends Junction {
+class Vertex(val location: Coordinate, var id: Int) {
   // TODO we could keep a map for faster lookup, sure, but determinism's cool
   // too.
-  var ls_turns = new MutableList[Turn]
-  override def turns = ls_turns.toList
+  var turns = new MutableList[Turn]
 
   // TODO construction sucks
   def turns_from(from: Edge): List[Turn] = turns.toList.filter(_.from == from)
@@ -69,11 +63,14 @@ class Vertex(val location: Coordinate, var id: Int) extends Junction {
 }
 
 // A clump of propinquous vertices logically grouped
-class UberSection(val id: Int, val verts: Set[Vertex]) extends Junction {
+class UberVertex(val id: Int, val verts: Set[Vertex]) {
+  // vertices with a turn that leads out of the ubervertex
+  //val border: Set[Turn] = verts.flatMap(v => v.turns).filter(t => !verts.contains(t.from.from))
+
   def turns = verts.flatMap(v => v.turns).toSet
 
   def to_xml(out: FileWriter) = {
-    out.write("  <ubersection id=\"" + id + "\" verts=\"" +
+    out.write("  <ubervertex id=\"" + id + "\" verts=\"" +
               verts.map(_.id).mkString(",") + "\"/>\n")
   }
 }

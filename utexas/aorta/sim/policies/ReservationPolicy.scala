@@ -9,8 +9,8 @@ import scala.collection.mutable.MultiMap
 import scala.collection.mutable.{Set => MutableSet}
 import scala.collection.mutable.{HashSet => MutableHashSet}
 
-import utexas.aorta.sim.{Intersection, Policy, Agent}
-import utexas.aorta.map.Turn
+import utexas.aorta.sim.{Junction, Policy, Agent}
+import utexas.aorta.map.TurnLike
 
 import utexas.aorta.{Util, cfg}
 
@@ -19,7 +19,7 @@ import utexas.aorta.{Util, cfg}
 // that have conflicts wait indefinitely.
 // If we found the optimal number of batches, that would be an instance of graph
 // coloring.
-class ReservationPolicy(intersection: Intersection) extends Policy(intersection) {
+class ReservationPolicy(junction: Junction) extends Policy(junction) {
   var current_batch = new TurnBatch()
   var lock_cur_batch = false    // because we're trying to preempt
   var reservations = List[TurnBatch]()
@@ -45,7 +45,7 @@ class ReservationPolicy(intersection: Intersection) extends Policy(intersection)
     }
   }
 
-  def can_go(a: Agent, turn: Turn, far_away: Double): Boolean = {
+  def can_go(a: Agent, turn: TurnLike, far_away: Double): Boolean = {
     val first_req = !current_agents.contains(a)
 
     // check everyone in the current batch. if any are not moving and not in their
@@ -81,9 +81,9 @@ class ReservationPolicy(intersection: Intersection) extends Policy(intersection)
     }
   }
 
-  def validate_entry(a: Agent, turn: Turn) = current_batch.has_ticket(a, turn)
+  def validate_entry(a: Agent, turn: TurnLike) = current_batch.has_ticket(a, turn)
 
-  def handle_exit(a: Agent, turn: Turn) = {
+  def handle_exit(a: Agent, turn: TurnLike) = {
     assert(current_batch.has_ticket(a, turn))
     current_batch.remove_ticket(a, turn)
     current_agents -= a
@@ -122,13 +122,13 @@ class ReservationPolicy(intersection: Intersection) extends Policy(intersection)
         && !reservations.isEmpty && lock_cur_batch == false)
     {
       // it's quite the edge case when there are no current_agents... because
-      // then the intersection would have shifted to the next anyway.
+      // then the junction would have shifted to the next anyway.
       assert(!current_batch.all_done)
 
       // cant do it if there are some that can't stop. aka, just lock current
       // cycle.
       lock_cur_batch = true
-      //Util.log("locking " + intersection + " for preemption")
+      //Util.log("locking " + junction + " for preemption")
       
       // then all the other handling is normal, just don't let agents enter
       // current_batch
@@ -140,10 +140,10 @@ class ReservationPolicy(intersection: Intersection) extends Policy(intersection)
 // conflict
 // TODO maybe generalizable.
 class TurnBatch() {
-  val tickets = new MutableMap[Turn, MutableSet[Agent]] with MultiMap[Turn, Agent]
+  val tickets = new MutableMap[TurnLike, MutableSet[Agent]] with MultiMap[TurnLike, Agent]
 
   // false if it conflicts with this group
-  def add_ticket(a: Agent, t: Turn): Boolean = {
+  def add_ticket(a: Agent, t: TurnLike): Boolean = {
     if (tickets.contains(t)) {
       // existing turn
       tickets.addBinding(t, a)
@@ -172,9 +172,9 @@ class TurnBatch() {
     return canceled
   }
 
-  def has_ticket(a: Agent, t: Turn) = tickets.contains(t) && tickets(t).contains(a)
+  def has_ticket(a: Agent, t: TurnLike) = tickets.contains(t) && tickets(t).contains(a)
 
-  def remove_ticket(a: Agent, t: Turn) = {
+  def remove_ticket(a: Agent, t: TurnLike) = {
     tickets.removeBinding(t, a)
   }
 

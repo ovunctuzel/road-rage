@@ -6,20 +6,23 @@ package utexas.aorta.sim
 
 import scala.collection.mutable.{HashMap => MutableMap}
 import scala.collection.mutable.{HashSet => MutableSet}
+import scala.collection.mutable.ListBuffer
 
 import utexas.aorta.sim.policies._
-import utexas.aorta.map.{Vertex, Turn}
+import utexas.aorta.map.{Vertex, Turn, UberVertex, UberTurn, Edge, Traversable,
+                         TurnLike}
 
 import utexas.aorta.{Util, cfg, Stats, Intersection_Throughput_Stat}
 
 // Common stuff goes here, particular implementations are in utexas.aorta.sim.policies
 
+// generalization of anywhere where agents meet in conflicting ways
+abstract class Junction() {
+}
+
 // Reason about collisions from conflicting simultaneous turns.
-class Intersection(val v: Vertex) {
-  //val policy: Policy = new NeverGoPolicy(this)
-  val policy: Policy = new StopSignPolicy(this)
-  //val policy: Policy = new SignalCyclePolicy(this)
-  //val policy: Policy = new ReservationPolicy(this)
+class Intersection(val v: Vertex) extends Junction() {
+  var policy: Policy = null   // set when one's created
 
   override def toString = "Intersection(" + v + ")"
 
@@ -117,28 +120,74 @@ class Intersection(val v: Vertex) {
   }
 }
 
-abstract class Policy(val intersection: Intersection) {
-  def can_go(a: Agent, turn: Turn, far_away: Double): Boolean
-  def validate_entry(a: Agent, turn: Turn): Boolean
-  def handle_exit(a: Agent, turn: Turn)
+class UberSection(val v: UberVertex) extends Junction() {
+  // remember what uberturn an agent is performing
+  val currently = new MutableMap[Agent, UberTurn]()
+  // TODO how to handle if they change their route after the first poll?
+
+  // figure out (and then remember) what this agent wants to do
+  def uberturn_of(a: Agent, start: TurnLike): UberTurn = {
+    if (currently.contains(a)) {
+      return currently(a)
+    } else {
+      val ut = find_uberturn(a, start)
+      currently(a) = ut
+      return ut
+    }
+  }
+
+  def forget(a: Agent) = {
+    currently -= a
+  }
+
+  private def find_uberturn(a: Agent, start: TurnLike): UberTurn = {
+    // lookahead in their route until we are out of the ubersection
+
+    // TODO detect cycles in their route!
+    
+    // TODO move some of this work to route or use an iterator pattern?
+    var idx = a.route.find_idx(start) + 1 // so this indexes an edge
+    val steps = new ListBuffer[Turn]()
+    steps += TurnLike.toTurn(start)
+    var result: Option[UberTurn] = None
+    while (!result.isDefined) {
+      val step = a.route.lookahead_step(idx)
+      if (step.isDefined) {
+        val e = Traversable.toEdge(step.get)
+        if (!v.verts.contains(e.to)) {
+          // found a way out!
+          result = Some(new UberTurn(steps.toList, v))
+        } else {
+          steps += Traversable.toTurn(a.route.lookahead_step(idx - 1).get)
+          idx += 2  // skip the turn, go to the next edge
+        }
+      } else {
+        // their route ends in the middle of us
+        result = Some(new UberTurn(steps.toList, v))
+      }
+    }
+    return result.get
+  }
+}
+
+// TODO it turns out we don't seem to know junction usually...
+abstract class Policy(val junction: Junction) {
+  def can_go(a: Agent, turn: TurnLike, far_away: Double): Boolean
+  def validate_entry(a: Agent, turn: TurnLike): Boolean
+  def handle_exit(a: Agent, turn: TurnLike)
   def unregister(a: Agent)
-  def current_greens(): Set[Turn] = Set()
+  def current_greens(): Set[TurnLike] = Set()
   def dump_info() = {}
 
   // Since we lookahead over small edges, we maybe won't/can't stop on the edge
   // right before the turn. As long as we validly stopped for us, then fine.
-  def is_waiting(a: Agent, t: Turn, far_away: Double) = far_away <= cfg.end_threshold
-  val agentTurnMap = new MutableMap[Agent, List[Turn]]()
-  def get_agent_turn_start(a: Agent) = agentTurnMap.getOrElse(a, Nil).headOption
-  def get_agent_turn_end(a: Agent) = agentTurnMap.getOrElse(a, Nil).lastOption
-  def get_agent_turn_set(a: Agent) = agentTurnMap.get(a)
-  def set_agent_turn_set(a: Agent, t: List[Turn]) = agentTurnMap.put(a, t)
+  def is_waiting(a: Agent, t: TurnLike, far_away: Double) = far_away <= cfg.end_threshold
 }
 
 // Simplest base-line ever.
-class NeverGoPolicy(intersection: Intersection) extends Policy(intersection) {
-  def can_go(a: Agent, turn: Turn, far_away: Double) = false
-  def validate_entry(a: Agent, turn: Turn) = false
-  def handle_exit(a: Agent, turn: Turn) = {}
+class NeverGoPolicy(junction: Junction) extends Policy(junction) {
+  def can_go(a: Agent, turn: TurnLike, far_away: Double) = false
+  def validate_entry(a: Agent, turn: TurnLike) = false
+  def handle_exit(a: Agent, turn: TurnLike) = {}
   def unregister(a: Agent) = {}
 }

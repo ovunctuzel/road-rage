@@ -50,3 +50,15 @@ abstract class Traversable() {
   def start_pt = lines.head.start
   def end_pt  = lines.last.end
 }
+
+object Traversable {
+  def toEdge(t: Traversable) = t match {
+    case e: Edge => e
+    case _ => throw new ClassCastException("it's a turn, not an edge")
+  }
+
+  def toTurn(t: Traversable) = t match {
+    case turn: Turn => turn
+    case _ => throw new ClassCastException("it's an edge, not a turn")
+  }
+}

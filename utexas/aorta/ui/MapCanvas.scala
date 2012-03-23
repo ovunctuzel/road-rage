@@ -83,7 +83,7 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
   private var polygon_roads2: Set[Road] = Set()
   private var current_vert: Option[Vertex] = None
   private var camera_agent: Option[Agent] = None
-  private val green_turns = new HashMap[Turn, Shape]()
+  private val green_turns = new HashMap[TurnLike, Shape]()
   private var show_green = false
 
   // this is like static config, except it's a function of the map and rng seed
@@ -267,9 +267,9 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
     g2d.setStroke(drawing_stroke)
     g2d.draw(polygon)
 
-    // Debug ubersections
+    // Debug ubervertices 
     g2d.setColor(new Color(255, 0, 0, 128))   // transparent
-    for (u <- sim.ubersections) {
+    for (u <- sim.ubervertices) {
       // make a wacky polygon around it, maybe not in a convex way
       /*val poly = new Polygon()
       val r = 0.5
@@ -424,7 +424,7 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
     TurnType.UTURN       -> Color.MAGENTA
   )
 
-  def draw_turn(g2d: Graphics2D, turn: Turn, color: Color) = {
+  def draw_turn(g2d: Graphics2D, turn: TurnLike, color: Color) = {
     val curve = GeomFactory.curved_turn(turn)
     g2d.setColor(color)
     g2d.draw(curve)
@@ -447,7 +447,7 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
       val turn = e.next_turns(current_turn)
       draw_turn(g2d, turn, turn_colors(turn.turn_type))
       // TODO this looks buggy!
-      for (conflict <- turn.conflicts) {
+      for (conflict <- turn.conflicts_set) {
         draw_turn(g2d, conflict, Color.RED)
       }
     }
@@ -926,7 +926,7 @@ object GeomFactory {
     return arrow
   }
 
-  def curved_turn(turn: Turn): Shape = {
+  def curved_turn(turn: TurnLike): Shape = {
     val pt1 = turn.from.shifted_end_pt(l = turn.from.lines.last.shift_line(0.5))
     val pt2 = turn.from.to.location
     val pt3 = turn.to.shifted_start_pt(l = turn.to.lines.head.shift_line(0.5))

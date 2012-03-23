@@ -67,7 +67,7 @@ object Checker {
     // conflicts should be symmetric
     for (e <- g.edges) {
       for (t1 <- e.next_turns) {
-        for (t2 <- t1.conflicts) {
+        for (t2 <- t1.conflicts_set) {
           if (!t2.conflicts(t1)) {
             Util.log("Asymmetric turn conflict between " + t1 + " and " + t2)
           }

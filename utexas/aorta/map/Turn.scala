@@ -8,6 +8,25 @@ import java.io.FileWriter
 
 import scala.collection.mutable.HashSet
 
+abstract class TurnLike extends Traversable {
+  def from: Edge
+  def to: Edge
+  def conflicts(other: TurnLike): Boolean
+  def other_turns(): Set[TurnLike]
+}
+
+object TurnLike {
+  def toTurn(t: TurnLike) = t match {
+    case turn: Turn => turn
+    case _ => throw new ClassCastException("uberturn, not turn")
+  }
+
+  def toUberTurn(t: TurnLike) = t match {
+    case u: UberTurn => u
+    case _ => throw new ClassCastException("turn, not uberturn")
+  }
+}
+
 object TurnType extends Enumeration {
   type TurnType = Value
   val CROSS       = Value("C")
@@ -18,7 +37,7 @@ object TurnType extends Enumeration {
 }
 
 class Turn(val id: Int, val from: Edge, val turn_type: TurnType.TurnType, val to: Edge)
-  extends Traversable with Ordered[Turn]
+  extends TurnLike with Ordered[Turn]
 {
   override def compare(other: Turn) = id.compare(other.id)
 
@@ -45,7 +64,9 @@ class Turn(val id: Int, val from: Edge, val turn_type: TurnType.TurnType, val to
 
   def vert = from.to
 
-  def conflicts: Set[Turn] = {
+  var conflicts_set: Set[TurnLike] = null
+  def conflicts(other: TurnLike) = conflicts_set.contains(other)
+  def calculate_conflicts = {
     val set = new HashSet[Turn]()
 
     // always: anything else that has the same target
@@ -89,20 +110,27 @@ class Turn(val id: Int, val from: Edge, val turn_type: TurnType.TurnType, val to
       case TurnType.UTURN => {}
     }
 
-    return set.toSet
+    conflicts_set = set.toSet
   }
+
+  def other_turns() = vert.turns.toSet
 }
 
-// a sequence of turns within an UberSection
-class UberTurn(val turns: List[Turn]) {
+// a sequence of turns within an UberVertex
+class UberTurn(val turns: List[Turn], val v: UberVertex) extends TurnLike {
   def from: Edge = turns.head.from
   def to: Edge = turns.last.to
   def edges_to: Set[Edge] = turns.map(t => t.to).toSet
+  // TODO technically we should do something with lines...
 
-  def conflicts(other: UberTurn): Boolean = {
+  override def toString = "Uber[" + turns.map(t => t.from.id + "->" + t.to.id).mkString(", ") + "]"
+
+  def conflicts(other: TurnLike): Boolean = {
+    val uber_other = TurnLike.toUberTurn(other)
+
     // if they share any edge, they conflict
     // TODO but what about subpaths of bigger paths?
-    if (!(edges_to & other.edges_to).isEmpty) {
+    if (!(edges_to & uber_other.edges_to).isEmpty) {
       return true
     }
 
@@ -110,10 +138,14 @@ class UberTurn(val turns: List[Turn]) {
     // note an uber-turn could repeat a vertex (rarely)
     // TODO this search is quadratic, it could probably be better
     for (t1 <- turns) {
-      return other.turns.find(t2 => t2.vert == t1.vert && t1.conflicts(t2)).isDefined
+      return uber_other.turns.find(t2 => t2.vert == t1.vert && t1.conflicts(t2)).isDefined
     }
 
     // no problems
     return false
   }
+
+  def other_turns() = v.turns.toSet // not sure why other .toSet needed... TODO
+
+  def leads_to = List(to)
 }

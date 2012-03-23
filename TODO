@@ -1,17 +1,20 @@
 # TODO #
 
-- ubersections arent really found/placed well yet.
+bugs:
+  - illegal intersection entry
+  - if commented out, route doesnt contain a turn
 
-- intersections inside an ubersection have a dummy delegate policy
-  - first encounter with an agent? polls their route until an uberturn is detected
-    (they leave the ubersection)
-  - dont allow routes with cycles inside our ubersection
-  - then just pass it along to one master normal policy for the whole ubersection
+- dont allow routes with cycles inside our ubersection
 
 - this changes our notion of 'is our turn blocked' because they have to just
   look after the end of the uberturn. uberturns conflict if they share edges? so
   dont need to look along uberturn.
 
+- uberturns should implement some geometry
+- traffic signal policy actually is gonna have trouble/fun with uberturns
+  - it turns out policy doesnt really seem to need to know junctions?
+- ubersections arent really found/placed well yet.
+  - do cycles have anything to do with it?
 - if route changes during ubersection, problems
 
 # Administrative

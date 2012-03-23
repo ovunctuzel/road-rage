@@ -9,7 +9,7 @@ import scala.collection.mutable.{HashSet => MutableSet}
 import scala.collection.mutable.ListBuffer
 import scala.collection.mutable.{HashMap => MutableMap}
 
-import utexas.aorta.map.{Turn, Edge, Vertex, Road, TurnType}
+import utexas.aorta.map.{TurnLike, Edge, Vertex, Road, TurnType}
 import utexas.aorta.sim.{Intersection, Policy, Agent, EV_Signal_Change}
 
 import utexas.aorta.{Util, cfg}
@@ -19,11 +19,11 @@ class Cycle(val offset: Double, val duration: Double) {
   assert(offset >= 0)
   assert(duration > 0)
   // TODO only mutable because we build this incrementally
-  val turns = new MutableSet[Turn]()
+  val turns = new MutableSet[TurnLike]()
 
   // returns false if it conflicts
   // assumes turn is from the correct intersection.
-  def add_turn(turn: Turn): Boolean = {
+  def add_turn(turn: TurnLike): Boolean = {
     if (could_add_turn(turn)) {
       turns += turn
       return true
@@ -33,17 +33,14 @@ class Cycle(val offset: Double, val duration: Double) {
   }
 
   // Don't actually add turn, just see if it would conflict or not
-  def could_add_turn(turn: Turn): Boolean = {
-    val conflicts = turn.conflicts  // Cache it
-    return !turns.find(t => conflicts(t)).isDefined
+  def could_add_turn(turn: TurnLike): Boolean = {
+    return !turns.find(t => turn.conflicts(t)).isDefined
   }
 
-  def has(turn: Turn) = turns(turn)
+  def has(turn: TurnLike) = turns(turn)
 
-  def vert() = turns.head.vert
-  
   // expand to include any turns that don't conflict
-  def expand_all_turns() = vert.turns.foreach(t => add_turn(t))
+  def expand_all_turns() = turns.head.other_turns.foreach(t => add_turn(t))
 }
 
 // factory methods for cycles
@@ -78,7 +75,7 @@ object Cycle {
     return cycles*/
   }
   
-  def turn_sets_to_cycles(sets: Set[Set[Turn]]): List[Cycle] = {
+  def turn_sets_to_cycles(sets: Set[Set[TurnLike]]): List[Cycle] = {
     val duration = 30  // TODO cfg
     var offset = 0
     return sets.toList.map(set => {
@@ -103,19 +100,18 @@ object Cycle {
 
   // each set will have all turns from some incoming edge
   // this just factors in conflicts that occur due to merging
-  def split_turn_set(input: Iterable[Turn]): Set[Set[Turn]] = {
+  def split_turn_set(input: Iterable[TurnLike]): Set[Set[TurnLike]] = {
     var turns_left = input
-    val groups = new MutableSet[Set[Turn]]()
+    val groups = new MutableSet[Set[TurnLike]]()
     while (!turns_left.isEmpty) {
-      val this_group = new MutableSet[Turn]()
+      val this_group = new MutableSet[TurnLike]()
       this_group += turns_left.head
       turns_left = turns_left.tail
 
       // conflict relation is symmetric, but not transitive... so do quadratic
       // conflict checking
       for (candidate <- turns_left) {
-        val conflicts = candidate.conflicts // cache
-        if (!this_group.find(t => conflicts(t)).isDefined) {
+        if (!this_group.find(t => candidate.conflicts(t)).isDefined) {
           this_group += candidate
           turns_left = turns_left.filter(t => t != candidate)
         }
@@ -129,11 +125,11 @@ object Cycle {
   // it's only necessary to split because of merging
   // these are the standard turn sets... all turns from each incoming group of
   // lanes can go
-  def standard_turn_sets(vert: Vertex): Set[Set[Turn]] = vert.roads.flatMap(
+  def standard_turn_sets(vert: Vertex): Set[Set[TurnLike]] = vert.roads.flatMap(
     r => split_turn_set(r.incoming_lanes(vert).flatMap(l => l.next_turns))
   ).toSet
 
-  def grouped_left_turn_sets(vert: Vertex): Set[Set[Turn]] = {
+  def grouped_left_turn_sets(vert: Vertex): Set[Set[TurnLike]] = {
     // Don't attempt this if it's not a 4-way stop
     if (vert.roads.size != 4) {
       return standard_turn_sets(vert)
@@ -147,7 +143,7 @@ object Cycle {
     }
 
     // for every incoming road, group the non-left turns
-    val groups = new ListBuffer[Set[Turn]]()
+    val groups = new ListBuffer[Set[TurnLike]]()
     for (r <- vert.roads) {
       groups ++= split_turn_set(r.incoming_lanes(vert).flatMap(e => e.next_turns.filter(t => t.turn_type != TurnType.LEFT)))
     }
@@ -191,7 +187,7 @@ class SignalCyclePolicy(intersection: Intersection) extends Policy(intersection)
   // durations make sense, and that all turns are covered
   val total_duration: Double = {
     var expect_offset = initial_offset
-    val turns_seen = new MutableSet[Turn]  // don't just count, count uniques.
+    val turns_seen = new MutableSet[TurnLike]  // don't just count, count uniques.
 
     for (cycle <- cycles) {
       assert(cycle.offset == expect_offset)
@@ -212,7 +208,7 @@ class SignalCyclePolicy(intersection: Intersection) extends Policy(intersection)
   // a turn until too late..
   // these are the agents we've _accepted_, whether or not they've started their
   // turn.
-  val current_agents = new MutableSet[(Agent, Turn)]
+  val current_agents = new MutableSet[(Agent, TurnLike)]
   // TODO perhaps be Either[Double, Cycle].
   // when None, we're in a normal cycle.
   var start_waiting: Option[Double] = None
@@ -275,7 +271,7 @@ class SignalCyclePolicy(intersection: Intersection) extends Policy(intersection)
     }
   }
 
-  def can_go(a: Agent, turn: Turn, far_away: Double): Boolean = {
+  def can_go(a: Agent, turn: TurnLike, far_away: Double): Boolean = {
     // Flush out stalled slowpokes.
     if (start_waiting.isDefined) {
       // Filter our agents who haven't started their turn and are not moving;
@@ -345,9 +341,9 @@ class SignalCyclePolicy(intersection: Intersection) extends Policy(intersection)
   // just make sure they're in the list of current_agents, meaning we accepted
   // them and it's still their normal cycle, or we're waiting on them but
   // they've still been told to go
-  def validate_entry(a: Agent, turn: Turn) = current_agents((a, turn))
+  def validate_entry(a: Agent, turn: TurnLike) = current_agents((a, turn))
 
-  def handle_exit(a: Agent, turn: Turn) = {
+  def handle_exit(a: Agent, turn: TurnLike) = {
     assert(current_agents((a, turn)))
     current_agents -= ((a, turn))
     // Possibly done waiting.

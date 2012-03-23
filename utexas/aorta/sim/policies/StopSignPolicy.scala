@@ -4,19 +4,19 @@
 
 package utexas.aorta.sim.policies
 
-import utexas.aorta.map.Turn
-import utexas.aorta.sim.{Intersection, Policy, Agent}
+import utexas.aorta.map.TurnLike
+import utexas.aorta.sim.{Junction, Policy, Agent}
 
 import utexas.aorta.{Util, cfg}
 
 // Always stop, then FIFO. Totally unoptimized.
-class StopSignPolicy(intersection: Intersection) extends Policy(intersection) {
-  // owner of the intersection! may be None when the queue has members. In that
+class StopSignPolicy(junction: Junction) extends Policy(junction) {
+  // owner of the junction! may be None when the queue has members. In that
   // case, the first person has to pause a bit longer before continuing.
   var current_owner: Option[Agent] = None
   var queue = List[Agent]()
 
-  def can_go(a: Agent, turn: Turn, far_away: Double): Boolean = {
+  def can_go(a: Agent, turn: TurnLike, far_away: Double): Boolean = {
     // Do they have the lock?
     current_owner match {
       case Some(owner) if a == owner => return true
@@ -47,12 +47,12 @@ class StopSignPolicy(intersection: Intersection) extends Policy(intersection) {
     }
   }
 
-  def validate_entry(a: Agent, turn: Turn) = current_owner match {
+  def validate_entry(a: Agent, turn: TurnLike) = current_owner match {
     case Some(a) => true
     case _       => false
   }
 
-  def handle_exit(a: Agent, turn: Turn) = {
+  def handle_exit(a: Agent, turn: TurnLike) = {
     //assert(a == current_owner.get)    // TODO
     if (!current_owner.isDefined || current_owner.get != a) {
       Util.log(a + " is leaving, but current owner is " + current_owner)
