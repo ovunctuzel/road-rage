@@ -13,6 +13,7 @@ class Vertex(val location: Coordinate, var id: Int) {
   // TODO we could keep a map for faster lookup, sure, but determinism's cool
   // too.
   var turns = new MutableList[Turn]
+  var uber_vert: Option[UberVertex] = None
 
   // TODO construction sucks
   def turns_from(from: Edge): List[Turn] = turns.toList.filter(_.from == from)

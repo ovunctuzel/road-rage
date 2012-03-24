@@ -148,17 +148,16 @@ class UberSection(val v: UberVertex) extends Junction() {
     // TODO move some of this work to route or use an iterator pattern?
     var idx = a.route.find_idx(start) + 1 // so this indexes an edge
     val steps = new ListBuffer[Turn]()
-    steps += TurnLike.toTurn(start)
     var result: Option[UberTurn] = None
     while (!result.isDefined) {
       val step = a.route.lookahead_step(idx)
       if (step.isDefined) {
+        steps += Traversable.toTurn(a.route.lookahead_step(idx - 1).get)  // TODO here?
         val e = Traversable.toEdge(step.get)
         if (!v.verts.contains(e.to)) {
           // found a way out!
           result = Some(new UberTurn(steps.toList, v))
         } else {
-          steps += Traversable.toTurn(a.route.lookahead_step(idx - 1).get)
           idx += 2  // skip the turn, go to the next edge
         }
       } else {

@@ -217,7 +217,9 @@ class Reader(fn: String) {
         case EvElemStart(_, "ubervertex", attribs, _) => {
           val id = get_int(attribs)("id")
           val group = get_attrib(attribs, "verts").split(",").map(v => verts(v.toInt))
-          ubervertices(id) = new UberVertex(id, group.toSet)
+          val uber = new UberVertex(id, group.toSet)
+          ubervertices(id) = uber
+          group.foreach(v => v.uber_vert = Some(uber))
         }
 
         case _ =>

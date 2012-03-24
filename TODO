@@ -1,8 +1,8 @@
 # TODO #
 
-bugs:
-  - illegal intersection entry
-  - if commented out, route doesnt contain a turn
+- gridlock wasnt detected in a case with 4 ubersections that shouldve been grouped as 1
+- observe an individual case of using this -vs- not to observe atomic behavior.
+- seemingly lost determinism? one or two clumps in 1 test..
 
 - dont allow routes with cycles inside our ubersection
 
@@ -10,12 +10,16 @@ bugs:
   look after the end of the uberturn. uberturns conflict if they share edges? so
   dont need to look along uberturn.
 
+- allow agents to spawn in an ubersection again (shouldnt be hard)
+  - but what if two start with conflicting uberturns? :P
 - uberturns should implement some geometry
 - traffic signal policy actually is gonna have trouble/fun with uberturns
   - it turns out policy doesnt really seem to need to know junctions?
 - ubersections arent really found/placed well yet.
   - do cycles have anything to do with it?
 - if route changes during ubersection, problems
+- determine computational impact
+  - disable gridlock detection after this works
 
 # Administrative
 - video

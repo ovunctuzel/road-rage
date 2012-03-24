@@ -115,7 +115,17 @@ class Queue(t: Traversable) {
   
   // TODO Starting on highways seems weird, but allow it for now
   // TODO justify this better, or cite the paper.
-  def ok_to_spawn = t.length >= worst_entry_dist + cfg.end_threshold + (2 * cfg.follow_dist)
+  def ok_to_spawn(): Boolean = {
+    val len = t.length >= worst_entry_dist + cfg.end_threshold + (2 * cfg.follow_dist)
+    if (!len) {
+      return false
+    }
+    // starting in an ubersection causes problems, should fix later.
+    return t match {
+      case e: Edge => (!e.from.uber_vert.isDefined) || (!e.to.uber_vert.isDefined)
+      case _ => false // spawning in turns is just a bad idea
+    }
+  }
   
   // TODO geometric argument
   def safe_spawn_dist = Util.rand_double(

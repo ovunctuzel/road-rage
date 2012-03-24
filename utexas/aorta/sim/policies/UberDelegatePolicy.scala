@@ -29,7 +29,6 @@ class UberDelegatePolicy(intersection: Intersection, master: Policy) extends Pol
   }
 
   def validate_entry(a: Agent, turn: TurnLike) = master.validate_entry(a, turn_of(a, turn))
-  //def validate_entry(a: Agent, turn: TurnLike) = true   // TODO
 
   // ignore this unless the agent is totally leaving the ubersection
   def handle_exit(a: Agent, turn: TurnLike) = {
