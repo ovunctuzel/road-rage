@@ -143,7 +143,8 @@ class UberSection(val v: UberVertex) extends Junction() {
   private def find_uberturn(a: Agent, start: TurnLike): UberTurn = {
     // lookahead in their route until we are out of the ubersection
 
-    // TODO detect cycles in their route!
+    // Detect cycles in routes by seeing duplicate turns
+    val seen = new MutableSet[Turn]()
     
     // TODO move some of this work to route or use an iterator pattern?
     var idx = a.route.find_idx(start) + 1 // so this indexes an edge
@@ -152,7 +153,13 @@ class UberSection(val v: UberVertex) extends Junction() {
     while (!result.isDefined) {
       val step = a.route.lookahead_step(idx)
       if (step.isDefined) {
-        steps += Traversable.toTurn(a.route.lookahead_step(idx - 1).get)  // TODO here?
+        val steps_turn = Traversable.toTurn(a.route.lookahead_step(idx - 1).get)
+        if (seen(steps_turn)) {
+          throw new Exception("Route with a cycle in an ubersection!")
+        } else {
+          seen += steps_turn
+        }
+        steps += steps_turn   // TODO here?
         val e = Traversable.toEdge(step.get)
         if (!v.verts.contains(e.to)) {
           // found a way out!
