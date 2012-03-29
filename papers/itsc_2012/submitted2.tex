@@ -124,8 +124,8 @@ road data available from OpenStreetMap (OSM) \cite{osm}, a moderated,
 user-editable interface for world maps. A map for any desired city in the world
 can be downloaded, which is then parsed by AORTA to set up a scale simulation of
 the real world in a few minutes. AORTA is available open-source and is easily
-extensible\footnote{Code available at
-\texttt{http://code.google.com/p/road-rage}}, making it easy for users to test
+extensible,\footnote{Code available at
+\texttt{http://code.google.com/p/road-rage}} making it easy for users to test
 out a number of agent behaviors and intersection policies in a short time span.
 
 This paper explores the state-of-the-art in traffic simulators in Section
@@ -221,7 +221,7 @@ AORTA's implementation uses Scala, a language implemented on the Java Virtual
 Machine \cite{scala}. Scala provides the advantage of functional programming
 constructs while still permitting imperative style.  Extensions and clients
 built on top of AORTA can be written in either Java or Scala. The software is
-open-source and easily extensible. For instance, the stop sign sign policy used
+open-source and easily extensible. For instance, the stop sign policy used
 in experiments described in Section \ref{sec:results} is implemented in just 70
 lines of code. 
 
@@ -253,7 +253,7 @@ are both called \emph{traversables}, meaning agents may exist on them.
 The map also has a geometric interpretation, used for visualization and
 measuring physical distances. A road contains a sequence of points, defining the
 center line that divides the road into two directions of travel. AORTA
-interprets these points as straight line segmentss and projects parallel lanes
+interprets these points as straight line segments and projects parallel lanes
 out using a fixed width. Turns are approximated with a single straight line
 segment connecting the end of one lane to the start of another.
 
@@ -291,10 +291,10 @@ for incompleteness in OSM data. Road type annotations imprecisely imply the
 number of lanes and typical speed limits. Heuristically enumerating the turns at
 each intersection often misses common features like right turn-only lanes and
 shared center left turn lanes. In some circumstances, one intersection appears
-to be several in close proximity, since OSM only has geometric, not functional,
-data on how roads meet. If OSM encoded this information, the realism of the
-simulation would improve. Other simulators have dealt with similar issues before
-\cite{Krajzewicz_Hertkorn_Ringel_Wagner_2005}.
+to be several in close proximity, since OSM has only geometric data, as opposed
+to functional data, on how roads meet. If OSM encoded functional information,
+the realism of the simulation would improve. Other simulators have dealt with
+similar issues \cite{Krajzewicz_Hertkorn_Ringel_Wagner_2005}.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -351,8 +351,8 @@ has completed.
 Intersections check for collisions by verifying no two agents are simultaneously
 performing conflicting turns. AORTA has a low-granularity model of turn
 conflict. If two vehicles at any point along two different turns could ever come
-into contact, then the turns are always in conflict, no matter where the agents
-actually are along that turn. This is visualized in Fig. \ref{fig:conflicts}.
+into contact, then the turns are always in conflict, regardless of where the agents
+actually are along the turns. This is visualized in Fig. \ref{fig:conflicts}.
 Further work is required before higher granularity can be introduced through
 space-time tiling intersections \cite{JAIR08-dresner}, due to some of the
 complex intersection geometries inferred from OSM. An example of such a complex
@@ -518,7 +518,7 @@ pseudo-random number generator, the input graph, and the generators'
 configuration fully determine the outcome of any simulation \footnote{This
 determinism may break down when generators use worker threads while the
 simulation is running, since tasks may finish and agents may enter the road at
-different times}. After setting up a scenario in the UI, users can save this
+different times.}. After setting up a scenario in the UI, users can save this
 configuration for re-simulation.
 
 The speed of simulation depends on the step duration $dt$, the map size, and the
