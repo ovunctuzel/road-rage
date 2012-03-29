@@ -122,17 +122,16 @@ Like any other microscopic traffic simulator, AORTA needs maps to run
 simulations. One of AORTA's key features is that it generates maps using real
 road data available from OpenStreetMap (OSM) \cite{osm}, a moderated,
 user-editable interface for world maps. A map for any desired city in the world
-can be downloaded, which is then parsed by AORTA to set up a scale simulation
-of the real world in a few minutes. AORTA is available open-source and is
-easily extensible\footnote{Code available at
-\texttt{http://code.google.com/p/road-rage}}, making it easier for users to
-test out a number of agent behaviors and intersection policies in a short
-time span.
+can be downloaded, which is then parsed by AORTA to set up a scale simulation of
+the real world in a few minutes. AORTA is available open-source and is easily
+extensible\footnote{Code available at
+\texttt{http://code.google.com/p/road-rage}}, making it easy for users to test
+out a number of agent behaviors and intersection policies in a short time span.
 
-This paper explores the state-of-the-art in traffic simulators in section
+This paper explores the state-of-the-art in traffic simulators in Section
 \ref{sec:related_work}, followed by a description of AORTA's architecture in
-section \ref{sec:arch}.  Use of OSM data in AORTA is explained in section
-\ref{sec:map}, along with a description of the simulator in section
+section \ref{sec:arch}.  Use of OSM data in AORTA is explained in Section
+\ref{sec:map}, along with a description of the simulator in Section
 \ref{sec:simulation}. Section \ref{sec:results} demonstrates an application
 built on top of AORTA and presents a simple experiment evaluating different
 intersection policies in a large scale scenario. The paper then concludes with a
@@ -216,14 +215,14 @@ graphs, then answers pathfinding and geometry queries. The simulation engine
 adds a notion of agents, vehicle dynamics, and collisions. Finally, the UI
 interactively renders the map and agents. A headless mode also exists to run
 experiments without the overhead of visualization. The interaction between
-modules is visualized in figure \ref{fig:arch}.
+modules is visualized in Fig. \ref{fig:arch}.
 
 AORTA's implementation uses Scala, a language implemented on the Java Virtual
 Machine \cite{scala}. Scala provides the advantage of functional programming
 constructs while still permitting imperative style.  Extensions and clients
 built on top of AORTA can be written in either Java or Scala. The software is
 open-source and easily extensible. For instance, the stop sign sign policy used
-in experiments described in section \ref{sec:results} is implemented in just 70
+in experiments described in Section \ref{sec:results} is implemented in just 70
 lines of code. 
 
 Sections \ref{sec:map} and \ref{sec:simulation} describe map construction from
@@ -238,8 +237,8 @@ One of the key features of AORTA is the simulation of traffic on existing road
 network data from OpenStreetMap \cite{osm}. The data from OSM is not directly
 suitable for running a simulation and is pre-processed through a \emph{map
 builder} utility. Section \ref{sec:mapmodel} describes the map model generated
-by the builder, section \ref{sec:mapconstruction} describes the process of
-refining OSM data, and section \ref{sec:osmlimits} describes limitations with
+by the builder, Section \ref{sec:mapconstruction} describes the process of
+refining OSM data, and Section \ref{sec:osmlimits} describes limitations with
 this process.
 
 \subsection{Map Model}
@@ -252,11 +251,11 @@ incoming to outgoing lanes. Since both lanes and turns support traffic, they
 are both called \emph{traversables}, meaning agents may exist on them.
 
 The map also has a geometric interpretation, used for visualization and
-measuring physical distances. A road contains a sequence of points, defining
-the center line that divides the road into two directions of travel. AORTA
-interprets these points as straight lines and projects parallel lanes out using
-a fixed width. Turns are modeled with a single straight line connecting the end
-of one lane to the start of another.
+measuring physical distances. A road contains a sequence of points, defining the
+center line that divides the road into two directions of travel. AORTA
+interprets these points as straight line segmentss and projects parallel lanes
+out using a fixed width. Turns are approximated with a single straight line
+segment connecting the end of one lane to the start of another.
 
 \subsection{Map Construction Passes}
 \label{sec:mapconstruction}
@@ -279,11 +278,9 @@ with each pass feeding the next. The map model is then stored in an XML format.
         intersection. The angle between the two lanes determines whether the turn is
         a left, right, straight, or U-turn. When several lanes all cross into fewer
         lanes, the builder forces merging at the rightmost lanes. 
-  \item Because turns are heuristically placed, the graph is often disconnected.
-        In order to ensure that an agent will be able to reach any point in the map,
-        the builder removes all but the largest strongly connected component of the
-        directed graph. Disconnected lanes are spliced out of larger roads, leaving
-        geometric gaps, but correctly ensuring connectivity.
+  \item Due to OSM's lack of turn data, the directed graph may not be connected.
+        The builder removes small disconnected portions, leaving the largest
+        strongly connected component.
 \end{enumerate}
 
 \subsection{Limitations with OSM}
@@ -293,11 +290,11 @@ AORTA's map construction process, although flexible, cannot completely account
 for incompleteness in OSM data. Road type annotations imprecisely imply the
 number of lanes and typical speed limits. Heuristically enumerating the turns at
 each intersection often misses common features like right turn-only lanes and
-shared center left turn lanes. There are many circumstances where AORTA
-simulates one intersection as several in close proximity because roads do not
-geometrically line up, but functionally they do. If OSM encoded this data, the
-the realism of the simulation would improve. Other simulators have identified
-similar issues before \cite{Krajzewicz_Hertkorn_Ringel_Wagner_2005}.
+shared center left turn lanes. In some circumstances, one intersection appears
+to be several in close proximity, since OSM only has geometric, not functional,
+data on how roads meet. If OSM encoded this information, the realism of the
+simulation would improve. Other simulators have dealt with similar issues before
+\cite{Krajzewicz_Hertkorn_Ringel_Wagner_2005}.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -355,11 +352,11 @@ Intersections check for collisions by verifying no two agents are simultaneously
 performing conflicting turns. AORTA has a low-granularity model of turn
 conflict. If two vehicles at any point along two different turns could ever come
 into contact, then the turns are always in conflict, no matter where the agents
-actually are along that turn. This is visualized in figure \ref{fig:conflicts}.
+actually are along that turn. This is visualized in Fig. \ref{fig:conflicts}.
 Further work is required before higher granularity can be introduced through
 space-time tiling intersections \cite{JAIR08-dresner}, due to some of the
 complex intersection geometries inferred from OSM. An example of such a complex
-intersection is shown in figure \ref{fig:crazyIntersection}.
+intersection is shown in Fig. \ref{fig:crazyIntersection}.
 
 % When a collision occurs, the simulator throws warnings and halts, since this
 % indicates a bug in some policy. A future alternative could be to mark the region
@@ -408,11 +405,11 @@ different agents as long as no two simultaneous turns conflict.
 
 \subsection{Current Limitations}
 
-Currently agents cannot change lanes. This causes a second issue: gridlock.
-Each agent maintains a safe following distance from the next. If a lane is
-filled, then an agent may be forced to stop in an intersection mid-turn and
-block other traffic. The default behavior prevents this by refusing to start a
-turn before the lookahead engine guarantees no agent will trigger a premature
+Currently agents cannot change lanes. This causes a second potential issue:
+gridlock.  Each agent maintains a safe following distance from the next. If a
+lane is filled, then an agent may be forced to stop in an intersection mid-turn
+and block other traffic. The default behavior prevents this by refusing to start
+a turn before the lookahead engine guarantees no agent will trigger a premature
 stop.
 
 However, with very high volumes of traffic, it is possible for waiting agents to
@@ -432,11 +429,11 @@ find such cycles.
 
 In many observed cases, the gridlock is caused by AORTA's present lack of
 lane-changing support: agents loop around intersections such as those pictured
-in figure \ref{fig:gridlock} in order to enter a lane adjacent to their original
-lane.  Since these routes are still legal, it is desirable to prevent or mend
-this problem without forcing different routes. However, choosing alternative
-moves (by changing lanes or rerouting) is an important constituent of a
-sufficient condition for the liveness of a road network \cite{AAAI11-au}.
+in Fig. \ref{fig:gridlock} in order to enter a lane adjacent to their original
+lane. Since such routes are still legal, it is desirable to prevent or mend this
+problem without requesting different routes. However, choosing alternative moves
+(by changing lanes or rerouting) is an important constituent of a sufficient
+condition for the liveness of a road network \cite{AAAI11-au}.
 
 \subsection{Extending AORTA}
 \label{sec:config}
@@ -573,11 +570,11 @@ policies.
 The number of agents driving at some time changes because the continuous
 generator introduces a new agent every second. This count reaches a steady state
 when the generator introduces an agent at the same rate as older agents finish
-their route. Figure \ref{fig:agent_cnt_atx} reveals that autonomous reservations
+their route. Fig. \ref{fig:agent_cnt_atx} reveals that autonomous reservations
 let agents reach their destination twice as quickly as the competition in
 Austin, with a steady-state of about 400 agents. There, the count for traffic
 signals continues to increase because gridlock occurred in one segment of the
-map, causing agents to not finish their route. Figure
+map, causing agents to not finish their route. Fig.
 \ref{fig:agent_cnt_houston} reveals a similar trend in Houston, except that
 gridlock occurred both during the trial with traffic signals and stop signs.
 Unexpected starvation was also observed: although the signals cycle through
@@ -587,7 +584,7 @@ destination lane to fill and become blocked.
 Repeating this or other experiments in more locations only requires those
 locations to be exported from the OSM website. Editing the intersection policies
 is similarly convenient, as users can ignore most of AORTA's code-base and just
-change the logic described in section \ref{sec:policies}.  For reference, the
+change the logic described in Section \ref{sec:policies}.  For reference, the
 most complex intersection policy, traffic signals with the flooding heuristic
 for timing assignment, is only 400 lines of code in Scala.
 
@@ -602,8 +599,8 @@ allows users to repeat an experiment in different places with minimal effort.
 Future work will exploit the flexible infrastructure of interactions between
 agent behaviors and intersections by exploring dynamic replanning and adaptable
 signal timings. On top of these structures, applications could experiment with
-ideas such dynamic contra-flow \cite{ITSC11-hausknecht}.  There will also be an
-effort to improve AORTA as a framework by including a lane-changing model,
+ideas such as dynamic contra-flow \cite{ITSC11-hausknecht}. There will also be
+an effort to improve AORTA as a framework by including a lane-changing model,
 preventing gridlock, and supporting more agents through parallel computing.
 
 % \addtolength{\textheight}{-12cm}  % This command serves to balance the column lengths
