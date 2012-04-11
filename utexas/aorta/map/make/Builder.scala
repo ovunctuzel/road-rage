@@ -57,9 +57,8 @@ object Builder {
 
     // TODO better output location?
     Util.log(
-      "Dumping map with %d roads, %d edges, %d vertices, and %d ubersections".format(
-        graph3.roads.length, graph3.edges.length, graph3.vertices.length,
-        graph3.ubersections.length
+      "Dumping map with %d roads, %d edges, and %d vertices".format(
+        graph3.roads.length, graph3.edges.length, graph3.vertices.length
     ))
     val out = new FileWriter(ofn)
     graph3.to_xml(out, graph1)

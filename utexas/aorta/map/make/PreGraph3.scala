@@ -9,8 +9,7 @@ import java.io.FileWriter
 import scala.collection.mutable.HashMap
 import scala.collection.mutable.MutableList
 
-import utexas.aorta.map.{Coordinate, Vertex, Road, Edge, Direction, Ward, Turn,
-                         UberSection}
+import utexas.aorta.map.{Coordinate, Vertex, Road, Edge, Direction, Ward, Turn}
 
 // TODO we should really subclass the real Graph, but not sure yet.
 
@@ -27,7 +26,6 @@ class PreGraph3(old_graph: PreGraph2) {
   var roads = old_graph.edges.map(add_road)   // collections of edges
   var wards = List[Ward]()
   var special_ward: Ward = null
-  var ubersections = List[UberSection]()
 
   // magic borrowed from Graph to support Tarjan's. Each of these expensive
   // things should only be called once.
@@ -111,13 +109,11 @@ class PreGraph3(old_graph: PreGraph2) {
       + "\" xoff=\"" + dat.offX + "\" yoff=\"" + dat.offY
       + "\" scale=\"" + dat.scale + "\" roads=\"" + roads.length
       + "\" edges=\"" + edges.length + "\" verts=\"" + vertices.length 
-      + "\" special_ward=\"" + special_ward.id
-      + "\" ubersections=\"" + ubersections.length + "\">\n"
+      + "\" special_ward=\"" + special_ward.id + "\">\n"
     )
     vertices.foreach(v => v.to_xml(out))
     roads.foreach(r => r.to_xml(out))
     edges.foreach(e => e.to_xml(out))
-    ubersections.foreach(u => u.to_xml(out))
     out.write("</graph>\n")
   }
 }

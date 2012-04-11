@@ -16,10 +16,7 @@ import utexas.aorta.{Util, cfg, Stats, Intersection_Throughput_Stat}
 
 // Reason about collisions from conflicting simultaneous turns.
 class Intersection(val v: Vertex) {
-  //val policy: Policy = new NeverGoPolicy(this)
-  val policy: Policy = new StopSignPolicy(this)
-  //val policy: Policy = new SignalCyclePolicy(this)
-  //val policy: Policy = new ReservationPolicy(this)
+  val policy = Simulation.choose_policy(this)
 
   override def toString = "Intersection(" + v + ")"
 
@@ -128,11 +125,6 @@ abstract class Policy(val intersection: Intersection) {
   // Since we lookahead over small edges, we maybe won't/can't stop on the edge
   // right before the turn. As long as we validly stopped for us, then fine.
   def is_waiting(a: Agent, t: Turn, far_away: Double) = far_away <= cfg.end_threshold
-  val agentTurnMap = new MutableMap[Agent, List[Turn]]()
-  def get_agent_turn_start(a: Agent) = agentTurnMap.getOrElse(a, Nil).headOption
-  def get_agent_turn_end(a: Agent) = agentTurnMap.getOrElse(a, Nil).lastOption
-  def get_agent_turn_set(a: Agent) = agentTurnMap.get(a)
-  def set_agent_turn_set(a: Agent, t: List[Turn]) = agentTurnMap.put(a, t)
 }
 
 // Simplest base-line ever.
