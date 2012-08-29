@@ -472,4 +472,20 @@ class Pass3(old_graph: PreGraph2) {
            else
              Set()
   }
+
+  // TODO call this somewhere
+  // TODO gotta do all that shuffling of IDs again. maybe do it once at the end.
+  def merge_vert(nuke: Vertex, merge_with: Vertex) = {
+    // delete 'nuke' from vertices
+    graph.vertices = graph.vertices.filter(v => v != nuke)
+
+    // change each in_edge and out_edge to point to 'merge_with'
+    for (e <- nuke.in_edges) {
+    }
+    for (e <- nuke.out_edges) {
+    }
+
+
+    // fiddle with turns somehow
+  }
 }

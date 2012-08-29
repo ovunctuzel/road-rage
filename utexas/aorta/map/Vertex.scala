@@ -26,6 +26,7 @@ class Vertex(val location: Coordinate, var id: Int) {
   def roads = turns.flatMap(t => List(t.from.road, t.to.road)).toSet
   def edges = turns.flatMap(t => List(t.from, t.to))
   def in_edges = turns.map(t => t.from)
+  def out_edges = turns.map(t => t.to)
 
   // these may prove useful; just remember roads are undirected.
   // TODO test for one-ways?
