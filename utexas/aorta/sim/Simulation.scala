@@ -79,11 +79,6 @@ class Simulation(roads: Array[Road], edges: Array[Edge], vertices: Array[Vertex]
   // All intersections with agents in them.
   val active_intersections = new MutableSet[Intersection]
 
-  // Just a convenience method.
-  def spawn_army(total: Int) = {
-    add_gen(new FixedSizeGenerator(this, edges, edges, total))
-  }
-
   def wait_for_all_generators() = {
     // A pre-step to schedule requests, then blockingly wait for routes to be done
     pre_step

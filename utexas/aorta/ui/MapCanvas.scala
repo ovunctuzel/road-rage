@@ -539,10 +539,7 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
         handle_ev(EV_Action("toggle-wards"))
       }
       case EV_Action("spawn-army") => {
-        sim.spawn_army(cfg.army_size)
-        // TODO when we're paused, poll generators anyway.
-        status.agents.text = sim.describe_agents
-        repaint
+        prompt_generator(sim.edges, sim.edges)
       }
       case EV_Action("step") => {
         val note = if (running)
@@ -725,6 +722,11 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
         show_green = !show_green
       }
       case EV_Select_Polygon() => {
+        // TODO continuation style would make this reasonable:
+        // 1) dont keep all that ugly state in the object
+        //    (but how to clear it?)
+        // 2) code reads like a simple flow
+
         // Let's find all vertices inside the polygon.
         val rds = sim.vertices.filter(v => polygon.contains(v.location.x, v.location.y)).flatMap(v => v.roads).toSet
         Util.log("Matched " + rds.size + " roads")
@@ -736,44 +738,11 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
             Util.log("Now select a second set of roads")
           } else {
             polygon_roads2 = rds
-            Util.log("Creating a new generator...")
 
-            // Ask: fixed (how many) or continuous (how many per what time)
-            // TODO improve the UI.
-            Dialog.showOptions(
-              message = "Want a fixed, one-time burst or a continuous generator?",
-              optionType = Dialog.Options.YesNoCancel, initial = 0,
-              entries = Seq("Constant", "Continuous")
-            ) match {
-              case Dialog.Result.Yes => {
-                // Fixed
-                prompt_int("How many agents?") match {
-                  case Some(num) => {
-                    sim.add_gen(new FixedSizeGenerator(
-                      sim,
-                      polygon_roads1.toList.flatMap(r => r.all_lanes),
-                      polygon_roads2.toList.flatMap(r => r.all_lanes),
-                      num
-                    ))
-                  }
-                  case _ =>
-                }
-              }
-              case Dialog.Result.No => {
-                // Continuous
-                prompt_double("How often (in simulation-time seconds) do you want one new agent?") match {
-                  case Some(time) => {
-                    sim.add_gen(new ContinuousGenerator(
-                      sim,
-                      polygon_roads1.toList.flatMap(r => r.all_lanes),
-                      polygon_roads2.toList.flatMap(r => r.all_lanes),
-                      time
-                    ))
-                  }
-                  case _ =>
-                }
-              }
-            }
+            prompt_generator(
+              polygon_roads1.toList.flatMap(_.all_lanes),
+              polygon_roads2.toList.flatMap(_.all_lanes)
+            )
 
             // Make the keyboard work again
             grab_focus
@@ -812,6 +781,41 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
       }
     }
     case _ => None
+  }
+
+  def prompt_generator(src: Seq[Edge], dst: Seq[Edge]) = {
+    Util.log("Creating a new generator...")
+
+    // Ask: fixed (how many) or continuous (how many per what time)
+    // TODO improve the UI.
+    Dialog.showOptions(
+      message = "Want a fixed, one-time burst or a continuous generator?",
+      optionType = Dialog.Options.YesNoCancel, initial = 0,
+      entries = Seq("Constant", "Continuous")
+    ) match {
+      case Dialog.Result.Yes => {
+        // Fixed
+        prompt_int("How many agents?") match {
+          case Some(num) => {
+            sim.add_gen(new FixedSizeGenerator(
+              sim, src, dst, num
+            ))
+          }
+          case _ =>
+        }
+      }
+      case Dialog.Result.No => {
+        // Continuous
+        prompt_double("How often (in simulation-time seconds) do you want one new agent?") match {
+          case Some(time) => {
+            sim.add_gen(new ContinuousGenerator(
+              sim, src, dst, time
+            ))
+          }
+          case _ =>
+        }
+      }
+    }
   }
 
   def switch_mode(m: Mode.Mode) = {

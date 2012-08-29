@@ -13,7 +13,6 @@ TESTING IT
   - observe a case where doing this helps some situation
 
 # Administrative
-- video
 - improve scripts to not rebuild maps often
 - website
   - build instructions (with scala and such)
