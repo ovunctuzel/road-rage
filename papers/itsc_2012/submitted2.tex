@@ -73,11 +73,11 @@ an experiment testing intersection policies at a city-wide scale.
 \label{sec:introduction}
 
 Autonomous vehicle technology has made tremendous progress in the last decade.
-In 2007, six of the competing teams completed the 96km course set for the DARPA
+In 2007, six of the competing teams completed the 96 km course set for the DARPA
 Urban Challenge \cite{spectrumUrbanChallenge2007}. They did so while
 obeying the traffic laws followed by human drivers, navigating along with other
 moving vehicles, and following correct intersection precedence order. Since
-then, Google's driverless cars have clocked more than 250,000km on public roads
+then, Google's driverless cars have clocked more than 250,000 km on public roads
 in urban California, USA \cite{tedThrun2011}. In 2010, researchers from the
 University of Parma successfully completed an autonomous
 \textit{intercontinental} run from Parma, Italy to Shanghai, China
@@ -163,7 +163,7 @@ routes.
 Another popular open source traffic simulator that can use OSM data is SUMO
 \cite{SUMO2011}, which shares many similar goals with AORTA. SUMO has been used to
 study the effect of automated transportation systems, route planning of
-individual vehicles, as well as dynamically adapting traffic signal policies to
+individual vehicles, and dynamically adapting traffic signal policies to
 increase traffic efficiency. While SUMO has a flexible system for managing
 traditional traffic signals, AORTA's general intersection policies are designed
 with autonomous vehicles in mind. These policies can use traditional schemes
@@ -405,11 +405,12 @@ different agents as long as no two simultaneous turns conflict.
 
 \subsection{Current Limitations}
 
-Currently agents cannot change lanes. This causes a second potential issue:
-gridlock.  Each agent maintains a safe following distance from the next. If a
-lane is filled, then an agent may be forced to stop in an intersection mid-turn
-and block other traffic. The default behavior prevents this by refusing to start
-a turn before the lookahead engine guarantees no agent will trigger a premature
+In the currently released version of the simulator, the ability for agents to
+change lanes has not yet been implemented. As a result, gridlock potentially
+occurs. Each agent maintains a safe following distance from the next. If a lane
+is filled, then an agent may be forced to stop in an intersection mid-turn and
+block other traffic. The default behavior prevents this by refusing to start a
+turn before the lookahead engine guarantees no agent will trigger a premature
 stop.
 
 However, with very high volumes of traffic, it is possible for waiting agents to
@@ -418,7 +419,7 @@ manner so that the agent at the front of each lane is waiting to perform a turn
 into another full lane with a similar agent at the front, gridlock
 \cite{AAAI11-au} occurs: no agent in the system will make progress unless an
 agent at the front decides to pick a different turn. AORTA has the ability to
-find such cycles.
+detect such cyclic dependencies.
 
 \begin{figure}[h]
   \centering \includegraphics[scale=0.25]{gridlock.png}
@@ -504,9 +505,9 @@ AORTA is a useful tool for evaluating this relation.
 \subsection{Experimental Setup}
 
 The experiment simulates one hour of traffic in two cities: a
-9$\times$11km$^{2}$ slice of downtown Austin, Texas\footnote{bounded by the
+9$\times$11 km$^{2}$ slice of downtown Austin, Texas\footnote{bounded by the
 Mopac, Springdale Road, Oltorf Street and Koenig Lane}, and a
-15$\times$13km$^{2}$ slice of downtown Houston, Texas\footnote{bounded by Ella
+15$\times$13 km$^{2}$ slice of downtown Houston, Texas\footnote{bounded by Ella
 Boulevard, Eastex Freeway, West Alabama Street and Crosstimbers Street}.  The
 step duration is fixed at 0.1 seconds. While the intersection policies vary,
 the agents spawned and their routes remain the same.  A generator creates one

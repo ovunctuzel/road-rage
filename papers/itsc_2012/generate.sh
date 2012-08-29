@@ -3,7 +3,7 @@
 if [ $# -eq 1 ]; then
   INPUT=$1
 else
-  INPUT=post_submit.tex
+  INPUT=submitted2.tex
 fi
 
 # generate graphviz diagrams
