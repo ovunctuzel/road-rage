@@ -25,10 +25,18 @@ object Generator {
 
     // TODO a bit fixed based on the two types of generators we have, but adding
     // a new class doesn't entail too much new work
+    // TODO serialize this info from the lambda?
+    val route_builder = Simulation.route_builder("Static A*")
     val g = params("type") match {
-      case "fixed"      => new FixedSizeGenerator(sim, starts, ends, params("total").toInt)
-      case "continuous" => new ContinuousGenerator(sim, starts, ends, params("spawn_every").toDouble)
-      case _            => throw new Exception("Weird serialized generator with type " + params("type"))
+      case "fixed"      => new FixedSizeGenerator(
+        sim, starts, ends, params("total").toInt, route_builder
+      )
+      case "continuous" => new ContinuousGenerator(
+        sim, starts, ends, params("spawn_every").toDouble, route_builder
+      )
+      case _            => throw new Exception(
+        "Weird serialized generator with type " + params("type")
+      )
     }
 
     def make_gen(): Unit = sim.add_gen(g)
@@ -36,7 +44,8 @@ object Generator {
   }
 }
 
-abstract class Generator(sim: Simulation, desired_starts: Seq[Edge], ends: Seq[Edge])
+abstract class Generator(sim: Simulation, desired_starts: Seq[Edge],
+                         ends: Seq[Edge], route_builder: () => Route)
 extends Ordered[Generator]
 {
   val id = Generator.next_id
@@ -63,7 +72,7 @@ extends Ordered[Generator]
   def count_pending = pending.size
 
   def add_specific_agent(start: Edge, end: Edge) = {
-    val route = Simulation.choose_route()
+    val route = route_builder()
     val a = new Agent(sim.next_id, sim, start, sim.queues(start).safe_spawn_dist, route)
 
     // schedule whatever work the route needs done.
@@ -137,8 +146,9 @@ extends Ordered[Generator]
 // TODO there's further refactorings that should happen between these two...
 // Fixed is really a degenerate case of continuous.
 
-class FixedSizeGenerator(sim: Simulation, starts: Seq[Edge], ends: Seq[Edge], total: Int)
-  extends Generator(sim, starts, ends)
+class FixedSizeGenerator(sim: Simulation, starts: Seq[Edge], ends: Seq[Edge],
+                         total: Int, route_builder: () => Route)
+  extends Generator(sim, starts, ends, route_builder)
 {
   var num_to_spawn = total
 
@@ -162,7 +172,8 @@ class FixedSizeGenerator(sim: Simulation, starts: Seq[Edge], ends: Seq[Edge], to
 }
 
 class ContinuousGenerator(sim: Simulation, starts: Seq[Edge], ends: Seq[Edge],
-                          spawn_every: Double) extends Generator(sim, starts, ends)
+                          spawn_every: Double, route_builder: () => Route)
+  extends Generator(sim, starts, ends, route_builder)
 {
   var last_tick = Agent.sim.tick
   var accumulated_time = 0.0

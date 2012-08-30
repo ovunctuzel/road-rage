@@ -16,7 +16,7 @@ import swing.Dialog
 
 import utexas.aorta.map._  // TODO yeah getting lazy.
 import utexas.aorta.sim.{Simulation, Agent, FixedSizeGenerator, ContinuousGenerator,
-                   Sim_Event, EV_Signal_Change}
+                         Sim_Event, EV_Signal_Change}
 import utexas.aorta.sim.policies.{GreenFlood, Cycle}
 
 import utexas.aorta.{Util, cfg}
@@ -783,8 +783,21 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
     case _ => None
   }
 
-  def prompt_generator(src: Seq[Edge], dst: Seq[Edge]) = {
+  def prompt_generator(src: Seq[Edge], dst: Seq[Edge]): Unit = {
     Util.log("Creating a new generator...")
+
+    // Ask: what type of behavior and route strategy
+    // TODO plumb behavior through, too, once there's reason to
+    val route_builder = Dialog.showInput(
+      message = "How should the agents route to their destination?",
+      initial = "",
+      // TODO populate seq from what sim uses
+      entries = Seq("Static A*", "Drunken", "Directional Drunk",
+                    "Drunken Explorer")
+    ) match {
+      case Some(name) => Simulation.route_builder(name.toString)
+      case None => return
+    }
 
     // Ask: fixed (how many) or continuous (how many per what time)
     // TODO improve the UI.
@@ -798,7 +811,7 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
         prompt_int("How many agents?") match {
           case Some(num) => {
             sim.add_gen(new FixedSizeGenerator(
-              sim, src, dst, num
+              sim, src, dst, num, route_builder
             ))
           }
           case _ =>
@@ -809,7 +822,7 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
         prompt_double("How often (in simulation-time seconds) do you want one new agent?") match {
           case Some(time) => {
             sim.add_gen(new ContinuousGenerator(
-              sim, src, dst, time
+              sim, src, dst, time, route_builder
             ))
           }
           case _ =>

@@ -278,11 +278,11 @@ object Simulation {
     //return new ReservationPolicy(i)
   }
 
-  def choose_route(): Route = {
-    // TODO how to decide?!
-    return new StaticRoute()
-    //return new DrunkenRoute()
-    //return new DirectionalDrunkRoute()
-    //return new DrunkenExplorerRoute()
+  def route_builder(name: String): () => Route = name match {
+    case "Static A*" => () => new StaticRoute()
+    case "Drunken" => () => new DrunkenRoute()
+    case "Directional Drunk" => () => new DirectionalDrunkRoute()
+    case "Drunken Explorer" => () => new DrunkenExplorerRoute()
+    // TODO case _ => ???
   }
 }
