@@ -16,7 +16,9 @@ import utexas.aorta.{Util, cfg, Stats, Intersection_Throughput_Stat}
 
 // Reason about collisions from conflicting simultaneous turns.
 class Intersection(val v: Vertex) {
-  val policy = Simulation.choose_policy(this)
+  // Set some default
+  // TODO possible issues when switching when agents are close by
+  var policy: Policy = new StopSignPolicy(this)
 
   override def toString = "Intersection(" + v + ")"
 

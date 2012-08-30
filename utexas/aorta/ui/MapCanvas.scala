@@ -721,7 +721,7 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
       case EV_Key_Press(Key.G) => {
         show_green = !show_green
       }
-      case EV_Select_Polygon() => {
+      case EV_Select_Polygon_For_Army() => {
         // TODO continuation style would make this reasonable:
         // 1) dont keep all that ugly state in the object
         //    (but how to clear it?)
@@ -750,6 +750,25 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
             polygon_roads1 = Set()
             polygon_roads2 = Set()
           }
+        }
+      }
+      case EV_Select_Polygon_For_Policy() => {
+        // Let's find all vertices inside the polygon.
+        val intersections = sim.intersections.values.filter(
+          i => polygon.contains(i.v.location.x, i.v.location.y)
+        )
+        Util.log("Matched " + intersections.size + " intersections")
+        Dialog.showInput(
+          message = "What policy should govern these intersections?",
+          initial = "",
+          // TODO populate seq from what sim uses
+          entries = Seq("Never Go", "Stop Sign", "Signal Cycle", "Reservation")
+        ) match {
+          case Some(name) => {
+            val builder = Simulation.policy_builder(name.toString)
+            intersections.foreach(i => i.policy = builder(i))
+          }
+          case None =>
         }
       }
       case EV_Key_Press(_) => // Ignore the rest

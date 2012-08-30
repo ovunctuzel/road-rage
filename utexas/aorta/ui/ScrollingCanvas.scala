@@ -90,7 +90,18 @@ abstract class ScrollingCanvas extends Component {
       if (polygon.npoints < 3) {
         Util.log("A polygon needs more than one line")
       } else {
-        handle_ev(EV_Select_Polygon())
+        handle_ev(EV_Select_Polygon_For_Army())
+      }
+      drawing_mode = false
+      polygon = new Polygon()
+      repaint
+    }
+    case KeyPressed(_, Key.P, _, _) if drawing_mode => {
+      // TODO refactor
+      if (polygon.npoints < 3) {
+        Util.log("A polygon needs more than one line")
+      } else {
+        handle_ev(EV_Select_Polygon_For_Policy())
       }
       drawing_mode = false
       polygon = new Polygon()
@@ -265,4 +276,5 @@ final case class EV_Param_Set(key: String, value: Option[String]) extends UI_Eve
 // that to work...
 final case class EV_Key_Press(key: Any) extends UI_Event {}
 final case class EV_Action(key: String) extends UI_Event {}
-final case class EV_Select_Polygon() extends UI_Event {}
+final case class EV_Select_Polygon_For_Army() extends UI_Event {}
+final case class EV_Select_Polygon_For_Policy() extends UI_Event {}

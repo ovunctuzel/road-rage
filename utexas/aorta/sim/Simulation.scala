@@ -270,12 +270,12 @@ object Simulation {
     return sim
   }
 
-  def choose_policy(i: Intersection): Policy = {
-    // TODO how to choose?
-    //return new NeverGoPolicy(i)
-    return new StopSignPolicy(i)
-    //return new SignalCyclePolicy(i)
-    //return new ReservationPolicy(i)
+  def policy_builder(name: String): (Intersection) => Policy = name match {
+    case "Never Go" => (i: Intersection) => new NeverGoPolicy(i)
+    case "Stop Sign" => (i: Intersection) => new StopSignPolicy(i)
+    case "Signal Cycle" => (i: Intersection) => new SignalCyclePolicy(i)
+    case "Reservation" => (i: Intersection) => new ReservationPolicy(i)
+    // TODO case _ => ???
   }
 
   def route_builder(name: String): () => Route = name match {
