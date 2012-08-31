@@ -5,6 +5,7 @@ DOING IT
   - still flood, then make new vert and turns, and mod old edges?
   - save uber-turns and extend turn, with lines/a notion of saved conflict?
   - track conflicts online by doing vert relaxation slowly?
+  - emphasize mixed policies
 
 TESTING IT
   - what if there are too many uberturns somewhere?
