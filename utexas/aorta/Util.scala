@@ -74,7 +74,9 @@ object Util {
   {
     // v_f = v_i + a*t
     val time_to_cruise = (speed_f - speed_i) / accel
-    val dist_during_accel = dist_at_constant_accel(accel, time_to_cruise, speed_i)
+    val dist_during_accel = dist_at_constant_accel(
+      accel, time_to_cruise, speed_i
+    )
 
     if (dist_during_accel < dist) {
       // so then the remainder happens at constant cruisin speed
@@ -192,10 +194,15 @@ class Int_Cfgable(default: Int, descr: String, min: Int, max: Int) {
 }
 
 sealed trait Measurement {}
-final case class Wasted_Time_Stat(agent: Int, intersection: Int, lag: Double, time: Double) extends Measurement {
-  override def toString = "s1 %d %d %.2f %d".format(agent, intersection, lag, time.toInt)
+final case class Wasted_Time_Stat(agent: Int, intersection: Int, lag: Double,
+                                  time: Double) extends Measurement
+{
+  override def toString = "s1 %d %d %.2f %d".format(
+    agent, intersection, lag, time.toInt
+  )
 }
-final case class Total_Trip_Stat(agent: Int, time: Double, dist: Double) extends Measurement
+final case class Total_Trip_Stat(agent: Int, time: Double, dist: Double)
+  extends Measurement
 {
   // TODO want average speed?
   override def toString = "s2 %d %.2f %.2f".format(agent, time, dist)
@@ -205,7 +212,9 @@ final case class Intersection_Throughput_Stat(intersection: Int, requests: Int,
   extends Measurement
 {
   // TODO should entered > requests?
-  override def toString = "s3 %d %d %d %d".format(intersection, requests, entered, time.toInt)
+  override def toString = "s3 %d %d %d %d".format(
+    intersection, requests, entered, time.toInt
+  )
 }
 final case class Active_Agents_Stat(time: Int, cnt: Int) extends Measurement
 {

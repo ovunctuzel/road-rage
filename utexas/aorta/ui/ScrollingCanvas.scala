@@ -271,7 +271,8 @@ abstract class ScrollingCanvas extends Component {
 sealed trait UI_Event {}
 final case class EV_Mouse_Moved(x: Double, y: Double) extends UI_Event {}
 // TODO type erasure issue here; this should really be Option[Any]
-final case class EV_Param_Set(key: String, value: Option[String]) extends UI_Event {}
+final case class EV_Param_Set(key: String, value: Option[String])
+  extends UI_Event {}
 // TODO this is really a swing.event.Key (a Enumeration.Value), but I can't get
 // that to work...
 final case class EV_Key_Press(key: Any) extends UI_Event {}

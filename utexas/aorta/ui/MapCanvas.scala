@@ -15,8 +15,8 @@ import swing.event.Key
 import swing.Dialog
 
 import utexas.aorta.map._  // TODO yeah getting lazy.
-import utexas.aorta.sim.{Simulation, Agent, FixedSizeGenerator, ContinuousGenerator,
-                         Sim_Event, EV_Signal_Change}
+import utexas.aorta.sim.{Simulation, Agent, FixedSizeGenerator,
+                         ContinuousGenerator, Sim_Event, EV_Signal_Change}
 import utexas.aorta.sim.policies.{GreenFlood, Cycle}
 
 import utexas.aorta.{Util, cfg}
@@ -108,12 +108,14 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
   Util.log("Pre-rendering road geometry...")
   Util.log_push
 
-  val road2lines = new HashMap[Road, MutableSet[RoadLine]] with MultiMap[Road, RoadLine]
+  val road2lines = new HashMap[Road, MutableSet[RoadLine]]
+    with MultiMap[Road, RoadLine]
   Util.log("Road lines...")
   val bg_lines = build_bg_lines
 
   // this is only used for finer granularity searching...
-  val edge2lines = new HashMap[Edge, MutableSet[EdgeLine]] with MultiMap[Edge, EdgeLine]
+  val edge2lines = new HashMap[Edge, MutableSet[EdgeLine]]
+    with MultiMap[Edge, EdgeLine]
   // pre-render lanes
   Util.log("Edge lines...")
   val fg_lines = build_fg_lines
@@ -164,7 +166,9 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
 
   // pre-compute; we don't have more than max_lanes
   private val lane_line_width = 0.6f  // TODO cfg
-  private val strokes = (0 until cfg.max_lanes).map(n => new BasicStroke(lane_line_width * n.toFloat))
+  private val strokes = (0 until cfg.max_lanes).map(
+    n => new BasicStroke(lane_line_width * n.toFloat)
+  )
 
   def zoomed_in = zoom > cfg.zoom_threshold
 
@@ -194,7 +198,8 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
     val roads_seen = new ListBuffer[RoadLine]
 
     // Draw the first layer (roads) - either all or just major ones
-    for (l <- bg_lines if (l.line.intersects(window) && (!show_wards || sim.special_ward.roads(l.road))))
+    for (l <- bg_lines if (l.line.intersects(window) &&
+                           (!show_wards || sim.special_ward.roads(l.road))))
     {
       draw_road(g2d, l)
       roads_seen += l
@@ -213,7 +218,8 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
       // then the second layer (lanes)
       // TODO this is ugly and maybe inefficient?
       //for (l <- fg_lines if l.line.intersects(window))
-      for (r <- roads_seen; l <- r.road.all_lanes.flatMap(edge2lines(_)) if l.line.intersects(window))
+      for (r <- roads_seen; l <- r.road.all_lanes.flatMap(edge2lines(_))
+           if l.line.intersects(window))
       {
         draw_edge(g2d, l)
       }
@@ -244,10 +250,12 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
       if (show_green) {
         g2d.setStroke(center_stroke)
         g2d.setColor(Color.GREEN)
-        //green_turns.values.foreach(t => if (t.intersects(window)) { g2d.draw(t) })
-        green_turns.foreach(
-          t => if (t._2.intersects(window)) { draw_turn(g2d, t._1, Color.GREEN) }
-        )
+        /*green_turns.values.foreach(
+          t => if (t.intersects(window)) { g2d.draw(t) }
+        )*/
+        green_turns.foreach(t => if (t._2.intersects(window)) {
+          draw_turn(g2d, t._1, Color.GREEN)
+        })
       }
     }
 
@@ -315,7 +323,8 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
   }
 
   def draw_agent(g2d: Graphics2D, a: Agent) = {
-    // try to avoid flashing red, this feature is used to visually spot true clumps
+    // try to avoid flashing red, this feature is used to visually spot true
+    // clumps
     if (a.speed == 0.0 && a.idle_since >= 5.0) {
       g2d.setColor(Color.RED)
     } else {
@@ -426,13 +435,17 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
   // TODO but we want to... cache this and not recall it in each mouseover_
   // matcher.
   //def cursor_bubble = new Rectangle2D.Double(x - eps, y - eps, eps * 2, eps * 2)
-  def bubble(pt: Coordinate) = new Ellipse2D.Double(pt.x - eps, pt.y - eps, eps * 2, eps * 2)
+  def bubble(pt: Coordinate) = new Ellipse2D.Double(
+    pt.x - eps, pt.y - eps, eps * 2, eps * 2
+  )
   def agent_bubble(a: Agent) = bubble(a.at.location)
   def vert_bubble(v: Vertex) = bubble(v.location)
 
   def mouseover_edge(x: Double, y: Double): Option[Edge] = {
     val window = viewing_window
-    val cursor_bubble = new Rectangle2D.Double(x - eps, y - eps, eps * 2, eps * 2)
+    val cursor_bubble = new Rectangle2D.Double(
+      x - eps, y - eps, eps * 2, eps * 2
+    )
     // do a search at low granularity first
     // TODO does this actually help us?
     /*for (big_line <- bg_lines if big_line.line.intersects(window)) {
@@ -450,7 +463,9 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
   }
 
   def mouseover_ward(x: Double, y: Double): Option[Ward] = {
-    val cursor_bubble = new Rectangle2D.Double(x - eps, y - eps, eps * 2, eps * 2)
+    val cursor_bubble = new Rectangle2D.Double(
+      x - eps, y - eps, eps * 2, eps * 2
+    )
     return ward_bubbles.find(w => w.bubble.intersects(cursor_bubble)) match {
       case Some(b) => Some(b.ward)
       case None    => None
@@ -461,13 +476,17 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
     // this is kinda wrong cause we rotate when zoomed in, but no biggie, just
     // make cursor bubble a bit bigger to account for it
     val radius = eps * 2
-    val cursor_bubble = new Rectangle2D.Double(x - radius, y - radius, radius * 2, radius * 2)
+    val cursor_bubble = new Rectangle2D.Double(
+      x - radius, y - radius, radius * 2, radius * 2
+    )
     // TODO ideally, center agent bubble where the vehicle center is drawn.
     return sim.agents.find(a => agent_bubble(a).intersects(cursor_bubble))
   }
 
   def mouseover_vert(x: Double, y: Double): Option[Vertex] = {
-    val cursor_bubble = new Rectangle2D.Double(x - eps, y - eps, eps * 2, eps * 2)
+    val cursor_bubble = new Rectangle2D.Double(
+      x - eps, y - eps, eps * 2, eps * 2
+    )
     return sim.vertices.find(v => vert_bubble(v).intersects(cursor_bubble))
   }
 
@@ -584,8 +603,8 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
           case Some(id) => {
             try {
               val e = sim.edges(id.toInt)
-              // TODO center on some part of the edge and zoom in, rather than just
-              // vaguely moving that way
+              // TODO center on some part of the edge and zoom in, rather than
+              // just vaguely moving that way
               Util.log("Here's " + e)
               center_on(e.lines.head.start)
               chosen_edge2 = Some(e)  // just kind of use this to highlight it
@@ -675,7 +694,8 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
       case EV_Key_Press(Key.D) => {
         (current_edge, current_agent, current_vert) match {
           case (Some(e), _, _) => {
-            Util.log(e.road + " is a " + e.road.road_type + " of length " + e.length + " meters")
+            Util.log(e.road + " is a " + e.road.road_type + " of length " +
+                     e.length + " meters")
           }
           case (None, Some(a), _) => {
             a.dump_info
@@ -728,7 +748,9 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
         // 2) code reads like a simple flow
 
         // Let's find all vertices inside the polygon.
-        val rds = sim.vertices.filter(v => polygon.contains(v.location.x, v.location.y)).flatMap(v => v.roads).toSet
+        val rds = sim.vertices.filter(
+          v => polygon.contains(v.location.x, v.location.y)).flatMap(v => v.roads
+        ).toSet
         Util.log("Matched " + rds.size + " roads")
         if (rds.isEmpty) {
           Util.log("Try that again.")
@@ -838,7 +860,9 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
       }
       case Dialog.Result.No => {
         // Continuous
-        prompt_double("How often (in simulation-time seconds) do you want one new agent?") match {
+        prompt_double(
+          "How often (in simulation-time seconds) do you want one new agent?"
+        ) match {
           case Some(time) => {
             sim.add_gen(new ContinuousGenerator(
               sim, src, dst, time, route_builder
@@ -871,7 +895,9 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
 sealed trait ScreenLine {
   val line: Line2D.Double
 }
-final case class RoadLine(a: Coordinate, b: Coordinate, road: Road) extends ScreenLine {
+final case class RoadLine(a: Coordinate, b: Coordinate, road: Road)
+  extends ScreenLine
+{
   // center
   val line = new Line2D.Double(a.x, a.y, b.x, b.y)
   // special for one-ways
@@ -889,7 +915,9 @@ final case class EdgeLine(l: Line, edge: Edge) extends ScreenLine {
 // and, separately...
 class WardBubble(val ward: Ward) {
   private val r = 2.0 + (0.1 * ward.roads.size) // TODO cfg
-  val bubble = new Ellipse2D.Double(ward.center.x - r, ward.center.y - r, r * 2, r * 2)
+  val bubble = new Ellipse2D.Double(
+    ward.center.x - r, ward.center.y - r, r * 2, r * 2
+  )
 }
 
 // TODO what else belongs?

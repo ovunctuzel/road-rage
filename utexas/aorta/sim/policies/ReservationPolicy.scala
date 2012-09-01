@@ -19,7 +19,9 @@ import utexas.aorta.{Util, cfg}
 // that have conflicts wait indefinitely.
 // If we found the optimal number of batches, that would be an instance of graph
 // coloring.
-class ReservationPolicy(intersection: Intersection) extends Policy(intersection) {
+class ReservationPolicy(intersection: Intersection)
+  extends Policy(intersection)
+{
   var current_batch = new TurnBatch()
   var lock_cur_batch = false    // because we're trying to preempt
   var reservations = List[TurnBatch]()
@@ -48,9 +50,9 @@ class ReservationPolicy(intersection: Intersection) extends Policy(intersection)
   def can_go(a: Agent, turn: Turn, far_away: Double): Boolean = {
     val first_req = !current_agents.contains(a)
 
-    // check everyone in the current batch. if any are not moving and not in their
-    // turn, then cancel them -- they're almost definitely stuck behind somebody
-    // who wants to do something different.
+    // check everyone in the current batch. if any are not moving and not in
+    // their turn, then cancel them -- they're almost definitely stuck behind
+    // somebody who wants to do something different.
     current_agents --= current_batch.flush_stalled
     shift_batches
 
@@ -140,7 +142,8 @@ class ReservationPolicy(intersection: Intersection) extends Policy(intersection)
 // conflict
 // TODO maybe generalizable.
 class TurnBatch() {
-  val tickets = new MutableMap[Turn, MutableSet[Agent]] with MultiMap[Turn, Agent]
+  val tickets = new MutableMap[Turn, MutableSet[Agent]]
+    with MultiMap[Turn, Agent]
 
   // false if it conflicts with this group
   def add_ticket(a: Agent, t: Turn): Boolean = {
@@ -172,7 +175,8 @@ class TurnBatch() {
     return canceled
   }
 
-  def has_ticket(a: Agent, t: Turn) = tickets.contains(t) && tickets(t).contains(a)
+  def has_ticket(a: Agent, t: Turn) = (tickets.contains(t) &&
+                                       tickets(t).contains(a))
 
   def remove_ticket(a: Agent, t: Turn) = {
     tickets.removeBinding(t, a)

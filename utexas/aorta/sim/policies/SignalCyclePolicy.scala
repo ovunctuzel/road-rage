@@ -99,7 +99,9 @@ object Cycle {
   // Least number of cycles can be modeled as graph coloring, but we're just
   // going to do a simple greedy approach, with the heuristic of trying to
   // include lots of turns from the same edge.
-  def arbitrary_cycles(vert: Vertex) = turn_sets_to_cycles(split_turn_set(vert.turns))
+  def arbitrary_cycles(vert: Vertex) = turn_sets_to_cycles(
+    split_turn_set(vert.turns)
+  )
 
   // each set will have all turns from some incoming edge
   // this just factors in conflicts that occur due to merging
@@ -139,7 +141,8 @@ object Cycle {
       return standard_turn_sets(vert)
     }
     // for both pairs of parallel roads, group the lefts
-    val parallel1: Set[Road] = Set(vert.roads.head) ++ vert.parallel_roads(vert.roads.head)
+    val parallel1: Set[Road] = (Set(vert.roads.head) ++
+                                vert.parallel_roads(vert.roads.head))
     val parallel2: Set[Road] = vert.roads -- parallel1
     // but if this is a weird intersection, again, don't even bother trying
     if (parallel1.size != 2 || parallel2.size != 2) {
@@ -149,17 +152,24 @@ object Cycle {
     // for every incoming road, group the non-left turns
     val groups = new ListBuffer[Set[Turn]]()
     for (r <- vert.roads) {
-      groups ++= split_turn_set(r.incoming_lanes(vert).flatMap(e => e.next_turns.filter(t => t.turn_type != TurnType.LEFT)))
+      groups ++= split_turn_set(r.incoming_lanes(vert).flatMap(
+        e => e.next_turns.filter(t => t.turn_type != TurnType.LEFT)
+      ))
     }
 
     // TODO these guaranteed to not conflict?
     // group the lefts. unfortunately, some may still conflict...
     val size_before = groups.size
-    groups ++= split_turn_set(parallel1.flatMap(r => r.incoming_lanes(vert).flatMap(l => l.left_turns)))
-    groups ++= split_turn_set(parallel2.flatMap(r => r.incoming_lanes(vert).flatMap(l => l.left_turns)))
+    groups ++= split_turn_set(parallel1.flatMap(
+      r => r.incoming_lanes(vert).flatMap(l => l.left_turns)
+    ))
+    groups ++= split_turn_set(parallel2.flatMap(
+      r => r.incoming_lanes(vert).flatMap(l => l.left_turns)
+    ))
     // Why weren't these parallel lefts fine?
     /*if (groups.size - size_before != 2) {
-      Util.log(groups.size + ", not " + size_before + " for " + parallel1 + " and " + parallel2)
+      Util.log(groups.size + ", not " + size_before + " for " + parallel1 +
+               " and " + parallel2)
     }*/
 
     return groups.toSet
@@ -182,7 +192,9 @@ object Cycle {
 }
 
 // A cycle-based light.
-class SignalCyclePolicy(intersection: Intersection) extends Policy(intersection) {
+class SignalCyclePolicy(intersection: Intersection)
+  extends Policy(intersection)
+{
   val cycles = Cycle.cycles_for(intersection)
   Cycle.max_cycles(cycles.size)
   val initial_offset = cycles.head.offset
@@ -229,7 +241,8 @@ class SignalCyclePolicy(intersection: Intersection) extends Policy(intersection)
   }
 
   {
-    var time = (Agent.sim.tick - initial_offset) % total_duration  // TODO make it > 0 too?
+    // TODO make it > 0 too?
+    var time = (Agent.sim.tick - initial_offset) % total_duration
     while (current_cycle == Cycle.nil_cycle) {
       val c = next_cycles.head
       next_cycles = next_cycles.tail
@@ -264,7 +277,8 @@ class SignalCyclePolicy(intersection: Intersection) extends Policy(intersection)
 
       // callback for UI usually
       Agent.sim.tell_listeners(
-        EV_Signal_Change(current_cycle.turns.toSet, next_cycles.head.turns.toSet)
+        EV_Signal_Change(current_cycle.turns.toSet,
+                         next_cycles.head.turns.toSet)
       )
 
       current_cycle = next_cycles.head
@@ -322,8 +336,11 @@ class SignalCyclePolicy(intersection: Intersection) extends Policy(intersection)
           time_left,
           (turn.to.road.speed_limit - a.speed) / a.max_accel
         ))
-        val accel_dist = Util.dist_at_constant_accel(a.max_accel, time_to_reach_limit, a.speed)
-        val speed_dist = turn.to.road.speed_limit * (time_left - time_to_reach_limit)
+        val accel_dist = Util.dist_at_constant_accel(
+          a.max_accel, time_to_reach_limit, a.speed
+        )
+        val speed_dist = (turn.to.road.speed_limit *
+                          (time_left - time_to_reach_limit))
 
         // TODO what thresholds?
         if (accel_dist + speed_dist >= dist_they_need) {

@@ -31,7 +31,9 @@ object Gridlock {
 
   def add_dep(e1: Edge, e2: Edge) = {
     if (schedule_check) {
-      Agent.sim.schedule(Agent.sim.tick + check_time, { Gridlock.detect_cycles })
+      Agent.sim.schedule(
+        Agent.sim.tick + check_time, { Gridlock.detect_cycles }
+      )
       schedule_check = false
     }
 
@@ -59,7 +61,8 @@ object Gridlock {
     Agent.sim.schedule(Agent.sim.tick + check_time, { Gridlock.detect_cycles })
 
     /*for (e <- deps.keys) {
-      Util.log(e.id + " depends on " + deps(e).id + " with cnt " + dep_counter((e, deps(e))))
+      Util.log(e.id + " depends on " + deps(e).id + " with cnt " +
+               dep_counter((e, deps(e))))
     }
     Util.log("")*/
 
@@ -72,7 +75,9 @@ object Gridlock {
         // as soon as we hit a lane we've already visited, we know there can't
         // be a cycle -- UNLESS this_group also contains them!
         var found_gridlock = false
-        while (!found_gridlock && deps.contains(cur) && (!visited(e) || this_group(e))) {
+        while (!found_gridlock && deps.contains(cur) &&
+               (!visited(e) || this_group(e)))
+        {
           visited += cur
           // Detect self-cycles
           if (cur == deps(cur)) {
@@ -83,7 +88,8 @@ object Gridlock {
             // Don't report it if we're discovering more things that lead to
             // already-reported gridlock. & is intersect.
             if ((already_reported & this_group).isEmpty) {
-              Util.log("Gridlock detected at " + Agent.sim.tick + " among: " + this_group)
+              Util.log("Gridlock detected at " + Agent.sim.tick + " among: " +
+                       this_group)
             }
             found_gridlock = true   // break the loop
             already_reported ++= this_group
@@ -119,7 +125,8 @@ object Gridlock {
       (turn_blocked_by match {
         case Some(other) => other.at.on match {
           case e: Edge => Some(e)
-          case t: Turn => Some(t.to)  // this can happen temporarily, but not permanently
+          // this can happen temporarily, but not permanently
+          case t: Turn => Some(t.to)
         }
         case None => None
       }) match {

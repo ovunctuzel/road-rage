@@ -51,7 +51,9 @@ class RouteFollowingBehavior(a: Agent, route: Route) extends Behavior(a) {
 
   override def choose_turn(e: Edge): Turn = route.next_step match {
     case Some(t: Turn) => t
-    case _             => throw new Exception("Asking " + a + " to choose turn now?!")
+    case _             => throw new Exception(
+      "Asking " + a + " to choose turn now?!"
+    )
   }
 
   override def transition(from: Traversable, to: Traversable) = {
@@ -138,7 +140,8 @@ class RouteFollowingBehavior(a: Agent, route: Route) extends Behavior(a) {
           // be from the start of the turn... subtract that turn's
           // length; that gives us how far away they are from the
           // end of the turn. make sure THAT'S a nice comfy value.
-          val dist_from_end_of_turn = step.looked_ahead_so_far + check_me.at.dist - cautious_turn.length
+          val dist_from_end_of_turn = (step.looked_ahead_so_far +
+                                       check_me.at.dist - cautious_turn.length)
           // TODO some epsilon?
           // they too close?
           if (dist_from_end_of_turn <= cfg.follow_dist) {
@@ -169,7 +172,9 @@ class RouteFollowingBehavior(a: Agent, route: Route) extends Behavior(a) {
     // Stop caring once we know we have to stop for some intersection AND stay
     // behind some agent. Need both, since the agent we're following may not
     // need to stop, but we do.
-    for (step <- lookahead() if (!stop_how_far_away.isDefined || !follow_agent.isDefined)) {
+    for (step <- lookahead()
+         if (!stop_how_far_away.isDefined || !follow_agent.isDefined))
+    {
       // 1) Agent
       // Worry either about the one we're following, or the one at the end of
       // the queue right now. It's the intersection's job to worry about letting
@@ -182,7 +187,8 @@ class RouteFollowingBehavior(a: Agent, route: Route) extends Behavior(a) {
         // We don't seem too need to check that we're not trying to follow
         // ourselves here too.
         follow_agent_how_far_away = follow_agent match {
-          // A bit of a special case, that looked_ahead_so_far doesn't cover well.
+          // A bit of a special case, that looked_ahead_so_far doesn't cover
+          // well.
           case Some(f) if f.at.on == a.at.on => f.at.dist - a.at.dist
           case Some(f) => step.looked_ahead_so_far + f.at.dist
           case _       => 0.0
@@ -258,7 +264,9 @@ class RouteFollowingBehavior(a: Agent, route: Route) extends Behavior(a) {
 
       // 3) Speed limit
       step.at match {
-        case e: Edge => { min_speed_limit = math.min(min_speed_limit, e.road.speed_limit) }
+        case e: Edge => {
+          min_speed_limit = math.min(min_speed_limit, e.road.speed_limit)
+        }
         case t: Turn => None
       }
     }

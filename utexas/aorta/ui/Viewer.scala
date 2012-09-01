@@ -28,8 +28,8 @@ object Status_Bar {
 
     // TODO generate these?
 
-    // all of this to prevent the rightmost 'At' column from spazzing out when the text
-    // changes length
+    // all of this to prevent the rightmost 'At' column from spazzing out when
+    // the text changes length
     // row 1: labels
     val c = new Constraints
     c.gridx = 0
@@ -130,7 +130,9 @@ object Viewer extends SimpleSwingApplication {
         contents += new MenuItem(Action("Configuration") {
           popup_config
         })
-        contents += new MenuItem(Action("Save scenario for later resimulation") {
+        contents += new MenuItem(
+          Action("Save scenario for later resimulation")
+        {
           val fn = "resim_log"
           Simulation.save_log(fn)
           Dialog.showMessage(message = "Scenario saved in '" + fn + "'")

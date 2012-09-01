@@ -46,7 +46,9 @@ class GreenFlood(sim: Simulation) {
     val duration: Double = cfg.signal_duration / turn_groups.size.toDouble
 
     // Find the group including the turn our starting edge leads to
-    val first_group = turn_groups.find(g => g.contains(edge.next_turns.head)).get
+    val first_group = turn_groups.find(
+      g => g.contains(edge.next_turns.head)
+    ).get
     val first_cycle = new Cycle(first_offset, duration)
     first_group.foreach(t => first_cycle.add_turn(t))
 
@@ -68,12 +70,15 @@ class GreenFlood(sim: Simulation) {
   // away from where we started flooding" to make this breadth-first; we're not
   // sorting by distance outwards. We could be, but I don't think it necessarily
   // makes a difference.
-  class Step(val cycle: Cycle, val offset: Double, val weight: Double) extends Ordered[Step] {
+  class Step(val cycle: Cycle, val offset: Double, val weight: Double)
+    extends Ordered[Step]
+  {
     // Small weights first
     def compare(other: Step) = other.weight.compare(weight)
   }
 
-  // Just one flood.  // Can we get the sentinels to help us with this whole "flood" problem?
+  // Just one flood. Can we get the sentinels to help us with this whole "flood"
+  // problem?
   def flood(start: Vertex) = {
     // Initialize
     val queue = new PriorityQueue[Step]()
@@ -93,14 +98,17 @@ class GreenFlood(sim: Simulation) {
         // green?
         // TODO the math for this could be more precise, based on accelerations
         // and following distance delays.
-        val min_delay = turn.to.road.speed_limit * (turn.length + turn.to.length)
+        val min_delay = (turn.to.road.speed_limit *
+                         (turn.length + turn.to.length))
         val desired_offset = (step.offset + min_delay).toInt
 
         if (!visited(turn.to.to)) {
           // schedule all the next cycles we can reach
           val next_cycles = schedule(turn.to, desired_offset)
           next_cycles.foreach(
-            next => queue.enqueue(new Step(next, next.offset, step.weight + desired_offset))
+            next => queue.enqueue(
+              new Step(next, next.offset, step.weight + desired_offset)
+            )
           )
           cycles(turn.to.to) ++= next_cycles
           visited += turn.to.to

@@ -10,8 +10,8 @@ import utexas.aorta.{Util, cfg, Stats, Wasted_Time_Stat}
 // TODO come up with a notion of dimension and movement capability. at first,
 // just use radius bounded by lane widths?
 
-class Agent(val id: Int, val graph: Graph, val start: Edge, val start_dist: Double,
-            val route: Route) extends Ordered[Agent]
+class Agent(val id: Int, val graph: Graph, val start: Edge,
+            val start_dist: Double, val route: Route) extends Ordered[Agent]
 {
   // just until they're introduced!
   var at: Position = null
@@ -57,8 +57,8 @@ class Agent(val id: Int, val graph: Graph, val start: Edge, val start_dist: Doub
     val start_on = at.on
     val old_dist = at.dist
 
-    // Do physics to update current speed and figure out how far we've traveled in
-    // this timestep.
+    // Do physics to update current speed and figure out how far we've traveled
+    // in this timestep.
     val new_dist = update_kinematics(dt_s)
     total_dist += new_dist
 
@@ -200,7 +200,9 @@ class Agent(val id: Int, val graph: Graph, val start: Edge, val start_dist: Doub
         if (wasted_time >= 0) {
           // TODO this number still seems off (it's not 0 even when nobody
           // stops, it's occasionally negative)
-          Stats.record(Wasted_Time_Stat(id, e.to.id, wasted_time, Agent.sim.tick))
+          Stats.record(
+            Wasted_Time_Stat(id, e.to.id, wasted_time, Agent.sim.tick)
+          )
         }
       }
       case _ =>
@@ -226,16 +228,21 @@ class Agent(val id: Int, val graph: Graph, val start: Edge, val start_dist: Doub
 
   // stopping time comes from v_f = v_0 + a*t
   // negative accel because we're slowing down.
-  def stopping_distance(s: Double = speed) = Util.dist_at_constant_accel(-max_accel, s / max_accel, s)
+  def stopping_distance(s: Double = speed) = Util.dist_at_constant_accel(
+    -max_accel, s / max_accel, s
+  )
   def max_next_speed = speed + (max_accel * cfg.dt_s)
   def max_next_dist = Util.dist_at_constant_accel(max_accel, cfg.dt_s, speed)
   // TODO clamp v_f at 0, since they cant deaccelerate into negative speed.
   def min_next_dist = Util.dist_at_constant_accel(-max_accel, cfg.dt_s, speed)
   def max_lookahead_dist = max_next_dist + stopping_distance(max_next_speed)
 
-  def accel_to_achieve(target_speed: Double) = Util.accel_to_achieve(speed, target_speed)
+  def accel_to_achieve(target_speed: Double) = Util.accel_to_achieve(
+    speed, target_speed
+  )
   // This directly follows from the distance traveled at constant accel
-  def accel_to_cover(dist: Double) = 2 * (dist - (speed * cfg.dt_s)) / (cfg.dt_s * cfg.dt_s)
+  def accel_to_cover(dist: Double) = (2 * (dist - (speed * cfg.dt_s)) /
+                                      (cfg.dt_s * cfg.dt_s))
 }
 
 // the singleton just lets us get at the simulation to look up queues
@@ -254,7 +261,8 @@ case class Position(val on: Traversable, val dist: Double) {
   assert(dist <= on.length)
   // TODO
   /*if (dist > on.length) {
-    Util.log("safe_spawn_dist must be broken... " + dist + " > " + on.length + " on " + on)
+    Util.log("safe_spawn_dist must be broken... " + dist + " > " + on.length +
+             " on " + on)
   }*/
 
   def location = on.location(dist)
