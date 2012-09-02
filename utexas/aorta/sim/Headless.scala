@@ -11,51 +11,8 @@ object Headless {
   // cut off some simulations by time
   var run_for: Double = -1.0
 
-  def process_args(args: Array[String]): Simulation = {
-    // TODO write with 'partition'
-    val keys = args.zipWithIndex.filter(p => p._2 % 2 == 0).map(p => p._1)
-    val vals = args.zipWithIndex.filter(p => p._2 % 2 == 1).map(p => p._1)
-    var fn = "dat/test.map"
-    var rng = System.currentTimeMillis
-    var diff_rng = false
-    var load_scenario = ""
-    var exp_name = "Experiment " + rng
-
-    if (args.size % 2 != 0) {
-      Util.log("Command-line parameters must be pairs of key => value")
-      sys.exit
-    }                                                                     
-
-    for ((key, value) <- keys.zip(vals)) {
-      key match {
-        case "--input"       => { fn = value }
-        case "--rng"         => { rng = value.toLong; diff_rng = true }
-        case "--print_stats" => { Stats.use_print = value == "1" }
-        case "--log_stats"   => { Stats.use_log = value == "1" }
-        case "--run_for"     => { run_for = value.toDouble }
-        case "--scenario"    => { load_scenario = value }
-        case "--name"        => { exp_name = value }
-        case _               => { Util.log("Unknown argument: " + key); sys.exit }
-      }
-    }
-
-    Stats.experiment_name(exp_name)
-
-    if (load_scenario.isEmpty) {
-      Util.init_rng(rng)
-      return Simulation.load(fn)
-    } else {
-      val sim = Simulation.load_scenario(load_scenario)
-      // It's useful to retry a scenario with a new seed.
-      if (diff_rng) {
-        Util.init_rng(rng)
-      }
-      return sim
-    }
-  }
-
   def main(args: Array[String]) = {
-    val sim = process_args(args)
+    val sim = Util.process_args(args)
     if (sim.num_generators == 0) {
       sim.add_gen(new FixedSizeGenerator(
         sim, sim.edges, sim.edges, cfg.army_size,

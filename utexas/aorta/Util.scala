@@ -4,6 +4,8 @@
 
 package utexas.aorta
 
+import utexas.aorta.sim.Simulation
+
 import scala.util.Random
 import java.io.FileWriter
 
@@ -88,6 +90,51 @@ object Util {
       val time = (-speed_i + discrim) / (2 * accel) // this is the positive root
       assert(time >= 0)   // make sure we have the right solution to this
       return time
+    }
+  }
+
+  def process_args(args: Array[String]): Simulation = {
+    // TODO write with 'partition'
+    val keys = args.zipWithIndex.filter(p => p._2 % 2 == 0).map(p => p._1)
+    val vals = args.zipWithIndex.filter(p => p._2 % 2 == 1).map(p => p._1)
+    var fn = "dat/test.map" // TODO defaults like this are bad, emit good fn
+    var rng = System.currentTimeMillis
+    var diff_rng = false
+    var load_scenario = ""
+    var exp_name = "Experiment " + rng
+
+    if (args.size % 2 != 0) {
+      // TODO better usage
+      Util.log("Command-line parameters must be pairs of key => value")
+      sys.exit
+    }                                                                     
+
+    for ((key, value) <- keys.zip(vals)) {
+      // TODO multiple different ways of saying 'true'
+      key match {
+        case "--input"       => { fn = value }
+        case "--rng"         => { rng = value.toLong; diff_rng = true }
+        case "--print_stats" => { Stats.use_print = value == "1" }
+        case "--log_stats"   => { Stats.use_log = value == "1" }
+        // TODO case "--run_for"     => { run_for = value.toDouble }
+        case "--scenario"    => { load_scenario = value }
+        case "--name"        => { exp_name = value }
+        case _               => { Util.log("Unknown argument: " + key); sys.exit }
+      }
+    }
+
+    Stats.experiment_name(exp_name)
+
+    if (load_scenario.isEmpty) {
+      Util.init_rng(rng)
+      return Simulation.load(fn)
+    } else {
+      val sim = Simulation.load_scenario(load_scenario)
+      // It's useful to retry a scenario with a new seed.
+      if (diff_rng) {
+        Util.init_rng(rng)
+      }
+      return sim
     }
   }
 }
@@ -229,7 +276,7 @@ object Stats {
   def experiment_name(name: String) = {
     if (use_log) {
       assert(log == null)
-      log = new FileWriter("stats_log")   // TODO use right buffering
+      log = new FileWriter("stats_log")
       log.write(name + "\n")
     }
     if (use_print) {

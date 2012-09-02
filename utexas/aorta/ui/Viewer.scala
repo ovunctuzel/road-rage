@@ -8,7 +8,7 @@ import swing._  // TODO figure out exactly what
 import java.awt.{Color, Component}
 import swing.Dialog
 
-import utexas.aorta.sim.{Simulation, Headless}
+import utexas.aorta.sim.Simulation
 import utexas.aorta.Util
 
 object Status_Bar {
@@ -117,7 +117,7 @@ object Viewer extends SimpleSwingApplication {
   }
 
   override def main(args: Array[String]) = {
-    canvas = new MapCanvas(Headless.process_args(args))
+    canvas = new MapCanvas(Util.process_args(args))
     super.main(args)
   }
 
