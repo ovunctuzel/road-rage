@@ -56,7 +56,7 @@ extends Ordered[Generator]
 
   // Prune the desired_starts for road type and length. Arrays have random
   // access.
-  val start_candidates = desired_starts.filter(e => sim.queues(e).ok_to_spawn).toArray
+  val start_candidates = desired_starts.filter(e => e.queue.ok_to_spawn).toArray
   val end_candidates = ends.toArray
 
   def serialize_ls(ls: Array[Edge]) = ls.map(e => e.id).mkString(",")
@@ -73,7 +73,7 @@ extends Ordered[Generator]
 
   def add_specific_agent(start: Edge, end: Edge) = {
     val route = route_builder()
-    val a = new Agent(sim.next_id, sim, start, sim.queues(start).safe_spawn_dist, route)
+    val a = new Agent(sim.next_id, sim, start, start.queue.safe_spawn_dist, route)
 
     // schedule whatever work the route needs done.
     route.request_route(start, end) match {

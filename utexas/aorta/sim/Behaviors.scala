@@ -135,7 +135,7 @@ class RouteFollowingBehavior(a: Agent, route: Route) extends Behavior(a) {
 
     // If any of these have an agent, see where they are...
     for (step <- check_steps) {
-      Agent.sim.queues(step.at).last match {
+      step.at.queue.last match {
         // We can't block ourselves, even if we think we can
         case Some(check_me) if check_me != a => {
           // the dist they are "away from start of lookahead" will
@@ -185,7 +185,7 @@ class RouteFollowingBehavior(a: Agent, route: Route) extends Behavior(a) {
         follow_agent = if (a.at.on == step.at)
                          a.cur_queue.ahead_of(a)
                        else
-                         Agent.sim.queues(step.at).last
+                         step.at.queue.last
         // We don't seem too need to check that we're not trying to follow
         // ourselves here too.
         follow_agent_how_far_away = follow_agent match {
@@ -247,7 +247,7 @@ class RouteFollowingBehavior(a: Agent, route: Route) extends Behavior(a) {
               // Only now is it fair to ask the intersection. We aren't blocked
               // by any agent.
               assert(a.cur_queue.head.get == a)
-              val i = Agent.sim.intersections(e.to)
+              val i = e.to.intersection
               a.upcoming_intersections += i   // remember we've registered here
               val next_turn = route.lookahead_step(step.steps_ahead) match {
                 case Some(t: Turn) => t

@@ -94,12 +94,12 @@ class Agent(val id: Int, val graph: Graph, val start: Edge,
       // tell the intersection
       (current_on, next) match {
         case (e: Edge, t: Turn) => {
-          val i = Agent.sim.intersections(t.vert)
+          val i = t.vert.intersection
           i.enter(this, t)
           upcoming_intersections += i
         }
         case (t: Turn, e: Edge) => {
-          val i = Agent.sim.intersections(t.vert)
+          val i = t.vert.intersection
           i.exit(this, t)
           upcoming_intersections -= i
         }
@@ -177,7 +177,7 @@ class Agent(val id: Int, val graph: Graph, val start: Edge,
   def enter(t: Traversable, dist: Double): Position = {
     // Remember for stats
     entered_last = (Agent.sim.tick, dist, speed)
-    Agent.sim.queues(t).enter(this, dist)
+    t.queue.enter(this, dist)
   }
   def exit(t: Traversable) = {
     // If we were on an edge, how long were we idling about?
@@ -207,9 +207,9 @@ class Agent(val id: Int, val graph: Graph, val start: Edge,
       }
       case _ =>
     }
-    Agent.sim.queues(t).exit(this)
+    t.queue.exit(this)
   }
-  def move(t: Traversable, dist: Double)  = Agent.sim.queues(t).move(this, dist)
+  def move(t: Traversable, dist: Double)  = t.queue.move(this, dist)
 
   def dump_info() = {
     Util.log("" + this)
@@ -222,7 +222,7 @@ class Agent(val id: Int, val graph: Graph, val start: Edge,
     Util.log_pop
   }
 
-  def cur_queue = Agent.sim.queues(at.on)
+  def cur_queue = at.on.queue
 
   // math queries for lookahead and such
 

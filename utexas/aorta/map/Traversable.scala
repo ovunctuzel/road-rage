@@ -4,9 +4,16 @@
 
 package utexas.aorta.map
 
+// TODO I don't want this dependency, but at the moment, it leads to a great
+// perf boost due to dropping a pricy hash lookup
+import utexas.aorta.sim.Queue
+
 // Something with a sequence of lines forming a path and a way to get to more
 // somethings
 abstract class Traversable() {
+  // TODO temporary perf fix
+  var queue: Queue = null
+
   var lines: List[Line] = Nil // till set_lines happens.
   def leads_to: List[Traversable]
 

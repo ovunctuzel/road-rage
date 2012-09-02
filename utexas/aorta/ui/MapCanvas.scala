@@ -185,8 +185,8 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
   // At this point, signal policies have already fired up and sent the first
   // round of greens. We missed it, so compute manually the first time.
   // TODO better solution
-  for (intersection <- sim.intersections.values) {
-    for (t <- intersection.policy.current_greens) {
+  for (v <- sim.vertices) {
+    for (t <- v.intersection.policy.current_greens) {
       green_turns(t) = GeomFactory.curved_turn(t)
     }
   }
@@ -239,7 +239,7 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
 
       current_vert match {
         case Some(v) => {
-          for (t <- sim.intersections(v).policy.current_greens) {
+          for (t <- v.intersection.policy.current_greens) {
             draw_turn(g2d, t, Color.GREEN)
           }
         }
@@ -703,7 +703,7 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
             sim.debug_agent = current_agent
           }
           case (None, None, Some(v)) => {
-            val i = sim.intersections(v)
+            val i = v.intersection
 
             Util.log("Current turns allowed:")
             Util.log_push
@@ -777,9 +777,9 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
       }
       case EV_Select_Polygon_For_Policy() => {
         // Let's find all vertices inside the polygon.
-        val intersections = sim.intersections.values.filter(
-          i => polygon.contains(i.v.location.x, i.v.location.y)
-        )
+        val intersections = sim.vertices.filter(
+          v => polygon.contains(v.location.x, v.location.y)
+        ).map(_.intersection)
         Util.log("Matched " + intersections.size + " intersections")
         Dialog.showInput(
           message = "What policy should govern these intersections?",

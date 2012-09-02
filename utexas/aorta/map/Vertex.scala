@@ -8,8 +8,15 @@ import java.io.FileWriter
 
 import scala.collection.mutable.MutableList
 
+// TODO I don't want this dependency, but at the moment, it leads to a great
+// perf boost due to dropping a pricy hash lookup
+import utexas.aorta.sim.Intersection
+
 // TODO var id due to tarjan
 class Vertex(val location: Coordinate, var id: Int) {
+  // TODO this is a temporary solution
+  var intersection: Intersection = null
+
   // TODO we could keep a map for faster lookup, sure, but determinism's cool
   // too.
   var turns = new MutableList[Turn]
