@@ -94,14 +94,15 @@ class Simulation(roads: Array[Road], edges: Array[Edge], vertices: Array[Vertex]
   // we only ever step with dt = cfg.dt_s, so we may have leftover.
   private var dt_accumulated: Double = 0
   // WE CAN GO FASTER
-  var time_speed = 1.0
+  var desired_sim_speed = 1.0
+  var actual_sim_speed = 0.0
 
   // TODO cfg
   def slow_down(amount: Double = 0.5) = {
-    time_speed = math.max(0.5, time_speed - amount)
+    desired_sim_speed = math.max(0.5, desired_sim_speed - amount)
   }
   def speed_up(amount: Double = 0.5) = {
-    time_speed += amount
+    desired_sim_speed += amount
   }
 
   // Returns true if at least one generator is active
@@ -139,12 +140,15 @@ class Simulation(roads: Array[Road], edges: Array[Edge], vertices: Array[Vertex]
     events.enqueue(new Callback(at, callback))
   }
 
+  private var last_real_time = 0.0
+  private var last_sim_time = 0.0
+
   // Returns (the number of agents that moved, total number of agents processed)
   def step(dt_s: Double): (Int, Int) = {
     pre_step
 
     // This value is dt in simulation time, not real time
-    dt_accumulated += dt_s * time_speed
+    dt_accumulated += dt_s * desired_sim_speed
 
     var moved_count = 0
     var total_count = 0
@@ -203,6 +207,14 @@ class Simulation(roads: Array[Road], edges: Array[Edge], vertices: Array[Vertex]
       // reset queues that need to be checked
       active_queues.clear
     }
+
+    val now = System.currentTimeMillis
+    if (now - last_real_time >= 1000.0) {
+      actual_sim_speed = tick - last_sim_time
+      last_sim_time = tick
+      last_real_time = now
+    }
+
     return (moved_count, total_count)
   }
 

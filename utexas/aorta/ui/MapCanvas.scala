@@ -37,7 +37,7 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
       while (true) {
         val start = System.currentTimeMillis
         // we should fire about 10x/second. optimal/useful rate is going to be
-        // related to time_speed and cfg.dt_s   TODO
+        // related to desired_sim_speed and cfg.dt_s   TODO
         Thread.sleep(10)
         if (running) {
           sim.step((System.currentTimeMillis - start).toDouble / 1000.0)
@@ -566,6 +566,7 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
                    else
                      " [Paused]"
         status.time.text = "%.1f %s".format(sim.tick, note)
+        status.actual_sim_speed.text = "%.1fx".format(sim.actual_sim_speed)
         // agents have maybe moved, so...
         status.agents.text = sim.describe_agents
         repaint
@@ -676,19 +677,19 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
       }
       case EV_Key_Press(Key.OpenBracket) => {
         sim.slow_down()
-        status.time_speed.text = "%.1fx".format(sim.time_speed)
+        status.desired_sim_speed.text = "%.1fx".format(sim.desired_sim_speed)
       }
       case EV_Key_Press(Key.CloseBracket) => {
         sim.speed_up()
-        status.time_speed.text = "%.1fx".format(sim.time_speed)
+        status.desired_sim_speed.text = "%.1fx".format(sim.desired_sim_speed)
       }
       case EV_Key_Press(Key.Minus) => {
         sim.slow_down(5)
-        status.time_speed.text = "%.1fx".format(sim.time_speed)
+        status.desired_sim_speed.text = "%.1fx".format(sim.desired_sim_speed)
       }
       case EV_Key_Press(Key.Equals) => {
         sim.speed_up(5)
-        status.time_speed.text = "%.1fx".format(sim.time_speed)
+        status.desired_sim_speed.text = "%.1fx".format(sim.desired_sim_speed)
       }
       // general debug based on whatever you're hovering over
       case EV_Key_Press(Key.D) => {

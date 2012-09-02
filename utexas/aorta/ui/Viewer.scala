@@ -15,7 +15,8 @@ object Status_Bar {
   val zoom       = new Label("1.0") // TODO from cfg
   val agents     = new Label("0 / 0 / 0 (0 generators)")
   val time       = new Label("0.0 [Paused]")
-  val time_speed = new Label("1.0x")
+  val desired_sim_speed = new Label("1.0x")
+  val actual_sim_speed = new Label("1.0x")
   val mode       = new Label("" + Mode.EXPLORE)
   val location   = new Label("Nowhere")
 
@@ -41,10 +42,12 @@ object Status_Bar {
     c.gridx = 2
     layout(new Label("Time")) = c
     c.gridx = 3
-    layout(new Label("Sim Speed")) = c
+    layout(new Label("Desired Sim Speed")) = c
     c.gridx = 4
-    layout(new Label("Mode")) = c // TODO remove?
+    layout(new Label("Actual Sim Speed")) = c
     c.gridx = 5
+    layout(new Label("Mode")) = c // TODO remove?
+    c.gridx = 6
     c.weightx = 1.0
     c.ipadx = 0
     layout(new Label("Location")) = c
@@ -60,10 +63,12 @@ object Status_Bar {
     c.gridx = 2
     layout(Status_Bar.time) = c
     c.gridx = 3
-    layout(Status_Bar.time_speed) = c
+    layout(Status_Bar.desired_sim_speed) = c
     c.gridx = 4
-    layout(Status_Bar.mode) = c
+    layout(Status_Bar.actual_sim_speed) = c
     c.gridx = 5
+    layout(Status_Bar.mode) = c
+    c.gridx = 6
     c.weightx = 1.0
     c.ipadx = 0
     layout(Status_Bar.location) = c
