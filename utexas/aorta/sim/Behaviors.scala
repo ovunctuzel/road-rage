@@ -4,6 +4,8 @@
 
 package utexas.aorta.sim
 
+import scala.collection.mutable.ListBuffer
+
 import utexas.aorta.map.{Edge, Turn, Traversable}
 import utexas.aorta.sim.analysis.Gridlock
 import utexas.aorta.{Util, cfg}
@@ -81,9 +83,9 @@ class RouteFollowingBehavior(a: Agent, route: Route) extends Behavior(a) {
                 start_at: Traversable = a.at.on,
                 first_dist_left: Double = a.at.dist_left,
                 start_steps_ahead: Int = 0
-               ): List[LookaheadStep] =
+               ): ListBuffer[LookaheadStep] =
   {
-    var steps: List[LookaheadStep] = Nil
+    val steps = new ListBuffer[LookaheadStep]()
 
     var lookahead_left = predict_dist
     var looked_ahead_so_far = 0.0   // how far from a.at to beginning of step
@@ -92,7 +94,7 @@ class RouteFollowingBehavior(a: Agent, route: Route) extends Behavior(a) {
     var steps_ahead = start_steps_ahead
 
     while (lookahead_left > 0.0) {
-      steps :+= new LookaheadStep(
+      steps += new LookaheadStep(
         lookahead_left, looked_ahead_so_far, at, dist_left, steps_ahead
       )
 

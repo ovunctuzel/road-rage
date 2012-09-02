@@ -16,7 +16,7 @@ object Headless {
     if (sim.num_generators == 0) {
       sim.add_gen(new FixedSizeGenerator(
         sim, sim.edges, sim.edges, cfg.army_size,
-        Simulation.route_builder("Static A*")
+        Simulation.route_builder("Drunken")
       ))
     }
     // We don't have to wait, but it's better for determinism if we do.

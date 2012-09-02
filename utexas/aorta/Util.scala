@@ -196,7 +196,7 @@ object cfg {
 
   val ints = List(
     ("max_lanes",  20,  "The max total lanes a road could have", 1, 30),
-    ("army_size",  500, "How many agents to spawn by default", 1, 10000),
+    ("army_size",  5000, "How many agents to spawn by default", 1, 10000),
     ("signal_duration",  60, "How long for a traffic signal to go through all of its cycles", 4, 1200)
   ) map {c => c._1 -> new Int_Cfgable(c._2, c._3, c._4, c._5)} toMap
 
@@ -205,26 +205,28 @@ object cfg {
 
   // TODO i wanted to use reflection to generate methods, but that won't work...
   // jvm limitations.
-  def antialias       = bools("antialias").value
-  def draw_cursor     = bools("draw_cursor").value
-  def draw_lane_arrow = bools("draw_lane_arrow").value
-  def dash_center     = bools("dash_center").value
+  // TODO these shortcuts take a bit extra memory, but avoid lots of hash
+  // lookups. real solution is to not have methods and then also objects...
+  lazy val antialias       = bools("antialias").value
+  lazy val draw_cursor     = bools("draw_cursor").value
+  lazy val draw_lane_arrow = bools("draw_lane_arrow").value
+  lazy val dash_center     = bools("dash_center").value
 
-  def lane_width      = doubles("lane_width").value
-  def zoom_threshold  = doubles("zoom_threshold").value
-  def epsilon         = doubles("epsilon").value
-  def end_threshold   = doubles("end_threshold").value
-  def follow_dist     = doubles("follow_dist").value
-  def max_accel       = doubles("max_accel").value
-  def pause_at_stop   = doubles("pause_at_stop").value
-  def min_lane_length = doubles("min_lane_length").value
-  def thruput_stat_time = doubles("thruput_stat_time").value
+  lazy val lane_width      = doubles("lane_width").value
+  lazy val zoom_threshold  = doubles("zoom_threshold").value
+  lazy val epsilon         = doubles("epsilon").value
+  lazy val end_threshold   = doubles("end_threshold").value
+  lazy val follow_dist     = doubles("follow_dist").value
+  lazy val max_accel       = doubles("max_accel").value
+  lazy val pause_at_stop   = doubles("pause_at_stop").value
+  lazy val min_lane_length = doubles("min_lane_length").value
+  lazy val thruput_stat_time = doubles("thruput_stat_time").value
 
-  def max_lanes       = ints("max_lanes").value
-  def army_size       = ints("army_size").value
-  def signal_duration    = ints("signal_duration").value
+  lazy val max_lanes       = ints("max_lanes").value
+  lazy val army_size       = ints("army_size").value
+  lazy val signal_duration    = ints("signal_duration").value
   
-  def dt_s            = doubles("dt_s").value
+  lazy val dt_s            = doubles("dt_s").value
 }
 
 // couldn't quite the OO work out to bundle these
