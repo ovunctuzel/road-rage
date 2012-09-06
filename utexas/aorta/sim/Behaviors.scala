@@ -73,46 +73,40 @@ class RouteFollowingBehavior(a: Agent, route: Route) extends Behavior(a) {
     Util.log_pop
   }
 
-  // Just a struct to encode all of this info
+  // TODO describe. like an iterator.
   class LookaheadStep(
-    val lookahead_left: Double, val looked_ahead_so_far: Double,
-    val at: Traversable, val dist_left: Double, val steps_ahead: Int
-  ) {}
-
-  def lookahead(predict_dist: Double = a.max_lookahead_dist,
-                start_at: Traversable = a.at.on,
-                first_dist_left: Double = a.at.dist_left,
-                start_steps_ahead: Int = 0
-               ): ListBuffer[LookaheadStep] =
+    val predict_dist: Double, val dist_ahead: Double,
+    val at: Traversable, val next_dist: Double, val steps_ahead: Int)
   {
-    val steps = new ListBuffer[LookaheadStep]()
+    // predict_dist = how far ahead will we look
+    // dist_ahead = how far have we looked ahead so far
+    // at = where do we end up
+    // next_dist = how much distance from 'at' we'll consider
+    // TODO is next_dist ~ predict_dist, dist_ahead?
+    // steps_ahead = how many steps ahead have we looked
 
-    var lookahead_left = predict_dist
-    var looked_ahead_so_far = 0.0   // how far from a.at to beginning of step
-    var at = start_at
-    var dist_left = first_dist_left
-    var steps_ahead = start_steps_ahead
+    // TODO iterator syntax
 
-    while (lookahead_left > 0.0) {
-      steps += new LookaheadStep(
-        lookahead_left, looked_ahead_so_far, at, dist_left, steps_ahead
-      )
-
-      lookahead_left -= dist_left
-      if (!route.lookahead_step(steps_ahead).isDefined) {
-        // done with route. stop considering possibilities immediately.
-        lookahead_left = -1
+    lazy val next_step: Option[LookaheadStep] = {
+      if (predict_dist <= 0.0) {
+        None  // TODO ooh, ban dist of 0, then this is even simpler?
       } else {
-        looked_ahead_so_far += dist_left
-        // order matters... steps_ahead will be what follows this new 'step'
-        at = route.lookahead_step(steps_ahead).get
-        steps_ahead += 1
-        // For all but the first step, we have all of its distance left.
-        dist_left = at.length
+        // TODO pass around an iterator instead
+        route.lookahead_step(steps_ahead) match {
+          case Some(place) => Some(new LookaheadStep(
+            predict_dist - next_dist, dist_ahead + next_dist,
+            place, place.length, steps_ahead + 1
+          ))
+          // Done with route, stop looking ahead.
+          case None => None
+        }
       }
     }
 
-    return steps
+    def steps(): Stream[LookaheadStep] = next_step match {
+      case Some(step) => this #:: step.steps
+      case None => this #:: Stream.empty
+    }
   }
 
   // Finds the culprit, if they exist
@@ -125,16 +119,15 @@ class RouteFollowingBehavior(a: Agent, route: Route) extends Behavior(a) {
     }
     val cautious_edge = cautious_turn.to
 
-    val check_steps = lookahead(
+    val check_steps = new LookaheadStep(
       // TODO + 0.5 as an epsilon...
-      predict_dist      = cautious_turn.length + cfg.follow_dist + 0.5,
-      start_at          = cautious_turn,
-      first_dist_left   = cautious_turn.length,
-      start_steps_ahead = step.steps_ahead + 1  // TODO off by 1?
+      cautious_turn.length + cfg.follow_dist + 0.5,
+      0, cautious_turn, cautious_turn.length,
+      step.steps_ahead + 1 // TODO off by 1?
     )
 
     // If any of these have an agent, see where they are...
-    for (step <- check_steps) {
+    for (step <- check_steps.steps) {
       step.at.queue.last match {
         // We can't block ourselves, even if we think we can
         case Some(check_me) if check_me != a => {
@@ -142,7 +135,7 @@ class RouteFollowingBehavior(a: Agent, route: Route) extends Behavior(a) {
           // be from the start of the turn... subtract that turn's
           // length; that gives us how far away they are from the
           // end of the turn. make sure THAT'S a nice comfy value.
-          val dist_from_end_of_turn = (step.looked_ahead_so_far +
+          val dist_from_end_of_turn = (step.dist_ahead +
                                        check_me.at.dist - cautious_turn.length)
           // TODO some epsilon?
           // they too close?
@@ -174,7 +167,12 @@ class RouteFollowingBehavior(a: Agent, route: Route) extends Behavior(a) {
     // Stop caring once we know we have to stop for some intersection AND stay
     // behind some agent. Need both, since the agent we're following may not
     // need to stop, but we do.
-    for (step <- lookahead()
+
+    val first_step = new LookaheadStep(
+      a.max_lookahead_dist, 0, a.at.on, a.at.dist_left, 0
+    )
+
+    for (step <- first_step.steps
          if (!stop_how_far_away.isDefined || !follow_agent.isDefined))
     {
       // 1) Agent
@@ -189,10 +187,9 @@ class RouteFollowingBehavior(a: Agent, route: Route) extends Behavior(a) {
         // We don't seem too need to check that we're not trying to follow
         // ourselves here too.
         follow_agent_how_far_away = follow_agent match {
-          // A bit of a special case, that looked_ahead_so_far doesn't cover
-          // well.
+          // A bit of a special case, that dist_ahead doesn't cover well.
           case Some(f) if f.at.on == a.at.on => f.at.dist - a.at.dist
-          case Some(f) => step.looked_ahead_so_far + f.at.dist
+          case Some(f) => step.dist_ahead + f.at.dist
           case _       => 0.0
         }
       }
@@ -203,8 +200,8 @@ class RouteFollowingBehavior(a: Agent, route: Route) extends Behavior(a) {
       // 2) Stopping at the end
       if (!stop_how_far_away.isDefined) {
         // physically stop somewhat far back from the intersection.
-        val should_stop = keep_stopping || (step.lookahead_left >= step.dist_left - cfg.end_threshold)
-        val how_far_away = step.looked_ahead_so_far + step.dist_left
+        val should_stop = keep_stopping || (step.predict_dist >= step.next_dist - cfg.end_threshold)
+        val how_far_away = step.dist_ahead + step.next_dist
 
         val stop_at_end: Boolean = should_stop && (step.at match {
           // Don't stop at the end of a turn
@@ -225,7 +222,7 @@ class RouteFollowingBehavior(a: Agent, route: Route) extends Behavior(a) {
             // TODO could it ever work out so that we're approved (meaning
             // nobody was blocking us) but then another step, somebody new
             // blocks us?
-            // TODO a decent invariant to verify: once an intersection improves
+            // TODO a decent invariant to verify: once an intersection approves
             // an agent, they shouldn't stall due to somebody blocking them
 
             // If we've already found somebody we're following, they must be
