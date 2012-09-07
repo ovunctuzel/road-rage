@@ -67,8 +67,8 @@ class RouteFollowingBehavior(a: Agent, route: Route) extends Behavior(a) {
     Util.log("Route-following behavior")
     // Just show a few steps ahead
     Util.log_push
-    for (i <- 0 until 5) {
-      Util.log("Step: " + route.lookahead_step(i))
+    for (step <- route.steps take 5) {
+      Util.log("Step: " + step)
     }
     Util.log_pop
   }
@@ -76,14 +76,14 @@ class RouteFollowingBehavior(a: Agent, route: Route) extends Behavior(a) {
   // TODO describe. like an iterator.
   class LookaheadStep(
     val predict_dist: Double, val dist_ahead: Double,
-    val at: Traversable, val next_dist: Double, val steps_ahead: Int)
+    val at: Traversable, val next_dist: Double, val route_steps: Stream[Traversable])
   {
     // predict_dist = how far ahead will we look
     // dist_ahead = how far have we looked ahead so far
     // at = where do we end up
     // next_dist = how much distance from 'at' we'll consider
     // TODO is next_dist ~ predict_dist, dist_ahead?
-    // steps_ahead = how many steps ahead have we looked
+    // steps = alignment of the route
 
     // TODO iterator syntax
 
@@ -91,11 +91,10 @@ class RouteFollowingBehavior(a: Agent, route: Route) extends Behavior(a) {
       if (predict_dist <= 0.0) {
         None  // TODO ooh, ban dist of 0, then this is even simpler?
       } else {
-        // TODO pass around an iterator instead
-        route.lookahead_step(steps_ahead) match {
+        route_steps.headOption match {
           case Some(place) => Some(new LookaheadStep(
             predict_dist - next_dist, dist_ahead + next_dist,
-            place, place.length, steps_ahead + 1
+            place, place.length, route_steps.tail
           ))
           // Done with route, stop looking ahead.
           case None => None
@@ -113,8 +112,8 @@ class RouteFollowingBehavior(a: Agent, route: Route) extends Behavior(a) {
   def check_for_blocked_turn(step: LookaheadStep): Option[Agent] = {
     // Look ahead from the start of the turn until follow_dist
     // after the end of it too see if anybody's there.
-    val cautious_turn = route.lookahead_step(step.steps_ahead) match {
-      case Some(t: Turn) => t
+    val cautious_turn = step.route_steps.head match {
+      case t: Turn => t
       case _       => throw new Exception("not a turn next?")
     }
     val cautious_edge = cautious_turn.to
@@ -123,7 +122,7 @@ class RouteFollowingBehavior(a: Agent, route: Route) extends Behavior(a) {
       // TODO + 0.5 as an epsilon...
       cautious_turn.length + cfg.follow_dist + 0.5,
       0, cautious_turn, cautious_turn.length,
-      step.steps_ahead + 1 // TODO off by 1?
+      step.route_steps.tail
     )
 
     // If any of these have an agent, see where they are...
@@ -169,7 +168,7 @@ class RouteFollowingBehavior(a: Agent, route: Route) extends Behavior(a) {
     // need to stop, but we do.
 
     val first_step = new LookaheadStep(
-      a.max_lookahead_dist, 0, a.at.on, a.at.dist_left, 0
+      a.max_lookahead_dist, 0, a.at.on, a.at.dist_left, route.steps
     )
 
     for (step <- first_step.steps
@@ -207,7 +206,7 @@ class RouteFollowingBehavior(a: Agent, route: Route) extends Behavior(a) {
           // Don't stop at the end of a turn
           case t: Turn => false
           // Stop if we're arriving at destination
-          case e if !route.lookahead_step(step.steps_ahead).isDefined => {
+          case e if !step.route_steps.headOption.isDefined => {
             stopping_for_destination = true
             true
           }
@@ -246,8 +245,8 @@ class RouteFollowingBehavior(a: Agent, route: Route) extends Behavior(a) {
               assert(a.cur_queue.head.get == a)
               val i = e.to.intersection
               a.upcoming_intersections += i   // remember we've registered here
-              val next_turn = route.lookahead_step(step.steps_ahead) match {
-                case Some(t: Turn) => t
+              val next_turn = step.route_steps.head match {
+                case t: Turn => t
                 case _ => throw new Exception("next_turn() called at wrong time")
               }
               !i.can_go(a, next_turn, how_far_away)

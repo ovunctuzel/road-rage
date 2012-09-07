@@ -11,11 +11,11 @@ import utexas.aorta.{Util, cfg}
 
 abstract class Route() {
   // Define these
-  def lookahead_step(n: Int): Option[Traversable]
   def request_route(from: Edge, to: Edge): Option[Callable[List[Traversable]]]
 
   // Common to most, but can change. Should never become empty after got_route.
-  var steps: List[Traversable] = Nil
+  // TODO make sure perf characteristics are good
+  var steps: Stream[Traversable] = Stream.empty
 
   def transition(from: Traversable, to: Traversable) = {
     if (steps.head == to) {
@@ -26,42 +26,15 @@ abstract class Route() {
   }
 
   def got_route(response: List[Traversable]) = {
-    steps = response
+    steps = response.toStream
   }
 
-  def next_step = lookahead_step(0)
-  
-  //TODO Make this a proper iterator
-  def next_turn(t: Turn):Option[Turn] = {
-    var step = lookahead_step(0)
-    var i = 1
-    while (step.isDefined && step != t){
-      step = lookahead_step(i)
-      i += 1
-    }
-    if (step != t) return None
-    step = lookahead_step(i)
-    i += 1
-    while (step.isDefined){
-      step match{
-        case t: Turn => return Some(t)
-        case _ =>
-      }
-      step = lookahead_step(i)
-      i += 1
-    }
-    return None
-    
-  }
+  // TODO re-evaluate the uses of this and if this'd ever break
+  def next_step = steps.headOption
 }
 
 // It's all there, all at once... just look at it
 class StaticRoute() extends Route() {
-  override def lookahead_step(n: Int) = if (n >= steps.size)
-                                          None
-                                        else
-                                          Some(steps(n))
-  
   override def request_route(from: Edge, to: Edge) = Some(new Callable[List[Traversable]]() {
     def call(): List[Traversable] = {
       return Agent.sim.pathfind_astar(from, to)
@@ -71,34 +44,21 @@ class StaticRoute() extends Route() {
 
 // DOOMED TO WALK FOREVER (until we happen to reach our goal)
 class DrunkenRoute() extends Route() {
-  var end_point: Edge = null
+  var goal: Edge = null
 
-  override def lookahead_step(n: Int): Option[Traversable] = {
-    // Lazily fill in steps as we need to
-    // TODO write the while with a for so we don't ask size() repeatedly
-    while (steps.size <= n) {
-      if (steps.isEmpty || steps.last == end_point) {
-        // terminate early, do not go past endpoint
-        // TODO this -may- break if from == to and we're to do a circuit
-        return None
-      } else {
-        val add = steps.last match {
-          case e: Edge => pick_turn(e)
-          case t: Turn => t.to
-        }
-        // pattern matching gets wonky when these are combined directly
-        steps :+= add
-      }
+  private def plan_step(last_step: Traversable): Stream[Traversable] = last_step match {
+    case _ if goal == last_step => Stream.empty
+    case e: Edge => {
+      val turn = pick_turn(e)
+      turn #:: plan_step(turn)
     }
-
-    // if we made it through all, haven't hit end_point yet
-    return Some(steps(n))
+    case t: Turn => t.to #:: plan_step(t.to)
   }
 
   // No actual work to do
   override def request_route(from: Edge, to: Edge): Option[Callable[List[Traversable]]] = {
-    end_point = to
-    steps = List(pick_turn(from))
+    goal = to
+    steps = plan_step(from)
     return None
   }
 
@@ -108,7 +68,7 @@ class DrunkenRoute() extends Route() {
 
 // Wanders around slightly less aimlessly by picking directions
 class DirectionalDrunkRoute extends DrunkenRoute() { 
-  def heuristic(t: Turn) = t.to.to.location.dist_to(end_point.to.location)
+  def heuristic(t: Turn) = t.to.to.location.dist_to(goal.to.location)
 
   // pick the most direct path 75% of the time
   override def pick_turn(e: Edge): Turn = {
