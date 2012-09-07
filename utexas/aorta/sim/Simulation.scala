@@ -17,7 +17,8 @@ import utexas.aorta.map.{Graph, Road, Edge, Vertex, Ward, Turn}
 import utexas.aorta.map.make.Reader
 import utexas.aorta.sim.policies._
 
-import utexas.aorta.{Util, cfg, Stats, Total_Trip_Stat, Active_Agents_Stat}
+import utexas.aorta.{Util, cfg, Stats, Total_Trip_Stat, Active_Agents_Stat,
+                     Simulator_Speedup_Stat}
 
 // This just adds a notion of agents
 class Simulation(roads: Array[Road], edges: Array[Edge], vertices: Array[Vertex],
@@ -213,6 +214,7 @@ class Simulation(roads: Array[Road], edges: Array[Edge], vertices: Array[Vertex]
       actual_sim_speed = tick - last_sim_time
       last_sim_time = tick
       last_real_time = now
+      Stats.record(Simulator_Speedup_Stat(actual_sim_speed, tick))
     }
 
     return (moved_count, total_count)
