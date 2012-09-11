@@ -13,7 +13,6 @@
 # tex stuff
 *.aux
 *.log
-*.pdf
 *.bbl
 *.blg
 *.eps
