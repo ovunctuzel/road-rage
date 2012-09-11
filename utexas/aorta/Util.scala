@@ -269,11 +269,44 @@ final case class Active_Agents_Stat(time: Int, cnt: Int) extends Measurement
 {
   override def toString = "s4 %d %d".format(time, cnt)
 }
+final case class Simulator_Speedup_Stat(factor: Double, time: Double)
+  extends Measurement
+{
+  override def toString = "s5 %d %d".format(factor, time)
+}
+
+class Aggregate_Stat(name: String) {
+  var total: Double = 0.0
+  var count = 0
+  var min: Double = 0.0
+  var max: Double = 0.0
+
+  def update(entry: Double) = {
+    if (count == 0) {
+      min = entry
+      max = entry
+    }
+    total += entry
+    count += 1
+    min = math.min(min, entry)
+    max = math.max(max, entry)
+  }
+
+  def mean = total / count.toDouble
+
+  def describe = "%s: %.2f average (%.2f min, %.2f max, %d samples)".format(
+    name, mean, min, max, count
+  )
+}
 
 object Stats {
   var log: FileWriter = null
   var use_log = false
   var use_print = false
+
+  val trip_time = new Aggregate_Stat("trip time (s)")
+  val simulator_speedup = new Aggregate_Stat("simulator speedup (factor)")
+  val time_wasted = new Aggregate_Stat("time wasted at individual intersections (s)")
 
   def experiment_name(name: String) = {
     if (use_log) {
@@ -293,6 +326,13 @@ object Stats {
     if (use_print) {
       Util.log("Stat: " + item)
     }
+
+    item match {
+      case Wasted_Time_Stat(_, _, lag, _) => time_wasted.update(lag)
+      case Total_Trip_Stat(_, time, _) => trip_time.update(time)
+      case Simulator_Speedup_Stat(factor, _) => simulator_speedup.update(factor)
+      case _ =>
+    }
   }
 
   // flush any logs we were writing
@@ -300,5 +340,13 @@ object Stats {
     if (log != null) {
       log.close
     }
+
+    // emit a summary
+    // TODO tabulate it?
+    println("")
+    println("-" * 80)
+    println(trip_time.describe)
+    println(time_wasted.describe)
+    println(simulator_speedup.describe)
   }
 }
