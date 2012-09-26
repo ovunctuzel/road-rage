@@ -1,21 +1,31 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <osm>
-  <node id='0' lat='0.0' lon='0.0'/>
-  <node id='1' lat='-0.01' lon='0.0'/>
-  <node id='2' lat='0.01' lon='0.0'/>
-  <node id='3' lat='0.0' lon='-0.01'/>
-  <node id='4' lat='0.0' lon='0.01'/>
+  <node id='0' lon='0.0' lat='0.0'/>
+  <node id='1' lon='0.0' lat='-0.01'/>
+  <node id='2' lon='0.0' lat='0.01'/>
+  <node id='3' lon='-0.01' lat='0.0'/>
+  <node id='4' lon='0.01' lat='0.0'/>
   <way id='5'>
-    <tag k='name' v='Horizontal'/>
+    <tag k='name' v='South'/>
     <tag k='lanes' v='2'/>
     <nd ref='1'/>
     <nd ref='0'/>
-    <nd ref='2'/>
   </way>
   <way id='6'>
-    <tag k='name' v='Vertical'/>
+    <tag k='name' v='North'/>
+    <tag k='lanes' v='2'/>
+    <nd ref='0'/>
+    <nd ref='2'/>
+  </way>
+  <way id='7'>
+    <tag k='name' v='West'/>
     <tag k='lanes' v='2'/>
     <nd ref='3'/>
+    <nd ref='0'/>
+  </way>
+  <way id='8'>
+    <tag k='name' v='East'/>
+    <tag k='lanes' v='2'/>
     <nd ref='0'/>
     <nd ref='4'/>
   </way>

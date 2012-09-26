@@ -905,7 +905,7 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
     // Filter and just remember the edges; the UI doesn't want to highlight
     // turns.
     route_members = r.map(s => s match {
-      case e: Edge => Some(e)
+      case e: Edge => { println(e); Some(e) }
       case _       => None
     }).flatten.toSet
     repaint
