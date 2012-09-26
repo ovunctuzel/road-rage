@@ -1,0 +1,19 @@
+#!/bin/bash
+
+SRCS=`find utexas/ -name '*.scala' -print | xargs`
+SWING="/usr/share/java/scala-swing.jar"
+#SWING="/usr/share/scala/lib/scala-swing.jar"
+BUILD_OPTS="-d .build -deprecation -unchecked -cp $SWING"
+RUN_OPTS="-cp .build:$SWING"
+
+echo Compiling...
+mkdir -p .build
+#scalac $BUILD_OPTS $SRCS
+fsc $BUILD_OPTS $SRCS
+
+# How did the compile go?
+if [[ $? != "0" ]]; then
+    exit 1
+fi
+echo Done compiling.
+echo

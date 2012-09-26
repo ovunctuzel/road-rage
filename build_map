@@ -1,5 +1,3 @@
 #!/bin/bash
 
-ant
-
 scala -cp .build utexas.aorta.map.make.Builder $@

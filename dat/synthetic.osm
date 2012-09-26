@@ -1,57 +1,22 @@
 <?xml version='1.0' encoding='UTF-8'?>
-<osm version='0.6' generator='JOSM'>
-  <bounds minlat='30.436128' minlon='-91.11868' maxlat='30.438774' maxlon='-91.115687' origin='CGImap 0.0.2' />
-  <node id='115214915' action='modify' timestamp='2009-08-14T10:46:12Z' uid='147510' user='woodpeck_fixbot' visible='true' version='2' changeset='2140655' lat='30.437657354213627' lon='-91.11149574061992' />
-  <node id='115215014' action='delete' timestamp='2009-08-14T10:46:13Z' uid='147510' user='woodpeck_fixbot' visible='true' version='2' changeset='2140655' lat='30.44329' lon='-91.117605' />
-  <node id='115218167' timestamp='2011-04-28T23:19:50Z' uid='446320' user='marawynn' visible='true' version='3' changeset='7999280' lat='30.4390969' lon='-91.1172222' />
-  <node id='115247422' action='modify' timestamp='2009-08-14T10:54:17Z' uid='147510' user='woodpeck_fixbot' visible='true' version='2' changeset='2140655' lat='30.43715529101874' lon='-91.12253922512235' />
-  <node id='115247424' timestamp='2009-08-14T10:54:17Z' uid='147510' user='woodpeck_fixbot' visible='true' version='2' changeset='2140655' lat='30.43749' lon='-91.117205' />
-  <node id='115252479' action='delete' timestamp='2011-11-17T16:40:25Z' uid='41187' user='Matt Toups' visible='true' version='3' changeset='9854944' lat='30.443698112328562' lon='-91.11675330543734' />
-  <node id='115252481' action='modify' timestamp='2009-08-14T10:55:30Z' uid='147510' user='woodpeck_fixbot' visible='true' version='2' changeset='2140655' lat='30.442132873360677' lon='-91.11720118170888' />
-  <node id='115252484' timestamp='2011-11-17T16:40:25Z' uid='41187' user='Matt Toups' visible='true' version='3' changeset='9854944' lat='30.4403403' lon='-91.1174082' />
-  <node id='115252487' timestamp='2009-08-14T10:55:30Z' uid='147510' user='woodpeck_fixbot' visible='true' version='2' changeset='2140655' lat='30.43599' lon='-91.117005' />
-  <node id='115252490' timestamp='2011-10-11T16:59:53Z' uid='22925' user='ELadner' visible='true' version='3' changeset='9532233' lat='30.4350539' lon='-91.1171907' />
-  <node id='115252492' action='modify' timestamp='2011-10-11T16:59:53Z' uid='22925' user='ELadner' visible='true' version='4' changeset='9532233' lat='30.433566537116455' lon='-91.11699945856444' />
-  <way id='12628804' timestamp='2007-11-15T13:04:21Z' uid='7168' user='DaveHansenTiger' visible='true' version='1' changeset='516391'>
-    <nd ref='115247422' />
-    <nd ref='115247424' />
-    <nd ref='115214915' />
-    <tag k='highway' v='residential' />
-    <tag k='name' v='Joliet Ave' />
-    <tag k='tiger:cfcc' v='A41' />
-    <tag k='tiger:county' v='East Baton Rouge, LA' />
-    <tag k='tiger:name_base' v='Joliet' />
-    <tag k='tiger:name_type' v='Ave' />
-    <tag k='tiger:reviewed' v='no' />
-    <tag k='tiger:separated' v='no' />
-    <tag k='tiger:source' v='tiger_import_dch_v0.6_20070813' />
-    <tag k='tiger:tlid' v='92189465:92189457' />
-    <tag k='tiger:upload_uuid' v='bulk_upload.pl-40f65c9b-293f-4ade-855c-437289561ee9' />
-    <tag k='tiger:zip_left' v='70806' />
-    <tag k='tiger:zip_right' v='70806' />
-    <tag k='oneway' v='no' />
+<osm>
+  <node id='0' lat='0.0' lon='0.0'/>
+  <node id='1' lat='-0.01' lon='0.0'/>
+  <node id='2' lat='0.01' lon='0.0'/>
+  <node id='3' lat='0.0' lon='-0.01'/>
+  <node id='4' lat='0.0' lon='0.01'/>
+  <way id='5'>
+    <tag k='name' v='Horizontal'/>
+    <tag k='highway' v='residential'/>
+    <nd ref='1'/>
+    <nd ref='0'/>
+    <nd ref='2'/>
   </way>
-  <way id='12629510' action='modify' timestamp='2007-11-15T13:07:26Z' uid='7168' user='DaveHansenTiger' visible='true' version='1' changeset='516391'>
-    <nd ref='115252481' />
-    <nd ref='115252484' />
-    <nd ref='115218167' />
-    <nd ref='115247424' />
-    <nd ref='115252487' />
-    <nd ref='115252490' />
-    <nd ref='115252492' />
-    <tag k='highway' v='residential' />
-    <tag k='name' v='Keed Ave' />
-    <tag k='tiger:cfcc' v='A41' />
-    <tag k='tiger:county' v='East Baton Rouge, LA' />
-    <tag k='tiger:name_base' v='Keed' />
-    <tag k='tiger:name_type' v='Ave' />
-    <tag k='tiger:reviewed' v='no' />
-    <tag k='tiger:separated' v='no' />
-    <tag k='tiger:source' v='tiger_import_dch_v0.6_20070813' />
-    <tag k='tiger:tlid' v='92189460:92189463:92189310:92189458:92189301:92189308:92189287:92189299' />
-    <tag k='tiger:upload_uuid' v='bulk_upload.pl-40f65c9b-293f-4ade-855c-437289561ee9' />
-    <tag k='tiger:zip_left' v='70806' />
-    <tag k='tiger:zip_right' v='70806' />
-    <tag k='oneway' v='no' />
+  <way id='6'>
+    <tag k='name' v='Vertical'/>
+    <tag k='highway' v='residential'/>
+    <nd ref='3'/>
+    <nd ref='0'/>
+    <nd ref='4'/>
   </way>
 </osm>

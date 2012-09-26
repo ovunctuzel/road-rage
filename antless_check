@@ -1,5 +1,0 @@
-#!/bin/bash
-
-. common_antless
-
-scala -cp .build utexas.aorta.map.make.Checker $@

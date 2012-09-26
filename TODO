@@ -1,6 +1,30 @@
 # TODO #
 
+# Lane changing
+- key: pathfind by directed roads (clumps of lanes), leave specific turns and lanes up to
+  behavior. still allow for re-planning (if we miss road entirely or part of road explodes).
+- representing logically
+  - in both queues
+  - agent in one location, but marked a certain state?
+- representing physically
+  - how long does it take? inversely proportional to speed?
+- when is it safe?
+  - dont try it too close to the end or beginning of an edge
+  - guarantee to avoid agents
+  - atomic; dont start without finishing
+  - dont attempt on short lanes
+- how are routes affected if it's missed/impossible?
+  - is it OK to stall forever and wait to merge in?
+- purpose
+  - for now, just routing
+  - much later, a behavior could do it within constraints of route to pass slow?
+- testing
+  - introduce automated test framework using scenarios
+  - wacky cases of 2 side-by-side agents wanting to swap places?
+
 # Uber stuff
+re-evaluate the idea of this.
+
 DOING IT
   - still flood, then make new vert and turns, and mod old edges?
   - save uber-turns and extend turn, with lines/a notion of saved conflict?
@@ -35,12 +59,11 @@ TESTING IT
   - lookahead by end_thres more than current.
   - why are we EVER doomed?!
   - why are we EVER requesting negative accel_to_end distances?
-- gridlock
-  - make them re-route?
-  - verify lane-changing is the problem
+- jvm crashing on some jvm implementations?
 
 # Behaviors, Policies, & Strategies
 - traffic signal
+  - try backpressure idea
   - visualize the green/red better
     - do something with lanes still
     - what i was imagining was picking some edge at some point in time, then flooding out
@@ -54,14 +77,15 @@ TESTING IT
 # Profiling
 - we can do much better with ready agents... max capacity of edges, group them based on
   where they want to spawn, maybe by generator?
-- measure profiling things
-  - how long did simulation run? (one value)
 - in react if speed is still 0, see if follow_agent or intersection has changed.
 - is caching properties of linked list hurting us for iterating through big things?
-- think about parallelizing
 - contraction hierarchies for FAST pathing, or wards
 - we could check less queues atomically if we could step agents in some cool order
   - or when we mess with an agent, see if they've moved yet this round?
+
+# Parallelizing
+- meseoscopic in between regions? lockstep necessary?
+- dynamic load balancing? any need to split up by region?
 
 # UI
 - turn off generators
@@ -96,25 +120,6 @@ TESTING IT
   - Claus Circle in BR... has no outgoing turns.
 - multi-lane situations dont have enough turns, and we need to do more trimming!
 
-# Lane changing
-- key: pathfind by directed roads (clumps of lanes), leave specific turns and lanes up to
-  behavior. still allow for re-planning (if we miss road entirely or part of road explodes).
-- logically, geometrically
-- when is it safe?
-  - dont try it too close to the end or beginning
-  - guarantee to avoid agents
-  - atomic; dont start without finishing
-  - dont attempt on short lanes
-- how does the agent look during it?
-  - how long does it take? is it a fxn of speed?
-  - stay in both queues during
-- how are routes affected if it's missed/impossible?
-  - is it OK to stall forever and wait to merge in?
-- wacky cases of 2 side-by-side agents wanting to swap places?
-- purpose
-  - for now, just routing
-  - much later, a behavior could do it within constraints of route to pass slow?
-
 # General Simulation
 - automated testing strategy.
 - have a notion of "I'm done with the turn, but I'm protruding into the intersection"
@@ -140,10 +145,6 @@ TESTING IT
   - mixing intersections!
 
 # Wards
-- whats broken with mikes?
-  - length
-  - overall strategy
-  - semantics of one of the set operations
 - find 'major' roads better
   - crosses/links major roads
   - manually editing

@@ -77,6 +77,11 @@ class Pass1(fn: String) {
 
     // TODO probably a better way to unpack than casting to string
     def get_attrib(attribs: MetaData, key: String): String = attribs.get(key).head.text
+    def get_attrib_default(attribs: MetaData, key: String, default: String): String =
+      attribs.get(key) match {
+        case Some(ls) => ls.head.text
+        case None => default
+      }
 
     event_reader.foreach(ev => {
       ev_count += 1
@@ -86,36 +91,34 @@ class Pass1(fn: String) {
       }
 
       ev match {
-        case EvElemStart(_, "node", attribs, _) => {
-          val viz = get_attrib(attribs, "visible")
-          if (viz != None && viz != "true") {
-            Util.log("WARNING: invisible node in osm")
-          } else {
-            // record the node
-            val id = get_attrib(attribs, "id").toInt
-            val x = get_attrib(attribs, "lon").toDouble
-            val y = get_attrib(attribs, "lat").toDouble
+        case EvElemStart(_, "node", attribs, _) =>
+          (get_attrib_default(attribs, "visible", "true"), get_attrib_default(attribs, "action", "modify")) match {
+            case ("true", "modify") => {
+              // record the node
+              val id = get_attrib(attribs, "id").toInt
+              val x = get_attrib(attribs, "lon").toDouble
+              val y = get_attrib(attribs, "lat").toDouble
 
-            id_to_node(id) = new Coordinate(x, y)
-            id_to_uses(id) = 0  // no edges reference it yet
+              id_to_node(id) = new Coordinate(x, y)
+              id_to_uses(id) = 0  // no edges reference it yet
+            }
+            case _ =>
           }
-        }
 
-        case EvElemStart(_, "way", attribs, _) => {
-          // TODO refactor the skip invisible check
-          val viz = get_attrib(attribs, "visible")
-          if (viz != None && viz != "true") {
-            Util.log("WARNING: invisible way in osm")
-          } else {
-            id = get_attrib(attribs, "id").toInt
-            name = ""
-            road_type = ""
-            oneway = false
-            skip_way = false
-            refs = new MutableList[Int]
-            lanes = None
+        case EvElemStart(_, "way", attribs, _) =>
+          (get_attrib_default(attribs, "visible", "true"), get_attrib_default(attribs, "action", "modify")) match {
+            case ("true", "modify") => {
+              id = get_attrib(attribs, "id").toInt
+              name = ""
+              road_type = ""
+              oneway = false
+              skip_way = false
+              refs = new MutableList[Int]
+              lanes = None
+            }
+            case _ =>
           }
-        }
+
         case EvElemEnd(_, "way") => {
           if (name == "" && road_type == "service") {
             // TODO wacky alleys, driveways, cemetary paths. when they

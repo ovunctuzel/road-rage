@@ -272,7 +272,7 @@ final case class Active_Agents_Stat(time: Int, cnt: Int) extends Measurement
 final case class Simulator_Speedup_Stat(factor: Double, time: Double)
   extends Measurement
 {
-  override def toString = "s5 %d %d".format(factor, time)
+  override def toString = "s5 %.2f %.2f".format(factor, time)
 }
 
 class Aggregate_Stat(name: String) {
