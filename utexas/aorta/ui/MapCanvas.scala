@@ -490,312 +490,331 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
     return sim.vertices.find(v => vert_bubble(v).intersects(cursor_bubble))
   }
 
-  def handle_ev(ev: UI_Event) = {
-    ev match {
-      case EV_Mouse_Moved(x, y) => {
-        // always reset everything
-        current_edge = None
-        current_turn = -1
-        current_ward = None
-        current_agent = None
-        current_vert = None
+  def handle_ev(ev: UI_Event): Unit = ev match {
+    case EV_Mouse_Moved(x, y) => {
+      // always reset everything
+      current_edge = None
+      current_turn = -1
+      current_ward = None
+      current_agent = None
+      current_vert = None
 
-        // Are we mouse-overing something? ("mousing over")
-        // Order: agents, wards, edges, vertices
+      // Are we mouse-overing something? ("mousing over")
+      // Order: agents, wards, edges, vertices
 
-        // Don't do the work of looking until we have to.
-        lazy val cur_a = mouseover_agent(x, y)
-        lazy val cur_w = if (show_wards) mouseover_ward(x, y) else None
-        lazy val cur_e = if (zoomed_in) mouseover_edge(x, y) else None
-        lazy val cur_v = mouseover_vert(x, y)
+      // Don't do the work of looking until we have to.
+      lazy val cur_a = mouseover_agent(x, y)
+      lazy val cur_w = if (show_wards) mouseover_ward(x, y) else None
+      lazy val cur_e = if (zoomed_in) mouseover_edge(x, y) else None
+      lazy val cur_v = mouseover_vert(x, y)
 
-        // TODO but do we lazily match? i don't think so.
-        status.location.text = (cur_a, cur_w, cur_e, cur_v) match {
-          case (Some(a), _, _, _) => {
-            current_agent = cur_a
-            "" + a
-          }
-          case (None, Some(w), _, _) => {
-            current_ward = cur_w
-            "" + w
-          }
-          case (None, None, Some(e), _) => {
-            current_edge = cur_e
-            "" + e
-          }
-          case (None, None, None, Some(v)) => {
-            current_vert = cur_v
-            "" + v
-          }
-          case _ => "Nowhere"
+      // TODO but do we lazily match? i don't think so.
+      status.location.text = (cur_a, cur_w, cur_e, cur_v) match {
+        case (Some(a), _, _, _) => {
+          current_agent = cur_a
+          "" + a
         }
+        case (None, Some(w), _, _) => {
+          current_ward = cur_w
+          "" + w
+        }
+        case (None, None, Some(e), _) => {
+          current_edge = cur_e
+          "" + e
+        }
+        case (None, None, None, Some(v)) => {
+          current_vert = cur_v
+          "" + v
+        }
+        case _ => "Nowhere"
+      }
 
-        // TODO only on changes?
-        repaint
-      }
-      case EV_Param_Set("highlight", value) => {
-        highlight_type = value
-        repaint
-      }
-      // TODO this'll be tab someday, i vow!
-      case EV_Key_Press(Key.Control) => {
-        // cycle through turns
-        current_edge match {
-          case Some(e) => {
-            current_turn += 1
-            if (current_turn >= e.next_turns.size) {
-              current_turn = 0
-            }
-            repaint
-          }
-          case None => {}
-        }
-      }
-      case EV_Key_Press(Key.P) => {
-        handle_ev(EV_Action("toggle-running"))
-      }
-      case EV_Key_Press(Key.W) => {
-        handle_ev(EV_Action("toggle-wards"))
-      }
-      case EV_Action("spawn-army") => {
-        prompt_generator(sim.edges, sim.edges)
-      }
-      case EV_Action("step") => {
-        val note = if (running)
-                     ""
-                   else
-                     " [Paused]"
-        status.time.text = "%.1f %s".format(sim.tick, note)
-        status.actual_sim_speed.text = "%.1fx".format(sim.actual_sim_speed)
-        // agents have maybe moved, so...
-        status.agents.text = sim.describe_agents
-        repaint
-      }
-      case EV_Action("toggle-running") => {
-        if (running) {
-          running = false
-        } else {
-          running = true
-        }
-      }
-      case EV_Action("toggle-wards") => {
-        show_wards = !show_wards
-        // TODO this doesnt quite seem to match until we actually move...
-        handle_ev(EV_Mouse_Moved(mouse_at_x, mouse_at_y))
-        repaint
-      }
-      case EV_Action("pathfind") => {
-        show_ward_colors = false  // it's really hard to see otherwise
-        switch_mode(Mode.PICK_1st)
-        chosen_edge1 = None
-        chosen_edge2 = None
-        route_members = Set[Edge]()
-        repaint
-      }
-      case EV_Action("clear-route") => {
-        switch_mode(Mode.EXPLORE)
-        chosen_edge1 = None
-        chosen_edge2 = None
-        route_members = Set[Edge]()
-        repaint
-      }
-      case EV_Action("teleport-edge") => {
-        prompt_int("What edge ID do you seek?") match {
-          case Some(id) => {
-            try {
-              val e = sim.edges(id.toInt)
-              // TODO center on some part of the edge and zoom in, rather than
-              // just vaguely moving that way
-              Util.log("Here's " + e)
-              center_on(e.lines.head.start)
-              chosen_edge2 = Some(e)  // just kind of use this to highlight it
-              repaint
-            } catch {
-              case _ => Util.log("Bad edge ID " + id)
-            }
-          }
-          case _ =>
-        }
-        grab_focus
-      }
-      case EV_Action("teleport-agent") => {
-        prompt_int("What agent ID do you seek?") match {
-          case Some(id) => {
-            try {
-              sim.agents.find(a => a.id == id.toInt) match {
-                case Some(a) => {
-                  Util.log("Here's " + a)
-                  center_on(a.at.location)
-                  repaint
-                }
-                case _ => Util.log("Didn't find " + id)
-              }
-            } catch {
-              case _ => Util.log("Bad agent ID " + id)
-            }
-          }
-          case _ =>
-        }
-        grab_focus
-      }
-      case EV_Action("teleport-vertex") => {
-        prompt_int("What vertex ID do you seek?") match {
-          case Some(id) => {
-            try {
-              val v = sim.vertices(id.toInt)
-              Util.log("Here's " + v)
-              center_on(v.location)
-              repaint
-            } catch {
-              case _ => Util.log("Bad agent ID " + id)
-            }
-          }
-          case _ =>
-        }
-        grab_focus
-      }
-      case EV_Key_Press(Key.C) if current_edge.isDefined => {
-        mode match {
-          case Mode.PICK_1st => {
-            chosen_edge1 = current_edge
-            switch_mode(Mode.PICK_2nd)
-            repaint
-          }
-          case Mode.PICK_2nd => {
-            chosen_edge2 = current_edge
-            // TODO later, let this inform any client
-            show_pathfinding
-            switch_mode(Mode.EXPLORE)
-          }
-          case _ =>
-        }
-      }
-      case EV_Key_Press(Key.T) => {
-        // toggle road-coloring mode
-        show_ward_colors = !show_ward_colors
-        repaint
-      }
-      case EV_Key_Press(Key.OpenBracket) => {
-        sim.slow_down()
-        status.desired_sim_speed.text = "%.1fx".format(sim.desired_sim_speed)
-      }
-      case EV_Key_Press(Key.CloseBracket) => {
-        sim.speed_up()
-        status.desired_sim_speed.text = "%.1fx".format(sim.desired_sim_speed)
-      }
-      case EV_Key_Press(Key.Minus) => {
-        sim.slow_down(5)
-        status.desired_sim_speed.text = "%.1fx".format(sim.desired_sim_speed)
-      }
-      case EV_Key_Press(Key.Equals) => {
-        sim.speed_up(5)
-        status.desired_sim_speed.text = "%.1fx".format(sim.desired_sim_speed)
-      }
-      // general debug based on whatever you're hovering over
-      case EV_Key_Press(Key.D) => {
-        (current_edge, current_agent, current_vert) match {
-          case (Some(e), _, _) => {
-            Util.log(e.road + " is a " + e.road.road_type + " of length " +
-                     e.length + " meters")
-          }
-          case (None, Some(a), _) => {
-            a.dump_info
-            sim.debug_agent = current_agent
-          }
-          case (None, None, Some(v)) => {
-            val i = v.intersection
-
-            Util.log("Current turns allowed:")
-            Util.log_push
-            i.policy.current_greens.foreach(g => Util.log("" + g))
-            Util.log_pop
-
-            Util.log("Current turns active:")
-            Util.log_push
-            i.turns.foreach(pair => Util.log(pair._2 + " doing " + pair._1))
-            Util.log_pop
-
-            // anything else
-            i.policy.dump_info
-          }
-          // This is what pressing 'd' when highlighting nothing means
-          case _ => {
-            sim.debug_agent = None
-          }
-        }
-      }
-      case EV_Key_Press(Key.F) => { camera_agent = current_agent }
-      case EV_Key_Press(Key.X) if current_agent.isDefined => {
-        if (running) {
-          Util.log("Cannot nuke agents while simulation is running!")
-        } else {
-          val a = current_agent.get
-          current_agent = None
-          Util.log("WARNING: Nuking " + a)
-          // simulate being done
-          a.exit(a.at.on)
-          a.upcoming_intersections.foreach(i => i.unregister(a))
-          a.upcoming_intersections = Set()
-          sim.agents -= a
-        }
-      }
-      case EV_Key_Press(Key.G) => {
-        show_green = !show_green
-      }
-      case EV_Select_Polygon_For_Army() => {
-        // TODO continuation style would make this reasonable:
-        // 1) dont keep all that ugly state in the object
-        //    (but how to clear it?)
-        // 2) code reads like a simple flow
-
-        // Let's find all vertices inside the polygon.
-        val rds = sim.vertices.filter(
-          v => polygon.contains(v.location.x, v.location.y)).flatMap(v => v.roads
-        ).toSet
-        Util.log("Matched " + rds.size + " roads")
-        if (rds.isEmpty) {
-          Util.log("Try that again.")
-        } else {
-          if (polygon_roads1.isEmpty) {
-            polygon_roads1 = rds
-            Util.log("Now select a second set of roads")
-          } else {
-            polygon_roads2 = rds
-
-            prompt_generator(
-              polygon_roads1.toList.flatMap(_.all_lanes),
-              polygon_roads2.toList.flatMap(_.all_lanes)
-            )
-
-            // Make the keyboard work again
-            grab_focus
-
-            polygon_roads1 = Set()
-            polygon_roads2 = Set()
-          }
-        }
-      }
-      case EV_Select_Polygon_For_Policy() => {
-        // Let's find all vertices inside the polygon.
-        val intersections = sim.vertices.filter(
-          v => polygon.contains(v.location.x, v.location.y)
-        ).map(_.intersection)
-        Util.log("Matched " + intersections.size + " intersections")
-        Dialog.showInput(
-          message = "What policy should govern these intersections?",
-          initial = "",
-          // TODO populate seq from what sim uses
-          entries = Seq("Never Go", "Stop Sign", "Signal Cycle", "Reservation")
-        ) match {
-          case Some(name) => {
-            val builder = Simulation.policy_builder(name.toString)
-            intersections.foreach(i => i.policy = builder(i))
-          }
-          case None =>
-        }
-      }
-      case EV_Key_Press(_) => // Ignore the rest
+      // TODO only on changes?
+      repaint
     }
+    case EV_Param_Set("highlight", value) => {
+      highlight_type = value
+      repaint
+    }
+    // TODO this'll be tab someday, i vow!
+    case EV_Key_Press(Key.Control) => {
+      // cycle through turns
+      current_edge match {
+        case Some(e) => {
+          current_turn += 1
+          if (current_turn >= e.next_turns.size) {
+            current_turn = 0
+          }
+          repaint
+        }
+        case None => {}
+      }
+    }
+    case EV_Key_Press(Key.P) => {
+      handle_ev(EV_Action("toggle-running"))
+    }
+    case EV_Key_Press(Key.W) => {
+      handle_ev(EV_Action("toggle-wards"))
+    }
+    case EV_Action("spawn-army") => {
+      prompt_generator(sim.edges, sim.edges)
+    }
+    case EV_Action("step") => {
+      val note = if (running)
+                   ""
+                 else
+                   " [Paused]"
+      status.time.text = "%.1f %s".format(sim.tick, note)
+      status.actual_sim_speed.text = "%.1fx".format(sim.actual_sim_speed)
+      // agents have maybe moved, so...
+      status.agents.text = sim.describe_agents
+      repaint
+    }
+    case EV_Action("toggle-running") => {
+      if (running) {
+        running = false
+      } else {
+        running = true
+      }
+    }
+    case EV_Action("toggle-wards") => {
+      show_wards = !show_wards
+      // TODO this doesnt quite seem to match until we actually move...
+      handle_ev(EV_Mouse_Moved(mouse_at_x, mouse_at_y))
+      repaint
+    }
+    case EV_Action("pathfind") => {
+      show_ward_colors = false  // it's really hard to see otherwise
+      switch_mode(Mode.PICK_1st)
+      chosen_edge1 = None
+      chosen_edge2 = None
+      route_members = Set[Edge]()
+      repaint
+    }
+    case EV_Action("clear-route") => {
+      switch_mode(Mode.EXPLORE)
+      chosen_edge1 = None
+      chosen_edge2 = None
+      route_members = Set[Edge]()
+      repaint
+    }
+    case EV_Action("teleport-edge") => {
+      prompt_int("What edge ID do you seek?") match {
+        case Some(id) => {
+          try {
+            val e = sim.edges(id.toInt)
+            // TODO center on some part of the edge and zoom in, rather than
+            // just vaguely moving that way
+            Util.log("Here's " + e)
+            center_on(e.lines.head.start)
+            chosen_edge2 = Some(e)  // just kind of use this to highlight it
+            repaint
+          } catch {
+            case _: NumberFormatException => Util.log("Bad edge ID " + id)
+          }
+        }
+        case _ =>
+      }
+      grab_focus
+    }
+    case EV_Action("teleport-agent") => {
+      prompt_int("What agent ID do you seek?") match {
+        case Some(id) => {
+          try {
+            sim.agents.find(a => a.id == id.toInt) match {
+              case Some(a) => {
+                Util.log("Here's " + a)
+                center_on(a.at.location)
+                repaint
+              }
+              case _ => Util.log("Didn't find " + id)
+            }
+          } catch {
+            case _: NumberFormatException => Util.log("Bad agent ID " + id)
+          }
+        }
+        case _ =>
+      }
+      grab_focus
+    }
+    case EV_Action("teleport-vertex") => {
+      prompt_int("What vertex ID do you seek?") match {
+        case Some(id) => {
+          try {
+            val v = sim.vertices(id.toInt)
+            Util.log("Here's " + v)
+            center_on(v.location)
+            repaint
+          } catch {
+            case _: NumberFormatException => Util.log("Bad agent ID " + id)
+          }
+        }
+        case _ =>
+      }
+      grab_focus
+    }
+    case EV_Key_Press(Key.C) if current_edge.isDefined => {
+      mode match {
+        case Mode.PICK_1st => {
+          chosen_edge1 = current_edge
+          switch_mode(Mode.PICK_2nd)
+          repaint
+        }
+        case Mode.PICK_2nd => {
+          chosen_edge2 = current_edge
+          // TODO later, let this inform any client
+          show_pathfinding
+          switch_mode(Mode.EXPLORE)
+        }
+        case _ =>
+      }
+    }
+    case EV_Key_Press(Key.M) if current_edge.isDefined => {
+      mode match {
+        case Mode.EXPLORE => {
+          chosen_edge1 = current_edge
+          switch_mode(Mode.PICK_2nd)
+          repaint
+        }
+        case Mode.PICK_2nd => {
+          chosen_edge2 = current_edge
+          sim.add_gen(new FixedSizeGenerator(
+            sim, Set(chosen_edge1.get), Set(current_edge.get), 1,
+            Simulation.route_builder("Static A*")
+          ))
+          chosen_edge1 = None
+          chosen_edge2 = None
+          switch_mode(Mode.EXPLORE)
+          repaint
+        }
+        case _ =>
+      }
+    }
+    case EV_Key_Press(Key.T) => {
+      // toggle road-coloring mode
+      show_ward_colors = !show_ward_colors
+      repaint
+    }
+    case EV_Key_Press(Key.OpenBracket) => {
+      sim.slow_down()
+      status.desired_sim_speed.text = "%.1fx".format(sim.desired_sim_speed)
+    }
+    case EV_Key_Press(Key.CloseBracket) => {
+      sim.speed_up()
+      status.desired_sim_speed.text = "%.1fx".format(sim.desired_sim_speed)
+    }
+    case EV_Key_Press(Key.Minus) => {
+      sim.slow_down(5)
+      status.desired_sim_speed.text = "%.1fx".format(sim.desired_sim_speed)
+    }
+    case EV_Key_Press(Key.Equals) => {
+      sim.speed_up(5)
+      status.desired_sim_speed.text = "%.1fx".format(sim.desired_sim_speed)
+    }
+    // general debug based on whatever you're hovering over
+    case EV_Key_Press(Key.D) => {
+      (current_edge, current_agent, current_vert) match {
+        case (Some(e), _, _) => {
+          Util.log(e.road + " is a " + e.road.road_type + " of length " +
+                   e.length + " meters")
+        }
+        case (None, Some(a), _) => {
+          a.dump_info
+          sim.debug_agent = current_agent
+        }
+        case (None, None, Some(v)) => {
+          val i = v.intersection
+
+          Util.log("Current turns allowed:")
+          Util.log_push
+          i.policy.current_greens.foreach(g => Util.log("" + g))
+          Util.log_pop
+
+          Util.log("Current turns active:")
+          Util.log_push
+          i.turns.foreach(pair => Util.log(pair._2 + " doing " + pair._1))
+          Util.log_pop
+
+          // anything else
+          i.policy.dump_info
+        }
+        // This is what pressing 'd' when highlighting nothing means
+        case _ => {
+          sim.debug_agent = None
+        }
+      }
+    }
+    case EV_Key_Press(Key.F) => { camera_agent = current_agent }
+    case EV_Key_Press(Key.X) if current_agent.isDefined => {
+      if (running) {
+        Util.log("Cannot nuke agents while simulation is running!")
+      } else {
+        val a = current_agent.get
+        current_agent = None
+        Util.log("WARNING: Nuking " + a)
+        // simulate being done
+        a.exit(a.at.on)
+        a.upcoming_intersections.foreach(i => i.unregister(a))
+        a.upcoming_intersections = Set()
+        sim.agents -= a
+      }
+    }
+    case EV_Key_Press(Key.G) => {
+      show_green = !show_green
+    }
+    case EV_Select_Polygon_For_Army() => {
+      // TODO continuation style would make this reasonable:
+      // 1) dont keep all that ugly state in the object
+      //    (but how to clear it?)
+      // 2) code reads like a simple flow
+
+      // Let's find all vertices inside the polygon.
+      val rds = sim.vertices.filter(
+        v => polygon.contains(v.location.x, v.location.y)).flatMap(v => v.roads
+      ).toSet
+      Util.log("Matched " + rds.size + " roads")
+      if (rds.isEmpty) {
+        Util.log("Try that again.")
+      } else {
+        if (polygon_roads1.isEmpty) {
+          polygon_roads1 = rds
+          Util.log("Now select a second set of roads")
+        } else {
+          polygon_roads2 = rds
+
+          prompt_generator(
+            polygon_roads1.toList.flatMap(_.all_lanes),
+            polygon_roads2.toList.flatMap(_.all_lanes)
+          )
+
+          // Make the keyboard work again
+          grab_focus
+
+          polygon_roads1 = Set()
+          polygon_roads2 = Set()
+        }
+      }
+    }
+    case EV_Select_Polygon_For_Policy() => {
+      // Let's find all vertices inside the polygon.
+      val intersections = sim.vertices.filter(
+        v => polygon.contains(v.location.x, v.location.y)
+      ).map(_.intersection)
+      Util.log("Matched " + intersections.size + " intersections")
+      Dialog.showInput(
+        message = "What policy should govern these intersections?",
+        initial = "",
+        // TODO populate seq from what sim uses
+        entries = Seq("Never Go", "Stop Sign", "Signal Cycle", "Reservation")
+      ) match {
+        case Some(name) => {
+          val builder = Simulation.policy_builder(name.toString)
+          intersections.foreach(i => i.policy = builder(i))
+        }
+        case None =>
+      }
+    }
+    case EV_Key_Press(_) => // Ignore the rest
   }
 
   // TODO ew, even refactored, these are a bit ugly.
@@ -806,7 +825,7 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
       try {
         Some(num.toInt)
       } catch {
-        case _ => None
+        case _: NumberFormatException => None
       }
     }
     case _ => None
@@ -819,7 +838,7 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
       try {
         Some(num.toDouble)
       } catch {
-        case _ => None
+        case _: NumberFormatException => None
       }
     }
     case _ => None

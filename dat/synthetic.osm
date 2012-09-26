@@ -7,14 +7,14 @@
   <node id='4' lat='0.0' lon='0.01'/>
   <way id='5'>
     <tag k='name' v='Horizontal'/>
-    <tag k='highway' v='residential'/>
+    <tag k='lanes' v='2'/>
     <nd ref='1'/>
     <nd ref='0'/>
     <nd ref='2'/>
   </way>
   <way id='6'>
     <tag k='name' v='Vertical'/>
-    <tag k='highway' v='residential'/>
+    <tag k='lanes' v='2'/>
     <nd ref='3'/>
     <nd ref='0'/>
     <nd ref='4'/>

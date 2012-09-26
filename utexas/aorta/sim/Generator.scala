@@ -44,8 +44,8 @@ object Generator {
   }
 }
 
-abstract class Generator(sim: Simulation, desired_starts: Seq[Edge],
-                         ends: Seq[Edge], route_builder: () => Route)
+abstract class Generator(sim: Simulation, desired_starts: Iterable[Edge],
+                         ends: Iterable[Edge], route_builder: () => Route)
 extends Ordered[Generator]
 {
   val id = Generator.next_id
@@ -146,8 +146,9 @@ extends Ordered[Generator]
 // TODO there's further refactorings that should happen between these two...
 // Fixed is really a degenerate case of continuous.
 
-class FixedSizeGenerator(sim: Simulation, starts: Seq[Edge], ends: Seq[Edge],
-                         total: Int, route_builder: () => Route)
+class FixedSizeGenerator(sim: Simulation, starts: Iterable[Edge],
+                         ends: Iterable[Edge], total: Int,
+                         route_builder: () => Route)
   extends Generator(sim, starts, ends, route_builder)
 {
   var num_to_spawn = total
@@ -171,8 +172,9 @@ class FixedSizeGenerator(sim: Simulation, starts: Seq[Edge], ends: Seq[Edge],
   )
 }
 
-class ContinuousGenerator(sim: Simulation, starts: Seq[Edge], ends: Seq[Edge],
-                          spawn_every: Double, route_builder: () => Route)
+class ContinuousGenerator(sim: Simulation, starts: Iterable[Edge],
+                          ends: Iterable[Edge], spawn_every: Double,
+                          route_builder: () => Route)
   extends Generator(sim, starts, ends, route_builder)
 {
   var last_tick = Agent.sim.tick

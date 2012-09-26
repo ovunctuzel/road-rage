@@ -176,7 +176,7 @@ object cfg {
     ("draw_cursor",     false, "Draw the epsilon bubble around the cursor?"),
     ("draw_lane_arrow", true,  "Draw arrows to show lane orientation?"),
     ("dash_center",     true,  "Dash the center yellow line?")
-  ) map {c => c._1 -> new Bool_Cfgable(c._2, c._3)} toMap
+  ).map({c => c._1 -> new Bool_Cfgable(c._2, c._3)}).toMap
 
   // all distances should be in meters
   val doubles = List(
@@ -192,13 +192,13 @@ object cfg {
     ("pause_at_stop",   1.0, "Wait this long at a stop sign before going",   0.5, 5.0),
     ("min_lane_length", 0.1, "It's unreasonable to have anything shorter",   0.0, 1.0),
     ("thruput_stat_time", 60.0, "Record throughput per this time",   0.5, 5.0)
-  ) map {c => c._1 -> new Double_Cfgable(c._2, c._3, c._4, c._5)} toMap
+  ).map({c => c._1 -> new Double_Cfgable(c._2, c._3, c._4, c._5)}).toMap
 
   val ints = List(
     ("max_lanes",  20,  "The max total lanes a road could have", 1, 30),
     ("army_size",  5000, "How many agents to spawn by default", 1, 10000),
     ("signal_duration",  60, "How long for a traffic signal to go through all of its cycles", 4, 1200)
-  ) map {c => c._1 -> new Int_Cfgable(c._2, c._3, c._4, c._5)} toMap
+  ).map({c => c._1 -> new Int_Cfgable(c._2, c._3, c._4, c._5)}).toMap
 
   // TODO val colors = ... (I'm not kidding)
   // TODO and of course, a way to save the settings.

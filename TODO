@@ -1,6 +1,7 @@
 # TODO #
 
 # Lane changing
+- reachable edges now include lane changes
 - key: pathfind by directed roads (clumps of lanes), leave specific turns and lanes up to
   behavior. still allow for re-planning (if we miss road entirely or part of road explodes).
 - representing logically
@@ -34,6 +35,7 @@ DOING IT
 TESTING IT
   - what if there are too many uberturns somewhere?
   - make sure we have determinism
+  - collision avoidance in many situations, with many dt's
   - make sure gridlock is detected
   - observe a case where doing this helps some situation
 

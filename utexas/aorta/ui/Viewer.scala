@@ -99,6 +99,7 @@ object Viewer extends SimpleSwingApplication {
     contents += new Label("=   speed up time faster")
 
     // Actions
+    contents += new Label("m   make new agent on current edge")
     contents += new Label("c   choose edge for pathfinding")
     contents += new Label("d   object-sensitive debug")
     contents += new Label("f   follow agent")
