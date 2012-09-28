@@ -193,7 +193,7 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
 
   // TODO colors for everything belong in cfg.
 
-  def render_canvas(g2d: Graphics2D, window: Rectangle2D.Double) = {
+  def render_canvas(g2d: Graphics2D, window: Rectangle2D.Double): Option[String] = {
     // remember these so we can draw center lines more efficiently
     val roads_seen = new ListBuffer[RoadLine]
 
@@ -274,6 +274,12 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
     g2d.setColor(Color.RED)
     g2d.setStroke(drawing_stroke)
     g2d.draw(polygon)
+
+    // TODO general tooltips based on whatever we're currently mousing over
+    return current_edge match {
+      case Some(e) => Some(e.toString)
+      case None => None
+    }
   }
 
   // we return any new roads seen

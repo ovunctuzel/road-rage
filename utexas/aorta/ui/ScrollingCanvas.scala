@@ -7,7 +7,7 @@ package utexas.aorta.ui
 import swing._  // TODO figure out exactly what
 import swing.event._
 import java.awt.{Color, RenderingHints, Polygon}
-import java.awt.geom.Rectangle2D
+import java.awt.geom.{Rectangle2D, RoundRectangle2D}
 
 import utexas.aorta.map.Coordinate
 
@@ -233,6 +233,8 @@ abstract class ScrollingCanvas extends Component {
       first_focus = false
     }
 
+    val orig_transform = g2d.getTransform
+
     // Perform the transformations to mimic scrolling and zooming
     g2d.translate(-x_off, -y_off)
     g2d.scale(zoom, zoom)
@@ -246,8 +248,29 @@ abstract class ScrollingCanvas extends Component {
     )
     g2d.setRenderingHints(antialiasing)
 
-    // do the actual work
-    render_canvas(g2d, viewing_window)
+    // provide a tool-tip rendering service to the client.
+    render_canvas(g2d, viewing_window) match {
+      case Some(text) => {
+        // TODO only if you want tooltips...
+        g2d.setTransform(orig_transform)
+        val width = g2d.getFontMetrics.getStringBounds(text, g2d).getWidth
+        val height = g2d.getFontMetrics.getStringBounds(text, g2d).getHeight
+        // center the text
+        val x = mouse_at_x - (width / 2.0)
+        // don't draw right on top of the cursor
+        val y = mouse_at_y - 10.0
+
+        // draw a nice backdrop
+        g2d.setColor(Color.WHITE)
+        g2d.fill(new RoundRectangle2D.Double(
+          x, y - height - 2.0, width, height + 4.0, 1.0, 1.0
+        ))
+        g2d.setColor(Color.BLACK)
+        // TODO tweak font size, colors.
+        g2d.drawString(text, x.toFloat, y.toFloat)
+      }
+      case None =>
+    }
   }
 
   // what logical coordinates are in view?
@@ -259,8 +282,8 @@ abstract class ScrollingCanvas extends Component {
     return new Rectangle2D.Double(x1, y1, x2 - x1, y2 - y1)
   }
 
-  // implement these
-  def render_canvas(g2d: Graphics2D, window: Rectangle2D.Double)
+  // implement these. render_canvas returns tooltip text desired
+  def render_canvas(g2d: Graphics2D, window: Rectangle2D.Double): Option[String]
   def canvas_width: Int
   def canvas_height: Int
   def handle_ev(ev: UI_Event)
