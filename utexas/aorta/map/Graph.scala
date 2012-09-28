@@ -4,7 +4,7 @@
 
 package utexas.aorta.map
 
-import scala.collection.mutable.{HashMap, PriorityQueue}
+import scala.collection.mutable.{HashMap, PriorityQueue, HashSet}
 
 import utexas.aorta.map.make.Reader
 
@@ -28,29 +28,40 @@ class Graph(val roads: Array[Road], val edges: Array[Edge],
   // (two edges without a turn in between). First step is NOT 'from', but last
   // step is 'to'.
   def pathfind_astar(from: Edge, to: Edge): List[Traversable] = {
-    // This is only used internally right now
-    class Step(val on: Traversable, val dist: Double) extends Ordered[Step] {
-      // This orders small distances first
-      def compare(other: Step) = other.dist.compare(dist)
-    }
-
-    // If this is requested, presumably they don't want us to return an empty
-    // path
-    val loop = from == to
     // Used for heuristic
     val goal_pt = to.start_pt
-    // encodes where we've visited and the backreferences for getting there
-    val visited = new HashMap[Traversable, Traversable]()
+    // The caller doesn't want an empty path
+    val loop = from == to
+    // how to trace back where we've been
+    val backrefs = new HashMap[Traversable, Traversable]()
+    // consider these in order
     val open = new PriorityQueue[Step]()
+    val open_members = new HashSet[Traversable]()
+    // done evaluating these
+    val visited = new HashSet[Traversable]()
+    // best distance so far
+    val costs = new HashMap[Traversable, Double]()
+
+    class Step(val on: Traversable, heuristic: Double) extends Ordered[Step] {
+      def cost = costs(on)
+      def score = cost //+ heuristic   TODO
+      def compare(other: Step) = other.score.compare(score)
+
+      override def toString = "%.2f away, %.2f heuristic, consider %s".format(cost, heuristic, on)
+    }
 
     // Start
-    open.enqueue(new Step(from, 0))
-    visited(from) = null  // some way of encoding the start
+    costs(from) = 0
+    open.enqueue(new Step(from, from.start_pt.dist_to(goal_pt)))
+    open_members += from
+    backrefs(from) = null  // encode the start somehow
 
     // Main loop
     var first = true
     while (!open.isEmpty) {
       val step = open.dequeue
+      visited += step.on
+      open_members -= step.on
 
       // Are we there yet?
       if (step.on == to && !first) {
@@ -59,20 +70,40 @@ class Graph(val roads: Array[Road], val edges: Array[Edge],
         while (at.isDefined && at.get != null) {
           path = at.get :: path
           // clean as we go to break loops
-          at = visited.remove(at.get)
+          at = backrefs.remove(at.get)
         }
-        // the first step is 'from', but we know.
+        // the first step is 'from'
         return path.tail
       }
 
       // Where can we go next?
       for (next <- step.on.leads_to) {
         if ((loop && next == from) || !visited.contains(next)) {
-          // TODO do we have to relax / handle finding a shorter path?
-          // TODO there are probably better heuristics than euclid
-          val heuristic = next.start_pt.dist_to(goal_pt)
-          open.enqueue(new Step(next, step.dist + next.length + heuristic))
-          visited(next) = step.on
+          val lane_changing = (step.on, next) match {
+            case (_: Edge, _: Edge) => true
+            case _ => false
+          }
+
+          // Lane-changing costs 0 distance, because we've already paid for
+          // the current edge's distance.
+          val tentative_cost = if (lane_changing)
+                                 costs(step.on)
+                               else
+                                 // TODO but then we wont get ordering till
+                                 // later..
+                                 costs(step.on) + step.on.length//next.length
+
+          // TODO costs => open_members?
+          if (!open_members.contains(next) || tentative_cost < costs(next)) {
+            backrefs(next) = step.on
+            costs(next) = tentative_cost
+            // TODO if they're in open_members, modify weight in the pri
+            // queue...
+            val heuristic = next.end_pt.dist_to(goal_pt)
+
+            open.enqueue(new Step(next, heuristic))
+            open_members += next
+          }
         }
       }
 
