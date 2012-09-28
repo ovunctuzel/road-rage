@@ -200,7 +200,8 @@ object Viewer extends SimpleSwingApplication {
 
       contents += new BoxPanel(Orientation.Horizontal) {
         contents += canvas
-        contents += helper
+        // TODO make toggleable
+        //contents += helper
       }
       border = Swing.MatteBorder(2, 2, 2, 2, Color.RED)
     }

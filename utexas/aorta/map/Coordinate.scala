@@ -46,9 +46,8 @@ object Coordinate {
     // This is Mike's math.
     val lon1 = math.toRadians(c1.x)
     val lon2 = math.toRadians(c2.x)
-    // make 0 at the north pole, not equator
-    val lat1 = math.toRadians(c1.y) + (math.Pi / 2.0)
-    val lat2 = math.toRadians(c2.y) + (math.Pi / 2.0)
+    val lat1 = math.toRadians(c1.y)
+    val lat2 = math.toRadians(c2.y)
 
     val radius = 6378100.0  // of earth, in meters
     val dLat = lat2 - lat1

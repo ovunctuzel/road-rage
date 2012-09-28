@@ -1,7 +1,6 @@
 # TODO #
 
 # Lane changing
-- reachable edges now include lane changes
 - key: pathfind by directed roads (clumps of lanes), leave specific turns and lanes up to
   behavior. still allow for re-planning (if we miss road entirely or part of road explodes).
 - representing logically
@@ -53,6 +52,7 @@ TESTING IT
 - switch ant to sbt? https://github.com/harrah/xsbt/wiki/Examples
 
 # Problems
+- calibration issues... distances totally off
 - fix the dumb illegal entry epsilon bugs.
   - why was the hack in map.make.Checker needed?
   - a conflict between a too-big stopping distance and acceleration into negative speed...

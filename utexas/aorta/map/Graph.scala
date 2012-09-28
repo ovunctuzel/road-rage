@@ -85,9 +85,10 @@ class Graph(val roads: Array[Road], val edges: Array[Edge],
           }
 
           // Lane-changing costs 0 distance, because we've already paid for
-          // the current edge's distance.
+          // the current edge's distance. well, almost free -- small penalty
+          // discourages needless lane-changing
           val tentative_cost = if (lane_changing)
-                                 costs(step.on)
+                                 costs(step.on) + 10.0
                                else
                                  // TODO but then we wont get ordering till
                                  // later..
