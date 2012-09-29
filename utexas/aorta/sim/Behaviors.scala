@@ -44,7 +44,9 @@ class RouteFollowingBehavior(a: Agent, route: Route) extends Behavior(a) {
   var keep_stopping = false
 
   override def choose_action(): Action = (a.at, route.next_step) match {
-    case (Position(e1: Edge, _), Some(e2: Edge)) => {
+    // TODO prefer to start when we're going faster, or allow acceleration
+    // during the maneuever...
+    case (Position(e1: Edge, _), Some(e2: Edge)) if a.speed > 2.0 => {
       // TODO choose the right time
       return Act_Lane_Change(e2)
     }

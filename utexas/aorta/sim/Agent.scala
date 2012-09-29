@@ -13,7 +13,7 @@ import utexas.aorta.{Util, cfg, Stats, Wasted_Time_Stat}
 class Agent(val id: Int, val graph: Graph, val start: Edge,
             val start_dist: Double, val route: Route) extends Ordered[Agent]
 {
-  // just until they're introduced!
+  // null just until they're introduced!
   var at: Position = null
 
   override def compare(other: Agent) = id.compare(other.id)
@@ -25,6 +25,10 @@ class Agent(val id: Int, val graph: Graph, val start: Edge,
   var target_accel: Double = 0  // m/s^2
   // TODO who chooses this?
   val behavior = new RouteFollowingBehavior(this, route)
+
+  // lane-changing stuff
+  var target_lane: Option[Edge] = None
+  var lanechange_time_left: Double = 0
 
   // stats stuff
   var idle_since = -1.0   // how long has our speed been 0?
@@ -39,6 +43,25 @@ class Agent(val id: Int, val graph: Graph, val start: Edge,
   // Returns true if we move or do anything at all
   def step(dt_s: Double): Boolean = {
     assert(dt_s == cfg.dt_s)
+
+    // Lane-changing?
+    target_lane match {
+      case Some(lane) => {
+        lanechange_time_left -= dt_s
+        if (lanechange_time_left <= 0) {
+          // Done!
+          // TODO leave the old queue
+          // TODO make sure lanes in same group have same length
+          behavior.transition(at.on, lane)
+          at = enter(lane, at.dist)
+
+          // Return to normality
+          target_lane = None
+          lanechange_time_left = 0
+        }
+      }
+      case None =>
+    }
 
     // To confirm determinism, enable and diff the logs. (Grep out
     // timing/profiling stuff)
@@ -118,7 +141,6 @@ class Agent(val id: Int, val graph: Graph, val start: Edge,
       at = enter(current_on, current_dist)
     }
 
-    // TODO deal with lane-changing
     return new_dist > 0.0
   }
 
@@ -129,6 +151,12 @@ class Agent(val id: Int, val graph: Graph, val start: Edge,
 
   // Returns true if we're done
   def react(): Boolean = {
+    // TODO does it make sense to let the behavior do anything once a lane
+    // change has been started?
+    if (target_lane.isDefined) {
+      return false
+    }
+
     behavior.choose_action match {
       case Act_Set_Accel(new_accel) => {
         // we have physical limits
@@ -140,8 +168,40 @@ class Agent(val id: Int, val graph: Graph, val start: Edge,
         return false
       }
       case Act_Lane_Change(lane) => {
-        // TODO ensure it's a valid request
-        Util.log("TODO lanechange")
+        // Ensure this is a valid request.
+        // TODO perhaps refactor these checks?
+        if (speed == 0.0) {
+          throw new Exception(this + " wants to lane-change at 0 speed!")
+        }
+        at.on match {
+          case e: Edge => {
+            if (e.road != lane.road) {
+              throw new Exception(this + " wants to lane-change across roads")
+            }
+            if (math.abs(lane.lane_num - e.lane_num) != 1) {
+              throw new Exception(this + " wants to skip lanes when lane-changing")
+            }
+          }
+          case _ => throw new Exception(this + " wants to lane-change from a turn!")
+        }
+
+        // TODO This is a pretty simplified model, yes.
+        // We're going to set acceleration to nil while we lane-change, so make
+        // sure we'll finish the maneuever before reaching the end of the lane.
+        // TODO and this formula makes no sense, but it should be kind of
+        // arbitrary.
+        lanechange_time_left = (cfg.lane_width * 10.0) / speed
+        val dist_for_lanechange = speed * lanechange_time_left
+        Util.log("%s starting to lane-change to %s. It'll take %.2f seconds, %.2f meters.".format(this, lane, lanechange_time_left, dist_for_lanechange))
+        // TODO plus some threshold for finishing a swap before the end
+        if (dist_for_lanechange >= at.dist_left) {
+          throw new Exception(this + " wants to lane-change too late!")
+        }
+
+        // Otherwise, fine!
+        target_lane = Some(lane)
+        target_accel = 0
+        // TODO get in both queues
         return false
       }
       case Act_Done_With_Route() => {
@@ -209,7 +269,7 @@ class Agent(val id: Int, val graph: Graph, val start: Edge,
     }
     t.queue.exit(this)
   }
-  def move(t: Traversable, dist: Double)  = t.queue.move(this, dist)
+  def move(t: Traversable, dist: Double) = t.queue.move(this, dist)
 
   def dump_info() = {
     Util.log("" + this)

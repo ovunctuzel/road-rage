@@ -1,6 +1,26 @@
 # TODO #
 
 # Lane changing
+
+splice into queues better
+
+
+ui draw lane-changers somehow?
+  ====> each object should implement their own render(), probably.
+
+can agents change speed during lane change?
+  they should be able to... physical possibility vs legality
+once they initiate it, can they stop?
+
+behavior may be able to initiate a multi-tick movement...
+
+lookahead has to deal with lane changing (or hopefully, not)
+  do we have to lookahead in two possibilities and avoid 
+
+
+
+
+
 - key: pathfind by directed roads (clumps of lanes), leave specific turns and lanes up to
   behavior. still allow for re-planning (if we miss road entirely or part of road explodes).
 - representing logically
@@ -88,6 +108,7 @@ TESTING IT
 # Parallelizing
 - meseoscopic in between regions? lockstep necessary?
 - dynamic load balancing? any need to split up by region?
+- actors / akka?
 
 # UI
 - turn off generators
@@ -102,7 +123,7 @@ TESTING IT
 - show agents who are currently GOING
   - ui could show policy's current owner or something
 - show routes better
-- config
+- onfig
 - black road backgrounds dont meet up smoothly since we go by line segment
   - add extra lanes on either side, dont color them white, but draw the stuff in between?
 - way better pruning of what to (re-draw) using quadtrees
