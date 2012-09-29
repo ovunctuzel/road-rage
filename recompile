@@ -8,8 +8,8 @@ RUN_OPTS="-cp .build:$SWING"
 
 echo Compiling...
 mkdir -p .build
-#scalac $BUILD_OPTS $SRCS
-fsc $BUILD_OPTS $SRCS
+scalac $BUILD_OPTS $SRCS
+#fsc $BUILD_OPTS $SRCS
 
 # How did the compile go?
 if [[ $? != "0" ]]; then

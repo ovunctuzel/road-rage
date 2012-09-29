@@ -33,31 +33,35 @@ class Queue(t: Traversable) {
   def end_step(): Unit = {
     // TODO if an agent ever looped around to the same edge again in one step,
     // this breaks badly.
+    // TODO likewise, problems if an agent quickly lane-changed out, passed
+    // someone, then back in.
 
     // Everything's fine.
     if (agents.size == 0) {
       return
     }
 
-    // Find any subsequence of the old crowd.
+    // Since we allow lane-changing, some funny things could happen. So first
+    // just check that the order of the distances matches the order of the
+    // queue.
+    if (!agents.zip(agents.tail).forall(pair => pair._1.at.dist > pair._2.at.dist)) {
+      Util.log("!!! Positions of agents on " + t + " don't match queue order!")
+      Util.log("  Agents: " + agents.map(a => "%d at %.2f".format(a.id, a.at.dist)))
+      // TODO assert/throw once this is stable
+      return
+    }
+
+    // Now we just want to make sure that all of the agents here last tick are
+    // in the same order. If some left, that's fine.
     val old_crowd = agents.filter(a => prev_agents.contains(a))
 
-    // Make sure they're in the same order. (This also verifies that if one
-    // left, everybody ahead also left.)
-    if (!prev_agents.containsSlice(old_crowd)) {
-      Util.log("!!! Agents on " + t + " changed order!")
-    }
-
-    // If anybody from the old crowd is still here, that means all new agents
-    // must be at the end. It suffices to check this:
-    if (old_crowd.size > 0 && old_crowd.head != agents.head) {
-      Util.log("!!! New agents on " + t + " aren't at the tail!")
-    }
-
-    // As a final sanity check, make sure the new queue is strictly ordered --
-    // no equal distances!
-    if (!agents.zip(agents.tail).forall(pair => pair._1.at.dist > pair._2.at.dist)) {
-      Util.log("!!! Agents on " + t + " aren't in a valid order!")
+    if (old_crowd.size > 1) {
+      // Since we know the ordering of the distances matches the ordering of the
+      // queue from the first check, it suffices to check the ordering of the
+      // distances in this list.
+      if (!old_crowd.zip(old_crowd.tail).forall(pair => pair._1.at.dist > pair._2.at.dist)) {
+        Util.log("!!! Collision on " + t)
+      }
     }
   }
 
@@ -69,7 +73,8 @@ class Queue(t: Traversable) {
     val (ahead, behind) = agents.partition(c => c.at.dist > dist)
     agents = ahead ++ List(a) ++ behind
 
-    // In-place check: we should enter at the end of the queue
+    // If we're not entering at the end of the queue, something _could_ be odd,
+    // so check it.
     if (!behind.isEmpty) {
       Agent.sim.active_queues += this
     }
@@ -80,7 +85,8 @@ class Queue(t: Traversable) {
   def exit(a: Agent) = {
     start_step  // lazily, if needed
 
-    // In-place check: we should leave from the front of the queue
+    // We should leave from the front of the queue generally, unless
+    // lane-changing
     if (agents.head != a) {
       Agent.sim.active_queues += this
     }

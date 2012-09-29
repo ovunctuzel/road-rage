@@ -2,20 +2,19 @@
 
 # Lane changing
 
-splice into queues better
-
-
-ui draw lane-changers somehow?
-  ====> each object should implement their own render(), probably.
-
-can agents change speed during lane change?
-  they should be able to... physical possibility vs legality
-once they initiate it, can they stop?
-
-behavior may be able to initiate a multi-tick movement...
 
 lookahead has to deal with lane changing (or hopefully, not)
-  do we have to lookahead in two possibilities and avoid 
+  do we have to lookahead in two possibilities and avoid both?!
+
+
+- behavior can keep updating speed and reacting. but cant cancel a lane change?
+- agent enforces physical limits, behavior does legality.
+
+- ui draw them better
+  two types of positions?
+- each obj should have a render()
+
+
 
 
 

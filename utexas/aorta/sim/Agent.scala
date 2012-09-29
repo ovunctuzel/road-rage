@@ -49,11 +49,12 @@ class Agent(val id: Int, val graph: Graph, val start: Edge,
       case Some(lane) => {
         lanechange_time_left -= dt_s
         if (lanechange_time_left <= 0) {
-          // Done!
-          // TODO leave the old queue
+          // Done! Leave the old queue
+          exit(at.on)
           // TODO make sure lanes in same group have same length
           behavior.transition(at.on, lane)
           at = enter(lane, at.dist)
+          Util.log(this + " done lane-changing to " + lane)
 
           // Return to normality
           target_lane = None
@@ -136,6 +137,11 @@ class Agent(val id: Int, val graph: Graph, val start: Edge,
     // so we finally end up somewhere...
     if (start_on == current_on) {
       at = move(start_on, current_dist)
+      // Also stay updated in the other queue
+      target_lane match {
+        case Some(lane) => move(lane, current_dist)
+        case None =>
+      }
     } else {
       exit(start_on)
       at = enter(current_on, current_dist)
@@ -201,7 +207,8 @@ class Agent(val id: Int, val graph: Graph, val start: Edge,
         // Otherwise, fine!
         target_lane = Some(lane)
         target_accel = 0
-        // TODO get in both queues
+        // Enter the target lane's queue too, at the same distance
+        enter(lane, at.dist)
         return false
       }
       case Act_Done_With_Route() => {

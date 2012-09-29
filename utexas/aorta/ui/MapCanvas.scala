@@ -276,9 +276,10 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
     g2d.draw(polygon)
 
     // TODO general tooltips based on whatever we're currently mousing over
-    return current_edge match {
-      case Some(e) => Some(e.toString)
-      case None => None
+    return (current_edge, current_agent) match {
+      case (Some(e), None) => Some(e.toString)
+      case (_, Some(a)) => Some(a.toString)
+      case _ => None
     }
   }
 
