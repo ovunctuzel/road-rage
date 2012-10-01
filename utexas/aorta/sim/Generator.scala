@@ -7,7 +7,7 @@ package utexas.aorta.sim
 import java.util.concurrent.{Executors, FutureTask, Callable}
 import scala.collection.mutable.ListBuffer
 
-import utexas.aorta.map.{Edge, Traversable}
+import utexas.aorta.map.{Edge, DirectedRoad}
 
 import utexas.aorta.{Util, cfg}
 
@@ -62,7 +62,7 @@ extends Ordered[Generator]
   def serialize_ls(ls: Array[Edge]) = ls.map(e => e.id).mkString(",")
 
   // there may be no task scheduled
-  protected var pending = new ListBuffer[(Agent, Option[FutureTask[List[Traversable]]])]
+  protected var pending = new ListBuffer[(Agent, Option[FutureTask[List[DirectedRoad]]])]
 
   // Returns new agents to try to spawn, or boolean means reap this genertor
   def run(): Either[List[Agent], Boolean]
@@ -76,9 +76,11 @@ extends Ordered[Generator]
     val a = new Agent(sim.next_id, sim, start, start.queue.safe_spawn_dist, route)
 
     // schedule whatever work the route needs done.
+    // TODO the route won't get them exactly to end, just end's group of lanes.
+    // close enough?
     route.request_route(start, end) match {
       case Some(task) => {
-        val delayed = new FutureTask[List[Traversable]](task)
+        val delayed = new FutureTask[List[DirectedRoad]](task)
         Generator.worker_pool.execute(delayed)
         pending += ((a, Some(delayed)))
       }

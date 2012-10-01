@@ -3,11 +3,6 @@
 # Lane changing
 
 Big changes:
-  1) pathfind at the granularity of roads, not edges
-    - maybe simplifies the map-building reachability analysis
-    - (it's the behavior's job to get into the right lane)
-  2) continue to ask route for next_turn
-    - this can implicitly indicate we missed a lanechange
   3) rethink entire lookahead/v2i communication
     - lookahead in two queues or stall and wait to merge
 

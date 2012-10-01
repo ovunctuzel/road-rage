@@ -100,6 +100,8 @@ class Graph(val roads: Array[Road], val edges: Array[Edge],
     // We didn't find the way?! The graph is connected!
     throw new Exception("Couldn't A* from " + from + " to " + to)
   }
+  def pathfind_astar(from: Edge, to: Edge): List[DirectedRoad] =
+    pathfind_astar(from.directed_road, to.directed_road)
 }
 
 // It's a bit funky, but the actual graph instance doesn't have this; we do.

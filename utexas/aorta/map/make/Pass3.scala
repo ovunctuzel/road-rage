@@ -73,6 +73,7 @@ class Pass3(old_graph: PreGraph2) {
     // use Tarjan's to locate all SCC's in the graph. ideally we'd just
     // have one, but crappy graphs, weird reality, and poor turn heuristics mean
     // we'll have disconnected portions.
+    // TODO simplify by flooding DirectedRoads, not turns and lanes
     val sccs = new ListBuffer[List[Traversable]]
 
     for (t <- graph.traversables) {

@@ -911,10 +911,9 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
     val r = sim.pathfind_astar(chosen_edge1.get, chosen_edge2.get)
     // Filter and just remember the edges; the UI doesn't want to highlight
     // turns.
-    route_members = r.map(s => s match {
-      case e: Edge => { Util.log(e.toString); Some(e) }
-      case _       => None
-    }).flatten.toSet
+    // TODO pathfinding is by directed road now, not edge. just pick some edge
+    // in each group.
+    route_members = r.map(_.edges.head).toSet
     repaint
   }
 }

@@ -6,26 +6,31 @@ package utexas.aorta.sim
 
 import scala.collection.mutable.{HashMap => MutableMap}
 import java.util.concurrent.Callable
-import utexas.aorta.map.{Edge, Turn, Traversable}
+import utexas.aorta.map.{Edge, DirectedRoad}
 import utexas.aorta.{Util, cfg}
 
 abstract class Route() {
   // Define these
-  def request_route(from: Edge, to: Edge): Option[Callable[List[Traversable]]]
+  def request_route(from: DirectedRoad, to: DirectedRoad): Option[Callable[List[DirectedRoad]]]
+  def request_route(from: Edge, to: Edge): Option[Callable[List[DirectedRoad]]]
+    = request_route(from.directed_road, to.directed_road)
 
   // Common to most, but can change. Should never become empty after got_route.
   // TODO make sure perf characteristics are good
-  var steps: Stream[Traversable] = Stream.empty
+  var steps: Stream[DirectedRoad] = Stream.empty
 
-  def transition(from: Traversable, to: Traversable) = {
+  // We're only updated when the agent enters a new road
+  def transition(from: DirectedRoad, to: DirectedRoad) = {
     if (steps.head == to) {
       steps = steps.tail      // moving right along
     } else {
+      // TODO or the behavior carrying out this route couldnt lane-change and
+      // had to detour...
       throw new Exception("We missed a move!")
     }
   }
 
-  def got_route(response: List[Traversable]) = {
+  def got_route(response: List[DirectedRoad]) = {
     steps = response.toStream
   }
 
@@ -35,59 +40,57 @@ abstract class Route() {
 
 // It's all there, all at once... just look at it
 class StaticRoute() extends Route() {
-  override def request_route(from: Edge, to: Edge) = Some(new Callable[List[Traversable]]() {
-    def call(): List[Traversable] = {
-      return Agent.sim.pathfind_astar(from, to)
+  override def request_route(from: DirectedRoad, to: DirectedRoad) = Some(
+    new Callable[List[DirectedRoad]]() {
+      def call = Agent.sim.pathfind_astar(from, to)
     }
-  })
+  )
 }
 
 // DOOMED TO WALK FOREVER (until we happen to reach our goal)
 class DrunkenRoute() extends Route() {
-  var goal: Edge = null
+  var goal: DirectedRoad = null
 
-  private def plan_step(last_step: Traversable): Stream[Traversable] = last_step match {
-    case _ if goal == last_step => Stream.empty
-    case e: Edge => {
-      val turn = pick_turn(e)
-      turn #:: plan_step(turn)
+  private def plan_step(last_step: DirectedRoad): Stream[DirectedRoad] =
+    if (last_step == goal)
+      Stream.empty
+    else {
+      val next = pick_next_road(last_step)
+      next #:: plan_step(next)
     }
-    case t: Turn => t.to #:: plan_step(t.to)
-  }
 
   // No actual work to do
-  override def request_route(from: Edge, to: Edge): Option[Callable[List[Traversable]]] = {
+  override def request_route(from: DirectedRoad, to: DirectedRoad): Option[Callable[List[DirectedRoad]]] = {
     goal = to
     steps = plan_step(from)
     return None
   }
 
-  // TODO choose a random point, or one leading in general direction of goal?
-  def pick_turn(e: Edge) = Util.choose_rand[Turn](e.next_turns)
+  def pick_next_road(r: DirectedRoad): DirectedRoad = Util.choose_rand[DirectedRoad](r.leads_to.toList)
 }
 
 // Wanders around slightly less aimlessly by picking directions
 class DirectionalDrunkRoute extends DrunkenRoute() { 
-  def heuristic(t: Turn) = t.to.to.location.dist_to(goal.to.location)
+  def heuristic(r: DirectedRoad) = r.end_pt.dist_to(goal.start_pt)
 
   // pick the most direct path 75% of the time
-  override def pick_turn(e: Edge): Turn = {
+  override def pick_next_road(r: DirectedRoad): DirectedRoad = {
     return if (Util.percent(.75))
-             e.next_turns.sortBy(heuristic).head
+             r.leads_to.toList.sortBy(heuristic).head
            else
-             super.pick_turn(e)
+             super.pick_next_road(r)
   }
 }
 
 // Don't keep picking the same turn
 class DrunkenExplorerRoute extends DirectionalDrunkRoute() {
-  var past = new MutableMap[Edge, Int]()
-  override def pick_turn(e: Edge): Turn = {
+  var past = new MutableMap[DirectedRoad, Int]()
+  override def pick_next_road(r: DirectedRoad): DirectedRoad = {
     // break ties by the heuristic of distance to goal
-    val choice = e.next_turns.sortBy(
-      t => (past.getOrElse(t.to, -1) + Util.rand_int(0, 5), heuristic(t))
+    val choice = r.leads_to.toList.sortBy(
+      next => (past.getOrElse(next, -1) + Util.rand_int(0, 5), heuristic(next))
     ).head
-    past(choice.to) = past.getOrElse(choice.to, 0) + 1
+    past(choice) = past.getOrElse(choice, 0) + 1
     return choice
   }
 }
