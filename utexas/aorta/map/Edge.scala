@@ -22,6 +22,11 @@ class Edge(var id: Int, val road: Road, val dir: Direction.Direction) extends Tr
   // with lane-changing
   def leads_to = next_turns ++ List(shift_left, shift_right).flatten
 
+  def directed_road = if (dir == Direction.POS)
+                        road.pos_group
+                      else
+                        road.neg_group
+
   def other_lanes = if (dir == Direction.POS) road.pos_lanes else road.neg_lanes
   def other_vert(v: Vertex) = road.other_vert(v)
   def opposite_lanes = if (dir == Direction.POS) road.neg_lanes else road.pos_lanes
@@ -194,4 +199,17 @@ object Direction extends Enumeration {
   type Direction = Value
   val POS = Value("+")  // v1 -> v2
   val NEG = Value("-")  // v2 -> v1
+}
+
+// Represent a group of directed edges on one road
+class DirectedRoad(val road: Road, val dir: Direction.Direction) {
+  def edges = if (dir == Direction.POS)
+                road.pos_lanes
+              else
+                road.neg_lanes
+
+  def start_pt = edges.head.from.location
+  def end_pt = edges.head.to.location
+  def leads_to = edges.flatMap(_.succs).map(_.directed_road).toSet
+  def length = road.length
 }

@@ -3,8 +3,6 @@
 # Lane changing
 
 Big changes:
-  0) model update: behavior can keep updating speed and reacting, but CANT
-     cancel a lane change once started
   1) pathfind at the granularity of roads, not edges
     - maybe simplifies the map-building reachability analysis
     - (it's the behavior's job to get into the right lane)

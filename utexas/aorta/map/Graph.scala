@@ -24,30 +24,29 @@ class Graph(val roads: Array[Road], val edges: Array[Edge],
   def traversables() = edges ++ turns
 
   // TODO eventually make this very general and reusable
-  // Returns the sequence of both edges and turns. Lane-changes are implicit
-  // (two edges without a turn in between). First step is NOT 'from', but last
-  // step is 'to'.
-  def pathfind_astar(from: Edge, to: Edge): List[Traversable] = {
+  // Returns a sequence of connected roads (from, to]. The user must decide how
+  // to lane-change.
+  def pathfind_astar(from: DirectedRoad, to: DirectedRoad): List[DirectedRoad] = {
     // Used for heuristic
-    val goal_pt = to.start_pt
+    val goal_pt = to.end_pt
     // The caller doesn't want an empty path
     val loop = from == to
     // how to trace back where we've been
-    val backrefs = new HashMap[Traversable, Traversable]()
+    val backrefs = new HashMap[DirectedRoad, DirectedRoad]()
     // consider these in order
     val open = new PriorityQueue[Step]()
-    val open_members = new HashSet[Traversable]()
+    val open_members = new HashSet[DirectedRoad]()
     // done evaluating these
-    val visited = new HashSet[Traversable]()
+    val visited = new HashSet[DirectedRoad]()
     // best distance so far
-    val costs = new HashMap[Traversable, Double]()
+    val costs = new HashMap[DirectedRoad, Double]()
 
-    class Step(val on: Traversable, heuristic: Double) extends Ordered[Step] {
-      def cost = costs(on)
-      def score = cost //+ heuristic   TODO
+    class Step(val road: DirectedRoad, heuristic: Double) extends Ordered[Step] {
+      def cost = costs(road)
+      def score = cost + heuristic
       def compare(other: Step) = other.score.compare(score)
 
-      override def toString = "%.2f away, %.2f heuristic, consider %s".format(cost, heuristic, on)
+      override def toString = "%.2f away, %.2f heuristic, consider %s".format(cost, heuristic, road)
     }
 
     // Start
@@ -60,13 +59,13 @@ class Graph(val roads: Array[Road], val edges: Array[Edge],
     var first = true
     while (!open.isEmpty) {
       val step = open.dequeue
-      visited += step.on
-      open_members -= step.on
+      visited += step.road
+      open_members -= step.road
 
       // Are we there yet?
-      if (step.on == to && !first) {
-        var path: List[Traversable] = Nil
-        var at: Option[Traversable] = Some(step.on)
+      if (step.road == to && !first) {
+        var path: List[DirectedRoad] = Nil
+        var at: Option[DirectedRoad] = Some(step.road)
         while (at.isDefined && at.get != null) {
           path = at.get :: path
           // clean as we go to break loops
@@ -77,26 +76,13 @@ class Graph(val roads: Array[Road], val edges: Array[Edge],
       }
 
       // Where can we go next?
-      for (next <- step.on.leads_to) {
+      for (next <- step.road.leads_to) {
         if ((loop && next == from) || !visited.contains(next)) {
-          val lane_changing = (step.on, next) match {
-            case (_: Edge, _: Edge) => true
-            case _ => false
-          }
-
-          // Lane-changing costs 0 distance, because we've already paid for
-          // the current edge's distance. well, almost free -- small penalty
-          // discourages needless lane-changing
-          val tentative_cost = if (lane_changing)
-                                 costs(step.on) + 10.0
-                               else
-                                 // TODO but then we wont get ordering till
-                                 // later..
-                                 costs(step.on) + step.on.length//next.length
+          val tentative_cost = costs(step.road) + step.road.length
 
           // TODO costs => open_members?
           if (!open_members.contains(next) || tentative_cost < costs(next)) {
-            backrefs(next) = step.on
+            backrefs(next) = step.road
             costs(next) = tentative_cost
             // TODO if they're in open_members, modify weight in the pri
             // queue...

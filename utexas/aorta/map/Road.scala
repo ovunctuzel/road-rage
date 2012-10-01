@@ -20,6 +20,9 @@ class Road(var id: Int, val points: List[Coordinate], val name: String,
   assert(v1.location == points.head)
   assert(v2.location == points.last)
 
+  val pos_group = new DirectedRoad(this, Direction.POS)
+  val neg_group = new DirectedRoad(this, Direction.NEG)
+
   // + lanes go from v1->v2; - lanes go from v2->v1
   // pass 3 doesn't set this, only Reader does. kinda sucks how we do it now.
   val pos_lanes = new MutableList[Edge]
