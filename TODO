@@ -2,38 +2,31 @@
 
 # Lane changing
 
+Big changes:
+  0) model update: behavior can keep updating speed and reacting, but CANT
+     cancel a lane change once started
+  1) pathfind at the granularity of roads, not edges
+    - maybe simplifies the map-building reachability analysis
+    - (it's the behavior's job to get into the right lane)
+  2) continue to ask route for next_turn
+    - this can implicitly indicate we missed a lanechange
+  3) rethink entire lookahead/v2i communication
+    - lookahead in two queues or stall and wait to merge
 
-lookahead has to deal with lane changing (or hopefully, not)
-  do we have to lookahead in two possibilities and avoid both?!
+Problems:
+  1) cant lanechange on short edges
 
 
-- behavior can keep updating speed and reacting. but cant cancel a lane change?
-- agent enforces physical limits, behavior does legality.
 
 - ui draw them better
-  two types of positions?
-- each obj should have a render()
-
-
-
-
-
-
-
-- key: pathfind by directed roads (clumps of lanes), leave specific turns and lanes up to
-  behavior. still allow for re-planning (if we miss road entirely or part of road explodes).
-- representing logically
-  - in both queues
-  - agent in one location, but marked a certain state?
-- representing physically
-  - how long does it take? inversely proportional to speed?
+  - two types of positions?
+  - each obj should have a render()
+  - spawning agents at specific places
 - when is it safe?
   - dont try it too close to the end or beginning of an edge
   - guarantee to avoid agents
   - atomic; dont start without finishing
   - dont attempt on short lanes
-- how are routes affected if it's missed/impossible?
-  - is it OK to stall forever and wait to merge in?
 - purpose
   - for now, just routing
   - much later, a behavior could do it within constraints of route to pass slow?

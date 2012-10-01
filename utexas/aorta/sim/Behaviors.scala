@@ -44,10 +44,11 @@ class RouteFollowingBehavior(a: Agent, route: Route) extends Behavior(a) {
   var keep_stopping = false
 
   override def choose_action(): Action = (a.at, route.next_step) match {
-    // TODO prefer to start when we're going faster, or allow acceleration
-    // during the maneuever...
-    case (Position(e1: Edge, _), Some(e2: Edge)) if a.speed > 2.0 => {
-      // TODO choose the right time
+    // If we're already in the act of lane-changing, just control our speed
+    case (Position(e1: Edge, _), Some(e2: Edge)) if !a.target_lane.isDefined => {
+      // TODO choose the right time to do this
+      // TODO possibly merge this function with max_safe_accel,
+      // reformulate as separate, stateless constraints
       return Act_Lane_Change(e2)
     }
     case _ => max_safe_accel
@@ -111,10 +112,10 @@ class RouteFollowingBehavior(a: Agent, route: Route) extends Behavior(a) {
   }
 
   // Finds the culprit, if they exist
-  def check_for_blocked_turn(step: LookaheadStep): Option[Agent] = {
+  def check_for_blocked_turn(start_step: LookaheadStep): Option[Agent] = {
     // Look ahead from the start of the turn until follow_dist
     // after the end of it too see if anybody's there.
-    val cautious_turn = step.route_steps.head match {
+    val cautious_turn = start_step.route_steps.head match {
       case t: Turn => t
       case _       => throw new Exception("not a turn next?")
     }
@@ -124,7 +125,7 @@ class RouteFollowingBehavior(a: Agent, route: Route) extends Behavior(a) {
       // TODO + 0.5 as an epsilon...
       cautious_turn.length + cfg.follow_dist + 0.5,
       0, cautious_turn, cautious_turn.length,
-      step.route_steps.tail
+      start_step.route_steps.tail
     )
 
     // If any of these have an agent, see where they are...
@@ -185,13 +186,18 @@ class RouteFollowingBehavior(a: Agent, route: Route) extends Behavior(a) {
                          a.cur_queue.ahead_of(a)
                        else
                          step.at.queue.last
-        // We don't seem too need to check that we're not trying to follow
-        // ourselves here too.
-        follow_agent_how_far_away = follow_agent match {
-          // A bit of a special case, that dist_ahead doesn't cover well.
-          case Some(f) if f.at.on == a.at.on => f.at.dist - a.at.dist
-          case Some(f) => step.dist_ahead + f.at.dist
-          case _       => 0.0
+        // This happens when we grab the last person off the next step's queue
+        // for lanechanging. Lookahead for lanechanging will change soon anyway,
+        // for now just avoid this case.
+        if (follow_agent.isDefined && follow_agent.get == a) {
+          follow_agent = None
+        } else {
+          follow_agent_how_far_away = follow_agent match {
+            // A bit of a special case, that dist_ahead doesn't cover well.
+            case Some(f) if f.at.on == a.at.on => f.at.dist - a.at.dist
+            case Some(f) => step.dist_ahead + f.at.dist
+            case _       => 0.0
+          }
         }
       }
 

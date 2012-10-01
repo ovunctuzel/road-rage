@@ -28,7 +28,7 @@ class Agent(val id: Int, val graph: Graph, val start: Edge,
 
   // lane-changing stuff
   var target_lane: Option[Edge] = None
-  var lanechange_time_left: Double = 0
+  var lanechange_dist_left: Double = 0
 
   // stats stuff
   var idle_since = -1.0   // how long has our speed been 0?
@@ -44,11 +44,16 @@ class Agent(val id: Int, val graph: Graph, val start: Edge,
   def step(dt_s: Double): Boolean = {
     assert(dt_s == cfg.dt_s)
 
+    // Do physics to update current speed and figure out how far we've traveled
+    // in this timestep.
+    val new_dist = update_kinematics(dt_s)
+    total_dist += new_dist
+
     // Lane-changing?
     target_lane match {
       case Some(lane) => {
-        lanechange_time_left -= dt_s
-        if (lanechange_time_left <= 0) {
+        lanechange_dist_left -= new_dist
+        if (lanechange_dist_left <= 0) {
           // Done! Leave the old queue
           exit(at.on)
           // TODO make sure lanes in same group have same length
@@ -58,7 +63,7 @@ class Agent(val id: Int, val graph: Graph, val start: Edge,
 
           // Return to normality
           target_lane = None
-          lanechange_time_left = 0
+          lanechange_dist_left = 0
         }
       }
       case None =>
@@ -81,11 +86,6 @@ class Agent(val id: Int, val graph: Graph, val start: Edge,
     val start_on = at.on
     val old_dist = at.dist
 
-    // Do physics to update current speed and figure out how far we've traveled
-    // in this timestep.
-    val new_dist = update_kinematics(dt_s)
-    total_dist += new_dist
-
     idle_since = if (speed == 0.0 && idle_since == -1.0)
                    Agent.sim.tick   // we've started idling
                  else if (speed == 0.0)
@@ -104,6 +104,9 @@ class Agent(val id: Int, val graph: Graph, val start: Edge,
     var current_dist = old_dist + new_dist
 
     while (current_dist >= current_on.length) {
+      if (current_on != start_on && target_lane.isDefined) {
+        throw new Exception(this + " just entered an intersection while lane-changing!")
+      }
       current_dist -= current_on.length
       // Are we finishing a turn or starting one?
       val next: Traversable = current_on match {
@@ -157,11 +160,7 @@ class Agent(val id: Int, val graph: Graph, val start: Edge,
 
   // Returns true if we're done
   def react(): Boolean = {
-    // TODO does it make sense to let the behavior do anything once a lane
-    // change has been started?
-    if (target_lane.isDefined) {
-      return false
-    }
+    val is_lanechanging = target_lane.isDefined
 
     behavior.choose_action match {
       case Act_Set_Accel(new_accel) => {
@@ -175,10 +174,11 @@ class Agent(val id: Int, val graph: Graph, val start: Edge,
       }
       case Act_Lane_Change(lane) => {
         // Ensure this is a valid request.
-        // TODO perhaps refactor these checks?
-        if (speed == 0.0) {
-          throw new Exception(this + " wants to lane-change at 0 speed!")
+        if (is_lanechanging) {
+          // Don't request twice in a row
+          throw new Exception(this + " is already lane-changing!")
         }
+        // TODO perhaps refactor these checks?
         at.on match {
           case e: Edge => {
             if (e.road != lane.road) {
@@ -191,16 +191,13 @@ class Agent(val id: Int, val graph: Graph, val start: Edge,
           case _ => throw new Exception(this + " wants to lane-change from a turn!")
         }
 
-        // TODO This is a pretty simplified model, yes.
-        // We're going to set acceleration to nil while we lane-change, so make
-        // sure we'll finish the maneuever before reaching the end of the lane.
-        // TODO and this formula makes no sense, but it should be kind of
-        // arbitrary.
-        lanechange_time_left = (cfg.lane_width * 10.0) / speed
-        val dist_for_lanechange = speed * lanechange_time_left
-        Util.log("%s starting to lane-change to %s. It'll take %.2f seconds, %.2f meters.".format(this, lane, lanechange_time_left, dist_for_lanechange))
+        // We have to cover a fixed distance to lane-change. The scaling is kind
+        // of arbitrary and just forces lane-changing to not be completely
+        // instantaneous at higher speeds.
+        lanechange_dist_left = cfg.lane_width * 10.0
+        Util.log("%s starting to lane-change to %s. It'll take %.2f meters.".format(this, lane, lanechange_dist_left))
         // TODO plus some threshold for finishing a swap before the end
-        if (dist_for_lanechange >= at.dist_left) {
+        if (lanechange_dist_left >= at.dist_left) {
           throw new Exception(this + " wants to lane-change too late!")
         }
 
