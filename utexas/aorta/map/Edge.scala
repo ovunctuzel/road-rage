@@ -26,6 +26,8 @@ class Edge(var id: Int, val road: Road, val dir: Direction.Direction) extends Tr
                         road.pos_group
                       else
                         road.neg_group
+  def turns_leading_to(group: DirectedRoad) =
+    next_turns.filter(t => t.to.directed_road == group)
 
   def other_lanes = if (dir == Direction.POS) road.pos_lanes else road.neg_lanes
   def other_vert(v: Vertex) = road.other_vert(v)

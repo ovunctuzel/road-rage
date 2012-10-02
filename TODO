@@ -6,8 +6,21 @@ Big changes:
   3) rethink entire lookahead/v2i communication
     - lookahead in two queues or stall and wait to merge
 
+  - figure out which lane to be in
+  - if safe to start changing, do that
+  - if not safe to start changing, EITHER stall and wait OR plow ahead and hope
+  
+  - remark: once we've started lane changing, we know we have enough distance to
+    handle it IN THE CURRENT EDGE. so just avoid next agent in both, and move
+    the lookahead for intersection to the new lane. 
+  - remark: maybe we dont need turn_blocked_by... empirically look at effects
+    without it. main source of gridlock was probably wacky routes.
+
+
+
 Problems:
   1) cant lanechange on short edges
+  2) what do we tell intersection when we're approaching in the wrong lane?
 
 
 

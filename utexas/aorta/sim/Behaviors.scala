@@ -36,33 +36,33 @@ class IdleBehavior(a: Agent) extends Behavior(a) {
   }
 }
 
-// the actual mechanics of the route are left up to something else, though
+// Conservatively avoids collisions and obeys intersections. Works reactively by
+// a 'lookahead' engine.
 class RouteFollowingBehavior(a: Agent, route: Route) extends Behavior(a) {
+  // TODO this is the only state we keep; it would rock to get rid of it.
   // This is set the first time we choose to begin stopping, and it helps since
   // worst-case analysis says we won't toe the line, but we still want to invoke
   // the same math.
   var keep_stopping = false
 
-  override def choose_action(): Action = (a.at, route.next_step) match {
-    // If we're already in the act of lane-changing, just control our speed
-    case (Position(e1: Edge, _), Some(e2: Edge)) if !a.target_lane.isDefined => {
-      // TODO choose the right time to do this
-      // TODO possibly merge this function with max_safe_accel,
-      // reformulate as separate, stateless constraints
-      return Act_Lane_Change(e2)
+  override def choose_turn(e: Edge): Turn = {
+    route.next_step match {
+      // Try to find a turn that leads to where we should go
+      case Some(r) => e.turns_leading_to(r).headOption match {
+        case Some(t) => return t
+        // TODO re-route.
+        case None => throw new Exception("Missed our lane!")
+      }
+      case None => throw new Exception("Route's done, we shouldn't be turning")
     }
-    case _ => max_safe_accel
   }
-
-  override def choose_turn(e: Edge): Turn = route.next_step match {
-    case Some(t: Turn) => t
-    case _             => throw new Exception(
-      "Asking " + a + " to choose turn now?!"
-    )
-  }
-
+  
   override def transition(from: Traversable, to: Traversable) = {
-    route.transition(from, to)
+    // The route only cares about entering new roads
+    (from, to) match {
+      case (t: Turn, e: Edge) => route.transition(t.from.directed_road, e.directed_road)
+      case _ =>
+    }
     keep_stopping = false   // reset
   }
 
@@ -74,6 +74,35 @@ class RouteFollowingBehavior(a: Agent, route: Route) extends Behavior(a) {
       Util.log("Step: " + step)
     }
     Util.log_pop
+  }
+
+  // If we're supposed to change to another lane, which adjacent lane gets us
+  // closest?
+  protected def desired_lane(): Option[Edge] = {
+    (route.next_step, a.at.on) match {
+      // This query only makes sense while we're on an edge
+      case (Some(group), cur_lane: Edge) => {
+        val candidates = cur_lane.other_lanes.filter(e => !e.turns_leading_to(group).isEmpty)
+        // Choose the closest candidate
+        // TODO unlikely, but if we're in the middle and the far left and far
+        // right lane both somehow lead to group, we could end up oscillating
+        return candidates.sortBy(
+          e => math.abs(e.lane_num - cur_lane.lane_num)
+        ).headOption
+      }
+      case _ => None
+    }
+  }
+
+  override def choose_action(): Action = (a.at, route.next_step) match {
+    // If we're already in the act of lane-changing, just control our speed
+    case (Position(e1: Edge, _), Some(e2: Edge)) if !a.target_lane.isDefined => {
+      // TODO choose the right time to do this
+      // TODO possibly merge this function with max_safe_accel,
+      // reformulate as separate, stateless constraints
+      return Act_Lane_Change(e2)
+    }
+    case _ => max_safe_accel
   }
 
   // TODO describe. like an iterator.
@@ -169,6 +198,8 @@ class RouteFollowingBehavior(a: Agent, route: Route) extends Behavior(a) {
     // Stop caring once we know we have to stop for some intersection AND stay
     // behind some agent. Need both, since the agent we're following may not
     // need to stop, but we do.
+    // TODO once we are bound by some intersection and theres no agent in
+    // between us and it, cant we stop looking for agents?
 
     val first_step = new LookaheadStep(
       a.max_lookahead_dist, 0, a.at.on, a.at.dist_left, route.steps
