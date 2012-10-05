@@ -101,6 +101,8 @@ class Queue(t: Traversable) {
   }
 
   def ahead_of(a: Agent) = agents.takeWhile(_ != a).lastOption
+  def closest_behind(dist: Double) = agents.find(a => a.at.dist <= dist)
+  def closest_ahead(dist: Double) = agents.takeWhile(_.at.dist >= dist).lastOption
 
   // Geometric logic for spawning.
 

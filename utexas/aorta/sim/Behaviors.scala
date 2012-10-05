@@ -6,7 +6,7 @@ package utexas.aorta.sim
 
 import scala.collection.mutable.ListBuffer
 
-import utexas.aorta.map.{Edge, Turn, Traversable}
+import utexas.aorta.map.{Edge, Turn, Traversable, DirectedRoad}
 import utexas.aorta.sim.analysis.Gridlock
 import utexas.aorta.{Util, cfg}
 
@@ -78,37 +78,85 @@ class RouteFollowingBehavior(a: Agent, route: Route) extends Behavior(a) {
 
   // If we're supposed to change to another lane, which adjacent lane gets us
   // closest?
-  protected def desired_lane(): Option[Edge] = {
-    (route.next_step, a.at.on) match {
-      // This query only makes sense while we're on an edge
-      case (Some(group), cur_lane: Edge) => {
-        val candidates = cur_lane.other_lanes.filter(e => !e.turns_leading_to(group).isEmpty)
-        // Choose the closest candidate
-        // TODO unlikely, but if we're in the middle and the far left and far
-        // right lane both somehow lead to group, we could end up oscillating
-        return candidates.sortBy(
-          e => math.abs(e.lane_num - cur_lane.lane_num)
-        ).headOption
+  protected def desired_lane(): Option[Edge] =
+    if (a.is_lanechanging)
+      None
+    else
+      (route.next_step, a.at.on) match {
+        // This query only makes sense while we're on an edge
+        case (Some(group), cur_lane: Edge) => {
+          val candidates = cur_lane.other_lanes.filter(
+            e => !e.turns_leading_to(group).isEmpty
+          )
+          // Choose the closest candidate
+          // TODO unlikely, but if we're in the middle and the far left and far
+          // right lane both somehow lead to group, we could end up oscillating
+          return candidates.sortBy(
+            e => math.abs(e.lane_num - cur_lane.lane_num)
+          ).headOption match {
+            case Some(e) if e == cur_lane => None
+            case Some(e) => Some(e)
+            case None => throw new Exception("No lane to reach " + group + "!")
+          }
+        }
+        case _ => None
       }
-      case _ => None
+
+  protected def safe_to_lanechange(target: Edge): Boolean = {
+    // TODO refactor this and make it something sensible
+    val dist_required = cfg.lane_width * 10.0
+
+    // Not enough room to finish before the intersection
+    if (dist_required + cfg.end_threshold >= a.at.dist_left) {
+      return false
     }
+
+    // Require at least 2 ticks worth of distance at the speed limit for the
+    // trailing car. Yes, probably too conservative.
+    // TODO what if we start lane-changing at the beginning of the lane? we
+    // don't lookbehind from the target lane; those guys have to react to us
+    // suddenly appearing.
+    // TODO make sure somebody can't decide to spawn in the way right as we
+    // start to shift.
+    val min_trailing_dist = 2.0 * cfg.dt_s * target.road.speed_limit
+    target.queue.closest_behind(a.at.dist) match {
+      case Some(avoid) => {
+        if (a.at.dist - avoid.at.dist <= min_trailing_dist) {
+          return false
+        }
+      }
+      case None =>
+    }
+
+    // TODO We'll back off speed quickly if we find ourselves tailing the guy
+    // ahead of us in the target lane, but we should probably do some kind of
+    // check to make sure we won't immediately plow through him.
+
+    return true
   }
 
-  override def choose_action(): Action = (a.at, route.next_step) match {
-    // If we're already in the act of lane-changing, just control our speed
-    case (Position(e1: Edge, _), Some(e2: Edge)) if !a.target_lane.isDefined => {
-      // TODO choose the right time to do this
-      // TODO possibly merge this function with max_safe_accel,
-      // reformulate as separate, stateless constraints
-      return Act_Lane_Change(e2)
+  override def choose_action(): Action = {
+    // Do we want to lane change?
+    desired_lane match {
+      case Some(e) => {
+        if (safe_to_lanechange(e)) {
+          return Act_Lane_Change(e)
+        } else {
+          // TODO Ever a good idea to stall and wait? (Only do so if we didn't
+          // fail the precondition of being too close to the end)
+        }
+      }
+      case None =>
     }
-    case _ => max_safe_accel
+
+    // TODO refactor and pull in max_safe_accel here.
+    return max_safe_accel
   }
 
   // TODO describe. like an iterator.
   class LookaheadStep(
     val predict_dist: Double, val dist_ahead: Double,
-    val at: Traversable, val next_dist: Double, val route_steps: Stream[Traversable])
+    val at: Traversable, val next_dist: Double, val route_steps: Stream[DirectedRoad])
   {
     // predict_dist = how far ahead will we look
     // dist_ahead = how far have we looked ahead so far

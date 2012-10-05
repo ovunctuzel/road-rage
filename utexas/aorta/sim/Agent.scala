@@ -29,6 +29,7 @@ class Agent(val id: Int, val graph: Graph, val start: Edge,
   // lane-changing stuff
   var target_lane: Option[Edge] = None
   var lanechange_dist_left: Double = 0
+  def is_lanechanging = target_lane.isDefined
 
   // stats stuff
   var idle_since = -1.0   // how long has our speed been 0?
@@ -104,7 +105,7 @@ class Agent(val id: Int, val graph: Graph, val start: Edge,
     var current_dist = old_dist + new_dist
 
     while (current_dist >= current_on.length) {
-      if (current_on != start_on && target_lane.isDefined) {
+      if (current_on != start_on && is_lanechanging) {
         throw new Exception(this + " just entered an intersection while lane-changing!")
       }
       current_dist -= current_on.length
@@ -160,7 +161,7 @@ class Agent(val id: Int, val graph: Graph, val start: Edge,
 
   // Returns true if we're done
   def react(): Boolean = {
-    val is_lanechanging = target_lane.isDefined
+    val was_lanechanging = is_lanechanging
 
     behavior.choose_action match {
       case Act_Set_Accel(new_accel) => {
@@ -174,7 +175,7 @@ class Agent(val id: Int, val graph: Graph, val start: Edge,
       }
       case Act_Lane_Change(lane) => {
         // Ensure this is a valid request.
-        if (is_lanechanging) {
+        if (was_lanechanging) {
           // Don't request twice in a row
           throw new Exception(this + " is already lane-changing!")
         }
