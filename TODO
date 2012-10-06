@@ -2,25 +2,12 @@
 
 # Lane changing
 
-1) where to lookahead?
-2) what to tell intersection?
+- fix plan once we talk to an intersection.
+- new interface for route policies.
+  - when we actually GET to an intersection, choose physical turn
+    - or behavior ask for next step, try to fulfill it? lookahead calling
+      earlier should make that match up, right?
 
-Big changes:
-  - where to lookahead? 
-  
-  - remark: once we've started lane changing, we know we have enough distance to
-    handle it IN THE CURRENT EDGE. so just avoid next agent in both, and move
-    the lookahead for intersection to the new lane. 
-  - remark: maybe we dont need turn_blocked_by... empirically look at effects
-    without it. main source of gridlock was probably wacky routes.
-  - strategy: really conservative merging criteria to start, then slowly optimize
-
-
-
-Problems:
-  1) cant lanechange on short edges
-    - so pathfinding could yield a route that isnt actually doable
-  2) what do we tell intersection when we're approaching in the wrong lane?
 
 
 

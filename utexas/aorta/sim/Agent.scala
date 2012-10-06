@@ -24,7 +24,7 @@ class Agent(val id: Int, val graph: Graph, val start: Edge,
   var speed: Double = 0.0   // meters/sec, I believe
   var target_accel: Double = 0  // m/s^2
   // TODO who chooses this?
-  val behavior = new RouteFollowingBehavior(this, route)
+  val behavior = new LookaheadBehavior(this, route)
 
   // lane-changing stuff
   var target_lane: Option[Edge] = None
@@ -37,6 +37,7 @@ class Agent(val id: Int, val graph: Graph, val start: Edge,
   var started_trip_at = -1.0
   var total_dist = 0.0
 
+  // Track intersections we've contacted but not passed
   var upcoming_intersections: Set[Intersection] = Set()
 
   override def toString = "Agent " + id

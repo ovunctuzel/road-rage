@@ -29,16 +29,16 @@ class IdleBehavior(a: Agent) extends Behavior(a) {
 
   override def choose_turn(e: Edge) = e.next_turns.head
 
-  override def transition(from: Traversable, to: Traversable) = {}   // mmkay
+  override def transition(from: Traversable, to: Traversable) = {}
 
   override def dump_info() = {
     Util.log("Idle behavior")
   }
 }
 
-// Conservatively avoids collisions and obeys intersections. Works reactively by
-// a 'lookahead' engine.
-class RouteFollowingBehavior(a: Agent, route: Route) extends Behavior(a) {
+// Reactively avoids collisions and obeys intersections by doing a conservative
+// analysis of the next few steps.
+class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
   // TODO this is the only state we keep; it would rock to get rid of it.
   // This is set the first time we choose to begin stopping, and it helps since
   // worst-case analysis says we won't toe the line, but we still want to invoke
@@ -106,31 +106,40 @@ class RouteFollowingBehavior(a: Agent, route: Route) extends Behavior(a) {
     // TODO refactor this and make it something sensible
     val dist_required = cfg.lane_width * 10.0
 
-    // Not enough room to finish before the intersection
+    // Satisfy the physical model, which requires us to finish lane-changing
+    // before reaching the intersection.
     if (dist_required + cfg.end_threshold >= a.at.dist_left) {
       return false
     }
 
-    // Require at least 2 ticks worth of distance at the speed limit for the
-    // trailing car. Yes, probably too conservative.
-    // TODO what if we start lane-changing at the beginning of the lane? we
-    // don't lookbehind from the target lane; those guys have to react to us
-    // suddenly appearing.
-    // TODO make sure somebody can't decide to spawn in the way right as we
-    // start to shift.
-    val min_trailing_dist = 2.0 * cfg.dt_s * target.road.speed_limit
     target.queue.closest_behind(a.at.dist) match {
+      // If there's a trailing car on this road, require at least 2 ticks worth
+      // of distance at the speed limit for the trailing car. Yes, probably too
+      // conservative.
       case Some(avoid) => {
+        val min_trailing_dist = 2.0 * cfg.dt_s * target.road.speed_limit
         if (a.at.dist - avoid.at.dist <= min_trailing_dist) {
           return false
         }
       }
-      case None =>
+      // It's impractical to flood backwards and find all the possible cars that
+      // could enter our target lane soon. So use the same idea as safe spawning
+      // distance and don't start a lane-change too early in the road. This
+      // gives agents time next tick to notice us during their lookahead.
+      case None => {
+        if (a.at.dist <= a.at.on.safe_spawn_dist) {
+          return false
+        }
+      }
     }
+
+    // TODO make sure somebody can't decide to spawn in the way right as we
+    // start to shift. when more things happen concurrently, just be careful.
 
     // TODO We'll back off speed quickly if we find ourselves tailing the guy
     // ahead of us in the target lane, but we should probably do some kind of
-    // check to make sure we won't immediately plow through him.
+    // check to make sure we won't immediately plow through him. Use lookahead
+    // engine.
 
     return true
   }
