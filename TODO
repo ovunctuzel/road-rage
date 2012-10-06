@@ -3,10 +3,20 @@
 # Lane changing
 
 - fix plan once we talk to an intersection.
+  - we only talk to intersections while doing lookahead. so no lanechanging at all in lookahead.
+  - lookahead steps go by edge, lock the route into stuff.
 - new interface for route policies.
+  - gimme high level steps to plan where to go
+  - ima ask you for a specific turn, youre gonna be consistent yo
+
+
   - when we actually GET to an intersection, choose physical turn
     - or behavior ask for next step, try to fulfill it? lookahead calling
       earlier should make that match up, right?
+    - route_steps is the stream of directed roads...
+      - used for determining where to lanechange
+      - separate from the 2 places where turns are picked? (physically, in lookahead)
+        - but those should be same! lookahead has to be concrete, no changing route from it!
 
 
 

@@ -17,7 +17,11 @@ abstract class Route() {
 
   // Common to most, but can change. Should never become empty after got_route.
   // TODO make sure perf characteristics are good
-  var steps: Stream[DirectedRoad] = Stream.empty
+  var general_steps: Stream[DirectedRoad] = Stream.empty
+  var specific_steps: Stream[Turn] = Stream.empty // or edge, turn pairs..
+  // TODO idea: dont disconnectedly ask choose_turn to us, track where lookahead
+  // is here, and someow interlave with general_steps to easily detect
+  // disagreements.
 
   // We're only updated when the agent enters a new road
   def transition(from: DirectedRoad, to: DirectedRoad) = {

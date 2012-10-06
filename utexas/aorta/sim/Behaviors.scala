@@ -78,6 +78,10 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
 
   // If we're supposed to change to another lane, which adjacent lane gets us
   // closest?
+  // TODO 1) lookahead several steps and see if we could get in a better lane in
+  // advance
+  // 2) discretionary lane changing, aka get in the faster lane if it wont hurt
+  // us
   protected def desired_lane(): Option[Edge] =
     if (a.is_lanechanging)
       None
@@ -127,7 +131,7 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
       // distance and don't start a lane-change too early in the road. This
       // gives agents time next tick to notice us during their lookahead.
       case None => {
-        if (a.at.dist <= a.at.on.safe_spawn_dist) {
+        if (a.at.dist <= a.at.on.queue.safe_spawn_dist) {
           return false
         }
       }
@@ -162,28 +166,45 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
     return max_safe_accel
   }
 
-  // TODO describe. like an iterator.
+  // This is a lazy sequence of edges/turns that tracks distances away from the
+  // original spot. This assumes no lane-changing: where the agent starts
+  // predicting is where they'll end up.  As a result, interaction with the
+  // routing strategy will sometimes force the strategy to reroute.
   class LookaheadStep(
     val predict_dist: Double, val dist_ahead: Double,
-    val at: Traversable, val next_dist: Double, val route_steps: Stream[DirectedRoad])
+    val at: Traversable, val next_dist: Double)
   {
     // predict_dist = how far ahead will we look
     // dist_ahead = how far have we looked ahead so far
     // at = where do we end up
-    // next_dist = how much distance from 'at' we'll consider
-    // TODO is next_dist ~ predict_dist, dist_ahead?
+    // next_dist = how much distance from 'at' we'll consider. it would just be
+    // length, except for the very first step of a lookahead, since the agent
+    // doesnt start at the beginning of the step.
     // steps = alignment of the route
 
     // TODO iterator syntax
 
+    def is_last_step = at match {
+      case t: Turn => false
+      case e: Edge => !route.choose_turn(e).isDefined
+    }
+
     lazy val next_step: Option[LookaheadStep] = {
       if (predict_dist <= 0.0) {
-        None  // TODO ooh, ban dist of 0, then this is even simpler?
+        // We're done
+        None
       } else {
-        route_steps.headOption match {
+        val next_location = at match {
+          // Easy choice of where to go next if we're in a turn
+          case t: Turn => Some(t.to)
+          // Ask the route which turn to take. Implicitly also inform it of
+          // necessary re-routes.
+          case e: Edge => route.choose_turn(e)
+        }
+        next_location match {
           case Some(place) => Some(new LookaheadStep(
             predict_dist - next_dist, dist_ahead + next_dist,
-            place, place.length, route_steps.tail
+            place, place.length
           ))
           // Done with route, stop looking ahead.
           case None => None
@@ -191,6 +212,7 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
       }
     }
 
+    // this is the make-lazy boilerplate
     def steps(): Stream[LookaheadStep] = next_step match {
       case Some(step) => this #:: step.steps
       case None => this #:: Stream.empty
@@ -198,7 +220,7 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
   }
 
   // Finds the culprit, if they exist
-  def check_for_blocked_turn(start_step: LookaheadStep): Option[Agent] = {
+  /*def check_for_blocked_turn(start_step: LookaheadStep): Option[Agent] = {
     // Look ahead from the start of the turn until follow_dist
     // after the end of it too see if anybody's there.
     val cautious_turn = start_step.route_steps.head match {
@@ -236,7 +258,7 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
     }
     // Nobody potentially dangerous
     return None
-  }
+  }*/
 
   // Returns Act_Set_Accel almost always.
   def max_safe_accel(): Action = {
@@ -259,9 +281,11 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
     // between us and it, cant we stop looking for agents?
 
     val first_step = new LookaheadStep(
-      a.max_lookahead_dist, 0, a.at.on, a.at.dist_left, route.steps
+      a.max_lookahead_dist, 0, a.at.on, a.at.dist_left
     )
 
+    // TODO pull each constraint out into its own function
+    // TODO verify the route is telling us the same moves between ticks
     for (step <- first_step.steps
          if (!stop_how_far_away.isDefined || !follow_agent.isDefined))
     {
@@ -289,6 +313,7 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
         }
       }
 
+      // TODO this comment is obselete if turn_blocked_by gets dropped
       // Do agent first to avoid doing some extra lookahead when looking for
       // turn_blocked_by.
 
@@ -302,12 +327,28 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
           // Don't stop at the end of a turn
           case t: Turn => false
           // Stop if we're arriving at destination
-          case e if !step.route_steps.headOption.isDefined => {
+          case e if step.is_last_step => {
             stopping_for_destination = true
             true
           }
           // Otherwise, ask the intersection
           case e: Edge => {
+            val i = e.to.intersection
+            a.upcoming_intersections += i   // remember we've registered here
+            // We know next_step is defined because is_last_step was false if
+            // we're in this case.
+            val next_turn = step.next_step.get.at match {
+              case t: Turn => t
+              case _ => throw new Exception("lookahead didnt get a turn")
+            }
+            // TODO verify we're telling the intersection the same turn between
+            // ticks
+            !i.can_go(a, next_turn, how_far_away)
+
+            // TODO turn_blocked_by was only added to try to prevent gridlock,
+            // but lanechanging may remedy the problem so much that
+            // turn_blocked_by isn't needed. it'd be simpler to remove.
+            /*
             // BEFORE we ask the intersection, make sure nobody could prevent us
             // from completing the turn we want to do. This includes if we're
             // following some agent.
@@ -347,6 +388,7 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
               }
               !i.can_go(a, next_turn, how_far_away)
             }
+            */
           }
         })
         if (stop_at_end) {
