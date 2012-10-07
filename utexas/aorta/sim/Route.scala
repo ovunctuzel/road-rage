@@ -6,43 +6,97 @@ package utexas.aorta.sim
 
 import scala.collection.mutable.{HashMap => MutableMap}
 import java.util.concurrent.Callable
-import utexas.aorta.map.{Edge, DirectedRoad}
+import utexas.aorta.map.{Edge, DirectedRoad, Traversable, Turn}
 import utexas.aorta.{Util, cfg}
 
 abstract class Route() {
-  // Define these
+  // This sets a new long-term plan, possibly delegating work to a thread pool.
   def request_route(from: DirectedRoad, to: DirectedRoad): Option[Callable[List[DirectedRoad]]]
   def request_route(from: Edge, to: Edge): Option[Callable[List[DirectedRoad]]]
     = request_route(from.directed_road, to.directed_road)
 
-  // Common to most, but can change. Should never become empty after got_route.
-  // TODO make sure perf characteristics are good
-  var general_steps: Stream[DirectedRoad] = Stream.empty
-  var specific_steps: Stream[Turn] = Stream.empty // or edge, turn pairs..
+  // TODO make sure perf characteristics of list/stream are correct
+  var general_path: Stream[DirectedRoad] = Stream.empty
+  var specific_path: Stream[Traversable] = Stream.empty
   // TODO idea: dont disconnectedly ask choose_turn to us, track where lookahead
   // is here, and someow interlave with general_steps to easily detect
   // disagreements.
 
-  // We're only updated when the agent enters a new road
-  def transition(from: DirectedRoad, to: DirectedRoad) = {
-    if (steps.head == to) {
-      steps = steps.tail      // moving right along
-    } else {
-      // TODO or the behavior carrying out this route couldnt lane-change and
-      // had to detour...
-      throw new Exception("We missed a move!")
+  def transition(from: Traversable, to: Traversable) = {
+    (from, to) match {
+      // When we lane-change, have to consider a new specific path
+      case (_: Edge, _: Edge) => {
+        // TODO pick_next_road will call high level replan() if needed.
+        specific_path = pick_next_step(to)
+      }
+      // Make sure we're following general path
+      case (e: Edge, t: Turn) => {
+        assert(general_path.head == e.directed_road)
+        general_path = general_path.tail
+      }
+    }
+
+    (from, to) match {
+      case (_: Edge, _: Edge) =>
+      case _ => {
+        // If we didn't just reset the specific path, make sure we're following
+        // it
+        assert(specific_path.head == from)
+        specific_path = specific_path.tail
+      }
     }
   }
 
-  def got_route(response: List[DirectedRoad]) = {
-    steps = response.toStream
+  def got_route(response: List[DirectedRoad], start_from: Traversable) = {
+    general_path = response.toStream
+    specific_path = pick_next_step(start_from)
   }
 
-  // TODO re-evaluate the uses of this and if this'd ever break
-  def next_step = steps.headOption
+  // TODO problem: if a user strictly evaluates all of our steps, itll force us
+  // to pick poorly
+  def pick_next_step(current: Traversable): Stream[Traversable] = {
+    current match {
+      // We don't have a choice
+      case t: Turn => { return t.to #:: pick_next_step(t.to) }
+      // TODO this is kinda a*-specific
+      case e: Edge => {
+        // TODO this is quite inefficient
+        val tail = general_path.dropWhile(r => r != e.directed_road)
+        // TODO If edge isn't in general path, ASSUME thats because we're at the
+        // first step?
+        val desired_road = if (tail.isEmpty)
+                             general_path.headOption
+                           else
+                             // head is e.directed_road, we want the next step
+                             tail.tail.headOption
+
+        desired_road match {
+          case Some(target_road) => {
+            // Find a turn that leads to the next step in the general_path
+            e.turns_leading_to(target_road) match {
+              case turn :: _ => turn #:: pick_next_step(turn)
+              case Nil => {
+                // TODO re-route!
+                // If it doesn't exist, that means we couldn't lane-change in
+                // time, so blockingly re-route, then try above again (it'll
+                // work this time)
+                Util.log("need to re-route and do more stuff!")
+                return Stream.empty // TODO tmp
+              }
+            }
+          }
+          case None => {
+            // Done with the route
+            return Stream.empty
+          }
+        }
+      }
+    }
+  }
 }
 
-// It's all there, all at once... just look at it
+// A* and don't adjust the route unless we miss part of the sequence due to
+// inability to lanechange.
 class StaticRoute() extends Route() {
   override def request_route(from: DirectedRoad, to: DirectedRoad) = Some(
     new Callable[List[DirectedRoad]]() {
@@ -50,6 +104,10 @@ class StaticRoute() extends Route() {
     }
   )
 }
+
+// TODO for the moment just redesign things for StaticRoute. maybe drunken
+// doesnt even care about an overall plan, so itd never recommend lane changing.
+// desired lane should maybe be a route thing?
 
 // DOOMED TO WALK FOREVER (until we happen to reach our goal)
 class DrunkenRoute() extends Route() {
@@ -66,7 +124,7 @@ class DrunkenRoute() extends Route() {
   // No actual work to do
   override def request_route(from: DirectedRoad, to: DirectedRoad): Option[Callable[List[DirectedRoad]]] = {
     goal = to
-    steps = plan_step(from)
+    general_path = plan_step(from)
     return None
   }
 

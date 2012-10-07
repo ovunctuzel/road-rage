@@ -45,24 +45,13 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
   // the same math.
   var keep_stopping = false
 
-  override def choose_turn(e: Edge): Turn = {
-    route.next_step match {
-      // Try to find a turn that leads to where we should go
-      case Some(r) => e.turns_leading_to(r).headOption match {
-        case Some(t) => return t
-        // TODO re-route.
-        case None => throw new Exception("Missed our lane!")
-      }
-      case None => throw new Exception("Route's done, we shouldn't be turning")
-    }
+  override def choose_turn(e: Edge) = route.specific_path.head match {
+    case t: Turn => t
+    case _ => throw new Exception("specific path yielded edge, not turn")
   }
   
   override def transition(from: Traversable, to: Traversable) = {
-    // The route only cares about entering new roads
-    (from, to) match {
-      case (t: Turn, e: Edge) => route.transition(t.from.directed_road, e.directed_road)
-      case _ =>
-    }
+    route.transition(from, to)
     keep_stopping = false   // reset
   }
 
@@ -70,7 +59,7 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
     Util.log("Route-following behavior")
     // Just show a few steps ahead
     Util.log_push
-    for (step <- route.steps take 5) {
+    for (step <- route.general_path take 5) {
       Util.log("Step: " + step)
     }
     Util.log_pop
@@ -86,7 +75,7 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
     if (a.is_lanechanging)
       None
     else
-      (route.next_step, a.at.on) match {
+      (route.general_path.headOption, a.at.on) match {
         // This query only makes sense while we're on an edge
         case (Some(group), cur_lane: Edge) => {
           val candidates = cur_lane.other_lanes.filter(
@@ -172,7 +161,7 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
   // routing strategy will sometimes force the strategy to reroute.
   class LookaheadStep(
     val predict_dist: Double, val dist_ahead: Double,
-    val at: Traversable, val next_dist: Double)
+    val path: Stream[Traversable], val next_dist: Double)
   {
     // predict_dist = how far ahead will we look
     // dist_ahead = how far have we looked ahead so far
@@ -184,27 +173,19 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
 
     // TODO iterator syntax
 
-    def is_last_step = at match {
-      case t: Turn => false
-      case e: Edge => !route.choose_turn(e).isDefined
-    }
+    def is_last_step = !next_step.isDefined
+
+    def at = path.head
 
     lazy val next_step: Option[LookaheadStep] = {
       if (predict_dist <= 0.0) {
         // We're done
         None
       } else {
-        val next_location = at match {
-          // Easy choice of where to go next if we're in a turn
-          case t: Turn => Some(t.to)
-          // Ask the route which turn to take. Implicitly also inform it of
-          // necessary re-routes.
-          case e: Edge => route.choose_turn(e)
-        }
-        next_location match {
+        path.tail.headOption match {
           case Some(place) => Some(new LookaheadStep(
             predict_dist - next_dist, dist_ahead + next_dist,
-            place, place.length
+            path.tail, place.length
           ))
           // Done with route, stop looking ahead.
           case None => None
@@ -260,6 +241,11 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
     return None
   }*/
 
+  // TODO assert(a.at.on == route.specific_path.head)
+  def lookahead_steps = (new LookaheadStep(
+    a.max_lookahead_dist, 0, route.specific_path, a.at.dist_left
+  )).steps
+
   // Returns Act_Set_Accel almost always.
   def max_safe_accel(): Action = {
     // Since we can't react instantly, we have to consider the worst-case of the
@@ -280,13 +266,9 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
     // TODO once we are bound by some intersection and theres no agent in
     // between us and it, cant we stop looking for agents?
 
-    val first_step = new LookaheadStep(
-      a.max_lookahead_dist, 0, a.at.on, a.at.dist_left
-    )
-
     // TODO pull each constraint out into its own function
     // TODO verify the route is telling us the same moves between ticks
-    for (step <- first_step.steps
+    for (step <- lookahead_steps
          if (!stop_how_far_away.isDefined || !follow_agent.isDefined))
     {
       // 1) Agent

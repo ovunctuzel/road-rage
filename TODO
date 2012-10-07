@@ -6,6 +6,13 @@
   - we only talk to intersections while doing lookahead. so no lanechanging at all in lookahead.
   - lookahead steps go by edge, lock the route into stuff.
 - new interface for route policies.
+  - invocations...
+    - behavior is physically forced to pick a turn RIGHT NOW
+    - gimme general_path of roads for debug or for picking where to lanechange
+    - lookahead wants to know where to specifically go next. (choosing turn)
+      first time vs regurgitate same answer.
+
+
   - gimme high level steps to plan where to go
   - ima ask you for a specific turn, youre gonna be consistent yo
 
