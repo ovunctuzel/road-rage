@@ -102,7 +102,7 @@ extends Ordered[Generator]
       val ready = a._2 match {
         case Some(task) => {
           if (task.isDone) {
-            a._1.route.got_route(task.get, a._1.at.on)
+            a._1.route.got_route(task.get)
             true
           } else {
             false

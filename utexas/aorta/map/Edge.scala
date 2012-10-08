@@ -38,6 +38,8 @@ class Edge(var id: Int, val road: Road, val dir: Direction.Direction) extends Tr
   def shift_left: Option[Edge]  = if (is_leftmost)  None else Some(other_lanes(lane_num + 1))
   def shift_right: Option[Edge] = if (is_rightmost) None else Some(other_lanes(lane_num - 1))
 
+  def adjacent_lanes: List[Edge] = List(shift_left, shift_right, Some(this)).flatten
+
   def next_turns = to.turns_from(this)
   def prev_turns = from.turns_to(this)
   def succs: List[Edge] = next_turns.map(t => t.to)
@@ -205,6 +207,8 @@ object Direction extends Enumeration {
 
 // Represent a group of directed edges on one road
 class DirectedRoad(val road: Road, val dir: Direction.Direction) {
+  override def toString = "%s's %s lanes".format(road, dir)
+
   def edges = if (dir == Direction.POS)
                 road.pos_lanes
               else

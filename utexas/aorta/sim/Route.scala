@@ -16,24 +16,24 @@ abstract class Route() {
     = request_route(from.directed_road, to.directed_road)
 
   // TODO make sure perf characteristics of list/stream are correct
+  // Both of these include the agent's current step as the head.
+  // When we're in a turn, general_path has the next road as head.
   var general_path: Stream[DirectedRoad] = Stream.empty
   var specific_path: Stream[Traversable] = Stream.empty
-  // TODO idea: dont disconnectedly ask choose_turn to us, track where lookahead
-  // is here, and someow interlave with general_steps to easily detect
-  // disagreements.
 
   def transition(from: Traversable, to: Traversable) = {
     (from, to) match {
       // When we lane-change, have to consider a new specific path
       case (_: Edge, _: Edge) => {
-        // TODO pick_next_road will call high level replan() if needed.
-        specific_path = pick_next_step(to)
+        // TODO pick_next_step will call high level replan() if needed.
+        specific_path = to #:: pick_next_step(to)
       }
       // Make sure we're following general path
       case (e: Edge, t: Turn) => {
         assert(general_path.head == e.directed_road)
         general_path = general_path.tail
       }
+      case _ =>
     }
 
     (from, to) match {
@@ -47,9 +47,14 @@ abstract class Route() {
     }
   }
 
-  def got_route(response: List[DirectedRoad], start_from: Traversable) = {
+  def got_route(response: List[DirectedRoad]) = {
     general_path = response.toStream
-    specific_path = pick_next_step(start_from)
+  }
+
+  def initialize(start: Traversable) = {
+    if (specific_path.isEmpty) {
+      specific_path = start #:: pick_next_step(start)
+    }
   }
 
   // TODO problem: if a user strictly evaluates all of our steps, itll force us
@@ -61,18 +66,13 @@ abstract class Route() {
       // TODO this is kinda a*-specific
       case e: Edge => {
         // TODO this is quite inefficient
-        val tail = general_path.dropWhile(r => r != e.directed_road)
-        // TODO If edge isn't in general path, ASSUME thats because we're at the
-        // first step?
-        val desired_road = if (tail.isEmpty)
-                             general_path.headOption
-                           else
-                             // head is e.directed_road, we want the next step
-                             tail.tail.headOption
+        // Get the next road after the current.
+        val desired_road =
+          general_path.dropWhile(r => r != e.directed_road).tail.headOption
 
         desired_road match {
           case Some(target_road) => {
-            // Find a turn that leads to the next step in the general_path
+            // Find a turn that leads to the desired road
             e.turns_leading_to(target_road) match {
               case turn :: _ => turn #:: pick_next_step(turn)
               case Nil => {

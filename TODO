@@ -2,44 +2,16 @@
 
 # Lane changing
 
-- fix plan once we talk to an intersection.
-  - we only talk to intersections while doing lookahead. so no lanechanging at all in lookahead.
-  - lookahead steps go by edge, lock the route into stuff.
-- new interface for route policies.
-  - invocations...
-    - behavior is physically forced to pick a turn RIGHT NOW
-    - gimme general_path of roads for debug or for picking where to lanechange
-    - lookahead wants to know where to specifically go next. (choosing turn)
-      first time vs regurgitate same answer.
-
-
-  - gimme high level steps to plan where to go
-  - ima ask you for a specific turn, youre gonna be consistent yo
-
-
-  - when we actually GET to an intersection, choose physical turn
-    - or behavior ask for next step, try to fulfill it? lookahead calling
-      earlier should make that match up, right?
-    - route_steps is the stream of directed roads...
-      - used for determining where to lanechange
-      - separate from the 2 places where turns are picked? (physically, in lookahead)
-        - but those should be same! lookahead has to be concrete, no changing route from it!
-
-
-
+- on synthetic, make sure the 'need to re-route' guys really missed their deal, and fix them.
+- when we've started to lane change, make sure we're lookign ahead from target lane?
+- in btr, spawning in clumps..
 
 - ui draw them better
   - two types of positions?
   - each obj should have a render()
   - spawning agents at specific places
-- when is it safe?
-  - dont try it too close to the end or beginning of an edge
-  - guarantee to avoid agents
-  - atomic; dont start without finishing
-  - dont attempt on short lanes
-- purpose
-  - for now, just routing
-  - much later, a behavior could do it within constraints of route to pass slow?
+- ui visualize safe spawning distances
+- cant pathfind to specific lane at the end.. but does it make sense to?
 - testing
   - introduce automated test framework using scenarios
   - wacky cases of 2 side-by-side agents wanting to swap places?

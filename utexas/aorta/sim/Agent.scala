@@ -61,7 +61,7 @@ class Agent(val id: Int, val graph: Graph, val start: Edge,
           // TODO make sure lanes in same group have same length
           behavior.transition(at.on, lane)
           at = enter(lane, at.dist)
-          Util.log(this + " done lane-changing to " + lane)
+          //Util.log(this + " done lane-changing to " + lane)
 
           // Return to normality
           target_lane = None
@@ -197,7 +197,7 @@ class Agent(val id: Int, val graph: Graph, val start: Edge,
         // of arbitrary and just forces lane-changing to not be completely
         // instantaneous at higher speeds.
         lanechange_dist_left = cfg.lane_width * 10.0
-        Util.log("%s starting to lane-change to %s. It'll take %.2f meters.".format(this, lane, lanechange_dist_left))
+        //Util.log("%s starting to lane-change to %s. It'll take %.2f meters.".format(this, lane, lanechange_dist_left))
         // TODO plus some threshold for finishing a swap before the end
         if (lanechange_dist_left >= at.dist_left) {
           throw new Exception(this + " wants to lane-change too late!")

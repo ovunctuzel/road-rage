@@ -45,7 +45,7 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
   // the same math.
   var keep_stopping = false
 
-  override def choose_turn(e: Edge) = route.specific_path.head match {
+  override def choose_turn(e: Edge) = route.specific_path.tail.head match {
     case t: Turn => t
     case _ => throw new Exception("specific path yielded edge, not turn")
   }
@@ -74,17 +74,22 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
   protected def desired_lane(): Option[Edge] =
     if (a.is_lanechanging)
       None
-    else
-      (route.general_path.headOption, a.at.on) match {
+    else {
+      (route.general_path.tail.headOption, a.at.on) match {
         // This query only makes sense while we're on an edge
         case (Some(group), cur_lane: Edge) => {
           val candidates = cur_lane.other_lanes.filter(
             e => !e.turns_leading_to(group).isEmpty
           )
-          // Choose the closest candidate
+          // The best lane is one that has a turn leading us to where we want to
+          // go and that's closest to us
+          val best_lane = candidates.sortBy(
+            e => math.abs(e.lane_num - cur_lane.lane_num))
           // TODO unlikely, but if we're in the middle and the far left and far
           // right lane both somehow lead to group, we could end up oscillating
-          return candidates.sortBy(
+
+          // So which adjacent lane gets us closest to the best?
+          return cur_lane.adjacent_lanes.sortBy(
             e => math.abs(e.lane_num - cur_lane.lane_num)
           ).headOption match {
             case Some(e) if e == cur_lane => None
@@ -94,6 +99,7 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
         }
         case _ => None
       }
+    }
 
   protected def safe_to_lanechange(target: Edge): Boolean = {
     // TODO refactor this and make it something sensible
@@ -102,6 +108,7 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
     // Satisfy the physical model, which requires us to finish lane-changing
     // before reaching the intersection.
     if (dist_required + cfg.end_threshold >= a.at.dist_left) {
+      //Util.log("(wont lc) too close to end")
       return false
     }
 
@@ -112,6 +119,7 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
       case Some(avoid) => {
         val min_trailing_dist = 2.0 * cfg.dt_s * target.road.speed_limit
         if (a.at.dist - avoid.at.dist <= min_trailing_dist) {
+          //Util.log("(wont lc) trailing car too close")
           return false
         }
       }
@@ -121,6 +129,7 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
       // gives agents time next tick to notice us during their lookahead.
       case None => {
         if (a.at.dist <= a.at.on.queue.safe_spawn_dist) {
+          //Util.log("(wont lc) not past min spawn dist yet")
           return false
         }
       }
@@ -141,6 +150,7 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
     // Do we want to lane change?
     desired_lane match {
       case Some(e) => {
+        //Util.log("Want to lanechange to " + e + ". Safe? " + safe_to_lanechange(e))
         if (safe_to_lanechange(e)) {
           return Act_Lane_Change(e)
         } else {
@@ -170,6 +180,7 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
     // length, except for the very first step of a lookahead, since the agent
     // doesnt start at the beginning of the step.
     // steps = alignment of the route
+    override def toString = "Lookahead to %s with %.2f m left".format(at, predict_dist)
 
     // TODO iterator syntax
 
@@ -268,9 +279,12 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
 
     // TODO pull each constraint out into its own function
     // TODO verify the route is telling us the same moves between ticks
+    route.initialize(a.at.on)
+    // TODO ^ workaround by including current step always?
     for (step <- lookahead_steps
          if (!stop_how_far_away.isDefined || !follow_agent.isDefined))
     {
+      //Util.log("step: " + step)
       // 1) Agent
       // Worry either about the one we're following, or the one at the end of
       // the queue right now. It's the intersection's job to worry about letting

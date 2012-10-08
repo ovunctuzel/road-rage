@@ -24,7 +24,7 @@ class Graph(val roads: Array[Road], val edges: Array[Edge],
   def traversables() = edges ++ turns
 
   // TODO eventually make this very general and reusable
-  // Returns a sequence of connected roads (from, to]. The user must decide how
+  // Returns a sequence of connected roads [from, to]. The user must decide how
   // to lane-change.
   def pathfind_astar(from: DirectedRoad, to: DirectedRoad): List[DirectedRoad] = {
     // Used for heuristic
@@ -71,8 +71,8 @@ class Graph(val roads: Array[Road], val edges: Array[Edge],
           // clean as we go to break loops
           at = backrefs.remove(at.get)
         }
-        // the first step is 'from'
-        return path.tail
+        // .tail would exclude 'from'
+        return path
       }
 
       // Where can we go next?
