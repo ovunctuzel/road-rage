@@ -2,9 +2,10 @@
 
 # Lane changing
 
-- on synthetic, make sure the 'need to re-route' guys really missed their deal, and fix them.
-- when we've started to lane change, make sure we're lookign ahead from target lane?
-- in btr, spawning in clumps..
+- now lookahead is making agents terminate route early...
+- handle rerouting when needed
+- once we've started to lane-change, look ahead from target lane
+  - and at agent ahead of us on current lane only
 
 - ui draw them better
   - two types of positions?

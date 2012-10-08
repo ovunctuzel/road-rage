@@ -84,13 +84,13 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
           // The best lane is one that has a turn leading us to where we want to
           // go and that's closest to us
           val best_lane = candidates.sortBy(
-            e => math.abs(e.lane_num - cur_lane.lane_num))
+            e => math.abs(e.lane_num - cur_lane.lane_num)).head
           // TODO unlikely, but if we're in the middle and the far left and far
           // right lane both somehow lead to group, we could end up oscillating
 
           // So which adjacent lane gets us closest to the best?
           return cur_lane.adjacent_lanes.sortBy(
-            e => math.abs(e.lane_num - cur_lane.lane_num)
+            e => math.abs(e.lane_num - best_lane.lane_num)
           ).headOption match {
             case Some(e) if e == cur_lane => None
             case Some(e) => Some(e)
@@ -150,7 +150,6 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
     // Do we want to lane change?
     desired_lane match {
       case Some(e) => {
-        //Util.log("Want to lanechange to " + e + ". Safe? " + safe_to_lanechange(e))
         if (safe_to_lanechange(e)) {
           return Act_Lane_Change(e)
         } else {
@@ -171,15 +170,17 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
   // routing strategy will sometimes force the strategy to reroute.
   class LookaheadStep(
     val predict_dist: Double, val dist_ahead: Double,
-    val path: Stream[Traversable], val next_dist: Double)
+    val path: Stream[Traversable], val this_dist: Double)
   {
-    // predict_dist = how far ahead will we look
+    // predict_dist = how far ahead we still have to look
+    // TODO consider seeding dist_ahead with not 0 but this_dist, then lots of
+    // stuff may get simpler.
     // dist_ahead = how far have we looked ahead so far
     // at = where do we end up
-    // next_dist = how much distance from 'at' we'll consider. it would just be
+    // this_dist = how much distance from 'at' we'll consider. it would just be
     // length, except for the very first step of a lookahead, since the agent
     // doesnt start at the beginning of the step.
-    // steps = alignment of the route
+    // path = specific_path from route
     override def toString = "Lookahead to %s with %.2f m left".format(at, predict_dist)
 
     // TODO iterator syntax
@@ -189,17 +190,24 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
     def at = path.head
 
     lazy val next_step: Option[LookaheadStep] = {
-      if (predict_dist <= 0.0) {
+      // We want to avoid asking forcing the path stream to compute its next
+      // step when we don't actually need it yet. We could needlessly confuse it
+      // and make it think we missed an opportunity to lane-change.
+      if (predict_dist - this_dist <= 0.0) {
         // We're done
         None
       } else {
         path.tail.headOption match {
           case Some(place) => Some(new LookaheadStep(
-            predict_dist - next_dist, dist_ahead + next_dist,
+            predict_dist - this_dist, dist_ahead + this_dist,
             path.tail, place.length
           ))
           // Done with route, stop looking ahead.
-          case None => None
+          //case None => None  TODO
+          case None => {
+            Util.log("  " + a + ", dist left = " + a.at.dist_left + ", quitting")
+            None
+          }
         }
       }
     }
@@ -284,7 +292,6 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
     for (step <- lookahead_steps
          if (!stop_how_far_away.isDefined || !follow_agent.isDefined))
     {
-      //Util.log("step: " + step)
       // 1) Agent
       // Worry either about the one we're following, or the one at the end of
       // the queue right now. It's the intersection's job to worry about letting
@@ -316,8 +323,8 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
       // 2) Stopping at the end
       if (!stop_how_far_away.isDefined) {
         // physically stop somewhat far back from the intersection.
-        val should_stop = keep_stopping || (step.predict_dist >= step.next_dist - cfg.end_threshold)
-        val how_far_away = step.dist_ahead + step.next_dist
+        val should_stop = keep_stopping || (step.predict_dist >= step.this_dist - cfg.end_threshold)
+        val how_far_away = step.dist_ahead + step.this_dist
 
         val stop_at_end: Boolean = should_stop && (step.at match {
           // Don't stop at the end of a turn

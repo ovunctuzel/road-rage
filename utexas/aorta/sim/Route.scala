@@ -80,7 +80,7 @@ abstract class Route() {
                 // If it doesn't exist, that means we couldn't lane-change in
                 // time, so blockingly re-route, then try above again (it'll
                 // work this time)
-                Util.log("need to re-route and do more stuff!")
+                Util.log("need to re-route! want " + target_road)
                 return Stream.empty // TODO tmp
               }
             }

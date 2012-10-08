@@ -51,7 +51,7 @@ class Intersection(val v: Vertex) {
   // attempting it.
   val turns = MutableMap[Turn, Int]()
 
-  // Check for collisions by detecting agents abnormal changes in ordering.
+  // Check for collisions
   def end_step(): Unit = {
     if (turns.size < 2) {
       return
