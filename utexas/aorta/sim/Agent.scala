@@ -301,7 +301,10 @@ class Agent(val id: Int, val graph: Graph, val start: Edge,
   def max_next_dist = Util.dist_at_constant_accel(max_accel, cfg.dt_s, speed)
   // TODO clamp v_f at 0, since they cant deaccelerate into negative speed.
   def min_next_dist = Util.dist_at_constant_accel(-max_accel, cfg.dt_s, speed)
-  def max_lookahead_dist = max_next_dist + stopping_distance(max_next_speed)
+  def max_lookahead_dist = math.max(
+    max_next_dist + stopping_distance(max_next_speed),
+    cfg.end_threshold // TODO a hack
+  )
 
   def accel_to_achieve(target_speed: Double) = Util.accel_to_achieve(
     speed, target_speed

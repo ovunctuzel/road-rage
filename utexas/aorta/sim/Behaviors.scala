@@ -203,11 +203,7 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
             path.tail, place.length
           ))
           // Done with route, stop looking ahead.
-          //case None => None  TODO
-          case None => {
-            Util.log("  " + a + ", dist left = " + a.at.dist_left + ", quitting")
-            None
-          }
+          case None => None
         }
       }
     }
@@ -410,8 +406,10 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
       }
     }
 
+    // We can't get any closer to our actual destination. Terminate.
     if (stopping_for_destination && stop_how_far_away.get <= cfg.end_threshold && a.speed == 0.0) {
-      // We can't get any closer to our actual destination. Terminate.
+      // Make sure lookahead did its job.
+      assert(route.general_path.tail.isEmpty)
       return Act_Done_With_Route()
     } else {
       // So, three possible constraints.

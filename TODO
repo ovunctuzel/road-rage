@@ -3,6 +3,17 @@
 # Lane changing
 
 - now lookahead is making agents terminate route early...
+  - if we evaluate specific_path too soon, we think we've missed a lanechange,
+    and try to re-route
+  - if we never lookahead far enough to see past this specific_path step, we
+    think we're done prematurely
+  - don't we want to call ahead to intersection a bit in advance too?
+
+  fixes...
+    1) guarantee we always lookahead some min amount?
+    2) see if general_path is empty before disappearing
+    3) ability to ask route's specific_path if we have another step WITHOUT computing it
+
 - handle rerouting when needed
 - once we've started to lane-change, look ahead from target lane
   - and at agent ahead of us on current lane only
