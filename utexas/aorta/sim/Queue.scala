@@ -126,6 +126,7 @@ class Queue(t: Traversable) {
   def ok_to_spawn = t.length >= worst_entry_dist + cfg.end_threshold + (2 * cfg.follow_dist)
   
   // TODO geometric argument
+  // TODO sometimes the max arg is < the min arg. :)
   def safe_spawn_dist = Util.rand_double(
     worst_entry_dist + cfg.follow_dist, t.length - cfg.end_threshold
   )

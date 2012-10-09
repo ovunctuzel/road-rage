@@ -2,8 +2,6 @@
 
 # Lane changing
 
-- handle rerouting when needed
-
 - now lookahead is making agents terminate route early...
   - if we evaluate specific_path too soon, we think we've missed a lanechange,
     and try to re-route

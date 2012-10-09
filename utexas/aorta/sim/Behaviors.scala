@@ -133,7 +133,7 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
       // distance and don't start a lane-change too early in the road. This
       // gives agents time next tick to notice us during their lookahead.
       case None => {
-        if (a.at.dist <= a.at.on.queue.safe_spawn_dist) {
+        if (a.at.dist <= a.at.on.queue.worst_entry_dist + cfg.follow_dist) {
           //Util.log("(wont lc) not past min spawn dist yet")
           return false
         }

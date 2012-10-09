@@ -10,8 +10,14 @@ import utexas.aorta.map.{Edge, DirectedRoad, Traversable, Turn}
 import utexas.aorta.{Util, cfg}
 
 abstract class Route() {
+  private var goal: DirectedRoad = null
+
   // This sets a new long-term plan, possibly delegating work to a thread pool.
-  def request_route(from: DirectedRoad, to: DirectedRoad): Option[Callable[List[DirectedRoad]]]
+  def reroute(from: DirectedRoad, to: DirectedRoad): Option[Callable[List[DirectedRoad]]]
+  def request_route(from: DirectedRoad, to: DirectedRoad): Option[Callable[List[DirectedRoad]]] = {
+    goal = to
+    return reroute(from, to)
+  }
   def request_route(from: Edge, to: Edge): Option[Callable[List[DirectedRoad]]]
     = request_route(from.directed_road, to.directed_road)
 
@@ -67,8 +73,8 @@ abstract class Route() {
       case e: Edge => {
         // TODO this is quite inefficient
         // Get the next road after the current.
-        val desired_road =
-          general_path.dropWhile(r => r != e.directed_road).tail.headOption
+        val before_and_after = general_path.span(_ != e.directed_road)
+        val desired_road = before_and_after._2.tail.headOption
 
         desired_road match {
           case Some(target_road) => {
@@ -76,12 +82,17 @@ abstract class Route() {
             e.turns_leading_to(target_road) match {
               case turn :: _ => turn #:: pick_next_step(turn)
               case Nil => {
-                // TODO re-route!
                 // If it doesn't exist, that means we couldn't lane-change in
-                // time, so blockingly re-route, then try above again (it'll
-                // work this time)
-                Util.log("need to re-route! want " + target_road)
-                return Stream.empty // TODO tmp
+                // time, so blockingly re-route
+                val new_src = pick_road_for_reroute(e)
+                // TODO this is very A* specific. will generalize again soon.
+                Util.log("Blockingly re-routing from " + new_src)
+                general_path = (
+                  before_and_after._1.toList ++ List(e.directed_road) ++
+                  Agent.sim.pathfind_astar(new_src, goal)
+                ).toStream
+                // Call ourselves again. desired_road will not be blank again.
+                return pick_next_step(current)
               }
             }
           }
@@ -93,12 +104,15 @@ abstract class Route() {
       }
     }
   }
+
+  // TODO leave it up to the implementation
+  def pick_road_for_reroute(e: Edge) = e.next_turns.head.to.directed_road
 }
 
 // A* and don't adjust the route unless we miss part of the sequence due to
 // inability to lanechange.
 class StaticRoute() extends Route() {
-  override def request_route(from: DirectedRoad, to: DirectedRoad) = Some(
+  override def reroute(from: DirectedRoad, to: DirectedRoad) = Some(
     new Callable[List[DirectedRoad]]() {
       def call = Agent.sim.pathfind_astar(from, to)
     }
@@ -122,7 +136,7 @@ class DrunkenRoute() extends Route() {
     }
 
   // No actual work to do
-  override def request_route(from: DirectedRoad, to: DirectedRoad): Option[Callable[List[DirectedRoad]]] = {
+  override def reroute(from: DirectedRoad, to: DirectedRoad): Option[Callable[List[DirectedRoad]]] = {
     goal = to
     general_path = plan_step(from)
     return None
