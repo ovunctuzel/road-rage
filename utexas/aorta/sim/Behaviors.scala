@@ -105,16 +105,19 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
     // TODO refactor this and make it something sensible
     val dist_required = cfg.lane_width * 10.0
 
+    // One lane could be shorter than the other. When we want to avoid the end
+    // of a lane, worry about the shorter one to be safe.
+    val min_len = math.min(a.at.on.length, target.length)
+
     // Satisfy the physical model, which requires us to finish lane-changing
     // before reaching the intersection.
-    if (dist_required + cfg.end_threshold >= a.at.dist_left) {
+    if (a.at.dist + dist_required + cfg.end_threshold >= min_len) {
       return false
     }
 
-    // We also can't lane-change and wind up past the end of our target lane.
-    // Sometimes parallel lanes wind up with different lengths due to wacky
-    // geometry.
-    if (a.at.dist + dist_required >= target.length) {
+    // Furthermore, we probably have to stop for the intersection, so be sure we
+    // have enough room to do that.
+    if (a.at.dist + a.stopping_distance(a.max_next_speed) >= min_len) {
       return false
     }
 

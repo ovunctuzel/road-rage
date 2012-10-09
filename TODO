@@ -2,6 +2,9 @@
 
 # Lane changing
 
+- reachability analyis used for pruning disconnected SCC's should use old code.
+  (some edges have no turns!)
+
 - now lookahead is making agents terminate route early...
   - if we evaluate specific_path too soon, we think we've missed a lanechange,
     and try to re-route
@@ -19,8 +22,7 @@
       - merge lookahead steps with specific_path, persist them, and update distances...
     - separate hasNext and get seems weird..
 
-- once we've started to lane-change, look ahead from target lane
-  - and at agent ahead of us on current lane only
+- dont forget to look at agent ahead of us in old lane only.
 
 - ui draw them better
   - two types of positions?

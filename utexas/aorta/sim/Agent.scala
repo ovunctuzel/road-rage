@@ -26,10 +26,11 @@ class Agent(val id: Int, val graph: Graph, val start: Edge,
   // TODO who chooses this?
   val behavior = new LookaheadBehavior(this, route)
 
-  // lane-changing stuff
-  var target_lane: Option[Edge] = None
+  // old_lane is where we're shifting from. we immediately warp into the target
+  // lane.
+  var old_lane: Option[Edge] = None
   var lanechange_dist_left: Double = 0
-  def is_lanechanging = target_lane.isDefined
+  def is_lanechanging = old_lane.isDefined
 
   // stats stuff
   var idle_since = -1.0   // how long has our speed been 0?
@@ -52,19 +53,16 @@ class Agent(val id: Int, val graph: Graph, val start: Edge,
     total_dist += new_dist
 
     // Lane-changing?
-    target_lane match {
+    old_lane match {
       case Some(lane) => {
         lanechange_dist_left -= new_dist
         if (lanechange_dist_left <= 0) {
           // Done! Leave the old queue
-          exit(at.on)
-          // TODO make sure lanes in same group have same length
-          behavior.transition(at.on, lane)
-          at = enter(lane, at.dist)
+          exit(lane)
           //Util.log(this + " done lane-changing to " + lane)
 
           // Return to normality
-          target_lane = None
+          old_lane = None
           lanechange_dist_left = 0
         }
       }
@@ -143,7 +141,7 @@ class Agent(val id: Int, val graph: Graph, val start: Edge,
     if (start_on == current_on) {
       at = move(start_on, current_dist)
       // Also stay updated in the other queue
-      target_lane match {
+      old_lane match {
         case Some(lane) => move(lane, current_dist)
         case None =>
       }
@@ -207,10 +205,13 @@ class Agent(val id: Int, val graph: Graph, val start: Edge,
         }
 
         // Otherwise, fine!
-        target_lane = Some(lane)
+        old_lane = Some(at.on.asInstanceOf[Edge])
         target_accel = 0
-        // Enter the target lane's queue too, at the same distance
-        enter(lane, at.dist)
+
+        // Immediately enter the target lane
+        behavior.transition(at.on, lane)
+        at = enter(lane, at.dist)
+
         return false
       }
       case Act_Done_With_Route() => {

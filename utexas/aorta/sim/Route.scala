@@ -31,7 +31,6 @@ abstract class Route() {
     (from, to) match {
       // When we lane-change, have to consider a new specific path
       case (_: Edge, _: Edge) => {
-        // TODO pick_next_step will call high level replan() if needed.
         specific_path = to #:: pick_next_step(to)
       }
       // Make sure we're following general path
