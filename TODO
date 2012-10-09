@@ -2,6 +2,8 @@
 
 # Lane changing
 
+- handle rerouting when needed
+
 - now lookahead is making agents terminate route early...
   - if we evaluate specific_path too soon, we think we've missed a lanechange,
     and try to re-route
@@ -14,7 +16,11 @@
     2) see if general_path is empty before disappearing
     3) ability to ask route's specific_path if we have another step WITHOUT computing it
 
-- handle rerouting when needed
+  redesign...
+    - does specific_path belong to behavior? does route care at all about low-level route?
+      - merge lookahead steps with specific_path, persist them, and update distances...
+    - separate hasNext and get seems weird..
+
 - once we've started to lane-change, look ahead from target lane
   - and at agent ahead of us on current lane only
 

@@ -202,6 +202,9 @@ class Agent(val id: Int, val graph: Graph, val start: Edge,
         if (lanechange_dist_left >= at.dist_left) {
           throw new Exception(this + " wants to lane-change too late!")
         }
+        if (at.dist + lanechange_dist_left >= lane.length) {
+          throw new Exception(this + " wants to lane-change to a much shorter lane!")
+        }
 
         // Otherwise, fine!
         target_lane = Some(lane)

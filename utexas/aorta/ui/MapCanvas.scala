@@ -69,6 +69,7 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
 
   // state
   private var current_edge: Option[Edge] = None
+  private var current_road: Option[Road] = None
   private var highlight_type: Option[String] = None
   private var show_ward_colors = false
   private var current_turn = -1  // for cycling through turns from an edge
@@ -276,9 +277,10 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
     g2d.draw(polygon)
 
     // TODO general tooltips based on whatever we're currently mousing over
-    return (current_edge, current_agent) match {
-      case (Some(e), None) => Some(e.toString)
-      case (_, Some(a)) => Some(a.toString)
+    return (current_edge, current_agent, current_road) match {
+      case (Some(e), _, _) => Some(e.toString)
+      case (_, Some(a), _) => Some(a.toString)
+      case (_, _, Some(r)) => Some(r.toString)
       case _ => None
     }
   }
@@ -469,6 +471,17 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
     }
   }
 
+  def mouseover_road(x: Double, y: Double): Option[Road] = {
+    val window = viewing_window
+    val cursor_bubble = new Rectangle2D.Double(
+      x - eps, y - eps, eps * 2, eps * 2
+    )
+    return bg_lines.find(l => l.line.intersects(cursor_bubble)) match {
+      case Some(r) => Some(r.road)
+      case None    => None
+    }
+  }
+
   def mouseover_ward(x: Double, y: Double): Option[Ward] = {
     val cursor_bubble = new Rectangle2D.Double(
       x - eps, y - eps, eps * 2, eps * 2
@@ -501,6 +514,7 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
     case EV_Mouse_Moved(x, y) => {
       // always reset everything
       current_edge = None
+      current_road = None
       current_turn = -1
       current_ward = None
       current_agent = None
@@ -513,25 +527,30 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
       lazy val cur_a = mouseover_agent(x, y)
       lazy val cur_w = if (show_wards) mouseover_ward(x, y) else None
       lazy val cur_e = if (zoomed_in) mouseover_edge(x, y) else None
+      lazy val cur_r = if (zoomed_in) mouseover_road(x, y) else None
       lazy val cur_v = mouseover_vert(x, y)
 
       // TODO but do we lazily match? i don't think so.
-      status.location.text = (cur_a, cur_w, cur_e, cur_v) match {
-        case (Some(a), _, _, _) => {
+      status.location.text = (cur_a, cur_w, cur_e, cur_v, cur_r) match {
+        case (Some(a), _, _, _, _) => {
           current_agent = cur_a
           "" + a
         }
-        case (None, Some(w), _, _) => {
+        case (None, Some(w), _, _, _) => {
           current_ward = cur_w
           "" + w
         }
-        case (None, None, Some(e), _) => {
+        case (None, None, Some(e), _, _) => {
           current_edge = cur_e
           "" + e
         }
-        case (None, None, None, Some(v)) => {
+        case (None, None, None, Some(v), _) => {
           current_vert = cur_v
           "" + v
+        }
+        case (None, None, None, None, Some(r)) => {
+          current_road = cur_r
+          "" + r
         }
         case _ => "Nowhere"
       }
@@ -611,6 +630,25 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
           try {
             val e = sim.edges(id.toInt)
             // TODO center on some part of the edge and zoom in, rather than
+            // just vaguely moving that way
+            Util.log("Here's " + e)
+            center_on(e.lines.head.start)
+            chosen_edge2 = Some(e)  // just kind of use this to highlight it
+            repaint
+          } catch {
+            case _: NumberFormatException => Util.log("Bad edge ID " + id)
+          }
+        }
+        case _ =>
+      }
+      grab_focus
+    }
+    case EV_Action("teleport-road") => {
+      prompt_int("What road ID do you seek?") match {
+        case Some(id) => {
+          try {
+            val e = sim.roads(id.toInt).all_lanes.head
+            // TODO center on some part of the road and zoom in, rather than
             // just vaguely moving that way
             Util.log("Here's " + e)
             center_on(e.lines.head.start)
@@ -720,16 +758,20 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
     }
     // general debug based on whatever you're hovering over
     case EV_Key_Press(Key.D) => {
-      (current_edge, current_agent, current_vert) match {
-        case (Some(e), _, _) => {
+      (current_edge, current_road, current_agent, current_vert) match {
+        case (Some(e), _, _, _) => {
           Util.log(e.road + " is a " + e.road.road_type + " of length " +
                    e.length + " meters")
         }
-        case (None, Some(a), _) => {
+        case (None, Some(r), _, _) => {
+          Util.log(r + " is a " + r.road_type + " of length " +
+                   r.length + " meters")
+        }
+        case (None, None, Some(a), _) => {
           a.dump_info
           sim.debug_agent = current_agent
         }
-        case (None, None, Some(v)) => {
+        case (None, None, None, Some(v)) => {
           val i = v.intersection
 
           Util.log("Current turns allowed:")

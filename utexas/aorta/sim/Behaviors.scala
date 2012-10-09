@@ -108,7 +108,13 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
     // Satisfy the physical model, which requires us to finish lane-changing
     // before reaching the intersection.
     if (dist_required + cfg.end_threshold >= a.at.dist_left) {
-      //Util.log("(wont lc) too close to end")
+      return false
+    }
+
+    // We also can't lane-change and wind up past the end of our target lane.
+    // Sometimes parallel lanes wind up with different lengths due to wacky
+    // geometry.
+    if (a.at.dist + dist_required >= target.length) {
       return false
     }
 
@@ -119,7 +125,6 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
       case Some(avoid) => {
         val min_trailing_dist = 2.0 * cfg.dt_s * target.road.speed_limit
         if (a.at.dist - avoid.at.dist <= min_trailing_dist) {
-          //Util.log("(wont lc) trailing car too close")
           return false
         }
       }

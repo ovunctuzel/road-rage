@@ -167,6 +167,9 @@ object Viewer extends SimpleSwingApplication {
         contents += new MenuItem(Action("Teleport to Edge") {
           canvas.handle_ev(EV_Action("teleport-edge"))
         })
+        contents += new MenuItem(Action("Teleport to Road") {
+          canvas.handle_ev(EV_Action("teleport-road"))
+        })
         contents += new MenuItem(Action("Teleport to Agent") {
           canvas.handle_ev(EV_Action("teleport-agent"))
         })
