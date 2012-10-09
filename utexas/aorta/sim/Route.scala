@@ -83,6 +83,15 @@ abstract class Route() {
               case Nil => {
                 // If it doesn't exist, that means we couldn't lane-change in
                 // time, so blockingly re-route
+
+                // TODO map builder isn't stripping out all the bad stuff, so a
+                // quick workaround is to elegantly give up
+                if (e.next_turns.isEmpty) {
+                  Util.log("Bad map has an agent in a dead-end!")
+                  general_path = List(e.directed_road).toStream
+                  return Stream.empty
+                }
+
                 val new_src = pick_road_for_reroute(e)
                 // TODO this is very A* specific. will generalize again soon.
                 Util.log("Blockingly re-routing from " + new_src)

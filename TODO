@@ -2,9 +2,6 @@
 
 # Lane changing
 
-- reachability analyis used for pruning disconnected SCC's should use old code.
-  (some edges have no turns!)
-
 - now lookahead is making agents terminate route early...
   - if we evaluate specific_path too soon, we think we've missed a lanechange,
     and try to re-route
@@ -23,6 +20,16 @@
     - separate hasNext and get seems weird..
 
 - dont forget to look at agent ahead of us in old lane only.
+
+- go back and fix hacks
+  - route interface
+
+- proper fixes to problems
+  - blocking A* for rerouting
+  - agents get caught in loops because the general path isnt realizable
+  - remove unreachable and dead-end edges
+
+- test at scale. gridlock?
 
 - ui draw them better
   - two types of positions?
