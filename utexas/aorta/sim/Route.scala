@@ -46,7 +46,7 @@ abstract class Route() {
     // Split our path into roads before and after e's road
     // TODO this is quite inefficient, specific_path should track us or so.
     return general_path.span(_ != e.directed_road) match {
-      case (before, next_road #:: rest) => {
+      case (before, this_road #:: next_road #:: rest) => {
         // Find a turn that leads to the desired road
         e.turns_leading_to(next_road) match {
           // Pick the first arbitrarily if there are multiple
@@ -58,24 +58,24 @@ abstract class Route() {
             // quick workaround is to elegantly give up
             if (e.next_turns.isEmpty) {
               Util.log("Bad map has an agent in a dead-end!")
-              general_path = List(e.directed_road).toStream
+              general_path = List(this_road).toStream
               None
+            } else {
+              // TODO this is very A* specific. will generalize again soon.
+              val new_src = e.next_turns.head.to.directed_road
+              Util.log("Blockingly re-routing from " + new_src)
+              general_path = (                                        
+                before.toList ++ List(this_road) ++
+                Agent.sim.pathfind_astar(new_src, goal)
+              ).toStream
+              // Call ourselves again. desired_road will not be blank again.
+              pick_turn(e)
             }
-
-            // TODO this is very A* specific. will generalize again soon.
-            val new_src = e.next_turns.head.to.directed_road
-            Util.log("Blockingly re-routing from " + new_src)
-            general_path = (                                        
-              before ++ List(e.directed_road) ++
-              Agent.sim.pathfind_astar(new_src, goal)
-            ).toStream
-            // Call ourselves again. desired_road will not be blank again.
-            pick_turn(e)
           }
         }
       }
       // Done with route
-      case (before, Stream.Empty) => None
+      case (before, this_road #:: Stream.Empty) => None
     }
   }
 }
