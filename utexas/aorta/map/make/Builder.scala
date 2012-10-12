@@ -11,57 +11,40 @@ import utexas.aorta.map.Graph
 import utexas.aorta.Util
 
 object Builder {
-  val default_ifn = "dat/btr.osm"
-  val default_ofn = "dat/test.map"
-
-  // generate a .map from a .osm
-  def main(args: Array[String]) {
-    // TODO usage info
-    // Input that can be specified, with defaults:
-    var ifn = default_ifn
-    var ofn = default_ofn
-    var show_dead = false
-    
-    if (args.size % 2 != 0) {
-      Util.log("Command-line parameters must be pairs of key => value")
-      sys.exit
-    }
-    val keys = args.zipWithIndex.filter(p => p._2 % 2 == 0).map(p => p._1)
-    val vals = args.zipWithIndex.filter(p => p._2 % 2 == 1).map(p => p._1)
-
-    for ((key, value) <- keys.zip(vals)) {
-      key match {
-        case "--show-dead" => { show_dead = value == "1" }
-        case "--input"     => { ifn = value }
-        case "--output"    => { ofn = value }
-        case _             => { Util.log("Weird option " + key); sys.exit }
-      }
+  // Takes a .osm and returns a .map
+  def convert(input: String, show_dead: Boolean = false): String = {
+    if (!input.endsWith(".osm")) {
+      throw new Exception(s"$input must end with .osm")
     }
 
-    Util.log("Processing " + ifn)
-    Util.log_push
+    val output = input.replace(".osm", ".map")
 
-    // first, let's take osm to an undirected graph with vertex intersections
-    // and entire-road edges.
-    val graph1 = new Pass1(ifn).run()
-    // So our edges can have a reasonable length...
+    val graph1 = new Pass1(input).run()
     Graph.set_params(graph1.width, graph1.height, graph1.offX, graph1.offY, graph1.scale)
 
-    // then split roads so that edges are between just two vertices
     val graph2 = new Pass2(graph1).run()
 
-    // now split edges into multiple directed lanes and connect them with some
-    // smart intersections
     val graph3 = new Pass3(graph2).run(show_dead)
-    Util.log_pop
 
-    // TODO better output location?
     Util.log(
-      "Dumping map with %d roads, %d edges, and %d vertices".format(
-        graph3.roads.length, graph3.edges.length, graph3.vertices.length
-    ))
-    val out = new FileWriter(ofn)
-    graph3.to_xml(out, graph1)
-    out.close
+      s"Dumping map with ${graph3.roads.length} roads, ${graph3.edges.length}" +
+      s" edges, and ${graph3.vertices.length} vertices"
+    )
+    val file = new FileWriter(output)
+    graph3.to_xml(file, graph1)
+    file.close
+
+    return output
+  }
+
+  def main(args: Array[String]) {
+    // TODO usage info
+    // TODO take params more flexibly again
+
+    if (args.size != 1) {
+      throw new Exception("Pass in only a single .osm filename")
+    }
+
+    convert(args.head)
   }
 }

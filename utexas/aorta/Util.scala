@@ -103,7 +103,7 @@ object Util {
     // TODO write with 'partition'
     val keys = args.zipWithIndex.filter(p => p._2 % 2 == 0).map(p => p._1)
     val vals = args.zipWithIndex.filter(p => p._2 % 2 == 1).map(p => p._1)
-    var fn = "dat/test.map" // TODO defaults like this are bad, emit good fn
+    var fn = ""
     var rng = System.currentTimeMillis
     var diff_rng = false
     var load_scenario = ""
@@ -129,7 +129,7 @@ object Util {
       }
     }
 
-    Stats.experiment_name(exp_name)
+    Stats.setup_experiment(exp_name)
 
     if (load_scenario.isEmpty) {
       Util.init_rng(rng)
@@ -311,12 +311,14 @@ object Stats {
   var log: FileWriter = null
   var use_log = false
   var use_print = false
+  var initialized = false
 
   val trip_time = new Aggregate_Stat("trip time (s)")
   val simulator_speedup = new Aggregate_Stat("simulator speedup (factor)")
   val time_wasted = new Aggregate_Stat("time wasted at individual intersections (s)")
 
-  def experiment_name(name: String) = {
+  def setup_experiment(name: String) = {
+    initialized = true
     if (use_log) {
       Util.assert_eq(log, null)
       log = new FileWriter("stats_log")
@@ -345,16 +347,18 @@ object Stats {
 
   // flush any logs we were writing
   def shutdown() = {
-    if (log != null) {
-      log.close
-    }
+    if (initialized) {
+      if (log != null) {
+        log.close
+      }
 
-    // emit a summary
-    // TODO tabulate it?
-    println("")
-    println("-" * 80)
-    println(trip_time.describe)
-    println(time_wasted.describe)
-    println(simulator_speedup.describe)
+      // emit a summary
+      // TODO tabulate it?
+      println("")
+      println("-" * 80)
+      println(trip_time.describe)
+      println(time_wasted.describe)
+      println(simulator_speedup.describe)
+    }
   }
 }
