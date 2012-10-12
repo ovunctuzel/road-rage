@@ -53,7 +53,7 @@ class StopSignPolicy(intersection: Intersection) extends Policy(intersection) {
   }
 
   def handle_exit(a: Agent, turn: Turn) = {
-    //assert(a == current_owner.get)    // TODO
+    //Util.assert_eq(a, current_owner.get)    // TODO
     if (!current_owner.isDefined || current_owner.get != a) {
       Util.log(a + " is leaving, but current owner is " + current_owner)
       Util.log("  Crazy guy was attempting " + turn)

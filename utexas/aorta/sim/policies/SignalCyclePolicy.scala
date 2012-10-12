@@ -16,8 +16,8 @@ import utexas.aorta.{Util, cfg}
 
 // TODO name 'Phase'?
 class Cycle(val offset: Double, val duration: Double) {
-  assert(offset >= 0)
-  assert(duration > 0)
+  Util.assert_ge(offset, 0)
+  Util.assert_gt(duration, 0)
   // TODO only mutable because we build this incrementally
   val turns = new MutableSet[Turn]()
 
@@ -206,13 +206,13 @@ class SignalCyclePolicy(intersection: Intersection)
     val turns_seen = new MutableSet[Turn]  // don't just count, count uniques.
 
     for (cycle <- cycles) {
-      assert(cycle.offset == expect_offset)
+      Util.assert_eq(cycle.offset, expect_offset)
       expect_offset += cycle.duration
 
       turns_seen ++= cycle.turns
     }
 
-    assert(turns_seen.size == intersection.v.turns.size)
+    Util.assert_eq(turns_seen.size, intersection.v.turns.size)
 
     expect_offset - initial_offset // this is now the total duration
   }

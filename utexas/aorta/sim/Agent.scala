@@ -45,7 +45,7 @@ class Agent(val id: Int, val graph: Graph, val start: Edge,
 
   // Returns true if we move or do anything at all
   def step(dt_s: Double): Boolean = {
-    assert(dt_s == cfg.dt_s)
+    Util.assert_eq(dt_s, cfg.dt_s)
 
     // Do physics to update current speed and figure out how far we've traveled
     // in this timestep.
@@ -95,7 +95,7 @@ class Agent(val id: Int, val graph: Graph, val start: Edge,
 
     // Check speed limit
     start_on match {
-      case e: Edge => assert(speed <= e.road.speed_limit)
+      case e: Edge => Util.assert_le(speed, e.road.speed_limit)
       case _ =>
     }
 
@@ -165,9 +165,9 @@ class Agent(val id: Int, val graph: Graph, val start: Edge,
     behavior.choose_action match {
       case Act_Set_Accel(new_accel) => {
         // we have physical limits
-        assert(new_accel.abs <= max_accel)
+        Util.assert_le(new_accel.abs, max_accel)
         // make sure this won't put us at a negative speed
-        assert(speed + (new_accel * cfg.dt_s) >= 0)
+        Util.assert_ge(speed + (new_accel * cfg.dt_s), 0)
 
         target_accel = new_accel
         return false
@@ -194,7 +194,7 @@ class Agent(val id: Int, val graph: Graph, val start: Edge,
         // We have to cover a fixed distance to lane-change. The scaling is kind
         // of arbitrary and just forces lane-changing to not be completely
         // instantaneous at higher speeds.
-        lanechange_dist_left = cfg.lane_width * 10.0
+        lanechange_dist_left = cfg.lanechange_dist
         //Util.log("%s starting to lane-change to %s. It'll take %.2f meters.".format(this, lane, lanechange_dist_left))
         // TODO plus some threshold for finishing a swap before the end
         if (lanechange_dist_left >= at.dist_left) {
@@ -216,15 +216,19 @@ class Agent(val id: Int, val graph: Graph, val start: Edge,
       }
       case Act_Done_With_Route() => {
         // Trust behavior, don't abuse this.
-        assert(speed == 0.0)
+        Util.assert_eq(speed, 0.0)
         exit(at.on)
         // and don't forget to tell intersections. this is normally just
         // at.on.vert if at.on is a turn, but it could be more due to lookahead.
-        upcoming_intersections.foreach(i => i.policy.unregister(this))
-        upcoming_intersections = Set()
+        cancel_intersection_reservations
         return true
       }
     }
+  }
+
+  def cancel_intersection_reservations() = {
+    upcoming_intersections.foreach(i => i.policy.unregister(this))
+    upcoming_intersections = Set()
   }
 
   // returns distance traveled, updates speed. note unit of the argument.
@@ -237,8 +241,8 @@ class Agent(val id: Int, val graph: Graph, val start: Edge,
 
     // It's the behavior's burden to set acceleration so that neither of these
     // cases happen
-    assert(speed >= 0.0)
-    assert(dist >= 0.0)
+    Util.assert_ge(speed, 0.0)
+    Util.assert_ge(dist, 0.0)
 
     return dist
   }
@@ -261,7 +265,7 @@ class Agent(val id: Int, val graph: Graph, val start: Edge,
           speed_i = entered_last._3, speed_f = e.road.speed_limit,
           dist = e.length - entered_last._2, accel = max_accel
         )
-        //assert(time_spent >= optimal_time)  // TODO we shouldn't have sped
+        //Util.assert_ge(time_spent, optimal_time)  // TODO we shouldn't have sped
         val wasted_time = time_spent - optimal_time
         // The alternatives for this measurement all suck:
         // - from 1st request till entering (includes legit travel time too)
@@ -288,6 +292,8 @@ class Agent(val id: Int, val graph: Graph, val start: Edge,
     Util.log("Speed: " + speed)
     Util.log("Next step's acceleration: " + target_accel)
     Util.log("How long idle? " + how_long_idle)
+    Util.log("Max next speed: " + max_next_speed)
+    Util.log("Stopping distance currently: " + stopping_distance(max_next_speed))
     behavior.dump_info
     Util.log_pop
   }
@@ -330,8 +336,8 @@ object Agent {
 // exist yet.
 
 case class Position(val on: Traversable, val dist: Double) {
-  assert(dist >= 0)
-  assert(dist <= on.length)
+  Util.assert_ge(dist, 0)
+  Util.assert_le(dist, on.length)
   // TODO
   /*if (dist > on.length) {
     Util.log("safe_spawn_dist must be broken... " + dist + " > " + on.length +

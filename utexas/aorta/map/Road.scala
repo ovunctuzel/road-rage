@@ -17,8 +17,8 @@ class Road(var id: Int, val points: List[Coordinate], val name: String,
            val v2: Vertex)
 {
   // an invariant
-  assert(v1.location == points.head)
-  assert(v2.location == points.last)
+  Util.assert_eq(v1.location, points.head)
+  Util.assert_eq(v2.location, points.last)
 
   val pos_group = new DirectedRoad(this, Direction.POS)
   val neg_group = new DirectedRoad(this, Direction.NEG)

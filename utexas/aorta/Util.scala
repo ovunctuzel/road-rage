@@ -62,6 +62,12 @@ object Util {
              comma_num(n / 1000, pad = false) + "," + comma_num(n % 1000)
   }
 
+  def assert_eq(a: Any, b: Any) = assert(a == b, a + " != " + b)
+  def assert_gt[T <% Ordered[T]](a: T, b: T) = assert(a > b, a + " <= " + b)
+  def assert_ge[T <% Ordered[T]](a: T, b: T) = assert(a >= b, a + " < " + b)
+  def assert_lt[T <% Ordered[T]](a: T, b: T) = assert(a < b, a + " >= " + b)
+  def assert_le[T <% Ordered[T]](a: T, b: T) = assert(a <= b, a + " > " + b)
+
   // to meters/sec, that is. SI units.
   def mph_to_si(r: Double) = r * 0.44704
 
@@ -88,7 +94,7 @@ object Util {
       // solve dist = a(t^2) + (v_i)t
       val discrim = math.sqrt((speed_i * speed_i) + (4 * accel * dist))
       val time = (-speed_i + discrim) / (2 * accel) // this is the positive root
-      assert(time >= 0)   // make sure we have the right solution to this
+      assert_ge(time, 0)   // make sure we have the right solution to this
       return time
     }
   }
@@ -227,6 +233,8 @@ object cfg {
   lazy val signal_duration    = ints("signal_duration").value
   
   lazy val dt_s            = doubles("dt_s").value
+
+  def lanechange_dist = lane_width * 10.0
 }
 
 // couldn't quite the OO work out to bundle these
@@ -310,7 +318,7 @@ object Stats {
 
   def experiment_name(name: String) = {
     if (use_log) {
-      assert(log == null)
+      Util.assert_eq(log, null)
       log = new FileWriter("stats_log")
       log.write(name + "\n")
     }

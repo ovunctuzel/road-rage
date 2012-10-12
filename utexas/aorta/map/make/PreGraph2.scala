@@ -37,7 +37,7 @@ class PreGraph2(old_graph: PreGraph1) {
         start = i
       }
     }
-    assert(start == road.points.length - 1);
+    Util.assert_eq(start, road.points.length - 1);
 
     // maybe Nil, if so, flatMap doesn't care
     // honey badger doesn't give a fuck

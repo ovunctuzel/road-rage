@@ -2,10 +2,15 @@
 
 # Lane changing
 
-- when we lanechange and clear the specific path, gotta cancel all the reservations...
+- fix map construction again.
+- headless also broken
+- new lookahead is not requesting turn till already stopped, even with reservation!
+- consider flooding backwards.
 - dont forget to look at agent ahead of us in old lane only.
 - go back and fix hacks
   - route interface
+- are we rerouting too frequently?
+  - try to tighten when we can lanechange
 
 - now lookahead is making agents terminate route early...
   - if we evaluate specific_path too soon, we think we've missed a lanechange,
@@ -25,7 +30,7 @@
 
 - proper fixes to problems
   - blocking A* for rerouting
-  = agents get caught in loops because the general path isnt realizable
+  - agents get caught in loops because the general path isnt realizable
   - remove unreachable and dead-end edges
 
 - test at scale. gridlock?
@@ -143,7 +148,6 @@ TESTING IT
 - multi-lane situations dont have enough turns, and we need to do more trimming!
 
 # General Simulation
-- automated testing strategy.
 - have a notion of "I'm done with the turn, but I'm protruding into the intersection"
   by requiring not only we're done with a turn but also some dist along the new edge.
 - slow down for turns (a speed limit)
@@ -183,3 +187,7 @@ TESTING IT
   - Mutable subclasses of everything used during construction..
   - have more ids and methods that access based on those. that'll break it.
   - immutable construction is easy... have parent entity create child.
+
+# Testing Strategy
+- map building
+  - transform map.make.Checker into tests, then apply to all osm files

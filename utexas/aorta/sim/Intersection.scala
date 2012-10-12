@@ -31,7 +31,7 @@ class Intersection(val v: Vertex) {
   def unregister(a: Agent) = policy.unregister(a)
   def can_go(a: Agent, turn: Turn, far_away: Double): Boolean = {
     // Sanity check...
-    assert(turn.vert == v)
+    Util.assert_eq(turn.vert, v)
     stats_requested += a
     started_counting match {
       case Some(time) =>

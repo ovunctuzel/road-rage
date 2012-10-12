@@ -59,12 +59,12 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
       // When we lane-change, have to consider a new specific path
       case (_: Edge, _: Edge) => {
         specific_path = to #:: pick_next_step(to)
-        // TODO cancel reservations
+        a.cancel_intersection_reservations
       }
       case _ => {
         // If we didn't just reset the specific path, make sure we're following
         // it
-        assert(specific_path.head == from)
+        Util.assert_eq(specific_path.head, from)
         specific_path = specific_path.tail
       }
     }
@@ -120,16 +120,13 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
     }
 
   protected def safe_to_lanechange(target: Edge): Boolean = {
-    // TODO refactor this and make it something sensible
-    val dist_required = cfg.lane_width * 10.0
-
     // One lane could be shorter than the other. When we want to avoid the end
     // of a lane, worry about the shorter one to be safe.
     val min_len = math.min(a.at.on.length, target.length)
 
     // Satisfy the physical model, which requires us to finish lane-changing
     // before reaching the intersection.
-    if (a.at.dist + dist_required + cfg.end_threshold >= min_len) {
+    if (a.at.dist + cfg.lanechange_dist + cfg.end_threshold >= min_len) {
       return false
     }
 
@@ -252,7 +249,7 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
       }
     }
 
-  // TODO assert(a.at.on == route.specific_path.head)
+  // TODO Util.assert_eq(a.at.on, route.specific_path.head)
   // TODO merge this and specific_path. have to propagate new distances.
   def lookahead_steps = (new LookaheadStep(
     a.max_lookahead_dist, 0, specific_path, a.at.dist_left

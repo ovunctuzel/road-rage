@@ -760,8 +760,10 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
     case EV_Key_Press(Key.D) => {
       (current_edge, current_road, current_agent, current_vert) match {
         case (Some(e), _, _, _) => {
-          Util.log(e.road + " is a " + e.road.road_type + " of length " +
-                   e.length + " meters")
+          Util.log(e + " has length " + e.length + " m, min entry dist " +
+                   (e.queue.worst_entry_dist + cfg.follow_dist))
+          Util.log("(lanechange dist is " + (cfg.lanechange_dist +
+                   cfg.end_threshold) + ")")
         }
         case (None, Some(r), _, _) => {
           Util.log(r + " is a " + r.road_type + " of length " +

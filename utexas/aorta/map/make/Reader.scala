@@ -169,7 +169,7 @@ class Reader(fn: String) {
           // tell the road about the edge, too
           // TODO edges in the xml will be ordered by their id, which we created
           // in order of lane numbering too
-          assert(e.other_lanes.length == e.lane_num)
+          Util.assert_eq(e.other_lanes.length, e.lane_num)
           e.other_lanes += e
 
           // reset

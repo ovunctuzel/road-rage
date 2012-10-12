@@ -8,6 +8,8 @@ package utexas.aorta.map
 // perf boost due to dropping a pricy hash lookup
 import utexas.aorta.sim.Queue
 
+import utexas.aorta.Util
+
 // Something with a sequence of lines forming a path and a way to get to more
 // somethings
 abstract class Traversable() {
@@ -50,7 +52,7 @@ abstract class Traversable() {
     // map.make.Reader artificially bumps up tiny edges to a min of 0.1 meters
     // to avoid breaking lookahead. So just... cheat and claim they're at the
     // end of the tiny, tiny edge.
-    assert(length == 0.1)
+    Util.assert_eq(length, 0.1)
     return (lines.last, lines.last.length)
   }
 

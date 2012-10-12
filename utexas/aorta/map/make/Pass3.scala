@@ -284,7 +284,7 @@ class Pass3(old_graph: PreGraph2) {
           // more to less. the rightmost will all have to merge.
           // we have 'to_edges.length - 1' regular dsts.
           val (mergers, regulars) = from_edges.splitAt(from_edges.length - (to_edges.length - 1))
-          assert(regulars.length == to_edges.length - 1)
+          Util.assert_eq(regulars.length, to_edges.length - 1)
 
           v.turns ++= mergers.map(from => new Turn(next_id, from, TurnType.CROSS_MERGE, to_edges.head))
           v.turns ++= regulars.zip(to_edges.tail).map(cross_turn)
@@ -294,7 +294,7 @@ class Pass3(old_graph: PreGraph2) {
           var regular_srcs = from_edges.dropRight(1)
 
           val (regular_dsts, choices) = to_edges.splitAt(to_edges.size - lane_diff - 1)
-          assert(regular_srcs.size == regular_dsts.size)
+          Util.assert_eq(regular_srcs.size, regular_dsts.size)
           
           v.turns ++= regular_srcs.zip(regular_dsts).map(cross_turn)
           v.turns ++= choices.map(to => new Turn(next_id, lucky_src, TurnType.CROSS, to))

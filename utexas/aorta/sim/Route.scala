@@ -30,7 +30,9 @@ abstract class Route() {
     (from, to) match {
       // Make sure we're following general path
       case (e: Edge, t: Turn) => {
-        assert(general_path.head == e.directed_road)
+        //Util.assert_eq(general_path.head, e.directed_road)
+        assert(general_path.head == e.directed_road,
+          { general_path.toList + " doesnt start with " + e.directed_road })
         general_path = general_path.tail
       }
       case _ =>
