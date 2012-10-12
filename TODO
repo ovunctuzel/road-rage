@@ -15,9 +15,10 @@
     3) ability to ask route's specific_path if we have another step WITHOUT computing it
 
   redesign...
-    - does specific_path belong to behavior? does route care at all about low-level route?
-      - merge lookahead steps with specific_path, persist them, and update distances...
+    - merge lookahead steps with specific_path, persist them, and update distances...
     - separate hasNext and get seems weird..
+
+- when we lanechange and clear the specific path, gotta cancel all the reservations...
 
 - dont forget to look at agent ahead of us in old lane only.
 
@@ -105,6 +106,7 @@ TESTING IT
   - or when we mess with an agent, see if they've moved yet this round?
 
 # Parallelizing
+- parallelize lookahead?
 - meseoscopic in between regions? lockstep necessary?
 - dynamic load balancing? any need to split up by region?
 - actors / akka?

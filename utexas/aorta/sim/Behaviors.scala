@@ -45,12 +45,30 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
   // the same math.
   var keep_stopping = false
 
-  override def choose_turn(e: Edge) = route.specific_path.tail.head match {
+  // We keep the state of our lookahead steps. The agent's current location
+  // should always be the first step.
+  var specific_path: Stream[Traversable] = Stream.empty
+
+  override def choose_turn(e: Edge) = specific_path.tail.head match {
     case t: Turn => t
     case _ => throw new Exception("specific path yielded edge, not turn")
   }
   
   override def transition(from: Traversable, to: Traversable) = {
+    (from, to) match {
+      // When we lane-change, have to consider a new specific path
+      case (_: Edge, _: Edge) => {
+        specific_path = to #:: pick_next_step(to)
+        // TODO cancel reservations
+      }
+      case _ => {
+        // If we didn't just reset the specific path, make sure we're following
+        // it
+        assert(specific_path.head == from)
+        specific_path = specific_path.tail
+      }
+    }
+
     route.transition(from, to)
     keep_stopping = false   // reset
   }
@@ -174,9 +192,10 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
 
   // This is a lazy sequence of edges/turns that tracks distances away from the
   // original spot. This assumes no lane-changing: where the agent starts
-  // predicting is where they'll end up.  As a result, interaction with the
+  // predicting is where they'll end up. As a result, interaction with the
   // routing strategy will sometimes force the strategy to reroute.
   class LookaheadStep(
+    // TODO dist_left_to_analyze, dist_so_far?
     val predict_dist: Double, val dist_ahead: Double,
     val path: Stream[Traversable], val this_dist: Double)
   {
@@ -223,6 +242,16 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
     }
   }
 
+  def pick_next_step(current: Traversable): Stream[Traversable] =
+    current match {
+      // We don't have a choice
+      case t: Turn => { return t.to #:: pick_next_step(t.to) }
+      case e: Edge => route.pick_turn(e) match {
+        case Some(t) => t #:: pick_next_step(t)
+        case None => Stream.empty
+      }
+    }
+
   // Finds the culprit, if they exist
   /*def check_for_blocked_turn(start_step: LookaheadStep): Option[Agent] = {
     // Look ahead from the start of the turn until follow_dist
@@ -265,8 +294,9 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
   }*/
 
   // TODO assert(a.at.on == route.specific_path.head)
+  // TODO merge this and specific_path. have to propagate new distances.
   def lookahead_steps = (new LookaheadStep(
-    a.max_lookahead_dist, 0, route.specific_path, a.at.dist_left
+    a.max_lookahead_dist, 0, specific_path, a.at.dist_left
   )).steps
 
   // Returns Act_Set_Accel almost always.
@@ -290,9 +320,13 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
     // between us and it, cant we stop looking for agents?
 
     // TODO pull each constraint out into its own function
-    // TODO verify the route is telling us the same moves between ticks
-    route.initialize(a.at.on)
+
+    // Initialize our lookahead path if necessary
+    if (specific_path.isEmpty) {
+      specific_path = a.at.on #:: pick_next_step(a.at.on)
+    }
     // TODO ^ workaround by including current step always?
+
     for (step <- lookahead_steps
          if (!stop_how_far_away.isDefined || !follow_agent.isDefined))
     {
@@ -415,6 +449,8 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
     }
 
     // We can't get any closer to our actual destination. Terminate.
+    // TODO consider moving this first case to choose_action and not doing
+    // lookahead when these premises hold true.
     if (stopping_for_destination && stop_how_far_away.get <= cfg.end_threshold && a.speed == 0.0) {
       // Make sure lookahead did its job.
       assert(route.general_path.tail.isEmpty)

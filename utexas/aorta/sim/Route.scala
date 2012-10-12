@@ -22,17 +22,12 @@ abstract class Route() {
     = request_route(from.directed_road, to.directed_road)
 
   // TODO make sure perf characteristics of list/stream are correct
-  // Both of these include the agent's current step as the head.
+  // Includes the agent's current step as the head.
   // When we're in a turn, general_path has the next road as head.
   var general_path: Stream[DirectedRoad] = Stream.empty
-  var specific_path: Stream[Traversable] = Stream.empty
 
   def transition(from: Traversable, to: Traversable) = {
     (from, to) match {
-      // When we lane-change, have to consider a new specific path
-      case (_: Edge, _: Edge) => {
-        specific_path = to #:: pick_next_step(to)
-      }
       // Make sure we're following general path
       case (e: Edge, t: Turn) => {
         assert(general_path.head == e.directed_road)
@@ -40,81 +35,49 @@ abstract class Route() {
       }
       case _ =>
     }
-
-    (from, to) match {
-      case (_: Edge, _: Edge) =>
-      case _ => {
-        // If we didn't just reset the specific path, make sure we're following
-        // it
-        assert(specific_path.head == from)
-        specific_path = specific_path.tail
-      }
-    }
   }
 
   def got_route(response: List[DirectedRoad]) = {
     general_path = response.toStream
   }
 
-  def initialize(start: Traversable) = {
-    if (specific_path.isEmpty) {
-      specific_path = start #:: pick_next_step(start)
-    }
-  }
-
-  // TODO problem: if a user strictly evaluates all of our steps, itll force us
-  // to pick poorly
-  def pick_next_step(current: Traversable): Stream[Traversable] = {
-    current match {
-      // We don't have a choice
-      case t: Turn => { return t.to #:: pick_next_step(t.to) }
-      // TODO this is kinda a*-specific
-      case e: Edge => {
-        // TODO this is quite inefficient
-        // Get the next road after the current.
-        val before_and_after = general_path.span(_ != e.directed_road)
-        val desired_road = before_and_after._2.tail.headOption
-
-        desired_road match {
-          case Some(target_road) => {
-            // Find a turn that leads to the desired road
-            e.turns_leading_to(target_road) match {
-              case turn :: _ => turn #:: pick_next_step(turn)
-              case Nil => {
-                // If it doesn't exist, that means we couldn't lane-change in
-                // time, so blockingly re-route
-
-                // TODO map builder isn't stripping out all the bad stuff, so a
-                // quick workaround is to elegantly give up
-                if (e.next_turns.isEmpty) {
-                  Util.log("Bad map has an agent in a dead-end!")
-                  general_path = List(e.directed_road).toStream
-                  return Stream.empty
-                }
-
-                val new_src = pick_road_for_reroute(e)
-                // TODO this is very A* specific. will generalize again soon.
-                Util.log("Blockingly re-routing from " + new_src)
-                general_path = (
-                  before_and_after._1.toList ++ List(e.directed_road) ++
-                  Agent.sim.pathfind_astar(new_src, goal)
-                ).toStream
-                // Call ourselves again. desired_road will not be blank again.
-                return pick_next_step(current)
-              }
+  // None indicates the route's done
+  def pick_turn(e: Edge): Option[Turn] = {
+    // Split our path into roads before and after e's road
+    // TODO this is quite inefficient, specific_path should track us or so.
+    return general_path.span(_ != e.directed_road) match {
+      case (before, next_road #:: rest) => {
+        // Find a turn that leads to the desired road
+        e.turns_leading_to(next_road) match {
+          // Pick the first arbitrarily if there are multiple
+          case turn :: _ => Some(turn)
+          // If it doesn't exist, that means we couldn't lane-change in
+          // time, so blockingly re-route
+          case Nil => {
+            // TODO map builder isn't stripping out all the bad stuff, so a
+            // quick workaround is to elegantly give up
+            if (e.next_turns.isEmpty) {
+              Util.log("Bad map has an agent in a dead-end!")
+              general_path = List(e.directed_road).toStream
+              None
             }
-          }
-          case None => {
-            // Done with the route
-            return Stream.empty
+
+            // TODO this is very A* specific. will generalize again soon.
+            val new_src = e.next_turns.head.to.directed_road
+            Util.log("Blockingly re-routing from " + new_src)
+            general_path = (                                        
+              before ++ List(e.directed_road) ++
+              Agent.sim.pathfind_astar(new_src, goal)
+            ).toStream
+            // Call ourselves again. desired_road will not be blank again.
+            pick_turn(e)
           }
         }
       }
+      // Done with route
+      case (before, Stream.Empty) => None
     }
   }
-
-  // TODO leave it up to the implementation
-  def pick_road_for_reroute(e: Edge) = e.next_turns.head.to.directed_road
 }
 
 // A* and don't adjust the route unless we miss part of the sequence due to
