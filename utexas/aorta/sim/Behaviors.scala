@@ -252,47 +252,6 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
       }
     }
 
-  // Finds the culprit, if they exist
-  /*def check_for_blocked_turn(start_step: LookaheadStep): Option[Agent] = {
-    // Look ahead from the start of the turn until follow_dist
-    // after the end of it too see if anybody's there.
-    val cautious_turn = start_step.route_steps.head match {
-      case t: Turn => t
-      case _       => throw new Exception("not a turn next?")
-    }
-    val cautious_edge = cautious_turn.to
-
-    val check_steps = new LookaheadStep(
-      // TODO + 0.5 as an epsilon...
-      cautious_turn.length + cfg.follow_dist + 0.5,
-      0, cautious_turn, cautious_turn.length,
-      start_step.route_steps.tail
-    )
-
-    // If any of these have an agent, see where they are...
-    for (step <- check_steps.steps) {
-      step.at.queue.last match {
-        // We can't block ourselves, even if we think we can
-        case Some(check_me) if check_me != a => {
-          // the dist they are "away from start of lookahead" will
-          // be from the start of the turn... subtract that turn's
-          // length; that gives us how far away they are from the
-          // end of the turn. make sure THAT'S a nice comfy value.
-          val dist_from_end_of_turn = (step.dist_ahead +
-                                       check_me.at.dist - cautious_turn.length)
-          // TODO some epsilon?
-          // they too close?
-          if (dist_from_end_of_turn <= cfg.follow_dist) {
-            return Some(check_me)
-          }
-        }
-        case _ =>
-      }
-    }
-    // Nobody potentially dangerous
-    return None
-  }*/
-
   // TODO assert(a.at.on == route.specific_path.head)
   // TODO merge this and specific_path. have to propagate new distances.
   def lookahead_steps = (new LookaheadStep(
@@ -354,10 +313,6 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
         }
       }
 
-      // TODO this comment is obselete if turn_blocked_by gets dropped
-      // Do agent first to avoid doing some extra lookahead when looking for
-      // turn_blocked_by.
-
       // 2) Stopping at the end
       if (!stop_how_far_away.isDefined) {
         // physically stop somewhat far back from the intersection.
@@ -385,51 +340,6 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
             // TODO verify we're telling the intersection the same turn between
             // ticks
             !i.can_go(a, next_turn, how_far_away)
-
-            // TODO turn_blocked_by was only added to try to prevent gridlock,
-            // but lanechanging may remedy the problem so much that
-            // turn_blocked_by isn't needed. it'd be simpler to remove.
-            /*
-            // BEFORE we ask the intersection, make sure nobody could prevent us
-            // from completing the turn we want to do. This includes if we're
-            // following some agent.
-
-            // TODO could this cause starvation of somebody that never talks to
-            // the intersection fast enough?
-            // TODO could it ever work out so that we're approved (meaning
-            // nobody was blocking us) but then another step, somebody new
-            // blocks us?
-            // TODO a decent invariant to verify: once an intersection approves
-            // an agent, they shouldn't stall due to somebody blocking them
-
-            // If we've already found somebody we're following, they must be
-            // somewhere on the edge leading up to this intersection, so they
-            // haven't started their turn yet. So there's a danger they could
-            // take the same turn we're doing and cause us to not finish our
-            // turn cleanly, possibly leading to gridlock.
-            // In other words, it doesn't matter how far away they are -- they
-            // haven't started their turn yet, so wait for them to completely
-            // finish first.
-            turn_blocked_by = if (follow_agent.isDefined)
-                                None
-                              else
-                                check_for_blocked_turn(step)
-
-            if (turn_blocked_by.isDefined || follow_agent.isDefined) {
-              true  // stop
-            } else {
-              // Only now is it fair to ask the intersection. We aren't blocked
-              // by any agent.
-              assert(a.cur_queue.head.get == a)
-              val i = e.to.intersection
-              a.upcoming_intersections += i   // remember we've registered here
-              val next_turn = step.route_steps.head match {
-                case t: Turn => t
-                case _ => throw new Exception("next_turn() called at wrong time")
-              }
-              !i.can_go(a, next_turn, how_far_away)
-            }
-            */
           }
         })
         if (stop_at_end) {
