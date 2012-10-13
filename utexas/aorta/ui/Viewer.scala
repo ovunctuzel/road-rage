@@ -7,9 +7,11 @@ package utexas.aorta.ui
 import swing._  // TODO figure out exactly what
 import java.awt.{Color, Component}
 import swing.Dialog
+import info.monitorenter.gui.chart.Chart2D
+import info.monitorenter.gui.chart.traces.Trace2DLtd
 
 import utexas.aorta.sim.Simulation
-import utexas.aorta.Util
+import utexas.aorta.{Util, cfg}
 
 object Status_Bar {
   val zoom       = new Label("1.0") // TODO from cfg
@@ -107,6 +109,16 @@ object Viewer extends SimpleSwingApplication {
     // TODO and option to hide the panel
   }
 
+  val chart = new Chart2D
+  // Remember enough points for the last 2 minutes
+  // TODO tweak more chart stuff
+  val chart_data = new Trace2DLtd((120.0 / cfg.dt_s).toInt)
+  chart_data.setColor(Color.RED)
+  chart.addTrace(chart_data)
+  chart.setMinPaintLatency(1000)  // only one redraw per second
+  chart.getAxisX.getAxisTitle.setTitle("Time (s)")
+  chart.getAxisY.getAxisTitle.setTitle("Number of agents")
+
   override def main(args: Array[String]) = {
     canvas = new MapCanvas(Util.process_args(args))
     super.main(args)
@@ -182,21 +194,32 @@ object Viewer extends SimpleSwingApplication {
       }
     }
 
-    contents = new BoxPanel(Orientation.Vertical) {
+    // TODO toggle between helper and other stuff in right pane
+    contents = new SplitPane(
+      Orientation.Vertical, canvas,
+      new scala.swing.Component {
+        override lazy val peer = chart
+      }
+    )
+
+    // TODO lost the statusbar! swing components are annoying.
+    /*contents = new BoxPanel(Orientation.Vertical) {
       background = Color.LIGHT_GRAY
       contents += Status_Bar.panel
 
-      contents += new BoxPanel(Orientation.Horizontal) {
-        contents += canvas
-        // TODO make toggleable
-        //contents += helper
-      }
+      // TODO toggle between helper and other stuff in right pane
+      contents += new SplitPane(
+        Orientation.Vertical, canvas,
+        new scala.swing.Component {
+          //preferredSize = new Dimension(200, Int.MaxValue)
+          override lazy val peer = chart
+        }
+      )
       border = Swing.MatteBorder(2, 2, 2, 2, Color.RED)
-    }
+    }*/
   }
 
   def popup_config() = {
     // TODO tabbed pane by category?
-
   }
 }

@@ -521,6 +521,7 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
       status.update_speed(sim)
       // agents have maybe moved, so...
       status.agents.text = sim.describe_agents
+      update_plot
       repaint
     }
     case EV_Action("toggle-running") => {
@@ -883,6 +884,12 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
     // in each group.
     route_members = r.map(_.edges.head).toSet
     repaint
+  }
+
+  def update_plot() = {
+    // TODO plot multiple things, or let the user select, etc.
+    // TODO and we should own the chart, not viewer.
+    Viewer.chart_data.addPoint(sim.tick, sim.agents.size)
   }
 }
 

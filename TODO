@@ -2,6 +2,8 @@
 
 # Lane changing
 
+(fix status bar swing stuff)
+
 - fix map construction again.
 - headless also broken
 - new lookahead is not requesting turn till already stopped, even with reservation!
@@ -148,6 +150,7 @@ TESTING IT
 - multi-lane situations dont have enough turns, and we need to do more trimming!
 
 # General Simulation
+- osm/ and maps/ separate
 - have a notion of "I'm done with the turn, but I'm protruding into the intersection"
   by requiring not only we're done with a turn but also some dist along the new edge.
 - slow down for turns (a speed limit)

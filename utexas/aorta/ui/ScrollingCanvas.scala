@@ -23,6 +23,9 @@ import utexas.aorta.Util
 
 // SuperMixin lets us get tab back
 abstract class ScrollingCanvas extends Component {
+  // TODO percentages, ideally!
+  preferredSize = new Dimension(600, Int.MaxValue)
+
   // It's nice to have access to this.
   protected var status = Status_Bar
 
