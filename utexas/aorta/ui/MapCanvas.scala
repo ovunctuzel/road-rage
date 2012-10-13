@@ -68,24 +68,29 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
   var running = false
 
   // state
-  private var current_edge: Option[Edge] = None
-  private var current_road: Option[Road] = None
+  private var current_obj: Option[Any] = None // TODO renderable, not any!
   private var highlight_type: Option[String] = None
   private var show_ward_colors = false
   private var current_turn = -1  // for cycling through turns from an edge
   private var show_wards = false
-  private var current_ward: Option[Ward] = None
   private var mode = Mode.EXPLORE
   private var chosen_edge1: Option[Edge] = None
   private var chosen_edge2: Option[Edge] = None
   private var route_members = Set[Edge]()
-  private var current_agent: Option[Agent] = None
   private var polygon_roads1: Set[Road] = Set()
   private var polygon_roads2: Set[Road] = Set()
-  private var current_vert: Option[Vertex] = None
   private var camera_agent: Option[Agent] = None
   private val green_turns = new HashMap[Turn, Shape]()
   private var show_green = false
+
+  def current_edge: Option[Edge] = current_obj match {
+    case Some(e: Edge) => Some(e)
+    case _ => None
+  }
+  def current_agent: Option[Agent] = current_obj match {
+    case Some(a: Agent) => Some(a)
+    case _ => None
+  }
 
   // this is like static config, except it's a function of the map and rng seed
   private val special_ward_color = Color.BLACK
@@ -232,19 +237,14 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
         g2d.draw(l.line)
       }
 
-      // draw turns?
-      current_edge match {
-        case Some(e) => draw_intersection(g2d, e)
-        case None    => {}
-      }
-
-      current_vert match {
-        case Some(v) => {
+      current_obj match {
+        case Some(e: Edge) => draw_intersection(g2d, e)
+        case Some(v: Vertex) => {
           for (t <- v.intersection.policy.current_greens) {
             draw_turn(g2d, t, Color.GREEN)
           }
         }
-        case None =>
+        case _ =>
       }
 
       // Show traffic signal stuff
@@ -276,20 +276,18 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
     g2d.setStroke(drawing_stroke)
     g2d.draw(polygon)
 
-    // TODO general tooltips based on whatever we're currently mousing over
-    return (current_edge, current_agent, current_road) match {
-      case (Some(e), _, _) => Some(e.toString)
-      case (_, Some(a), _) => Some(a.toString)
-      case (_, _, Some(r)) => Some(r.toString)
-      case _ => None
+    // What tooltip do we want?
+    return current_obj match {
+      case Some(thing) => Some(thing.toString)
+      case None => None
     }
   }
 
   // we return any new roads seen
   def draw_ward(g2d: Graphics2D, w: WardBubble): Set[RoadLine] = {
-    current_ward match {
+    current_obj match {
       // Show the roads of the highlighted ward
-      case (Some(ward)) if w.ward == ward => {
+      case (Some(ward: Ward)) if w.ward == ward => {
         val lines = ward.roads.flatMap(road2lines(_))
         lines.foreach(l => draw_road(g2d, l))
         return lines
@@ -439,123 +437,52 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
     }
   }
 
+  def redo_mouseover(x: Double, y: Double): Unit = {
+    current_obj = None
+    current_turn = -1
+
+    if (!zoomed_in) {
+      return
+    }
+
+    // TODO determine if a low-granularity search to narrow down results helps.
+
+    val cursor = new Rectangle2D.Double(x - eps, y - eps, eps * 2, eps * 2)
+
+    def hit(shape: Shape) = shape.intersects(cursor)
+
+    // Order of search: agents, vertices, edges, roads, wards
+    // TODO ideally, center agent bubble where the vehicle center is drawn.
+
+    // TODO this is _kind_ of ugly.
+    current_obj = sim.agents.find(a => hit(agent_bubble(a))) match {
+      case None => sim.vertices.find(v => hit(bubble(v.location))) match {
+        case None => fg_lines.find(l => hit(l.line)) match {
+          case None => bg_lines.find(l => hit(l.line)) match {
+            case None => ward_bubbles.find(b => hit(b.bubble)) match {
+              case None => None
+              case Some(b) => Some(b.ward)
+            }
+            case Some(l) => Some(l.road)
+          }
+          case Some(l) => Some(l.edge)
+        }
+        case Some(v) => Some(v)
+      }
+      case Some(a) => Some(a)
+    }
+  }
+
   // the radius of a small epsilon circle for the cursor
   def eps = 5.0 / zoom
-  // TODO but we want to... cache this and not recall it in each mouseover_
-  // matcher.
-  //def cursor_bubble = new Rectangle2D.Double(x - eps, y - eps, eps * 2, eps * 2)
   def bubble(pt: Coordinate) = new Ellipse2D.Double(
     pt.x - eps, pt.y - eps, eps * 2, eps * 2
   )
   def agent_bubble(a: Agent) = bubble(a.at.location)
-  def vert_bubble(v: Vertex) = bubble(v.location)
-
-  def mouseover_edge(x: Double, y: Double): Option[Edge] = {
-    val window = viewing_window
-    val cursor_bubble = new Rectangle2D.Double(
-      x - eps, y - eps, eps * 2, eps * 2
-    )
-    // do a search at low granularity first
-    // TODO does this actually help us?
-    /*for (big_line <- bg_lines if big_line.line.intersects(window)) {
-      for (e <- big_line.road.all_lanes) {
-        for (l <- edge2lines(e) if l.line.intersects(cursor_bubble)) {
-          return Some(l.edge)
-        }
-      }
-    }*/
-
-    return fg_lines.find(l => l.line.intersects(cursor_bubble)) match {
-      case Some(l) => Some(l.edge)
-      case None    => None
-    }
-  }
-
-  def mouseover_road(x: Double, y: Double): Option[Road] = {
-    val window = viewing_window
-    val cursor_bubble = new Rectangle2D.Double(
-      x - eps, y - eps, eps * 2, eps * 2
-    )
-    return bg_lines.find(l => l.line.intersects(cursor_bubble)) match {
-      case Some(r) => Some(r.road)
-      case None    => None
-    }
-  }
-
-  def mouseover_ward(x: Double, y: Double): Option[Ward] = {
-    val cursor_bubble = new Rectangle2D.Double(
-      x - eps, y - eps, eps * 2, eps * 2
-    )
-    return ward_bubbles.find(w => w.bubble.intersects(cursor_bubble)) match {
-      case Some(b) => Some(b.ward)
-      case None    => None
-    }
-  }
-
-  def mouseover_agent(x: Double, y: Double): Option[Agent] = {
-    // this is kinda wrong cause we rotate when zoomed in, but no biggie, just
-    // make cursor bubble a bit bigger to account for it
-    val radius = eps * 2
-    val cursor_bubble = new Rectangle2D.Double(
-      x - radius, y - radius, radius * 2, radius * 2
-    )
-    // TODO ideally, center agent bubble where the vehicle center is drawn.
-    return sim.agents.find(a => agent_bubble(a).intersects(cursor_bubble))
-  }
-
-  def mouseover_vert(x: Double, y: Double): Option[Vertex] = {
-    val cursor_bubble = new Rectangle2D.Double(
-      x - eps, y - eps, eps * 2, eps * 2
-    )
-    return sim.vertices.find(v => vert_bubble(v).intersects(cursor_bubble))
-  }
 
   def handle_ev(ev: UI_Event): Unit = ev match {
     case EV_Mouse_Moved(x, y) => {
-      // always reset everything
-      current_edge = None
-      current_road = None
-      current_turn = -1
-      current_ward = None
-      current_agent = None
-      current_vert = None
-
-      // Are we mouse-overing something? ("mousing over")
-      // Order: agents, wards, edges, vertices
-
-      // Don't do the work of looking until we have to.
-      lazy val cur_a = mouseover_agent(x, y)
-      lazy val cur_w = if (show_wards) mouseover_ward(x, y) else None
-      lazy val cur_e = if (zoomed_in) mouseover_edge(x, y) else None
-      lazy val cur_r = if (zoomed_in) mouseover_road(x, y) else None
-      lazy val cur_v = mouseover_vert(x, y)
-
-      // TODO but do we lazily match? i don't think so.
-      status.location.text = (cur_a, cur_w, cur_e, cur_v, cur_r) match {
-        case (Some(a), _, _, _, _) => {
-          current_agent = cur_a
-          "" + a
-        }
-        case (None, Some(w), _, _, _) => {
-          current_ward = cur_w
-          "" + w
-        }
-        case (None, None, Some(e), _, _) => {
-          current_edge = cur_e
-          "" + e
-        }
-        case (None, None, None, Some(v), _) => {
-          current_vert = cur_v
-          "" + v
-        }
-        case (None, None, None, None, Some(r)) => {
-          current_road = cur_r
-          "" + r
-        }
-        case _ => "Nowhere"
-      }
-
-      // TODO only on changes?
+      redo_mouseover(x, y)
       repaint
     }
     case EV_Param_Set("highlight", value) => {
@@ -565,15 +492,15 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
     // TODO this'll be tab someday, i vow!
     case EV_Key_Press(Key.Control) => {
       // cycle through turns
-      current_edge match {
-        case Some(e) => {
+      current_obj match {
+        case Some(e: Edge) => {
           current_turn += 1
           if (current_turn >= e.next_turns.size) {
             current_turn = 0
           }
           repaint
         }
-        case None => {}
+        case _ =>
       }
     }
     case EV_Key_Press(Key.P) => {
@@ -591,7 +518,7 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
                  else
                    " [Paused]"
       status.time.text = "%.1f %s".format(sim.tick, note)
-      status.actual_sim_speed.text = "%.1fx".format(sim.actual_sim_speed)
+      status.update_speed(sim)
       // agents have maybe moved, so...
       status.agents.text = sim.describe_agents
       repaint
@@ -742,58 +669,56 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
     }
     case EV_Key_Press(Key.OpenBracket) => {
       sim.slow_down()
-      status.desired_sim_speed.text = "%.1fx".format(sim.desired_sim_speed)
+      status.update_speed(sim)
     }
     case EV_Key_Press(Key.CloseBracket) => {
       sim.speed_up()
-      status.desired_sim_speed.text = "%.1fx".format(sim.desired_sim_speed)
+      status.update_speed(sim)
     }
     case EV_Key_Press(Key.Minus) => {
       sim.slow_down(5)
-      status.desired_sim_speed.text = "%.1fx".format(sim.desired_sim_speed)
+      status.update_speed(sim)
     }
     case EV_Key_Press(Key.Equals) => {
       sim.speed_up(5)
-      status.desired_sim_speed.text = "%.1fx".format(sim.desired_sim_speed)
+      status.update_speed(sim)
     }
-    // general debug based on whatever you're hovering over
-    case EV_Key_Press(Key.D) => {
-      (current_edge, current_road, current_agent, current_vert) match {
-        case (Some(e), _, _, _) => {
-          Util.log(e + " has length " + e.length + " m, min entry dist " +
-                   (e.queue.worst_entry_dist + cfg.follow_dist))
-          Util.log("(lanechange dist is " + (cfg.lanechange_dist +
-                   cfg.end_threshold) + ")")
-        }
-        case (None, Some(r), _, _) => {
-          Util.log(r + " is a " + r.road_type + " of length " +
-                   r.length + " meters")
-        }
-        case (None, None, Some(a), _) => {
-          a.dump_info
-          sim.debug_agent = current_agent
-        }
-        case (None, None, None, Some(v)) => {
-          val i = v.intersection
-
-          Util.log("Current turns allowed:")
-          Util.log_push
-          i.policy.current_greens.foreach(g => Util.log("" + g))
-          Util.log_pop
-
-          Util.log("Current turns active:")
-          Util.log_push
-          i.turns.foreach(pair => Util.log(pair._2 + " doing " + pair._1))
-          Util.log_pop
-
-          // anything else
-          i.policy.dump_info
-        }
-        // This is what pressing 'd' when highlighting nothing means
-        case _ => {
-          sim.debug_agent = None
-        }
+    // TODO move the debug string to the renderable trait
+    case EV_Key_Press(Key.D) => current_obj match {
+      case Some(e: Edge) => {
+        Util.log(e + " has length " + e.length + " m, min entry dist " +
+                 (e.queue.worst_entry_dist + cfg.follow_dist))
+        Util.log("(lanechange dist is " + (cfg.lanechange_dist +
+                 cfg.end_threshold) + ")")
       }
+      case Some(r: Road) => {
+        Util.log(r + " is a " + r.road_type + " of length " +
+                 r.length + " meters")
+      }
+      case Some(a: Agent) => {
+        a.dump_info
+        sim.debug_agent = Some(a)
+      }
+      case Some(v: Vertex) => {
+        val i = v.intersection
+
+        Util.log("Current turns allowed:")
+        Util.log_push
+        i.policy.current_greens.foreach(g => Util.log("" + g))
+        Util.log_pop
+
+        Util.log("Current turns active:")
+        Util.log_push
+        i.turns.foreach(pair => Util.log(pair._2 + " doing " + pair._1))
+        Util.log_pop
+
+        // anything else
+        i.policy.dump_info
+      }
+      case Some(thing) => {
+        Util.log(thing.toString)
+      }
+      case None =>
     }
     case EV_Key_Press(Key.F) => { camera_agent = current_agent }
     case EV_Key_Press(Key.X) if current_agent.isDefined => {
@@ -801,7 +726,7 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
         Util.log("Cannot nuke agents while simulation is running!")
       } else {
         val a = current_agent.get
-        current_agent = None
+        current_obj = None
         Util.log("WARNING: Nuking " + a)
         // simulate being done
         a.exit(a.at.on)
@@ -947,7 +872,6 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
 
   def switch_mode(m: Mode.Mode) = {
     mode = m
-    status.mode.text = "" + mode
   }
 
   def show_pathfinding() = {

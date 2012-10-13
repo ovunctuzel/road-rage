@@ -15,12 +15,13 @@ object Status_Bar {
   val zoom       = new Label("1.0") // TODO from cfg
   val agents     = new Label("0 / 0 / 0 (0 generators)")
   val time       = new Label("0.0 [Paused]")
-  val desired_sim_speed = new Label("1.0x")
-  val actual_sim_speed = new Label("1.0x")
-  val mode       = new Label("" + Mode.EXPLORE)
-  val location   = new Label("Nowhere")
+  val sim_speed = new Label("1.0x / 1.0x")
 
-  // TODO could put methods here to set text!
+  def update_speed(sim: Simulation) = {
+    sim_speed.text = "%.1fx / %.1fx".format(
+      sim.actual_sim_speed, sim.desired_sim_speed
+    )
+  }
 
   val panel = new GridBagPanel {
     // TODO config for all the sizings...
@@ -42,15 +43,7 @@ object Status_Bar {
     c.gridx = 2
     layout(new Label("Time")) = c
     c.gridx = 3
-    layout(new Label("Desired Sim Speed")) = c
-    c.gridx = 4
-    layout(new Label("Actual Sim Speed")) = c
-    c.gridx = 5
-    layout(new Label("Mode")) = c // TODO remove?
-    c.gridx = 6
-    c.weightx = 1.0
-    c.ipadx = 0
-    layout(new Label("Location")) = c
+    layout(new Label("Sim Speed (Actual/Desired)")) = c
 
     // row 2: columns
     c.weightx = 0.0
@@ -63,15 +56,7 @@ object Status_Bar {
     c.gridx = 2
     layout(Status_Bar.time) = c
     c.gridx = 3
-    layout(Status_Bar.desired_sim_speed) = c
-    c.gridx = 4
-    layout(Status_Bar.actual_sim_speed) = c
-    c.gridx = 5
-    layout(Status_Bar.mode) = c
-    c.gridx = 6
-    c.weightx = 1.0
-    c.ipadx = 0
-    layout(Status_Bar.location) = c
+    layout(Status_Bar.sim_speed) = c
   }
 }
 
