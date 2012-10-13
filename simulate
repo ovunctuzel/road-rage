@@ -1,3 +1,3 @@
 #!/bin/bash
 
-scala -cp .build:/usr/share/java/scala-swing.jar utexas.aorta.ui.Viewer $@
+scala -cp .build:/usr/share/java/scala-swing.jar:jchart2d/jchart2d-3.2.2.jar utexas.aorta.ui.Viewer $@
