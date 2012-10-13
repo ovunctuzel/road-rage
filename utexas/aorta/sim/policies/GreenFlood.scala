@@ -89,7 +89,7 @@ class GreenFlood(sim: Simulation) {
     visited += start
 
     // breadth-first search
-    while (!queue.isEmpty) {
+    while (queue.nonEmpty) {
       val step = queue.dequeue
       val cycle = step.cycle
 

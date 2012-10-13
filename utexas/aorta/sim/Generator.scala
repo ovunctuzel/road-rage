@@ -97,7 +97,7 @@ extends Ordered[Generator]
     // determinism by scanning through in order and stopping at the first that
     // isn't done
     val done = new ListBuffer[Agent]()
-    while (!pending.isEmpty) {
+    while (pending.nonEmpty) {
       val a = pending.head
       val ready = a._2 match {
         case Some(task) => {

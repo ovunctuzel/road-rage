@@ -70,125 +70,24 @@ class Pass3(old_graph: PreGraph2) {
     }
     Util.log_pop
 
-    // use Tarjan's to locate all SCC's in the graph. ideally we'd just
-    // have one, but crappy graphs, weird reality, and poor turn heuristics mean
-    // we'll have disconnected portions.
-    // TODO simplify by flooding DirectedRoads, not turns and lanes
-    val sccs = new ListBuffer[List[Traversable]]
+    // finds edges with no predecessors/successors, removes them, and floods
+    // that effect out...
+    clean_half_edges
 
-    for (t <- graph.traversables) {
-      if (!visited(t)) {
-        tarjan_body(t, sccs)
-      }
+    // TODO finds SCCs and removes all but the largest...
+    //clean_disconnected(show_dead)
+
+    // clean up ids of all edges, roads, verts.
+    // TODO a better way, and one without reassigning to 'val' id? if we just
+    // clone each structure and have a mapping from old to new... worth it?
+    for ((e, id) <- graph.edges.zipWithIndex) {
+      e.id = id
     }
-
-    // deal with all edges of all but the largest SCC by either
-    // 1) coloring them so we can manually inspect
-    // 2) or removing the associated roads, vertices, edges
-
-    // Collect all the bad edges and turns.
-    val bad_edges = new ListBuffer[Edge]
-    val bad_turns = new ListBuffer[Turn]
-
-    sccs.sortBy(scc => scc.size).toList.reverse match {
-      case (biggest :: doomed_sccs) => {
-        for (scc <- doomed_sccs; trav <- scc) {
-          trav match {
-            case e: Edge => bad_edges += e
-            case t: Turn => bad_turns += t
-          }
-        }
-      }
-      case Nil => Util.log("Map was empty?!") // shouldn't happen
+    for ((v, id) <- graph.vertices.zipWithIndex) {
+      v.id = id
     }
-
-    Util.log(bad_edges.size + " bad edges, " + bad_turns.size + " bad turns")
-    val doomed_edges = bad_edges.toSet
-
-    if (show_dead) {
-      // Mark all roads involving bad edges.
-      for (r <- graph.roads) {
-        if (r.all_lanes.find(l => doomed_edges(l)).isDefined) {
-          r.road_type = "doomed"
-        }
-      }
-      
-      // And also mark exactly the bad edges.
-      doomed_edges.foreach(e => e.doomed = true)
-    } else {
-      // As a note, all of these steps that completely delete a structure are
-      // safe -- anything else referring to them will also be deleted, thanks to
-      // Mr. Tarjan.
-
-      // Deal with bad edges by finding roads only containing bad edges (doom
-      // them too), and filter out the bad edges from the rest.
-      val keep_roads = new ListBuffer[Road]
-
-      for (r <- graph.roads) {
-        val pos_lanes = r.pos_lanes.filter(l => !doomed_edges(l))
-        val neg_lanes = r.neg_lanes.filter(l => !doomed_edges(l))
-
-        // We can completely nix this road otherwise
-        if (pos_lanes.size != 0 || neg_lanes.size != 0) {
-          // This will end up looking weird (gaps in roads), but just get rid of
-          // the bad lanes. Gotta clean up lane numbers right now, IDs later.
-          r.pos_lanes.clear
-          r.pos_lanes ++= pos_lanes
-          for ((lane, idx) <- r.pos_lanes.zipWithIndex) {
-            lane.lane_num = idx
-          }
-          r.neg_lanes.clear
-          r.neg_lanes ++= neg_lanes
-          for ((lane, idx) <- r.neg_lanes.zipWithIndex) {
-            lane.lane_num = idx
-          }
-
-          keep_roads += r
-        }
-      }
-
-      // Now clean up each vertex similarly by filtering out bad turns and
-      // possibly nixing the vertex completely
-      val doomed_turns = bad_turns.toSet
-      val keep_verts = new ListBuffer[Vertex]
-      for (v <- graph.vertices) {
-        val turns = v.turns.filter(t => !doomed_turns(t))
-        // If there are no turns left, nix this vertex completely
-        if (turns.size != 0) {
-          v.turns.clear
-          v.turns ++= turns
-          keep_verts += v
-        }
-      }
-
-      // Now get rid of all the bad stuff
-      Util.log((graph.roads.size - keep_roads.size) + " roads and " +
-               (graph.vertices.size - keep_verts.size) + " vertices were bad too")
-
-      graph.roads.clear
-      graph.roads ++= keep_roads
-      graph.edges = graph.edges.filter(e => !doomed_edges(e))
-      graph.vertices.clear
-      graph.vertices ++= keep_verts
-
-      // clean up ids of all edges, roads, verts.
-      // TODO a better way, and one without reassigning to 'val' id? if we just
-      // clone each structure and have a mapping from old to new... worth it?
-      var id = 0
-      for (v <- graph.vertices) {
-        v.id = id
-        id += 1
-      }
-      id = 0
-      for (r <- graph.roads) {
-        r.id = id
-        id += 1
-      }
-      id = 0
-      for (e <- graph.edges) {
-        e.id = id
-        id += 1
-      }
+    for ((r, id) <- graph.roads.zipWithIndex) {
+      r.id = id
     }
 
     Util.log("Tidying up geometry...")
@@ -321,6 +220,179 @@ class Pass3(old_graph: PreGraph2) {
     }
   }
 
+  private def clean_half_edges() = {
+    val orig_edges = graph.edges.size
+    val orig_verts = graph.vertices.size
+    val orig_roads = graph.roads.size
+
+    def is_bad(e: Edge) = e.next_turns.isEmpty || e.prev_turns.isEmpty
+
+    Util.log("Using fixpoint algorithm to prune half-edges")
+
+    // fixpoint algorithm: find half-edges till there are none
+    // TODO flooding would be faster.
+    var done = false
+    while (!done) {
+      graph.edges.partition(e => is_bad(e)) match {
+        case (bad, good) => {
+          // TODO cant pattern match nil for mutable list :(
+          if (bad.isEmpty) {
+            done = true
+          } else {
+            graph.edges = good
+            // remove the turns that get obseleted by the bad
+            val bad_set = bad.toSet
+            for (v <- graph.vertices) {
+              v.turns = v.turns.filter(
+                t => !bad_set.contains(t.from) && !bad_set.contains(t.to)
+              )
+            }
+          }
+        }
+      }
+    }
+
+    val good_edges = graph.edges.toSet
+
+    // TODO refactor this: squeeze together lane numbers
+    // This will end up looking weird (gaps in roads)
+    for (r <- graph.roads) {
+      val pos_lanes = r.pos_lanes.filter(e => good_edges.contains(e))
+      val neg_lanes = r.neg_lanes.filter(e => good_edges.contains(e))
+      r.pos_lanes.clear
+      r.pos_lanes ++= pos_lanes
+      r.neg_lanes.clear
+      r.neg_lanes ++= neg_lanes
+      for ((lane, idx) <- r.pos_lanes.zipWithIndex) {
+        lane.lane_num = idx
+      }
+      for ((lane, idx) <- r.neg_lanes.zipWithIndex) {
+        lane.lane_num = idx
+      }
+    }
+
+    // See what vertices now have no turns or lanes left
+    graph.vertices.partition(v => v.turns.isEmpty) match {
+      case (bad, good) => {
+        graph.vertices = good
+        val bad_set = bad.toSet
+        graph.roads = graph.roads.filter(
+          r => !bad_set.contains(r.v1) && !bad_set.contains(r.v2) && r.all_lanes.nonEmpty
+        )
+      }
+    }
+
+    Util.log(
+      s"$orig_edges -> ${graph.edges.size} edges, $orig_verts -> " +
+      s"${graph.vertices.size} vertices, $orig_roads -> ${graph.roads.size} " +
+      "roads"
+    )
+  }
+
+  private def clean_disconnected(show_dead: Boolean) = {
+    // use Tarjan's to locate all SCC's in the graph. ideally we'd just
+    // have one, but crappy graphs, weird reality, and poor turn heuristics mean
+    // we'll have disconnected portions.
+    // TODO simplify by flooding DirectedRoads, not turns and lanes
+    val sccs = new ListBuffer[List[Traversable]]
+
+    for (t <- graph.traversables) {
+      if (!visited(t)) {
+        tarjan_body(t, sccs)
+      }
+    }
+
+    // deal with all edges of all but the largest SCC by either
+    // 1) coloring them so we can manually inspect
+    // 2) or removing the associated roads, vertices, edges
+
+    // Collect all the bad edges and turns.
+    val bad_edges = new ListBuffer[Edge]
+    val bad_turns = new ListBuffer[Turn]
+
+    sccs.sortBy(scc => scc.size).toList.reverse match {
+      case (biggest :: doomed_sccs) => {
+        for (scc <- doomed_sccs; trav <- scc) {
+          trav match {
+            case e: Edge => bad_edges += e
+            case t: Turn => bad_turns += t
+          }
+        }
+      }
+      case Nil => Util.log("Map was empty?!") // shouldn't happen
+    }
+
+    Util.log(bad_edges.size + " bad edges, " + bad_turns.size + " bad turns")
+    val doomed_edges = bad_edges.toSet
+
+    if (show_dead) {
+      // Mark all roads involving bad edges.
+      for (r <- graph.roads) {
+        if (r.all_lanes.find(l => doomed_edges(l)).isDefined) {
+          r.road_type = "doomed"
+        }
+      }
+      
+      // And also mark exactly the bad edges.
+      doomed_edges.foreach(e => e.doomed = true)
+    } else {
+      // As a note, all of these steps that completely delete a structure are
+      // safe -- anything else referring to them will also be deleted, thanks to
+      // Mr. Tarjan.
+
+      // Deal with bad edges by finding roads only containing bad edges (doom
+      // them too), and filter out the bad edges from the rest.
+      val keep_roads = new ListBuffer[Road]
+
+      for (r <- graph.roads) {
+        val pos_lanes = r.pos_lanes.filter(l => !doomed_edges(l))
+        val neg_lanes = r.neg_lanes.filter(l => !doomed_edges(l))
+
+        // We can completely nix this road otherwise
+        if (pos_lanes.size != 0 || neg_lanes.size != 0) {
+          // This will end up looking weird (gaps in roads), but just get rid of
+          // the bad lanes. Gotta clean up lane numbers right now, IDs later.
+          r.pos_lanes.clear
+          r.pos_lanes ++= pos_lanes
+          for ((lane, idx) <- r.pos_lanes.zipWithIndex) {
+            lane.lane_num = idx
+          }
+          r.neg_lanes.clear
+          r.neg_lanes ++= neg_lanes
+          for ((lane, idx) <- r.neg_lanes.zipWithIndex) {
+            lane.lane_num = idx
+          }
+
+          keep_roads += r
+        }
+      }
+
+      // Now clean up each vertex similarly by filtering out bad turns and
+      // possibly nixing the vertex completely
+      val doomed_turns = bad_turns.toSet
+      val keep_verts = new ListBuffer[Vertex]
+      for (v <- graph.vertices) {
+        val turns = v.turns.filter(t => !doomed_turns(t))
+        // If there are no turns left, nix this vertex completely
+        if (turns.size != 0) {
+          v.turns.clear
+          v.turns ++= turns
+          keep_verts += v
+        }
+      }
+
+      // Now get rid of all the bad stuff
+      Util.log((graph.roads.size - keep_roads.size) + " roads and " +
+               (graph.vertices.size - keep_verts.size) + " vertices were bad too")
+
+      graph.roads.clear
+      graph.roads ++= keep_roads
+      graph.edges = graph.edges.filter(e => !doomed_edges(e))
+      graph.vertices.clear
+      graph.vertices ++= keep_verts
+    }
+  }
+
   private def adjust_segments(e: Edge) = {
     // When we shift lines from the road's center to draw lanes, we end up with
     // lines that protrude too far into the intersection. It's not clear how far
@@ -399,10 +471,10 @@ class Pass3(old_graph: PreGraph2) {
     // seed with original work
     work.push((orig_trav, null, tarjan_head(orig_trav)))
 
-    while (!work.isEmpty) {
+    while (work.nonEmpty) {
       val (t, backref, next_steps) = work.pop
 
-      if (!next_steps.isEmpty) {
+      if (next_steps.nonEmpty) {
         val next = next_steps.head
 
         // either way, there's more work to do -- push it on BEFORE other work
@@ -456,7 +528,7 @@ class Pass3(old_graph: PreGraph2) {
     var queue: List[Vertex] = List(from)
 
     // a DFS to find intersections clumped together
-    while (!queue.isEmpty) {
+    while (queue.nonEmpty) {
       val cur = queue.head
       queue = queue.tail
       seen += cur

@@ -57,7 +57,7 @@ class Graph(val roads: Array[Road], val edges: Array[Edge],
 
     // Main loop
     var first = true
-    while (!open.isEmpty) {
+    while (open.nonEmpty) {
       val step = open.dequeue
       visited += step.road
       open_members -= step.road

@@ -112,7 +112,7 @@ class Simulation(roads: Array[Road], edges: Array[Edge], vertices: Array[Vertex]
     // overseers)
     // (It's good to do this first because they might create generators as part
     // of resimulation)
-    while (!events.isEmpty && tick >= events.head.at) {
+    while (events.nonEmpty && tick >= events.head.at) {
       val ev = events.dequeue
       ev.cb()
     }

@@ -75,7 +75,7 @@ class Queue(t: Traversable) {
 
     // If we're not entering at the end of the queue, something _could_ be odd,
     // so check it.
-    if (!behind.isEmpty) {
+    if (behind.nonEmpty) {
       Agent.sim.active_queues += this
     }
 

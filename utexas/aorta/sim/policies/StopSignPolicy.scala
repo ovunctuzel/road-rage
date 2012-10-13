@@ -35,7 +35,7 @@ class StopSignPolicy(intersection: Intersection) extends Policy(intersection) {
     }
 
     // Can we promote them now?
-    val ready = !current_owner.isDefined && !queue.isEmpty && a == queue.head &&
+    val ready = !current_owner.isDefined && queue.nonEmpty && a == queue.head &&
                 a.how_long_idle >= cfg.pause_at_stop
     if (ready) {
       // promote them!

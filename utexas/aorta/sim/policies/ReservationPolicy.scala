@@ -38,7 +38,7 @@ class ReservationPolicy(intersection: Intersection)
       if (reservations.size != 0) {
         current_batch = reservations.head
         reservations = reservations.tail
-        if (!reservations.isEmpty) {
+        if (reservations.nonEmpty) {
           // If we had a previous preempt notification on the way, just ignore
           // it when it arrives
           dont_be_greedy
@@ -121,7 +121,7 @@ class ReservationPolicy(intersection: Intersection)
   // Delay the current cycle, they're hogging unfairly
   def preempt() = {
     if (Agent.sim.tick - others_started_waiting >= cfg.signal_duration
-        && !reservations.isEmpty && lock_cur_batch == false)
+        && reservations.nonEmpty && lock_cur_batch == false)
     {
       // it's quite the edge case when there are no current_agents... because
       // then the intersection would have shifted to the next anyway.

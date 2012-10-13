@@ -2,9 +2,10 @@
 
 # Lane changing
 
-(fix status bar swing stuff)
-
 - fix map construction again.
+  - remove stuff in behavior/route that handles this
+  - graph3 should be designed to remove pieces of itself easily.
+  - still dont neglect tarjans
 - headless also broken
 - new lookahead is not requesting turn till already stopped, even with reservation!
 - consider flooding backwards.

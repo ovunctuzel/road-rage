@@ -63,7 +63,7 @@ object Ward {
     // these are waiting to go in any ward
     val pending_verts = new MutableHashSet[Vertex]()
     pending_verts ++= g.vertices
-    while (!pending_verts.isEmpty) {
+    while (pending_verts.nonEmpty) {
       // make a new ward...
       val cur_ward = new MutableHashSet[Vertex]
       val evaluating = new MutableStack[Vertex]
@@ -73,7 +73,7 @@ object Ward {
 
       // add all vertices a fixed distance away from the one we're evaluating,
       // meaning this goes by density and not total distance
-      while (!evaluating.isEmpty) {
+      while (evaluating.nonEmpty) {
         val from_v = evaluating.pop
         for (e <- from_v.edges if e.length <= max_dist) {
           val adj_v = e.other_vert(from_v)
@@ -143,7 +143,7 @@ object Ward {
     // it gives us connectivity properties within the wards -- IF there aren't
     // wacky one-ways.
     val wards = new MutableList[Ward]
-    while (!minor.isEmpty) {
+    while (minor.nonEmpty) {
       val representative = minor.head
       val roads = flood_roads(representative, orig_majors)
       if (roads.size == 1) {
@@ -185,7 +185,7 @@ object Ward {
     }
 
     stack.push(start)
-    while (!stack.isEmpty) {
+    while (stack.nonEmpty) {
       val from = stack.pop
       set += from
       consider(from.v1.roads)

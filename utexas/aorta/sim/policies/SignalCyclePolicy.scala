@@ -108,7 +108,7 @@ object Cycle {
   def split_turn_set(input: Iterable[Turn]): Set[Set[Turn]] = {
     var turns_left = input
     val groups = new MutableSet[Set[Turn]]()
-    while (!turns_left.isEmpty) {
+    while (turns_left.nonEmpty) {
       val this_group = new MutableSet[Turn]()
       this_group += turns_left.head
       turns_left = turns_left.tail
@@ -264,7 +264,7 @@ class SignalCyclePolicy(intersection: Intersection)
     }
 
     // Are there slow agents?
-    if (!current_agents.isEmpty) {
+    if (current_agents.nonEmpty) {
       // Yup. Gotta wait for them.
       start_waiting = Some(Agent.sim.tick)
       current_cycle = Cycle.nil_cycle

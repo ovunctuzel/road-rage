@@ -97,7 +97,7 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
         // This query only makes sense while we're on an edge
         case (Some(group), cur_lane: Edge) => {
           val candidates = cur_lane.other_lanes.filter(
-            e => !e.turns_leading_to(group).isEmpty
+            e => e.turns_leading_to(group).nonEmpty
           )
           // The best lane is one that has a turn leading us to where we want to
           // go and that's closest to us
