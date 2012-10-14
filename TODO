@@ -3,8 +3,6 @@
 # Lane changing
 
 - fix map construction again.
-  - remove stuff in behavior/route that handles this
-  - graph3 should be designed to remove pieces of itself easily.
   - still dont neglect tarjans
 - headless also broken
 - new lookahead is not requesting turn till already stopped, even with reservation!
@@ -103,6 +101,7 @@ TESTING IT
 - structuring policy stuff as a state machine and events may be more elegant...
 
 # Profiling
+- optionally gzipping maps/osm?
 - we can do much better with ready agents... max capacity of edges, group them based on
   where they want to spawn, maybe by generator?
 - in react if speed is still 0, see if follow_agent or intersection has changed.

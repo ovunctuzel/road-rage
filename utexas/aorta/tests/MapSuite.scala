@@ -4,10 +4,13 @@
 
 package utexas.aorta.tests
 
-import utexas.aorta.map.make.{Builder, Reader}
-import utexas.aorta.map.Graph
+import scala.collection.mutable.Stack
+import scala.collection.mutable.{HashSet => MutableHashSet}
 
 import java.io.File
+
+import utexas.aorta.map.make.{Builder, Reader}
+import utexas.aorta.map.{Graph, Traversable}
 
 // TODO Use ScalaTests or another framework.
 
@@ -48,9 +51,11 @@ object MapSuite {
     }
   }
 
-  // This is a weak check that just looks at individual edges, not connected
-  // components of the whole graph.
+  // Every edge should be reachable from every other edge, barring approaches
+  // that try to lane-change in too-short areas.
   def check_connectivity(g: Graph) = {
+    // This is a weak check that just looks at individual edges, not connected
+    // components of the whole graph.
     for (e <- g.edges) {
       if (e.next_turns.size == 0) {
         throw new Exception(s"$e leads nowhere")
@@ -58,6 +63,32 @@ object MapSuite {
       if (e.prev_turns.size == 0) {
         throw new Exception(s"Nothing leads to $e")
       }
+    }
+
+    // This is another weak check that just floods from some random edge and
+    // sees how many edges it reaches. It doesn't guarantee total connectedness,
+    // but we'll trust Tarjan's algorithm in pass 3 of construction for now.
+    val visit_me = new Stack[Traversable]
+    val visited = new MutableHashSet[Traversable]
+    val start = g.edges.head
+    visit_me.push(start)
+    visited += start
+    
+    while (visit_me.nonEmpty) {
+      val current = visit_me.pop
+      for (next <- current.leads_to if !visited.contains(next)) {
+        visited += next
+        visit_me.push(next)
+      }
+    }
+
+    // Did we see everything?
+    val size1 = visited.size
+    val size2 = g.traversables.size
+    if (size1 != size2) {
+      throw new Exception(
+        s"Reached $size1 traversables from $start, but should have found $size2"
+      )
     }
   }
 

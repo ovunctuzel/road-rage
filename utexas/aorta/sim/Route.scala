@@ -56,23 +56,15 @@ abstract class Route() {
           // If it doesn't exist, that means we couldn't lane-change in
           // time, so blockingly re-route
           case Nil => {
-            // TODO map builder isn't stripping out all the bad stuff, so a
-            // quick workaround is to elegantly give up
-            if (e.next_turns.isEmpty) {
-              Util.log("Bad map has an agent in a dead-end!")
-              general_path = List(this_road).toStream
-              None
-            } else {
-              // TODO this is very A* specific. will generalize again soon.
-              val new_src = e.next_turns.head.to.directed_road
-              Util.log("Blockingly re-routing from " + new_src)
-              general_path = (                                        
-                before.toList ++ List(this_road) ++
-                Agent.sim.pathfind_astar(new_src, goal)
-              ).toStream
-              // Call ourselves again. desired_road will not be blank again.
-              pick_turn(e)
-            }
+            // TODO this is very A* specific. will generalize again soon.
+            val new_src = e.next_turns.head.to.directed_road
+            Util.log("Blockingly re-routing from " + new_src)
+            general_path = (                                        
+              before.toList ++ List(this_road) ++
+              Agent.sim.pathfind_astar(new_src, goal)
+            ).toStream
+            // Call ourselves again. desired_road will not be blank again.
+            pick_turn(e)
           }
         }
       }
