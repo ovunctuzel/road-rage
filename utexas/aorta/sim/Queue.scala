@@ -45,10 +45,10 @@ class Queue(t: Traversable) {
     // just check that the order of the distances matches the order of the
     // queue.
     if (!agents.zip(agents.tail).forall(pair => pair._1.at.dist > pair._2.at.dist)) {
-      Util.log("!!! Positions of agents on " + t + " don't match queue order!")
-      Util.log("  Agents: " + agents.map(a => "%d at %.2f".format(a.id, a.at.dist)))
-      // TODO assert/throw once this is stable
-      return
+      throw new Exception(
+        s"Agents out of order on $t: " +
+        agents.map(a => "%d at %.2f".format(a.id, a.at.dist))
+      )
     }
 
     // Now we just want to make sure that all of the agents here last tick are
@@ -60,7 +60,7 @@ class Queue(t: Traversable) {
       // queue from the first check, it suffices to check the ordering of the
       // distances in this list.
       if (!old_crowd.zip(old_crowd.tail).forall(pair => pair._1.at.dist > pair._2.at.dist)) {
-        Util.log("!!! Collision on " + t)
+        throw new Exception(s"Agents swapped positions on $t")
       }
     }
   }

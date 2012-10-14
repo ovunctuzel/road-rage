@@ -2,35 +2,29 @@
 
 # Lane changing
 
-- headless also broken
+- agents winding up in exact same position. lanechanging race?
 - new lookahead is not requesting turn till already stopped, even with reservation!
-- consider flooding backwards.
-- dont forget to look at agent ahead of us in old lane only.
-- go back and fix hacks
-  - route interface
+  - now lookahead is making agents terminate route early...
+    - if we evaluate specific_path too soon, we think we've missed a lanechange,
+      and try to re-route
+    - if we never lookahead far enough to see past this specific_path step, we
+      think we're done prematurely
+    - don't we want to call ahead to intersection a bit in advance too?
+
+    fixes...
+      1) guarantee we always lookahead some min amount?
+      2) see if general_path is empty before disappearing
+      3) ability to ask route's specific_path if we have another step WITHOUT computing it
+
+    redesign...
+      - merge lookahead steps with specific_path, persist them, and update distances...
+      - separate hasNext and get seems weird..
 - are we rerouting too frequently?
   - try to tighten when we can lanechange
-
-- now lookahead is making agents terminate route early...
-  - if we evaluate specific_path too soon, we think we've missed a lanechange,
-    and try to re-route
-  - if we never lookahead far enough to see past this specific_path step, we
-    think we're done prematurely
-  - don't we want to call ahead to intersection a bit in advance too?
-
-  fixes...
-    1) guarantee we always lookahead some min amount?
-    2) see if general_path is empty before disappearing
-    3) ability to ask route's specific_path if we have another step WITHOUT computing it
-
-  redesign...
-    - merge lookahead steps with specific_path, persist them, and update distances...
-    - separate hasNext and get seems weird..
-
-- proper fixes to problems
-  - blocking A* for rerouting
-  - agents get caught in loops because the general path isnt realizable
-  - remove unreachable and dead-end edges
+  - consider flooding backwards.
+- dont forget to look at agent ahead of us in old lane only.
+- blocking A* for rerouting
+- agents get caught in loops because the general path isnt realizable
 
 - test at scale. gridlock?
 
@@ -149,6 +143,7 @@ TESTING IT
 
 # General Simulation
 - osm/ and maps/ separate
+- modular design... if one agent breaks, dont break everyone
 - have a notion of "I'm done with the turn, but I'm protruding into the intersection"
   by requiring not only we're done with a turn but also some dist along the new edge.
 - slow down for turns (a speed limit)

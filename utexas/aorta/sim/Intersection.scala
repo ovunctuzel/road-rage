@@ -57,12 +57,11 @@ class Intersection(val v: Vertex) {
       return
     }
 
-    // The naive way is quadratic (a Cartesian product), with a slight optimization
-    // by observing that the conflicts-with relation is symmetric.
+    // The naive way is quadratic (a Cartesian product), with a slight
+    // optimization by observing that the conflicts-with relation is symmetric.
     for (t1 <- turns.keys; t2 <- turns.keys if t1.id < t2.id) {
       if (t1.conflicts(t2)) {
-        Util.log("!!! Collision in an intersection: " + t1 + " and " + t2)
-        assert(t2.conflicts(t1))
+        throw new Exception(s"Intersection collision: $t1 and $t2 conflict")
       }
     }
 
@@ -86,7 +85,7 @@ class Intersection(val v: Vertex) {
     turns(t) += 1
     if (!policy.validate_entry(a, t)) {
       Util.log("!!! %s illegally entered intersection, going %.2f m/s".format(a, a.speed))
-      Util.log("  Incident was near " + t.from + " and " + t + " (vert " + t.from.to.id + ")")
+      Util.log("  Illegal entry was near " + t.from + " and " + t + " (vert " + t.from.to.id + ")")
       Util.log("  Origin lane length: " + t.from.length + "; time " + Agent.sim.tick)
       Util.log("  Happened at " + Agent.sim.tick)
       sys.exit

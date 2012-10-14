@@ -62,7 +62,7 @@ extends Ordered[Generator]
   def serialize_ls(ls: Array[Edge]) = ls.map(e => e.id).mkString(",")
 
   // there may be no task scheduled
-  protected var pending = new ListBuffer[(Agent, Option[FutureTask[List[DirectedRoad]]])]
+  protected var pending = new ListBuffer[(Agent, Option[FutureTask[Stream[DirectedRoad]]])]
 
   // Returns new agents to try to spawn, or boolean means reap this genertor
   def run(): Either[List[Agent], Boolean]
@@ -78,9 +78,9 @@ extends Ordered[Generator]
     // schedule whatever work the route needs done.
     // TODO the route won't get them exactly to end, just end's group of lanes.
     // close enough?
-    route.request_route(start, end) match {
+    route.request_route(start.directed_road, end.directed_road) match {
       case Some(task) => {
-        val delayed = new FutureTask[List[DirectedRoad]](task)
+        val delayed = new FutureTask[Stream[DirectedRoad]](task)
         Generator.worker_pool.execute(delayed)
         pending += ((a, Some(delayed)))
       }
@@ -108,7 +108,7 @@ extends Ordered[Generator]
             false
           }
         }
-        case None       => true
+        case None => true
       }
       if (ready) {
         done += a._1
