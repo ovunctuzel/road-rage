@@ -99,6 +99,61 @@ class PreGraph3(old_graph: PreGraph2) {
     case _                        => 2
   }
 
+  def remove_turns_to_bad_edges(bad_edges: Set[Edge]) = {
+    for (v <- vertices) {
+      v.turns = v.turns.filter(
+        t => !bad_edges.contains(t.from) && !bad_edges.contains(t.to)
+      )
+    }
+  }
+
+  // After eating away at elements from edges/vertices/roads, cleanup references
+  // to those deleted objects elsewhere.
+  def fix_map() = {
+    val good_edges = edges.toSet
+
+    // TODO refactor this: squeeze together lane numbers
+    // This will end up looking weird (gaps in roads)
+    for (r <- roads) {                                              
+      val pos_lanes = r.pos_lanes.filter(e => good_edges.contains(e))
+      val neg_lanes = r.neg_lanes.filter(e => good_edges.contains(e))
+      r.pos_lanes.clear
+      r.pos_lanes ++= pos_lanes
+      r.neg_lanes.clear
+      r.neg_lanes ++= neg_lanes
+      for ((lane, idx) <- r.pos_lanes.zipWithIndex) {
+        lane.lane_num = idx
+      }
+      for ((lane, idx) <- r.neg_lanes.zipWithIndex) {
+        lane.lane_num = idx
+      }
+    }
+
+    // See what vertices now have no turns or lanes left
+    vertices.partition(v => v.turns.isEmpty) match {
+      case (bad, good) => {
+        vertices = good
+        val bad_set = bad.toSet
+        roads = roads.filter(
+          r => !bad_set.contains(r.v1) && !bad_set.contains(r.v2) && r.all_lanes.nonEmpty
+        )
+      }
+    }
+
+    // clean up ids of all edges, roads, verts.
+    // TODO a better way, and one without reassigning to 'val' id? if we just
+    // clone each structure and have a mapping from old to new... worth it?
+    for ((e, id) <- edges.zipWithIndex) {
+      e.id = id
+    }
+    for ((v, id) <- vertices.zipWithIndex) {
+      v.id = id
+    }
+    for ((r, id) <- roads.zipWithIndex) {
+      r.id = id
+    }
+  }
+
   // TODO pregraph1 should have a 'data' structure or something
   // it's important to dump vertices first, since roads need them. and edges
   // need roads, so the order works out well.

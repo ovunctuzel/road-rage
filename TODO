@@ -2,8 +2,6 @@
 
 # Lane changing
 
-- fix map construction again.
-  - still dont neglect tarjans
 - headless also broken
 - new lookahead is not requesting turn till already stopped, even with reservation!
 - consider flooding backwards.
