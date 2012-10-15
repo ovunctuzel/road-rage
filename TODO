@@ -2,7 +2,11 @@
 
 # Lane changing
 
-- agents winding up in exact same position. lanechanging race?
+current major problems:
+  1) no determinism?
+  2) eq distances
+  3) empty route?
+
 - new lookahead is not requesting turn till already stopped, even with reservation!
   - now lookahead is making agents terminate route early...
     - if we evaluate specific_path too soon, we think we've missed a lanechange,
@@ -104,11 +108,20 @@ TESTING IT
 
 # Parallelizing
 - parallelize lookahead?
+  - safe_to_lanechange looks at other agents in a queue...
+  - entering/exit queue to lanechange or be done with route (lock per queue)
+  - canceling intersection reservations (lock per vert)
+  - lookahead looks for things close by on queues.
+  - polling intersections
+  => observing readonly state of simulation would be useful. this is another
+     argument for reverse computation.
 - meseoscopic in between regions? lockstep necessary?
 - dynamic load balancing? any need to split up by region?
 - actors / akka?
 
 # UI
+- http://technically.us/code/x/flocking-with-spde/
+  consider processing, partial 3d rendering of overpasses.
 - turn off generators
 - color agents from diff generators a certain way
 - when we speed up, sleep less in UI?
@@ -142,6 +155,10 @@ TESTING IT
 - multi-lane situations dont have enough turns, and we need to do more trimming!
 
 # General Simulation
+- reverse simulation! find a problem, go backwards in time
+  - characterizing where everything is is easy, capturing internal state is hard
+  - characterize evertyhing that happens that causes state change, make it undoable.
+  - another benefit... if queue does error checking against old state of queue, does that help? (i think not...)
 - osm/ and maps/ separate
 - modular design... if one agent breaks, dont break everyone
 - have a notion of "I'm done with the turn, but I'm protruding into the intersection"
@@ -185,5 +202,8 @@ TESTING IT
   - immutable construction is easy... have parent entity create child.
 
 # Testing Strategy
-- map building
-  - transform map.make.Checker into tests, then apply to all osm files
+- determinism
+  - how to test it?
+  - how to use it?
+- things to test
+  - invariance of dt_s

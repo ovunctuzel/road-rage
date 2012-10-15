@@ -128,6 +128,7 @@ class Pass3(old_graph: PreGraph2) {
 
   // fill out an intersection with turns
   private def connect_vertex(v: Vertex, roads: MutableSet[Road]) = {
+    // TODO return the turns or something so we can more efficiently set them
     // TODO cfg
     val cross_thresshold = math.Pi / 10 // allow 18 degrees
 
@@ -136,7 +137,7 @@ class Pass3(old_graph: PreGraph2) {
       // link corresponding lane numbers
       val r = roads.head
       for ((from, to) <- r.incoming_lanes(v) zip r.outgoing_lanes(v)) {
-        v.turns += new Turn(next_id, from, TurnType.UTURN, to)
+        v.turns = new Turn(next_id, from, TurnType.UTURN, to) :: v.turns
       }
     }
 
@@ -201,9 +202,9 @@ class Pass3(old_graph: PreGraph2) {
       } else if (angle_btwn < 0) {
         // no multiple turn lanes supported yet. it's just too hard to know when
         // this is the case.
-        v.turns += new Turn(next_id, from_rep.leftmost_lane, TurnType.LEFT, to_rep.leftmost_lane)
+        v.turns = new Turn(next_id, from_rep.leftmost_lane, TurnType.LEFT, to_rep.leftmost_lane) :: v.turns
       } else {
-        v.turns += new Turn(next_id, from_rep.rightmost_lane, TurnType.RIGHT, to_rep.rightmost_lane)
+        v.turns = new Turn(next_id, from_rep.rightmost_lane, TurnType.RIGHT, to_rep.rightmost_lane) :: v.turns
       }
     }
 

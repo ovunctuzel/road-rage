@@ -29,7 +29,7 @@ class PreGraph3(old_graph: PreGraph2) {
 
   // magic borrowed from Graph to support Tarjan's. Each of these expensive
   // things should only be called once.
-  def turns() = vertices.foldLeft(List[Turn]())((l, v) => v.turns.toList ++ l)
+  def turns() = vertices.foldLeft(List[Turn]())((l, v) => v.turns ++ l)
   def traversables() = edges ++ turns
 
   def add_road(old_edge: PreEdge2): Road = {

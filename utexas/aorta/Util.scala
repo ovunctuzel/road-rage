@@ -107,7 +107,7 @@ object Util {
     var rng = System.currentTimeMillis
     var diff_rng = false
     var load_scenario = ""
-    var exp_name = "Experiment " + rng
+    var exp_name = ""
 
     if (args.size % 2 != 0) {
       // TODO better usage
@@ -128,7 +128,9 @@ object Util {
         case _               => { Util.log("Unknown argument: " + key); sys.exit }
       }
     }
-
+    if (exp_name.isEmpty) {
+      exp_name = "Experiment " + rng
+    }
     Stats.setup_experiment(exp_name)
 
     if (load_scenario.isEmpty) {

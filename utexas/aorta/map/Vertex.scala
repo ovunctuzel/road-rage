@@ -19,11 +19,12 @@ class Vertex(val location: Coordinate, var id: Int) {
 
   // TODO we could keep a map for faster lookup, sure, but determinism's cool
   // too.
-  var turns = new MutableList[Turn]
+  var turns: List[Turn] = Nil
 
-  // TODO construction sucks
-  def turns_from(from: Edge): List[Turn] = turns.toList.filter(_.from == from)
-  def turns_to(to: Edge): List[Turn] = turns.toList.filter(_.to == to)
+  def turns_from(from: Edge): List[Turn] = turns.filter(_.from == from)
+  def turns_to(to: Edge): List[Turn] = turns.filter(_.to == to)
+  def edges_to(to: DirectedRoad): List[Edge] =
+    turns.filter(_.to.directed_road == to).map(_.from)
 
   // what verts lead to this one?
   def in_verts = turns.map(t => t.from.from).toSet

@@ -221,7 +221,7 @@ class Reader(fn: String) {
     // turns just want edges, doesn't matter what trait they're endowed with
     for (v <- verts) {
       for (link <- vertLinks(v.id)) {
-        v.turns += new Turn(link.id, edges(link.from), link.link_type, edges(link.to))
+        v.turns = new Turn(link.id, edges(link.from), link.link_type, edges(link.to)) :: v.turns
       }
     }
 

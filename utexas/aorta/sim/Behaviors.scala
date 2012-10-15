@@ -96,13 +96,15 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
       (route.general_path.tail.headOption, a.at.on) match {
         // This query only makes sense while we're on an edge
         case (Some(group), cur_lane: Edge) => {
-          val candidates = cur_lane.other_lanes.filter(
-            e => e.turns_leading_to(group).nonEmpty
-          )
+          val candidates = cur_lane.to.edges_to(group)
+          if (candidates.isEmpty) { // TODO remove, shouldnt happen!
+            Util.log(s"no way to reach $group from $cur_lane? step 1 is ${route.general_path.head}")
+          }
           // The best lane is one that has a turn leading us to where we want to
           // go and that's closest to us
           val best_lane = candidates.sortBy(
-            e => math.abs(e.lane_num - cur_lane.lane_num)).head
+            e => math.abs(e.lane_num - cur_lane.lane_num)
+          ).head
           // TODO unlikely, but if we're in the middle and the far left and far
           // right lane both somehow lead to group, we could end up oscillating
 
@@ -140,11 +142,16 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
       // If there's a trailing car on this road, require at least 2 ticks worth
       // of distance at the speed limit for the trailing car. Yes, probably too
       // conservative.
+      // TODO this depends on agent ordering per tick. 2 agents may try to merge
+      // into the same lane at the same spot in the same tick. how to
+      // parallelize?
       case Some(avoid) => {
         val min_trailing_dist = 2.0 * cfg.dt_s * target.road.speed_limit
         if (a.at.dist - avoid.at.dist <= min_trailing_dist) {
           return false
         }
+        // TODO tmp debug
+        //Util.log(s"$a at ${a.at} sees $avoid as biggest threat")
       }
       // It's impractical to flood backwards and find all the possible cars that
       // could enter our target lane soon. So use the same idea as safe spawning
