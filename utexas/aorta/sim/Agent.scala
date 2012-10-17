@@ -5,7 +5,8 @@
 package utexas.aorta.sim
 
 import utexas.aorta.map.{Edge, Coordinate, Turn, Traversable, Graph}
-import utexas.aorta.{Util, cfg, Stats, Wasted_Time_Stat}
+import utexas.aorta.{Util, cfg}
+import utexas.aorta.analysis.{Stats, Wasted_Time_Stat}
 
 // TODO come up with a notion of dimension and movement capability. at first,
 // just use radius bounded by lane widths?

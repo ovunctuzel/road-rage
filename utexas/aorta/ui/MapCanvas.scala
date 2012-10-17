@@ -459,10 +459,11 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
       case None => sim.vertices.find(v => hit(bubble(v.location))) match {
         case None => fg_lines.find(l => hit(l.line)) match {
           case None => bg_lines.find(l => hit(l.line)) match {
-            case None => ward_bubbles.find(b => hit(b.bubble)) match {
+            case None if show_wards => ward_bubbles.find(b => hit(b.bubble)) match {
               case None => None
               case Some(b) => Some(b.ward)
             }
+            case None => None
             case Some(l) => Some(l.road)
           }
           case Some(l) => Some(l.edge)

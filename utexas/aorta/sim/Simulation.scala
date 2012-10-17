@@ -17,8 +17,9 @@ import utexas.aorta.map.{Graph, Road, Edge, Vertex, Ward, Turn}
 import utexas.aorta.map.make.Reader
 import utexas.aorta.sim.policies._
 
-import utexas.aorta.{Util, cfg, Stats, Total_Trip_Stat, Active_Agents_Stat,
-                     Simulator_Speedup_Stat}
+import utexas.aorta.{Util, cfg}
+import utexas.aorta.analysis.{Stats, Total_Trip_Stat, Active_Agents_Stat,
+                              Simulator_Speedup_Stat, Profiling}
 
 // This just adds a notion of agents
 class Simulation(roads: Array[Road], edges: Array[Edge], vertices: Array[Vertex],
@@ -157,8 +158,7 @@ class Simulation(roads: Array[Road], edges: Array[Edge], vertices: Array[Vertex]
     // Agents can't react properly in the presence of huge time-steps. So chop
     // up this time-step into exactly consistent/equal pieces, if needed.
     while (dt_accumulated >= cfg.dt_s) {
-      //val t0 = Util.timer("whole step")
-      //Util.log_push
+      Profiling.whole_step.start
       dt_accumulated -= cfg.dt_s
       tick += cfg.dt_s
 
@@ -169,7 +169,7 @@ class Simulation(roads: Array[Road], edges: Array[Edge], vertices: Array[Vertex]
       // Queues will lazily start_step, remembering their current state, when
       // they need to.
 
-      //val t3 = Util.timer("agent step")
+      Profiling.agent_step.start
       var active_cnt = 0
       agents.foreach(a => {
         if (a.step(cfg.dt_s)) {
@@ -181,18 +181,18 @@ class Simulation(roads: Array[Road], edges: Array[Edge], vertices: Array[Vertex]
       if (tick.toInt % 5 == 0) {
         Stats.record(Active_Agents_Stat(tick.toInt, active_cnt))
       }
-      //t3.stop
+      Profiling.agent_step.stop
 
       // Just check the ones we need to.
-      //val t4 = Util.timer("queue stop")
+      Profiling.queue_check.start
       active_queues.foreach(q => q.end_step)
-      //t4.stop
+      Profiling.queue_check.stop
 
-      //val t5 = Util.timer("vert check")
+      Profiling.intersection_check.start
       active_intersections.foreach(i => i.end_step)
-      //t5.stop
+      Profiling.intersection_check.stop
 
-      //val t6 = Util.timer("react")
+      Profiling.react.start
       agents.foreach(a => {
         // reap the done agents
         if (a.react) {
@@ -200,10 +200,9 @@ class Simulation(roads: Array[Road], edges: Array[Edge], vertices: Array[Vertex]
           Stats.record(Total_Trip_Stat(a.id, tick - a.started_trip_at, a.total_dist))
         }
       })
-      //t6.stop
+      Profiling.react.stop
       
-      //Util.log_pop
-      //t0.stop
+      Profiling.whole_step.stop
 
       // reset queues that need to be checked
       active_queues.clear

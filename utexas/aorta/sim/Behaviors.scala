@@ -7,7 +7,7 @@ package utexas.aorta.sim
 import scala.collection.mutable.ListBuffer
 
 import utexas.aorta.map.{Edge, Turn, Traversable, DirectedRoad}
-import utexas.aorta.sim.analysis.Gridlock
+import utexas.aorta.analysis.{Gridlock, Profiling}
 import utexas.aorta.{Util, cfg}
 
 abstract class Behavior(a: Agent) {
@@ -178,9 +178,9 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
 
   override def choose_action(): Action = {
     // Do we want to lane change?
-    desired_lane match {
+    Profiling.desired_lane.time(desired_lane) match {
       case Some(e) => {
-        if (safe_to_lanechange(e)) {
+        if (Profiling.safe_lane.time(() => safe_to_lanechange(e))) {
           return Act_Lane_Change(e)
         } else {
           // TODO Ever a good idea to stall and wait? (Only do so if we didn't
@@ -191,7 +191,7 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
     }
 
     // TODO refactor and pull in max_safe_accel here.
-    return max_safe_accel
+    return Profiling.react_accel.time(max_safe_accel)
   }
 
   // This is a lazy sequence of edges/turns that tracks distances away from the
@@ -396,7 +396,6 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
 
       val conservative_accel = math.min(a1, math.min(a2, a3))
 
-      // TODO better way to separate this out?
       Gridlock.handle_agent(a, conservative_accel, follow_agent, turn_blocked_by)
 
       // As the very last step, clamp based on our physical capabilities.

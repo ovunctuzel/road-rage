@@ -2,10 +2,17 @@
 
 # Lane changing
 
+CHECKPOINTING
+  - trigger it auomatically, right filenames
+  - efficient format, but converters btwn human-readable
+  - hard to save rng, so reset seed before checkpointing
+  - scala auto-serialization, ad-hoc, collect state?
+
 current major problems:
   1) no determinism?
   2) eq distances
   3) empty route?
+    ./headless --input dat/atx_big.map --rng 1350453254246
 
 - new lookahead is not requesting turn till already stopped, even with reservation!
   - now lookahead is making agents terminate route early...
@@ -159,6 +166,7 @@ TESTING IT
   - characterizing where everything is is easy, capturing internal state is hard
   - characterize evertyhing that happens that causes state change, make it undoable.
   - another benefit... if queue does error checking against old state of queue, does that help? (i think not...)
+
 - osm/ and maps/ separate
 - modular design... if one agent breaks, dont break everyone
 - have a notion of "I'm done with the turn, but I'm protruding into the intersection"

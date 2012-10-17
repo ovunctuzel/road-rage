@@ -4,15 +4,13 @@
 
 package utexas.aorta
 
-import utexas.aorta.sim.Simulation
-
 import scala.util.Random
 import java.io.FileWriter
 
+import utexas.aorta.sim.Simulation
+import utexas.aorta.analysis.{Stats, Profiling}
+
 object Util {
-  def timer(msg: String) = new Timer(msg)
-  def stopwatch = new Stopwatch
-  
   private var indent_log = 0
   def log_push = { indent_log += 1 }
   def log_pop =  { indent_log -= 1 }
@@ -20,7 +18,6 @@ object Util {
   def log(msg: String) = println(indent + msg)
 
   private var rng: Random = null  // icky...
-
   var seed: Long = -1
 
   def init_rng(s: Long) = {
@@ -31,10 +28,15 @@ object Util {
 
   // Convenient to see this at the very end if it was a long log.
   scala.sys.ShutdownHookThread({
+    println("")
+    println("-" * 80)
     if (seed != -1) {
       Util.log("\nRNG seed: " + Util.seed)
     }
+    println("")
     Stats.shutdown
+    println("")
+    Profiling.shutdown
   })
 
   def rand_double(min: Double, max: Double): Double = {
@@ -147,36 +149,6 @@ object Util {
   }
 }
 
-// use nanoseconds for both; it's nice and sensitive
-class Timer(msg: String) {
-  val start = System.nanoTime
-
-  def so_far = (System.nanoTime - start) / 1000000000.0
-
-  def stop = {
-    Util.log("\"" + msg + "\": " + so_far + "s")
-  }
-}
-
-class Stopwatch() {
-  var from: Long = System.nanoTime
-  var seconds: Double = 0.0
-
-  def start = {
-    from = System.nanoTime
-  }
-
-  def stop = {
-    val now = System.nanoTime
-    seconds += (now - from) / 1000000000.0
-  }
-
-  def reset = {
-    seconds = 0.0
-    start
-  }
-}
-
 object cfg {
   // TODO marking things as configurable or not from the UI.
   val bools = List(
@@ -250,117 +222,4 @@ class Double_Cfgable(default: Double, descr: String, min: Double, max: Double) {
 
 class Int_Cfgable(default: Int, descr: String, min: Int, max: Int) {
   var value = default
-}
-
-sealed trait Measurement {}
-final case class Wasted_Time_Stat(agent: Int, intersection: Int, lag: Double,
-                                  time: Double) extends Measurement
-{
-  override def toString = "s1 %d %d %.2f %d".format(
-    agent, intersection, lag, time.toInt
-  )
-}
-final case class Total_Trip_Stat(agent: Int, time: Double, dist: Double)
-  extends Measurement
-{
-  // TODO want average speed?
-  override def toString = "s2 %d %.2f %.2f".format(agent, time, dist)
-}
-final case class Intersection_Throughput_Stat(intersection: Int, requests: Int,
-                                              entered: Int, time: Double)
-  extends Measurement
-{
-  // TODO should entered > requests?
-  override def toString = "s3 %d %d %d %d".format(
-    intersection, requests, entered, time.toInt
-  )
-}
-final case class Active_Agents_Stat(time: Int, cnt: Int) extends Measurement
-{
-  override def toString = "s4 %d %d".format(time, cnt)
-}
-final case class Simulator_Speedup_Stat(factor: Double, time: Double)
-  extends Measurement
-{
-  override def toString = "s5 %.2f %.2f".format(factor, time)
-}
-
-class Aggregate_Stat(name: String) {
-  var total: Double = 0.0
-  var count = 0
-  var min: Double = 0.0
-  var max: Double = 0.0
-
-  def update(entry: Double) = {
-    if (count == 0) {
-      min = entry
-      max = entry
-    }
-    total += entry
-    count += 1
-    min = math.min(min, entry)
-    max = math.max(max, entry)
-  }
-
-  def mean = total / count.toDouble
-
-  def describe = "%s: %.2f average (%.2f min, %.2f max, %d samples)".format(
-    name, mean, min, max, count
-  )
-}
-
-object Stats {
-  var log: FileWriter = null
-  var use_log = false
-  var use_print = false
-  var initialized = false
-
-  val trip_time = new Aggregate_Stat("trip time (s)")
-  val simulator_speedup = new Aggregate_Stat("simulator speedup (factor)")
-  val time_wasted = new Aggregate_Stat("time wasted at individual intersections (s)")
-
-  def setup_experiment(name: String) = {
-    initialized = true
-    if (use_log) {
-      Util.assert_eq(log, null)
-      log = new FileWriter("stats_log")
-      log.write(name + "\n")
-    }
-    if (use_print) {
-      Util.log("Experiment name: " + name)
-    }
-  }
-
-  def record(item: Measurement) = {
-    if (use_log) {
-      log.write(item.toString + "\n")
-    }
-    if (use_print) {
-      Util.log("Stat: " + item)
-    }
-
-    item match {
-      case Wasted_Time_Stat(_, _, lag, _) => time_wasted.update(lag)
-      case Total_Trip_Stat(_, time, _) => trip_time.update(time)
-      case Simulator_Speedup_Stat(factor, _) => simulator_speedup.update(factor)
-      case _ =>
-    }
-  }
-
-  // flush any logs we were writing
-  def shutdown() = {
-    if (initialized) {
-      if (log != null) {
-        log.close
-      }
-
-      // emit a summary
-      // TODO tabulate it?
-      println("")
-      println("-" * 80)
-      println(trip_time.describe)
-      println(time_wasted.describe)
-      println(simulator_speedup.describe)
-    }
-  }
 }

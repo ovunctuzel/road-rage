@@ -10,7 +10,8 @@ import scala.collection.mutable.{HashSet => MutableSet}
 import utexas.aorta.sim.policies._
 import utexas.aorta.map.{Vertex, Turn}
 
-import utexas.aorta.{Util, cfg, Stats, Intersection_Throughput_Stat}
+import utexas.aorta.{Util, cfg}
+import utexas.aorta.analysis.{Stats, Intersection_Throughput_Stat}
 
 // Common stuff goes here, particular implementations are in utexas.aorta.sim.policies
 
