@@ -232,6 +232,24 @@ class Simulation(roads: Array[Road], edges: Array[Edge], vertices: Array[Vertex]
       return false
     }
   }
+
+  def save_checkpoint(fn: String) = {
+    //val t = Util.timer("checkpointing")
+
+    // TODO 1) move functionality to each object
+    // TODO 2) write in a binary format
+    
+    val out = new FileWriter(fn)
+    for (a <- agents) {
+      out.write(s"${a.id} @ ${a.at.on.id},${a.at.dist}. ${a.speed}/${a.target_accel}\n")
+    }
+    for (a <- ready_to_spawn) {
+      out.write(s"${a.id} s ${a.start.id},${a.start_dist}")
+    }
+    out.close
+
+    //t.stop
+  }
 }
 
 sealed trait Sim_Event {}

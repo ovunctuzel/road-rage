@@ -11,7 +11,7 @@ import utexas.aorta.cfg
 // TODO subclass Edge for pos/neg.. seems easier for lots of things
 
 // TODO var id due to tarjan
-class Edge(var id: Int, val road: Road, val dir: Direction.Direction) extends Traversable {
+class Edge(id: Int, val road: Road, val dir: Direction.Direction) extends Traversable(id) {
   var lane_num: Int = -1  // TODO needs to be initialized to be defined.. bleh.
 
   // This is diagnostic.

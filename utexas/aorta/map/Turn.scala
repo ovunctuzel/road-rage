@@ -17,8 +17,8 @@ object TurnType extends Enumeration {
   val UTURN       = Value("U")
 }
 
-class Turn(val id: Int, val from: Edge, val turn_type: TurnType.TurnType, val to: Edge)
-  extends Traversable with Ordered[Turn]
+class Turn(id: Int, val from: Edge, val turn_type: TurnType.TurnType, val to: Edge)
+  extends Traversable(id) with Ordered[Turn]
 {
   override def compare(other: Turn) = id.compare(other.id)
 

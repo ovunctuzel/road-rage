@@ -12,7 +12,8 @@ import utexas.aorta.Util
 
 // Something with a sequence of lines forming a path and a way to get to more
 // somethings
-abstract class Traversable() {
+// TODO immut id
+abstract class Traversable(var id: Int) {
   // TODO temporary perf fix
   var queue: Queue = null
 
