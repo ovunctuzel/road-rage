@@ -69,6 +69,7 @@ abstract class Route() {
 
             // TODO it's useful to know how often this is happening for debug
             Util.log("Blockingly re-routing from " + new_src)
+            Util.log("Old route... " + general_path.take(5).toList)
 
             val new_route = reroute(new_src, goal) match {
               case Left(route) => route

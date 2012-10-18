@@ -25,14 +25,12 @@ object Generator {
 
     // TODO a bit fixed based on the two types of generators we have, but adding
     // a new class doesn't entail too much new work
-    // TODO serialize this info from the lambda?
-    val route_builder = Simulation.route_builder("Static A*")
     val g = params("type") match {
       case "fixed"      => new FixedSizeGenerator(
-        sim, starts, ends, params("total").toInt, route_builder
+        sim, starts, ends, params("total").toInt, params("route_builder")
       )
       case "continuous" => new ContinuousGenerator(
-        sim, starts, ends, params("spawn_every").toDouble, route_builder
+        sim, starts, ends, params("spawn_every").toDouble, params("route_builder")
       )
       case _            => throw new Exception(
         "Weird serialized generator with type " + params("type")
@@ -45,7 +43,7 @@ object Generator {
 }
 
 abstract class Generator(sim: Simulation, desired_starts: Iterable[Edge],
-                         ends: Iterable[Edge], route_builder: () => Route)
+                         ends: Iterable[Edge], route_builder: String)
 extends Ordered[Generator]
 {
   val id = Generator.next_id
@@ -72,7 +70,7 @@ extends Ordered[Generator]
   def count_pending = pending.size
 
   def add_specific_agent(start: Edge, end: Edge) = {
-    val route = route_builder()
+    val route = Simulation.route_builder(route_builder)()
     val a = new Agent(sim.next_id, sim, start, start.queue.safe_spawn_dist, route)
 
     // schedule whatever work the route needs done.
@@ -150,7 +148,7 @@ extends Ordered[Generator]
 
 class FixedSizeGenerator(sim: Simulation, starts: Iterable[Edge],
                          ends: Iterable[Edge], total: Int,
-                         route_builder: () => Route)
+                         route_builder: String)
   extends Generator(sim, starts, ends, route_builder)
 {
   var num_to_spawn = total
@@ -169,14 +167,15 @@ class FixedSizeGenerator(sim: Simulation, starts: Iterable[Edge],
     }
   }
 
-  override def serialize() = "<generator type=\"fixed\" time=\"%f\" starts=\"%s\" ends=\"%s\" total=\"%d\"/>".format(
-    created_at, serialize_ls(start_candidates), serialize_ls(end_candidates), total
+  override def serialize() = "<generator type=\"fixed\" time=\"%f\" starts=\"%s\" ends=\"%s\" total=\"%d\" route_builder=\"%s\"/>".format(
+    created_at, serialize_ls(start_candidates), serialize_ls(end_candidates),
+    total, route_builder
   )
 }
 
 class ContinuousGenerator(sim: Simulation, starts: Iterable[Edge],
                           ends: Iterable[Edge], spawn_every: Double,
-                          route_builder: () => Route)
+                          route_builder: String)
   extends Generator(sim, starts, ends, route_builder)
 {
   var last_tick = Agent.sim.tick
@@ -199,8 +198,8 @@ class ContinuousGenerator(sim: Simulation, starts: Iterable[Edge],
     }
   }
 
-  override def serialize() = "<generator type=\"continuous\" time=\"%f\" starts=\"%s\" ends=\"%s\" spawn_every=\"%f\"/>".format(
+  override def serialize() = "<generator type=\"continuous\" time=\"%f\" starts=\"%s\" ends=\"%s\" spawn_every=\"%f\" route_builder=\"%s\"/>".format(
     created_at, serialize_ls(start_candidates), serialize_ls(end_candidates),
-    spawn_every
+    spawn_every, route_builder
   )
 }

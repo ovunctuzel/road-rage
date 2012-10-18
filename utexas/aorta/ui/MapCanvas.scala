@@ -653,8 +653,7 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
         case Mode.PICK_2nd => {
           chosen_edge2 = current_edge
           sim.add_gen(new FixedSizeGenerator(
-            sim, Set(chosen_edge1.get), Set(current_edge.get), 1,
-            Simulation.route_builder("Static A*")
+            sim, Set(chosen_edge1.get), Set(current_edge.get), 1, "Static A*"
           ))
           chosen_edge1 = None
           chosen_edge2 = None
@@ -834,7 +833,7 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
       entries = Seq("Static A*", "Drunken", "Directional Drunk",
                     "Drunken Explorer")
     ) match {
-      case Some(name) => Simulation.route_builder(name.toString)
+      case Some(name) => name.toString
       case None => return
     }
 

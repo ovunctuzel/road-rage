@@ -1,12 +1,28 @@
 # TODO #
 
-# Lane changing
+# Current
+
+LANE-CHANGE
+  - buggy, disconnected routes... verify paths make sense? a* issue, drunken, both?
+    no way to reach Highgrove Terrace [R5792]'s - lanes from Lane -0 of Highgrove Terrace (13556)? step 1 is Highgrove Terrace [R5792]'s + lanes
+  - lookbehind for lanechanging and spawning. lazily compute.
+  - adjust routing to know when lanechanging impossible on short edges.
+  - implement speculative desired_lane
+  - rerouting too often?
+
+  - drunken too should use an effectively_leads_to for picking
 
 CHECKPOINTING
   - trigger it auomatically, right filenames
   - efficient format, but converters btwn human-readable
   - hard to save rng, so reset seed before checkpointing
   - scala auto-serialization, ad-hoc, collect state?
+
+OPTIMIZE
+  - parallelize lookahead within a timestep
+  - profiling times dont add up
+
+# Lane changing
 
 current major problems:
   1) no determinism?

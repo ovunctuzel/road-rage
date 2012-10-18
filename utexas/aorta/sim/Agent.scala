@@ -6,7 +6,7 @@ package utexas.aorta.sim
 
 import utexas.aorta.map.{Edge, Coordinate, Turn, Traversable, Graph}
 import utexas.aorta.{Util, cfg}
-import utexas.aorta.analysis.{Stats, Wasted_Time_Stat}
+import utexas.aorta.analysis.{Profiling, Stats, Wasted_Time_Stat}
 
 // TODO come up with a notion of dimension and movement capability. at first,
 // just use radius bounded by lane widths?
@@ -163,7 +163,7 @@ class Agent(val id: Int, val graph: Graph, val start: Edge,
   def react(): Boolean = {
     val was_lanechanging = is_lanechanging
 
-    behavior.choose_action match {
+    Profiling.choose_act.time(behavior.choose_action) match {
       case Act_Set_Accel(new_accel) => {
         // we have physical limits
         Util.assert_le(new_accel.abs, max_accel)
@@ -295,6 +295,8 @@ class Agent(val id: Int, val graph: Graph, val start: Edge,
     Util.log("How long idle? " + how_long_idle)
     Util.log("Max next speed: " + max_next_speed)
     Util.log("Stopping distance currently: " + stopping_distance(max_next_speed))
+    Util.log("Lookahead dist: " + max_lookahead_dist)
+    Util.log("Dist left here: " + at.dist_left)
     behavior.dump_info
     Util.log_pop
   }

@@ -99,6 +99,7 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
           val candidates = cur_lane.to.edges_to(group)
           if (candidates.isEmpty) { // TODO remove, shouldnt happen!
             Util.log(s"no way to reach $group from $cur_lane? step 1 is ${route.general_path.head}")
+            Util.log("rest of route..." + route.general_path.take(10))
           }
           // The best lane is one that has a turn leading us to where we want to
           // go and that's closest to us
