@@ -826,7 +826,7 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
 
     // Ask: what type of behavior and route strategy
     // TODO plumb behavior through, too, once there's reason to
-    val route_builder = Dialog.showInput(
+    val route_type = Dialog.showInput(
       message = "How should the agents route to their destination?",
       initial = "",
       // TODO populate seq from what sim uses
@@ -849,7 +849,7 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
         prompt_int("How many agents?") match {
           case Some(num) => {
             sim.add_gen(new FixedSizeGenerator(
-              sim, src, dst, num, route_builder
+              sim, src, dst, num, route_type
             ))
           }
           case _ =>
@@ -862,7 +862,7 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
         ) match {
           case Some(time) => {
             sim.add_gen(new ContinuousGenerator(
-              sim, src, dst, time, route_builder
+              sim, src, dst, time, route_type
             ))
           }
           case _ =>
