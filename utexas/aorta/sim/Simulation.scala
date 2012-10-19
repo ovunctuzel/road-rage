@@ -13,7 +13,7 @@ import scala.io.Source
 import scala.xml.MetaData
 import scala.xml.pull._
 
-import utexas.aorta.map.{Graph, Road, Edge, Vertex, Ward, Turn}
+import utexas.aorta.map.{Graph, Road, Edge, Vertex, Ward, Turn, DirectedRoad}
 import utexas.aorta.map.make.Reader
 import utexas.aorta.sim.policies._
 
@@ -283,6 +283,7 @@ object Simulation {
     return sim
   }
 
+  // TODO make it an enum
   def policy_builder(name: String): (Intersection) => Policy = name match {
     case "Never Go" => (i: Intersection) => new NeverGoPolicy(i)
     case "Stop Sign" => (i: Intersection) => new StopSignPolicy(i)
@@ -291,11 +292,12 @@ object Simulation {
     // TODO case _ => ???
   }
 
-  def route_builder(name: String): () => Route = name match {
-    case "Static A*" => () => new StaticRoute()
-    case "Drunken" => () => new DrunkenRoute()
-    case "Directional Drunk" => () => new DirectionalDrunkRoute()
-    case "Drunken Explorer" => () => new DrunkenExplorerRoute()
+  def make_route(name: String, goal: DirectedRoad) = name match {
+    case "Static A*" => new StaticRoute(goal)
+    case "Drunken" => new DrunkenRoute(goal)
+    // TODO enable the others
+    //case "Directional Drunk" => () => new DirectionalDrunkRoute(goal)
+    //case "Drunken Explorer" => () => new DrunkenExplorerRoute(goal)
     // TODO case _ => ???
   }
 }

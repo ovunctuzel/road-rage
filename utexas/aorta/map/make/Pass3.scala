@@ -212,12 +212,12 @@ class Pass3(old_graph: PreGraph2) {
     for (in <- incoming_roads; src <- in.incoming_lanes(v)
          if v.turns_from(src).length == 0)
     {
-      Util.log("Warning: nowhere to go after " + src)
+      //Util.log("Warning: nowhere to go after " + src)
     }
     for (out <- outgoing_roads; dst <- out.outgoing_lanes(v)
          if v.turns_to(dst).length == 0)
     {
-      Util.log("Warning: nothing leads to " + dst)
+      //Util.log("Warning: nothing leads to " + dst)
     }
   }
 
@@ -371,7 +371,7 @@ class Pass3(old_graph: PreGraph2) {
 
         // But some changes, for some reason, make some lines MUCH shorter, so
         // detect and avoid trimming those.
-        val max_trim = 50.0  // TODO cfg. this should be meters now.
+        val max_trim = 500.0  // TODO cfg. this should be meters now.
 
         val possible1 = new Line(l1.x1, l1.y1, pt.x, pt.y)
         if (possible1.length < l1.length && l1.length - possible1.length <= max_trim) {
