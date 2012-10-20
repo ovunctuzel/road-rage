@@ -206,16 +206,20 @@ class Agent(val id: Int, val graph: Graph, val start: Edge,
         }
 
         // Otherwise, fine!
+        Profiling.debug.start
         old_lane = Some(at.on.asInstanceOf[Edge])
         target_accel = 0
 
         // Immediately enter the target lane
         behavior.transition(at.on, lane)
         at = enter(lane, at.dist)
+        Profiling.debug.stop
 
         return false
       }
       case Act_Done_With_Route() => {
+        // TODO untrue when our dest is tiny and we stop right before it!
+        Util.assert_eq(at.on.asInstanceOf[Edge].directed_road, route.goal)
         // Trust behavior, don't abuse this.
         Util.assert_eq(speed, 0.0)
         exit(at.on)

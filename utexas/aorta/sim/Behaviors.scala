@@ -45,28 +45,17 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
   // the same math.
   var keep_stopping = false
 
-  // We keep the state of our lookahead steps. The agent's current location
-  // should always be the first step.
-  var specific_path: Stream[Traversable] = Stream.empty
-
-  override def choose_turn(e: Edge) = specific_path.tail.head match {
-    case t: Turn => t
-    case _ => throw new Exception("specific path yielded edge, not turn")
-  }
+  override def choose_turn(e: Edge) = route.pick_turn(e)
   
   override def transition(from: Traversable, to: Traversable) = {
     (from, to) match {
-      // When we lane-change, have to consider a new specific path
+      // When we lane-change, hopefully we haven't scheduled reservations,
+      // right?
       case (_: Edge, _: Edge) => {
-        specific_path = to #:: pick_next_step(to)
+        // TODO actually, make sure there arent any of these...
         a.cancel_intersection_reservations
       }
-      case _ => {
-        // If we didn't just reset the specific path, make sure we're following
-        // it
-        Util.assert_eq(specific_path.head, from)
-        specific_path = specific_path.tail
-      }
+      case _ =>
     }
 
     route.transition(from, to)
@@ -75,52 +64,8 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
 
   override def dump_info() = {
     Util.log("Route-following behavior")
-    // Just show a few steps ahead
-    Util.log_push
-    for (step <- route.general_path take 5) {
-      Util.log("Step: " + step)
-    }
-    Util.log_pop
+    // TODO ask the route to debug itself? :P
   }
-
-  // If we're supposed to change to another lane, which adjacent lane gets us
-  // closest?
-  // TODO 1) lookahead several steps and see if we could get in a better lane in
-  // advance
-  // 2) discretionary lane changing, aka get in the faster lane if it wont hurt
-  // us
-  protected def desired_lane(): Option[Edge] =
-    if (a.is_lanechanging)
-      None
-    else {
-      (route.general_path.tail.headOption, a.at.on) match {
-        // This query only makes sense while we're on an edge
-        case (Some(group), cur_lane: Edge) => {
-          val candidates = cur_lane.to.edges_to(group)
-          if (candidates.isEmpty) { // TODO remove, shouldnt happen!
-            Util.log(s"no way to reach $group from $cur_lane? step 1 is ${route.general_path.head}")
-            Util.log("rest of route..." + route.general_path.take(10))
-          }
-          // The best lane is one that has a turn leading us to where we want to
-          // go and that's closest to us
-          val best_lane = candidates.sortBy(
-            e => math.abs(e.lane_num - cur_lane.lane_num)
-          ).head
-          // TODO unlikely, but if we're in the middle and the far left and far
-          // right lane both somehow lead to group, we could end up oscillating
-
-          // So which adjacent lane gets us closest to the best?
-          return cur_lane.adjacent_lanes.sortBy(
-            e => math.abs(e.lane_num - best_lane.lane_num)
-          ).headOption match {
-            case Some(e) if e == cur_lane => None
-            case Some(e) => Some(e)
-            case None => throw new Exception("No lane to reach " + group + "!")
-          }
-        }
-        case _ => None
-      }
-    }
 
   protected def safe_to_lanechange(target: Edge): Boolean = {
     // One lane could be shorter than the other. When we want to avoid the end
@@ -179,16 +124,22 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
 
   override def choose_action(): Action = {
     // Do we want to lane change?
-    Profiling.desired_lane.time(desired_lane) match {
-      case Some(e) => {
-        if (Profiling.safe_lane.time(() => safe_to_lanechange(e))) {
-          return Act_Lane_Change(e)
-        } else {
+    // TODO 1) discretionary lane changing to pass people
+    // TODO 2) routes can lookahead a bit to tell us to lane-change early
+    if (!a.is_lanechanging) {
+      a.at.on match {
+        case e: Edge => {
+          val target = Profiling.desired_lane.time(
+            () => route.pick_lane(e)
+          )
           // TODO Ever a good idea to stall and wait? (Only do so if we didn't
           // fail the precondition of being too close to the end)
+          if (target != e && safe_to_lanechange(target)) {
+            return Act_Lane_Change(target)
+          }
         }
+        case _ =>
       }
-      case None =>
     }
 
     // TODO refactor and pull in max_safe_accel here.
@@ -197,12 +148,11 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
 
   // This is a lazy sequence of edges/turns that tracks distances away from the
   // original spot. This assumes no lane-changing: where the agent starts
-  // predicting is where they'll end up. As a result, interaction with the
-  // routing strategy will sometimes force the strategy to reroute.
+  // predicting is where they'll end up.
   class LookaheadStep(
     // TODO dist_left_to_analyze, dist_so_far?
-    val predict_dist: Double, val dist_ahead: Double,
-    val path: Stream[Traversable], val this_dist: Double)
+    val at: Traversable, val predict_dist: Double, val dist_ahead: Double,
+    val this_dist: Double)
   {
     // predict_dist = how far ahead we still have to look
     // TODO consider seeding dist_ahead with not 0 but this_dist, then lots of
@@ -212,34 +162,31 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
     // this_dist = how much distance from 'at' we'll consider. it would just be
     // length, except for the very first step of a lookahead, since the agent
     // doesnt start at the beginning of the step.
-    // path = specific_path from route
     override def toString = "Lookahead to %s with %.2f m left".format(at, predict_dist)
 
     // TODO iterator syntax
 
-    def is_last_step = !next_step.isDefined
-
-    def at = path.head
-
-    lazy val next_step: Option[LookaheadStep] = {
-      // We want to avoid asking forcing the path stream to compute its next
-      // step when we don't actually need it yet. We could needlessly confuse it
-      // and make it think we missed an opportunity to lane-change.
-      if (predict_dist - this_dist <= 0.0) {
-        // We're done
-        None
-      } else {
-        path.tail.headOption match {
-          case Some(place) => Some(new LookaheadStep(
-            predict_dist - this_dist, dist_ahead + this_dist,
-            path.tail, place.length
-          ))
-          // Done with route, stop looking ahead.
-          case None => None
-        }
-      }
+    // TODO this and next_at, maybe move them out of this class
+    // TODO the way this gets used is a bit redundant
+    def is_last_step = at match {
+      case e: Edge => route.done(e)
+      case _ => false
     }
 
+    def next_at = at match {
+      case e: Edge => route.pick_turn(e)
+      case t: Turn => t.to
+    }
+
+    lazy val next_step: Option[LookaheadStep] =
+      if (predict_dist - this_dist <= 0.0 || is_last_step)
+        None
+      else
+        Some(new LookaheadStep(
+          next_at, predict_dist - this_dist, dist_ahead + this_dist,
+          next_at.length
+        ))
+          
     // this is the make-lazy boilerplate
     def steps(): Stream[LookaheadStep] = next_step match {
       case Some(step) => this #:: step.steps
@@ -247,20 +194,8 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
     }
   }
 
-  def pick_next_step(current: Traversable): Stream[Traversable] =
-    current match {
-      // We don't have a choice
-      case t: Turn => { return t.to #:: pick_next_step(t.to) }
-      case e: Edge => route.pick_turn(e) match {
-        case Some(t) => t #:: pick_next_step(t)
-        case None => Stream.empty
-      }
-    }
-
-  // TODO Util.assert_eq(a.at.on, route.specific_path.head)
-  // TODO merge this and specific_path. have to propagate new distances.
   def lookahead_steps = (new LookaheadStep(
-    a.max_lookahead_dist, 0, specific_path, a.at.dist_left
+    a.at.on, a.max_lookahead_dist, 0, a.at.dist_left
   )).steps
 
   // Returns Act_Set_Accel almost always.
@@ -284,12 +219,6 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
     // between us and it, cant we stop looking for agents?
 
     // TODO pull each constraint out into its own function
-
-    // Initialize our lookahead path if necessary
-    if (specific_path.isEmpty) {
-      specific_path = a.at.on #:: pick_next_step(a.at.on)
-    }
-    // TODO ^ workaround by including current step always?
 
     for (step <- lookahead_steps
          if (!stop_how_far_away.isDefined || !follow_agent.isDefined))
@@ -328,16 +257,16 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
           // Don't stop at the end of a turn
           case t: Turn => false
           // Stop if we're arriving at destination
-          case e if step.is_last_step => {
+          case e: Edge if route.done(e) => {
             stopping_for_destination = true
             true
           }
+          // Lookahead has scanned far ahead enough
+          case e: Edge if !step.next_step.isDefined => true
           // Otherwise, ask the intersection
           case e: Edge => {
             val i = e.to.intersection
             a.upcoming_intersections += i   // remember we've registered here
-            // We know next_step is defined because is_last_step was false if
-            // we're in this case.
             val next_turn = step.next_step.get.at match {
               case t: Turn => t
               case _ => throw new Exception("lookahead didnt get a turn")
@@ -367,8 +296,6 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
     // TODO consider moving this first case to choose_action and not doing
     // lookahead when these premises hold true.
     if (stopping_for_destination && stop_how_far_away.get <= cfg.end_threshold && a.speed == 0.0) {
-      // Make sure lookahead did its job.
-      assert(route.general_path.tail.isEmpty)
       return Act_Done_With_Route()
     } else {
       // So, three possible constraints.

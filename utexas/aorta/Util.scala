@@ -65,6 +65,7 @@ object Util {
   }
 
   def assert_eq(a: Any, b: Any) = assert(a == b, a + " != " + b)
+  def assert_ne(a: Any, b: Any) = assert(a != b, a + " == " + b)
   def assert_gt[T <% Ordered[T]](a: T, b: T) = assert(a > b, a + " <= " + b)
   def assert_ge[T <% Ordered[T]](a: T, b: T) = assert(a >= b, a + " < " + b)
   def assert_lt[T <% Ordered[T]](a: T, b: T) = assert(a < b, a + " >= " + b)

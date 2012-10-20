@@ -37,8 +37,9 @@ class Edge(var id: Int, val road: Road, val dir: Direction.Direction) extends Tr
 
   def shift_left: Option[Edge]  = if (is_leftmost)  None else Some(other_lanes(lane_num + 1))
   def shift_right: Option[Edge] = if (is_rightmost) None else Some(other_lanes(lane_num - 1))
-
   def adjacent_lanes: List[Edge] = List(shift_left, shift_right, Some(this)).flatten
+  def best_adj_lane(to_reach: Edge)
+    = adjacent_lanes.sortBy(e => math.abs(to_reach.lane_num - e.lane_num)).head
 
   def next_turns = to.turns_from(this)
   def prev_turns = from.turns_to(this)
@@ -216,6 +217,14 @@ class DirectedRoad(val road: Road, val dir: Direction.Direction) {
 
   def start_pt = edges.head.from.location
   def end_pt = edges.head.to.location
-  def leads_to = edges.flatMap(_.succs).map(_.directed_road).toSet
+  // TODO dont assume some edge being lane-changeable means others are too
+  // TODO could even predict/take into account the current distance to see if
+  // there's room left
+  def naive_leads_to = edges.flatMap(_.succs).map(_.directed_road).toSet
+  def leads_to(from: Edge) = if (from.queue.ok_to_lanechange)
+                               naive_leads_to
+                             else
+                               from.succs.map(_.directed_road).toSet
+
   def length = road.length
 }
