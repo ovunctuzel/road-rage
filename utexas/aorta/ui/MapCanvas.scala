@@ -701,6 +701,8 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
         sim.debug_agent = Some(a)
       }
       case Some(v: Vertex) => {
+        Util.log(v + " at " + v.location)
+
         val i = v.intersection
 
         Util.log("Current turns allowed:")
@@ -792,6 +794,7 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
       }
     }
     case EV_Key_Press(_) => // Ignore the rest
+    case _ =>
   }
 
   // TODO ew, even refactored, these are a bit ugly.

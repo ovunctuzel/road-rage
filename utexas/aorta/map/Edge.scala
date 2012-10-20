@@ -161,22 +161,23 @@ class Line(var x1: Double, var y1: Double, var x2: Double, var y2: Double) {
 
   // this is line intersection, not line segment.
   def intersection(other: Line): Option[Coordinate] = {
-    // Ripped from http://en.wikipedia.org/wiki/Line-line_intersection shamelessly
+    // Ripped from http://www.java-gaming.org/index.php?topic=22590.0
+    def det(a: Double, b: Double, c: Double, d: Double) = (a * d) - (b * c)
+
     val x3 = other.x1
     val x4 = other.x2
     val y3 = other.y1
     val y4 = other.y2
 
-    val denom: Double = (x1 - x2) * (y3 - y4) - (y1 - y2) * (x3 - x4)
-    val num_x: Double = (x1 * y2 - y1 * x2) * (x3 - x4) - (x1 - x2) * (x3 * y4 - y3 * x4)
-    val num_y: Double = (x1 * y2 - y1 * x2) * (y3 - y4) - (y1 - y2) * (x3 * y4 - y3 * x4)
-
-    if (denom.abs <= cfg.epsilon) {
-      // they're parallel
-      return None
-    } else {
-      return Some(new Coordinate(num_x / denom, num_y / denom))
+    val det1And2 = det(x1, y1, x2, y2)
+    val det3And4 = det(x3, y3, x4, y4)
+    val detDiff = det(x1 - x2, y1 - y2, x3 - x4, y3 - y4)
+    if (detDiff <= cfg.epsilon) {
+      return None  // parallel
     }
+    val x = det(det1And2, x1 - x2, det3And4, x3 - x4) / detDiff
+    val y = det(det1And2, y1 - y2, det3And4, y3 - y4) / detDiff
+    return Some(new Coordinate(x, y))
   }
 
   // where are we on this line? even handles negative distances

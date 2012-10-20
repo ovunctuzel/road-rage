@@ -14,7 +14,7 @@ import scala.collection.mutable.ListBuffer
 import scala.collection.mutable.MutableList
 
 import utexas.aorta.map.{Road, Edge, Vertex, Turn, TurnType, Line, Coordinate, Ward,
-                         Traversable}
+                         Traversable, DirectedRoad}
 
 import utexas.aorta.{Util, cfg}
 
@@ -57,7 +57,7 @@ class Pass3(old_graph: PreGraph2) {
 
       // force line segments to meet up on the inside
       for (e <- r.all_lanes; (l1, l2) <- e.lines zip e.lines.tail) {
-        adjust_lines(l1, l2, true)
+        adjust_lines(l1, l2, true, true)
       }
     }
 
@@ -92,7 +92,10 @@ class Pass3(old_graph: PreGraph2) {
 
     Util.log("Tidying up geometry...")
     // Do this work per edge, for now.
-    graph.edges.foreach(e => adjust_segments(e))
+    graph.roads.foreach(r => {
+      adjust_segments(r.pos_group)
+      adjust_segments(r.neg_group)
+    })
 
     Util.log("Dividing the map into wards...")
     Util.log_push
@@ -334,7 +337,10 @@ class Pass3(old_graph: PreGraph2) {
     }
   }
 
-  private def adjust_segments(e: Edge) = {
+  private def adjust_segments(r: DirectedRoad): Unit = {
+    if (r.edges.isEmpty) {
+      return
+    }
     // When we shift lines from the road's center to draw lanes, we end up with
     // lines that protrude too far into the intersection. It's not clear how far
     // back to trim these in general, so one solution is to find all the other
@@ -355,13 +361,25 @@ class Pass3(old_graph: PreGraph2) {
     // edge that's going to cross us, so that's why we force rightmost lane
     // Not adjusting the other line if we're not the rightmost lane... TODO does
     // this help?
-    e.rightmost_lane.next_counterclockwise_to match {
-      case Some(ccw) => adjust_lines(e.lines.last, ccw.lines.head, e.is_rightmost)
+    r.edges.head.next_counterclockwise_to match {
+      case Some(ccw) => {
+        // Trim their lines first, since we base it off of our rightmost. THEN
+        // trim our lines, including our rightmost.
+        val our_rightmost = r.edges.head
+        assert(our_rightmost.is_rightmost)
+        for (other_e <- ccw.other_lanes if !other_e.is_rightmost) {
+          adjust_lines(our_rightmost.lines.last, other_e.lines.head, false, true)
+        }
+
+        for (our_e <- r.edges) {
+          adjust_lines(our_e.lines.last, ccw.lines.head, true, our_e.is_rightmost)
+        }
+      }
       case _ => {}
     }
   }
 
-  private def adjust_lines(l1: Line, l2: Line, both: Boolean) = {
+  private def adjust_lines(l1: Line, l2: Line, fix_1st: Boolean, fix_2nd: Boolean) = {
     // expect them to collide.
     l1.intersection(l2) match {
       case Some(pt) => {
@@ -373,12 +391,14 @@ class Pass3(old_graph: PreGraph2) {
         // detect and avoid trimming those.
         val max_trim = 500.0  // TODO cfg. this should be meters now.
 
-        val possible1 = new Line(l1.x1, l1.y1, pt.x, pt.y)
-        if (possible1.length < l1.length && l1.length - possible1.length <= max_trim) {
-          l1.x2 = pt.x
-          l1.y2 = pt.y
+        if (fix_1st) {
+          val possible1 = new Line(l1.x1, l1.y1, pt.x, pt.y)
+          if (possible1.length < l1.length && l1.length - possible1.length <= max_trim) {
+            l1.x2 = pt.x
+            l1.y2 = pt.y
+          }
         }
-        if (both) {
+        if (fix_2nd) {
           val possible2 = new Line(pt.x, pt.y, l2.x2, l2.y2)
           if (possible2.length < l2.length && l2.length - possible2.length <= max_trim) {
             l2.x1 = pt.x

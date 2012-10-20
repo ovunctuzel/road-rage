@@ -2,9 +2,6 @@
 
 # Current
 
-- trim back line segments again
-  then look at the different policies on synthetic :P
-
 LANE-CHANGE
   - new route interface
     - implement all the drunks. how bad there?
@@ -13,19 +10,12 @@ LANE-CHANGE
         - compressed all pairs?
         - time to use wards?
         - look at googles contraction hierarchies
-    - perf
-      - save memory by excluding lines/points, except from gui?
-      - hotspot just doesnt kick in soon enough
-      - go back and optimize spawning
 
-
-  - dont LC asap?
-  - rerouting too often? (this doesnt even make sense now)
-    - lookbehind for lanechanging and spawning. lazily compute.
-    - consider stalling to wait to LC
-    - consider better pass3 reachability analysis
-    - implement speculative desired_lane
   - why do we need to asap warp to new lane when we start LCing again?
+  - lookbehind for lanechanging and spawning. lazily compute.
+  - consider stalling to wait to LC
+  - consider better pass3 reachability analysis
+  - implement speculative desired_lane
 
 CHECKPOINTING
   - trigger it auomatically, right filenames
@@ -37,6 +27,9 @@ OPTIMIZE
   - dont keep asking the same thing over and over again in lookahead
   - parallelize lookahead within a timestep
   - profiling times dont add up
+  - save memory by excluding lines/points, except from gui?
+  - hotspot just doesnt kick in soon enough
+  - go back and optimize spawning
 
 TEST
   - is it really safe to tweak dt?
