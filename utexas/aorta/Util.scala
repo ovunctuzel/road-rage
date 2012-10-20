@@ -209,7 +209,7 @@ object cfg {
   
   lazy val dt_s            = doubles("dt_s").value
 
-  def lanechange_dist = lane_width * 2.0
+  def lanechange_dist = lane_width * 5.0
 }
 
 // couldn't quite the OO work out to bundle these

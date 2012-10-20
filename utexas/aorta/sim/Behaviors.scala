@@ -45,6 +45,28 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
   // the same math.
   var keep_stopping = false
 
+  // As an optimization and to keep some stats on how successful lane-changing
+  // is, remember the adjacent lane we'd like to switch into.
+  // Start null to trigger the initial case of resetting it. Have to do it at
+  // "sim time" when agent's actually first moving, otherwise the route might
+  // not be ready to answer us.
+  var target_lane: Option[Edge] = null
+
+  def reset_target_lane(base: Edge) = {
+    target_lane = None
+    base match {
+      case e: Edge => {
+        val target = Profiling.desired_lane.time(
+          () => route.pick_lane(e)
+        )
+        if (target != base) {
+          target_lane = Some(target)
+        }
+      }
+      case _ =>
+    }
+  }
+
   override def choose_turn(e: Edge) = route.pick_turn(e)
   
   override def transition(from: Traversable, to: Traversable) = {
@@ -59,7 +81,12 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
     }
 
     route.transition(from, to)
-    keep_stopping = false   // reset
+    // reset state
+    keep_stopping = false
+    to match {
+      case e: Edge => reset_target_lane(e)
+      case _ => target_lane = None
+    }
   }
 
   override def dump_info() = {
@@ -126,16 +153,17 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
     // Do we want to lane change?
     // TODO 1) discretionary lane changing to pass people
     // TODO 2) routes can lookahead a bit to tell us to lane-change early
+    
+    // TODO awkward way to bootstrap this.
+    if (target_lane == null) {
+      // Should be an edge, since we start on edges.
+      reset_target_lane(a.at.on.asInstanceOf[Edge])
+    }
     if (!a.is_lanechanging) {
-      a.at.on match {
-        case e: Edge => {
-          val target = Profiling.desired_lane.time(
-            () => route.pick_lane(e)
-          )
-          // TODO Ever a good idea to stall and wait? (Only do so if we didn't
-          // fail the precondition of being too close to the end)
-          if (target != e && safe_to_lanechange(target)) {
-            return Act_Lane_Change(target)
+      target_lane match {
+        case Some(e) => {
+          if (Profiling.safe_lane.time(() => safe_to_lanechange(e))) {
+            return Act_Lane_Change(e)
           }
         }
         case _ =>
@@ -324,7 +352,11 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
 
       val conservative_accel = math.min(a1, math.min(a2, a3))
 
+      // TODO hopefully gridlock is better, don't need to do this analyis so
+      // much
+      /*Profiling.debug.start
       Gridlock.handle_agent(a, conservative_accel, follow_agent, turn_blocked_by)
+      Profiling.debug.stop*/
 
       // As the very last step, clamp based on our physical capabilities.
       return Act_Set_Accel(if (conservative_accel > 0)

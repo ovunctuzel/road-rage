@@ -206,14 +206,12 @@ class Agent(val id: Int, val graph: Graph, val start: Edge,
         }
 
         // Otherwise, fine!
-        Profiling.debug.start
         old_lane = Some(at.on.asInstanceOf[Edge])
         target_accel = 0
 
         // Immediately enter the target lane
         behavior.transition(at.on, lane)
         at = enter(lane, at.dist)
-        Profiling.debug.stop
 
         return false
       }
