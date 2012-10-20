@@ -76,8 +76,11 @@ class DrunkenRoute(goal: DirectedRoad) extends Route(goal) {
     }
   }
 
+  // With the right amount of alcohol, a drunk can choose uniformly at random
+  def choose_turn(e: Edge) = Util.choose_rand(e.next_turns)
+
   def pick_turn(e: Edge) =
-    chosen_turns.getOrElseUpdate(e, Util.choose_rand(e.next_turns))
+    chosen_turns.getOrElseUpdate(e, choose_turn(e))
 
   def pick_lane(e: Edge): Edge = {
     if (!desired_lane.isDefined) {
@@ -91,31 +94,30 @@ class DrunkenRoute(goal: DirectedRoad) extends Route(goal) {
   }
 }
 
-// TODO do these too
-/*
 // Wanders around slightly less aimlessly by picking directions
-class DirectionalDrunkRoute extends DrunkenRoute() { 
-  def heuristic(r: DirectedRoad) = r.end_pt.dist_to(goal.start_pt)
+class DirectionalDrunkRoute(goal: DirectedRoad) extends DrunkenRoute(goal) { 
+  def heuristic(t: Turn) = t.to.to.location.dist_to(goal.start_pt)
 
   // pick the most direct path 75% of the time
-  override def pick_next_road(r: DirectedRoad): DirectedRoad = {
-    return if (Util.percent(.75))
-             r.leads_to.toList.sortBy(heuristic).head
-           else
-             super.pick_next_road(r)
-  }
+  override def choose_turn(e: Edge) =
+    if (Util.percent(.75))
+      e.next_turns.sortBy(heuristic).head
+    else
+      super.choose_turn(e)
 }
 
-// Don't keep picking the same turn
-class DrunkenExplorerRoute extends DirectionalDrunkRoute() {
-  var past = new MutableMap[DirectedRoad, Int]()
-  override def pick_next_road(r: DirectedRoad): DirectedRoad = {
+// Don't keep making the same choices for roads
+class DrunkenExplorerRoute(goal: DirectedRoad) extends DirectionalDrunkRoute(goal) {
+  val past = new MutableMap[DirectedRoad, Int]()
+
+  override def choose_turn(e: Edge): Turn = {
     // break ties by the heuristic of distance to goal
-    val choice = r.leads_to.toList.sortBy(
-      next => (past.getOrElse(next, -1) + Util.rand_int(0, 5), heuristic(next))
-    ).head
-    past(choice) = past.getOrElse(choice, 0) + 1
+    val choice = e.next_turns.sortBy(turn => (
+      past.getOrElse(turn.to.directed_road, -1) + Util.rand_int(0, 5),
+      heuristic(turn)
+    )).head
+    val road = choice.to.directed_road
+    past(road) = past.getOrElse(road, 0) + 1
     return choice
   }
 }
-*/

@@ -73,11 +73,10 @@ extends Ordered[Generator]
     val route = Simulation.make_route(route_type, end.directed_road)
     val a = new Agent(sim.next_id, sim, start, start.queue.safe_spawn_dist, route)
 
-    // schedule whatever work the route needs done.
-    // TODO the route won't get them exactly to end, just end's group of lanes.
-    // close enough?
+    // Agents get to the directed road of the requested ending. Good enough?
     route.compute_route match {
       case Some(task) => {
+        // Schedule whatever work the route needs done.
         val delayed = new FutureTask[Unit](task)
         Generator.worker_pool.execute(delayed)
         pending += ((a, Some(delayed)))

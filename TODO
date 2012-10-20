@@ -3,15 +3,12 @@
 # Current
 
 LANE-CHANGE
-  - new route interface
-    - implement all the drunks. how bad there?
-    - static
-      - full dijkstras eats memory and is slow
-        - compressed all pairs?
-        - time to use wards?
-        - look at googles contraction hierarchies
-
   - why do we need to asap warp to new lane when we start LCing again?
+  - tweak distance to do it up again
+  - how often do we want to LC but cant? (total that miss it)
+
+  - static routes eat memory and are slow!
+    - contraction hierarchies, hub labeling, etc
   - lookbehind for lanechanging and spawning. lazily compute.
   - consider stalling to wait to LC
   - consider better pass3 reachability analysis
@@ -26,21 +23,17 @@ CHECKPOINTING
 OPTIMIZE
   - dont keep asking the same thing over and over again in lookahead
   - parallelize lookahead within a timestep
-  - profiling times dont add up
+  - profiling times dont add up. renice?
   - save memory by excluding lines/points, except from gui?
   - hotspot just doesnt kick in soon enough
   - go back and optimize spawning
+  - ui should sleep better
+  - more compact format than xml? :P  even json...
 
 TEST
   - is it really safe to tweak dt?
 
 # Lane changing
-
-current major problems:
-  1) no determinism?
-  2) eq distances
-  3) empty route?
-    ./headless --input dat/atx_big.map --rng 1350453254246
 
 - new lookahead is not requesting turn till already stopped, even with reservation!
   - now lookahead is making agents terminate route early...
@@ -59,7 +52,6 @@ current major problems:
       - merge lookahead steps with specific_path, persist them, and update distances...
       - separate hasNext and get seems weird..
 - dont forget to look at agent ahead of us in old lane only.
-- blocking A* for rerouting
 - agents get caught in loops because the general path isnt realizable
 
 - test at scale. gridlock?
@@ -69,7 +61,6 @@ current major problems:
   - each obj should have a render()
   - spawning agents at specific places
 - ui visualize safe spawning distances
-- cant pathfind to specific lane at the end.. but does it make sense to?
 - testing
   - introduce automated test framework using scenarios
   - wacky cases of 2 side-by-side agents wanting to swap places?

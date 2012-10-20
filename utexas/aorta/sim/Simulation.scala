@@ -295,9 +295,8 @@ object Simulation {
   def make_route(name: String, goal: DirectedRoad) = name match {
     case "Static A*" => new StaticRoute(goal)
     case "Drunken" => new DrunkenRoute(goal)
-    // TODO enable the others
-    //case "Directional Drunk" => () => new DirectionalDrunkRoute(goal)
-    //case "Drunken Explorer" => () => new DrunkenExplorerRoute(goal)
+    case "Directional Drunk" => new DirectionalDrunkRoute(goal)
+    case "Drunken Explorer" => new DrunkenExplorerRoute(goal)
     // TODO case _ => ???
   }
 }
