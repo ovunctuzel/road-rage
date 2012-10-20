@@ -124,11 +124,6 @@ class Queue(t: Traversable) {
   // TODO Starting on highways seems weird, but allow it for now
   // TODO justify this better, or cite the paper.
   def ok_to_spawn = t.length >= worst_entry_dist + cfg.end_threshold + (2 * cfg.follow_dist)
-
-  def ok_to_lanechange =
-    (t.length >= cfg.lanechange_dist + cfg.end_threshold) &&
-    // this second constraint can be removed once lookbehind is implemented
-    (t.length >= worst_entry_dist + cfg.follow_dist)
   
   // TODO geometric argument
   // TODO sometimes the max arg is < the min arg. :)

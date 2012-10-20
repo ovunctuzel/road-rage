@@ -22,16 +22,11 @@ object Profiling {
   val desired_lane = stopwatch("    desired_lane")
   val safe_lane = stopwatch("    safe_to_lanechange")
   val react_accel = stopwatch("    max_safe_accel")
-  val debug = stopwatch("[debug watch]")
   private val watches = List(agent_step, queue_check, intersection_check, react,
-                             choose_act, desired_lane, safe_lane, react_accel,
-                             debug)
+                             choose_act, desired_lane, safe_lane, react_accel)
   // TODO break down more. GUI? iterating over agents vs calling methods?
 
-  def shutdown(): Unit = {
-    if (whole_step.seconds == 0.0) {
-      return
-    }
+  def shutdown() = {
     Util.log(f"Cumulatively, ${whole_step.seconds}%.2f seconds spent simulating ticks")
     for (watch <- watches) {
       val percentage = (watch.seconds / whole_step.seconds) * 100.0

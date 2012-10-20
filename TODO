@@ -2,27 +2,15 @@
 
 # Current
 
-- trim back line segments again
-
 LANE-CHANGE
-  - new route interface
-    - implement all the drunks. how bad there?
+  - buggy, disconnected routes... verify paths make sense? a* issue, drunken, both?
+    no way to reach Highgrove Terrace [R5792]'s - lanes from Lane -0 of Highgrove Terrace (13556)? step 1 is Highgrove Terrace [R5792]'s + lanes
+  - lookbehind for lanechanging and spawning. lazily compute.
+  - adjust routing to know when lanechanging impossible on short edges.
+  - implement speculative desired_lane
+  - rerouting too often?
 
-    - static
-      - full dijkstras eats memory and is slow
-        - compressed all pairs?
-      - running was hella slow (agent step?!)
-        - cache hits? but shouldnt be thrashing memory with drunk...
-      - on synthetic, why does everyone want the rightmost lanes?
-
-
-  - dont LC asap?
-  - rerouting too often? (this doesnt even make sense now)
-    - lookbehind for lanechanging and spawning. lazily compute.
-    - consider stalling to wait to LC
-    - consider better pass3 reachability analysis
-    - implement speculative desired_lane
-  - why do we need to asap warp to new lane when we start LCing again?
+  - drunken too should use an effectively_leads_to for picking
 
 CHECKPOINTING
   - trigger it auomatically, right filenames
@@ -31,12 +19,8 @@ CHECKPOINTING
   - scala auto-serialization, ad-hoc, collect state?
 
 OPTIMIZE
-  - dont keep asking the same thing over and over again in lookahead
   - parallelize lookahead within a timestep
   - profiling times dont add up
-
-TEST
-  - is it really safe to tweak dt?
 
 # Lane changing
 
@@ -62,6 +46,9 @@ current major problems:
     redesign...
       - merge lookahead steps with specific_path, persist them, and update distances...
       - separate hasNext and get seems weird..
+- are we rerouting too frequently?
+  - try to tighten when we can lanechange
+  - consider flooding backwards.
 - dont forget to look at agent ahead of us in old lane only.
 - blocking A* for rerouting
 - agents get caught in loops because the general path isnt realizable

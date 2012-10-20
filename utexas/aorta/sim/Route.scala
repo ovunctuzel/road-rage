@@ -9,86 +9,115 @@ import java.util.concurrent.Callable
 import utexas.aorta.map.{Edge, DirectedRoad, Traversable, Turn}
 import utexas.aorta.{Util, cfg}
 
-// Get a client to their goal by any means possible.
-abstract class Route(val goal: DirectedRoad) {
-  def done(at: Edge) = at.directed_road == goal
+abstract class Route() {
+  protected var goal: DirectedRoad = null
 
-  // Can return work to delegate to a thread pool that MUST be done before the
-  // client asks us questions.
-  def compute_route(): Option[Callable[Unit]]
-  // The client tells us they've physically moved
-  def transition(from: Traversable, to: Traversable)
-  // The client is being forced to pick a turn. If they ask us repeatedly, we
-  // have to always return the same answer.
-  def pick_turn(e: Edge): Turn
-  // The client may try to lane-change somewhere
-  def pick_lane(e: Edge): Edge
-}
+  // This shouldn't modify any state of the route (eg, don't change goal here)
+  // It can give a response immediately, or delegate to a thread pool
+  def reroute(from: DirectedRoad, to: DirectedRoad): Either[Stream[DirectedRoad], Callable[Stream[DirectedRoad]]]
 
-// Compute the cost of the path from every source to our single goal. 
-// TODO does this wind up being too expensive memory-wise? maybe approx as ints
-// or something... even a compressed data structure that's a bit slower to read
-// from.
-class StaticRoute(goal: DirectedRoad) extends Route(goal) {
-  var costs: Array[Double] = null
-
-  def compute_route = Some(new Callable[Unit]() {
-    def call = {
-      costs = Agent.sim.shortest_paths(goal)
+  // This sets the goal, calls reroute, and even handles the case when reroute
+  // immediately answers.
+  def request_route(from: DirectedRoad, to: DirectedRoad): Option[Callable[Stream[DirectedRoad]]] = {
+    goal = to
+    return reroute(from, to) match {
+      case Left(route) => {
+        got_route(route)
+        None
+      }
+      case Right(thunk) => Some(thunk)
     }
-  })
-
-  // We don't care.
-  def transition(from: Traversable, to: Traversable) = {}
-
-  def pick_turn(e: Edge) = e.next_turns.sortBy(t => costs(t.to.id)).head
-  def pick_lane(e: Edge): Edge = {
-    // Break ties for the best lane overall by picking the rightmost lane
-    // arbitrarily.
-    val target_lane = e.other_lanes.sortBy(e => (costs(e.id), e.lane_num)).head
-    // Get as close to target_lane as possible.
-    // TODO make sure this doesnt oscillate.
-    return e.adjacent_lanes.sortBy(
-      e => math.abs(target_lane.lane_num - e.lane_num)
-    ).head
   }
-}
 
-// DOOMED TO WALK FOREVER (until we happen to reach our goal)
-class DrunkenRoute(goal: DirectedRoad) extends Route(goal) {
-  // Remember answers we've given for the sake of consistency
-  var desired_lane = 0
-  val chosen_turns = new MutableMap[Edge, Turn]()
+  // TODO make sure perf characteristics of list/stream are correct
+  // Includes the agent's current step as the head.
+  // When we're in a turn, general_path has the next road as head.
+  var general_path: Stream[DirectedRoad] = Stream.empty
 
-  def compute_route = None
-
-  // Forget what we've remembered
   def transition(from: Traversable, to: Traversable) = {
     (from, to) match {
-      case (t: Turn, e: Edge) => {
-        if (e.queue.ok_to_lanechange) {
-          desired_lane = Util.rand_int(0, e.other_lanes.size - 1)
-        } else {
-          desired_lane = e.lane_num
-        }
-      }
+      // Make sure we're following general path
       case (e: Edge, t: Turn) => {
-        chosen_turns.remove(e)
+        //Util.assert_eq(general_path.head, e.directed_road)
+        assert(general_path.head == e.directed_road,
+          { general_path.toList + " doesnt start with " + e.directed_road })
+        general_path = general_path.tail
       }
       case _ =>
     }
   }
 
-  def pick_turn(e: Edge) =
-    chosen_turns.getOrElseUpdate(e, Util.choose_rand(e.next_turns))
+  def got_route(response: Stream[DirectedRoad]) = {
+    general_path = response
+  }
 
-  def pick_lane(e: Edge) = e.adjacent_lanes.sortBy(
-    e => math.abs(desired_lane - e.lane_num)
-  ).head
+  // None indicates the route's done
+  def pick_turn(e: Edge): Option[Turn] = {
+    // Split our path into roads before and after e's road
+    // TODO this is quite inefficient, specific_path should track us or so.
+    return general_path.span(_ != e.directed_road) match {
+      case (before, this_road #:: next_road #:: rest) => {
+        // Find a turn that leads to the desired road
+        e.turns_leading_to(next_road) match {
+          // Pick the first arbitrarily if there are multiple
+          case turn :: _ => Some(turn)
+          // If it doesn't exist, that means we couldn't lane-change in
+          // time, so blockingly re-route
+          case Nil => {
+            // TODO let the route choose this
+            val new_src = e.next_turns.head.to.directed_road
+
+            // TODO it's useful to know how often this is happening for debug
+            Util.log("Blockingly re-routing from " + new_src)
+            Util.log("Old route... " + general_path.take(5).toList)
+
+            val new_route = reroute(new_src, goal) match {
+              case Left(route) => route
+              // Blockingly do the work right now
+              case Right(thunk) => thunk.call
+            }
+
+            got_route(
+              (before.toList ++ List(this_road)).toStream #::: new_route
+            )
+
+            // Call ourselves again. desired_road will not be blank again.
+            pick_turn(e)
+          }
+        }
+      }
+      // Done with route
+      case (before, this_road #:: Stream.Empty) => None
+    }
+  }
 }
 
-// TODO do these too
-/*
+// A* and don't adjust the route unless we miss part of the sequence due to
+// inability to lanechange.
+class StaticRoute() extends Route() {
+  override def reroute(from: DirectedRoad, to: DirectedRoad) = Right(
+    new Callable[Stream[DirectedRoad]]() {
+      def call = Agent.sim.pathfind_astar(from, to).toStream
+    }
+  )
+}
+
+// DOOMED TO WALK FOREVER (until we happen to reach our goal)
+class DrunkenRoute() extends Route() {
+  // No actual work to do
+  override def reroute(from: DirectedRoad, to: DirectedRoad) = Left(plan_step(from))
+
+  private def plan_step(cur_step: DirectedRoad): Stream[DirectedRoad] =
+    if (cur_step == goal)
+      cur_step #:: Stream.empty
+    else {
+      val next = pick_next_road(cur_step)
+      cur_step #:: plan_step(next)
+    }
+
+  def pick_next_road(r: DirectedRoad): DirectedRoad = Util.choose_rand[DirectedRoad](r.leads_to.toList)
+}
+
 // Wanders around slightly less aimlessly by picking directions
 class DirectionalDrunkRoute extends DrunkenRoute() { 
   def heuristic(r: DirectedRoad) = r.end_pt.dist_to(goal.start_pt)
@@ -114,4 +143,3 @@ class DrunkenExplorerRoute extends DirectionalDrunkRoute() {
     return choice
   }
 }
-*/

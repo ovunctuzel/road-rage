@@ -73,7 +73,6 @@ class PreGraph3(old_graph: PreGraph2) {
   }
 
   private def add_edge(r: Road, dir: Direction.Direction) = {
-    // TODO ahh counting constantly is so slow!
     val e = new Edge(edges.length, r, dir)
     edges += e
     // first in a list of lanes is defined as the rightmost

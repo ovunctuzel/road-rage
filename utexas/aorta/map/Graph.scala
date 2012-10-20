@@ -76,8 +76,7 @@ class Graph(val roads: Array[Road], val edges: Array[Edge],
       }
 
       // Where can we go next?
-      // TODO rewrite this method
-      for (next <- step.road.naive_leads_to) {
+      for (next <- step.road.leads_to) {
         if ((loop && next == from) || !visited.contains(next)) {
           val tentative_cost = costs(step.road) + step.road.length
 
@@ -103,62 +102,6 @@ class Graph(val roads: Array[Road], val edges: Array[Edge],
   }
   def pathfind_astar(from: Edge, to: Edge): List[DirectedRoad] =
     pathfind_astar(from.directed_road, to.directed_road)
-
-  // Runs Dijkstra's algorithm and returns the cost to get from every edge to
-  // the goal.
-  def shortest_paths(goal: DirectedRoad): Array[Double] = {
-    // TODO needs tests!
-    // TODO I have to think about this carefully, but this is single-source...
-    // cant we just flow backwards, though? prev_turns makes sense...
-
-    val costs = new Array[Double](edges.size)
-
-    val infinity = Double.PositiveInfinity
-    for (i <- 0 to costs.length - 1) {
-      costs.update(i, infinity)
-    }
-
-    // TODO pass in a comparator to the queue instead of having a wrapper class
-    class Step(val edge: Edge) extends Ordered[Step] {
-      def cost = costs(edge.id)
-      def compare(other: Step) = other.cost.compare(cost)
-    }
-
-    // Edges in the open set don't have their final distance yet
-    val open = new PriorityQueue[Step]()
-    val done = new HashSet[Edge]()
-
-    for (e <- goal.edges) {
-      costs(e.id) = 0
-      open.enqueue(new Step(e))
-    }
-
-    while (open.nonEmpty) {
-      val step = open.dequeue
-      
-      // Skip duplicate steps, since we chose option 3 for the problem below.
-      if (!done.contains(step.edge)) {
-        done += step.edge
-
-        for (turn <- step.edge.prev_turns if !done.contains(turn.from)) {
-          val next = turn.from
-          val dist = step.cost + turn.length + next.length
-          if (dist < costs(next.id)) {
-            // Relax!
-            costs(next.id) = dist
-            // TODO ideally, decrease-key
-            // 1) get a PQ that uses a fibonacci heap
-            // 2) remove, re-insert again
-            // 3) just insert a dupe, then skip the duplicates when we get to them
-            // Opting for 3, for now.
-            open.enqueue(new Step(next))
-          }
-        }
-      }
-    }
-
-    return costs
-  }
 }
 
 // It's a bit funky, but the actual graph instance doesn't have this; we do.

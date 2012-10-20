@@ -7,7 +7,7 @@ package utexas.aorta.sim
 import java.util.concurrent.{Executors, FutureTask, Callable}
 import scala.collection.mutable.ListBuffer
 
-import utexas.aorta.map.Edge
+import utexas.aorta.map.{Edge, DirectedRoad}
 
 import utexas.aorta.{Util, cfg}
 
@@ -27,10 +27,10 @@ object Generator {
     // a new class doesn't entail too much new work
     val g = params("type") match {
       case "fixed"      => new FixedSizeGenerator(
-        sim, starts, ends, params("total").toInt, params("route_type")
+        sim, starts, ends, params("total").toInt, params("route_builder")
       )
       case "continuous" => new ContinuousGenerator(
-        sim, starts, ends, params("spawn_every").toDouble, params("route_type")
+        sim, starts, ends, params("spawn_every").toDouble, params("route_builder")
       )
       case _            => throw new Exception(
         "Weird serialized generator with type " + params("type")
@@ -43,7 +43,7 @@ object Generator {
 }
 
 abstract class Generator(sim: Simulation, desired_starts: Iterable[Edge],
-                         ends: Iterable[Edge], route_type: String)
+                         ends: Iterable[Edge], route_builder: String)
 extends Ordered[Generator]
 {
   val id = Generator.next_id
@@ -60,7 +60,7 @@ extends Ordered[Generator]
   def serialize_ls(ls: Array[Edge]) = ls.map(e => e.id).mkString(",")
 
   // there may be no task scheduled
-  protected var pending = new ListBuffer[(Agent, Option[FutureTask[Unit]])]
+  protected var pending = new ListBuffer[(Agent, Option[FutureTask[Stream[DirectedRoad]]])]
 
   // Returns new agents to try to spawn, or boolean means reap this genertor
   def run(): Either[List[Agent], Boolean]
@@ -70,15 +70,15 @@ extends Ordered[Generator]
   def count_pending = pending.size
 
   def add_specific_agent(start: Edge, end: Edge) = {
-    val route = Simulation.make_route(route_type, end.directed_road)
+    val route = Simulation.route_builder(route_builder)()
     val a = new Agent(sim.next_id, sim, start, start.queue.safe_spawn_dist, route)
 
     // schedule whatever work the route needs done.
     // TODO the route won't get them exactly to end, just end's group of lanes.
     // close enough?
-    route.compute_route match {
+    route.request_route(start.directed_road, end.directed_road) match {
       case Some(task) => {
-        val delayed = new FutureTask[Unit](task)
+        val delayed = new FutureTask[Stream[DirectedRoad]](task)
         Generator.worker_pool.execute(delayed)
         pending += ((a, Some(delayed)))
       }
@@ -100,9 +100,7 @@ extends Ordered[Generator]
       val ready = a._2 match {
         case Some(task) => {
           if (task.isDone) {
-            // Do we even need to call .get? These just have side effects
-            // that poke the route internally
-            task.get
+            a._1.route.got_route(task.get)
             true
           } else {
             false
@@ -150,8 +148,8 @@ extends Ordered[Generator]
 
 class FixedSizeGenerator(sim: Simulation, starts: Iterable[Edge],
                          ends: Iterable[Edge], total: Int,
-                         route_type: String)
-  extends Generator(sim, starts, ends, route_type)
+                         route_builder: String)
+  extends Generator(sim, starts, ends, route_builder)
 {
   var num_to_spawn = total
 
@@ -169,16 +167,16 @@ class FixedSizeGenerator(sim: Simulation, starts: Iterable[Edge],
     }
   }
 
-  override def serialize() = "<generator type=\"fixed\" time=\"%f\" starts=\"%s\" ends=\"%s\" total=\"%d\" route_type=\"%s\"/>".format(
+  override def serialize() = "<generator type=\"fixed\" time=\"%f\" starts=\"%s\" ends=\"%s\" total=\"%d\" route_builder=\"%s\"/>".format(
     created_at, serialize_ls(start_candidates), serialize_ls(end_candidates),
-    total, route_type
+    total, route_builder
   )
 }
 
 class ContinuousGenerator(sim: Simulation, starts: Iterable[Edge],
                           ends: Iterable[Edge], spawn_every: Double,
-                          route_type: String)
-  extends Generator(sim, starts, ends, route_type)
+                          route_builder: String)
+  extends Generator(sim, starts, ends, route_builder)
 {
   var last_tick = Agent.sim.tick
   var accumulated_time = 0.0
@@ -200,8 +198,8 @@ class ContinuousGenerator(sim: Simulation, starts: Iterable[Edge],
     }
   }
 
-  override def serialize() = "<generator type=\"continuous\" time=\"%f\" starts=\"%s\" ends=\"%s\" spawn_every=\"%f\" route_type=\"%s\"/>".format(
+  override def serialize() = "<generator type=\"continuous\" time=\"%f\" starts=\"%s\" ends=\"%s\" spawn_every=\"%f\" route_builder=\"%s\"/>".format(
     created_at, serialize_ls(start_candidates), serialize_ls(end_candidates),
-    spawn_every, route_type
+    spawn_every, route_builder
   )
 }

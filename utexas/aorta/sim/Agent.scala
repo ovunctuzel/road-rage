@@ -140,14 +140,12 @@ class Agent(val id: Int, val graph: Graph, val start: Edge,
 
     // so we finally end up somewhere...
     if (start_on == current_on) {
-      Profiling.debug.start
       at = move(start_on, current_dist)
       // Also stay updated in the other queue
       old_lane match {
         case Some(lane) => move(lane, current_dist)
         case None =>
       }
-      Profiling.debug.stop
     } else {
       exit(start_on)
       at = enter(current_on, current_dist)
@@ -218,8 +216,6 @@ class Agent(val id: Int, val graph: Graph, val start: Edge,
         return false
       }
       case Act_Done_With_Route() => {
-        // TODO untrue when our dest is tiny and we stop right before it!
-        Util.assert_eq(at.on.asInstanceOf[Edge].directed_road, route.goal)
         // Trust behavior, don't abuse this.
         Util.assert_eq(speed, 0.0)
         exit(at.on)
