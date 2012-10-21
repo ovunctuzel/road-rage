@@ -66,10 +66,10 @@ object Util {
 
   def assert_eq(a: Any, b: Any) = assert(a == b, a + " != " + b)
   def assert_ne(a: Any, b: Any) = assert(a != b, a + " == " + b)
-  def assert_gt[T <% Ordered[T]](a: T, b: T) = assert(a > b, a + " <= " + b)
-  def assert_ge[T <% Ordered[T]](a: T, b: T) = assert(a >= b, a + " < " + b)
-  def assert_lt[T <% Ordered[T]](a: T, b: T) = assert(a < b, a + " >= " + b)
-  def assert_le[T <% Ordered[T]](a: T, b: T) = assert(a <= b, a + " > " + b)
+  def assert_gt(a: Double, b: Double) = assert(a > b, a + " <= " + b)
+  def assert_ge(a: Double, b: Double) = assert(a >= b, a + " < " + b)
+  def assert_lt(a: Double, b: Double) = assert(a < b, a + " >= " + b)
+  def assert_le(a: Double, b: Double) = assert(a <= b, a + " > " + b)
 
   // to meters/sec, that is. SI units.
   def mph_to_si(r: Double) = r * 0.44704

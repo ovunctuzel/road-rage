@@ -21,6 +21,10 @@ CHECKPOINTING
   - scala auto-serialization, ad-hoc, collect state?
 
 OPTIMIZE
+  - boxing with doubles is slow..
+  - turn off all assertions, timers...
+  - reduce memory by throwing away geometry in headless mode
+    (and even in non-headless, if we wind up with awt stuff in the gui)
   - dont keep asking the same thing over and over again in lookahead
     - remember our limiting factor from last time and check it again?
       but when could new agents crop up in between?

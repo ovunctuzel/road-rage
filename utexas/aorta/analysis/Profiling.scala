@@ -13,6 +13,7 @@ object Profiling {
 
   // Figure out what eats the most time simulating each tick
   // TODO generalize this idea of breaking down
+  val prestep = stopwatch("pre-step (spawning)")
   val whole_step = stopwatch("entire ticks")
   val agent_step = stopwatch("agent steps")
   val queue_check = stopwatch("queue checks")
@@ -23,9 +24,10 @@ object Profiling {
   val safe_lane = stopwatch("    safe_to_lanechange")
   val react_accel = stopwatch("    max_safe_accel")
   val debug = stopwatch("[debug watch]")
-  private val watches = List(agent_step, queue_check, intersection_check, react,
-                             choose_act, desired_lane, safe_lane, react_accel,
-                             debug)
+  private val watches = List(
+    prestep, agent_step, queue_check, intersection_check, react,
+    choose_act, desired_lane, safe_lane, react_accel, debug
+  )
   // TODO break down more. GUI? iterating over agents vs calling methods?
 
   def shutdown(): Unit = {

@@ -214,17 +214,7 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
           next_at, predict_dist - this_dist, dist_ahead + this_dist,
           next_at.length
         ))
-          
-    // this is the make-lazy boilerplate
-    def steps(): Stream[LookaheadStep] = next_step match {
-      case Some(step) => this #:: step.steps
-      case None => this #:: Stream.empty
-    }
   }
-
-  def lookahead_steps = (new LookaheadStep(
-    a.at.on, a.max_lookahead_dist, 0, a.at.dist_left
-  )).steps
 
   // Returns Act_Set_Accel almost always.
   def max_safe_accel(): Action = {
@@ -248,8 +238,11 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
 
     // TODO pull each constraint out into its own function
 
-    for (step <- lookahead_steps
-         if (!stop_how_far_away.isDefined || !follow_agent.isDefined))
+    var step = new LookaheadStep(
+      a.at.on, a.max_lookahead_dist, 0, a.at.dist_left
+    )
+
+    while (step != null && (!stop_how_far_away.isDefined || !follow_agent.isDefined))
     {
       // 1) Agent
       // Worry either about the one we're following, or the one at the end of
@@ -317,6 +310,12 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
           min_speed_limit = math.min(min_speed_limit, e.road.speed_limit)
         }
         case t: Turn => None
+      }
+
+      // Set the next step.
+      step = step.next_step match {
+        case Some(s) => s
+        case None => null
       }
     }
 

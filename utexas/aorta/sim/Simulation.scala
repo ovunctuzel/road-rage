@@ -147,7 +147,10 @@ class Simulation(roads: Array[Road], edges: Array[Edge], vertices: Array[Vertex]
 
   // Returns (the number of agents that moved, total number of agents processed)
   def step(dt_s: Double): (Int, Int) = {
+    // TODO so we're introducing agents at possibly different times?!
+    Profiling.prestep.start
     pre_step
+    Profiling.prestep.stop
 
     // This value is dt in simulation time, not real time
     dt_accumulated += dt_s * desired_sim_speed

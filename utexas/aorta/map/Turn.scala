@@ -20,6 +20,8 @@ object TurnType extends Enumeration {
 class Turn(val id: Int, val from: Edge, val turn_type: TurnType.TurnType, val to: Edge)
   extends Traversable with Ordered[Turn]
 {
+  setup_turn_line
+
   override def compare(other: Turn) = id.compare(other.id)
 
   // id is just for comparisons, not indexing
@@ -35,9 +37,12 @@ class Turn(val id: Int, val from: Edge, val turn_type: TurnType.TurnType, val to
   //override def toString = "Turn(" + from.id + ", " + to.id + ")"
 
   // TODO a little anonymous sub returning the line?
-  private val a = from.lines.last.end
-  private val b = to.lines.head.start
-  set_lines(List[Line](new Line(a.x, a.y, b.x, b.y)))
+  private def setup_turn_line() = {
+    val a = from.lines.last.end
+    val b = to.lines.head.start
+    set_lines(List[Line](new Line(a.x, a.y, b.x, b.y)))
+  }
+
   def leads_to = List(to)
 
   def involves_road(r: Road) = (from.road == r || to.road == r)
