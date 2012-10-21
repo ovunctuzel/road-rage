@@ -4,6 +4,9 @@
 
 package utexas.aorta.analysis
 
+import scala.annotation.elidable
+import scala.annotation.elidable.ASSERTION
+
 import utexas.aorta.Util
 
 object Profiling {
@@ -13,20 +16,19 @@ object Profiling {
 
   // Figure out what eats the most time simulating each tick
   // TODO generalize this idea of breaking down
-  val prestep = stopwatch("pre-step (spawning)")
   val whole_step = stopwatch("entire ticks")
   val agent_step = stopwatch("agent steps")
-  val queue_check = stopwatch("queue checks")
-  val intersection_check = stopwatch("intersection checks")
   val react = stopwatch("agent reactions")
   val choose_act = stopwatch("  choose_act")
   val desired_lane = stopwatch("    desired_lane")
   val safe_lane = stopwatch("    safe_to_lanechange")
   val react_accel = stopwatch("    max_safe_accel")
-  val debug = stopwatch("[debug watch]")
+  val constraint_agents = stopwatch("      agent constraints")
+  val constraint_stops = stopwatch("      intersection constraints")
+  val lookahead = stopwatch("      determining next steps")
   private val watches = List(
-    prestep, agent_step, queue_check, intersection_check, react,
-    choose_act, desired_lane, safe_lane, react_accel, debug
+    agent_step, react, choose_act, desired_lane, safe_lane, react_accel,
+    constraint_agents, constraint_stops, lookahead
   )
   // TODO break down more. GUI? iterating over agents vs calling methods?
 
@@ -58,15 +60,16 @@ class Stopwatch(val name: String) {
   private var from: Long = 0
   var seconds: Double = 0.0
 
-  def start = {
+  @elidable(ASSERTION) def start = {
     from = System.nanoTime
   }
 
-  def stop = {
+  @elidable(ASSERTION) def stop = {
     val now = System.nanoTime
     seconds += (now - from) / 1000000000.0
   }
 
+  // TODO replace with what?
   def time[A](thunk: () => A): A = {
     try {
       start

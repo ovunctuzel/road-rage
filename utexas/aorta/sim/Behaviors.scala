@@ -201,7 +201,7 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
       case _ => false
     }
 
-    def next_at = at match {
+    lazy val next_at = at match {
       case e: Edge => route.pick_turn(e)
       case t: Turn => t.to
     }
@@ -222,13 +222,10 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
     // next tick, which happens when we speed up as much as possible this tick.
 
     // the output.
-    var stop_how_far_away: Option[Double] = None
-    var stop_at: Option[Traversable] = None
-    var stopping_for_destination = false
-    var turn_blocked_by: Option[Agent] = None
-    var follow_agent: Option[Agent] = None
-    var follow_agent_how_far_away = 0.0   // gets set when follow_agent does.
-    var min_speed_limit = Double.MaxValue
+    var accel_for_stop: Option[Double] = None
+    var accel_for_agent: Option[Double] = None
+    var min_speed_limit: Option[Double] = None
+    var done_with_route = false
 
     // Stop caring once we know we have to stop for some intersection AND stay
     // behind some agent. Need both, since the agent we're following may not
@@ -236,134 +233,143 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
     // TODO once we are bound by some intersection and theres no agent in
     // between us and it, cant we stop looking for agents?
 
-    // TODO pull each constraint out into its own function
-
+    //Profiling.lookahead.start
     var step = new LookaheadStep(
       a.at.on, a.max_lookahead_dist, 0, a.at.dist_left
     )
+    //Profiling.lookahead.stop
 
-    while (step != null && (!stop_how_far_away.isDefined || !follow_agent.isDefined))
+    while (step != null && (!accel_for_agent.isDefined || !accel_for_stop.isDefined))
     {
-      // 1) Agent
-      // Worry either about the one we're following, or the one at the end of
-      // the queue right now. It's the intersection's job to worry about letting
-      // another wind up on our lane at the wrong time.
-      if (!follow_agent.isDefined) {
-        follow_agent = if (a.at.on == step.at)
-                         a.cur_queue.ahead_of(a)
-                       else
-                         step.at.queue.last
-        // This happens when we grab the last person off the next step's queue
-        // for lanechanging. Lookahead for lanechanging will change soon anyway,
-        // for now just avoid this case.
-        if (follow_agent.isDefined && follow_agent.get == a) {
-          follow_agent = None
-        } else {
-          follow_agent_how_far_away = follow_agent match {
-            // A bit of a special case, that dist_ahead doesn't cover well.
-            case Some(f) if f.at.on == a.at.on => f.at.dist - a.at.dist
-            case Some(f) => step.dist_ahead + f.at.dist
-            case _       => 0.0
-          }
+      //Profiling.constraint_agents.start
+      if (!accel_for_agent.isDefined) {
+        accel_for_agent = constraint_agent(step)
+      }
+      //Profiling.constraint_agents.stop
+
+      //Profiling.constraint_stops.start
+      if (!accel_for_stop.isDefined) {
+        constraint_stop(step) match {
+          case Left(constraint) => accel_for_stop = constraint
+          case Right(done) => done_with_route = true
         }
       }
+      //Profiling.constraint_stops.stop
 
-      // 2) Stopping at the end
-      if (!stop_how_far_away.isDefined) {
-        // physically stop somewhat far back from the intersection.
-        val should_stop = keep_stopping || (step.predict_dist >= step.this_dist - cfg.end_threshold)
-        val how_far_away = step.dist_ahead + step.this_dist
-
-        val stop_at_end: Boolean = should_stop && (step.at match {
-          // Don't stop at the end of a turn
-          case t: Turn => false
-          // Stop if we're arriving at destination
-          case e: Edge if route.done(e) => {
-            stopping_for_destination = true
-            true
-          }
-          // Lookahead has scanned far ahead enough
-          case e: Edge if !step.next_step.isDefined => true
-          // Otherwise, ask the intersection
-          case e: Edge => {
-            val i = e.to.intersection
-            a.upcoming_intersections += i   // remember we've registered here
-            val next_turn = step.next_step.get.at match {
-              case t: Turn => t
-              case _ => throw new Exception("lookahead didnt get a turn")
-            }
-            // TODO verify we're telling the intersection the same turn between
-            // ticks
-            !i.can_go(a, next_turn, how_far_away)
-          }
-        })
-        if (stop_at_end) {
-          keep_stopping = true
-          stop_how_far_away = Some(how_far_away)
-          stop_at = Some(step.at)
-        }
-      }
-
-      // 3) Speed limit
-      step.at match {
-        case e: Edge => {
-          min_speed_limit = math.min(min_speed_limit, e.road.speed_limit)
-        }
-        case t: Turn => None
+      min_speed_limit = (min_speed_limit, constraint_speed_limit(step)) match {
+        case (None, limit) => limit
+        case (Some(speed), None) => Some(speed)
+        case (Some(s1), Some(s2)) => Some(math.min(s1, s2))
       }
 
       // Set the next step.
+      //Profiling.lookahead.start
       step = step.next_step match {
         case Some(s) => s
         case None => null
       }
+      //Profiling.lookahead.stop
     }
 
     // We can't get any closer to our actual destination. Terminate.
     // TODO consider moving this first case to choose_action and not doing
     // lookahead when these premises hold true.
-    if (stopping_for_destination && stop_how_far_away.get <= cfg.end_threshold && a.speed == 0.0) {
+    if (done_with_route) {
       return Act_Done_With_Route()
     } else {
-      // So, three possible constraints.
-      val a1 = stop_how_far_away match {
-        case Some(dist) => {
-          // Stop 'end_threshold' short of where we should when we can, but when
-          // our destination is an edge, compromise and stop anywhere along it
-          // we can. This handles a few stalemate cases with sequences of short
-          // edges and possibly out-of-sync intersection policies.
-          val last_stop = stop_at.get
-          val go_this_dist = last_stop match {
-            // creep forward to halfway along the shorty edge.
-            case e: Edge if dist <= cfg.end_threshold => dist - (last_stop.length / 2.0)
-            // stop back appropriately.
-            case _                                    => dist - cfg.end_threshold
-          }
-          accel_to_end(go_this_dist)
-        }
-        case _          => Double.MaxValue
-      }
-      val a2 = follow_agent match {
-        case Some(f) => accel_to_follow(f, follow_agent_how_far_away)
-        case _       => Double.MaxValue
-      }
-      val a3 = a.accel_to_achieve(min_speed_limit)
-
-      val conservative_accel = math.min(a1, math.min(a2, a3))
-
-      // TODO hopefully gridlock is better, don't need to do this analyis so
-      // much
-      /*Profiling.debug.start
-      Gridlock.handle_agent(a, conservative_accel, follow_agent, turn_blocked_by)
-      Profiling.debug.stop*/
+      val conservative_accel = List(
+        accel_for_stop, accel_for_agent,
+        min_speed_limit.flatMap(l => Some(a.accel_to_achieve(l))),
+        // Don't forget physical limits
+        Some(a.max_accel)
+      ).flatten.min
 
       // As the very last step, clamp based on our physical capabilities.
       return Act_Set_Accel(if (conservative_accel > 0)
-                             math.min(conservative_accel, a.max_accel)
+                             conservative_accel
                            else
                              math.max(conservative_accel, -a.max_accel))
     }
   }
+
+  // All constraint functions return a limiting acceleration, if relevant
+  // Don't plow into people
+  def constraint_agent(step: LookaheadStep): Option[Double] = {
+    val follow_agent = if (a.at.on == step.at)
+                         a.cur_queue.ahead_of(a)
+                       else
+                         step.at.queue.last
+    return follow_agent match {
+      // This happens when we grab the last person off the next step's queue
+      // for lanechanging. Lookahead for lanechanging will change soon anyway,
+      // for now just avoid this case.
+      case Some(other) if a == other => None
+      case Some(other) => {
+        val dist_away = if (other.at.on == a.at.on)
+                          other.at.dist - a.at.dist
+                        else
+                          step.dist_ahead + other.at.dist
+        Some(accel_to_follow(other, dist_away))
+      }
+      case None => None
+    }
+  }
+
+  // Returns an optional acceleration, or 'true', which indicates the agent
+  // is totally done.
+  def constraint_stop(step: LookaheadStep): Either[Option[Double], Boolean] = {
+    // physically stop somewhat far back from the intersection.
+    val should_stop = keep_stopping || (step.predict_dist >= step.this_dist - cfg.end_threshold)
+    val how_far_away = step.dist_ahead + step.this_dist
+
+    val stop_at_end: Boolean = should_stop && (step.at match {
+      // Don't stop at the end of a turn
+      case t: Turn => false
+      // Stop if we're arriving at destination
+      case e: Edge if route.done(e) => {
+        // Are we completely done?
+        if (how_far_away <= cfg.end_threshold && a.speed == 0.0) {
+          return Right(true)
+        }
+        true
+      }
+      // Lookahead has scanned far ahead enough
+      case e: Edge if !step.next_step.isDefined => true
+      // Otherwise, ask the intersection
+      case e: Edge => {
+        val i = e.to.intersection
+        a.upcoming_intersections += i   // remember we've registered here
+        val next_turn = step.next_step.get.at.asInstanceOf[Turn]
+        // TODO verify we're telling the intersection the same turn between
+        // ticks
+        !i.can_go(a, next_turn, how_far_away)
+      }
+    })
+    if (!stop_at_end) {
+      return Left(None)
+    }
+
+    keep_stopping = true
+    // Stop 'end_threshold' short of where we should when we can, but when
+    // our destination is an edge, compromise and stop anywhere along it
+    // we can. This handles a few stalemate cases with sequences of short
+    // edges and possibly out-of-sync intersection policies.
+    val go_this_dist = step.at match {
+      // creep forward to halfway along the shorty edge.
+      case e: Edge if how_far_away <= cfg.end_threshold => how_far_away - (step.at.length / 2.0)
+      // stop back appropriately.
+      case _                                    => how_far_away - cfg.end_threshold
+    }
+    return Left(Some(accel_to_end(go_this_dist)))
+  }
+
+  def constraint_speed_limit(step: LookaheadStep): Option[Double] =
+    step.at match {
+      case e: Edge => Some(e.road.speed_limit)
+      case t: Turn => None
+    }
+
+  // TODO make a singleton for math
 
   private def accel_to_follow(follow: Agent, dist_from_them_now: Double): Double = {
     // Maintain our stopping distance away from this guy, plus don't scrunch

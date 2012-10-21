@@ -148,9 +148,7 @@ class Simulation(roads: Array[Road], edges: Array[Edge], vertices: Array[Vertex]
   // Returns (the number of agents that moved, total number of agents processed)
   def step(dt_s: Double): (Int, Int) = {
     // TODO so we're introducing agents at possibly different times?!
-    Profiling.prestep.start
     pre_step
-    Profiling.prestep.stop
 
     // This value is dt in simulation time, not real time
     dt_accumulated += dt_s * desired_sim_speed
@@ -187,13 +185,9 @@ class Simulation(roads: Array[Road], edges: Array[Edge], vertices: Array[Vertex]
       Profiling.agent_step.stop
 
       // Just check the ones we need to.
-      Profiling.queue_check.start
       active_queues.foreach(q => q.end_step)
-      Profiling.queue_check.stop
 
-      Profiling.intersection_check.start
       active_intersections.foreach(i => i.end_step)
-      Profiling.intersection_check.stop
 
       Profiling.react.start
       agents.foreach(a => {

@@ -6,6 +6,8 @@ package utexas.aorta
 
 import scala.util.Random
 import java.io.FileWriter
+import scala.annotation.elidable
+import scala.annotation.elidable.ASSERTION
 
 import utexas.aorta.sim.Simulation
 import utexas.aorta.analysis.{Stats, Profiling}
@@ -64,12 +66,12 @@ object Util {
              comma_num(n / 1000, pad = false) + "," + comma_num(n % 1000)
   }
 
-  def assert_eq(a: Any, b: Any) = assert(a == b, a + " != " + b)
-  def assert_ne(a: Any, b: Any) = assert(a != b, a + " == " + b)
-  def assert_gt(a: Double, b: Double) = assert(a > b, a + " <= " + b)
-  def assert_ge(a: Double, b: Double) = assert(a >= b, a + " < " + b)
-  def assert_lt(a: Double, b: Double) = assert(a < b, a + " >= " + b)
-  def assert_le(a: Double, b: Double) = assert(a <= b, a + " > " + b)
+  @elidable(ASSERTION) def assert_eq(a: Any, b: Any) = assert(a == b, a + " != " + b)
+  @elidable(ASSERTION) def assert_ne(a: Any, b: Any) = assert(a != b, a + " == " + b)
+  @elidable(ASSERTION) def assert_gt(a: Double, b: Double) = assert(a > b, a + " <= " + b)
+  @elidable(ASSERTION) def assert_ge(a: Double, b: Double) = assert(a >= b, a + " < " + b)
+  @elidable(ASSERTION) def assert_lt(a: Double, b: Double) = assert(a < b, a + " >= " + b)
+  @elidable(ASSERTION) def assert_le(a: Double, b: Double) = assert(a <= b, a + " > " + b)
 
   // to meters/sec, that is. SI units.
   def mph_to_si(r: Double) = r * 0.44704

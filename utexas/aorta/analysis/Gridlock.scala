@@ -11,6 +11,8 @@ import utexas.aorta.map.{Edge, Turn}
 
 import utexas.aorta.{Util, cfg}
 
+// TODO Not used at the moment, but could be useful again later.
+
 // Maintain a graph of what lanes depend on another due to agents in one
 // blocking the turns in another.
 object Gridlock {

@@ -5,6 +5,8 @@
 package utexas.aorta.analysis
 
 import java.io.FileWriter
+import scala.annotation.elidable
+import scala.annotation.elidable.ASSERTION
 
 import utexas.aorta.Util
 
@@ -88,7 +90,7 @@ object Stats {
     }
   }
 
-  def record(item: Measurement) = {
+  @elidable(ASSERTION) def record(item: Measurement) = {
     if (use_log) {
       log.write(item.toString + "\n")
     }
