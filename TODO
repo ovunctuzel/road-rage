@@ -34,7 +34,8 @@ OPTIMIZE
   - hotspot just doesnt kick in soon enough
   - go back and optimize spawning
   - ui should sleep better
-  - more compact format than xml? :P  even json...
+  - maps: more compact format than xml? :P  even json...
+    - why are traversable lines given not as point sequence?
 
 TEST
   - is it really safe to tweak dt? epsilons may depend on it.
