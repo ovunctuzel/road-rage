@@ -77,6 +77,7 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
   private var chosen_edge1: Option[Edge] = None
   private var chosen_edge2: Option[Edge] = None
   private var route_members = Set[Edge]()
+  private var route_members_road = Set[Road]()
   private var polygon_roads1: Set[Road] = Set()
   private var polygon_roads2: Set[Road] = Set()
   private var camera_agent: Option[Agent] = None
@@ -309,7 +310,11 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
 
   def draw_road(g2d: Graphics2D, l: RoadLine) = {
     g2d.setColor(color_road(l.road))
-    g2d.setStroke(strokes(l.road.num_lanes))
+    if (route_members_road(l.road)) {
+      g2d.setStroke(strokes(l.road.num_lanes * 2))
+    } else {
+      g2d.setStroke(strokes(l.road.num_lanes))
+    }
     g2d.draw(l.bg_line)
   }
 
@@ -368,7 +373,9 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
   }
 
   def color_road(r: Road): Color = {
-    if (polygon_roads1(r)) {
+    if (route_members_road(r)) {
+      return Color.GREEN
+    } else if (polygon_roads1(r)) {
       return Color.RED
     } else if (polygon_roads2(r)) {
       return Color.GREEN
@@ -544,6 +551,7 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
       chosen_edge1 = None
       chosen_edge2 = None
       route_members = Set[Edge]()
+      route_members_road = Set[Road]()
       repaint
     }
     case EV_Action("clear-route") => {
@@ -551,6 +559,7 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
       chosen_edge1 = None
       chosen_edge2 = None
       route_members = Set[Edge]()
+      route_members_road = Set[Road]()
       repaint
     }
     case EV_Action("teleport-edge") => {
@@ -886,6 +895,7 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
     // TODO pathfinding is by directed road now, not edge. just pick some edge
     // in each group.
     route_members = r.map(_.edges.head).toSet
+    route_members_road = route_members.map(_.road)
     repaint
   }
 
