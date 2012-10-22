@@ -261,10 +261,8 @@ class Pass3(old_graph: PreGraph2) {
         s"${graph.vertices.size} vertices, $orig_roads -> " + 
         s"${graph.roads.size} roads"
       )
-      return true
-    } else {
-      return false
     }
+    return any_changes
   }
 
   // Returns true if any edges are removed
@@ -290,6 +288,7 @@ class Pass3(old_graph: PreGraph2) {
     val bad_turns = new ListBuffer[Turn]
 
     sccs.sortBy(scc => scc.size).toList.reverse match {
+      // TODO dont return inside here
       case (biggest :: Nil) => return false // Good, just one SCC
       case (biggest :: doomed_sccs) => {
         for (scc <- doomed_sccs; trav <- scc) {

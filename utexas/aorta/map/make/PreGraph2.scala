@@ -53,16 +53,16 @@ class PreGraph2(old_graph: PreGraph1) {
     // do we already have an edge from v1->v2 or v2->v1?
     // this handling mainly needs to deal with cul-de-sacs
 
-    if (edge_lookup.contains((v1, v2, edge_dat.name)) ||
-        edge_lookup.contains((v2, v1, edge_dat.name)))
+    return if (edge_lookup.contains((v1, v2, edge_dat.name)) ||
+               edge_lookup.contains((v2, v1, edge_dat.name)))
     {
       //Util.log("well, finally! already exists " + edge_dat.name)
       // TODO make a new edge if the points dont match?
-      return None
+      None
     } else {
       val e = new PreEdge2(v1, v2, points, edge_dat)
       //edge_lookup((v1, v2, edge_dat.name)) = e
-      return Some(e)
+      Some(e)
     }
   }
 }

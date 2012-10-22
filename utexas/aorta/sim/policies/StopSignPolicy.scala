@@ -16,36 +16,33 @@ class StopSignPolicy(intersection: Intersection) extends Policy(intersection) {
   var current_owner: Option[Agent] = None
   var queue = List[Agent]()
 
-  def can_go(a: Agent, turn: Turn, far_away: Double): Boolean = {
-    // Do they have the lock?
+  def can_go(a: Agent, turn: Turn, far_away: Double): Boolean =
     current_owner match {
-      case Some(owner) if a == owner => return true
-      case _       =>
-    }
+      // Do they have the lock?
+      case Some(owner) if a == owner => true
+      case _ => {
+        // Flush queue of stalled agents. Anybody in this queue has not started
+        // the turn yet, by definition, so they're safe to cancel. Assume the
+        // current_owner will never stall because they wouldn't poll us if
+        // they're blocked.
+        queue = queue.filter(a => a.speed != 0.0)
 
-    // Flush queue of stalled agents. Anybody in this queue has not started the
-    // turn yet, by definition, so they're safe to cancel. Assume the
-    // current_owner will never stall because they wouldn't poll us if they're
-    // blocked.
-    queue = queue.filter(a => a.speed != 0.0)
+        // Schedule them if needed and if they're at the end of the edge.
+        if (!queue.contains(a) && is_waiting(a, turn, far_away)) {
+          queue :+= a
+        }
 
-    // Schedule them if needed and if they're at the end of the edge.
-    if (!queue.contains(a) && is_waiting(a, turn, far_away)) {
-      queue :+= a
+        // Can we promote them now?
+        val ready = !current_owner.isDefined && queue.nonEmpty &&
+                    a == queue.head && a.how_long_idle >= cfg.pause_at_stop
+        if (ready) {
+          // promote them!
+          current_owner = Some(queue.head)
+          queue = queue.tail
+        }
+        ready
+      }
     }
-
-    // Can we promote them now?
-    val ready = !current_owner.isDefined && queue.nonEmpty && a == queue.head &&
-                a.how_long_idle >= cfg.pause_at_stop
-    if (ready) {
-      // promote them!
-      current_owner = Some(queue.head)
-      queue = queue.tail
-      return true
-    } else {
-      return false
-    }
-  }
 
   def validate_entry(a: Agent, turn: Turn) = current_owner match {
     case Some(a) => true

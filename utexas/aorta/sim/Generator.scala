@@ -94,7 +94,8 @@ extends Ordered[Generator]
     // determinism by scanning through in order and stopping at the first that
     // isn't done
     val done = new ListBuffer[Agent]()
-    while (pending.nonEmpty) {
+    var continue = true
+    while (continue && pending.nonEmpty) {
       val a = pending.head
       val ready = a._2 match {
         case Some(task) => {
@@ -114,7 +115,7 @@ extends Ordered[Generator]
         pending = pending.tail
       } else {
         // stop immediately!
-        return done.toList
+        continue = false
       }
     }
     return done.toList
@@ -154,19 +155,18 @@ class FixedSizeGenerator(sim: Simulation, starts: Iterable[Edge],
 {
   var num_to_spawn = total
 
-  override def run(): Either[List[Agent], Boolean] = {
+  override def run(): Either[List[Agent], Boolean] =
     if (num_to_spawn == 0 && pending.isEmpty) {
       // this generator's done.
-      return Right(true)
+      Right(true)
     } else if (start_candidates.isEmpty) {
       Util.log("Generator has no viable starting edges!")
-      return Right(true)
+      Right(true)
     } else {
       val n = num_to_spawn
       num_to_spawn = 0
-      return Left(create_and_poll(n))
+      Left(create_and_poll(n))
     }
-  }
 
   override def serialize() = "<generator type=\"fixed\" time=\"%f\" starts=\"%s\" ends=\"%s\" total=\"%d\" route_type=\"%s\"/>".format(
     created_at, serialize_ls(start_candidates), serialize_ls(end_candidates),
@@ -186,16 +186,16 @@ class ContinuousGenerator(sim: Simulation, starts: Iterable[Edge],
     accumulated_time += Agent.sim.tick - last_tick
     last_tick = Agent.sim.tick
 
-    if (start_candidates.isEmpty) {
+    return if (start_candidates.isEmpty) {
       Util.log("Generator has no viable starting edges!")
-      return Right(true)
+      Right(true)
     } else {
       var new_agents: List[Agent] = Nil
       while (accumulated_time >= spawn_every) {
         accumulated_time -= spawn_every
         new_agents ++= create_and_poll(1)
       }
-      return Left(new_agents)
+      Left(new_agents)
     }
   }
 

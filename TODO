@@ -133,6 +133,9 @@ TESTING IT
 - actors / akka?
 
 # UI
+1) draw map as an svg, see how fast that can be rendered by anything
+2) see how fast p3d can render static geometry
+3) java3d optimized for static scenes?
 - http://technically.us/code/x/flocking-with-spde/
   consider processing, partial 3d rendering of overpasses.
 - turn off generators

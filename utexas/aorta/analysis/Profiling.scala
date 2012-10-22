@@ -32,14 +32,13 @@ object Profiling {
   )
   // TODO break down more. GUI? iterating over agents vs calling methods?
 
-  def shutdown(): Unit = {
-    if (whole_step.seconds == 0.0) {
-      return
-    }
-    Util.log(f"Cumulatively, ${whole_step.seconds}%.2f seconds spent simulating ticks")
-    for (watch <- watches) {
-      val percentage = (watch.seconds / whole_step.seconds) * 100.0
-      Util.log(f"${watch.name}: $percentage%.2f%   (${watch.seconds}%.2fs)")
+  def shutdown() = {
+    if (whole_step.seconds != 0.0) {
+      Util.log(f"Cumulatively, ${whole_step.seconds}%.2f seconds spent simulating ticks")
+      for (watch <- watches) {
+        val percentage = (watch.seconds / whole_step.seconds) * 100.0
+        Util.log(f"${watch.name}: $percentage%.2f%   (${watch.seconds}%.2fs)")
+      }
     }
   }
 }

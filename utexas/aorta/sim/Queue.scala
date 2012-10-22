@@ -140,24 +140,29 @@ class Queue(t: Traversable) {
   // lookahead work.
   def can_spawn_now(dist: Double): Boolean = {
     val bad_dist = worst_entry_dist
-    for (a <- agents.reverse) {
+    var safe = true
+    // Find the first agent that makes us conclude there's a problem or we're
+    // truly safe. This closure yields true when it wants to short-circuit.
+    agents.reverse.find(a => {
       if (dist > a.at.dist) {
         // make sure nobody's within bad_dist behind this
         if (dist - a.at.dist <= bad_dist) {
-          // They could slam into us!
-          return false
+          safe = false
+          true
+        } else {
+          // keep looking
+          false
         }
       } else {
         // don't spawn too close behind somebody
         if (a.at.dist - dist <= cfg.follow_dist) {
-          return false
+          safe = false
         } else {
-          // we can short-circuit; we're fine.
-          return true
+          safe = true
         }
+        true
       }
-    }
-    // nobody's there? fine.
-    return true
+    })
+    return safe
   }
 }

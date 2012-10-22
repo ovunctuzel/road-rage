@@ -61,16 +61,15 @@ class PreGraph3(old_graph: PreGraph2) {
     return r
   }
 
-  private def get_vert(at: Coordinate): Vertex = {
+  private def get_vert(at: Coordinate): Vertex =
     if (vert_lookup.contains(at)) {
-      return vert_lookup(at)
+      vert_lookup(at)
     } else {
       val v = new Vertex(at, vertices.length)
       vertices += v
       vert_lookup += ((at, v))
-      return v
+      v
     }
-  }
 
   private def add_edge(r: Road, dir: Direction.Direction) = {
     // TODO ahh counting constantly is so slow!

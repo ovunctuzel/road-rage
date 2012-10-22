@@ -111,6 +111,7 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
       return false
     }
 
+    // TODO rewrite to not return from within the closures
     target.queue.closest_behind(a.at.dist) match {
       // If there's a trailing car on this road, require at least 2 ticks worth
       // of distance at the speed limit for the trailing car. Yes, probably too
@@ -274,8 +275,8 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
     // We can't get any closer to our actual destination. Terminate.
     // TODO consider moving this first case to choose_action and not doing
     // lookahead when these premises hold true.
-    if (done_with_route) {
-      return Act_Done_With_Route()
+    return if (done_with_route) {
+      Act_Done_With_Route()
     } else {
       val conservative_accel = List(
         accel_for_stop, accel_for_agent,
@@ -285,10 +286,10 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
       ).flatten.min
 
       // As the very last step, clamp based on our physical capabilities.
-      return Act_Set_Accel(if (conservative_accel > 0)
-                             conservative_accel
-                           else
-                             math.max(conservative_accel, -a.max_accel))
+      Act_Set_Accel(if (conservative_accel > 0)
+                      conservative_accel
+                    else
+                      math.max(conservative_accel, -a.max_accel))
     }
   }
 
@@ -329,6 +330,7 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
       case e: Edge if route.done(e) => {
         // Are we completely done?
         if (how_far_away <= cfg.end_threshold && a.speed == 0.0) {
+          // TODO dont return from deep inside here
           return Right(true)
         }
         true

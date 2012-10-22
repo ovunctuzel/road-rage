@@ -44,6 +44,7 @@ abstract class Traversable() {
       if (at > l.length) {
         at -= l.length
       } else {
+        // TODO dont return inside here. fold?
         return (l, at)
       }
     }

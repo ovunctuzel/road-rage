@@ -56,14 +56,13 @@ class Edge(var id: Int, val road: Road, val dir: Direction.Direction) extends Tr
   def is_leftmost  = lane_num == other_lanes.size - 1
 
   // It really is this simple.
-  def next_counterclockwise_to: Option[Edge] = {
+  def next_counterclockwise_to: Option[Edge] =
     if (is_rightmost) {
       val ordering = right_turns_to ++ crosses_to ++ left_turns_to
-      return ordering.headOption
+      ordering.headOption
     } else {
-      return Some(other_lanes(lane_num - 1))
+      Some(other_lanes(lane_num - 1))
     }
-  }
 
   // not for one-ways right now. but TODO it'd be cool to put that here.
   def lane_offset = other_lanes.length - lane_num
@@ -107,12 +106,9 @@ class Edge(var id: Int, val road: Road, val dir: Direction.Direction) extends Tr
   private def shift_pt(x: Double, y: Double, theta: Double) = new Coordinate(
     x + (shift_mag * math.cos(theta)), y - (shift_mag * math.sin(theta))
   )
-  def shifted_start_pt(l: Line = lines.head): Coordinate = {
-    return shift_pt(l.x1, l.y1, l.angle)
-  }
-  def shifted_end_pt(l: Line = lines.last): Coordinate = {
-    return shift_pt(l.x2, l.y2, l.angle + math.Pi)  // reverse the angle
-  }
+  def shifted_start_pt(l: Line = lines.head) = shift_pt(l.x1, l.y1, l.angle)
+  def shifted_end_pt(l: Line = lines.last)
+    = shift_pt(l.x2, l.y2, l.angle + math.Pi)  // reverse the angle
 }
 
 // TODO noooo not var >_<
@@ -132,10 +128,10 @@ class Line(var x1: Double, var y1: Double, var x2: Double, var y2: Double) {
   // increasing down, but trig thinks y increases up...
   def angle: Double = {
     val theta = math.atan2(y1 - y2, x2 - x1)  // y inversion
-    if (theta < 0)
-      return theta + (2 * math.Pi)
+    return if (theta < 0)
+      theta + (2 * math.Pi)
     else
-      return theta
+      theta
   }
 
   // TODO shiftline() broke with the seemingly correct angle(). testing.
@@ -172,12 +168,13 @@ class Line(var x1: Double, var y1: Double, var x2: Double, var y2: Double) {
     val det1And2 = det(x1, y1, x2, y2)
     val det3And4 = det(x3, y3, x4, y4)
     val detDiff = det(x1 - x2, y1 - y2, x3 - x4, y3 - y4)
-    if (detDiff <= cfg.epsilon) {
-      return None  // parallel
+    return if (detDiff <= cfg.epsilon) {
+      None  // parallel
+    } else {
+      val x = det(det1And2, x1 - x2, det3And4, x3 - x4) / detDiff
+      val y = det(det1And2, y1 - y2, det3And4, y3 - y4) / detDiff
+      return Some(new Coordinate(x, y))
     }
-    val x = det(det1And2, x1 - x2, det3And4, x3 - x4) / detDiff
-    val y = det(det1And2, y1 - y2, det3And4, y3 - y4) / detDiff
-    return Some(new Coordinate(x, y))
   }
 
   // where are we on this line? even handles negative distances

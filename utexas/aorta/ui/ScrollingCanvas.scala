@@ -281,9 +281,8 @@ abstract class ScrollingCanvas extends Component {
   def y1 = screen_to_map_y(0)
   def x2 = screen_to_map_x(size.width)
   def y2 = screen_to_map_y(size.height)
-  def viewing_window: Rectangle2D.Double = {
-    return new Rectangle2D.Double(x1, y1, x2 - x1, y2 - y1)
-  }
+  def viewing_window: Rectangle2D.Double =
+    new Rectangle2D.Double(x1, y1, x2 - x1, y2 - y1)
 
   // implement these. render_canvas returns tooltip text desired
   def render_canvas(g2d: Graphics2D, window: Rectangle2D.Double): Option[String]

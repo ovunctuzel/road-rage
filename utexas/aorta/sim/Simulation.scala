@@ -218,16 +218,15 @@ class Simulation(roads: Array[Road], edges: Array[Edge], vertices: Array[Vertex]
 
   // True if we've correctly promoted into real agents. Does the work of
   // spawning as well.
-  def try_spawn(a: Agent): Boolean = {
+  def try_spawn(a: Agent): Boolean =
     if (a.start.queue.can_spawn_now(a.start_dist)) {
       a.at = a.enter(a.start, a.start_dist)
       a.started_trip_at = tick
       agents += a
-      return true
+      true
     } else {
-      return false
+      false
     }
-  }
 }
 
 sealed trait Sim_Event {}

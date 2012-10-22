@@ -163,7 +163,7 @@ class Agent(val id: Int, val graph: Graph, val start: Edge,
   def react(): Boolean = {
     val was_lanechanging = is_lanechanging
 
-    Profiling.choose_act.time(behavior.choose_action) match {
+    return Profiling.choose_act.time(behavior.choose_action) match {
       case Act_Set_Accel(new_accel) => {
         // we have physical limits
         Util.assert_le(new_accel.abs, max_accel)
@@ -171,7 +171,7 @@ class Agent(val id: Int, val graph: Graph, val start: Edge,
         Util.assert_ge(speed + (new_accel * cfg.dt_s), 0)
 
         target_accel = new_accel
-        return false
+        false
       }
       case Act_Lane_Change(lane) => {
         // Ensure this is a valid request.
@@ -213,7 +213,7 @@ class Agent(val id: Int, val graph: Graph, val start: Edge,
         behavior.transition(at.on, lane)
         at = enter(lane, at.dist)
 
-        return false
+        false
       }
       case Act_Done_With_Route() => {
         // TODO untrue when our dest is tiny and we stop right before it!
@@ -224,7 +224,7 @@ class Agent(val id: Int, val graph: Graph, val start: Edge,
         // and don't forget to tell intersections. this is normally just
         // at.on.vert if at.on is a turn, but it could be more due to lookahead.
         cancel_intersection_reservations
-        return true
+        true
       }
     }
   }

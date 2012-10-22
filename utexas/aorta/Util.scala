@@ -41,15 +41,13 @@ object Util {
     Profiling.shutdown
   })
 
-  def rand_double(min: Double, max: Double): Double = {
-    if (min > max) {
+  def rand_double(min: Double, max: Double): Double =
+    if (min > max)
       throw new Exception("rand(" + min + ", " + max + ") requested")
-    } else if (min == max) {
-      return min
-    } else {
-      return min + rng.nextDouble * (max - min)
-    }
-  }
+    else if (min == max)
+      min
+    else
+      min + rng.nextDouble * (max - min)
   def rand_int(min: Int, max: Int) = rand_double(min, max).toInt
   def choose_rand[T](from: Seq[T]): T = from(rng.nextInt(from.length))
   // return true 'p'% of the time. p is [0.0, 1.0]
@@ -57,14 +55,13 @@ object Util {
 
   // due to internationalization, printf doesn't have a way of adding commas
   // after every 3 orders of mag
-  def comma_num(n: Int, pad: Boolean = true): String = {
-    return if (n < 1000 && pad)
-             "%03d".format(n)
-           else if (n < 1000)
-             "" + n
-           else
-             comma_num(n / 1000, pad = false) + "," + comma_num(n % 1000)
-  }
+  def comma_num(n: Int, pad: Boolean = true): String =
+    if (n < 1000 && pad)
+      "%03d".format(n)
+    else if (n < 1000)
+      "" + n
+    else
+      comma_num(n / 1000, pad = false) + "," + comma_num(n % 1000)
 
   @elidable(ASSERTION) def assert_eq(a: Any, b: Any) = assert(a == b, a + " != " + b)
   @elidable(ASSERTION) def assert_ne(a: Any, b: Any) = assert(a != b, a + " == " + b)
@@ -91,7 +88,7 @@ object Util {
       accel, time_to_cruise, speed_i
     )
 
-    if (dist_during_accel < dist) {
+    return if (dist_during_accel < dist) {
       // so then the remainder happens at constant cruisin speed
       return time_to_cruise + ((dist - dist_during_accel) / speed_f)
     } else {
@@ -100,7 +97,7 @@ object Util {
       val discrim = math.sqrt((speed_i * speed_i) + (4 * accel * dist))
       val time = (-speed_i + discrim) / (2 * accel) // this is the positive root
       assert_ge(time, 0)   // make sure we have the right solution to this
-      return time
+      time
     }
   }
 
@@ -138,16 +135,16 @@ object Util {
     }
     Stats.setup_experiment(exp_name)
 
-    if (load_scenario.isEmpty) {
+    return if (load_scenario.isEmpty) {
       Util.init_rng(rng)
-      return Simulation.load(fn)
+      Simulation.load(fn)
     } else {
       val sim = Simulation.load_scenario(load_scenario)
       // It's useful to retry a scenario with a new seed.
       if (diff_rng) {
         Util.init_rng(rng)
       }
-      return sim
+      sim
     }
   }
 }

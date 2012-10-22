@@ -23,14 +23,13 @@ class Cycle(val offset: Double, val duration: Double) {
 
   // returns false if it conflicts
   // assumes turn is from the correct intersection.
-  def add_turn(turn: Turn): Boolean = {
+  def add_turn(turn: Turn): Boolean =
     if (could_add_turn(turn)) {
       turns += turn
-      return true
+      true
     } else {
-      return false
+      false
     }
-  }
 
   // Don't actually add turn, just see if it would conflict or not
   def could_add_turn(turn: Turn): Boolean = {

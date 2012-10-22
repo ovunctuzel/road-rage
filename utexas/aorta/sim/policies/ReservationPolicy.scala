@@ -56,10 +56,10 @@ class ReservationPolicy(intersection: Intersection)
     current_agents --= current_batch.flush_stalled
     shift_batches
 
-    if (first_req) {
+    return if (first_req) {
       current_agents += a
       if ((!lock_cur_batch) && current_batch.add_ticket(a, turn)) {
-        return true
+        true
       } else {
         // A conflicting turn. Add it to the reservations.
 
@@ -76,10 +76,10 @@ class ReservationPolicy(intersection: Intersection)
           reservations :+= batch
         }
 
-        return false
+        false
       }
     } else {
-      return current_batch.has_ticket(a, turn)
+      current_batch.has_ticket(a, turn)
     }
   }
 
@@ -146,20 +146,19 @@ class TurnBatch() {
     with MultiMap[Turn, Agent]
 
   // false if it conflicts with this group
-  def add_ticket(a: Agent, t: Turn): Boolean = {
+  def add_ticket(a: Agent, t: Turn): Boolean =
     if (tickets.contains(t)) {
       // existing turn
       tickets.addBinding(t, a)
-      return true
+      true
     } else if (tickets.keys.filter(c => t.conflicts(c)).size == 0) {
       // new turn that doesn't conflict
       tickets.addBinding(t, a)
-      return true
+      true
     } else {
       // conflict
-      return false
+      false
     }
-  }
 
   def flush_stalled(): MutableSet[Agent] = {
     val canceled = new MutableHashSet[Agent]()

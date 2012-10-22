@@ -26,8 +26,8 @@ class Reader(fn: String) {
   // we know all of this as soon as we read the graph tag...
   var vertLinks: Array[List[TmpLink]] = null
 
-  def load_map(): Graph             = return load(false).right.get
-  def load_simulation(): Simulation = return load(true).left.get
+  def load_map(): Graph             = load(false).right.get
+  def load_simulation(): Simulation = load(true).left.get
   
   // TODO this is one nasty long routine...
   // and it changes behavior at a few places based on its parameter.
@@ -235,11 +235,10 @@ class Reader(fn: String) {
     wards_map -= special_ward_id
     val wards: List[Ward] = wards_map.map(pair => new Ward(pair._1, pair._2.toSet)).toList
 
-    if (with_agents) {
-      return Left(new Simulation(roads, edges, verts, wards, special_ward))
-    } else {
-      return Right(new Graph(roads, edges, verts, wards, special_ward))
-    }
+    return if (with_agents)
+      Left(new Simulation(roads, edges, verts, wards, special_ward))
+    else
+      Right(new Graph(roads, edges, verts, wards, special_ward))
     // TODO anything to more explicitly free up?
   }
 }

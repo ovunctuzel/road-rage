@@ -37,11 +37,10 @@ class Vertex(val location: Coordinate, var id: Int) {
 
   // these may prove useful; just remember roads are undirected.
   // TODO test for one-ways?
-  private def find_roads(r: Road, types: Set[TurnType.TurnType]): Set[Road] = {
-    return turns.filter(
+  private def find_roads(r: Road, types: Set[TurnType.TurnType]): Set[Road] =
+    turns.filter(
       t => (t.involves_road(r) && types(t.turn_type))
     ).map(t => t.other_road(r)).toSet
-  }
   def parallel_roads(r: Road) = find_roads(r, Set(TurnType.CROSS))
   def perp_roads(r: Road)     = find_roads(r, Set(TurnType.LEFT, TurnType.RIGHT))
   def left_roads(r: Road)     = find_roads(r, Set(TurnType.LEFT))

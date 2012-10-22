@@ -285,13 +285,13 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
   }
 
   // we return any new roads seen
-  def draw_ward(g2d: Graphics2D, w: WardBubble): Set[RoadLine] = {
+  def draw_ward(g2d: Graphics2D, w: WardBubble): Set[RoadLine] =
     current_obj match {
       // Show the roads of the highlighted ward
       case (Some(ward: Ward)) if w.ward == ward => {
         val lines = ward.roads.flatMap(road2lines(_))
         lines.foreach(l => draw_road(g2d, l))
-        return lines
+        lines
       }
       case _ => {
         // Show the center of the ward and all external connections
@@ -303,10 +303,9 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
             w.bubble.getCenterX, w.bubble.getCenterY, v.location.x, v.location.y
           ))
         }
-        return Set()
+        Set()
       }
     }
-  }
 
   def draw_road(g2d: Graphics2D, l: RoadLine) = {
     g2d.setColor(color_road(l.road))
@@ -372,40 +371,35 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
     }
   }
 
-  def color_road(r: Road): Color = {
-    if (route_members_road(r)) {
-      return Color.GREEN
-    } else if (polygon_roads1(r)) {
-      return Color.RED
-    } else if (polygon_roads2(r)) {
-      return Color.GREEN
-    } else if (show_ward_colors) {
-      return ward_colorings(r.ward)
-    } else {
+  def color_road(r: Road): Color =
+    if (route_members_road(r))
+      Color.GREEN
+    else if (polygon_roads1(r))
+      Color.RED
+    else if (polygon_roads2(r))
+      Color.GREEN
+    else if (show_ward_colors)
+      ward_colorings(r.ward)
+    else
       // The normal handling
-      return highlight_type match
-      {
+      highlight_type match {
         case (Some(x)) if x == r.road_type => Color.GREEN
         case _                             => Color.BLACK
       }
-    }
-  }
 
-  def color_edge(e: Edge): Color = {
+  def color_edge(e: Edge): Color =
     // TODO cfg
-    if (chosen_edge1.isDefined && chosen_edge1.get == e) {
-      return Color.BLUE
-    } else if (chosen_edge2.isDefined && chosen_edge2.get == e) {
-      return Color.RED
-    } else if (route_members(e)) {
-      return Color.GREEN
-    } else if (e.doomed) {
+    if (chosen_edge1.isDefined && chosen_edge1.get == e)
+      Color.BLUE
+    else if (chosen_edge2.isDefined && chosen_edge2.get == e)
+      Color.RED
+    else if (route_members(e))
+      Color.GREEN
+    else if (e.doomed)
       // TODO configurable.
-      return Color.RED
-    } else {
-      return Color.WHITE
-    }
-  }
+      Color.RED
+    else
+      Color.WHITE
 
   val turn_colors = Map( // cfg
     TurnType.CROSS       -> Color.WHITE,
