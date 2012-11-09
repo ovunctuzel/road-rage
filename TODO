@@ -1,50 +1,23 @@
 # TODO #
 
-# Current
+decide when to call-ahead to intersection
+- cant be when we're at the front of the queue, since it might be too late
+  if we're following somebody turning a different way
 
-LANE-CHANGE
-  - stats: how often do we want to LC but cant? (total that miss it)
-  - talk to intersection earlier?
-  - static routes eat memory and are slow!
-    - contraction hierarchies, hub labeling, etc
-  - why do we need to asap warp to new lane when we start LCing again?
-    (lookahead)
-  - lookbehind for lanechanging and spawning. lazily compute.
-  - consider stalling to wait to LC
-  - consider better pass3 reachability analysis
-  - implement speculative desired_lane
-
-CHECKPOINTING
-  - trigger it auomatically, right filenames
-  - efficient format, but converters btwn human-readable
-  - hard to save rng, so reset seed before checkpointing
-  - scala auto-serialization, ad-hoc, collect state?
-
-OPTIMIZE
-  - boxing with doubles is slow..
-  - turn off all assertions, timers...
-  - reduce memory by throwing away geometry in headless mode
-    (and even in non-headless, if we wind up with awt stuff in the gui)
-  - dont keep asking the same thing over and over again in lookahead
-    - remember our limiting factor from last time and check it again?
-      but when could new agents crop up in between?
-  - parallelize lookahead within a timestep
-  - profiling times dont add up. renice?
-  - save memory by excluding lines/points, except from gui?
-  - hotspot just doesnt kick in soon enough
-  - go back and optimize spawning
-  - ui should sleep better
-  - maps: more compact format than xml? :P  even json...
-    - why are traversable lines given not as point sequence?
-
-TEST
-  - is it really safe to tweak dt? epsilons may depend on it.
+# Optimizations
+- reduce memory by throwing away geometry in headless mode
+  (and even in non-headless, if we wind up with awt stuff in the gui)
+- ui should sleep better
+- maps: more compact format than xml? :P  even json...
+  - why are traversable lines given not as point sequence?
 
 # Lane changing
 
 - new lookahead is not requesting turn till already stopped, even with reservation!
 - dont forget to look at agent ahead of us in old lane only.
 - agents get caught in loops because the general path isnt realizable
+- lookbehind is feasible with lazy floodfilling
+- speculative desired_lane
 
 - test at scale. gridlock?
 
@@ -85,6 +58,7 @@ TESTING IT
 - is there a way to analytically say "an agent will own this chunk" at some time, and
   then solve for collisions?
 - switch ant to sbt? https://github.com/harrah/xsbt/wiki/Examples
+- repository of detailed cities with demand data?
 
 # Problems
 - calibration issues... distances totally off
@@ -97,6 +71,7 @@ TESTING IT
   - why are we EVER doomed?!
   - why are we EVER requesting negative accel_to_end distances?
 - jvm crashing on some jvm implementations?
+- is it really safe to tweak dt? epsilons may depend on it.
 
 # Behaviors, Policies, & Strategies
 - traffic signal
@@ -134,15 +109,18 @@ TESTING IT
 - actors / akka?
 
 # UI
-1) draw map as an svg, see how fast that can be rendered by anything
-2) see how fast p3d can render static geometry
-3) java3d optimized for static scenes?
+- visualize lookahead
+- work on svg
+- see how fast p3d can render static geometry
+- java3d optimized for static scenes?
+- the renderer for osm is actually nice..
 - http://technically.us/code/x/flocking-with-spde/
   consider processing, partial 3d rendering of overpasses.
 - turn off generators
 - color agents from diff generators a certain way
 - when we speed up, sleep less in UI?
-- configurable intersection policies
+- configurable intersection policies. and rep them better!
+- right click context menus
 - in sugarland, oneway bg lines arent thick enough
 - get rid of arrows, make roads transparent, change colors, something.
   - dont show arrows when line segs are really clustered
@@ -170,13 +148,10 @@ TESTING IT
 - cul-de-sac handling in p2... needed?
   - Claus Circle in BR... has no outgoing turns.
 - multi-lane situations dont have enough turns, and we need to do more trimming!
+- connectivity fixpoint algorithm shouldnt be necessary?
 
 # General Simulation
-- reverse simulation! find a problem, go backwards in time
-  - characterizing where everything is is easy, capturing internal state is hard
-  - characterize evertyhing that happens that causes state change, make it undoable.
-  - another benefit... if queue does error checking against old state of queue, does that help? (i think not...)
-
+- calibrate parameters.
 - osm/ and maps/ separate
 - modular design... if one agent breaks, dont break everyone
 - have a notion of "I'm done with the turn, but I'm protruding into the intersection"
@@ -193,8 +168,6 @@ TESTING IT
 - follow dist variable based on speed, so when a light goes green,
   everyone starts simultaneously
 - contraflow
-  1) Traversable.location starts from the other end (distances, queues all stay same)
-  2) dynamically recalculating turns
 - dynamic replanning + hierarchial planning
 - microtolling (not trolling)
 - traffic signals that learn
@@ -204,8 +177,6 @@ TESTING IT
 # Wards
 - find 'major' roads better
   - crosses/links major roads
-  - manually editing
-  - update osm (scripts!)
 - my wards!
   - guarantee some kind of connectedness within a ward
   - except in vs out edges to the whole neighborhood?

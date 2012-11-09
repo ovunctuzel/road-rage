@@ -1,0 +1,7 @@
+TODO: describe the problem. essentially lockstep or having to rollback with STM
+or manual dependency tracking.
+
+also load-balancing
+
+one way to let one region be X seconds ahead of another: simulate common ground
+in between, such as a long road that takes a min of X seconds to cross.
