@@ -51,6 +51,13 @@ class Queue(t: Traversable) {
       )
     }
 
+    // Make sure nobody's crowding anybody else.
+    for ((a1, a2) <- agents.zip(agents.tail)) {
+      if (a1.at.dist < a2.at.dist + cfg.follow_dist) {
+        throw new Exception(s"$a2 too close to $a1 on $t")
+      }
+    }
+
     // Now we just want to make sure that all of the agents here last tick are
     // in the same order. If some left, that's fine.
     val old_crowd = agents.filter(a => prev_agents.contains(a))

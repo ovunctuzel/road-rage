@@ -1,7 +1,25 @@
 # TODO #
 
-decide when to call-ahead to intersection
-- cant be when we're at the front of the queue, since it might be too late
+= merging on top of someone..
+  = maybe add check to Queue to make sure theyre not too close together?
+  = follow dist for one behind us?
+  = our stopping dist + follow dist for one ahead of us
+  = while we LC, continue to look ahead just on our lane.
+  = somebody doesnt leave a queue quickly...
+
+- somethings slow again!
+- dont let agents start lc that takes a while?
+
+- find timer/assert/whatever thats particularly slow?
+
+- sleep less in UI
+
+- draw LC agents in btwn
+
+- stop sign, synthetic, a*. theyre not spreading out.
+
+- decide when to call-ahead to intersection
+  cant be when we're at the front of the queue, since it might be too late
   if we're following somebody turning a different way
 
 # Optimizations
@@ -14,7 +32,6 @@ decide when to call-ahead to intersection
 # Lane changing
 
 - new lookahead is not requesting turn till already stopped, even with reservation!
-- dont forget to look at agent ahead of us in old lane only.
 - agents get caught in loops because the general path isnt realizable
 - lookbehind is feasible with lazy floodfilling
 - speculative desired_lane

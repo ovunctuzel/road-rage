@@ -113,15 +113,14 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
 
     // TODO rewrite to not return from within the closures
     target.queue.closest_behind(a.at.dist) match {
-      // If there's a trailing car on this road, require at least 2 ticks worth
-      // of distance at the speed limit for the trailing car. Yes, probably too
-      // conservative.
+      // If there's somebody behind us on our target, make sure they could stop
+      // and not hit us.
       // TODO this depends on agent ordering per tick. 2 agents may try to merge
       // into the same lane at the same spot in the same tick. how to
       // parallelize?
       case Some(avoid) => {
-        val min_trailing_dist = 2.0 * cfg.dt_s * target.road.speed_limit
-        if (a.at.dist - avoid.at.dist <= min_trailing_dist) {
+        val min_dist = cfg.follow_dist + avoid.stopping_distance(avoid.max_next_speed)
+        if (a.at.dist - avoid.at.dist <= min_dist) {
           return false
         }
         // TODO tmp debug
@@ -133,7 +132,6 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
       // gives agents time next tick to notice us during their lookahead.
       case None => {
         if (a.at.dist <= a.at.on.queue.worst_entry_dist + cfg.follow_dist) {
-          //Util.log("(wont lc) not past min spawn dist yet")
           return false
         }
       }
@@ -142,10 +140,17 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
     // TODO make sure somebody can't decide to spawn in the way right as we
     // start to shift. when more things happen concurrently, just be careful.
 
-    // TODO We'll back off speed quickly if we find ourselves tailing the guy
-    // ahead of us in the target lane, but we should probably do some kind of
-    // check to make sure we won't immediately plow through him. Use lookahead
-    // engine.
+    // We shouldn't have to do arbitrary lookahead for in front of us, since
+    // we're guaranteed to finish the LC by the end of the target lane.
+    target.queue.closest_ahead(a.at.dist) match {
+      case Some(avoid) => {
+        val min_dist = cfg.follow_dist + a.stopping_distance(a.max_next_speed)
+        if (avoid.at.dist - a.at.dist <= min_dist) {
+          return false
+        }
+      }
+      case None =>
+    }
 
     return true
   }
@@ -225,6 +230,7 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
     // the output.
     var accel_for_stop: Option[Double] = None
     var accel_for_agent: Option[Double] = None
+    var accel_for_lc_agent: Option[Double] = None
     var min_speed_limit: Option[Double] = None
     var done_with_route = false
 
@@ -239,6 +245,10 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
       a.at.on, a.max_lookahead_dist, 0, a.at.dist_left
     )
     //Profiling.lookahead.stop
+
+    //Profiling.constraint_agents.start
+    accel_for_lc_agent = constraint_lc_agent
+    //Profiling.constraint_agents.stop
 
     while (step != null && (!accel_for_agent.isDefined || !accel_for_stop.isDefined))
     {
@@ -279,7 +289,7 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
       Act_Done_With_Route()
     } else {
       val conservative_accel = List(
-        accel_for_stop, accel_for_agent,
+        accel_for_stop, accel_for_agent, accel_for_lc_agent,
         min_speed_limit.flatMap(l => Some(a.accel_to_achieve(l))),
         // Don't forget physical limits
         Some(a.max_accel)
@@ -306,10 +316,27 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
       // for now just avoid this case.
       case Some(other) if a == other => None
       case Some(other) => {
-        val dist_away = if (other.at.on == a.at.on)
+        val dist_away = if (other.on(a.at.on))
                           other.at.dist - a.at.dist
                         else
                           step.dist_ahead + other.at.dist
+        Some(accel_to_follow(other, dist_away))
+      }
+      case None => None
+    }
+  }
+
+  // When we're lane-changing, lookahead takes care of the new path. But we
+  // still have to pay attention to exactly one other agent: the one in front of
+  // us on our old lane.
+  def constraint_lc_agent(): Option[Double] = {
+    val follow_agent = a.old_lane match {
+      case Some(e) => e.queue.ahead_of(a)
+      case None => None
+    }
+    return follow_agent match {
+      case Some(other) => {
+        val dist_away = other.at.dist - a.at.dist
         Some(accel_to_follow(other, dist_away))
       }
       case None => None

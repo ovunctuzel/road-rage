@@ -60,7 +60,6 @@ class Agent(val id: Int, val graph: Graph, val start: Edge,
         if (lanechange_dist_left <= 0) {
           // Done! Leave the old queue
           exit(lane)
-          //Util.log(this + " done lane-changing to " + lane)
 
           // Return to normality
           old_lane = None
@@ -304,6 +303,12 @@ class Agent(val id: Int, val graph: Graph, val start: Edge,
   }
 
   def cur_queue = at.on.queue
+
+  def on(t: Traversable) = (at.on, old_lane) match {
+    case (ours, _) if ours == t => true
+    case (_, Some(l)) if l == t => true
+    case _ => false
+  }
 
   // math queries for lookahead and such
 

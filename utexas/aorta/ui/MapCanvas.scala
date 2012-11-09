@@ -694,6 +694,7 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
                  (e.queue.worst_entry_dist + cfg.follow_dist))
         Util.log("(lanechange dist is " + (cfg.lanechange_dist +
                  cfg.end_threshold) + ")")
+        Util.log("Queue contains " + e.queue.agents)
       }
       case Some(r: Road) => {
         Util.log(r + " is a " + r.road_type + " of length " +
