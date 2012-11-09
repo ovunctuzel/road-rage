@@ -145,6 +145,8 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
     target.queue.closest_ahead(a.at.dist) match {
       case Some(avoid) => {
         val min_dist = cfg.follow_dist + a.stopping_distance(a.max_next_speed)
+        // TODO prefer to not LC when we can't immediately finish it, on account
+        // of them being stopped with not enough room for us to finish LCing...
         if (avoid.at.dist - a.at.dist <= min_dist) {
           return false
         }

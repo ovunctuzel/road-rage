@@ -1,23 +1,12 @@
 # TODO #
 
-= merging on top of someone..
-  = maybe add check to Queue to make sure theyre not too close together?
-  = follow dist for one behind us?
-  = our stopping dist + follow dist for one ahead of us
-  = while we LC, continue to look ahead just on our lane.
-  = somebody doesnt leave a queue quickly...
-
-- somethings slow again!
-- dont let agents start lc that takes a while?
 
 - find timer/assert/whatever thats particularly slow?
+- somethings slow again!
 
 - sleep less in UI
 
-- draw LC agents in btwn
-
-- stop sign, synthetic, a*. theyre not spreading out.
-
+- signal isnt working at all.
 - decide when to call-ahead to intersection
   cant be when we're at the front of the queue, since it might be too late
   if we're following somebody turning a different way
@@ -25,7 +14,6 @@
 # Optimizations
 - reduce memory by throwing away geometry in headless mode
   (and even in non-headless, if we wind up with awt stuff in the gui)
-- ui should sleep better
 - maps: more compact format than xml? :P  even json...
   - why are traversable lines given not as point sequence?
 
@@ -33,16 +21,12 @@
 
 - new lookahead is not requesting turn till already stopped, even with reservation!
 - agents get caught in loops because the general path isnt realizable
+- dont let agents start lc that takes a while?
 - lookbehind is feasible with lazy floodfilling
 - speculative desired_lane
 
 - test at scale. gridlock?
 
-- ui draw them better
-  - two types of positions?
-  - each obj should have a render()
-  - spawning agents at specific places
-- ui visualize safe spawning distances
 - testing
   - introduce automated test framework using scenarios
   - wacky cases of 2 side-by-side agents wanting to swap places?
@@ -126,6 +110,8 @@ TESTING IT
 - actors / akka?
 
 # UI
+- spawning agents at specific places
+- better code, everything needs debug() and render()
 - visualize lookahead
 - work on svg
 - see how fast p3d can render static geometry

@@ -196,6 +196,13 @@ class Line(var x1: Double, var y1: Double, var x2: Double, var y2: Double) {
 
     return new Line(x1 + dx, y1 + dy, x2 + dx, y2 + dy)
   }
+
+  // When percent = 0, returns this. When percent = 1, return l. Otherwise,
+  // interpolates between the two lines.
+  def add_scaled(l: Line, percent: Double) = new Line(
+    x1 + ((l.x1 - x1) * percent), y1 + ((l.y1 - y1) * percent),
+    x2 + ((l.x2 - x2) * percent), y2 + ((l.y2 - y2) * percent)
+  )
 }
 
 object Direction extends Enumeration {

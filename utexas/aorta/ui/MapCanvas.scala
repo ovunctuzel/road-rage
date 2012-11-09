@@ -349,7 +349,17 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
       val vehicle_length = 0.5  // along the edge
       val vehicle_width = 0.25  // perpendicular
 
-      val (line, front_dist) = a.at.on.current_pos(a.at.dist)
+      var (line, front_dist) = a.at.on.current_pos(a.at.dist)
+      a.old_lane match {
+        case Some(l) => {
+          val (line2, more_dist) = l.current_pos(a.at.dist)
+          // TODO I'd think 1 - progress should work, but by visual inspection,
+          // apparently not.
+          val progress = (a.lanechange_dist_left / cfg.lanechange_dist)
+          line = line.add_scaled(line2, progress)
+        }
+        case None =>
+      }
       val front_pt = line.point_on(front_dist)
 
       // the front center of the vehicle is where the location is. ascii
