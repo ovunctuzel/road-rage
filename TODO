@@ -1,15 +1,11 @@
 # TODO #
 
-
 - find timer/assert/whatever thats particularly slow?
 - somethings slow again!
 
 - sleep less in UI
 
 - signal isnt working at all.
-- decide when to call-ahead to intersection
-  cant be when we're at the front of the queue, since it might be too late
-  if we're following somebody turning a different way
 
 # Optimizations
 - reduce memory by throwing away geometry in headless mode

@@ -364,13 +364,15 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
         }
         true
       }
-      // Lookahead has scanned far ahead enough
-      case e: Edge if !step.next_step.isDefined => true
       // Otherwise, ask the intersection
       case e: Edge => {
         val i = e.to.intersection
         a.upcoming_intersections += i   // remember we've registered here
-        val next_turn = step.next_step.get.at.asInstanceOf[Turn]
+        // If the lookahead includes a next step, this should be consistent with
+        // what the route says, by the route's contract of consistent answers.
+        // But sometimes the lookahead terminates early due to not enough
+        // distance, so just always ask this.
+        val next_turn = route.pick_turn(e)
         // TODO verify we're telling the intersection the same turn between
         // ticks
         !i.can_go(a, next_turn, how_far_away)
