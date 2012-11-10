@@ -1,11 +1,7 @@
 # TODO #
 
 - find timer/assert/whatever thats particularly slow?
-- somethings slow again!
-
-- sleep less in UI
-
-- signal isnt working at all.
+- synthetic is really slow
 
 # Optimizations
 - reduce memory by throwing away geometry in headless mode
@@ -72,6 +68,7 @@ TESTING IT
 
 # Behaviors, Policies, & Strategies
 - traffic signal
+  - cycles have to last long enough to let agent cross long intersection
   - try backpressure idea
   - visualize the green/red better
     - do something with lanes still
@@ -81,9 +78,12 @@ TESTING IT
   - diffused backwards allocation
     - same idea, but goal: make one critical intersection super efficient
     - what lanes lead to / feed the lanes that can do turns? repeat for those.
+- reservations
+  - use backpressurelike idea with inertia
 - structuring policy stuff as a state machine and events may be more elegant...
 
 # Profiling
+- sleep less in UI
 - optionally gzipping maps/osm?
 - we can do much better with ready agents... max capacity of edges, group them based on
   where they want to spawn, maybe by generator?
