@@ -220,7 +220,7 @@ class Simulation(roads: Array[Road], edges: Array[Edge], vertices: Array[Vertex]
   // spawning as well.
   def try_spawn(a: Agent): Boolean =
     if (a.start.queue.can_spawn_now(a.start_dist)) {
-      a.at = a.enter(a.start, a.start_dist)
+      a.enter(a.start, a.start_dist)
       a.started_trip_at = tick
       agents += a
       true

@@ -4,6 +4,8 @@
 
 package utexas.aorta.sim
 
+import scala.collection.immutable.TreeSet
+
 import utexas.aorta.map.{Edge, Traversable}
 
 import utexas.aorta.{Util, cfg}
@@ -14,8 +16,12 @@ import utexas.aorta.{Util, cfg}
 // Reason about collisions on edges and within individual turns.
 class Queue(t: Traversable) {
   // Descending by distance: head of list is front of traversable.
-  var agents = List[Agent]()
+  // There's probably a nicer way to express this.
+  var agents = TreeSet.empty(
+    Ordering[Double].on((a: Agent) => -a.at.dist)
+  )
   var last_tick = -1.0              // last observed
+  // TODO should this be a tree too, for efficiency?
   var prev_agents = List[Agent]()   // to verify no collisions occurred in a step
 
   def head = agents.headOption
@@ -24,7 +30,7 @@ class Queue(t: Traversable) {
   // Called lazily.
   def start_step() = {
     if (last_tick != Agent.sim.tick) {
-      prev_agents = agents
+      prev_agents = agents.toList
       last_tick = Agent.sim.tick
     }
   }
@@ -37,7 +43,7 @@ class Queue(t: Traversable) {
     // someone, then back in.
 
     // Everything's fine.
-    if (agents.size == 0) {
+    if (agents.isEmpty) {
       return
     }
 
@@ -72,25 +78,25 @@ class Queue(t: Traversable) {
     }
   }
 
-  def enter(a: Agent, dist: Double): Position = {
-    // Just find our spot.
-
+  def enter(a: Agent, dist: Double) = {
     start_step  // lazily, if needed
-
-    val (ahead, behind) = agents.partition(c => c.at.dist > dist)
-    agents = ahead ++ List(a) ++ behind
+    a.at = Position(t, dist)
+    agents += a
 
     // If we're not entering at the end of the queue, something _could_ be odd,
     // so check it.
-    if (behind.nonEmpty) {
+    if (agents.from(a).tail.nonEmpty) {
       Agent.sim.active_queues += this
     }
-
-    return Position(t, dist)
   }
 
-  def exit(a: Agent) = {
+  def exit(a: Agent): Unit = {
     start_step  // lazily, if needed
+
+    if (agents.isEmpty) {
+      Util.log(s"wtf... $a leaving empty $t ?")
+      return
+    }
 
     // We should leave from the front of the queue generally, unless
     // lane-changing
@@ -98,16 +104,17 @@ class Queue(t: Traversable) {
       Agent.sim.active_queues += this
     }
 
-    agents = agents.filter(c => c != a)
+    agents -= a
   }
 
-  def move(a: Agent, new_dist: Double): Position = {
-    // TODO more efficiently?
+  def move(a: Agent, new_dist: Double) = {
+    // TODO more efficiently? don't remove, re-insert?
     exit(a)
-    return enter(a, new_dist)
+    enter(a, new_dist)
   }
 
-  def ahead_of(a: Agent) = agents.takeWhile(_ != a).lastOption
+  def ahead_of(a: Agent) = closest_ahead(a.at.dist)
+  // TODO but then this is still horrid
   def closest_behind(dist: Double) = agents.find(a => a.at.dist <= dist)
   def closest_ahead(dist: Double) = agents.takeWhile(_.at.dist >= dist).lastOption
 
@@ -149,7 +156,8 @@ class Queue(t: Traversable) {
     var safe = true
     // Find the first agent that makes us conclude there's a problem or we're
     // truly safe. This closure yields true when it wants to short-circuit.
-    agents.reverse.find(a => {
+    // TODO no reverse?
+    agents.toList.reverse.find(a => {
       if (dist > a.at.dist) {
         val bad_dist = cfg.follow_dist + a.stopping_distance(a.max_next_speed)
         if (dist - a.at.dist <= bad_dist) {

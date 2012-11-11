@@ -139,15 +139,16 @@ class Agent(val id: Int, val graph: Graph, val start: Edge,
 
     // so we finally end up somewhere...
     if (start_on == current_on) {
-      at = move(start_on, current_dist)
       // Also stay updated in the other queue
       old_lane match {
         case Some(lane) => move(lane, current_dist)
         case None =>
       }
+      // TODO order matters, ew!
+      move(start_on, current_dist)
     } else {
       exit(start_on)
-      at = enter(current_on, current_dist)
+      enter(current_on, current_dist)
     }
 
     return new_dist > 0.0
@@ -210,7 +211,7 @@ class Agent(val id: Int, val graph: Graph, val start: Edge,
 
         // Immediately enter the target lane
         behavior.transition(at.on, lane)
-        at = enter(lane, at.dist)
+        enter(lane, at.dist)
 
         false
       }
@@ -250,7 +251,7 @@ class Agent(val id: Int, val graph: Graph, val start: Edge,
   }
 
   // Delegate to the queues and intersections that simulation manages
-  def enter(t: Traversable, dist: Double): Position = {
+  def enter(t: Traversable, dist: Double) = {
     // Remember for stats
     entered_last = (Agent.sim.tick, dist, speed)
     t.queue.enter(this, dist)
