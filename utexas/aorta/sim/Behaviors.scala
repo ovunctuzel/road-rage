@@ -7,7 +7,7 @@ package utexas.aorta.sim
 import scala.collection.mutable.ListBuffer
 
 import utexas.aorta.map.{Edge, Turn, Traversable, DirectedRoad}
-import utexas.aorta.analysis.{Gridlock, Profiling}
+import utexas.aorta.analysis.Gridlock
 import utexas.aorta.{Util, cfg}
 
 abstract class Behavior(a: Agent) {
@@ -56,9 +56,7 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
     target_lane = None
     base match {
       case e: Edge => {
-        val target = Profiling.desired_lane.time(
-          () => route.pick_lane(e)
-        )
+        val target = route.pick_lane(e)
         if (target != base) {
           target_lane = Some(target)
         }
@@ -170,7 +168,7 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
     if (!a.is_lanechanging) {
       target_lane match {
         case Some(e) => {
-          if (Profiling.safe_lane.time(() => safe_to_lanechange(e))) {
+          if (safe_to_lanechange(e)) {
             return Act_Lane_Change(e)
           }
         }
@@ -179,7 +177,7 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
     }
 
     // TODO refactor and pull in max_safe_accel here.
-    return Profiling.react_accel.time(max_safe_accel)
+    return max_safe_accel
   }
 
   // This is a lazy sequence of edges/turns that tracks distances away from the
@@ -242,32 +240,24 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
     // TODO once we are bound by some intersection and theres no agent in
     // between us and it, cant we stop looking for agents?
 
-    //Profiling.lookahead.start
     var step = new LookaheadStep(
       a.at.on, a.max_lookahead_dist, 0, a.at.dist_left
     )
-    //Profiling.lookahead.stop
 
-    //Profiling.constraint_agents.start
     accel_for_lc_agent = constraint_lc_agent
-    //Profiling.constraint_agents.stop
 
     while (step != null && (!accel_for_agent.isDefined || !accel_for_stop.isDefined))
     {
-      //Profiling.constraint_agents.start
       if (!accel_for_agent.isDefined) {
         accel_for_agent = constraint_agent(step)
       }
-      //Profiling.constraint_agents.stop
 
-      //Profiling.constraint_stops.start
       if (!accel_for_stop.isDefined) {
         constraint_stop(step) match {
           case Left(constraint) => accel_for_stop = constraint
           case Right(done) => done_with_route = true
         }
       }
-      //Profiling.constraint_stops.stop
 
       min_speed_limit = (min_speed_limit, constraint_speed_limit(step)) match {
         case (None, limit) => limit
@@ -276,12 +266,10 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
       }
 
       // Set the next step.
-      //Profiling.lookahead.start
       step = step.next_step match {
         case Some(s) => s
         case None => null
       }
-      //Profiling.lookahead.stop
     }
 
     // We can't get any closer to our actual destination. Terminate.
@@ -298,10 +286,7 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
       ).flatten.min
 
       // As the very last step, clamp based on our physical capabilities.
-      Act_Set_Accel(if (conservative_accel > 0)
-                      conservative_accel
-                    else
-                      math.max(conservative_accel, -a.max_accel))
+      Act_Set_Accel(math.max(conservative_accel, -a.max_accel))
     }
   }
 

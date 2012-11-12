@@ -1,7 +1,11 @@
 # TODO #
 
-- find timer/assert/whatever thats particularly slow?
-- synthetic is really slow
+- proximity violations remain.
+- synthetic is really slow due to bad queue data structure
+  - need: insertion, deletion, next, prev
+  - linked list has no random access, bad for binary search
+  - tree is ideal!
+  - put people in the queue paired with a fixed distance?
 
 # Optimizations
 - reduce memory by throwing away geometry in headless mode
@@ -10,10 +14,8 @@
   - why are traversable lines given not as point sequence?
 
 # Lane changing
-
-- new lookahead is not requesting turn till already stopped, even with reservation!
 - agents get caught in loops because the general path isnt realizable
-- dont let agents start lc that takes a while?
+- dont let agents start lc that depends on others getting out of way
 - lookbehind is feasible with lazy floodfilling
 - speculative desired_lane
 

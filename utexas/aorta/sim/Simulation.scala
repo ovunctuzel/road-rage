@@ -19,7 +19,7 @@ import utexas.aorta.sim.policies._
 
 import utexas.aorta.{Util, cfg}
 import utexas.aorta.analysis.{Stats, Total_Trip_Stat, Active_Agents_Stat,
-                              Simulator_Speedup_Stat, Profiling}
+                              Simulator_Speedup_Stat}
 
 // This just adds a notion of agents
 class Simulation(roads: Array[Road], edges: Array[Edge], vertices: Array[Vertex],
@@ -159,7 +159,6 @@ class Simulation(roads: Array[Road], edges: Array[Edge], vertices: Array[Vertex]
     // Agents can't react properly in the presence of huge time-steps. So chop
     // up this time-step into exactly consistent/equal pieces, if needed.
     while (dt_accumulated >= cfg.dt_s) {
-      Profiling.whole_step.start
       dt_accumulated -= cfg.dt_s
       tick += cfg.dt_s
 
@@ -170,7 +169,6 @@ class Simulation(roads: Array[Road], edges: Array[Edge], vertices: Array[Vertex]
       // Queues will lazily start_step, remembering their current state, when
       // they need to.
 
-      Profiling.agent_step.start
       var active_cnt = 0
       agents.foreach(a => {
         if (a.step(cfg.dt_s)) {
@@ -182,14 +180,12 @@ class Simulation(roads: Array[Road], edges: Array[Edge], vertices: Array[Vertex]
       if (tick.toInt % 5 == 0) {
         Stats.record(Active_Agents_Stat(tick.toInt, active_cnt))
       }
-      Profiling.agent_step.stop
 
       // Just check the ones we need to.
       active_queues.foreach(q => q.end_step)
 
       active_intersections.foreach(i => i.end_step)
 
-      Profiling.react.start
       agents.foreach(a => {
         // reap the done agents
         if (a.react) {
@@ -197,10 +193,7 @@ class Simulation(roads: Array[Road], edges: Array[Edge], vertices: Array[Vertex]
           Stats.record(Total_Trip_Stat(a.id, tick - a.started_trip_at, a.total_dist))
         }
       })
-      Profiling.react.stop
       
-      Profiling.whole_step.stop
-
       // reset queues that need to be checked
       active_queues.clear
     }

@@ -162,7 +162,7 @@ class Agent(val id: Int, val graph: Graph, val start: Edge,
   def react(): Boolean = {
     val was_lanechanging = is_lanechanging
 
-    return Profiling.choose_act.time(behavior.choose_action) match {
+    return behavior.choose_action match {
       case Act_Set_Accel(new_accel) => {
         // we have physical limits
         Util.assert_le(new_accel.abs, max_accel)

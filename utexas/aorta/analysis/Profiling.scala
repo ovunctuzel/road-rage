@@ -9,6 +9,9 @@ import scala.annotation.elidable.ASSERTION
 
 import utexas.aorta.Util
 
+// Ironically, using timers in tight loops has caused up to 3x slowdown before.
+// Java profilers might be safer.
+
 object Profiling {
   // TODO the ability to disable
   def timer(msg: String) = new Timer(msg)
