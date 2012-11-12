@@ -8,6 +8,7 @@ import scala.annotation.tailrec
 import scala.collection.immutable.{SortedSet, TreeSet}
 import scala.collection.mutable.{MutableList, PriorityQueue, ListBuffer}
 import scala.collection.mutable.{HashSet => MutableSet}
+import java.util.concurrent.{Executors, FutureTask, Callable}
 import java.io.FileWriter
 import scala.io.Source
 import scala.xml.MetaData
@@ -190,11 +191,24 @@ class Simulation(roads: Array[Road], edges: Array[Edge], vertices: Array[Vertex]
       active_intersections.foreach(i => i.end_step)
 
       Profiling.react.start
+      // TODO use futures/promises
+      val pending = new ListBuffer[(Agent, FutureTask[Boolean])]()
+      // TODO measure how long to schedule?
       agents.foreach(a => {
-        // reap the done agents
-        if (a.react) {
-          agents -= a
-          Stats.record(Total_Trip_Stat(a.id, tick - a.started_trip_at, a.total_dist))
+        val delayed = new FutureTask[Boolean](
+          new Callable[Boolean]() {
+            def call = a.react
+          }
+        )
+        Generator.worker_pool.execute(delayed)
+        pending += ((a, delayed))
+      })
+      pending.foreach(pair => pair match {
+        case (a, delayed) => {
+          if (delayed.get) {
+            Stats.record(Total_Trip_Stat(a.id, tick - a.started_trip_at, a.total_dist))
+            agents -= a
+          }
         }
       })
       Profiling.react.stop

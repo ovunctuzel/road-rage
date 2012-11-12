@@ -38,9 +38,9 @@ class Intersection(val v: Vertex) {
       case Some(time) =>
       case None => {
         started_counting = Some(Agent.sim.tick)
-        Agent.sim.schedule(
+        /*Agent.sim.schedule(
           Agent.sim.tick + cfg.thruput_stat_time, { this.count_stat }
-        )
+        )*/
       }
     }
     return policy.can_go(a, turn, far_away)
