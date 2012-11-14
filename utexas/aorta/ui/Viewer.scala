@@ -9,6 +9,7 @@ import java.awt.{Color, Component}
 import swing.Dialog
 import info.monitorenter.gui.chart.Chart2D
 import info.monitorenter.gui.chart.traces.Trace2DLtd
+import javax.media.j3d.Canvas3D
 
 import utexas.aorta.sim.Simulation
 import utexas.aorta.{Util, cfg}
@@ -70,7 +71,8 @@ object Viewer extends SimpleSwingApplication {
     "tertiary", "primary", "service", "doomed"
   )
   // null just because it's parametric from argv
-  var canvas: MapCanvas = null
+  var canvas_2d: MapCanvas = null
+  var canvas_3d: MapCanvas3D = null
 
   val helper = new BoxPanel(Orientation.Vertical) {
     border = Swing.MatteBorder(5, 5, 5, 5, Color.BLACK)
@@ -120,7 +122,8 @@ object Viewer extends SimpleSwingApplication {
   chart.getAxisY.getAxisTitle.setTitle("Number of agents")
 
   override def main(args: Array[String]) = {
-    canvas = new MapCanvas(Util.process_args(args))
+    canvas_2d = new MapCanvas(Util.process_args(args))
+    canvas_3d = new MapCanvas3D(Util.process_args(args))
     super.main(args)
   }
 
@@ -149,54 +152,60 @@ object Viewer extends SimpleSwingApplication {
       contents += new Menu("View") {
         contents += new Menu("Highlight type of road") {
           contents ++= road_types.map(t => new MenuItem(t) {
-            canvas.handle_ev(EV_Param_Set("highlight", Some(t)))
+            canvas_2d.handle_ev(EV_Param_Set("highlight", Some(t)))
           })
         }
         contents += new MenuItem(Action("Clear all highlighting") {
-          canvas.handle_ev(EV_Param_Set("highlight", None))
+          canvas_2d.handle_ev(EV_Param_Set("highlight", None))
         })
         contents += new MenuItem(Action("Toggle wards display") {
-          canvas.handle_ev(EV_Action("toggle-wards"))
+          canvas_2d.handle_ev(EV_Action("toggle-wards"))
         })
       }
 
       contents += new Menu("Query") {
         contents += new MenuItem(Action("Teleport to Edge") {
-          canvas.handle_ev(EV_Action("teleport-edge"))
+          canvas_2d.handle_ev(EV_Action("teleport-edge"))
         })
         contents += new MenuItem(Action("Teleport to Road") {
-          canvas.handle_ev(EV_Action("teleport-road"))
+          canvas_2d.handle_ev(EV_Action("teleport-road"))
         })
         contents += new MenuItem(Action("Teleport to Agent") {
-          canvas.handle_ev(EV_Action("teleport-agent"))
+          canvas_2d.handle_ev(EV_Action("teleport-agent"))
         })
         contents += new MenuItem(Action("Teleport to Vertex") {
-          canvas.handle_ev(EV_Action("teleport-vertex"))
+          canvas_2d.handle_ev(EV_Action("teleport-vertex"))
         })
         
         // TODO these are kind of toggleable...
         contents += new MenuItem(Action("Pathfind") {
-          canvas.handle_ev(EV_Action("pathfind"))
+          canvas_2d.handle_ev(EV_Action("pathfind"))
         })
         contents += new MenuItem(Action("Clear Route") {
-          canvas.handle_ev(EV_Action("clear-route"))
+          canvas_2d.handle_ev(EV_Action("clear-route"))
         })
       }
 
       contents += new Menu("Simulate") {
         //contents += new MenuItem("Spawn Agent") // TODO
         contents += new MenuItem(Action("Spawn Army") {
-          canvas.handle_ev(EV_Action("spawn-army"))
+          canvas_2d.handle_ev(EV_Action("spawn-army"))
         })
         contents += new MenuItem(Action("Play/Pause") {
-          canvas.handle_ev(EV_Action("toggle-running"))
+          canvas_2d.handle_ev(EV_Action("toggle-running"))
         })
       }
     }
 
     // TODO toggle between helper and other stuff in right pane
     val main_content = new SplitPane(
-      Orientation.Vertical, canvas,
+      Orientation.Vertical,
+      new scala.swing.Component {
+        override lazy val peer = new javax.swing.JComponent {
+          add(canvas_3d.canvas)
+        }
+      },
+      //canvas_2d,
       new scala.swing.Component {
         override lazy val peer = chart
       }

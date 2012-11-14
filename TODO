@@ -6,6 +6,7 @@
   - linked list has no random access, bad for binary search
   - tree is ideal!
   - put people in the queue paired with a fixed distance?
+- benchmark with sun java 7
 
 # Optimizations
 - reduce memory by throwing away geometry in headless mode
