@@ -7,30 +7,28 @@ package utexas.aorta.ui
 import com.sun.j3d.utils.behaviors.vp.OrbitBehavior
 import com.sun.j3d.utils.geometry.Sphere
 import com.sun.j3d.utils.universe.SimpleUniverse
-import com.sun.j3d.exp.swing.JCanvas3D
 import javax.media.j3d.{Canvas3D, BranchGroup, BoundingSphere, AmbientLight,
                         Shape3D, QuadArray, GeometryArray}
 import javax.vecmath.{Point3d, Color3f, Point3f}
-import java.awt.Dimension
 
 import utexas.aorta.sim.Simulation
 
 import utexas.aorta.{Util, cfg}
 
 class MapCanvas3D(sim: Simulation) {
-  val canvas = new JCanvas3D()
-  canvas.setPreferredSize(new Dimension(600, 400))
-  //canvas.setSize(600, 400)  <-- sets a fixed size!
+  val canvas = setup_canvas
 
-  def setup() = {
-    val use_canvas = canvas.getOffscreenCanvas3D
-    val universe = new SimpleUniverse(use_canvas)
+  def setup_canvas(): Canvas3D = {
+    val c = new Canvas3D(SimpleUniverse.getPreferredConfiguration)
+    c.setSize(600, 400) // TODO resizing?
+    val universe = new SimpleUniverse(c)
     universe.addBranchGraph(create_scene_graph)
     universe.getViewingPlatform.setNominalViewingTransform
-    val orbit = new OrbitBehavior(use_canvas)
+    val orbit = new OrbitBehavior(c)
     val bounds = new BoundingSphere(new Point3d(0.0, 0.0, 0.0), 100000.0)
     orbit.setSchedulingBounds(bounds)
     universe.getViewingPlatform.setViewPlatformBehavior(orbit)
+    return c
   }
 
   def create_scene_graph(): BranchGroup = {
@@ -69,11 +67,3 @@ class FlatRect(x1: Float, y1: Float, x2: Float, y2: Float, color: Color3f) exten
     setGeometry(plane)
   }
 }
-
-// TODO the resize issue. 
-// http://www.java.net/node/660790
-// problem seems to be offscreen buffer doesnt get created
-// 1) just use the scala canvas stuff?
-// 2) disable layout manager, where?
-// 3) jcanvas 3d can work, but it doesnt resize, and it also breaks mouse orbit
-// behavior.
