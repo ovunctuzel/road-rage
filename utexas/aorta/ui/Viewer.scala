@@ -122,8 +122,9 @@ object Viewer extends SimpleSwingApplication {
   chart.getAxisY.getAxisTitle.setTitle("Number of agents")
 
   override def main(args: Array[String]) = {
-    canvas_2d = new MapCanvas(Util.process_args(args))
-    canvas_3d = new MapCanvas3D(Util.process_args(args))
+    val sim = Util.process_args(args)
+    canvas_2d = new MapCanvas(sim)
+    canvas_3d = new MapCanvas3D(sim)
     super.main(args)
   }
 
