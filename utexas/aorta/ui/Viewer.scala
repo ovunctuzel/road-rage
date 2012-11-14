@@ -202,7 +202,12 @@ object Viewer extends SimpleSwingApplication {
       Orientation.Vertical,
       new scala.swing.Component {
         override lazy val peer = new javax.swing.JComponent {
+          setLayout(null)
+          setSize(100, 100)
           add(canvas_3d.canvas)
+          setSize(200, 100)
+          println("setting stuff up...")
+          canvas_3d.setup
         }
       },
       //canvas_2d,
