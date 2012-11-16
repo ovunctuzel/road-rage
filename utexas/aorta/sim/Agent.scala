@@ -139,10 +139,12 @@ class Agent(val id: Int, val graph: Graph, val start: Edge,
 
     // so we finally end up somewhere...
     if (start_on == current_on) {
-      at = move(start_on, current_dist)
+      val old_dist = at.dist
+      at = move(start_on, current_dist, old_dist)
       // Also stay updated in the other queue
       old_lane match {
-        case Some(lane) => move(lane, current_dist)
+        // our distance is changed since we moved above...
+        case Some(lane) => move(lane, current_dist, old_dist)
         case None =>
       }
     } else {
@@ -283,9 +285,10 @@ class Agent(val id: Int, val graph: Graph, val start: Edge,
       }
       case _ =>
     }
-    t.queue.exit(this)
+    t.queue.exit(this, at.dist)
   }
-  def move(t: Traversable, dist: Double) = t.queue.move(this, dist)
+  def move(t: Traversable, new_dist: Double, old_dist: Double) =
+    t.queue.move(this, new_dist, old_dist)
 
   def dump_info() = {
     Util.log("" + this)

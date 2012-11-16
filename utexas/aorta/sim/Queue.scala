@@ -4,6 +4,10 @@
 
 package utexas.aorta.sim
 
+// I'd love to use scala's treemap, but it doesnt support higher/lowerkey.
+import java.util.TreeMap
+import scala.collection.JavaConversions.collectionAsScalaIterable
+
 import utexas.aorta.map.{Edge, Traversable}
 
 import utexas.aorta.{Util, cfg}
@@ -13,18 +17,25 @@ import utexas.aorta.{Util, cfg}
 
 // Reason about collisions on edges and within individual turns.
 class Queue(t: Traversable) {
-  // Descending by distance: head of list is front of traversable.
-  var agents = List[Agent]()
-  var last_tick = -1.0              // last observed
-  var prev_agents = List[Agent]()   // to verify no collisions occurred in a step
+  private def wrap_option(entry: java.util.Map.Entry[Double, Agent]) =
+    if (entry != null)
+      Some(entry.getValue)
+    else
+      None
 
-  def head = agents.headOption
-  def last = agents.lastOption
+  // Descending by distance: the front of traversable has the greatest distance.
+  val agents = new java.util.TreeMap[Double, Agent]()
+  var last_tick = -1.0              // last observed
+  // to verify no collisions occurred in a step
+  var prev_agents: Set[Agent] = Set()
+
+  def head = wrap_option(agents.firstEntry)
+  def last = wrap_option(agents.lastEntry)
 
   // Called lazily.
   def start_step() = {
     if (last_tick != Agent.sim.tick) {
-      prev_agents = agents
+      prev_agents = agents.values.toSet
       last_tick = Agent.sim.tick
     }
   }
@@ -37,22 +48,26 @@ class Queue(t: Traversable) {
     // someone, then back in.
 
     // Everything's fine.
-    if (agents.size == 0) {
+    if (agents.isEmpty) {
       return
     }
+
+    // TODO more efficiently?
+    val alist = agents.values.toList
+    // TODO check keys match value.at.dist
 
     // Since we allow lane-changing, some funny things could happen. So first
     // just check that the order of the distances matches the order of the
     // queue.
-    if (!agents.zip(agents.tail).forall(pair => pair._1.at.dist > pair._2.at.dist)) {
+    if (!alist.zip(alist.tail).forall(pair => pair._1.at.dist > pair._2.at.dist)) {
       throw new Exception(
         s"Agents out of order on $t: " +
-        agents.map(a => "%d at %.2f".format(a.id, a.at.dist))
+        alist.map(a => "%d at %.2f".format(a.id, a.at.dist))
       )
     }
 
     // Make sure nobody's crowding anybody else.
-    for ((a1, a2) <- agents.zip(agents.tail)) {
+    for ((a1, a2) <- alist.zip(alist.tail)) {
       if (a1.at.dist < a2.at.dist + cfg.follow_dist) {
         throw new Exception(s"$a2 too close to $a1 on $t")
       }
@@ -60,7 +75,7 @@ class Queue(t: Traversable) {
 
     // Now we just want to make sure that all of the agents here last tick are
     // in the same order. If some left, that's fine.
-    val old_crowd = agents.filter(a => prev_agents.contains(a))
+    val old_crowd = alist.filter(a => prev_agents.contains(a))
 
     if (old_crowd.size > 1) {
       // Since we know the ordering of the distances matches the ordering of the
@@ -77,39 +92,39 @@ class Queue(t: Traversable) {
 
     start_step  // lazily, if needed
 
-    val (ahead, behind) = agents.partition(c => c.at.dist > dist)
-    agents = ahead ++ List(a) ++ behind
+    // Use -dist to make highest dist first and avoid comparator junk.
+    agents.put(-dist, a)
 
     // If we're not entering at the end of the queue, something _could_ be odd,
     // so check it.
-    if (behind.nonEmpty) {
+    if (closest_behind(dist).isDefined) {
       Agent.sim.active_queues += this
     }
 
     return Position(t, dist)
   }
 
-  def exit(a: Agent) = {
+  def exit(a: Agent, old_dist: Double) = {
     start_step  // lazily, if needed
 
     // We should leave from the front of the queue generally, unless
     // lane-changing
-    if (agents.head != a) {
+    if (agents.firstEntry.getValue != a) {
       Agent.sim.active_queues += this
     }
 
-    agents = agents.filter(c => c != a)
+    agents.remove(-old_dist)
   }
 
-  def move(a: Agent, new_dist: Double): Position = {
+  def move(a: Agent, new_dist: Double, old_dist: Double): Position = {
     // TODO more efficiently?
-    exit(a)
+    exit(a, old_dist)
     return enter(a, new_dist)
   }
 
-  def ahead_of(a: Agent) = agents.takeWhile(_ != a).lastOption
-  def closest_behind(dist: Double) = agents.find(a => a.at.dist <= dist)
-  def closest_ahead(dist: Double) = agents.takeWhile(_.at.dist >= dist).lastOption
+  def ahead_of(a: Agent) = closest_ahead(a.at.dist)
+  def closest_behind(dist: Double) = wrap_option(agents.higherEntry(-dist))
+  def closest_ahead(dist: Double) = wrap_option(agents.lowerEntry(-dist))
 
   // Geometric logic for spawning.
 
@@ -149,7 +164,7 @@ class Queue(t: Traversable) {
     var safe = true
     // Find the first agent that makes us conclude there's a problem or we're
     // truly safe. This closure yields true when it wants to short-circuit.
-    agents.reverse.find(a => {
+    agents.descendingMap.values.find(a => {
       if (dist > a.at.dist) {
         val bad_dist = cfg.follow_dist + a.stopping_distance(a.max_next_speed)
         if (dist - a.at.dist <= bad_dist) {
