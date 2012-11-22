@@ -47,7 +47,6 @@ class Simulation(roads: Array[Road], edges: Array[Edge], vertices: Array[Vertex]
   private var generators: SortedSet[Generator] = new TreeSet[Generator]
   private var generator_count = 0   // just for informational/UI purposes
   private var id_cnt = -1
-  def num_generators = generators.size
 
   // Just for debug.
   var debug_agent: Option[Agent] = None
@@ -147,9 +146,6 @@ class Simulation(roads: Array[Road], edges: Array[Edge], vertices: Array[Vertex]
 
   // Returns (the number of agents that moved, total number of agents processed)
   def step(dt_s: Double): (Int, Int) = {
-    // TODO so we're introducing agents at possibly different times?!
-    pre_step
-
     // This value is dt in simulation time, not real time
     dt_accumulated += dt_s * desired_sim_speed
 
@@ -161,6 +157,12 @@ class Simulation(roads: Array[Road], edges: Array[Edge], vertices: Array[Vertex]
     while (dt_accumulated >= cfg.dt_s) {
       dt_accumulated -= cfg.dt_s
       tick += cfg.dt_s
+
+      // Do this consistently every tick so we have deterministic resimulation,
+      // which certainly depends on when agents are introduced to the system.
+      // (If the routes take different amounts of time to compute and aren't
+      // ASAP, this ISN'T deterministic yet.)
+      pre_step
 
       // If you wanted crazy speedup, disable all but agent stepping and
       // reacting. But that involves trusting that no simulation violations

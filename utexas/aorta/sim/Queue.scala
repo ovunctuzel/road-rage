@@ -42,6 +42,7 @@ class Queue(t: Traversable) {
   
   // Check for collisions by detecting abnormal changes in ordering.
   def end_step(): Unit = {
+    // TODO this is inefficient.
     // TODO if an agent ever looped around to the same edge again in one step,
     // this breaks badly.
     // TODO likewise, problems if an agent quickly lane-changed out, passed

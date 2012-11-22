@@ -160,6 +160,7 @@ TESTING IT
 - give lanes/roads/etc the ability to be closed
 - lots of things break if we have a vertex with a self-loop
 - determinism: worker threads while running (can't help this)
+  - record when we introduce somebody, resim enforces this and blocks.
 
 # Applications
 - follow dist variable based on speed, so when a light goes green,

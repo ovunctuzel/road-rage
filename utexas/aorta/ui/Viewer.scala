@@ -122,7 +122,7 @@ object Viewer extends SimpleSwingApplication {
   chart.getAxisY.getAxisTitle.setTitle("Number of agents")
 
   override def main(args: Array[String]) = {
-    val sim = Util.process_args(args)
+    val (sim, _) = Util.process_args(args)
     canvas_2d = new MapCanvas(sim)
     canvas_3d = new MapCanvas3D(sim)
     super.main(args)
@@ -206,10 +206,10 @@ object Viewer extends SimpleSwingApplication {
           add(canvas_3d.canvas)
         }
       },
-      //canvas_2d,
-      new scala.swing.Component {
+      canvas_2d
+      /*new scala.swing.Component {
         override lazy val peer = chart
-      }
+      }*/
     )
 
     contents = new BorderPanel {

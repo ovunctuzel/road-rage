@@ -101,7 +101,8 @@ object Util {
     }
   }
 
-  def process_args(args: Array[String]): Simulation = {
+  // The boolean says whether or not a pre-defined scenario is being run.
+  def process_args(args: Array[String]): (Simulation, Boolean) = {
     // TODO write with 'partition'
     val keys = args.zipWithIndex.filter(p => p._2 % 2 == 0).map(p => p._1)
     val vals = args.zipWithIndex.filter(p => p._2 % 2 == 1).map(p => p._1)
@@ -137,14 +138,14 @@ object Util {
 
     return if (load_scenario.isEmpty) {
       Util.init_rng(rng)
-      Simulation.load(fn)
+      (Simulation.load(fn), false)
     } else {
       val sim = Simulation.load_scenario(load_scenario)
       // It's useful to retry a scenario with a new seed.
       if (diff_rng) {
         Util.init_rng(rng)
       }
-      sim
+      (sim, true)
     }
   }
 }
