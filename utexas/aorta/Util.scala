@@ -19,12 +19,16 @@ object Util {
   def indent = "  " * indent_log
   def log(msg: String) = println(indent + msg)
 
-  private var rng: Random = null  // icky...
+  // For simulation stuff
+  private var sim_rng: Random = null  // icky...
+  // For the UI and stuff that doesn't matter. Separate these so determinism
+  // works between headless/UI.
+  val util_rng = new Random()
   var seed: Long = -1
 
   def init_rng(s: Long) = {
     seed = s
-    rng = new Random(seed)
+    sim_rng = new Random(seed)
     Util.log("RNG seed: " + seed)
   }
 
@@ -41,7 +45,7 @@ object Util {
     Profiling.shutdown
   })
 
-  def rand_double(min: Double, max: Double): Double =
+  def rand_double(min: Double, max: Double, rng: Random = sim_rng): Double =
     if (min > max)
       throw new Exception("rand(" + min + ", " + max + ") requested")
     else if (min == max)
@@ -49,7 +53,7 @@ object Util {
     else
       min + rng.nextDouble * (max - min)
   def rand_int(min: Int, max: Int) = rand_double(min, max).toInt
-  def choose_rand[T](from: Seq[T]): T = from(rng.nextInt(from.length))
+  def choose_rand[T](from: Seq[T]): T = from(sim_rng.nextInt(from.length))
   // return true 'p'% of the time. p is [0.0, 1.0]
   def percent(p: Double) = rand_double(0.0, 1.0) < p
 

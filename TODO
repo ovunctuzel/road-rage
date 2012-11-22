@@ -1,5 +1,6 @@
 # TODO #
 
+- ui speed controls.. step one tick, display a certain fps, sleep to match what?
 - proximity violations remain.
 - benchmark with sun java 7
 

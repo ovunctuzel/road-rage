@@ -70,7 +70,9 @@ class Queue(t: Traversable) {
     // Make sure nobody's crowding anybody else.
     for ((a1, a2) <- alist.zip(alist.tail)) {
       if (a1.at.dist < a2.at.dist + cfg.follow_dist) {
-        throw new Exception(s"$a2 too close to $a1 on $t")
+        throw new Exception(
+          s"$a2 too close to $a1 on $t (" + (a1.at.dist - a2.at.dist) + ")"
+        )
       }
     }
 

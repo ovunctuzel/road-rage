@@ -71,9 +71,9 @@ class Agent(val id: Int, val graph: Graph, val start: Edge,
 
     // To confirm determinism, enable and diff the logs. (Grep out
     // timing/profiling stuff)
-    /*Util.log("%s at %.1f is at (%s, %.1f) with speed %.1f and accel %.1f".format(
-      this, Agent.sim.tick, at.on, at.dist, speed, target_accel
-    ))*/
+    /*Util.log(
+      f"At ${Agent.sim.tick}%.1f, $this is at $at with speed ${speed}%.1f and accel ${target_accel}%.1f"
+    )*/
 
     if (speed == 0.0 && target_accel == 0.0) {
       if (idle_since == -1.0) {
@@ -359,4 +359,5 @@ case class Position(val on: Traversable, val dist: Double) {
 
   def location = on.location(dist)
   def dist_left = on.length - dist
+  override def toString = s"($on, $dist)"
 }
