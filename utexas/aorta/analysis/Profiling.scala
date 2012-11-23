@@ -13,7 +13,6 @@ import utexas.aorta.Util
 // Java profilers might be safer.
 
 object Profiling {
-  // TODO the ability to disable
   def timer(msg: String) = new Timer(msg)
   def stopwatch(name: String = "") = new Stopwatch(name)
 

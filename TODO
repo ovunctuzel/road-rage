@@ -107,7 +107,6 @@ TESTING IT
 - actors / akka?
 
 # UI
-- spawning agents at specific places
 - better code, everything needs debug() and render()
 - visualize lookahead
 - work on svg

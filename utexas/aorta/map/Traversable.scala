@@ -32,6 +32,13 @@ abstract class Traversable() {
     case (l: Line, dist_along: Double) => l.point_on(dist_along)
   }
 
+  // Find a point along one our lines that's close the given point
+  // TODO this is inefficient!
+  def approx_dist(pt: Coordinate, step_size: Double): Double =
+    (0.0 until length by step_size).map(
+      dist => (location(dist).dist_to(pt), dist)
+    ).min._2
+
   // returns line and distance along that line
   def current_pos(dist: Double): (Line, Double) = {
     if (dist < 0) {

@@ -16,7 +16,8 @@ import swing.Dialog
 
 import utexas.aorta.map._  // TODO yeah getting lazy.
 import utexas.aorta.sim.{Simulation, Agent, FixedSizeGenerator,
-                         ContinuousGenerator, Sim_Event, EV_Signal_Change}
+                         ContinuousGenerator, SpecificGenerator, Sim_Event,
+                         EV_Signal_Change}
 import utexas.aorta.sim.policies.{GreenFlood, Cycle}
 
 import utexas.aorta.{Util, cfg}
@@ -76,6 +77,7 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
   private var mode = Mode.EXPLORE
   private var chosen_edge1: Option[Edge] = None
   private var chosen_edge2: Option[Edge] = None
+  private var chosen_pos: Option[(Edge, Double)] = None
   private var route_members = Set[Edge]()
   private var route_members_road = Set[Road]()
   private var polygon_roads1: Set[Road] = Set()
@@ -85,7 +87,7 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
   private var show_green = false
 
   def current_edge: Option[Edge] = current_obj match {
-    case Some(e: Edge) => Some(e)
+    case Some((e: Edge, _: Double)) => Some(e)
     case _ => None
   }
   def current_agent: Option[Agent] = current_obj match {
@@ -239,7 +241,7 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
       }
 
       current_obj match {
-        case Some(e: Edge) => draw_intersection(g2d, e)
+        case Some((e: Edge, _: Double)) => draw_intersection(g2d, e)
         case Some(v: Vertex) => {
           for (t <- v.intersection.policy.current_greens) {
             draw_turn(g2d, t, Color.GREEN)
@@ -279,6 +281,7 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
 
     // What tooltip do we want?
     return current_obj match {
+      case Some((e: Edge, d: Double)) => Some(f"$e at $d%.2f")
       case Some(thing) => Some(thing.toString)
       case None => None
     }
@@ -477,7 +480,7 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
             case None => None
             case Some(l) => Some(l.road)
           }
-          case Some(l) => Some(l.edge)
+          case Some(l) => Some(l.edge, l.edge.approx_dist(new Coordinate(x, y), 1.0))
         }
         case Some(v) => Some(v)
       }
@@ -504,15 +507,15 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
     // TODO this'll be tab someday, i vow!
     case EV_Key_Press(Key.Control) => {
       // cycle through turns
-      current_obj match {
-        case Some(e: Edge) => {
+      current_edge match {
+        case Some(e) => {
           current_turn += 1
           if (current_turn >= e.next_turns.size) {
             current_turn = 0
           }
           repaint
         }
-        case _ =>
+        case None =>
       }
     }
     case EV_Key_Press(Key.P) => {
@@ -660,16 +663,19 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
       mode match {
         case Mode.EXPLORE => {
           chosen_edge1 = current_edge
+          chosen_pos = current_obj.asInstanceOf[Option[(Edge, Double)]]
           switch_mode(Mode.PICK_2nd)
           repaint
         }
         case Mode.PICK_2nd => {
           chosen_edge2 = current_edge
-          sim.add_gen(new FixedSizeGenerator(
-            sim, Set(chosen_edge1.get), Set(current_edge.get), 1, "Static A*"
+          sim.add_gen(new SpecificGenerator(
+            sim, "Static A*",
+            List((chosen_pos.get._1, current_edge.get, chosen_pos.get._2))
           ))
           chosen_edge1 = None
           chosen_edge2 = None
+          chosen_pos = None
           switch_mode(Mode.EXPLORE)
           repaint
         }
@@ -699,7 +705,7 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
     }
     // TODO move the debug string to the renderable trait
     case EV_Key_Press(Key.D) => current_obj match {
-      case Some(e: Edge) => {
+      case Some((e: Edge, _: Double)) => {
         Util.log(e + " has length " + e.length + " m, min entry dist " +
                  (e.queue.worst_entry_dist + cfg.follow_dist))
         Util.log("(lanechange dist is " + (cfg.lanechange_dist +

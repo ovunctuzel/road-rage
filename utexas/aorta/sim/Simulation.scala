@@ -43,7 +43,7 @@ class Simulation(roads: Array[Road], edges: Array[Edge], vertices: Array[Vertex]
   traversables.foreach(t => t.queue = new Queue(t))
   vertices.foreach(v => v.intersection = new Intersection(v))
   var agents: SortedSet[Agent] = new TreeSet[Agent]
-  var ready_to_spawn: List[Agent] = Nil
+  var ready_to_spawn: List[SpawnAgent] = Nil
   private var generators: SortedSet[Generator] = new TreeSet[Generator]
   private var generator_count = 0   // just for informational/UI purposes
   private var id_cnt = -1
@@ -213,11 +213,11 @@ class Simulation(roads: Array[Road], edges: Array[Edge], vertices: Array[Vertex]
 
   // True if we've correctly promoted into real agents. Does the work of
   // spawning as well.
-  def try_spawn(a: Agent): Boolean =
-    if (a.start.queue.can_spawn_now(a.start_dist)) {
-      a.at = a.enter(a.start, a.start_dist)
-      a.started_trip_at = tick
-      agents += a
+  def try_spawn(spawn: SpawnAgent): Boolean =
+    if (spawn.e.queue.can_spawn_now(spawn.dist)) {
+      spawn.a.at = spawn.a.enter(spawn.e, spawn.dist)
+      spawn.a.started_trip_at = tick
+      agents += spawn.a
       true
     } else {
       false

@@ -11,9 +11,7 @@ import utexas.aorta.analysis.{Profiling, Stats, Wasted_Time_Stat}
 // TODO come up with a notion of dimension and movement capability. at first,
 // just use radius bounded by lane widths?
 
-class Agent(val id: Int, val graph: Graph, val start: Edge,
-            val start_dist: Double, val route: Route) extends Ordered[Agent]
-{
+class Agent(val id: Int, val route: Route) extends Ordered[Agent] {
   // null just until they're introduced!
   var at: Position = null
 
@@ -336,6 +334,8 @@ class Agent(val id: Int, val graph: Graph, val start: Edge,
   def accel_to_cover(dist: Double) = (2 * (dist - (speed * cfg.dt_s)) /
                                       (cfg.dt_s * cfg.dt_s))
 }
+
+class SpawnAgent(val a: Agent, val e: Edge, val dist: Double) {}
 
 // the singleton just lets us get at the simulation to look up queues
 object Agent {

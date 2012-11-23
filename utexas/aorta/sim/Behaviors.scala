@@ -11,8 +11,6 @@ import utexas.aorta.analysis.Gridlock
 import utexas.aorta.{Util, cfg}
 
 abstract class Behavior(a: Agent) {
-  val graph = a.graph
-
   // asked every tick after everybody has moved
   def choose_action(): Action
   // only queried when the agent reaches a vertex

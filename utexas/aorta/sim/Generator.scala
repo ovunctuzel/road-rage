@@ -20,17 +20,23 @@ object Generator {
   var next_id = 0
 
   def unserialize(sim: Simulation, params: (String => String)) = {
-    val starts = params("starts").split(",").map(e => sim.edges(e.toInt))
-    val ends = params("ends").split(",").map(e => sim.edges(e.toInt))
+    val route = params("route_type")
+    lazy val starts = params("starts").split(",").map(e => sim.edges(e.toInt))
+    lazy val ends = params("ends").split(",").map(e => sim.edges(e.toInt))
 
-    // TODO a bit fixed based on the two types of generators we have, but adding
-    // a new class doesn't entail too much new work
+    // TODO a bit fixed based on the three types of generators we have, but
+    // adding a new class doesn't entail too much new work
     val g = params("type") match {
       case "fixed"      => new FixedSizeGenerator(
-        sim, starts, ends, params("total").toInt, params("route_type")
+        sim, starts, ends, params("total").toInt, route
       )
       case "continuous" => new ContinuousGenerator(
-        sim, starts, ends, params("spawn_every").toDouble, params("route_type")
+        sim, starts, ends, params("spawn_every").toDouble, route
+      )
+      case "specific" => new SpecificGenerator(
+        sim, route, params("positions").split(",").map(
+          p => SpecificGenerator.parse(p, sim)
+        )
       )
       case _            => throw new Exception(
         "Weird serialized generator with type " + params("type")
@@ -42,8 +48,7 @@ object Generator {
   }
 }
 
-abstract class Generator(sim: Simulation, desired_starts: Iterable[Edge],
-                         ends: Iterable[Edge], route_type: String)
+abstract class Generator(sim: Simulation, route_type: String)
 extends Ordered[Generator]
 {
   val id = Generator.next_id
@@ -52,26 +57,21 @@ extends Ordered[Generator]
 
   def compare(other: Generator) = other.id.compare(id)
 
-  // Prune the desired_starts for road type and length. Arrays have random
-  // access.
-  val start_candidates = desired_starts.filter(e => e.queue.ok_to_spawn).toArray
-  val end_candidates = ends.toArray
-
   def serialize_ls(ls: Array[Edge]) = ls.map(e => e.id).mkString(",")
 
   // there may be no task scheduled
-  protected var pending = new ListBuffer[(Agent, Option[FutureTask[Unit]])]
+  protected var pending = new ListBuffer[(SpawnAgent, Option[FutureTask[Unit]])]
 
   // Returns new agents to try to spawn, or boolean means reap this genertor
-  def run(): Either[List[Agent], Boolean]
+  def run(): Either[List[SpawnAgent], Boolean]
   // For resimulation. Spit out something in XML.
   def serialize(): String
 
   def count_pending = pending.size
 
-  def add_specific_agent(start: Edge, end: Edge) = {
+  def add_specific_agent(start: Edge, end: Edge, start_dist: Double) = {
     val route = Simulation.make_route(route_type, end.directed_road)
-    val a = new Agent(sim.next_id, sim, start, start.queue.safe_spawn_dist, route)
+    val a = new SpawnAgent(new Agent(sim.next_id, route), start, start_dist)
 
     // Agents get to the directed road of the requested ending. Good enough?
     route.compute_route match {
@@ -89,11 +89,11 @@ extends Ordered[Generator]
   }
 
   // This is a nonblocking poll, of course
-  def poll(): List[Agent] = {
+  def poll(): List[SpawnAgent] = {
     // Even though worker threads will complete tasks out of order, can force
     // determinism by scanning through in order and stopping at the first that
     // isn't done
-    val done = new ListBuffer[Agent]()
+    val done = new ListBuffer[SpawnAgent]()
     var continue = true
     while (continue && pending.nonEmpty) {
       val a = pending.head
@@ -134,12 +134,21 @@ extends Ordered[Generator]
     })
     Util.log("")
   }
+}
 
-  def create_and_poll(n: Int): List[Agent] = {
+abstract class SpawnAnywhere(sim: Simulation, route_type: String,
+                             starts: Iterable[Edge], ends: Iterable[Edge])
+extends Generator(sim, route_type)
+{
+  // Prune starts for road type and length. Arrays have random access.
+  val start_candidates = starts.filter(e => e.queue.ok_to_spawn).toArray
+  val end_candidates = ends.toArray
+
+  def create_and_poll(n: Int): List[SpawnAgent] = {
     for (i <- (0 until n)) {
       val start = Util.choose_rand[Edge](start_candidates)
       val end = Util.choose_rand[Edge](end_candidates)
-      add_specific_agent(start, end)
+      add_specific_agent(start, end, start.queue.safe_spawn_dist)
     }
     return poll
   }
@@ -151,11 +160,11 @@ extends Ordered[Generator]
 class FixedSizeGenerator(sim: Simulation, starts: Iterable[Edge],
                          ends: Iterable[Edge], total: Int,
                          route_type: String)
-  extends Generator(sim, starts, ends, route_type)
+  extends SpawnAnywhere(sim, route_type, starts, ends)
 {
   var num_to_spawn = total
 
-  override def run(): Either[List[Agent], Boolean] =
+  override def run(): Either[List[SpawnAgent], Boolean] =
     if (num_to_spawn == 0 && pending.isEmpty) {
       // this generator's done.
       Right(true)
@@ -177,12 +186,12 @@ class FixedSizeGenerator(sim: Simulation, starts: Iterable[Edge],
 class ContinuousGenerator(sim: Simulation, starts: Iterable[Edge],
                           ends: Iterable[Edge], spawn_every: Double,
                           route_type: String)
-  extends Generator(sim, starts, ends, route_type)
+  extends SpawnAnywhere(sim, route_type, starts, ends)
 {
   var last_tick = Agent.sim.tick
   var accumulated_time = 0.0
 
-  override def run(): Either[List[Agent], Boolean] = {
+  override def run(): Either[List[SpawnAgent], Boolean] = {
     accumulated_time += Agent.sim.tick - last_tick
     last_tick = Agent.sim.tick
 
@@ -190,7 +199,7 @@ class ContinuousGenerator(sim: Simulation, starts: Iterable[Edge],
       Util.log("Generator has no viable starting edges!")
       Right(true)
     } else {
-      var new_agents: List[Agent] = Nil
+      var new_agents: List[SpawnAgent] = Nil
       while (accumulated_time >= spawn_every) {
         accumulated_time -= spawn_every
         new_agents ++= create_and_poll(1)
@@ -203,4 +212,43 @@ class ContinuousGenerator(sim: Simulation, starts: Iterable[Edge],
     created_at, serialize_ls(start_candidates), serialize_ls(end_candidates),
     spawn_every, route_type
   )
+}
+
+class SpecificGenerator(sim: Simulation, route_type: String,
+                        positions: Iterable[(Edge, Edge, Double)])
+  extends Generator(sim, route_type)
+{
+  var done = false
+
+  override def run(): Either[List[SpawnAgent], Boolean] = {
+    if (done) {
+      if (pending.isEmpty) {
+        Right(true)
+      } else {
+        Left(poll)
+      }
+    } else {
+      done = true
+      for (p <- positions) {
+        add_specific_agent(p._1, p._2, p._3)
+      }
+      Left(poll)
+    }
+  }
+
+  override def serialize() = "<generator type=\"specific\" time=\"%f\" positions=\"%s\" route_type=\"%s\"/>".format(
+    created_at, positions.map(serialize_pos).mkString(","), route_type
+  )
+
+  def serialize_pos(pos: (Edge, Edge, Double)) = "%d/%d/%f".format(pos._1.id, pos._2.id, pos._3)
+}
+
+object SpecificGenerator {
+  val pattern = """(\d+)/(\d+)/(.+)""".r
+
+  def parse(pos: String, sim: Simulation) = pos match {
+    case pattern(start, end, dist) => (sim.edges(start.toInt),
+                                       sim.edges(end.toInt),
+                                       dist.toDouble)
+  }
 }
