@@ -109,47 +109,27 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
       return false
     }
 
-    // TODO rewrite to not return from within the closures
-    target.queue.closest_behind(a.at.dist) match {
-      // If there's somebody behind us on our target, make sure they could stop
-      // and not hit us.
-      // TODO this depends on agent ordering per tick. 2 agents may try to merge
-      // into the same lane at the same spot in the same tick. how to
-      // parallelize?
-      case Some(avoid) => {
-        val min_dist = cfg.follow_dist + avoid.stopping_distance(avoid.max_next_speed)
-        if (a.at.dist - avoid.at.dist <= min_dist) {
-          return false
-        }
-        // TODO tmp debug
-        //Util.log(s"$a at ${a.at} sees $avoid as biggest threat")
-      }
-      // It's impractical to flood backwards and find all the possible cars that
-      // could enter our target lane soon. So use the same idea as safe spawning
-      // distance and don't start a lane-change too early in the road. This
-      // gives agents time next tick to notice us during their lookahead.
-      case None => {
-        if (a.at.dist <= a.at.on.queue.worst_entry_dist + cfg.follow_dist) {
-          return false
-        }
-      }
+    // It's impractical to flood backwards and find all the possible cars that
+    // could enter our target lane soon. So use the same idea as safe spawning
+    // distance and don't start a lane-change too early in the road. This
+    // gives agents time next tick to notice us during their lookahead.
+    if (!target.queue.closest_behind(a.at.dist).isDefined &&
+        a.at.dist <= a.at.on.queue.worst_entry_dist + cfg.follow_dist)
+    {
+      return false
     }
 
-    // TODO make sure somebody can't decide to spawn in the way right as we
-    // start to shift. when more things happen concurrently, just be careful.
-
-    // We shouldn't have to do arbitrary lookahead for in front of us, since
-    // we're guaranteed to finish the LC by the end of the target lane.
-    target.queue.closest_ahead(a.at.dist) match {
-      case Some(avoid) => {
-        val min_dist = cfg.follow_dist + a.stopping_distance(a.max_next_speed)
-        // TODO prefer to not LC when we can't immediately finish it, on account
-        // of them being stopped with not enough room for us to finish LCing...
-        if (avoid.at.dist - a.at.dist <= min_dist) {
-          return false
-        }
-      }
-      case None =>
+    // We don't want to merge in too closely to the agent ahead of us, nor do we
+    // want to make somebody behind us risk running into us. So just make sure
+    // there are no agents in that danger range.
+    // TODO expanding the search to twice follow dist is a hack; I'm not sure
+    // why agents are winding up about a meter too close sometimes.
+    val ahead_dist = (2.0 * cfg.follow_dist) + a.stopping_distance(a.max_next_speed)
+    // TODO assumes all vehicles the same. not true forever.
+    val behind_dist = (2.0 * cfg.follow_dist) + a.stopping_distance(target.road.speed_limit)
+    val nearby = target.queue.all_in_range(a.at.dist - behind_dist, a.at.dist + ahead_dist)
+    if (!nearby.isEmpty) {
+      return false
     }
 
     return true
