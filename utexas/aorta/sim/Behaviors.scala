@@ -19,11 +19,13 @@ abstract class Behavior(a: Agent) {
   def transition(from: Traversable, to: Traversable)
   // just for debugging
   def dump_info()
+  // for steady-state analysis
+  def wants_to_lc(): Boolean
 }
 
 // Never speeds up from rest, so effectively never does anything
 class IdleBehavior(a: Agent) extends Behavior(a) {
-  override def choose_action() = Act_Set_Accel(0)
+  override def choose_action(): Action = Act_Set_Accel(0)
 
   override def choose_turn(e: Edge) = e.next_turns.head
 
@@ -32,6 +34,8 @@ class IdleBehavior(a: Agent) extends Behavior(a) {
   override def dump_info() = {
     Util.log("Idle behavior")
   }
+
+  override def wants_to_lc = false
 }
 
 // Reactively avoids collisions and obeys intersections by doing a conservative
@@ -49,6 +53,8 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
   // "sim time" when agent's actually first moving, otherwise the route might
   // not be ready to answer us.
   var target_lane: Option[Edge] = null
+
+  override def wants_to_lc = target_lane.isDefined
 
   def reset_target_lane(base: Edge) = {
     target_lane = None

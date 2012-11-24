@@ -47,7 +47,7 @@ edge, by #3. but in those cases, is much time really spent computationally?
 
 
 when can we ENTER steady-state?
-- when we're going our max accel
+- when we're going our max speed limit (aka 0 accel needed)
 - when we're not LCing
 - when we dont WANT to LC
 
@@ -57,3 +57,18 @@ when must we CEASE steady-state?
 - when we approach the end of our lane (implying this is useful for long lanes)
 - when somebody LCs into our lane near us
 - when the person we're following wakes up from steady-state* (and we get close)
+
+evidence this could help:
+  - in synthetic, 90% of moves result in 0 accel.
+  - in btr, 45%
+
+phase 1 of implementing this is just to skip our normal reaction when we're in
+the steady state, but phase 2 could even skip polling the agent that tick
+entirely. ultimately, rephrasing some of the behavior code as 'react to somebody
+appearing in front of you', 'react to getting to the end of the lane' might be
+cool, although the generalish code now may wind up being the simplest.
+
+code-wise, lookahead is split into constraints now. maybe each constraint
+contributes an entrance/exit transition for steady-stateness?
+
+why're the extra buffers needed? its like an extra tick is missed.

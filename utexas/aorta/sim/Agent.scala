@@ -40,6 +40,13 @@ class Agent(val id: Int, val route: Route) extends Ordered[Agent] {
   // Track intersections we've contacted but not passed
   var upcoming_intersections: Set[Intersection] = Set()
 
+  // We can safely not react (no acceleration) until something changes.
+  protected var steady_state = false
+  def wakeup() = {
+    steady_state = false
+  }
+  def awake = !steady_state
+
   override def toString = "Agent " + id
 
   // Returns true if we move or do anything at all
@@ -150,6 +157,25 @@ class Agent(val id: Int, val route: Route) extends Ordered[Agent] {
       at = enter(current_on, current_dist)
     }
 
+    // Leave steady state?
+    val close_to_lead = at.on.queue.ahead_of(this) match {
+      case Some(a) =>
+        // TODO eww buffers
+        (a.at.dist - at.dist) <= (stopping_distance(max_next_speed) + 2.0 * cfg.follow_dist)
+      case None => false
+    }
+    val leave_steady = (
+      // TODO i don't like having to add the buffer to max_lookahead_dist..
+      (at.dist_left <= max_lookahead_dist + cfg.follow_dist) || // too close to the end
+      (close_to_lead) // too close to the agent in front of us
+    )
+    if (leave_steady) {
+      if (!awake) {
+        //Util.log(s"$this leaving steady state")
+      }
+      wakeup
+    }
+
     return new_dist > 0.0
   }
 
@@ -169,10 +195,34 @@ class Agent(val id: Int, val route: Route) extends Ordered[Agent] {
         // make sure this won't put us at a negative speed
         Util.assert_ge(speed + (new_accel * cfg.dt_s), 0)
 
+        // Enter steady state?
+        val enter_steady = (
+          (new_accel == 0.0) && // Be moving at the speed limit
+          (!was_lanechanging) && // Don't be LCing
+          (!behavior.wants_to_lc) && // Doesn't want to LC
+          (at.dist_left > max_lookahead_dist + cfg.follow_dist) // Don't be close to the end
+        )
+        if (enter_steady) {
+          if (!steady_state) {
+            //Util.log(s"$this entering steady state")
+          }
+          steady_state = true
+        }
+        if (steady_state && new_accel != 0.0) {
+          // Means I haven't characterized steady state fully yet.
+          Util.log(s"$this wants to accel to $new_accel when in steady-state!")
+          Util.log(s"  at ${at.dist}, vs ${at.on.length} - ${max_lookahead_dist}")
+        }
+
         target_accel = new_accel
         false
       }
       case Act_Lane_Change(lane) => {
+        if (steady_state) {
+          // Means I haven't characterized steady state fully yet.
+          Util.log(s"$this wants to LC to $lane when in steady-state!")
+        }
+
         // Ensure this is a valid request.
         if (was_lanechanging) {
           // Don't request twice in a row
