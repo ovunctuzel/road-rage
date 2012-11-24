@@ -72,3 +72,8 @@ code-wise, lookahead is split into constraints now. maybe each constraint
 contributes an entrance/exit transition for steady-stateness?
 
 why're the extra buffers needed? its like an extra tick is missed.
+
+wakeup recursively panning out to other agents is problematic because ordering.
+id doesnt correspond to who leads on a queue! could redefine to operate in the
+right order per queue, but thats been decided against previously for
+alternatives. only resort to it.

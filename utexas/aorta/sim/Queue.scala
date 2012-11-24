@@ -126,6 +126,7 @@ class Queue(t: Traversable) {
   }
 
   def ahead_of(a: Agent) = closest_ahead(a.at.dist)
+  def behind(a: Agent) = closest_behind(a.at.dist)
   def closest_behind(dist: Double) = wrap_option(agents.higherEntry(-dist))
   def closest_ahead(dist: Double) = wrap_option(agents.lowerEntry(-dist))
   def all_in_range(from: Double, to: Double) = agents.subMap(-to, true, -from, true)
