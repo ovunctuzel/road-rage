@@ -18,6 +18,7 @@ abstract class Traversable() {
 
   var lines: List[Line] = Nil // till set_lines happens.
   def leads_to: List[Traversable]
+  def speed_limit: Double
 
   // Store; it's not free to compute it constantly
   var length: Double = 0

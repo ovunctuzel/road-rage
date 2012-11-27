@@ -48,9 +48,10 @@ object Headless {
           sim.tick, sim.tick - last_virtual_time, sim.describe_agents,
           max_movements, Util.comma_num(total_agent_steps)
         ))
-        Util.log(s"  ${Simulation.steady} steady, vs ${Simulation.unsteady} reacting")
-        Simulation.steady = 0
-        Simulation.unsteady = 0
+        Util.log("  " + Util.comma_num(Simulation.did_fp) + " did fp, " +
+                 Util.comma_num(Simulation.didnt_fp) + " didnt")
+        Simulation.did_fp = 0
+        Simulation.didnt_fp = 0
         last_real_time = now
         last_virtual_time = sim.tick
         max_movements = 0

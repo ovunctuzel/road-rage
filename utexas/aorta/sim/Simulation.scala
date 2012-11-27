@@ -229,9 +229,9 @@ sealed trait Sim_Event {}
 final case class EV_Signal_Change(reds: Set[Turn], greens: Set[Turn]) extends Sim_Event {}
 
 object Simulation {
-  // TODO stats.
-  var steady = 0
-  var unsteady = 0
+  // temporary stats for fast-path tests.
+  var did_fp = 0
+  var didnt_fp = 0
 
   // maintain a log of the simulation here
   var map_fn: String = ""

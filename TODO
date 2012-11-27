@@ -1,9 +1,14 @@
 # TODO #
 
+- fine tune math
+  - no or standardized epsilons
+  - do we have to start stopping for the end of stuff before we get close?
+    - dont always call that constraint, maybe
+  - worst case stuff all acts like we will exceed speed limit.
+
 - proximity violations remain.
 - there actually is ALMOST atomicity. steps happen sequentially but are unconcious.
   react() moves agents to target LC queue asap.. thats bad. dont do it till step! then worry about collisions, reverting. (what priority wins?)
-- ui speed controls.. step one tick, display a certain fps, sleep to match what?
 
 # Optimizations
 - reduce memory by throwing away geometry in headless mode
@@ -107,6 +112,7 @@ TESTING IT
 - actors / akka?
 
 # UI
+- ui speed controls.. step one tick, display a certain fps, sleep to match what?
 - better code, everything needs debug() and render()
 - visualize lookahead
 - work on svg

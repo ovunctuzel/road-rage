@@ -44,6 +44,7 @@ class Turn(val id: Int, val from: Edge, val turn_type: TurnType.TurnType, val to
   }
 
   def leads_to = List(to)
+  def speed_limit = to.speed_limit
 
   def involves_road(r: Road) = (from.road == r || to.road == r)
   def other_road(r: Road) = if (from.road == r) to.road else from.road

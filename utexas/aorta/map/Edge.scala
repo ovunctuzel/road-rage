@@ -21,6 +21,7 @@ class Edge(var id: Int, val road: Road, val dir: Direction.Direction) extends Tr
   //def leads_to = next_turns
   // with lane-changing
   def leads_to = next_turns ++ List(shift_left, shift_right).flatten
+  def speed_limit = road.speed_limit
 
   def directed_road = if (dir == Direction.POS)
                         road.pos_group

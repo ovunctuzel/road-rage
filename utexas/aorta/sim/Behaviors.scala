@@ -149,6 +149,41 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
       // Should be an edge, since we start on edges.
       reset_target_lane(a.at.on.asInstanceOf[Edge])
     }
+
+    // Try a fast-path!
+    val no_lc = (!wants_to_lc) && (!a.is_lanechanging)
+    val not_near_end = a.at.dist_left >= a.max_lookahead_dist + cfg.end_threshold // TODO +buf?
+    val lead = a.our_lead
+    val not_tailing = lead match {
+      case Some(l) =>
+        // TODO or just stopping dist at max next speed?
+        (l.at.dist - a.at.dist) >= (a.max_lookahead_dist + cfg.follow_dist)
+      case None => true
+    }
+    val at_speed = a.speed == a.at.on.speed_limit
+    // TODO more fast paths that dont do full analysis
+    // TODO go back and prove these are equivalent to the original semantics
+    if (no_lc && not_near_end) {
+      if (not_tailing && at_speed) {
+        Simulation.did_fp += 1
+        return Act_Set_Accel(0)
+      }/* else if (not_tailing) {
+        // so we're not at speed
+        Simulation.did_fp += 1
+        return Act_Set_Accel(
+          math.min(a.accel_to_achieve(a.at.on.speed_limit), a.max_accel)
+        )
+      } else if (at_speed) {
+        // so we're tailing
+        Simulation.did_fp += 1
+        return Act_Set_Accel(math.max(
+          accel_to_follow(lead.get, lead.get.at.dist - a.at.dist),
+          -a.max_accel
+        ))
+      }*/
+    }
+    Simulation.didnt_fp += 1
+
     if (!a.is_lanechanging) {
       target_lane match {
         case Some(e) => {
@@ -215,7 +250,7 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
     var accel_for_stop: Option[Double] = None
     var accel_for_agent: Option[Double] = None
     var accel_for_lc_agent: Option[Double] = None
-    var min_speed_limit: Option[Double] = None
+    var min_speed_limit = Double.MaxValue
     var done_with_route = false
 
     // Stop caring once we know we have to stop for some intersection AND stay
@@ -243,11 +278,7 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
         }
       }
 
-      min_speed_limit = (min_speed_limit, constraint_speed_limit(step)) match {
-        case (None, limit) => limit
-        case (Some(speed), None) => Some(speed)
-        case (Some(s1), Some(s2)) => Some(math.min(s1, s2))
-      }
+      min_speed_limit = math.min(min_speed_limit, step.at.speed_limit)
 
       // Set the next step.
       step = step.next_step match {
@@ -264,7 +295,7 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
     } else {
       val conservative_accel = List(
         accel_for_stop, accel_for_agent, accel_for_lc_agent,
-        min_speed_limit.flatMap(l => Some(a.accel_to_achieve(l))),
+        Some(a.accel_to_achieve(min_speed_limit)),
         // Don't forget physical limits
         Some(a.max_accel)
       ).flatten.min
@@ -364,12 +395,6 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
     }
     return Left(Some(accel_to_end(go_this_dist)))
   }
-
-  def constraint_speed_limit(step: LookaheadStep): Option[Double] =
-    step.at match {
-      case e: Edge => Some(e.road.speed_limit)
-      case t: Turn => None
-    }
 
   // TODO make a singleton for math
 
