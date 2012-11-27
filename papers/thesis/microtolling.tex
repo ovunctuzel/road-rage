@@ -1,0 +1,53 @@
+The underlying aim of microtolling is to optimize total travel time among all
+drivers. The costs assigned to roads in explanations of Braess' paradox account
+for the time to cross the road. The paradox occurs because all rational agents
+try to take a new shortcut road with a certain configuration, but if only a few
+drivers deviate from the original routes and take the shortcut, shouldn't total
+travel time decrease? (I wrote a quick brute-force solver that evaluates total
+time for every combination of drivers on each route, and so far, the answer is
+no, but there must be a mistake somewhere.) Let the "capacity" of the shortcut
+be this critical maximum of drivers that can take the new route and not decrease
+the total travel time.
+
+Assuming the critical number of drivers who take the shortcut can be calculated,
+the question becomes how to choose the lucky drivers who get the faster route.
+A lottery isn't "fair." Microtolling is an alternative. Rational agents minimize
+the cost of their route, so to limit the number who take the faster route, costs
+should be based on both time and a toll. A new assumption is required: drivers
+have different time/dollar ratios; only some drivers are willing to pay a higher
+toll for a faster route.
+
+Some questions arise:
+1) How does the tolling work?
+  a) The shortcut is free/cheap until the capacity is reached, then a high toll
+     is imposed. (Unfair because it's first-come, first-serve.)
+  b) Everybody pays a toll proportional to the number of drivers on the
+     shortcut. If it's empty at first for some driver but more people join while
+     that driver is still using it, that driver pays the new high cost. This
+     encourages usage at non-peak times.
+  c) Once the shortcut is at capacity, do we allow more drivers to join? They
+     would get an individual lower travel time, but decrease the total travel
+     time of the system. (Is this even possible? Intuitively, yes, because a
+     light could remain green for one car to cross quickly, even though the
+     other phase has more demand waiting to cross.)
+  d) If c) is true, then does an auction work better than a fixed toll?
+
+2) How to generalize to large networks with more than just time costs for roads?
+   Intersection costs depend on the flow in connected roads; does this raise any
+   fundamental new complication, or can crossing an intersection be modeled as
+   just another edge with a cost?
+
+3) Time costs that are just constant or just linear are both unrealistic. The
+   time to cross a road is constant (distance / speed limit) until there's
+   congestion due to an intersection. This can maybe be modeled by a simple
+   piecewise function (constant up to the road's capacity, then some function of
+   the number of cars.)
+
+
+Related work
+
+http://theory.stanford.edu/~tim/papers/nd_hard.pdf
+detecting braess paradox and finding the optimal roads to remove is NP-hard
+
+http://economics.mit.edu/files/302
+may have done lots of this general analysis already
