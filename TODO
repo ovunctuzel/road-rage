@@ -3,8 +3,10 @@
 - fine tune math
   - no or standardized epsilons
   - do we have to start stopping for the end of stuff before we get close?
+    - why end_threshold necessary? why keep_stopping?
     - dont always call that constraint, maybe
   - worst case stuff all acts like we will exceed speed limit.
+- fastpaths for behavior (most agents lookahead just 1 step)
 
 - proximity violations remain.
 - there actually is ALMOST atomicity. steps happen sequentially but are unconcious.

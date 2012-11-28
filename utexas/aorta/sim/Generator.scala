@@ -6,6 +6,7 @@ package utexas.aorta.sim
 
 import java.util.concurrent.{Executors, FutureTask, Callable}
 import scala.collection.mutable.ListBuffer
+import scala.collection.mutable.{Queue => QueueADT}
 
 import utexas.aorta.map.Edge
 
@@ -60,7 +61,7 @@ extends Ordered[Generator]
   def serialize_ls(ls: Array[Edge]) = ls.map(e => e.id).mkString(",")
 
   // there may be no task scheduled
-  protected var pending = new ListBuffer[(SpawnAgent, Option[FutureTask[Unit]])]
+  protected val pending = new QueueADT[(SpawnAgent, Option[FutureTask[Unit]])]
 
   // Returns new agents to try to spawn, or boolean means reap this genertor
   def run(): Either[List[SpawnAgent], Boolean]
@@ -79,11 +80,11 @@ extends Ordered[Generator]
         // Schedule whatever work the route needs done.
         val delayed = new FutureTask[Unit](task)
         Generator.worker_pool.execute(delayed)
-        pending += ((a, Some(delayed)))
+        pending.enqueue((a, Some(delayed)))
       }
       case _ => {
         // don't schedule anything
-        pending += ((a, None))
+        pending.enqueue((a, None))
       }
     }
   }
@@ -96,7 +97,7 @@ extends Ordered[Generator]
     val done = new ListBuffer[SpawnAgent]()
     var continue = true
     while (continue && pending.nonEmpty) {
-      val a = pending.head
+      val a = pending.front
       val ready = a._2 match {
         case Some(task) => {
           if (task.isDone) {
@@ -112,7 +113,7 @@ extends Ordered[Generator]
       }
       if (ready) {
         done += a._1
-        pending = pending.tail
+        pending.dequeue
       } else {
         // stop immediately!
         continue = false
