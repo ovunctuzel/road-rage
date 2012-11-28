@@ -41,12 +41,6 @@ class IdleBehavior(a: Agent) extends Behavior(a) {
 // Reactively avoids collisions and obeys intersections by doing a conservative
 // analysis of the next few steps.
 class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
-  // TODO this is the only state we keep; it would rock to get rid of it.
-  // This is set the first time we choose to begin stopping, and it helps since
-  // worst-case analysis says we won't toe the line, but we still want to invoke
-  // the same math.
-  var keep_stopping = false
-
   // As an optimization and to keep some stats on how successful lane-changing
   // is, remember the adjacent lane we'd like to switch into.
   // Start null to trigger the initial case of resetting it. Have to do it at
@@ -84,7 +78,6 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
 
     route.transition(from, to)
     // reset state
-    keep_stopping = false
     to match {
       case e: Edge => reset_target_lane(e)
       case _ => target_lane = None
@@ -349,7 +342,7 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
   // is totally done.
   def constraint_stop(step: LookaheadStep): Either[Option[Double], Boolean] = {
     // physically stop somewhat far back from the intersection.
-    val should_stop = keep_stopping || (step.predict_dist >= step.this_dist - cfg.end_threshold)
+    val should_stop = step.predict_dist >= step.this_dist - cfg.end_threshold
     val how_far_away = step.dist_ahead + step.this_dist
 
     val stop_at_end: Boolean = should_stop && (step.at match {
@@ -382,7 +375,6 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
       return Left(None)
     }
 
-    keep_stopping = true
     // Stop 'end_threshold' short of where we should when we can, but when
     // our destination is an edge, compromise and stop anywhere along it
     // we can. This handles a few stalemate cases with sequences of short

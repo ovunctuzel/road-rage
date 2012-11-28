@@ -3,7 +3,7 @@
 - fine tune math
   - no or standardized epsilons
   - do we have to start stopping for the end of stuff before we get close?
-    - why end_threshold necessary? why keep_stopping?
+    - why end_threshold necessary?
     - dont always call that constraint, maybe
   - worst case stuff all acts like we will exceed speed limit.
 - fastpaths for behavior (most agents lookahead just 1 step)
@@ -17,6 +17,7 @@
   (and even in non-headless, if we wind up with awt stuff in the gui)
 - maps: more compact format than xml? :P  even json...
   - why are traversable lines given not as point sequence?
+- dont need lots of behavior objects if they keep no state
 
 # Lane changing
 - agents get caught in loops because the general path isnt realizable
