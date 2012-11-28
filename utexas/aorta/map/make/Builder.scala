@@ -31,7 +31,7 @@ object Builder {
       s" edges, and ${graph3.vertices.length} vertices"
     )
     val file = new FileWriter(output)
-    graph3.to_xml(file, graph1)
+    graph3.to_plaintext(file, graph1)
     file.close
 
     return output

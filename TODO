@@ -1,5 +1,6 @@
 # TODO #
 
+- deal with gridlock
 - fine tune math
   - no or standardized epsilons
   - do we have to start stopping for the end of stuff before we get close?
@@ -7,6 +8,7 @@
     - dont always call that constraint, maybe
   - worst case stuff all acts like we will exceed speed limit.
 - fastpaths for behavior (most agents lookahead just 1 step)
+- can we make timesteps equivalent? (probably not)
 
 - proximity violations remain.
 - there actually is ALMOST atomicity. steps happen sequentially but are unconcious.

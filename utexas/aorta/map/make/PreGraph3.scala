@@ -171,4 +171,19 @@ class PreGraph3(old_graph: PreGraph2) {
     edges.foreach(e => e.to_xml(out))
     out.write("</graph>\n")
   }
+
+  def to_plaintext(out: FileWriter, dat: PreGraph1) = {
+    // CSV header line
+    out.write(
+      dat.width + "," + dat.height + "," + dat.offX + "," + dat.offY +
+      dat.scale + "," + roads.length + "," + edges.length + "," +
+      vertices.length + "," + special_ward.id + "\n"
+    )
+    out.write("---vertices---\n")
+    vertices.foreach(v => v.to_plaintext(out))
+    out.write("---roads---\n")
+    roads.foreach(r => r.to_plaintext(out))
+    out.write("---edges---\n")
+    edges.foreach(e => e.to_plaintext(out))
+  }
 }

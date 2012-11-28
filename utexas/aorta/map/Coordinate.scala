@@ -34,6 +34,10 @@ class Coordinate(val x: Double, val y: Double) extends Ordered[Coordinate] {
     out.write("    <pt x=\"" + x + "\" y=\"" + y + "\"/>\n")
   }
 
+  def to_plaintext(out: FileWriter) = {
+    out.write(x + "," + y + ";")
+  }
+
   def +(other: Coordinate) = new Coordinate(x + other.x, y + other.y)
   def dist_to(o: Coordinate) = Coordinate.gps_dist_in_meters(
     Graph.world_to_gps(this.x, this.y), Graph.world_to_gps(o.x, o.y)

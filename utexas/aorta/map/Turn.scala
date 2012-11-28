@@ -32,6 +32,10 @@ class Turn(val id: Int, val from: Edge, val turn_type: TurnType.TurnType, val to
     )
   }
 
+  def to_plaintext(out: FileWriter) = {
+    out.write(from.id + "," + to.id + "," + turn_type + "," + id + ";")
+  }
+
   override def toString = "" + turn_type + " turn[" + id + "](" + from + ", " + to + ")"
   // Short form is nice.
   //override def toString = "Turn(" + from.id + ", " + to.id + ")"

@@ -87,6 +87,14 @@ class Edge(var id: Int, val road: Road, val dir: Direction.Direction) extends Tr
     out.write("  </edge>\n")
   }
 
+  def to_plaintext(out: FileWriter) = {
+    out.write(
+      id + "," + road.id + "," + dir + "," + lane_num + "," + doomed + ":"
+    )
+    lines.foreach(l => l.to_plaintext(out))
+    out.write("\n")
+  }
+
   //////// Geometry. TODO separate somewhere?
 
   // recall + means v1->v2, and that road's points are stored in that order
@@ -150,6 +158,12 @@ class Line(var x1: Double, var y1: Double, var x2: Double, var y2: Double) {
     out.write(
       "    <line x1=\"" + x1 + "\" y1=\"" + y1 + "\" x2=\"" + x2 + "\" y2=\""
       + y2 + "\"/>\n"
+    )
+  }
+
+  def to_plaintext(out: FileWriter) = {
+    out.write(
+      x1 + "," + y1 + "," + x2 + "," + y2 + ";"
     )
   }
 

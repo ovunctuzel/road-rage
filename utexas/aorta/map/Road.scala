@@ -53,6 +53,16 @@ class Road(var id: Int, val points: List[Coordinate], val name: String,
     out.write("</road>\n")
   }
 
+  def to_plaintext(out: FileWriter) = {
+    out.write(
+      // TODO worry about names with commas!
+      scala.xml.Utility.escape(name) + "," + road_type + "," + osm_id + "," +
+      v1.id + "," + v2.id + "," + ward.id + "," + id + ":"
+    )
+    points.foreach(pt => pt.to_plaintext(out))
+    out.write("\n")
+  }
+
   override def toString = name + " [R" + id + "]"
   
   // TODO don't ask for vertex that isn't either v1 or v2.

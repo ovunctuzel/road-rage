@@ -61,6 +61,12 @@ class Vertex(val location: Coordinate, var id: Int) {
     out.write("  </vertex>\n")
   }
 
+  def to_plaintext(out: FileWriter) = {
+    out.write(id + "," + location.x + "," + location.y + ":")
+    turns.sortBy(t => (t.from.id, t.to.id)).foreach(t => t.to_plaintext(out))
+    out.write("\n")
+  }
+
   override def toString = "[V" + id + "]"
 
   override def equals(other: Any) = other match {
