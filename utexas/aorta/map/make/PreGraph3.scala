@@ -36,7 +36,7 @@ class PreGraph3(old_graph: PreGraph2) {
     // do addEdges too, once we decide how many lanes to do
     // TODO shit, decide roads.size while we're assigning to it?
     val r = new Road(
-      road_id_cnt, old_edge.points.toList,
+      road_id_cnt, old_edge.points.toArray,
       old_edge.dat.name, old_edge.dat.road_type, old_edge.dat.orig_id,
       get_vert(old_edge.points.head), get_vert(old_edge.points.last)
     )
@@ -176,7 +176,7 @@ class PreGraph3(old_graph: PreGraph2) {
     // CSV header line
     out.write(
       dat.width + "," + dat.height + "," + dat.offX + "," + dat.offY +
-      dat.scale + "," + roads.length + "," + edges.length + "," +
+      "," + dat.scale + "," + roads.length + "," + edges.length + "," +
       vertices.length + "," + special_ward.id + "\n"
     )
     out.write("---vertices---\n")

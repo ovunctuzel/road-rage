@@ -19,7 +19,7 @@ import utexas.aorta.sim.Simulation
 
 import utexas.aorta.{Util, cfg}
 
-class Reader(fn: String) {
+class XMLReader(fn: String) {
   // per road
   class TmpLink(val id: Int, val from: Int, val to: Int, val link_type: TurnType.TurnType)
 
@@ -113,7 +113,7 @@ class Reader(fn: String) {
         }
         case EvElemEnd(_, "road") => {
           roads(rd_id) = new Road(
-            rd_id, rd_pts.toList, rd_name, rd_type, rd_osm,
+            rd_id, rd_pts.toArray, rd_name, rd_type, rd_osm,
             // it's vital that we break the interdependence by dumping vertices
             // first
             verts(rd_v1), verts(rd_v2)
@@ -158,7 +158,7 @@ class Reader(fn: String) {
           e.doomed = e_doomed
           edges(e_id) = e
           e.lane_num = e_lane
-          e.set_lines(e_lines.toList)
+          e.set_lines(e_lines.toArray)
           // Sucks, but we have some REALLY small edges.
           if (e.length <= cfg.min_lane_length) {
             // Cheat. Agents NEED the ability to exist somewhere on this edge.
@@ -214,6 +214,149 @@ class Reader(fn: String) {
         case _ =>
       }
     })
+    Util.log("")
+    Util.log_pop
+
+    Util.log("Adding references at intersections")
+    // turns just want edges, doesn't matter what trait they're endowed with
+    for (v <- verts) {
+      for (link <- vertLinks(v.id)) {
+        v.turns = new Turn(link.id, edges(link.from), link.link_type, edges(link.to)) :: v.turns
+      }
+    }
+
+    Util.log("Recovering wards as well")
+    // Don't forget to separate out the special ward first
+    // Missing the special ward  can happen on some oddly-constructed maps
+    val special_ward = if (wards_map.contains(special_ward_id))
+                         new Ward(special_ward_id, wards_map(special_ward_id).toSet)
+                       else
+                         new Ward(special_ward_id, Set())
+    wards_map -= special_ward_id
+    val wards: List[Ward] = wards_map.map(pair => new Ward(pair._1, pair._2.toSet)).toList
+
+    return if (with_agents)
+      Left(new Simulation(roads, edges, verts, wards, special_ward))
+    else
+      Right(new Graph(roads, edges, verts, wards, special_ward))
+    // TODO anything to more explicitly free up?
+  }
+}
+
+class PlaintextReader(fn: String) {
+  // per road
+  class TmpLink(val id: Int, val from: Int, val to: Int, val link_type: TurnType.TurnType)
+
+  // we know all of this as soon as we read the graph tag...
+  var vertLinks: Array[Array[TmpLink]] = null
+
+  def load_map(): Graph             = load(false).right.get
+  def load_simulation(): Simulation = load(true).left.get
+  
+  // TODO splitting strings, converting to int/double is still expensive.
+  def load(with_agents: Boolean): Either[Simulation, Graph] = {
+    // Brittle, but faster parser than xml.
+    Util.log("Loading map " + fn)
+    Util.log_push
+
+    // per graph
+    var roads: Array[Road] = null
+    var edges: Array[Edge] = null
+    var verts: Array[Vertex] = null
+
+    val wards_map = new HashMap[Int, MutableSet[Road]] with MultiMap[Int, Road]
+    var special_ward_id: Int = -1
+
+    // TODO enum, dont do an if everytime, fix lots...
+    var state = 0
+    for (line <- Source.fromFile(fn).getLines) {
+      if (state == 0) {
+        // first line, the graph
+        val Array(width, height, xoff, yoff, scale, num_roads, num_edges,
+                  num_verts, ward_id) = line.split(",")
+        // Set this as early as possible! length() of any lines we make needs
+        // it.
+        Graph.set_params(width.toDouble, height.toDouble, xoff.toDouble,
+                         yoff.toDouble, scale.toDouble)
+        special_ward_id = ward_id.toInt
+        
+        // set up all the temporary things to accumulate stuff
+        roads = new Array[Road](num_roads.toInt)
+        edges = new Array[Edge](num_edges.toInt)
+        verts = new Array[Vertex](num_verts.toInt)
+        vertLinks = new Array[Array[TmpLink]](num_verts.toInt)
+
+        state = 1
+      } else if (state == 1) {
+        // second line, beginning of vertices
+        Util.assert_eq(line, "---vertices---")
+        state = 2
+      } else if (state == 2) {
+        // expecting a vertex
+        if (line == "---roads---") {
+          state = 3
+        } else {
+          val Array(metadata, turns) = line.split(":")
+          val Array(id, x, y) = metadata.split(",")
+
+          verts(id.toInt) = new Vertex(new Coordinate(x.toDouble, y.toDouble), id.toInt)
+          vertLinks(id.toInt) = turns.split(";").map(link => {
+            val Array(from, to, turn_type, link_id) = link.split(",")
+            new TmpLink(
+              link_id.toInt, from.toInt, to.toInt, TurnType.withName(turn_type)
+            )
+          })
+        }
+      } else if (state == 3) {
+        // expecting a road
+        if (line == "---edges---") {
+          state = 4
+        } else {
+          val Array(metadata, points) = line.split(":")
+          val Array(name, road_type, osm_id, v1, v2, ward, id) = metadata.split(",")
+
+          roads(id.toInt) = new Road(
+            id.toInt,
+            points.split(";").map(pt => {
+              val Array(x, y) = pt.split(",")
+              new Coordinate(x.toDouble, y.toDouble)
+            }),
+            name, road_type, osm_id.toInt,
+            // it's vital that we break the interdependence by dumping vertices
+            // first
+            verts(v1.toInt), verts(v2.toInt)
+          )
+          wards_map.addBinding(ward.toInt, roads(id.toInt))
+        }
+      } else if (state == 4) {
+        // expecting an edge
+        val Array(metadata, lines) = line.split(":")
+        val Array(id, road, dir, lane_num, doomed) = metadata.split(",")
+
+        val e = new Edge(id.toInt, roads(road.toInt),
+                         if (dir == "+") Direction.POS else Direction.NEG)
+        e.doomed = doomed == "true"
+        e.lane_num = lane_num.toInt
+        edges(id.toInt) = e
+        e.set_lines(lines.split(";").map(e_line => {
+          val Array(x1, y1, x2, y2) = e_line.split(",")
+          new Line(x1.toDouble, y1.toDouble, x2.toDouble, y2.toDouble)
+        }))
+
+        // Sucks, but we have some REALLY small edges.
+        if (e.length <= cfg.min_lane_length) {
+          // Cheat. Agents NEED the ability to exist somewhere on this edge.
+          //Util.log("WARNING " + e + " is tiny")
+          e.length = 0.1
+        }
+
+        // tell the road about the edge, too
+        // TODO edges in the xml will be ordered by their id, which we created
+        // in order of lane numbering too
+        Util.assert_eq(e.other_lanes.length, e.lane_num)
+        e.other_lanes += e
+      }
+    }
     Util.log("")
     Util.log_pop
 

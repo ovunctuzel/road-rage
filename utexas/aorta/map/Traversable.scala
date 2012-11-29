@@ -16,14 +16,14 @@ abstract class Traversable() {
   // TODO temporary perf fix
   var queue: Queue = null
 
-  var lines: List[Line] = Nil // till set_lines happens.
+  var lines: Array[Line] = null // till set_lines happens.
   def leads_to: List[Traversable]
   def speed_limit: Double
 
   // Store; it's not free to compute it constantly
   var length: Double = 0
 
-  def set_lines(ls: List[Line]) = {
+  def set_lines(ls: Array[Line]) = {
     lines = ls
     length = lines.foldLeft(0.0)((a, b) => a + b.length)
   }

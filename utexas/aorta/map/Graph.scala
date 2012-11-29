@@ -6,7 +6,7 @@ package utexas.aorta.map
 
 import scala.collection.mutable.{HashMap, PriorityQueue, HashSet}
 
-import utexas.aorta.map.make.Reader
+import utexas.aorta.map.make.PlaintextReader
 
 import utexas.aorta.Util
 
@@ -183,5 +183,5 @@ object Graph {
     (x / scale) - xoff, ((height - y) / scale) - yoff
   )
 
-  def load(fn: String) = (new Reader(fn)).load_map
+  def load(fn: String) = (new PlaintextReader(fn)).load_map
 }

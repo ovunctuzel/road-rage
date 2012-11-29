@@ -14,7 +14,7 @@ import scala.xml.MetaData
 import scala.xml.pull._
 
 import utexas.aorta.map.{Graph, Road, Edge, Vertex, Ward, Turn, DirectedRoad}
-import utexas.aorta.map.make.Reader
+import utexas.aorta.map.make.PlaintextReader
 import utexas.aorta.sim.policies._
 
 import utexas.aorta.{Util, cfg}
@@ -241,7 +241,7 @@ object Simulation {
   // start a new simulation
   def load(fn: String): Simulation = {
     map_fn = fn
-    return (new Reader(fn)).load_simulation
+    return (new PlaintextReader(fn)).load_simulation
   }
 
   // TODO major limit: we don't yet encode spawning an army and waiting for

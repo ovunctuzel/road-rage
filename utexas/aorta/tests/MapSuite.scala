@@ -9,7 +9,7 @@ import scala.collection.mutable.{HashSet => MutableHashSet}
 
 import java.io.File
 
-import utexas.aorta.map.make.{Builder, Reader}
+import utexas.aorta.map.make.{Builder, PlaintextReader}
 import utexas.aorta.map.{Graph, Traversable}
 
 // TODO Use ScalaTests or another framework.
@@ -20,7 +20,8 @@ object MapSuite {
       println(s"Building $fn...")
       val output = Builder.convert(fn)
       println(s"Loading $output...")
-      val graph = (new Reader(output)).load_map
+      // TODO add tests to make sure the XML encoding still yields the same map
+      val graph = (new PlaintextReader(output)).load_map
       println(s"Checking $output...")
       check_map(graph)
     }

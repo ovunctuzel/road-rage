@@ -12,7 +12,7 @@ import utexas.aorta.Util
 
 // TODO enum for type. also, it's var because of tarjan's...
 // TODO var id due to tarjan
-class Road(var id: Int, val points: List[Coordinate], val name: String,
+class Road(var id: Int, val points: Array[Coordinate], val name: String,
            var road_type: String, val osm_id: Int, val v1: Vertex,
            val v2: Vertex)
 {

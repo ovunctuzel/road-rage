@@ -44,7 +44,7 @@ class Turn(val id: Int, val from: Edge, val turn_type: TurnType.TurnType, val to
   private def setup_turn_line() = {
     val a = from.lines.last.end
     val b = to.lines.head.start
-    set_lines(List[Line](new Line(a.x, a.y, b.x, b.y)))
+    set_lines(Array[Line](new Line(a.x, a.y, b.x, b.y)))
   }
 
   def leads_to = List(to)
