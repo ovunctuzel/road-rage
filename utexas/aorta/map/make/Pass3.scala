@@ -140,7 +140,7 @@ class Pass3(old_graph: PreGraph2) {
       // link corresponding lane numbers
       val r = roads.head
       for ((from, to) <- r.incoming_lanes(v) zip r.outgoing_lanes(v)) {
-        v.turns = new Turn(next_id, from, TurnType.UTURN, to) :: v.turns
+        v.turns = Turn(next_id, from, TurnType.UTURN, to) :: v.turns
       }
     }
 
@@ -177,7 +177,7 @@ class Pass3(old_graph: PreGraph2) {
         // TODO these rules are hard to generalize. when should we have
         // left/right-turn only lanes and stuff?
 
-        def cross_turn(pair: (Edge, Edge)) = new Turn(next_id, pair._1, TurnType.CROSS, pair._2)
+        def cross_turn(pair: (Edge, Edge)) = Turn(next_id, pair._1, TurnType.CROSS, pair._2)
         val lane_diff = to_edges.length - from_edges.length
 
         if (lane_diff == 0) {
@@ -189,7 +189,7 @@ class Pass3(old_graph: PreGraph2) {
           val (mergers, regulars) = from_edges.splitAt(from_edges.length - (to_edges.length - 1))
           Util.assert_eq(regulars.length, to_edges.length - 1)
 
-          v.turns ++= mergers.map(from => new Turn(next_id, from, TurnType.CROSS_MERGE, to_edges.head))
+          v.turns ++= mergers.map(from => Turn(next_id, from, TurnType.CROSS_MERGE, to_edges.head))
           v.turns ++= regulars.zip(to_edges.tail).map(cross_turn)
         } else if (lane_diff > 0) {
           // less to more. the leftmost gets to pick many destinations.
@@ -200,14 +200,14 @@ class Pass3(old_graph: PreGraph2) {
           Util.assert_eq(regular_srcs.size, regular_dsts.size)
           
           v.turns ++= regular_srcs.zip(regular_dsts).map(cross_turn)
-          v.turns ++= choices.map(to => new Turn(next_id, lucky_src, TurnType.CROSS, to))
+          v.turns ++= choices.map(to => Turn(next_id, lucky_src, TurnType.CROSS, to))
         }
       } else if (angle_btwn < 0) {
         // no multiple turn lanes supported yet. it's just too hard to know when
         // this is the case.
-        v.turns = new Turn(next_id, from_rep.leftmost_lane, TurnType.LEFT, to_rep.leftmost_lane) :: v.turns
+        v.turns = Turn(next_id, from_rep.leftmost_lane, TurnType.LEFT, to_rep.leftmost_lane) :: v.turns
       } else {
-        v.turns = new Turn(next_id, from_rep.rightmost_lane, TurnType.RIGHT, to_rep.rightmost_lane) :: v.turns
+        v.turns = Turn(next_id, from_rep.rightmost_lane, TurnType.RIGHT, to_rep.rightmost_lane) :: v.turns
       }
     }
 

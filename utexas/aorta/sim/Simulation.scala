@@ -239,9 +239,9 @@ object Simulation {
   val generators = new ListBuffer[Generator]()
 
   // start a new simulation
-  def load(fn: String): Simulation = {
+  def load(fn: String, with_geometry: Boolean): Simulation = {
     map_fn = fn
-    return (new PlaintextReader(fn)).load_simulation
+    return (new PlaintextReader(fn, with_geometry)).load_simulation
   }
 
   // TODO major limit: we don't yet encode spawning an army and waiting for
@@ -256,7 +256,7 @@ object Simulation {
     out.close
   }
 
-  def load_scenario(fn: String): Simulation = {
+  def load_scenario(fn: String, with_geometry: Boolean): Simulation = {
     // TODO probably a better way to unpack than casting to string
     def get_attrib(attribs: MetaData, key: String): String = attribs.get(key).head.text
 
@@ -264,7 +264,7 @@ object Simulation {
 
     new XMLEventReader(Source.fromFile(fn)).foreach(ev => ev match {
       case EvElemStart(_, "scenario", attribs, _) => {
-        sim = load(get_attrib(attribs, "map"))
+        sim = load(get_attrib(attribs, "map"), with_geometry)
         Util.init_rng(get_attrib(attribs, "seed").toLong)
       }
       case EvElemStart(_, "generator", attribs, _) => {

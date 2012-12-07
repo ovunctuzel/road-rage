@@ -14,13 +14,6 @@
 - there actually is ALMOST atomicity. steps happen sequentially but are unconcious.
   react() moves agents to target LC queue asap.. thats bad. dont do it till step! then worry about collisions, reverting. (what priority wins?)
 
-# Optimizations
-- reduce memory by throwing away geometry in headless mode
-  (and even in non-headless, if we wind up with awt stuff in the gui)
-- maps: more compact format than xml? :P  even json...
-  - why are traversable lines given not as point sequence?
-- dont need lots of behavior objects if they keep no state
-
 # Lane changing
 - agents get caught in loops because the general path isnt realizable
 - dont let agents start lc that depends on others getting out of way
@@ -93,15 +86,19 @@ TESTING IT
   - use backpressurelike idea with inertia
 - structuring policy stuff as a state machine and events may be more elegant...
 
-# Profiling
+# Profiling/Optimizations
 - sleep less in UI
-- optionally gzipping maps/osm?
 - we can do much better with ready agents... max capacity of edges, group them based on
   where they want to spawn, maybe by generator?
-- in react if speed is still 0, see if follow_agent or intersection has changed.
 - is caching properties of linked list hurting us for iterating through big things?
 - we could check less queues atomically if we could step agents in some cool order
   - or when we mess with an agent, see if they've moved yet this round?
+- dont need lots of behavior objects if they keep no state
+- throw away geometry in UI after converted to awt stuff
+- truncate lengths, other doubles or more compactly write
+- improve map loading
+  - scanner?
+  - why are traversable lines given not as point sequence?
 
 # Parallelizing
 - parallelize lookahead?
@@ -206,4 +203,4 @@ TESTING IT
   - how to test it?
   - how to use it?
 - things to test
-  - invariance of dt_s
+  - invariance of dt_s (if possible)

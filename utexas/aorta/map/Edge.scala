@@ -81,7 +81,8 @@ class Edge(var id: Int, val road: Road, val dir: Direction.Direction) extends Tr
                       ""
     out.write(
       "  <edge id=\"" + id + "\" road=\"" + road.id + "\" dir=\"" + dir
-      + "\" laneNum=\"" + lane_num + "\"" + is_doomed + ">\n"
+      + "\" laneNum=\"" + lane_num + "\" length=\"" + length + "\""
+      + is_doomed + ">\n"
     )
     lines.foreach(l => l.to_xml(out))
     out.write("  </edge>\n")
@@ -89,7 +90,8 @@ class Edge(var id: Int, val road: Road, val dir: Direction.Direction) extends Tr
 
   def to_plaintext(out: FileWriter) = {
     out.write(
-      id + "," + road.id + "," + dir + "," + lane_num + "," + doomed + ":"
+      id + "," + road.id + "," + dir + "," + lane_num + "," + doomed + "," +
+      length + ":"
     )
     lines.foreach(l => l.to_plaintext(out))
     out.write("\n")

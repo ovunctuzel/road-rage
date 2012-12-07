@@ -183,5 +183,6 @@ object Graph {
     (x / scale) - xoff, ((height - y) / scale) - yoff
   )
 
-  def load(fn: String) = (new PlaintextReader(fn)).load_map
+  def load(fn: String, with_geometry: Boolean) =
+    (new PlaintextReader(fn, with_geometry)).load_map
 }

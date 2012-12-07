@@ -17,10 +17,11 @@ object TurnType extends Enumeration {
   val UTURN       = Value("U")
 }
 
-class Turn(val id: Int, val from: Edge, val turn_type: TurnType.TurnType, val to: Edge)
+// This constructor eschews geometry, takes a length.
+class Turn(val id: Int, val from: Edge, val turn_type: TurnType.TurnType, val to: Edge, length: Double)
   extends Traversable with Ordered[Turn]
 {
-  setup_turn_line
+  set_length(length)
 
   override def compare(other: Turn) = id.compare(other.id)
 
@@ -28,24 +29,18 @@ class Turn(val id: Int, val from: Edge, val turn_type: TurnType.TurnType, val to
   def to_xml(out: FileWriter) = {
     out.write(
       "    <link from=\"" + from.id + "\" to=\"" + to.id
-      + "\" type=\"" + turn_type + "\" id=\"" + id + "\"/>\n"
+      + "\" type=\"" + turn_type + "\" length=\"" + length
+      + "\" id=\"" + id + "\"/>\n"
     )
   }
 
   def to_plaintext(out: FileWriter) = {
-    out.write(from.id + "," + to.id + "," + turn_type + "," + id + ";")
+    out.write(from.id + "," + to.id + "," + turn_type + "," + length + "," + id + ";")
   }
 
   override def toString = "" + turn_type + " turn[" + id + "](" + from + ", " + to + ")"
   // Short form is nice.
   //override def toString = "Turn(" + from.id + ", " + to.id + ")"
-
-  // TODO a little anonymous sub returning the line?
-  private def setup_turn_line() = {
-    val a = from.lines.last.end
-    val b = to.lines.head.start
-    set_lines(Array[Line](new Line(a.x, a.y, b.x, b.y)))
-  }
 
   def leads_to = List(to)
   def speed_limit = to.speed_limit
@@ -100,5 +95,17 @@ class Turn(val id: Int, val from: Edge, val turn_type: TurnType.TurnType, val to
     }
 
     return set.toSet
+  }
+}
+
+object Turn {
+  // Alternate constructor assumes geometry of road available.
+  def apply(id: Int, from: Edge, turn_type: TurnType.TurnType, to: Edge): Turn = {
+    val a = from.lines.last.end
+    val b = to.lines.head.start
+    val l = new Line(a.x, a.y, b.x, b.y)
+    val t = new Turn(id, from, turn_type, to, l.length)
+    t.set_lines(Array[Line](l))
+    return t
   }
 }

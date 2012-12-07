@@ -13,7 +13,7 @@ import utexas.aorta.{Util, cfg}
 // Dump an SVG of the map.
 object SVG {
   def main(args: Array[String]) = {
-    val (sim, _) = Util.process_args(args)
+    val (sim, _) = Util.process_args(args, true)
     val out = new FileWriter("output.svg")
     dump(sim, out)
     out.close

@@ -12,13 +12,19 @@ import utexas.aorta.Util
 
 // TODO enum for type. also, it's var because of tarjan's...
 // TODO var id due to tarjan
-class Road(var id: Int, val points: Array[Coordinate], val name: String,
+class Road(var id: Int, val length: Double, val name: String,
            var road_type: String, val osm_id: Int, val v1: Vertex,
            val v2: Vertex)
 {
-  // an invariant
-  Util.assert_eq(v1.location, points.head)
-  Util.assert_eq(v2.location, points.last)
+  var points: Array[Coordinate] = null
+
+  def set_points(pts: Array[Coordinate]) = {
+    points = pts
+
+    // check invariants
+    Util.assert_eq(v1.location, points.head)
+    Util.assert_eq(v2.location, points.last)
+  }
 
   val pos_group = new DirectedRoad(this, Direction.POS)
   val neg_group = new DirectedRoad(this, Direction.NEG)
@@ -27,9 +33,6 @@ class Road(var id: Int, val points: Array[Coordinate], val name: String,
   // pass 3 doesn't set this, only Reader does. kinda sucks how we do it now.
   val pos_lanes = new MutableList[Edge]
   val neg_lanes = new MutableList[Edge]
-  val length = points.zip(points.tail).map(p => new Line(p._1, p._2)).foldLeft(0.0)(
-    (a, b) => a + b.length
-  )
 
   // This is fixed, but we don't know it immediately...
   var ward: Ward = null
@@ -47,7 +50,8 @@ class Road(var id: Int, val points: Array[Coordinate], val name: String,
     out.write(
       "  <road name=\"" + scala.xml.Utility.escape(name) + "\" type=\"" + road_type
       + "\" osmid=\"" + osm_id + "\" v1=\"" + v1.id + "\" v2=\"" + v2.id
-      + "\" ward=\"" + ward.id + "\" id=\"" + id + "\">\n"
+      + "\" ward=\"" + ward.id + "\" length=\"" + length
+      + "\" id=\"" + id + "\">\n"
     )
     points.foreach(pt => pt.to_xml(out))
     out.write("</road>\n")
@@ -57,7 +61,7 @@ class Road(var id: Int, val points: Array[Coordinate], val name: String,
     out.write(
       // TODO worry about names with commas!
       scala.xml.Utility.escape(name) + "," + road_type + "," + osm_id + "," +
-      v1.id + "," + v2.id + "," + ward.id + "," + id + ":"
+      v1.id + "," + v2.id + "," + ward.id + "," + length + "," + id + ":"
     )
     points.foreach(pt => pt.to_plaintext(out))
     out.write("\n")
@@ -99,4 +103,11 @@ class Road(var id: Int, val points: Array[Coordinate], val name: String,
     
     case _                => 35 // Generally a safe speed, right?
   })
+}
+
+object Road {
+  def road_len(pts: Iterable[Coordinate]) =
+    pts.zip(pts.tail).map(p => new Line(p._1, p._2)).foldLeft(0.0)(
+      (a, b) => a + b.length
+    )
 }
