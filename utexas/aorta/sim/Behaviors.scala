@@ -19,8 +19,14 @@ abstract class Behavior(a: Agent) {
   def transition(from: Traversable, to: Traversable)
   // just for debugging
   def dump_info()
-  // for steady-state analysis
-  def wants_to_lc(): Boolean
+  def wants_to_lc(): Boolean = target_lane != null && target_lane.isDefined
+
+  // As an optimization and to keep some stats on how successful lane-changing
+  // is, remember the adjacent lane we'd like to switch into.
+  // Start null to trigger the initial case of resetting it. Have to do it at
+  // "sim time" when agent's actually first moving, otherwise the route might
+  // not be ready to answer us.
+  var target_lane: Option[Edge] = null
 }
 
 // Never speeds up from rest, so effectively never does anything
@@ -41,15 +47,6 @@ class IdleBehavior(a: Agent) extends Behavior(a) {
 // Reactively avoids collisions and obeys intersections by doing a conservative
 // analysis of the next few steps.
 class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
-  // As an optimization and to keep some stats on how successful lane-changing
-  // is, remember the adjacent lane we'd like to switch into.
-  // Start null to trigger the initial case of resetting it. Have to do it at
-  // "sim time" when agent's actually first moving, otherwise the route might
-  // not be ready to answer us.
-  var target_lane: Option[Edge] = null
-
-  override def wants_to_lc = target_lane.isDefined
-
   def reset_target_lane(base: Edge) = {
     target_lane = None
     base match {
@@ -89,49 +86,6 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
     // TODO ask the route to debug itself? :P
   }
 
-  protected def safe_to_lanechange(target: Edge): Boolean = {
-    // One lane could be shorter than the other. When we want to avoid the end
-    // of a lane, worry about the shorter one to be safe.
-    val min_len = math.min(a.at.on.length, target.length)
-
-    // Satisfy the physical model, which requires us to finish lane-changing
-    // before reaching the intersection.
-    if (a.at.dist + cfg.lanechange_dist + cfg.end_threshold >= min_len) {
-      return false
-    }
-
-    // Furthermore, we probably have to stop for the intersection, so be sure we
-    // have enough room to do that.
-    if (a.at.dist + a.stopping_distance(a.max_next_speed) >= min_len) {
-      return false
-    }
-
-    // It's impractical to flood backwards and find all the possible cars that
-    // could enter our target lane soon. So use the same idea as safe spawning
-    // distance and don't start a lane-change too early in the road. This
-    // gives agents time next tick to notice us during their lookahead.
-    if (!target.queue.closest_behind(a.at.dist).isDefined &&
-        a.at.dist <= a.at.on.queue.worst_entry_dist + cfg.follow_dist)
-    {
-      return false
-    }
-
-    // We don't want to merge in too closely to the agent ahead of us, nor do we
-    // want to make somebody behind us risk running into us. So just make sure
-    // there are no agents in that danger range.
-    // TODO expanding the search to twice follow dist is a hack; I'm not sure
-    // why agents are winding up about a meter too close sometimes.
-    val ahead_dist = (2.0 * cfg.follow_dist) + a.stopping_distance(a.max_next_speed)
-    // TODO assumes all vehicles the same. not true forever.
-    val behind_dist = (2.0 * cfg.follow_dist) + a.stopping_distance(target.road.speed_limit)
-    val nearby = target.queue.all_in_range(a.at.dist - behind_dist, a.at.dist + ahead_dist)
-    if (!nearby.isEmpty) {
-      return false
-    }
-
-    return true
-  }
-
   override def choose_action(): Action = {
     // Do we want to lane change?
     // TODO 1) discretionary lane changing to pass people
@@ -144,7 +98,7 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
     }
 
     // Try a fast-path!
-    val no_lc = (!wants_to_lc) && (!a.is_lanechanging)
+    val no_lc = (!a.is_lanechanging)
     val not_near_end = a.at.dist_left >= a.max_lookahead_dist + cfg.end_threshold // TODO +buf?
     val lead = a.our_lead
     val not_tailing = lead match {
@@ -177,18 +131,8 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
     }
     Simulation.didnt_fp += 1
 
-    if (!a.is_lanechanging) {
-      target_lane match {
-        case Some(e) => {
-          if (safe_to_lanechange(e)) {
-            return Act_Lane_Change(e)
-          }
-        }
-        case _ =>
-      }
-    }
-
-    // TODO refactor and pull in max_safe_accel here.
+    // TODO refactor and pull in max_safe_accel here? maybe this function is for
+    // fast-paths.
     return max_safe_accel
   }
 
@@ -324,18 +268,15 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
   // When we're lane-changing, lookahead takes care of the new path. But we
   // still have to pay attention to exactly one other agent: the one in front of
   // us on our old lane.
-  def constraint_lc_agent(): Option[Double] = {
-    val follow_agent = a.old_lane match {
-      case Some(e) => e.queue.ahead_of(a)
-      case None => None
-    }
-    return follow_agent match {
+  def constraint_lc_agent(): Option[Double] = a.old_lane match {
+    case Some(e) => e.queue.ahead_of(a) match {
       case Some(other) => {
         val dist_away = other.at.dist - a.at.dist
         Some(accel_to_follow(other, dist_away))
       }
       case None => None
     }
+    case None => None
   }
 
   // Returns an optional acceleration, or 'true', which indicates the agent
@@ -467,5 +408,4 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
 
 abstract class Action
 final case class Act_Set_Accel(new_accel: Double) extends Action
-final case class Act_Lane_Change(lane: Edge) extends Action
 final case class Act_Done_With_Route() extends Action

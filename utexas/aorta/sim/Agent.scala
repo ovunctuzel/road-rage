@@ -49,7 +49,24 @@ class Agent(val id: Int, val route: Route) extends Ordered[Agent] {
     val new_dist = update_kinematics(dt_s)
     total_dist += new_dist
 
-    // Lane-changing?
+    // If they're not already lane-changing, should they start?
+    if (!is_lanechanging && behavior.wants_to_lc) {
+      val lane = behavior.target_lane.get
+      if (safe_to_lc(lane)) {
+        // We have to cover a fixed distance to lane-change. The scaling is kind
+        // of arbitrary and just forces lane-changing to not be completely
+        // instantaneous at higher speeds.
+        lanechange_dist_left = cfg.lanechange_dist
+        old_lane = Some(at.on.asInstanceOf[Edge])
+        target_accel = 0
+
+        // Immediately enter the target lane
+        behavior.transition(at.on, lane)
+        at = enter(lane, at.dist)
+      }
+    }
+
+    // Currently Lane-changing?
     old_lane match {
       case Some(lane) => {
         lanechange_dist_left -= new_dist
@@ -60,6 +77,7 @@ class Agent(val id: Int, val route: Route) extends Ordered[Agent] {
           // Return to normality
           old_lane = None
           lanechange_dist_left = 0
+          // We'll only shift lanes once per tick.
         }
       }
       case None =>
@@ -148,6 +166,61 @@ class Agent(val id: Int, val route: Route) extends Ordered[Agent] {
     return new_dist > 0.0
   }
 
+  def safe_to_lc(target: Edge): Boolean = {
+    at.on match {
+      case e: Edge => {
+        if (e.road != target.road) {
+          throw new Exception(this + " wants to lane-change across roads")
+        }
+        if (math.abs(target.lane_num - e.lane_num) != 1) {
+          throw new Exception(this + " wants to skip lanes when lane-changing")
+        }                                                               
+      }
+      case _ => throw new Exception(this + " wants to lane-change from a turn!")
+    }
+
+    // One lane could be shorter than the other. When we want to avoid the end
+    // of a lane, worry about the shorter one to be safe.
+    val min_len = math.min(at.on.length, target.length)
+
+    // Satisfy the physical model, which requires us to finish lane-changing
+    // before reaching the intersection.
+    if (at.dist + cfg.lanechange_dist + cfg.end_threshold >= min_len) {
+      return false
+    }
+
+    // Furthermore, we probably have to stop for the intersection, so be sure we
+    // have enough room to do that.
+    if (at.dist + stopping_distance(max_next_speed) >= min_len) {
+      return false
+    }
+
+    // It's impractical to flood backwards and find all the possible cars that
+    // could enter our target lane soon. So use the same idea as safe spawning
+    // distance and don't start a lane-change too early in the road. This
+    // gives agents time next tick to notice us during their lookahead.
+    if (!target.queue.closest_behind(at.dist).isDefined &&
+        at.dist <= at.on.queue.worst_entry_dist + cfg.follow_dist)
+    {
+      return false
+    }
+
+    // We don't want to merge in too closely to the agent ahead of us, nor do we
+    // want to make somebody behind us risk running into us. So just make sure
+    // there are no agents in that danger range.
+    // TODO expanding the search to twice follow dist is a hack; I'm not sure
+    // why agents are winding up about a meter too close sometimes.
+    val ahead_dist = (2.0 * cfg.follow_dist) + stopping_distance(max_next_speed)
+    // TODO assumes all vehicles the same. not true forever.
+    val behind_dist = (2.0 * cfg.follow_dist) + stopping_distance(target.road.speed_limit)
+    val nearby = target.queue.all_in_range(at.dist - behind_dist, at.dist + ahead_dist)
+    if (!nearby.isEmpty) {
+      return false
+    }
+
+    return true
+  }
+
   def how_long_idle = if (idle_since == -1.0)
                         0.0
                       else
@@ -164,48 +237,6 @@ class Agent(val id: Int, val route: Route) extends Ordered[Agent] {
         // make sure this won't put us at a negative speed
         Util.assert_ge(speed + (new_accel * cfg.dt_s), 0)
         target_accel = new_accel
-        false
-      }
-      case Act_Lane_Change(lane) => {
-        // Ensure this is a valid request.
-        if (was_lanechanging) {
-          // Don't request twice in a row
-          throw new Exception(this + " is already lane-changing!")
-        }
-        // TODO perhaps refactor these checks?
-        at.on match {
-          case e: Edge => {
-            if (e.road != lane.road) {
-              throw new Exception(this + " wants to lane-change across roads")
-            }
-            if (math.abs(lane.lane_num - e.lane_num) != 1) {
-              throw new Exception(this + " wants to skip lanes when lane-changing")
-            }
-          }
-          case _ => throw new Exception(this + " wants to lane-change from a turn!")
-        }
-
-        // We have to cover a fixed distance to lane-change. The scaling is kind
-        // of arbitrary and just forces lane-changing to not be completely
-        // instantaneous at higher speeds.
-        lanechange_dist_left = cfg.lanechange_dist
-        //Util.log("%s starting to lane-change to %s. It'll take %.2f meters.".format(this, lane, lanechange_dist_left))
-        // TODO plus some threshold for finishing a swap before the end
-        if (lanechange_dist_left >= at.dist_left) {
-          throw new Exception(this + " wants to lane-change too late!")
-        }
-        if (at.dist + lanechange_dist_left >= lane.length) {
-          throw new Exception(this + " wants to lane-change to a much shorter lane!")
-        }
-
-        // Otherwise, fine!
-        old_lane = Some(at.on.asInstanceOf[Edge])
-        target_accel = 0
-
-        // Immediately enter the target lane
-        behavior.transition(at.on, lane)
-        at = enter(lane, at.dist)
-
         false
       }
       case Act_Done_With_Route() => {
