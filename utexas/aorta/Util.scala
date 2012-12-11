@@ -123,6 +123,7 @@ object Util {
       sys.exit
     }                                                                     
 
+    val prefix = """--cfg_(\w+)""".r
     for ((key, value) <- keys.zip(vals)) {
       // TODO multiple different ways of saying 'true'
       key match {
@@ -134,6 +135,19 @@ object Util {
         // TODO case "--run_for"     => { run_for = value.toDouble }
         case "--scenario"    => { load_scenario = value }
         case "--name"        => { exp_name = value }
+        case prefix(param)   => cfg.get_param_method(param) match {
+          case Some(method) => {
+            val param_type = method.getParameterTypes.head
+            if (param_type == classOf[Int]) {
+              method.invoke(cfg, value.toInt: java.lang.Integer)
+            } else if (param_type == classOf[Double]) {
+              method.invoke(cfg, value.toDouble: java.lang.Double)
+            } else if (param_type == classOf[Boolean]) {
+              method.invoke(cfg, (value == "1"): java.lang.Boolean)
+            }
+          }
+          case None => { Util.log(s"No parameter $param"); sys.exit }
+        }
         case _               => { Util.log("Unknown argument: " + key); sys.exit }
       }
     }
@@ -194,28 +208,47 @@ object cfg {
   // jvm limitations.
   // TODO these shortcuts take a bit extra memory, but avoid lots of hash
   // lookups. real solution is to not have methods and then also objects...
-  lazy val antialias       = bools("antialias").value
-  lazy val draw_cursor     = bools("draw_cursor").value
-  lazy val draw_lane_arrow = bools("draw_lane_arrow").value
-  lazy val dash_center     = bools("dash_center").value
 
-  lazy val lane_width      = doubles("lane_width").value
-  lazy val zoom_threshold  = doubles("zoom_threshold").value
-  lazy val epsilon         = doubles("epsilon").value
-  lazy val end_threshold   = doubles("end_threshold").value
-  lazy val follow_dist     = doubles("follow_dist").value
-  lazy val max_accel       = doubles("max_accel").value
-  lazy val pause_at_stop   = doubles("pause_at_stop").value
-  lazy val min_lane_length = doubles("min_lane_length").value
-  lazy val thruput_stat_time = doubles("thruput_stat_time").value
+  var antialias = false
+  var draw_cursor = false
+  var draw_lane_arrow = false
+  var dash_center = false
 
-  lazy val max_lanes       = ints("max_lanes").value
-  lazy val army_size       = ints("army_size").value
-  lazy val signal_duration    = ints("signal_duration").value
-  
-  lazy val dt_s            = doubles("dt_s").value
+  var lane_width = 0.0
+  var zoom_threshold = 0.0
+  var epsilon = 0.0
+  var end_threshold = 0.0
+  var follow_dist = 0.0
+  var max_accel = 0.0
+  var pause_at_stop = 0.0
+  var min_lane_length = 0.0
+  var thruput_stat_time = 0.0
+  var dt_s = 0.0
+
+  var max_lanes = 0
+  var army_size = 0
+  var signal_duration = 0
+
+  // Do this early.
+  init_params
 
   def lanechange_dist = lane_width * 5.0
+
+  def get_param_method(name: String) =
+    cfg.getClass.getDeclaredMethods.find(_.getName == name + "_$eq")
+
+  // Set all the config stuff from the hashes.
+  def init_params() = {
+    for ((key, value) <- bools) {
+      get_param_method(key).get.invoke(cfg, value.value: java.lang.Boolean)
+    }
+    for ((key, value) <- doubles) {
+      get_param_method(key).get.invoke(cfg, value.value: java.lang.Double)
+    }
+    for ((key, value) <- ints) {
+      get_param_method(key).get.invoke(cfg, value.value: java.lang.Integer)
+    }
+  }
 }
 
 // couldn't quite the OO work out to bundle these

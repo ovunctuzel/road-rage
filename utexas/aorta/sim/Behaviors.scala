@@ -40,8 +40,6 @@ class IdleBehavior(a: Agent) extends Behavior(a) {
   override def dump_info() = {
     Util.log("Idle behavior")
   }
-
-  override def wants_to_lc = false
 }
 
 // Reactively avoids collisions and obeys intersections by doing a conservative
