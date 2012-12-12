@@ -77,12 +77,12 @@ object Util {
   // to meters/sec, that is. SI units.
   def mph_to_si(r: Double) = r * 0.44704
 
-  // All in SI units
   def dist_at_constant_accel(accel: Double, time: Double, initial_speed: Double)
     = (initial_speed * time) + (0.5 * accel * (time * time))
   def accel_to_achieve(cur_speed: Double, target_speed: Double)
     = (target_speed - cur_speed) / cfg.dt_s
-  // accelerate first, then cruise at constant
+  // find the time to cover dist by accelerating first, then cruising at
+  // constant speed
   def two_phase_time(speed_i: Double = 0, speed_f: Double = 0, dist: Double = 0,
                      accel: Double = 0): Double =
   {
@@ -183,7 +183,7 @@ object cfg {
   val doubles = List(
     ("lane_width",      0.5, "Width of a lane in meters", 0.01, 0.1),
     ("zoom_threshold",  5.0, "How close to zoom in before drawing details",    1.0, 15.0),
-    ("epsilon",     0.00001, "What do we take as zero due to FP imprecision?", 0.0,  1.0),
+    ("epsilon",       1E-10, "What do we take as zero due to FP imprecision?", 0.0,  1.0),
     ("dt_s",            0.1, "The only dt in seconds an agent can experience", 0.1,  3.0),
     // account for crosswalks, vehicle length...
     ("end_threshold",   5.0, "The end of a traversable is its length - this",  0.1,  3.0),

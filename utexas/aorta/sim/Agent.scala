@@ -107,8 +107,8 @@ class Agent(val id: Int, val route: Route) extends Ordered[Agent] {
                  else
                    -1.0   // we're not idling
 
-    // Check speed limit
-    Util.assert_le(speed, start_on.speed_limit)
+    // Check speed limit. Allow a bit of slack.
+    Util.assert_le(speed, start_on.speed_limit + cfg.epsilon)
 
     // Apply this distance. 
     var current_on = start_on
@@ -234,8 +234,11 @@ class Agent(val id: Int, val route: Route) extends Ordered[Agent] {
       case Act_Set_Accel(new_accel) => {
         // we have physical limits
         Util.assert_le(new_accel.abs, max_accel)
-        // make sure this won't put us at a negative speed
-        Util.assert_ge(speed + (new_accel * cfg.dt_s), 0)
+        // Make sure this won't put us at a negative speed. We'll tolerate a bit
+        // below negative, because FP imprecision means I've observed cases
+        // where solving for the accel that perfectly makes us stop actually
+        // puts us a bit in the negative.
+        Util.assert_ge(speed + (new_accel * cfg.dt_s), -cfg.epsilon)
         target_accel = new_accel
         false
       }
@@ -264,6 +267,11 @@ class Agent(val id: Int, val route: Route) extends Ordered[Agent] {
     // timestep.
     val initial_speed = speed
     speed = initial_speed + (target_accel * dt_sec)
+    // We tolerate slight FP imprecision, but actually cap it off here.
+    // Hopefully that won't mess with anything.
+    if (speed < 0.0 && speed >= -cfg.epsilon) {
+      speed = 0.0
+    }
     val dist = Util.dist_at_constant_accel(target_accel, dt_sec, initial_speed)
 
     // It's the behavior's burden to set acceleration so that neither of these
@@ -361,6 +369,9 @@ class Agent(val id: Int, val route: Route) extends Ordered[Agent] {
   // This directly follows from the distance traveled at constant accel
   def accel_to_cover(dist: Double) = (2 * (dist - (speed * cfg.dt_s)) /
                                       (cfg.dt_s * cfg.dt_s))
+
+  // To stop in one time-step, that is. From v_f = v_i + at
+  def accel_to_stop = (-1 * speed) / cfg.dt_s
 }
 
 class SpawnAgent(val a: Agent, val e: Edge, val dist: Double) {}

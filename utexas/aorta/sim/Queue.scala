@@ -148,7 +148,7 @@ class Queue(t: Traversable) {
     return (lim * cfg.dt_s) + stopping_dist
   }
   
-  // TODO Starting on highways seems weird, but allow it for now
+  // TODO Starting on highways or in the middle lane seems weird, but allow it for now
   // TODO justify this better, or cite the paper.
   def ok_to_spawn = t.length >= worst_entry_dist + cfg.end_threshold + (2 * cfg.follow_dist)
 

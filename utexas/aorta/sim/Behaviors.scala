@@ -142,6 +142,9 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
     val at: Traversable, val predict_dist: Double, val dist_ahead: Double,
     val this_dist: Double)
   {
+    // Steps start at the beginning of 'at', except for the 'first' lookahead
+    // step. this_dist encodes that case. But dist_ahead is a way of measuring
+    // how far the agent really is right now from something in the future.
     // predict_dist = how far ahead we still have to look
     // TODO consider seeding dist_ahead with not 0 but this_dist, then lots of
     // stuff may get simpler.
@@ -280,17 +283,24 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
   // Returns an optional acceleration, or 'true', which indicates the agent
   // is totally done.
   def constraint_stop(step: LookaheadStep): Either[Option[Double], Boolean] = {
-    // physically stop somewhat far back from the intersection.
-    val should_stop = step.predict_dist >= step.this_dist - cfg.end_threshold
-    val how_far_away = step.dist_ahead + step.this_dist
+    // The goal is to stop in the range [length - end_threshold, length),
+    // preferably right at that left border.
 
-    val stop_at_end: Boolean = should_stop && (step.at match {
+    if (step.predict_dist < step.this_dist - cfg.end_threshold) {
+      return Left(None)
+    }
+
+    // end of this current step's edge, that is
+    val dist_from_agent_to_end = step.dist_ahead + step.this_dist
+
+    val stop_at_end: Boolean = step.at match {
       // Don't stop at the end of a turn
       case t: Turn => false
       // Stop if we're arriving at destination
       case e: Edge if route.done(e) => {
         // Are we completely done?
-        if (how_far_away <= cfg.end_threshold && a.speed == 0.0) {
+        // TODO epsilon here more fair?
+        if (dist_from_agent_to_end <= cfg.end_threshold && a.speed == 0.0) {
           // TODO dont return from deep inside here
           return Right(true)
         }
@@ -305,26 +315,18 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
         // But sometimes the lookahead terminates early due to not enough
         // distance, so just always ask this.
         val next_turn = route.pick_turn(e)
-        // TODO verify we're telling the intersection the same turn between
-        // ticks
-        !i.can_go(a, next_turn, how_far_away)
+        !i.can_go(a, next_turn, dist_from_agent_to_end)
       }
-    })
+    }
     if (!stop_at_end) {
       return Left(None)
     }
 
-    // Stop 'end_threshold' short of where we should when we can, but when
-    // our destination is an edge, compromise and stop anywhere along it
-    // we can. This handles a few stalemate cases with sequences of short
-    // edges and possibly out-of-sync intersection policies.
-    val go_this_dist = step.at match {
-      // creep forward to halfway along the shorty edge.
-      case e: Edge if how_far_away <= cfg.end_threshold => how_far_away - (step.at.length / 2.0)
-      // stop back appropriately.
-      case _                                    => how_far_away - cfg.end_threshold
-    }
-    return Left(Some(accel_to_end(go_this_dist)))
+    // We want to go the distance that puts us at length - end_threshold. If
+    // we're already past that point (due to floating point imprecision, or just
+    // because the edge is short), then try to cover 0 extra distance!
+    val want_dist = math.max(0.0, dist_from_agent_to_end - cfg.end_threshold)
+    return Left(Some(accel_to_end(want_dist)))
   }
 
   // TODO make a singleton for math
@@ -366,37 +368,24 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
     return math.max(accel_to_stop, accel)
   }
 
-  // This is based on Piyush's proof.
-  // how_far_away already includes end_threshold, if appropriate.
-  private def accel_to_end(how_far_away: Double): Double = {
-    // a, b, c for a normal quadratic
-    val q_a = 1 / a.max_accel
-    val q_b = cfg.dt_s
-    val q_c = (a.speed * cfg.dt_s) - (2 * how_far_away)
-    val try_speed = (-q_b + math.sqrt((q_b * q_b) - (4 * q_a * q_c))) / (2 * q_a)
+  // Find an accel to travel want_dist and wind up with speed 0.
+  private def accel_to_end(want_dist: Double): Double = {
+    // d = (v_1)(t) + (1/2)(a)(t^2)
+    // 0 = (v_1) + (a)(t)
+    // Eliminating time yields the formula for accel below.
 
-    // TODO why does this or NaN ever happen?
-    /*if (desired_speed < 0) {
-      Util.log("why neg speed?")
-    } else if (desired_speed.isNaN) {
-      // try seed 1327894373344 to make it happen, though. synthetic.
-      Util.log("NaN speed... a=" + q_a + ", b=" + q_b + ", c=" + q_c)
-    }*/
-
-    // in the NaN case, just try to stop?
-    val desired_speed = if (try_speed.isNaN)
-                          0
-                        else
-                          math.max(0, try_speed)
-
-    val needed_accel = a.accel_to_achieve(desired_speed)
-
-    // TODO dumb epsilon bug again. fix this better.
-    val stop_speed = a.speed + (needed_accel * cfg.dt_s)
-    return if (stop_speed < 0)
-             needed_accel + 0.1
-           else
-             needed_accel
+    if (want_dist > 0.0) {
+      val accel = (-1 * a.speed * a.speed) / (2 * want_dist)
+      // When time isn't a multiple of dt_s, just stop for that last step.
+      if (a.speed + accel * cfg.dt_s < 0.00) {
+        return a.accel_to_stop
+      } else {
+        return accel
+      }
+    } else {
+      // Special case for distance of 0: avoid a NaN, just stop.
+      return a.accel_to_stop
+    }
   }
 }
 
