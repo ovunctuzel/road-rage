@@ -1,12 +1,11 @@
 # TODO #
 
-- fine tune math
-  - no or standardized epsilons
-  - do we have to start stopping for the end of stuff before we get close?
-    - why end_threshold necessary?
-    - dont always call that constraint, maybe
-  - worst case stuff all acts like we will exceed speed limit.
-- proximity violations remain.
+- following isnt well behaved
+- lane changing stuff needs tuning
+- entering at 0m/s
+- worst case stuff all acts like we will exceed speed limit.
+- want_dist for stopping isnt quite 0 for sequence of shorties, just 0 along
+  more of that shorty.
 
 - fastpaths for behavior (most agents lookahead just 1 step)
 - can we make timesteps equivalent? (probably not)

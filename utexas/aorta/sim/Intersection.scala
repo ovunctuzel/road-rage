@@ -85,7 +85,7 @@ class Intersection(val v: Vertex) {
     }
     turns(t) += 1
     if (!policy.validate_entry(a, t)) {
-      Util.log("!!! %s illegally entered intersection, going %.2f m/s".format(a, a.speed))
+      Util.log("!!! %s illegally entered intersection, going %f m/s".format(a, a.speed))
       Util.log("  Illegal entry was near " + t.from + " and " + t + " (vert " + t.from.to.id + ")")
       Util.log("  Origin lane length: " + t.from.length + "; time " + Agent.sim.tick)
       Util.log("  Happened at " + Agent.sim.tick)

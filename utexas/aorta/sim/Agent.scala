@@ -356,8 +356,13 @@ class Agent(val id: Int, val route: Route) extends Ordered[Agent] {
   )
   def max_next_speed = speed + (max_accel * cfg.dt_s)
   def max_next_dist = Util.dist_at_constant_accel(max_accel, cfg.dt_s, speed)
-  // TODO clamp v_f at 0, since they cant deaccelerate into negative speed.
-  def min_next_dist = Util.dist_at_constant_accel(-max_accel, cfg.dt_s, speed)
+  // They can't deaccelerate into negative speed, so cap the deacceleration.
+  def min_next_dist = Util.dist_at_constant_accel(
+    math.max(-max_accel, accel_to_stop), cfg.dt_s, speed
+  )
+  def min_next_speed = speed + (cfg.dt_s * math.max(-max_accel, accel_to_stop))
+  def min_next_dist_plus_stopping =
+    min_next_dist + stopping_distance(min_next_speed)
   def max_lookahead_dist = math.max(
     max_next_dist + stopping_distance(max_next_speed),
     cfg.end_threshold // TODO a hack
@@ -366,7 +371,7 @@ class Agent(val id: Int, val route: Route) extends Ordered[Agent] {
   def accel_to_achieve(target_speed: Double) = Util.accel_to_achieve(
     speed, target_speed
   )
-  // This directly follows from the distance traveled at constant accel
+  // d = (v_i)(t) + (1/2)(a)(t^2), solved for a
   def accel_to_cover(dist: Double) = (2 * (dist - (speed * cfg.dt_s)) /
                                       (cfg.dt_s * cfg.dt_s))
 

@@ -253,8 +253,8 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
     return follow_agent match {
       // This happens when we grab the last person off the next step's queue
       // for lanechanging. Lookahead for lanechanging will change soon anyway,
-      // for now just avoid this case.
-      case Some(other) if a == other => None
+      // for now just avoid this case. TODO
+      case Some(other) if a == other => None  // TODO next to last?
       case Some(other) => {
         val dist_away = if (other.on(a.at.on))
                           other.at.dist - a.at.dist
@@ -329,14 +329,35 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
     return Left(Some(accel_to_end(want_dist)))
   }
 
-  // TODO make a singleton for math
-
   private def accel_to_follow(follow: Agent, dist_from_them_now: Double): Double = {
-    // Maintain our stopping distance away from this guy, plus don't scrunch
-    // together too closely...
 
-    // Again, reason about the worst-case: we speed up as much as possible, they
-    // slam on their brakes.
+    // TODO This stuff isn't working yet at all.
+    /*
+    // Make sure our stopping distance after the next time-step is at least
+    // cfg.follow_dist away from their stopping distance.
+
+    // Reason about the worst-case: they slam on their brakes.
+    val their_next_dist = follow.min_next_dist_plus_stopping
+
+    // We want cfg.follow_dist = (dist_from_them_now + their_next_dist) - (our
+    // next dist + next stopping dist)
+    // Lots of expanded algebra later, solve for a...:
+    // -cfg.follow_dist + dist_from_them_now + their_next_dist =
+    // [(a.speed)(t) + (1/2)(a)(t^2)] + [(a.speed + at)t
+    val accel =
+      ((dist_from_them_now + their_next_dist - cfg.follow_dist
+      - (2 * a.speed * cfg.dt_s) + (0.5 * a.max_accel * cfg.dt_s * cfg.dt_s))
+      * (3 / 2) / (cfg.dt_s * cfg.dt_s))
+
+
+    if (a.speed + (accel * cfg.dt_s) < 0.0) {
+      Util.log(s"$a following $follow wants to go neg: " + (a.speed + (accel * cfg.dt_s)))
+    }
+
+    return accel
+    */
+
+    // The old ways.
     val us_worst_stop_dist = a.stopping_distance(a.max_next_speed)
     val most_we_could_go = a.max_next_dist
     val least_they_could_go = follow.min_next_dist
@@ -344,8 +365,6 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
     // TODO this optimizes for next tick, so we're playing it really
     // conservative here... will that make us fluctuate more?
     val projected_dist_from_them = dist_from_them_now - most_we_could_go + least_they_could_go
-
-    // don't ride bumper-to-bumper
     val desired_dist_btwn = us_worst_stop_dist + cfg.follow_dist
 
     // Positive = speed up, zero = go their speed, negative = slow down
@@ -353,6 +372,18 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
 
     // Try to cover whatever the distance is, and cap off our values.
     val accel = a.accel_to_cover(delta_dist)
+
+    /*// TODO do we ever do anything but this accel? Since timesteps are accounted
+    // for here, doesn't seem like this should ever happen...
+    if (a.speed + (accel * cfg.dt_s) < 0.0) {
+      Util.log(s"$a following $follow wants to go neg: " + (a.speed + (accel * cfg.dt_s)))
+      Util.log(s"  want $desired_dist_btwn but worst case is $projected_dist_from_them")
+      Util.log(s"  and have " + (dist_from_them_now + a.stopping_distance(a.speed)))
+      Util.log(s"  least theyd go is $least_they_could_go. their speed ${follow.speed}")
+      Util.log(s"  our speed ${a.speed}")
+    }*/
+    // It's probably fine for the above to be true, given the old method of
+    // assuming our own worst-case choice, which is just wacky.
 
     // TODO its a bit scary that this ever happens? does that mean we're too
     // close..?
