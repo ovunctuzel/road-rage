@@ -347,6 +347,8 @@ class Agent(val id: Int, val route: Route) extends Ordered[Agent] {
   def min_next_speed = math.max(0.0, speed + (cfg.dt_s * -max_accel))
   def min_next_dist_plus_stopping =
     min_next_dist + stopping_distance(min_next_speed)
+  def max_next_dist_plus_stopping =
+    max_next_dist + stopping_distance(max_next_speed)
   def max_lookahead_dist = math.max(
     max_next_dist + stopping_distance(max_next_speed),
     cfg.end_threshold // TODO a hack

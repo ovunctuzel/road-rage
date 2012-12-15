@@ -171,7 +171,8 @@ class Queue(t: Traversable) {
     // truly safe. This closure yields true when it wants to short-circuit.
     agents.descendingMap.values.find(a => {
       if (dist > a.at.dist) {
-        val bad_dist = cfg.follow_dist + a.stopping_distance(a.max_next_speed)
+        // don't spawn in front of somebody who can't stop
+        val bad_dist = cfg.follow_dist + a.max_next_dist_plus_stopping
         if (dist - a.at.dist <= bad_dist) {
           safe = false
           true

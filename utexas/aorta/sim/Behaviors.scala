@@ -330,34 +330,6 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
   }
 
   private def accel_to_follow(follow: Agent, dist_from_them_now: Double): Double = {
-
-    // TODO This stuff isn't working yet at all.
-    /*
-    // Make sure our stopping distance after the next time-step is at least
-    // cfg.follow_dist away from their stopping distance.
-
-    // Reason about the worst-case: they slam on their brakes.
-    val their_next_dist = follow.min_next_dist_plus_stopping
-
-    // We want cfg.follow_dist = (dist_from_them_now + their_next_dist) - (our
-    // next dist + next stopping dist)
-    // Lots of expanded algebra later, solve for a...:
-    // -cfg.follow_dist + dist_from_them_now + their_next_dist =
-    // [(a.speed)(t) + (1/2)(a)(t^2)] + [(a.speed + at)t
-    val accel =
-      ((dist_from_them_now + their_next_dist - cfg.follow_dist
-      - (2 * a.speed * cfg.dt_s) + (0.5 * a.max_accel * cfg.dt_s * cfg.dt_s))
-      * (3 / 2) / (cfg.dt_s * cfg.dt_s))
-
-
-    if (a.speed + (accel * cfg.dt_s) < 0.0) {
-      Util.log(s"$a following $follow wants to go neg: " + (a.speed + (accel * cfg.dt_s)))
-    }
-
-    return accel
-    */
-
-    // The old ways.
     val us_worst_stop_dist = a.stopping_distance(a.max_next_speed)
     val most_we_could_go = a.max_next_dist
     val least_they_could_go = follow.min_next_dist
@@ -370,36 +342,8 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
     // Positive = speed up, zero = go their speed, negative = slow down
     val delta_dist = projected_dist_from_them - desired_dist_btwn
 
-    // Try to cover whatever the distance is, and cap off our values.
-    val accel = a.accel_to_cover(delta_dist)
-
-    /*// TODO do we ever do anything but this accel? Since timesteps are accounted
-    // for here, doesn't seem like this should ever happen...
-    if (a.speed + (accel * cfg.dt_s) < 0.0) {
-      Util.log(s"$a following $follow wants to go neg: " + (a.speed + (accel * cfg.dt_s)))
-      Util.log(s"  want $desired_dist_btwn but worst case is $projected_dist_from_them")
-      Util.log(s"  and have " + (dist_from_them_now + a.stopping_distance(a.speed)))
-      Util.log(s"  least theyd go is $least_they_could_go. their speed ${follow.speed}")
-      Util.log(s"  our speed ${a.speed}")
-    }*/
-    // It's probably fine for the above to be true, given the old method of
-    // assuming our own worst-case choice, which is just wacky.
-
-    // TODO Probably can remove this check and bad epsilon-hack. Partial
-    // time-steps are fine.
-
-    // TODO its a bit scary that this ever happens? does that mean we're too
-    // close..?
-    // Make sure we don't deaccelerate past 0 either.
-    var accel_to_stop = a.accel_to_achieve(0)
-
-    // TODO dumb epsilon bug. fix this better.
-    val stop_speed = a.speed + (accel_to_stop * cfg.dt_s)
-    if (stop_speed < 0) {
-      accel_to_stop += 0.1
-    }
-
-    return math.max(accel_to_stop, accel)
+    // Try to cover whatever the distance is
+    return a.accel_to_cover(delta_dist)
   }
 
   // Find an accel to travel want_dist and wind up with speed 0.

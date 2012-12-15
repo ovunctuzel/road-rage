@@ -1,11 +1,11 @@
 # TODO #
 
-- following isnt well behaved
 - lane changing stuff needs tuning
 - worst case stuff all acts like we will exceed speed limit.
 - want_dist for stopping isnt quite 0 for sequence of shorties, just 0 along
   more of that shorty.
 - at big timesteps, nobody moves
+- simulate and headless deterministic, different
 
 - fastpaths for behavior (most agents lookahead just 1 step)
 - can we make timesteps equivalent? (probably not)
