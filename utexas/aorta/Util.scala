@@ -77,8 +77,15 @@ object Util {
   // to meters/sec, that is. SI units.
   def mph_to_si(r: Double) = r * 0.44704
 
-  def dist_at_constant_accel(accel: Double, time: Double, initial_speed: Double)
-    = (initial_speed * time) + (0.5 * accel * (time * time))
+  // Capped when speed goes negative.
+  def dist_at_constant_accel(accel: Double, time: Double, initial_speed: Double): Double = {
+    // Don't deaccelerate into going backwards, just cap things off.
+    val actual_time = if (accel >= 0)
+                        time
+                      else
+                        math.min(time, -1 * initial_speed / accel)
+    return (initial_speed * actual_time) + (0.5 * accel * (actual_time * actual_time))
+  }
   def accel_to_achieve(cur_speed: Double, target_speed: Double)
     = (target_speed - cur_speed) / cfg.dt_s
   // find the time to cover dist by accelerating first, then cruising at

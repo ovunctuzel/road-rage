@@ -385,6 +385,9 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
     // It's probably fine for the above to be true, given the old method of
     // assuming our own worst-case choice, which is just wacky.
 
+    // TODO Probably can remove this check and bad epsilon-hack. Partial
+    // time-steps are fine.
+
     // TODO its a bit scary that this ever happens? does that mean we're too
     // close..?
     // Make sure we don't deaccelerate past 0 either.
@@ -406,13 +409,9 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
     // Eliminating time yields the formula for accel below.
 
     if (want_dist > 0.0) {
-      val accel = (-1 * a.speed * a.speed) / (2 * want_dist)
-      // When time isn't a multiple of dt_s, just stop for that last step.
-      if (a.speed + accel * cfg.dt_s < 0.00) {
-        return a.accel_to_stop
-      } else {
-        return accel
-      }
+      // If this accel puts us past speed 0, it's fine, we just idle for the
+      // remainder of the timestep.
+      return (-1 * a.speed * a.speed) / (2 * want_dist)
     } else {
       // Special case for distance of 0: avoid a NaN, just stop.
       return a.accel_to_stop

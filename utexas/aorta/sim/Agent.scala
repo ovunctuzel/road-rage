@@ -20,6 +20,7 @@ class Agent(val id: Int, val route: Route) extends Ordered[Agent] {
   // We can only set a target acceleration, which we travel at for the entire
   // duration of timesteps.
   val max_accel = cfg.max_accel   // TODO based on vehicle type
+  // TODO max_deaccel too
   var speed: Double = 0.0   // meters/sec, I believe
   var target_accel: Double = 0  // m/s^2
   // TODO who chooses this?
@@ -234,11 +235,6 @@ class Agent(val id: Int, val route: Route) extends Ordered[Agent] {
       case Act_Set_Accel(new_accel) => {
         // we have physical limits
         Util.assert_le(new_accel.abs, max_accel)
-        // Make sure this won't put us at a negative speed. We'll tolerate a bit
-        // below negative, because FP imprecision means I've observed cases
-        // where solving for the accel that perfectly makes us stop actually
-        // puts us a bit in the negative.
-        Util.assert_ge(speed + (new_accel * cfg.dt_s), -cfg.epsilon)
         target_accel = new_accel
         false
       }
@@ -263,22 +259,12 @@ class Agent(val id: Int, val route: Route) extends Ordered[Agent] {
 
   // returns distance traveled, updates speed. note unit of the argument.
   def update_kinematics(dt_sec: Double): Double = {
-    // Simply travel at the target constant acceleration for the duration of the
-    // timestep.
+    // Travel at the target constant acceleration for the duration of the
+    // timestep, capping off when speed hits zero.
     val initial_speed = speed
-    speed = initial_speed + (target_accel * dt_sec)
-    // We tolerate slight FP imprecision, but actually cap it off here.
-    // Hopefully that won't mess with anything.
-    if (speed < 0.0 && speed >= -cfg.epsilon) {
-      speed = 0.0
-    }
+    speed = math.max(0.0, initial_speed + (target_accel * dt_sec))
     val dist = Util.dist_at_constant_accel(target_accel, dt_sec, initial_speed)
-
-    // It's the behavior's burden to set acceleration so that neither of these
-    // cases happen
-    Util.assert_ge(speed, 0.0)
     Util.assert_ge(dist, 0.0)
-
     return dist
   }
 
@@ -357,10 +343,8 @@ class Agent(val id: Int, val route: Route) extends Ordered[Agent] {
   def max_next_speed = speed + (max_accel * cfg.dt_s)
   def max_next_dist = Util.dist_at_constant_accel(max_accel, cfg.dt_s, speed)
   // They can't deaccelerate into negative speed, so cap the deacceleration.
-  def min_next_dist = Util.dist_at_constant_accel(
-    math.max(-max_accel, accel_to_stop), cfg.dt_s, speed
-  )
-  def min_next_speed = speed + (cfg.dt_s * math.max(-max_accel, accel_to_stop))
+  def min_next_dist = Util.dist_at_constant_accel(-max_accel, cfg.dt_s, speed)
+  def min_next_speed = math.max(0.0, speed + (cfg.dt_s * -max_accel))
   def min_next_dist_plus_stopping =
     min_next_dist + stopping_distance(min_next_speed)
   def max_lookahead_dist = math.max(
@@ -396,7 +380,7 @@ case class Position(val on: Traversable, val dist: Double) {
   Util.assert_ge(dist, 0)
   Util.assert_le(dist, on.length)
   // TODO
-  /*if (dist > on.length) {
+  /*if (dist >= on.length) {
     Util.log("safe_spawn_dist must be broken... " + dist + " > " + on.length +
              " on " + on)
   }*/

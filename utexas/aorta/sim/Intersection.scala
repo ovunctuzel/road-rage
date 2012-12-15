@@ -85,6 +85,8 @@ class Intersection(val v: Vertex) {
     }
     turns(t) += 1
     if (!policy.validate_entry(a, t)) {
+      // Misleading error message. They may be going 0 speed, but the agent step
+      // code hasn't finished moving them.
       Util.log("!!! %s illegally entered intersection, going %f m/s".format(a, a.speed))
       Util.log("  Illegal entry was near " + t.from + " and " + t + " (vert " + t.from.to.id + ")")
       Util.log("  Origin lane length: " + t.from.length + "; time " + Agent.sim.tick)
