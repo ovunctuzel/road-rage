@@ -151,6 +151,8 @@ object Util {
               method.invoke(cfg, value.toDouble: java.lang.Double)
             } else if (param_type == classOf[Boolean]) {
               method.invoke(cfg, (value == "1"): java.lang.Boolean)
+            } else {
+              method.invoke(cfg, value: java.lang.String)
             }
           }
           case None => { Util.log(s"No parameter $param"); sys.exit }
@@ -208,6 +210,10 @@ object cfg {
     ("signal_duration",  60, "How long for a traffic signal to go through all of its cycles", 4, 1200)
   ).map({c => c._1 -> new Int_Cfgable(c._2, c._3, c._4, c._5)}).toMap
 
+  val strings = List(
+    ("policy", "StopSign")
+  ).map({c => c._1 -> new String_Cfgable(c._2)}).toMap
+
   // TODO val colors = ... (I'm not kidding)
   // TODO and of course, a way to save the settings.
 
@@ -236,6 +242,8 @@ object cfg {
   var army_size = 0
   var signal_duration = 0
 
+  var policy = ""
+
   // Do this early.
   init_params
 
@@ -255,6 +263,9 @@ object cfg {
     for ((key, value) <- ints) {
       get_param_method(key).get.invoke(cfg, value.value: java.lang.Integer)
     }
+    for ((key, value) <- strings) {
+      get_param_method(key).get.invoke(cfg, value.value: java.lang.String)
+    }
   }
 }
 
@@ -268,5 +279,9 @@ class Double_Cfgable(default: Double, descr: String, min: Double, max: Double) {
 }
 
 class Int_Cfgable(default: Int, descr: String, min: Int, max: Int) {
+  var value = default
+}
+
+class String_Cfgable(default: String) {
   var value = default
 }

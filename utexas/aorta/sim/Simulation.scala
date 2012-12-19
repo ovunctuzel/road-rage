@@ -280,9 +280,9 @@ object Simulation {
 
   // TODO make it an enum
   def policy_builder(name: String): (Intersection) => Policy = name match {
-    case "Never Go" => (i: Intersection) => new NeverGoPolicy(i)
-    case "Stop Sign" => (i: Intersection) => new StopSignPolicy(i)
-    case "Signal Cycle" => (i: Intersection) => new SignalCyclePolicy(i)
+    case "NeverGo" => (i: Intersection) => new NeverGoPolicy(i)
+    case "StopSign" => (i: Intersection) => new StopSignPolicy(i)
+    case "SignalCycle" => (i: Intersection) => new SignalCyclePolicy(i)
     case "Reservation" => (i: Intersection) => new ReservationPolicy(i)
     // TODO case _ => ???
   }
@@ -294,4 +294,6 @@ object Simulation {
     case "Drunken Explorer" => new DrunkenExplorerRoute(goal)
     // TODO case _ => ???
   }
+
+  def make_policy(i: Intersection) = policy_builder(cfg.policy)(i)
 }

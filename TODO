@@ -1,6 +1,8 @@
 # TODO #
 
+- manual inspection. stuff in resim_log isnt moving.
 - lane changing stuff needs tuning
+- how much to lookahead?
 - worst case stuff all acts like we will exceed speed limit.
 - want_dist for stopping isnt quite 0 for sequence of shorties, just 0 along
   more of that shorty.
