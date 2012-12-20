@@ -10,8 +10,8 @@ FAST=""
 
 echo Compiling...
 mkdir -p .build
-#scalac $BUILD_OPTS $FAST $SRCS
-fsc $BUILD_OPTS $FAST $SRCS
+scalac $BUILD_OPTS $FAST $SRCS
+#fsc $BUILD_OPTS $FAST $SRCS
 
 # How did the compile go?
 if [[ $? != "0" ]]; then
