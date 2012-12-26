@@ -348,14 +348,22 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
 
   // Find an accel to travel want_dist and wind up with speed 0.
   private def accel_to_end(want_dist: Double): Double = {
-    // d = (v_1)(t) + (1/2)(a)(t^2)
-    // 0 = (v_1) + (a)(t)
-    // Eliminating time yields the formula for accel below.
-
     if (want_dist > 0.0) {
-      // If this accel puts us past speed 0, it's fine, we just idle for the
-      // remainder of the timestep.
-      return (-1 * a.speed * a.speed) / (2 * want_dist)
+      if (a.speed > 0.0) {
+        // d = (v_1)(t) + (1/2)(a)(t^2)
+        // 0 = (v_1) + (a)(t)
+        // Eliminating time yields the formula for accel below.
+
+        // If this accel puts us past speed 0, it's fine, we just idle for the
+        // remainder of the timestep.
+        return (-1 * a.speed * a.speed) / (2 * want_dist)
+      } else {
+        // We have to accelerate so that we can get going, but not enough so
+        // that we can't stop. Want (1/2)(a_1)(dt)^2 + [(a_1)(dt)](dt) -
+        // (1/2)(a_max)(dt)^2 = want_dist, algebra gives the answer below.
+        val coefficient = (2.0 / 3.0) / (cfg.dt_s * cfg.dt_s)
+        return (coefficient * want_dist) + (a.max_accel / 3.0)
+      }
     } else {
       // Special case for distance of 0: avoid a NaN, just stop.
       return a.accel_to_stop
