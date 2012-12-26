@@ -81,7 +81,7 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
 
   override def dump_info() = {
     Util.log("Route-following behavior")
-    // TODO ask the route to debug itself? :P
+    route.dump_info
   }
 
   override def choose_action(): Action = {
@@ -324,8 +324,9 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
 
     // We want to go the distance that puts us at length - end_threshold. If
     // we're already past that point (due to floating point imprecision, or just
-    // because the edge is short), then try to cover 0 extra distance!
-    val want_dist = math.max(0.0, dist_from_agent_to_end - cfg.end_threshold)
+    // because the edge is short), then try to cover enough distance to get us
+    // to the start of the edge.
+    val want_dist = math.max(step.dist_ahead, dist_from_agent_to_end - cfg.end_threshold)
     return Left(Some(accel_to_end(want_dist)))
   }
 

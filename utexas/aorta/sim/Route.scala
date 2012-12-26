@@ -23,6 +23,8 @@ abstract class Route(val goal: DirectedRoad) {
   def pick_turn(e: Edge): Turn
   // The client may try to lane-change somewhere
   def pick_lane(e: Edge): Edge
+  // Debug
+  def dump_info
 }
 
 // Compute the cost of the path from every source to our single goal. 
@@ -52,6 +54,10 @@ class StaticRoute(goal: DirectedRoad) extends Route(goal) {
     return from.adjacent_lanes.sortBy(
       e => math.abs(target_lane.lane_num - e.lane_num)
     ).head
+  }
+
+  def dump_info() = {
+    Util.log(s"Static route to $goal")
   }
 }
 
@@ -91,6 +97,12 @@ class DrunkenRoute(goal: DirectedRoad) extends Route(goal) {
       }
     }
     return e.best_adj_lane(desired_lane.get)
+  }
+
+  def dump_info() = {
+    Util.log(s"Drunken route to $goal")
+    Util.log(s"  Desired lane: $desired_lane")
+    Util.log(s"  Chosen turns: $chosen_turns")
   }
 }
 

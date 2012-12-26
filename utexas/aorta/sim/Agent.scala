@@ -37,6 +37,10 @@ class Agent(val id: Int, val route: Route) extends Ordered[Agent] {
   var entered_last = (-1.0, -1.0, -1.0)  // time, distance, speed
   var started_trip_at = -1.0
   var total_dist = 0.0
+  def how_long_idle = if (idle_since == -1.0)
+                        0
+                      else
+                        Agent.sim.tick - idle_since
 
   // Track intersections we've contacted but not passed
   var upcoming_intersections: Set[Intersection] = Set()
@@ -222,11 +226,6 @@ class Agent(val id: Int, val route: Route) extends Ordered[Agent] {
     return true
   }
 
-  def how_long_idle = if (idle_since == -1.0)
-                        0.0
-                      else
-                        Agent.sim.tick - idle_since
-
   // Returns true if we're done
   def react(): Boolean = {
     val was_lanechanging = is_lanechanging
@@ -312,10 +311,9 @@ class Agent(val id: Int, val route: Route) extends Ordered[Agent] {
     Util.log_push
     Util.log("At: " + at)
     Util.log("Speed: " + speed)
-    Util.log("Next step's acceleration: " + target_accel)
     Util.log("How long idle? " + how_long_idle)
     Util.log("Max next speed: " + max_next_speed)
-    Util.log("Stopping distance currently: " + stopping_distance(max_next_speed))
+    Util.log("Stopping distance next: " + stopping_distance(max_next_speed))
     Util.log("Lookahead dist: " + max_lookahead_dist)
     Util.log("Dist left here: " + at.dist_left)
     behavior.dump_info
@@ -349,10 +347,7 @@ class Agent(val id: Int, val route: Route) extends Ordered[Agent] {
     min_next_dist + stopping_distance(min_next_speed)
   def max_next_dist_plus_stopping =
     max_next_dist + stopping_distance(max_next_speed)
-  def max_lookahead_dist = math.max(
-    max_next_dist + stopping_distance(max_next_speed),
-    cfg.end_threshold // TODO a hack
-  )
+  def max_lookahead_dist = max_next_dist_plus_stopping
 
   def accel_to_achieve(target_speed: Double) = Util.accel_to_achieve(
     speed, target_speed

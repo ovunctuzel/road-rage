@@ -339,7 +339,7 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
   def draw_agent(g2d: Graphics2D, a: Agent) = {
     // try to avoid flashing red, this feature is used to visually spot true
     // clumps
-    if (a.speed == 0.0 && a.idle_since >= 5.0) {
+    if (a.speed == 0.0 && a.how_long_idle >= 5.0) {
       g2d.setColor(Color.RED)
     } else {
       if (!agent_colors.contains(a)) {

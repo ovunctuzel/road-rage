@@ -1,13 +1,8 @@
 # TODO #
 
-- manual inspection. stuff in resim_log isnt moving.
-- lane changing stuff needs tuning
-- how much to lookahead?
 - worst case stuff all acts like we will exceed speed limit.
-- want_dist for stopping isnt quite 0 for sequence of shorties, just 0 along
-  more of that shorty.
+- lane changing stuff needs tuning
 - at big timesteps, nobody moves
-- simulate and headless deterministic, different
 
 - fastpaths for behavior (most agents lookahead just 1 step)
 - can we make timesteps equivalent? (probably not)
@@ -55,17 +50,8 @@ TESTING IT
 - repository of detailed cities with demand data?
 
 # Problems
+- simulate and headless deterministic, different often
 - calibration issues... distances totally off
-- fix the dumb illegal entry epsilon bugs.
-  - why was the hack in map.make.Checker needed?
-  - a conflict between a too-big stopping distance and acceleration into negative speed...
-    - suggests it was an impossible request anyway?
-  - directly compute the accel to end in dist.
-  - lookahead by end_thres more than current.
-  - why are we EVER doomed?!
-  - why are we EVER requesting negative accel_to_end distances?
-- jvm crashing on some jvm implementations?
-- is it really safe to tweak dt? epsilons may depend on it.
 - different vehicle lengths, parameters
 
 # Behaviors, Policies, & Strategies
@@ -112,6 +98,7 @@ TESTING IT
 - actors / akka?
 
 # UI
+- cmdline switch to follow stuff or zoom in somewhere
 - ui speed controls.. step one tick, display a certain fps, sleep to match what?
 - better code, everything needs debug() and render()
 - visualize lookahead
