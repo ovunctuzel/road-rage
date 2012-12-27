@@ -1,11 +1,7 @@
 # TODO #
 
-- worst case stuff all acts like we will exceed speed limit.
-- lane changing stuff needs tuning
-- at big timesteps, nobody moves
-
-- fastpaths for behavior (most agents lookahead just 1 step)
-- can we make timesteps equivalent? (probably not)
+- fp math needs tuning
+- at big timesteps, nobody moves?
 
 # Lane changing
 - agents get caught in loops because the general path isnt realizable
@@ -53,6 +49,8 @@ TESTING IT
 - simulate and headless deterministic, different often
 - calibration issues... distances totally off
 - different vehicle lengths, parameters
+- fastpaths for behavior (most agents lookahead just 1 step)
+- can we make timesteps equivalent? (probably not)
 
 # Behaviors, Policies, & Strategies
 - traffic signal

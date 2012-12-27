@@ -196,6 +196,7 @@ class Agent(val id: Int, val route: Route) extends Ordered[Agent] {
 
     // Furthermore, we probably have to stop for the intersection, so be sure we
     // have enough room to do that.
+    // TODO not also travel dist?
     if (at.dist + stopping_distance(max_next_speed) >= min_len) {
       return false
     }
@@ -338,9 +339,12 @@ class Agent(val id: Int, val route: Route) extends Ordered[Agent] {
   def stopping_distance(s: Double = speed) = Util.dist_at_constant_accel(
     -max_accel, s / max_accel, s
   )
-  def max_next_speed = speed + (max_accel * cfg.dt_s)
-  def max_next_dist = Util.dist_at_constant_accel(max_accel, cfg.dt_s, speed)
-  // They can't deaccelerate into negative speed, so cap the deacceleration.
+  // We'll be constrained by the current edge's speed limit and maybe other
+  // stuff, but at least this speed lim.
+  def max_next_accel = math.min(max_accel, (at.on.speed_limit - speed) / cfg.dt_s)
+
+  def max_next_speed = speed + (max_next_accel * cfg.dt_s)
+  def max_next_dist = Util.dist_at_constant_accel(max_next_accel, cfg.dt_s, speed)
   def min_next_dist = Util.dist_at_constant_accel(-max_accel, cfg.dt_s, speed)
   def min_next_speed = math.max(0.0, speed + (cfg.dt_s * -max_accel))
   def min_next_dist_plus_stopping =

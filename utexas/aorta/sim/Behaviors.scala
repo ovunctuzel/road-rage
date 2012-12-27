@@ -112,7 +112,7 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
       if (not_tailing && at_speed) {
         Simulation.did_fp += 1
         return Act_Set_Accel(0)
-      }/* else if (not_tailing) {
+      } else if (not_tailing) {
         // so we're not at speed
         Simulation.did_fp += 1
         return Act_Set_Accel(
@@ -125,7 +125,7 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
           accel_to_follow(lead.get, lead.get.at.dist - a.at.dist),
           -a.max_accel
         ))
-      }*/
+      }
     }
     Simulation.didnt_fp += 1
 
