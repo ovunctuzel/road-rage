@@ -1,8 +1,5 @@
 # TODO #
 
-- fp math needs tuning
-- at big timesteps, nobody moves?
-
 # Lane changing
 - agents get caught in loops because the general path isnt realizable
 - dont let agents start lc that depends on others getting out of way
@@ -14,22 +11,6 @@
 - testing
   - introduce automated test framework using scenarios
   - wacky cases of 2 side-by-side agents wanting to swap places?
-
-# Uber stuff
-re-evaluate the idea of this.
-
-DOING IT
-  - still flood, then make new vert and turns, and mod old edges?
-  - save uber-turns and extend turn, with lines/a notion of saved conflict?
-  - track conflicts online by doing vert relaxation slowly?
-  - emphasize mixed policies
-
-TESTING IT
-  - what if there are too many uberturns somewhere?
-  - make sure we have determinism
-  - collision avoidance in many situations, with many dt's
-  - make sure gridlock is detected
-  - observe a case where doing this helps some situation
 
 # Administrative
 - improve scripts to not rebuild maps often
@@ -46,6 +27,7 @@ TESTING IT
 - repository of detailed cities with demand data?
 
 # Problems
+- at big timesteps, nobody moves?
 - simulate and headless deterministic, different often
 - calibration issues... distances totally off
 - different vehicle lengths, parameters
