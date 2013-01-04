@@ -77,6 +77,7 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
   private var mode = Mode.EXPLORE
   private var chosen_edge1: Option[Edge] = None
   private var chosen_edge2: Option[Edge] = None
+  private var chosen_road: Option[Road] = None
   private var chosen_pos: Option[(Edge, Double)] = None
   private var route_members = Set[Edge]()
   private var route_members_road = Set[Road]()
@@ -261,6 +262,15 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
           draw_turn(g2d, t._1, Color.GREEN)
         })
       }
+
+      // TODO tmp -- trying out intersection merging
+      g2d.setColor(Color.CYAN)
+      for (v <- sim.vertices) {
+        val bub = bubble(v.location)
+        if (bub.intersects(window)) {
+          g2d.draw(bub)
+        }
+      }
     }
 
     // When an agent is doing a turn, it's not any edge's agent queue. Because
@@ -385,7 +395,9 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
   }
 
   def color_road(r: Road): Color =
-    if (route_members_road(r))
+    if (chosen_road.isDefined && chosen_road.get == r)
+      Color.RED
+    else if (route_members_road(r))
       Color.GREEN
     else if (polygon_roads1(r))
       Color.RED
@@ -592,12 +604,12 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
       prompt_int("What road ID do you seek?") match {
         case Some(id) => {
           try {
-            val e = sim.roads(id.toInt).all_lanes.head
+            val r = sim.roads(id.toInt)
             // TODO center on some part of the road and zoom in, rather than
             // just vaguely moving that way
-            Util.log("Here's " + e)
-            center_on(e.lines.head.start)
-            chosen_edge2 = Some(e)  // just kind of use this to highlight it
+            Util.log("Here's " + r)
+            center_on(r.all_lanes.head.lines.head.start)
+            chosen_road = Some(r)
             repaint
           } catch {
             case _: NumberFormatException => Util.log("Bad edge ID " + id)
@@ -735,6 +747,8 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
         Util.log_push
         i.turns.foreach(pair => Util.log(pair._2 + " doing " + pair._1))
         Util.log_pop
+
+        Util.log("Roads: " + v.roads)
 
         // anything else
         i.policy.dump_info

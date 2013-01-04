@@ -51,7 +51,7 @@ class Pass1(fn: String) {
 
   def run(): PreGraph1 = {
     // fill out graph with roads and collect all info
-    match_events( new XMLEventReader(Source.fromFile(fn)))
+    match_events( new XMLEventReader(Source.fromFile(fn, "UTF-8")))
 
     Util.log("Normalizing graph coordinates")
     graph.normalize()
@@ -150,7 +150,7 @@ class Pass1(fn: String) {
 
             graph.add_edge(name, road_type, oneway, id, points, lanes)
 
-            // The tip and tail of this edge's points are always vertices
+            // The tip and tail of this way's points are always vertices
             graph.add_vertex(points.head)
             graph.add_vertex(points.last)
           }

@@ -34,9 +34,6 @@ class Pass3(old_graph: PreGraph2) {
   val t_stack = new Stack[Traversable]
   var dfs = 0   // counter numbering
 
-  // for intersection grouping
-  val seen = new MutableHashSet[Vertex]()
-
   def run(show_dead: Boolean): PreGraph3 = {
     for (r <- graph.roads) {
       roads_per_vert.addBinding(r.v1, r)
@@ -112,14 +109,15 @@ class Pass3(old_graph: PreGraph2) {
     Util.log("The map has " + (wards.size + 1) + " wards")
     Util.log_pop
 
-    // Discover groups of nearby intersections (with abysmally short roads
-    // between them)
-    Util.log("Clumping close intersections together and destroying internal structure...")
-    for (v <- graph.vertices) {
-      if (!seen.contains(v)) {
-        val clump = flood_clump(v)
-      }
+    Util.log("Transforming small roads into longer turns")
+    Util.log_push
+    // TODO when to run?
+    // TODO order of merging these matters, could be weird
+    val road_min_len = 20.0  // TODO cfg
+    for (r <- graph.roads if r.length < road_min_len) {
+      merge_short_road(r)
     }
+    Util.log_pop
 
     return graph
   }
@@ -481,28 +479,34 @@ class Pass3(old_graph: PreGraph2) {
     }
   }
 
-  val max_len = 50.0 // meters. TODO cfg
-
-  def flood_clump(from: Vertex): Set[Vertex] = {
-    val this_clump = new ListBuffer[Vertex]()
-    var queue: List[Vertex] = List(from)
-
-    // a DFS to find intersections clumped together
-    while (queue.nonEmpty) {
-      val cur = queue.head
-      queue = queue.tail
-      seen += cur
-      this_clump += cur
-      for (r <- cur.roads if r.length <= max_len) {
-        val next = r.other_vert(cur)
-        if (!seen.contains(next)) {
-          queue = next :: queue
+  def merge_short_road(r: Road): Unit = {
+    // TODO testing this just at one spot, for now
+    if (r.id != 2428) {
+      return
+    }
+    Util.log(s"$r is short, removing...")
+    // Find all turns leading to each edge of this bad road
+    for (e <- r.all_lanes) {
+      Util.log("gonna end up doing " + (e.prev_turns.size * e.next_turns.size) +
+               " new turns for " + e)
+      for (orig_turn <- e.prev_turns) {
+        // Extend that turn to cover this road
+        e.from.turns = e.from.turns.filter(t => t != orig_turn)
+        for (tail_turn <- e.next_turns) {
+          // TODO figuring out type will be hard.
+          val turn_type = tail_turn.turn_type
+          // TODO turn ids dont seem to need to be contiguous.
+          e.from.turns = new Turn(
+            next_id, orig_turn.from, turn_type, tail_turn.to,
+            orig_turn.length + tail_turn.length
+          ) :: e.from.turns
         }
       }
     }
-    return if (this_clump.size > 1)
-             this_clump.toSet
-           else
-             Set()
+    // Remove the road and the edges.
+    // TODO ever nix the vertices?
+    graph.roads = graph.roads.filter(road => road != r)
+    graph.edges = graph.edges.filter(e => e.road != r)
+    graph.fix_ids
   }
 }

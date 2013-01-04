@@ -1,5 +1,16 @@
 # TODO #
 
+- clean up roads with just 2 roads
+  - theyre unnecessary AND below thing breaks? on small stuff, possibly related.
+  - the problems at Bernwood... osm src suggests duplicity...
+  - currently, it eats roads!
+- short roads into longer turns
+  - fix the geometry stuff later. what stuff?
+    - maybe remove set_lines?
+  - turn conflicts gonna be hard. they look weird right now.
+  - when to run this transform?
+    - split pass 3 into more steps?
+
 # Lane changing
 - agents get caught in loops because the general path isnt realizable
 - dont let agents start lc that depends on others getting out of way

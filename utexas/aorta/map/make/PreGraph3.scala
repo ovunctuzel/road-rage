@@ -141,7 +141,11 @@ class PreGraph3(old_graph: PreGraph2) {
       }
     }
 
-    // clean up ids of all edges, roads, verts.
+    fix_ids
+  }
+
+  // clean up ids of all edges, roads, verts.
+  def fix_ids() = {
     // TODO a better way, and one without reassigning to 'val' id? if we just
     // clone each structure and have a mapping from old to new... worth it?
     for ((e, id) <- edges.zipWithIndex) {
