@@ -439,11 +439,11 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
     g2d.setColor(color)
     g2d.draw(curve)
     // This is math copied from curved_turn :P
-    val pt2 = turn.from.to.location
-    val pt3 = turn.to.shifted_start_pt(l = turn.to.lines.head.shift_line(0.5))
+    /*val pt2 = turn.from.to.location
+    val pt3 = turn.conflict_line.end
     g2d.fill(
       GeomFactory.draw_arrow(new Line(pt2.x, pt2.y, pt3.x, pt3.y), 3)
-    )
+    )*/
   }
 
   def draw_intersection(g2d: Graphics2D, e: Edge) = {
@@ -457,10 +457,42 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
       val turn = e.next_turns(current_turn)
       draw_turn(g2d, turn, turn_colors(turn.turn_type))
       // TODO this looks buggy!
-      for (conflict <- turn.conflicts) {
-        draw_turn(g2d, conflict, Color.RED)
+
+      if (drawing_mode) {
+        for (conflict <- turn.more_conflicts) {
+          draw_turn(g2d, conflict, Color.RED)
+        }
+      } else {
+        for (conflict <- turn.conflicts) {
+          draw_turn(g2d, conflict, Color.RED)
+        }
       }
+
+      // TODO
+      val olds = turn.conflicts.toSet
+      val news = turn.more_conflicts.toSet
+
+      Util.log("--- " + turn)
+      for (o <- olds -- news) {
+        Util.log("missing old:   " + o)
+      }
+      for (g <- news -- olds) {
+        Util.log("gained new:   " + g)
+      }
+      /*for (n <- news) {
+        Util.log("  " + n)
+
+        g2d.setColor(Color.GREEN)
+        if (turn.to != n.to) {
+          val con = turn.conflict_line.intersection(n.conflict_line)
+          con match {
+            case Some(hit) => g2d.fill(bubble(hit))
+            case None => println("    except not rly: " + n)
+          }
+        }
+      }*/
     }
+    Util.log("")
   }
 
   def redo_mouseover(x: Double, y: Double): Unit = {
@@ -999,12 +1031,15 @@ object GeomFactory {
   }
 
   def curved_turn(turn: Turn): Shape = {
-    val pt1 = turn.from.shifted_end_pt(l = turn.from.lines.last.shift_line(0.5))
+    /*val pt1 = turn.from.shifted_end_pt(0.5)
     val pt2 = turn.from.to.location
-    val pt3 = turn.to.shifted_start_pt(l = turn.to.lines.head.shift_line(0.5))
+    val pt3 = turn.to.shifted_start_pt(0.5)
     return new CubicCurve2D.Double(
       pt1.x, pt1.y, pt2.x, pt2.y, pt2.x, pt2.y, pt3.x, pt3.y
-    )
+    )*/
+    //return new Line2D.Double(pt1.x, pt1.y, pt3.x, pt3.y)
+    val line = turn.conflict_line
+    return new Line2D.Double(line.start.x, line.start.y, line.end.x, line.end.y)
   }
 
   def rand_color() = new Color(

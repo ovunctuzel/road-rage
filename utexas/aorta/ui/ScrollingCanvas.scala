@@ -59,7 +59,7 @@ abstract class ScrollingCanvas extends Component {
   listenTo(keys) // TODO work damnit!
 
   // Free-hand drawing stuff
-  private var drawing_mode = false
+  protected var drawing_mode = false
   var polygon = new Polygon()
 
   reactions += {

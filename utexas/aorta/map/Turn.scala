@@ -17,10 +17,13 @@ object TurnType extends Enumeration {
   val UTURN       = Value("U")
 }
 
-// This constructor eschews geometry, takes a length.
-class Turn(val id: Int, val from: Edge, val turn_type: TurnType.TurnType, val to: Edge, length: Double)
-  extends Traversable with Ordered[Turn]
-{
+// This constructor eschews geometry, taking a length and two points for
+// conflicts.
+class Turn(
+  val id: Int, val from: Edge, val turn_type: TurnType.TurnType, val to: Edge,
+  length: Double, val conflict_line: Line
+) extends Traversable with Ordered[Turn] {
+  // TODO conflict_line is a fragile approach that just extends segments a bit
   set_length(length)
 
   override def compare(other: Turn) = id.compare(other.id)
@@ -35,7 +38,11 @@ class Turn(val id: Int, val from: Edge, val turn_type: TurnType.TurnType, val to
   }
 
   def to_plaintext(out: FileWriter) = {
-    out.write(from.id + "," + to.id + "," + turn_type + "," + length + "," + id + ";")
+    out.write(
+      from.id + "," + to.id + "," + turn_type + "," + length + "," + id +
+      "," + conflict_line.x1 + "," + conflict_line.y1 + "," + conflict_line.x2 +
+      "," + conflict_line.y2 + ";"
+    )
   }
 
   override def toString = "" + turn_type + " turn[" + id + "](" + from + ", " + to + ")"
@@ -96,16 +103,34 @@ class Turn(val id: Int, val from: Edge, val turn_type: TurnType.TurnType, val to
 
     return set.toSet
   }
+
+  def conflicts_with(t: Turn) =
+    (from != t.from) && (to == t.to || conflict_line.segment_intersect(t.conflict_line))
+
+  // TODO more efficiently?
+  def more_conflicts = vert.turns.filter(conflicts_with)
 }
 
 object Turn {
-  // Alternate constructor assumes geometry of road available.
+  // This variant creates default one-line long turns.
   def apply(id: Int, from: Edge, turn_type: TurnType.TurnType, to: Edge): Turn = {
     val a = from.lines.last.end
     val b = to.lines.head.start
-    val l = new Line(a.x, a.y, b.x, b.y)
-    val t = new Turn(id, from, turn_type, to, l.length)
-    t.set_lines(Array[Line](l))
+    return Turn(id, from, turn_type, to, Array(new Line(a, b)))
+  }
+
+  // Alternate constructor uses full geometry.
+  def apply(id: Int, from: Edge, turn_type: TurnType.TurnType, to: Edge, lines: Array[Line]): Turn = {
+    val len = lines.foldLeft(0.0)((a, b) => a + b.length)
+    val t = new Turn(id, from, turn_type, to, len, conflict(from, to))
+    t.set_lines(lines)
     return t
   }
+
+  def apply(id: Int, from: Edge, turn_type: TurnType.TurnType, to: Edge, len: Double) =
+    new Turn(id, from, turn_type, to, len, conflict(from, to))
+
+  // TODO brittle approach
+  def conflict(from: Edge, to: Edge) =
+    new Line(from.shifted_end_pt(0.0), to.shifted_start_pt(0.0))
 }

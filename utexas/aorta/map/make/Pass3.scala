@@ -378,7 +378,7 @@ class Pass3(old_graph: PreGraph2) {
 
   private def adjust_lines(l1: Line, l2: Line, fix_1st: Boolean, fix_2nd: Boolean) = {
     // expect them to collide.
-    l1.intersection(l2) match {
+    l1.line_intersection(l2) match {
       case Some(pt) => {
         // With multiple lanes, this could happen multiple times. Either force
         // far-to-near order so lines only ever decrease, or just only permit
@@ -496,7 +496,7 @@ class Pass3(old_graph: PreGraph2) {
           // TODO figuring out type will be hard.
           val turn_type = tail_turn.turn_type
           // TODO turn ids dont seem to need to be contiguous.
-          e.from.turns = new Turn(
+          e.from.turns = Turn(
             next_id, orig_turn.from, turn_type, tail_turn.to,
             orig_turn.length + tail_turn.length
           ) :: e.from.turns
