@@ -60,7 +60,7 @@ class Intersection(val v: Vertex) {
     // The naive way is quadratic (a Cartesian product), with a slight
     // optimization by observing that the conflicts-with relation is symmetric.
     for (t1 <- turns.keys; t2 <- turns.keys if t1.id < t2.id) {
-      if (t1.conflicts(t2)) {
+      if (t1.conflicts_with(t2)) {
         throw new Exception(s"Intersection collision: $t1 and $t2 conflict")
       }
     }

@@ -32,10 +32,8 @@ class Cycle(val offset: Double, val duration: Double) {
     }
 
   // Don't actually add turn, just see if it would conflict or not
-  def could_add_turn(turn: Turn): Boolean = {
-    val conflicts = turn.conflicts  // Cache it
-    return !turns.find(t => conflicts(t)).isDefined
-  }
+  def could_add_turn(turn: Turn) =
+    !turns.find(t => t.conflicts_with(t)).isDefined
 
   def has(turn: Turn) = turns(turn)
 
@@ -115,8 +113,7 @@ object Cycle {
       // conflict relation is symmetric, but not transitive... so do quadratic
       // conflict checking
       for (candidate <- turns_left) {
-        val conflicts = candidate.conflicts // cache
-        if (!this_group.find(t => conflicts(t)).isDefined) {
+        if (!this_group.find(t => t.conflicts_with(t)).isDefined) {
           this_group += candidate
           turns_left = turns_left.filter(t => t != candidate)
         }

@@ -151,7 +151,7 @@ class TurnBatch() {
       // existing turn
       tickets.addBinding(t, a)
       true
-    } else if (tickets.keys.filter(c => t.conflicts(c)).size == 0) {
+    } else if (tickets.keys.filter(c => t.conflicts_with(c)).isEmpty) {
       // new turn that doesn't conflict
       tickets.addBinding(t, a)
       true

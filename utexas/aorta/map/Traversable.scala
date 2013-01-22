@@ -74,6 +74,7 @@ abstract class Traversable() {
   def start_pt = lines.head.start
   def end_pt  = lines.last.end
 
+  // TODO the UI nearly doesn't depend on these, remove?
   def shifted_start_pt(shift: Double) = lines.head.shift_line(shift).start
   def shifted_end_pt(shift: Double) = lines.last.shift_line(shift).end
 }

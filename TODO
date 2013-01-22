@@ -1,10 +1,5 @@
 # TODO #
 
-- turn conflicts standardized
-  * any differences left? MORE CORRECT?!
-  - maybe fix UI arrows
-  - remove turn types, clean up
-    - but that breaks part of pass3
 - clean up roads with just 2 roads
   - theyre unnecessary AND below thing breaks? on small stuff, possibly related.
   - the problems at Bernwood... osm src suggests duplicity...
@@ -46,6 +41,7 @@
 - repository of detailed cities with demand data?
 
 # Problems
+- big_btr failing connectivity test
 - at big timesteps, nobody moves?
 - simulate and headless deterministic, different often
 - calibration issues... distances totally off
@@ -182,6 +178,8 @@
   - Mutable subclasses of everything used during construction..
   - have more ids and methods that access based on those. that'll break it.
   - immutable construction is easy... have parent entity create child.
+- remove turn types, clean up
+  - but that breaks part of pass3
 
 # Testing Strategy
 - determinism

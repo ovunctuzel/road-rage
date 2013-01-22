@@ -57,58 +57,11 @@ class Turn(
 
   def vert = from.to
 
-  def conflicts: Set[Turn] = {
-    val set = new HashSet[Turn]()
-
-    // always: anything else that has the same target
-    set ++= (to.prev_turns.toSet - this)
-
-    turn_type match {
-      // All crossings from perpendicular roads
-      // and lefts, except from us
-      // TODO anything in or out of the road to our right?
-      case TurnType.CROSS => {
-        val perps = vert.perp_roads(from.road)
-        set ++= vert.turns.filter(
-          t => (t.turn_type == TurnType.CROSS && perps(t.from.road))
-             || (t.turn_type == TurnType.LEFT && t.from != from)
-        )
-      }
-
-      case TurnType.LEFT => {
-        // TODO this doesnt handle multiple lanes, its too conservative
-        // other sides' crossings
-        set ++= vert.turns.filter(t => t.turn_type == TurnType.CROSS && t.from != from)
-        // TODO cleaner way of finding this opposite lane... this is a mess again
-        for (opposite <- vert.turns_to(to).filter(t => t.turn_type == TurnType.RIGHT)) {
-          set ++= opposite.from.other_lanes.flatMap(e => e.crosses)
-        }
-        // and left turns from perp roads
-        val perps = vert.perp_roads(from.road)
-        set ++= vert.turns.filter(
-          t => t.turn_type == TurnType.LEFT && perps(t.from.road)
-        )
-      }
-
-      case TurnType.CROSS_MERGE => {
-        // TODO
-      }
-
-      // just things that have the same target!
-      case TurnType.RIGHT => {}
-
-      // Nothing!
-      case TurnType.UTURN => {}
-    }
-
-    return set.toSet
-  }
-
   def conflicts_with(t: Turn) =
     (from != t.from) && (to == t.to || conflict_line.segment_intersect(t.conflict_line))
 
   // TODO more efficiently?
-  def more_conflicts = vert.turns.filter(conflicts_with)
+  def conflicts = vert.turns.filter(conflicts_with).toSet
 }
 
 object Turn {
@@ -130,7 +83,5 @@ object Turn {
   def apply(id: Int, from: Edge, turn_type: TurnType.TurnType, to: Edge, len: Double) =
     new Turn(id, from, turn_type, to, len, conflict(from, to))
 
-  // TODO brittle approach
-  def conflict(from: Edge, to: Edge) =
-    new Line(from.shifted_end_pt(0.0), to.shifted_start_pt(0.0))
+  def conflict(from: Edge, to: Edge) = new Line(from.end_pt, to.start_pt)
 }

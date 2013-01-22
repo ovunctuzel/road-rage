@@ -98,7 +98,7 @@ object MapSuite {
     for (e <- g.edges) {
       for (t1 <- e.next_turns) {
         for (t2 <- t1.conflicts) {
-          if (!t2.conflicts(t1)) {
+          if (!t2.conflicts_with(t1)) {
             throw new Exception(s"Asymmetric turn conflict between $t1 and $t2")
           }
         }
