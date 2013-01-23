@@ -9,7 +9,7 @@ import scala.collection.mutable.{HashSet => MutableSet}
 import scala.collection.mutable.ListBuffer
 import scala.collection.mutable.{HashMap => MutableMap}
 
-import utexas.aorta.map.{Turn, Edge, Vertex, Road, TurnType}
+import utexas.aorta.map.{Turn, Edge, Vertex, Road}
 import utexas.aorta.sim.{Intersection, Policy, Agent, EV_Signal_Change}
 
 import utexas.aorta.{Util, cfg}
@@ -131,7 +131,7 @@ object Cycle {
     r => split_turn_set(r.incoming_lanes(vert).flatMap(l => l.next_turns))
   ).toSet
 
-  def grouped_left_turn_sets(vert: Vertex): Set[Set[Turn]] = {
+  /*def grouped_left_turn_sets(vert: Vertex): Set[Set[Turn]] = {
     // Don't attempt this if it's not a 4-way stop
     if (vert.roads.size != 4) {
       return standard_turn_sets(vert)
@@ -163,13 +163,13 @@ object Cycle {
       r => r.incoming_lanes(vert).flatMap(l => l.left_turns)
     ))
     // Why weren't these parallel lefts fine?
-    /*if (groups.size - size_before != 2) {
+    if (groups.size - size_before != 2) {
       Util.log(groups.size + ", not " + size_before + " for " + parallel1 +
                " and " + parallel2)
-    }*/
+    }
 
     return groups.toSet
-  }
+  }*/
 
   // TODO this is a lot of work for maybe not that much benefit
   private var max_cycles_seen = 0

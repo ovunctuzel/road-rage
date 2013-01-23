@@ -46,24 +46,9 @@ class Edge(var id: Int, val road: Road, val dir: Direction.Direction) extends Tr
   def prev_turns = from.turns_to(this)
   def succs: List[Edge] = next_turns.map(t => t.to)
   def preds: List[Edge] = prev_turns.map(t => t.from)
-  def right_turns = next_turns.filter(t => t.turn_type == TurnType.RIGHT)
-  def left_turns  = next_turns.filter(t => t.turn_type == TurnType.LEFT)
-  def crosses     = next_turns.filter(t => t.turn_type == TurnType.CROSS)
-  def right_turns_to = right_turns.map(t => t.to)
-  def left_turns_to  = left_turns.map(t => t.to)
-  def crosses_to     = crosses.map(t => t.to)
 
   def is_rightmost = lane_num == 0
   def is_leftmost  = lane_num == other_lanes.size - 1
-
-  // It really is this simple.
-  def next_counterclockwise_to: Option[Edge] =
-    if (is_rightmost) {
-      val ordering = right_turns_to ++ crosses_to ++ left_turns_to
-      ordering.headOption
-    } else {
-      Some(other_lanes(lane_num - 1))
-    }
 
   // not for one-ways right now. but TODO it'd be cool to put that here.
   def lane_offset = other_lanes.length - lane_num

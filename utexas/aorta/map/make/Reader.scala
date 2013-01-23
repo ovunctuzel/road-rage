@@ -11,7 +11,7 @@ import scala.xml.pull._
 import scala.collection.mutable.{MutableList, HashMap, MultiMap, ArrayBuffer}
 import scala.collection.mutable.{Set => MutableSet}
 
-import utexas.aorta.map.{Coordinate, Road, Vertex, Edge, Direction, Line, TurnType,
+import utexas.aorta.map.{Coordinate, Road, Vertex, Edge, Direction, Line,
                    Turn, Graph, Ward}
 import utexas.aorta.sim.Simulation
 
@@ -30,8 +30,7 @@ abstract class Reader(fn: String, with_geometry: Boolean) {
   val wards_map = new HashMap[Int, MutableSet[Road]] with MultiMap[Int, Road]
   var special_ward_id: Int = -1
 
-  // per road
-  class TmpLink(val id: Int, val from: Int, val to: Int, val length: Double, val link_type: TurnType.TurnType, val conflict_line: Line)
+  class TmpLink(val id: Int, val from: Int, val to: Int, val length: Double, val conflict_line: Line)
 
   def load_map() = load match {
     case (r, e, v, w, special_ward) => new Graph(r, e, v, w, special_ward)
@@ -55,9 +54,9 @@ abstract class Reader(fn: String, with_geometry: Boolean) {
     for (v <- verts) {
       for (link <- vertLinks(v.id)) {
         if (with_geometry) {
-          v.turns = Turn(link.id, edges(link.from), link.link_type, edges(link.to)) :: v.turns
+          v.turns = Turn(link.id, edges(link.from), edges(link.to)) :: v.turns
         } else {
-          v.turns = new Turn(link.id, edges(link.from), link.link_type, edges(link.to), link.length, link.conflict_line) :: v.turns
+          v.turns = new Turn(link.id, edges(link.from), edges(link.to), link.length, link.conflict_line) :: v.turns
         }
 
       }
@@ -261,7 +260,7 @@ class XMLReader(fn: String, with_geometry: Boolean) extends Reader(fn, with_geom
         case EvElemStart(_, "link", attribs, _) => {
           v_links += new TmpLink(
             get_int(attribs)("id"), get_int(attribs)("from"), get_int(attribs)("to"),
-            get_double(attribs)("length"), TurnType.withName(get_attrib(attribs, "type"))
+            get_double(attribs)("length")
           )
         }
 
@@ -313,10 +312,9 @@ class PlaintextReader(fn: String, with_geometry: Boolean) extends Reader(fn, wit
 
           verts(id.toInt) = new Vertex(new Coordinate(x.toDouble, y.toDouble), id.toInt)
           vertLinks(id.toInt) = turns.split(";").map(link => {
-            val Array(from, to, turn_type, length, link_id, x1, y1, x2, y2) = link.split(",")
+            val Array(from, to, length, link_id, x1, y1, x2, y2) = link.split(",")
             new TmpLink(
               link_id.toInt, from.toInt, to.toInt, length.toDouble,
-              TurnType.withName(turn_type),
               new Line(x1.toDouble, y1.toDouble, x2.toDouble, y2.toDouble)
             )
           })

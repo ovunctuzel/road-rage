@@ -39,8 +39,7 @@ class GreenFlood(sim: Simulation) {
   
   // set up all the cycles at one intersection
   def schedule(edge: Edge, first_offset: Double): List[Cycle] = {
-    // or standard_turn_set, or any, really.
-    val turn_groups = Cycle.grouped_left_turn_sets(edge.to)
+    val turn_groups = Cycle.standard_turn_sets(edge.to)
 
     // Schedule all cycles equally
     val duration: Double = cfg.signal_duration / turn_groups.size.toDouble

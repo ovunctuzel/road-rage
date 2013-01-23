@@ -426,14 +426,6 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
     else
       Color.WHITE
 
-  val turn_colors = Map( // cfg
-    TurnType.CROSS       -> Color.WHITE,
-    TurnType.CROSS_MERGE -> Color.RED,   // TODO i want to notice it!
-    TurnType.LEFT        -> Color.ORANGE,
-    TurnType.RIGHT       -> Color.GREEN,
-    TurnType.UTURN       -> Color.MAGENTA
-  )
-
   def draw_turn(g2d: Graphics2D, turn: Turn, color: Color) = {
     val curve = GeomFactory.curved_turn(turn)
     g2d.setColor(color)
@@ -450,12 +442,12 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
     if (current_turn == -1) {
       // show all turns
       for (turn <- e.next_turns) {
-        draw_turn(g2d, turn, turn_colors(turn.turn_type))
+        draw_turn(g2d, turn, Color.WHITE)
       }
     } else {
       // show one turn and its conflicts
       val turn = e.next_turns(current_turn)
-      draw_turn(g2d, turn, turn_colors(turn.turn_type))
+      draw_turn(g2d, turn, Color.WHITE)
 
       for (conflict <- turn.conflicts) {
         draw_turn(g2d, conflict, Color.RED)

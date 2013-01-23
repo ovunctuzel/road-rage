@@ -8,20 +8,11 @@ import java.io.FileWriter
 
 import scala.collection.mutable.HashSet
 
-object TurnType extends Enumeration {
-  type TurnType = Value
-  val CROSS       = Value("C")
-  val CROSS_MERGE = Value("M")
-  val LEFT        = Value("L")
-  val RIGHT       = Value("R")
-  val UTURN       = Value("U")
-}
-
 // This constructor eschews geometry, taking a length and two points for
 // conflicts.
 class Turn(
-  val id: Int, val from: Edge, val turn_type: TurnType.TurnType, val to: Edge,
-  length: Double, val conflict_line: Line
+  val id: Int, val from: Edge, val to: Edge, length: Double,
+  val conflict_line: Line
 ) extends Traversable with Ordered[Turn] {
   // TODO conflict_line is a fragile approach that just extends segments a bit
   set_length(length)
@@ -32,20 +23,19 @@ class Turn(
   def to_xml(out: FileWriter) = {
     out.write(
       "    <link from=\"" + from.id + "\" to=\"" + to.id
-      + "\" type=\"" + turn_type + "\" length=\"" + length
-      + "\" id=\"" + id + "\"/>\n"
+      + "\" length=\"" + length + "\" id=\"" + id + "\"/>\n"
     )
   }
 
   def to_plaintext(out: FileWriter) = {
     out.write(
-      from.id + "," + to.id + "," + turn_type + "," + length + "," + id +
+      from.id + "," + to.id + "," + + length + "," + id +
       "," + conflict_line.x1 + "," + conflict_line.y1 + "," + conflict_line.x2 +
       "," + conflict_line.y2 + ";"
     )
   }
 
-  override def toString = "" + turn_type + " turn[" + id + "](" + from + ", " + to + ")"
+  override def toString = "turn[" + id + "](" + from + ", " + to + ")"
   // Short form is nice.
   //override def toString = "Turn(" + from.id + ", " + to.id + ")"
 
@@ -66,22 +56,22 @@ class Turn(
 
 object Turn {
   // This variant creates default one-line long turns.
-  def apply(id: Int, from: Edge, turn_type: TurnType.TurnType, to: Edge): Turn = {
+  def apply(id: Int, from: Edge, to: Edge): Turn = {
     val a = from.lines.last.end
     val b = to.lines.head.start
-    return Turn(id, from, turn_type, to, Array(new Line(a, b)))
+    return Turn(id, from, to, Array(new Line(a, b)))
   }
 
   // Alternate constructor uses full geometry.
-  def apply(id: Int, from: Edge, turn_type: TurnType.TurnType, to: Edge, lines: Array[Line]): Turn = {
+  def apply(id: Int, from: Edge, to: Edge, lines: Array[Line]): Turn = {
     val len = lines.foldLeft(0.0)((a, b) => a + b.length)
-    val t = new Turn(id, from, turn_type, to, len, conflict(from, to))
+    val t = new Turn(id, from, to, len, conflict(from, to))
     t.set_lines(lines)
     return t
   }
 
-  def apply(id: Int, from: Edge, turn_type: TurnType.TurnType, to: Edge, len: Double) =
-    new Turn(id, from, turn_type, to, len, conflict(from, to))
+  def apply(id: Int, from: Edge, to: Edge, len: Double) =
+    new Turn(id, from, to, len, conflict(from, to))
 
   def conflict(from: Edge, to: Edge) = new Line(from.end_pt, to.start_pt)
 }

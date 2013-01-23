@@ -35,17 +35,6 @@ class Vertex(val location: Coordinate, var id: Int) {
   def edges = turns.flatMap(t => List(t.from, t.to))
   def in_edges = turns.map(t => t.from)
 
-  // these may prove useful; just remember roads are undirected.
-  // TODO test for one-ways?
-  private def find_roads(r: Road, types: Set[TurnType.TurnType]): Set[Road] =
-    turns.filter(
-      t => (t.involves_road(r) && types(t.turn_type))
-    ).map(t => t.other_road(r)).toSet
-  def parallel_roads(r: Road) = find_roads(r, Set(TurnType.CROSS))
-  def perp_roads(r: Road)     = find_roads(r, Set(TurnType.LEFT, TurnType.RIGHT))
-  def left_roads(r: Road)     = find_roads(r, Set(TurnType.LEFT))
-  def right_roads(r: Road)    = find_roads(r, Set(TurnType.RIGHT))
-  
   // Priority of a vertex is the sum of speed limits of roads surrounding it
   def get_priority = roads.foldLeft(0.0)((a,b) => a + b.speed_limit)
 

@@ -13,7 +13,7 @@ import scala.collection.mutable.MultiMap
 import scala.collection.mutable.ListBuffer
 import scala.collection.mutable.MutableList
 
-import utexas.aorta.map.{Road, Edge, Vertex, Turn, TurnType, Line, Coordinate, Ward,
+import utexas.aorta.map.{Road, Edge, Vertex, Turn, Line, Coordinate, Ward,
                          Traversable, DirectedRoad}
 
 import utexas.aorta.{Util, cfg}
@@ -87,12 +87,12 @@ class Pass3(old_graph: PreGraph2) {
       dfs = 0
     }
 
-    Util.log("Tidying up geometry...")
+    /*Util.log("Tidying up geometry...")
     // Do this work per edge, for now.
     graph.roads.foreach(r => {
       adjust_segments(r.pos_group)
       adjust_segments(r.neg_group)
-    })
+    })*/
 
     Util.log("Dividing the map into wards...")
     Util.log_push
@@ -113,7 +113,7 @@ class Pass3(old_graph: PreGraph2) {
     Util.log_push
     // TODO when to run?
     // TODO order of merging these matters, could be weird
-    val road_min_len = 20.0  // TODO cfg
+    val road_min_len = 50.0  // TODO cfg
     for (r <- graph.roads if r.length < road_min_len) {
       merge_short_road(r)
     }
@@ -138,7 +138,7 @@ class Pass3(old_graph: PreGraph2) {
       // link corresponding lane numbers
       val r = roads.head
       for ((from, to) <- r.incoming_lanes(v) zip r.outgoing_lanes(v)) {
-        v.turns = Turn(next_id, from, TurnType.UTURN, to) :: v.turns
+        v.turns = Turn(next_id, from, to) :: v.turns
       }
     }
 
@@ -146,6 +146,8 @@ class Pass3(old_graph: PreGraph2) {
     // incoming to or outgoing from this vert.
     val incoming_roads = roads filter (_.incoming_lanes(v).length != 0)
     val outgoing_roads = roads filter (_.outgoing_lanes(v).length != 0)
+
+    def make_turn(pair: (Edge, Edge)) = Turn(next_id, pair._1, pair._2)
 
     // this is a Cartesian product.
     for (r1 <- incoming_roads; r2 <- outgoing_roads if r1 != r2) {
@@ -175,20 +177,19 @@ class Pass3(old_graph: PreGraph2) {
         // TODO these rules are hard to generalize. when should we have
         // left/right-turn only lanes and stuff?
 
-        def cross_turn(pair: (Edge, Edge)) = Turn(next_id, pair._1, TurnType.CROSS, pair._2)
         val lane_diff = to_edges.length - from_edges.length
 
         if (lane_diff == 0) {
           // exact 1:1 mapping
-          v.turns ++= from_edges.zip(to_edges).map(cross_turn)
+          v.turns ++= from_edges.zip(to_edges).map(make_turn)
         } else if (lane_diff < 0) {
           // more to less. the rightmost will all have to merge.
           // we have 'to_edges.length - 1' regular dsts.
           val (mergers, regulars) = from_edges.splitAt(from_edges.length - (to_edges.length - 1))
           Util.assert_eq(regulars.length, to_edges.length - 1)
 
-          v.turns ++= mergers.map(from => Turn(next_id, from, TurnType.CROSS_MERGE, to_edges.head))
-          v.turns ++= regulars.zip(to_edges.tail).map(cross_turn)
+          v.turns ++= mergers.map(from => make_turn(from, to_edges.head))
+          v.turns ++= regulars.zip(to_edges.tail).map(make_turn)
         } else if (lane_diff > 0) {
           // less to more. the leftmost gets to pick many destinations.
           val lucky_src = from_edges.last
@@ -197,15 +198,15 @@ class Pass3(old_graph: PreGraph2) {
           val (regular_dsts, choices) = to_edges.splitAt(to_edges.size - lane_diff - 1)
           Util.assert_eq(regular_srcs.size, regular_dsts.size)
           
-          v.turns ++= regular_srcs.zip(regular_dsts).map(cross_turn)
-          v.turns ++= choices.map(to => Turn(next_id, lucky_src, TurnType.CROSS, to))
+          v.turns ++= regular_srcs.zip(regular_dsts).map(make_turn)
+          v.turns ++= choices.map(to => make_turn(lucky_src, to))
         }
       } else if (angle_btwn < 0) {
         // no multiple turn lanes supported yet. it's just too hard to know when
         // this is the case.
-        v.turns = Turn(next_id, from_rep.leftmost_lane, TurnType.LEFT, to_rep.leftmost_lane) :: v.turns
+        v.turns = make_turn(from_rep.leftmost_lane, to_rep.leftmost_lane) :: v.turns
       } else {
-        v.turns = Turn(next_id, from_rep.rightmost_lane, TurnType.RIGHT, to_rep.rightmost_lane) :: v.turns
+        v.turns = make_turn(from_rep.rightmost_lane, to_rep.rightmost_lane) :: v.turns
       }
     }
 
@@ -334,7 +335,8 @@ class Pass3(old_graph: PreGraph2) {
     }
   }
 
-  private def adjust_segments(r: DirectedRoad): Unit = {
+  // TODO the approach needs to be carefully redone
+  /*private def adjust_segments(r: DirectedRoad): Unit = {
     if (r.edges.isEmpty) {
       return
     }
@@ -374,7 +376,7 @@ class Pass3(old_graph: PreGraph2) {
       }
       case _ => {}
     }
-  }
+  }*/
 
   private def adjust_lines(l1: Line, l2: Line, fix_1st: Boolean, fix_2nd: Boolean) = {
     // expect them to collide.
@@ -480,24 +482,27 @@ class Pass3(old_graph: PreGraph2) {
   }
 
   def merge_short_road(r: Road): Unit = {
-    // TODO testing this just at one spot, for now
-    if (r.id != 2428) {
+    // TODO needs more tuning
+    return
+
+    // TODO this spot is hokey.
+    if (r.name == "Bernwood Drive") {
       return
     }
+
+    // TODO testing this just at one spot, for now
     Util.log(s"$r is short, removing...")
     // Find all turns leading to each edge of this bad road
     for (e <- r.all_lanes) {
-      Util.log("gonna end up doing " + (e.prev_turns.size * e.next_turns.size) +
+      Util.log("  gonna end up doing " + (e.prev_turns.size * e.next_turns.size) +
                " new turns for " + e)
       for (orig_turn <- e.prev_turns) {
         // Extend that turn to cover this road
         e.from.turns = e.from.turns.filter(t => t != orig_turn)
         for (tail_turn <- e.next_turns) {
-          // TODO figuring out type will be hard.
-          val turn_type = tail_turn.turn_type
           // TODO turn ids dont seem to need to be contiguous.
           e.from.turns = Turn(
-            next_id, orig_turn.from, turn_type, tail_turn.to,
+            next_id, orig_turn.from, tail_turn.to,
             orig_turn.length + tail_turn.length
           ) :: e.from.turns
         }

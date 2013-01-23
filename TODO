@@ -5,14 +5,19 @@
   - the problems at Bernwood... osm src suggests duplicity...
   - currently, it eats roads!
 - short roads into longer turns
+  - 50 meters?
+  - dont nix roads connected to vertices with only one road!
+  - bernwood drive and other places where the number blows up
+
   - fix the geometry stuff later. what stuff?
     - maybe remove set_lines?
-  - turn conflicts gonna be hard. they look weird right now.
+  - remove ui debugging stuff
   - when to run this transform?
     - split pass 3 into more steps?
 
 - code org... predicates not defined on objects would be nice
   debug(x) all in one place, how to draw(x) all in one place, etc
+  or not all in one place?
 
 # Lane changing
 - agents get caught in loops because the general path isnt realizable
@@ -41,7 +46,6 @@
 - repository of detailed cities with demand data?
 
 # Problems
-- big_btr failing connectivity test
 - at big timesteps, nobody moves?
 - simulate and headless deterministic, different often
 - calibration issues... distances totally off
@@ -178,12 +182,9 @@
   - Mutable subclasses of everything used during construction..
   - have more ids and methods that access based on those. that'll break it.
   - immutable construction is easy... have parent entity create child.
-- remove turn types, clean up
-  - but that breaks part of pass3
 
 # Testing Strategy
 - determinism
   - how to test it?
-  - how to use it?
 - things to test
   - invariance of dt_s (if possible)
