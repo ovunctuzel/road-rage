@@ -1,6 +1,27 @@
 # TODO #
 
+SMALL TASKS
+  - debug and draw per object
+  = trim lane lines
+    - not trimmed back enough
+    - segment_intersection only
+  - draw turns good
+  - split the passes
+  - separate maps/ and osm/ dir
+  - slow down for turns (a speed limit)
+
+BIG TASKS
+  - collapse degenerate vertices
+  - short roads -> longer turns
+  - variety of vehicle params
+  - redo all intersection stuff
+  - contraction hierarchies
+
 - clean up roads with just 2 roads
+  - 2 types
+    1) when we split roads from osm that have only 2 things
+    2) when osm itself has ways that only connect at 2 places
+
   - theyre unnecessary AND below thing breaks? on small stuff, possibly related.
   - the problems at Bernwood... osm src suggests duplicity...
   - currently, it eats roads!
@@ -15,10 +36,6 @@
   - when to run this transform?
     - split pass 3 into more steps?
 
-- code org... predicates not defined on objects would be nice
-  debug(x) all in one place, how to draw(x) all in one place, etc
-  or not all in one place?
-
 # Lane changing
 - agents get caught in loops because the general path isnt realizable
 - dont let agents start lc that depends on others getting out of way
@@ -32,7 +49,6 @@
   - wacky cases of 2 side-by-side agents wanting to swap places?
 
 # Administrative
-- improve scripts to not rebuild maps often
 - website
   - build instructions (with scala and such)
   - osm scraper script
@@ -99,7 +115,6 @@
 # UI
 - cmdline switch to follow stuff or zoom in somewhere
 - ui speed controls.. step one tick, display a certain fps, sleep to match what?
-- better code, everything needs debug() and render()
 - visualize lookahead
 - work on svg
 - see how fast p3d can render static geometry
@@ -120,7 +135,7 @@
 - show agents who are currently GOING
   - ui could show policy's current owner or something
 - show routes better
-- onfig
+- config
 - black road backgrounds dont meet up smoothly since we go by line segment
   - add extra lanes on either side, dont color them white, but draw the stuff in between?
 - way better pruning of what to (re-draw) using quadtrees
@@ -130,8 +145,6 @@
 # Map Gen
 - use http://wiki.openstreetmap.org/wiki/Relation:restriction
 - fix geom of edge lines
-- make sure turns and conflicts are as good as possible
-  - randomize num of lanes to test
 - our pruning of pedestrian ways seems to be a bit too enthusiastic (see Guadalupe St)
 - deterministic construction is still wonky, with ward IDs and lines (due to meeting up)
 - make line segs meet up better.

@@ -54,7 +54,15 @@ class Pass3(old_graph: PreGraph2) {
 
       // force line segments to meet up on the inside
       for (e <- r.all_lanes; (l1, l2) <- e.lines zip e.lines.tail) {
-        adjust_lines(l1, l2, true, true)
+        l1.line_intersection(l2) match {
+          case Some(pt) if (l1.segment_intersect(l2)) => {
+            l1.x2 = pt.x
+            l1.y2 = pt.y
+            l2.x1 = pt.x
+            l2.y1 = pt.y
+          }
+          case _ =>
+        }
       }
     }
 
@@ -87,13 +95,6 @@ class Pass3(old_graph: PreGraph2) {
       dfs = 0
     }
 
-    /*Util.log("Tidying up geometry...")
-    // Do this work per edge, for now.
-    graph.roads.foreach(r => {
-      adjust_segments(r.pos_group)
-      adjust_segments(r.neg_group)
-    })*/
-
     Util.log("Dividing the map into wards...")
     Util.log_push
     // Mike has "super-edges" in between wards, and Dustin has the "highway". All
@@ -118,6 +119,9 @@ class Pass3(old_graph: PreGraph2) {
       merge_short_road(r)
     }
     Util.log_pop
+
+    Util.log("Tidying up geometry...")
+    graph.vertices.foreach(v => adjust_lines(v))
 
     return graph
   }
@@ -335,77 +339,41 @@ class Pass3(old_graph: PreGraph2) {
     }
   }
 
-  // TODO the approach needs to be carefully redone
-  /*private def adjust_segments(r: DirectedRoad): Unit = {
-    if (r.edges.isEmpty) {
-      return
-    }
-    // When we shift lines from the road's center to draw lanes, we end up with
-    // lines that protrude too far into the intersection. It's not clear how far
-    // back to trim these in general, so one solution is to find all the other
-    // line segments of adjacent edges, determine intersection points, and trim
-    // both lines back to that point.
-    // TODO investigate a general "scale length by 10%" policy
-    // TODO multiple 'right roads' are untested? :P
+  private def adjust_lines(v: Vertex) = {
+    val shortest_line = new HashMap[Edge, Line]
+    for (in <- v.in_edges) {
+      for (out <- v.out_edges) {
+        val l1 = in.lines.last
+        val l2 = out.lines.head
+        l1.line_intersection(l2) match {
+          case Some(pt) if (l1.segment_intersect(l2)) => {
+            val possible1 = new Line(l1.x1, l1.y1, pt.x, pt.y)
+            val possible2 = new Line(pt.x, pt.y, l2.x2, l2.y2)
 
-    // We want our rightmost lane to match whatever is counter-clockwise to it. 
-    // TODO this is flawed in the presence of oneways:
-    // ^
-    // |
-    // V <======  the ccw lane relevant is incoming, not outgoing
-    // ^
-    // |
-
-    // next_counterclockwise_to returns parallel lanes, but we actually want the
-    // edge that's going to cross us, so that's why we force rightmost lane
-    // Not adjusting the other line if we're not the rightmost lane... TODO does
-    // this help?
-    r.edges.head.next_counterclockwise_to match {
-      case Some(ccw) => {
-        // Trim their lines first, since we base it off of our rightmost. THEN
-        // trim our lines, including our rightmost.
-        val our_rightmost = r.edges.head
-        assert(our_rightmost.is_rightmost)
-        for (other_e <- ccw.other_lanes if !other_e.is_rightmost) {
-          adjust_lines(our_rightmost.lines.last, other_e.lines.head, false, true)
-        }
-
-        for (our_e <- r.edges) {
-          adjust_lines(our_e.lines.last, ccw.lines.head, true, our_e.is_rightmost)
+            // This line will intersect many -- store the one that gets
+            // trimmed the most.
+            if (!shortest_line.contains(in) || possible1.length < shortest_line(in).length) {
+              shortest_line(in) = possible1
+            }
+            if (!shortest_line.contains(out) || possible2.length < shortest_line(out).length) {
+              shortest_line(out) = possible2
+            }
+          }
+          case _ =>
         }
       }
-      case _ => {}
     }
-  }*/
 
-  private def adjust_lines(l1: Line, l2: Line, fix_1st: Boolean, fix_2nd: Boolean) = {
-    // expect them to collide.
-    l1.line_intersection(l2) match {
-      case Some(pt) => {
-        // With multiple lanes, this could happen multiple times. Either force
-        // far-to-near order so lines only ever decrease, or just only permit
-        // changes when it makes lines shorter...
-
-        // But some changes, for some reason, make some lines MUCH shorter, so
-        // detect and avoid trimming those.
-        val max_trim = 500.0  // TODO cfg. this should be meters now.
-
-        if (fix_1st) {
-          val possible1 = new Line(l1.x1, l1.y1, pt.x, pt.y)
-          if (possible1.length < l1.length && l1.length - possible1.length <= max_trim) {
-            l1.x2 = pt.x
-            l1.y2 = pt.y
-          }
-        }
-        if (fix_2nd) {
-          val possible2 = new Line(pt.x, pt.y, l2.x2, l2.y2)
-          if (possible2.length < l2.length && l2.length - possible2.length <= max_trim) {
-            l2.x1 = pt.x
-            l2.y1 = pt.y
-          }
-        }
-      }
-      case None => {} // don't worry about parallel lines
+    // Go back and mod the line to its shortest length.
+    for ((e, best_line) <- shortest_line) {
+      val l = if (e.from == v)
+                e.lines.head
+              else
+                e.lines.last
+      l.x1 = best_line.x1
+      l.y1 = best_line.y1
+      l.x2 = best_line.x2
+      l.y2 = best_line.y2
     }
   }
 
