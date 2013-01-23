@@ -33,8 +33,8 @@ class Vertex(val location: Coordinate, var id: Int) {
 
   def roads = turns.flatMap(t => List(t.from.road, t.to.road)).toSet
   def edges = turns.flatMap(t => List(t.from, t.to))
-  def in_edges = turns.map(t => t.from)
-  def out_edges = turns.map(t => t.to)
+  def in_edges = turns.map(t => t.from).toSet
+  def out_edges = turns.map(t => t.to).toSet
 
   // Priority of a vertex is the sum of speed limits of roads surrounding it
   def get_priority = roads.foldLeft(0.0)((a,b) => a + b.speed_limit)

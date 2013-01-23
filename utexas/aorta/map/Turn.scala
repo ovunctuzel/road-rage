@@ -48,7 +48,7 @@ class Turn(
   def vert = from.to
 
   def conflicts_with(t: Turn) =
-    (from != t.from) && (to == t.to || conflict_line.segment_intersect(t.conflict_line))
+    (from != t.from) && (to == t.to || conflict_line.segment_intersection(t.conflict_line).isDefined)
 
   // TODO more efficiently?
   def conflicts = vert.turns.filter(conflicts_with).toSet

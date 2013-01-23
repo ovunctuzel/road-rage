@@ -2,9 +2,6 @@
 
 SMALL TASKS
   - debug and draw per object
-  = trim lane lines
-    - not trimmed back enough
-    - segment_intersection only
   - draw turns good
   - split the passes
   - separate maps/ and osm/ dir

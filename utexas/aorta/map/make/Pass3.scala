@@ -54,8 +54,8 @@ class Pass3(old_graph: PreGraph2) {
 
       // force line segments to meet up on the inside
       for (e <- r.all_lanes; (l1, l2) <- e.lines zip e.lines.tail) {
-        l1.line_intersection(l2) match {
-          case Some(pt) if (l1.segment_intersect(l2)) => {
+        l1.segment_intersection(l2) match {
+          case Some(pt) => {
             l1.x2 = pt.x
             l1.y2 = pt.y
             l2.x1 = pt.x
@@ -343,10 +343,22 @@ class Pass3(old_graph: PreGraph2) {
     val shortest_line = new HashMap[Edge, Line]
     for (in <- v.in_edges) {
       for (out <- v.out_edges) {
-        val l1 = in.lines.last
-        val l2 = out.lines.head
-        l1.line_intersection(l2) match {
-          case Some(pt) if (l1.segment_intersect(l2)) => {
+        // Correct for shifting the UI does by preventing intersections when
+        // shifted over. Has a side effect of making cars stop a bit far back,
+        // which is fine.
+        val l1 = in.lines.last.shift_line(0.5)
+        val l2 = out.lines.head.shift_line(0.5)
+
+        // Just to be safe, don't allow ourselves to ever extend a line
+        if (!shortest_line.contains(in)) {
+          shortest_line(in) = l1
+        }
+        if (!shortest_line.contains(out)) {
+          shortest_line(out) = l2
+        }
+
+        l1.segment_intersection(l2) match {
+          case Some(pt) => {
             val possible1 = new Line(l1.x1, l1.y1, pt.x, pt.y)
             val possible2 = new Line(pt.x, pt.y, l2.x2, l2.y2)
 
@@ -370,10 +382,11 @@ class Pass3(old_graph: PreGraph2) {
                 e.lines.head
               else
                 e.lines.last
-      l.x1 = best_line.x1
-      l.y1 = best_line.y1
-      l.x2 = best_line.x2
-      l.y2 = best_line.y2
+      val use = best_line.shift_line(-0.5)
+      l.x1 = use.x1
+      l.y1 = use.y1
+      l.x2 = use.x2
+      l.y2 = use.y2
     }
   }
 

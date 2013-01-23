@@ -111,7 +111,7 @@ class Line(var x1: Double, var y1: Double, var x2: Double, var y2: Double) {
   def start = new Coordinate(x1, y1)
   def end = new Coordinate(x2, y2)
 
-  override def toString = "%f, %f ---> %f, %f".format(x1, y1, x2, y2)
+  override def toString = "(%f, %f) ---> (%f, %f)".format(x1, y1, x2, y2)
 
   def to_xml(out: FileWriter) = {
     out.write(
@@ -129,8 +129,9 @@ class Line(var x1: Double, var y1: Double, var x2: Double, var y2: Double) {
   // assuming the two lines share an origin
   def dot(l2: Line) = (x2 - x1) * (l2.x2 - l2.x1) + (y2 - y1) * (l2.y2 - l2.y1)
 
-  def line_intersection(other: Line): Option[Coordinate] = {
-    // Ripped from http://www.java-gaming.org/index.php?topic=22590.0
+  def segment_intersection(other: Line): Option[Coordinate] = {
+    // Ripped from http://paulbourke.net/geometry/pointlineplane/
+    // and http://www.java-gaming.org/index.php?topic=22590.0
     def det(a: Double, b: Double, c: Double, d: Double) = (a * d) - (b * c)
 
     val x3 = other.x1
@@ -142,34 +143,19 @@ class Line(var x1: Double, var y1: Double, var x2: Double, var y2: Double) {
     return if (detDiff.abs <= cfg.epsilon) {
       None  // parallel
     } else {
-      val det1And2 = det(x1, y1, x2, y2)
-      val det3And4 = det(x3, y3, x4, y4)
-      val x = det(det1And2, x1 - x2, det3And4, x3 - x4) / detDiff
-      val y = det(det1And2, y1 - y2, det3And4, y3 - y4) / detDiff
-      Some(new Coordinate(x, y))
-    }
-  }
-
-  def segment_intersect(other: Line): Boolean = {
-    // Ripped from http://paulbourke.net/geometry/pointlineplane/
-    // TODO unify with above
-    val x3 = other.x1
-    val x4 = other.x2
-    val y3 = other.y1
-    val y4 = other.y2
-
-    val denom = (y4 - y3) * (x2 - x1) - (x4 - x3) * (y2 - y1)
-    val numer_a = (x4 - x3) * (y1 - y3) - (y4 - y3) * (x1 - x3)
-    val numer_b = (x2 - x1) * (y1 - y3) - (y2 - y1) * (x1 - x3)
-    if (denom.abs <= cfg.epsilon) {
-      return false
-    } else {
-      val a = numer_a / denom
-      val b = numer_b / denom
+      // Do the segments intersect?
+      val numer_a = (x4 - x3) * (y1 - y3) - (y4 - y3) * (x1 - x3)
+      val numer_b = (x2 - x1) * (y1 - y3) - (y2 - y1) * (x1 - x3)
+      val a = numer_a / detDiff
+      val b = numer_b / detDiff
       if (a < 0 || a > 1 || b < 0 || b > 1) {
-        return false
+        return None
       } else {
-        return true
+        val det1And2 = det(x1, y1, x2, y2)
+        val det3And4 = det(x3, y3, x4, y4)
+        val x = det(det1And2, x1 - x2, det3And4, x3 - x4) / detDiff
+        val y = det(det1And2, y1 - y2, det3And4, y3 - y4) / detDiff
+        return Some(new Coordinate(x, y))
       }
     }
   }
