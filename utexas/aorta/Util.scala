@@ -32,17 +32,21 @@ object Util {
     Util.log("RNG seed: " + seed)
   }
 
+  private var dump_at_shutdown = false
+
   // Convenient to see this at the very end if it was a long log.
   scala.sys.ShutdownHookThread({
-    println("")
-    println("-" * 80)
-    if (seed != -1) {
-      Util.log("\nRNG seed: " + Util.seed)
+    if (dump_at_shutdown) {
+      println("")
+      println("-" * 80)
+      if (seed != -1) {
+        Util.log("\nRNG seed: " + Util.seed)
+      }
+      println("")
+      Stats.shutdown
+      println("")
+      Profiling.shutdown
     }
-    println("")
-    Stats.shutdown
-    println("")
-    Profiling.shutdown
   })
 
   def rand_double(min: Double, max: Double, rng: Random = sim_rng): Double =
@@ -113,7 +117,8 @@ object Util {
   }
 
   // The boolean says whether or not a pre-defined scenario is being run.
-  def process_args(args: Array[String], with_geo: Boolean): (Simulation, Boolean) = {
+  def process_args(args: Array[String], with_geo: Boolean, shutdown: Boolean): (Simulation, Boolean) = {
+    dump_at_shutdown = shutdown
     // TODO write with 'partition'
     val keys = args.zipWithIndex.filter(p => p._2 % 2 == 0).map(p => p._1)
     val vals = args.zipWithIndex.filter(p => p._2 % 2 == 1).map(p => p._1)

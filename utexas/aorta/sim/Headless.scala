@@ -13,7 +13,7 @@ object Headless {
   var run_for: Double = -1.0
 
   def main(args: Array[String]) = {
-    val (sim, is_scenario) = Util.process_args(args, false)
+    val (sim, is_scenario) = Util.process_args(args, false, true)
     if (!is_scenario) {
       sim.add_gen(new FixedSizeGenerator(
         sim, sim.edges, sim.edges, cfg.army_size, "Drunken"

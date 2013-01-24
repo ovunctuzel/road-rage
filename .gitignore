@@ -22,3 +22,8 @@
 stats_log
 resim_log
 log_*
+
+# unrefined notes
+papers/thesis/*
+papers/itsc_2012/*.tex
+papers/itsc_2012/root.bib

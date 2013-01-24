@@ -1,12 +1,12 @@
 # TODO #
 
 SMALL TASKS
-  = debug and draw per object
   - draw turns good
   - split the passes
   - separate maps/ and osm/ dir
   - slow down for turns (a speed limit)
   - quick code cleanup
+    - draw per object
 
 BIG TASKS
   - collapse degenerate vertices
@@ -16,13 +16,8 @@ BIG TASKS
   - contraction hierarchies
 
 - clean up roads with just 2 roads
-  - 2 types
-    1) when we split roads from osm that have only 2 things
-    2) when osm itself has ways that only connect at 2 places
-
-  - theyre unnecessary AND below thing breaks? on small stuff, possibly related.
-  - the problems at Bernwood... osm src suggests duplicity...
-  - currently, it eats roads!
+  - later pass deletes stuff that isnt reachable.
+  - interstates getting nixed, why?
 - short roads into longer turns
   - 50 meters?
   - dont nix roads connected to vertices with only one road!
