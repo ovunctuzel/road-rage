@@ -11,13 +11,15 @@ import scala.collection.mutable.MutableList
 import scala.collection.mutable.{Stack => MutableStack}
 import scala.collection.mutable.{HashMap => MutableMap}
 
-import utexas.aorta.map.make.PreGraph3 // TODO we can actually operate just as easily on a grap...
+import utexas.aorta.map.make.PreGraph3 // TODO we can actually operate just as easily on a graph...
+
+import utexas.aorta.ui.Renderable
 
 import utexas.aorta.Util
 
 // note that ID does NOT give the ward list that graph has any ordering!
 // TODO var id so we can get deterministic ordering ;)
-class Ward(var id: Int, val roads: Set[Road]) {
+class Ward(var id: Int, val roads: Set[Road]) extends Renderable {
   override def toString = "Ward with " + roads.size + " roads"
 
   private def find_center(): Coordinate = {
@@ -41,6 +43,10 @@ class Ward(var id: Int, val roads: Set[Road]) {
 
   // The vertices that lead to the ward
   val frontier = find_frontier
+
+  def debug = {
+    Util.log(toString)
+  }
 }
 
 object Ward {

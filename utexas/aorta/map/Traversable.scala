@@ -10,6 +10,8 @@ import utexas.aorta.sim.Queue
 
 import java.io.FileWriter
 
+import utexas.aorta.ui.Renderable
+
 import utexas.aorta.{cfg, Util}
 
 // Something with a sequence of lines forming a path and a way to get to more
@@ -195,4 +197,22 @@ class Line(var x1: Double, var y1: Double, var x2: Double, var y2: Double) {
   )
   def shifted_start_pt = shift_pt(x1, y1, angle)
   def shifted_end_pt = shift_pt(x2, y2, angle + math.Pi)  // reverse the angle
+}
+
+case class Position(val on: Traversable, val dist: Double) extends Renderable {
+  Util.assert_ge(dist, 0)
+  Util.assert_le(dist, on.length)
+  // TODO
+  /*if (dist >= on.length) {
+    Util.log("safe_spawn_dist must be broken... " + dist + " > " + on.length +
+             " on " + on)
+  }*/
+
+  def location = on.location(dist)
+  def dist_left = on.length - dist
+  override def toString = s"($on, $dist)"
+  
+  def debug = {
+    Util.log(toString)
+  }
 }

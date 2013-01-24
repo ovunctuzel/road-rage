@@ -8,7 +8,7 @@ package utexas.aorta.sim
 import java.util.TreeMap
 import scala.collection.JavaConversions.collectionAsScalaIterable
 
-import utexas.aorta.map.{Edge, Traversable}
+import utexas.aorta.map.{Edge, Traversable, Position}
 
 import utexas.aorta.{Util, cfg}
 

@@ -6,12 +6,16 @@ package utexas.aorta.map
 
 import java.io.FileWriter
 
-import utexas.aorta.cfg
+import utexas.aorta.ui.Renderable
+
+import utexas.aorta.{cfg, Util}
 
 // TODO subclass Edge for pos/neg.. seems easier for lots of things
 
 // TODO var id due to tarjan
-class Edge(var id: Int, val road: Road, val dir: Direction.Direction) extends Traversable {
+class Edge(var id: Int, val road: Road, val dir: Direction.Direction)
+  extends Traversable with Renderable
+{
   var lane_num: Int = -1  // TODO needs to be initialized to be defined.. bleh.
 
   // This is diagnostic.
@@ -95,6 +99,15 @@ class Edge(var id: Int, val road: Road, val dir: Direction.Direction) extends Tr
                          new Line(road.points.dropRight(1).last, road.points.last) // -2 -> -1
                        else
                          new Line(road.points.tail.head, road.points.head) // 1 -> 0
+
+  def debug = {
+    Util.log(this + " has length " + length + " m, min entry dist " +
+             (queue.worst_entry_dist + cfg.follow_dist))
+    Util.log("(lanechange dist is " + (cfg.lanechange_dist +
+             cfg.end_threshold) + ")")
+    Util.log("Queue contains " + queue.agents)
+    Util.log("Speed lim " + speed_limit)
+  }
 }
 
 object Direction extends Enumeration {

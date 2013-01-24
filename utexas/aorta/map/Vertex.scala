@@ -8,12 +8,16 @@ import java.io.FileWriter
 
 import scala.collection.mutable.MutableList
 
+import utexas.aorta.ui.Renderable
+
+import utexas.aorta.Util
+
 // TODO I don't want this dependency, but at the moment, it leads to a great
 // perf boost due to dropping a pricy hash lookup
 import utexas.aorta.sim.Intersection
 
 // TODO var id due to tarjan
-class Vertex(val location: Coordinate, var id: Int) {
+class Vertex(val location: Coordinate, var id: Int) extends Renderable {
   // TODO this is a temporary solution
   var intersection: Intersection = null
 
@@ -62,5 +66,26 @@ class Vertex(val location: Coordinate, var id: Int) {
   override def equals(other: Any) = other match {
     case other: Vertex => { id == other.id }
     case _ => false
+  }
+
+  def debug = {
+    Util.log(this + " at " + location)
+
+    val i = intersection
+
+    Util.log("Current turns allowed:")
+    Util.log_push
+    i.policy.current_greens.foreach(g => Util.log("" + g))
+    Util.log_pop
+                                                                        
+    Util.log("Current turns active:")                                   
+    Util.log_push
+    i.turns.foreach(pair => Util.log(pair._2 + " doing " + pair._1))
+    Util.log_pop
+
+    Util.log("Roads: " + roads)
+
+    // anything else
+    i.policy.dump_info
   }
 }

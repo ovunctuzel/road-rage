@@ -4,14 +4,16 @@
 
 package utexas.aorta.sim
 
-import utexas.aorta.map.{Edge, Coordinate, Turn, Traversable, Graph}
+import utexas.aorta.map.{Edge, Coordinate, Turn, Traversable, Graph, Position}
 import utexas.aorta.{Util, cfg}
+import utexas.aorta.ui.Renderable
 import utexas.aorta.analysis.{Profiling, Stats, Wasted_Time_Stat}
 
 // TODO come up with a notion of dimension and movement capability. at first,
 // just use radius bounded by lane widths?
 
-class Agent(val id: Int, val route: Route) extends Ordered[Agent] {
+class Agent(val id: Int, val route: Route) extends Ordered[Agent] with Renderable
+{
   // null just until they're introduced!
   var at: Position = null
 
@@ -307,20 +309,6 @@ class Agent(val id: Int, val route: Route) extends Ordered[Agent] {
   def move(t: Traversable, new_dist: Double, old_dist: Double) =
     t.queue.move(this, new_dist, old_dist)
 
-  def dump_info() = {
-    Util.log("" + this)
-    Util.log_push
-    Util.log("At: " + at)
-    Util.log("Speed: " + speed)
-    Util.log("How long idle? " + how_long_idle)
-    Util.log("Max next speed: " + max_next_speed)
-    Util.log("Stopping distance next: " + stopping_distance(max_next_speed))
-    Util.log("Lookahead dist: " + max_lookahead_dist)
-    Util.log("Dist left here: " + at.dist_left)
-    behavior.dump_info
-    Util.log_pop
-  }
-
   def cur_queue = at.on.queue
 
   def on(t: Traversable) = (at.on, old_lane) match {
@@ -362,6 +350,20 @@ class Agent(val id: Int, val route: Route) extends Ordered[Agent] {
 
   // To stop in one time-step, that is. From v_f = v_i + at
   def accel_to_stop = (-1 * speed) / cfg.dt_s
+
+  def debug = {
+    Util.log("" + this)
+    Util.log_push
+    Util.log("At: " + at)
+    Util.log("Speed: " + speed)
+    Util.log("How long idle? " + how_long_idle)
+    Util.log("Max next speed: " + max_next_speed)
+    Util.log("Stopping distance next: " + stopping_distance(max_next_speed))
+    Util.log("Lookahead dist: " + max_lookahead_dist)
+    Util.log("Dist left here: " + at.dist_left)
+    behavior.dump_info
+    Util.log_pop
+  }
 }
 
 class SpawnAgent(val a: Agent, val e: Edge, val dist: Double) {}
@@ -369,24 +371,4 @@ class SpawnAgent(val a: Agent, val e: Edge, val dist: Double) {}
 // the singleton just lets us get at the simulation to look up queues
 object Agent {
   var sim: Simulation = null
-}
-
-////////////////////////////////////////////////////////////////////////////////
-
-// VoidPosition used to exist too, but I couldn't work out when we would ever
-// want it. If there's an agent waiting to enter the map, they don't need to
-// exist yet.
-
-case class Position(val on: Traversable, val dist: Double) {
-  Util.assert_ge(dist, 0)
-  Util.assert_le(dist, on.length)
-  // TODO
-  /*if (dist >= on.length) {
-    Util.log("safe_spawn_dist must be broken... " + dist + " > " + on.length +
-             " on " + on)
-  }*/
-
-  def location = on.location(dist)
-  def dist_left = on.length - dist
-  override def toString = s"($on, $dist)"
 }

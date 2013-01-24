@@ -304,3 +304,9 @@ final case class EV_Key_Press(key: Any) extends UI_Event {}
 final case class EV_Action(key: String) extends UI_Event {}
 final case class EV_Select_Polygon_For_Army() extends UI_Event {}
 final case class EV_Select_Polygon_For_Policy() extends UI_Event {}
+
+trait Renderable {
+  def debug(): Unit
+
+  // TODO someday, right-click context menus!
+}

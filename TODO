@@ -1,11 +1,12 @@
 # TODO #
 
 SMALL TASKS
-  - debug and draw per object
+  = debug and draw per object
   - draw turns good
   - split the passes
   - separate maps/ and osm/ dir
   - slow down for turns (a speed limit)
+  - quick code cleanup
 
 BIG TASKS
   - collapse degenerate vertices

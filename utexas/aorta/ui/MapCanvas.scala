@@ -69,7 +69,7 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
   var running = false
 
   // state
-  private var current_obj: Option[Any] = None // TODO renderable, not any!
+  private var current_obj: Option[Renderable] = None
   private var highlight_type: Option[String] = None
   private var show_ward_colors = false
   private var current_turn = -1  // for cycling through turns from an edge
@@ -78,7 +78,7 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
   private var chosen_edge1: Option[Edge] = None
   private var chosen_edge2: Option[Edge] = None
   private var chosen_road: Option[Road] = None
-  private var chosen_pos: Option[(Edge, Double)] = None
+  private var chosen_pos: Option[Position] = None
   private var route_members = Set[Edge]()
   private var route_members_road = Set[Road]()
   private var polygon_roads1: Set[Road] = Set()
@@ -88,7 +88,7 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
   private var show_green = false
 
   def current_edge: Option[Edge] = current_obj match {
-    case Some((e: Edge, _: Double)) => Some(e)
+    case Some(pos: Position) => Some(pos.on.asInstanceOf[Edge])
     case _ => None
   }
   def current_agent: Option[Agent] = current_obj match {
@@ -242,7 +242,7 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
       }
 
       current_obj match {
-        case Some((e: Edge, _: Double)) => draw_intersection(g2d, e)
+        case Some(pos: Position) => draw_intersection(g2d, pos.on.asInstanceOf[Edge])
         case Some(v: Vertex) => {
           for (t <- v.intersection.policy.current_greens) {
             draw_turn(g2d, t, Color.GREEN)
@@ -291,7 +291,7 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
 
     // What tooltip do we want?
     return current_obj match {
-      case Some((e: Edge, d: Double)) => Some(f"$e at $d%.2f")
+      case Some(pos: Position) => Some(f"${pos.on} at ${pos.dist}%.2f")
       case Some(thing) => Some(thing.toString)
       case None => None
     }
@@ -484,7 +484,7 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
             case None => None
             case Some(l) => Some(l.road)
           }
-          case Some(l) => Some(l.edge, l.edge.approx_dist(new Coordinate(x, y), 1.0))
+          case Some(l) => Some(Position(l.edge, l.edge.approx_dist(new Coordinate(x, y), 1.0)))
         }
         case Some(v) => Some(v)
       }
@@ -667,7 +667,7 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
       mode match {
         case Mode.EXPLORE => {
           chosen_edge1 = current_edge
-          chosen_pos = current_obj.asInstanceOf[Option[(Edge, Double)]]
+          chosen_pos = current_obj.asInstanceOf[Option[Position]]
           switch_mode(Mode.PICK_2nd)
           repaint
         }
@@ -675,7 +675,8 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
           chosen_edge2 = current_edge
           sim.add_gen(new SpecificGenerator(
             sim, "Static A*",
-            List((chosen_pos.get._1, current_edge.get, chosen_pos.get._2))
+            // TODO avoid some nasty casting if we specialize an EdgePosition
+            List((chosen_pos.get.on.asInstanceOf[Edge], current_edge.get, chosen_pos.get.dist))
           ))
           chosen_edge1 = None
           chosen_edge2 = None
@@ -709,45 +710,11 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
     }
     // TODO move the debug string to the renderable trait
     case EV_Key_Press(Key.D) => current_obj match {
-      case Some((e: Edge, _: Double)) => {
-        Util.log(e + " has length " + e.length + " m, min entry dist " +
-                 (e.queue.worst_entry_dist + cfg.follow_dist))
-        Util.log("(lanechange dist is " + (cfg.lanechange_dist +
-                 cfg.end_threshold) + ")")
-        Util.log("Queue contains " + e.queue.agents)
-        Util.log("Speed lim " + e.speed_limit)
-      }
-      case Some(r: Road) => {
-        Util.log(r + " is a " + r.road_type + " of length " +
-                 r.length + " meters")
-      }
       case Some(a: Agent) => {
-        a.dump_info
+        a.debug
         sim.debug_agent = Some(a)
       }
-      case Some(v: Vertex) => {
-        Util.log(v + " at " + v.location)
-
-        val i = v.intersection
-
-        Util.log("Current turns allowed:")
-        Util.log_push
-        i.policy.current_greens.foreach(g => Util.log("" + g))
-        Util.log_pop
-
-        Util.log("Current turns active:")
-        Util.log_push
-        i.turns.foreach(pair => Util.log(pair._2 + " doing " + pair._1))
-        Util.log_pop
-
-        Util.log("Roads: " + v.roads)
-
-        // anything else
-        i.policy.dump_info
-      }
-      case Some(thing) => {
-        Util.log(thing.toString)
-      }
+      case Some(thing) => thing.debug
       case None =>
     }
     case EV_Key_Press(Key.F) => { camera_agent = current_agent }

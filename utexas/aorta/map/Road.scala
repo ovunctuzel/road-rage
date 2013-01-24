@@ -8,13 +8,15 @@ import java.io.FileWriter
 
 import scala.collection.mutable.MutableList
 
+import utexas.aorta.ui.Renderable
+
 import utexas.aorta.Util
 
 // TODO enum for type. also, it's var because of tarjan's...
 // TODO var id due to tarjan
 class Road(var id: Int, val length: Double, val name: String,
            var road_type: String, val osm_id: Int, val v1: Vertex,
-           val v2: Vertex)
+           val v2: Vertex) extends Renderable
 {
   var points: Array[Coordinate] = null
 
@@ -103,6 +105,10 @@ class Road(var id: Int, val length: Double, val name: String,
     
     case _                => 35 // Generally a safe speed, right?
   })
+
+  def debug = {
+    Util.log(this + " is a " + road_type + " of length " + length + " meters")
+  }
 }
 
 object Road {
