@@ -34,7 +34,7 @@ class Pass3(old_graph: PreGraph2) {
   val t_stack = new Stack[Traversable]
   var dfs = 0   // counter numbering
 
-  def run(show_dead: Boolean): PreGraph3 = {
+  def run(): PreGraph3 = {
     for (r <- graph.roads) {
       roads_per_vert.addBinding(r.v1, r)
       roads_per_vert.addBinding(r.v2, r)
@@ -75,13 +75,15 @@ class Pass3(old_graph: PreGraph2) {
     }
     Util.log_pop
 
+    Util.log("Removing disconnected chunks of the network")
     var changed = true
+    Util.log_push
     while (changed) {
       // first find edges with no predecessors/successors, remove them, and
       // flood that effect out...
       val change1 = clean_half_edges
       // then finds SCCs and removes all but the largest
-      val change2 = clean_disconnected(show_dead)
+      val change2 = clean_disconnected()
       // since each phase potentially affects the other, repeat both until
       // nothing changes
       changed = change1 || change2
@@ -94,6 +96,10 @@ class Pass3(old_graph: PreGraph2) {
       t_stack.clear
       dfs = 0
     }
+    Util.log_pop
+
+    Util.log("Collapsing degenerate vertices with 2 roads...")
+    collapse_degenerate()
 
     Util.log("Dividing the map into wards...")
     Util.log_push
@@ -170,9 +176,6 @@ class Pass3(old_graph: PreGraph2) {
       val angle_btwn = ((from_angle - to_angle + 3 * (math.Pi)) % (2 * math.Pi)) - math.Pi
 
       if (r1.osm_id == r2.osm_id || math.abs(angle_btwn) <= cross_thresshold) {
-        // TODO possibly worry about when just osm id matches and angle is
-        // huge... is it really a cross?
-        
         // a crossing!
         // essentially zip the from's to the to's, but handle merging:
         // x -> x + n, make the 1 leftmost  lead to the n leftmost
@@ -213,18 +216,6 @@ class Pass3(old_graph: PreGraph2) {
         v.turns = make_turn(from_rep.rightmost_lane, to_rep.rightmost_lane) :: v.turns
       }
     }
-
-    // here's how to diagnose SCC's.
-    for (in <- incoming_roads; src <- in.incoming_lanes(v)
-         if v.turns_from(src).length == 0)
-    {
-      //Util.log("Warning: nowhere to go after " + src)
-    }
-    for (out <- outgoing_roads; dst <- out.outgoing_lanes(v)
-         if v.turns_to(dst).length == 0)
-    {
-      //Util.log("Warning: nothing leads to " + dst)
-    }
   }
 
   // Returns true if any edges are removed
@@ -233,8 +224,6 @@ class Pass3(old_graph: PreGraph2) {
     val orig_verts = graph.vertices.size
     val orig_roads = graph.roads.size
 
-    def is_bad(e: Edge) = e.next_turns.isEmpty || e.prev_turns.isEmpty
-
     Util.log("Using fixpoint algorithm to prune half-edges")
 
     // fixpoint algorithm: find half-edges till there are none
@@ -242,7 +231,7 @@ class Pass3(old_graph: PreGraph2) {
     var done = false
     var any_changes = false
     while (!done) {
-      graph.edges.partition(e => is_bad(e)) match {
+      graph.edges.partition(e => e.doomed) match {
         case (bad, good) => {
           // TODO cant pattern match nil for mutable list :(
           if (bad.isEmpty) {
@@ -269,7 +258,7 @@ class Pass3(old_graph: PreGraph2) {
   }
 
   // Returns true if any edges are removed
-  private def clean_disconnected(show_dead: Boolean): Boolean = {
+  private def clean_disconnected(): Boolean = {
     // use Tarjan's to locate all SCC's in the graph. ideally we'd just
     // have one, but crappy graphs, weird reality, and poor turn heuristics mean
     // we'll have disconnected portions.
@@ -308,34 +297,47 @@ class Pass3(old_graph: PreGraph2) {
       s"${bad_edges.size} edges, ${bad_turns.size} turns belonging to small SCC"
     )
     val doomed_edges = bad_edges.toSet
+    // As a note, all of these steps that completely delete a structure are
+    // safe -- anything else referring to them will also be deleted, thanks to
+    // Mr. Tarjan.
 
-    if (show_dead) {
-      // Mark all roads involving bad edges.
-      for (r <- graph.roads) {
-        if (r.all_lanes.find(l => doomed_edges(l)).isDefined) {
-          r.road_type = "doomed"
+    // TODO write these at set differences..
+    graph.edges = graph.edges.filter(e => !doomed_edges.contains(e))
+    val doomed_turns = bad_turns.toSet
+    for (v <- graph.vertices) {
+      v.turns = v.turns.filter(t => !doomed_turns.contains(t))
+    }
+
+    graph.fix_map
+    return true
+  }
+
+  private def collapse_degenerate(): Unit = {
+    // TODO nowhere near ready yet
+    return
+
+    // Degenerate vertices have exactly 2 roads, with matching numbers of lanes
+    // and with one straight turn connecting each.
+    def compatible_vert(v: Vertex) = v.roads.toList match {
+      case r1 :: r2 :: Nil =>
+        ((r1.pos_lanes.size == r2.pos_lanes.size) &&
+         (r1.neg_lanes.size == r2.neg_lanes.size) &&
+         (!r1.all_lanes.find(e => e.next_turns.size != 1).isDefined) &&
+         (!r2.all_lanes.find(e => e.next_turns.size != 1).isDefined)
+        )
+      case _ => false
+    }
+
+    var changed = true
+    while (changed) {
+      graph.vertices.find(compatible_vert) match {
+        case Some(v) => {
+          val Array(r1, r2) = v.roads.toArray
+          // Arbitrarily decide to keep and extend r1, and nix r2.
+          
         }
+        case None => changed = false
       }
-      
-      // And also mark exactly the bad edges.
-      doomed_edges.foreach(e => e.doomed = true)
-
-      // technically, no changes since we mark, not remove, stuff
-      return false
-    } else {
-      // As a note, all of these steps that completely delete a structure are
-      // safe -- anything else referring to them will also be deleted, thanks to
-      // Mr. Tarjan.
-
-      // TODO write these at set differences..
-      graph.edges = graph.edges.filter(e => !doomed_edges.contains(e))
-      val doomed_turns = bad_turns.toSet
-      for (v <- graph.vertices) {
-        v.turns = v.turns.filter(t => !doomed_turns.contains(t))
-      }
-
-      graph.fix_map
-      return true
     }
   }
 

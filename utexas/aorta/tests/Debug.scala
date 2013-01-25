@@ -15,6 +15,7 @@ object Debug {
     val (sim, is_scenario) = Util.process_args(args, with_geo, false)
 
     degenerate_verts(sim)
+    doomed_stuff(sim)
   }
 
   private def degenerate_verts(sim: Simulation) = {
@@ -22,5 +23,10 @@ object Debug {
     silly.foreach(v => println("Degenerate vertex: " + v))
     println("")
     println(silly.size + " total")
+  }
+
+  private def doomed_stuff(sim: Simulation) = {
+    println(sim.roads.filter(_.doomed).size + " doomed roads")
+    println(sim.edges.filter(_.doomed).size + " doomed edges")
   }
 }

@@ -103,7 +103,6 @@ class XMLReader(fn: String, with_geometry: Boolean) extends Reader(fn, with_geom
     var e_length: Double = -1
     var e_dir: Direction.Direction = Direction.POS
     var e_lines = new MutableList[Line]
-    var e_doomed = false
 
     // per vertex
     var v_id: Int = -1
@@ -191,8 +190,6 @@ class XMLReader(fn: String, with_geometry: Boolean) extends Reader(fn, with_geom
           e_lane = get_int(attribs)("laneNum")
           e_length = get_double(attribs)("length")
 
-          e_doomed = has_attrib(attribs, "doomed")
-
           if (dir == '+') {
             e_dir = Direction.POS
           } else {
@@ -203,7 +200,6 @@ class XMLReader(fn: String, with_geometry: Boolean) extends Reader(fn, with_geom
         }
         case EvElemEnd(_, "edge") => {
           val e = new Edge(e_id, roads(e_rd), e_dir)
-          e.doomed = e_doomed
           edges(e_id) = e
           e.lane_num = e_lane
           if (with_geometry) {
@@ -231,7 +227,6 @@ class XMLReader(fn: String, with_geometry: Boolean) extends Reader(fn, with_geom
           e_length = -1
           e_dir = Direction.POS
           e_lines.clear
-          e_doomed = false
         }
 
         case EvElemStart(_, "line", attribs, _) => {
@@ -307,17 +302,25 @@ class PlaintextReader(fn: String, with_geometry: Boolean) extends Reader(fn, wit
         if (line == "---roads---") {
           state = 3
         } else {
-          val Array(metadata, turns) = line.split(":")
-          val Array(id, x, y) = metadata.split(",")
+          // TODO this case is only for when bad edges aren't removed
+          if (line.endsWith(":")) {
+            val Array(metadata) = line.split(":")
+            val Array(id, x, y) = metadata.split(",")
+            verts(id.toInt) = new Vertex(new Coordinate(x.toDouble, y.toDouble), id.toInt)
+            vertLinks(id.toInt) = Array()
+          } else {
+            val Array(metadata, turns) = line.split(":")
+            val Array(id, x, y) = metadata.split(",")
 
-          verts(id.toInt) = new Vertex(new Coordinate(x.toDouble, y.toDouble), id.toInt)
-          vertLinks(id.toInt) = turns.split(";").map(link => {
-            val Array(from, to, length, link_id, x1, y1, x2, y2) = link.split(",")
-            new TmpLink(
-              link_id.toInt, from.toInt, to.toInt, length.toDouble,
-              new Line(x1.toDouble, y1.toDouble, x2.toDouble, y2.toDouble)
-            )
-          })
+            verts(id.toInt) = new Vertex(new Coordinate(x.toDouble, y.toDouble), id.toInt)
+            vertLinks(id.toInt) = turns.split(";").map(link => {
+              val Array(from, to, length, link_id, x1, y1, x2, y2) = link.split(",")
+              new TmpLink(
+                link_id.toInt, from.toInt, to.toInt, length.toDouble,
+                new Line(x1.toDouble, y1.toDouble, x2.toDouble, y2.toDouble)
+              )
+            })
+          }
         }
       } else if (state == 3) {
         // expecting a road
@@ -345,11 +348,10 @@ class PlaintextReader(fn: String, with_geometry: Boolean) extends Reader(fn, wit
       } else if (state == 4) {
         // expecting an edge
         val Array(metadata, lines) = line.split(":")
-        val Array(id, road, dir, lane_num, doomed, length) = metadata.split(",")
+        val Array(id, road, dir, lane_num, length) = metadata.split(",")
 
         val e = new Edge(id.toInt, roads(road.toInt),
                          if (dir == "+") Direction.POS else Direction.NEG)
-        e.doomed = doomed == "true"
         e.lane_num = lane_num.toInt
         edges(id.toInt) = e
         if (with_geometry) {

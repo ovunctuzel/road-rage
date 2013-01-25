@@ -39,6 +39,7 @@ class Pass1(fn: String) {
     "area",           // these, according to a forgotten old comment, are weird
     "leisure",        // NO TIME FOR THAT NOW
     "multipolygon",   // WHY ARE THERE SO MANY
+    "power",          // AHHH DON'T SHOCK ME
     // cycleway is marked in addition to being highway=tertiary... geez.
     "path", "footway", "bridleway", "steps", "pedestrian", "bus_guideway"
     // TODO cemeteries in Houston, real roads in BTR, alleys in ATX...
@@ -162,7 +163,7 @@ class Pass1(fn: String) {
           if (!skip_way) {
             val key = get_attrib(attribs, "k")
             val value = get_attrib(attribs, "v")
-            if (ignore_me(key) || (key == "highway" && ignore_me(value))) {
+            if ((ignore_me(key) && value != "no") || (key == "highway" && ignore_me(value))) {
               skip_way = true
             } else {
               key match {

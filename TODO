@@ -3,6 +3,11 @@
 SMALL TASKS
   - draw turns good
   - split the passes
+    - pass1 = read osm + normalize
+    - pass2 = pass2
+    - pass3 = (>make edge geometry), make edges, make turns,
+              (>nuke disconnected), (collapse degenerate verts), (>wards),
+              (small roads to long turns), trim lane lines at vertices
   - separate maps/ and osm/ dir
   - slow down for turns (a speed limit)
   - quick code cleanup
@@ -11,14 +16,16 @@ SMALL TASKS
 BIG TASKS
   - collapse degenerate vertices
   - short roads -> longer turns
+  - make turns better, more systematically
   - variety of vehicle params
   - redo all intersection stuff
   - contraction hierarchies
 
 - clean up roads with just 2 roads
-  - later pass deletes stuff that isnt reachable.
-  - interstates getting nixed, why?
+  - pass3, since doomed pruning makes new problems
+  - but keep pass 2 version? seems to prevent some stuff from getting doomed!
 - short roads into longer turns
+  * get rid of the hack that adds length to short roads upon creation
   - 50 meters?
   - dont nix roads connected to vertices with only one road!
   - bernwood drive and other places where the number blows up
@@ -26,8 +33,6 @@ BIG TASKS
   - fix the geometry stuff later. what stuff?
     - maybe remove set_lines?
   - remove ui debugging stuff
-  - when to run this transform?
-    - split pass 3 into more steps?
 
 # Lane changing
 - agents get caught in loops because the general path isnt realizable

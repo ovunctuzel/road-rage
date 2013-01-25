@@ -214,5 +214,9 @@ case class Position(val on: Traversable, val dist: Double) extends Renderable {
   
   def debug = {
     Util.log(toString)
+    on match {
+      case e: Edge => e.debug
+      case _ =>
+    }
   }
 }

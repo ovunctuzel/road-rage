@@ -109,6 +109,9 @@ class Road(var id: Int, val length: Double, val name: String,
   def debug = {
     Util.log(this + " is a " + road_type + " of length " + length + " meters")
   }
+
+  // For debug only
+  def doomed = all_lanes.find(e => e.doomed).isDefined
 }
 
 object Road {

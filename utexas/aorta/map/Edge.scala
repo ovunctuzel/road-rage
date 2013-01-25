@@ -18,9 +18,6 @@ class Edge(var id: Int, val road: Road, val dir: Direction.Direction)
 {
   var lane_num: Int = -1  // TODO needs to be initialized to be defined.. bleh.
 
-  // This is diagnostic.
-  var doomed = false
-
   // no lane-changing
   //def leads_to = next_turns
   // with lane-changing
@@ -64,14 +61,9 @@ class Edge(var id: Int, val road: Road, val dir: Direction.Direction)
   def to: Vertex   = if (dir == Direction.POS) road.v2 else road.v1
 
   def to_xml(out: FileWriter) = {
-    val is_doomed = if (doomed)
-                      " doomed=\"absolutely\""
-                    else
-                      ""
     out.write(
       "  <edge id=\"" + id + "\" road=\"" + road.id + "\" dir=\"" + dir
-      + "\" laneNum=\"" + lane_num + "\" length=\"" + length + "\""
-      + is_doomed + ">\n"
+      + "\" laneNum=\"" + lane_num + "\" length=\"" + length + "\">\n"
     )
     lines.foreach(l => l.to_xml(out))
     out.write("  </edge>\n")
@@ -79,8 +71,7 @@ class Edge(var id: Int, val road: Road, val dir: Direction.Direction)
 
   def to_plaintext(out: FileWriter) = {
     out.write(
-      id + "," + road.id + "," + dir + "," + lane_num + "," + doomed + "," +
-      length + ":"
+      id + "," + road.id + "," + dir + "," + lane_num + "," + length + ":"
     )
     lines.foreach(l => l.to_plaintext(out))
     out.write("\n")
@@ -107,7 +98,12 @@ class Edge(var id: Int, val road: Road, val dir: Direction.Direction)
              cfg.end_threshold) + ")")
     Util.log("Queue contains " + queue.agents)
     Util.log("Speed lim " + speed_limit)
+    Util.log("Succs: " + next_turns)
+    Util.log("Preds: " + prev_turns)
   }
+
+  // For debug only
+  def doomed = next_turns.isEmpty || prev_turns.isEmpty
 }
 
 object Direction extends Enumeration {

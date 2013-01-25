@@ -405,6 +405,8 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
       Color.GREEN
     else if (show_ward_colors)
       ward_colorings(r.ward)
+    else if (r.doomed)
+      Color.RED
     else
       // The normal handling
       highlight_type match {

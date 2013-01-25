@@ -12,7 +12,7 @@ import utexas.aorta.Util
 
 object Builder {
   // Takes a .osm and returns a .map
-  def convert(input: String, show_dead: Boolean = false): String = {
+  def convert(input: String): String = {
     if (!input.endsWith(".osm")) {
       throw new Exception(s"$input must end with .osm")
     }
@@ -24,7 +24,7 @@ object Builder {
 
     val graph2 = new Pass2(graph1).run()
 
-    val graph3 = new Pass3(graph2).run(show_dead)
+    val graph3 = new Pass3(graph2).run()
 
     Util.log(
       s"Dumping map with ${graph3.roads.length} roads, ${graph3.edges.length}" +

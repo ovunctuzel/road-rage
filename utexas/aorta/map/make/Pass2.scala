@@ -13,7 +13,8 @@ class Pass2(old_graph: PreGraph1) {
   val graph = new PreGraph2(old_graph)
 
   def run(): PreGraph2 = {
-    // TODO this isn't working yet.
+    // TODO this is getting moved to pass3, but it actually seems to be useful
+    // to run here too. maybe keep for now!
     //return graph
 
     // Find vertices with exactly two roads involved. They're redundant.

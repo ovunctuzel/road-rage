@@ -68,7 +68,7 @@ object Viewer extends SimpleSwingApplication {
   val road_types = List(
     "null", "residential", "unclassified", "secondary",
     "motorway_link", "motorway", "trunk_link", "secondary_link", "primary_link",
-    "tertiary", "primary", "service", "doomed"
+    "tertiary", "primary", "service"
   )
   // null just because it's parametric from argv
   var canvas_2d: MapCanvas = null
