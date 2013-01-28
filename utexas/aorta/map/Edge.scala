@@ -14,9 +14,11 @@ import utexas.aorta.{cfg, Util}
 
 // TODO var id due to tarjan
 class Edge(var id: Int, val road: Road, val dir: Direction.Direction)
-  extends Traversable with Renderable
+  extends Traversable with Renderable with Ordered[Edge]
 {
   var lane_num: Int = -1  // TODO needs to be initialized to be defined.. bleh.
+
+  override def compare(other: Edge) = id.compare(other.id)
 
   // no lane-changing
   //def leads_to = next_turns

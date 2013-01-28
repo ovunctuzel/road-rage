@@ -7,30 +7,27 @@ package utexas.aorta.sim.policies
 import scala.collection.mutable.{HashMap => MutableMap}
 import scala.collection.mutable.MultiMap
 import scala.collection.mutable.{Set => MutableSet}
-import scala.collection.mutable.{HashSet => MutableHashSet}
 
 import utexas.aorta.sim.{Intersection, Policy, Agent}
 import utexas.aorta.map.Turn
 
 import utexas.aorta.{Util, cfg}
 
-// FIFO based on request, batched by non-conflicting turns.  Possible liveness
-// violation, since new agents can pour into the current_turns, and the ones
-// that have conflicts wait indefinitely.
-// If we found the optimal number of batches, that would be an instance of graph
-// coloring.
-class ReservationPolicy(intersection: Intersection)
-  extends Policy(intersection)
+// FIFO based on request, batched by non-conflicting turns.
+// TODO make it generalizable to lots of ordering/batching/liveness rules
+class ReservationPolicy(intersection: Intersection) extends Policy(intersection)
 {
-  var current_batch = new TurnBatch()
-  var lock_cur_batch = false    // because we're trying to preempt
-  var reservations = List[TurnBatch]()
-  // used to determine if it's an agent's first requent or not
-  val current_agents = new MutableHashSet[Agent]()
+  private var reservations = new TurnBatch() :: Nil
+  private var lock_cur_batch = false    // because we're trying to preempt
+  private val accepted_agents = new MutableSet[Agent]()
   // When did the first group of reservations start waiting?
   private var others_started_waiting = -1.0
 
-  def react() = {}
+  def react() = {
+    // TODO flush stalled agents to avoid gridlock?
+
+
+  }
 
   def shift_batches() = {
     if (current_batch.all_done) {
@@ -142,10 +139,8 @@ class ReservationPolicy(intersection: Intersection)
 
 // Count what agents are doing each type of turn, and add turns that don't
 // conflict
-// TODO maybe generalizable.
 class TurnBatch() {
-  val tickets = new MutableMap[Turn, MutableSet[Agent]]
-    with MultiMap[Turn, Agent]
+  val tickets = new MutableMap[Turn, MutableSet[Agent]] with MultiMap[Turn, Agent]
 
   // false if it conflicts with this group
   def add_ticket(a: Agent, t: Turn): Boolean =
@@ -153,7 +148,7 @@ class TurnBatch() {
       // existing turn
       tickets.addBinding(t, a)
       true
-    } else if (tickets.keys.filter(c => t.conflicts_with(c)).isEmpty) {
+    } else if (!tickets.keys.find(c => t.conflicts_with(c)).isDefined) {
       // new turn that doesn't conflict
       tickets.addBinding(t, a)
       true
@@ -162,26 +157,10 @@ class TurnBatch() {
       false
     }
 
-  def flush_stalled(): MutableSet[Agent] = {
-    val canceled = new MutableHashSet[Agent]()
-    // Nix agents who haven't started turn and are not moving.
-    for (t <- tickets.keys) {
-      for (a <- tickets(t)) {
-        if (a.at.on != t && a.speed == 0.0) {
-          remove_ticket(a, t)
-          canceled += a
-        }
-      }
-    }
-    return canceled
-  }
+  def has_ticket(a: Agent, t: Turn) =
+    tickets.contains(t) && tickets(t).contains(a)
 
-  def has_ticket(a: Agent, t: Turn) = (tickets.contains(t) &&
-                                       tickets(t).contains(a))
-
-  def remove_ticket(a: Agent, t: Turn) = {
-    tickets.removeBinding(t, a)
-  }
+  def remove_ticket(a: Agent, t: Turn) = tickets.removeBinding(t, a)
 
   def all_done = tickets.isEmpty
 }

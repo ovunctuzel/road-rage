@@ -4,80 +4,74 @@
 
 package utexas.aorta.sim.policies
 
-import utexas.aorta.map.Turn
+import scala.collection.mutable.{HashSet => MutableSet}
+import scala.collection.SortedSet
+
+import utexas.aorta.map.{Turn, Edge, Vertex}
 import utexas.aorta.sim.{Intersection, Policy, Agent}
 
 import utexas.aorta.{Util, cfg}
 
 // Always stop, then FIFO. Totally unoptimized.
 class StopSignPolicy(intersection: Intersection) extends Policy(intersection) {
-  // owner of the intersection! may be None when the queue has members. In that
-  // case, the first person has to pause a bit longer before continuing.
-  var current_owner: Option[Agent] = None
-  var queue = List[Agent]()
+  // Since we only add somebody to our queue when they're sufficiently close,
+  // flood out to discover what edges we need to watch. This is independent of
+  // lookahead and dt.
+  private val monitor_edges = SortedSet((find_edges(intersection.v, cfg.end_threshold)): _*)
+  // We only add an agent to this once they satisfy our entrance requirements.
+  // Head is the current owner.
+  private var queue = List[Agent]()
+  // This just backs our queue
+  private val queued_agents = new MutableSet[Agent]()
 
-  def react() = {}
+  override def is_waiting(a: Agent, far_away: Double) =
+    super.is_waiting(a, far_away) && a.how_long_idle >= cfg.pause_at_stop
 
-  def can_go(a: Agent, turn: Turn, far_away: Double): Boolean =
-    current_owner match {
-      // Do they have the lock?
-      case Some(owner) if a == owner => true
-      case _ => {
-        // Flush queue of stalled agents. Anybody in this queue has not started
-        // the turn yet, by definition, so they're safe to cancel. Assume the
-        // current_owner will never stall because they wouldn't poll us if
-        // they're blocked.
-        queue = queue.filter(a => a.speed != 0.0)
-
-        // Schedule them if needed and if they're at the end of the edge.
-        if (!queue.contains(a) && is_waiting(a, turn, far_away)) {
+  def react() = {
+    // If multiple agents get to enter the queue this step, the order is
+    // arbitrary but deterministic.
+    for (e <- monitor_edges) {
+      e.queue.head match {
+        case Some(a) if !queued_agents(a) && is_waiting(a) => {
           queue :+= a
+          queued_agents += a
         }
-
-        // Can we promote them now?
-        val ready = !current_owner.isDefined && queue.nonEmpty &&
-                    a == queue.head && a.how_long_idle >= cfg.pause_at_stop
-        if (ready) {
-          // promote them!
-          current_owner = Some(queue.head)
-          queue = queue.tail
-        }
-        ready
+        case _ =>
       }
     }
-
-  def validate_entry(a: Agent, turn: Turn) = current_owner match {
-    case Some(a) => true
-    case _       => false
   }
 
+  def can_go(a: Agent, turn: Turn, far_away: Double) =
+    queue.headOption.getOrElse(null) == a
+
+  def validate_entry(a: Agent, turn: Turn) = can_go(a, turn, 0)
+
   def handle_exit(a: Agent, turn: Turn) = {
-    //Util.assert_eq(a, current_owner.get)    // TODO
-    if (!current_owner.isDefined || current_owner.get != a) {
-      Util.log(a + " is leaving, but current owner is " + current_owner)
-      Util.log("  Crazy guy was attempting " + turn)
-      Util.log("  Time was " + Agent.sim.tick)
-    }
-    current_owner = None
-    // Next time queue.head, if it exists, polls, we'll let them go if they've
-    // waited patiently.
+    queue = queue.tail
+    queued_agents -= a
   }
 
   def unregister(a: Agent) = {
-    current_owner match {
-      case Some(agent) if a == agent => {
-        // release the lock
-        current_owner = None
-      }
-      case _ => {
-        // don't bother with us
-        queue = queue.filter(x => x != a)
-      }
-    }
+    queue = queue.filter(_ != a)
+    queued_agents -= a
   }
 
-  override def dump_info() = {
-    Util.log("Current owner: " + current_owner)
-    Util.log("Queue: " + queue)
+  def current_greens = intersection.turns.keys.toSet
+
+  def dump_info() = {
+    Util.log("Current queue: " + queue)
+    Util.log("Edges we watch: " + monitor_edges)
+  }
+
+  private def find_edges(v: Vertex, distance: Double): List[Edge] = {
+    // TODO functionally?
+    val buffer = new MutableSet[Edge]()
+    for (e <- v.in_edges) {
+      buffer += e
+      if (distance >= e.length) {
+        buffer ++= find_edges(e.from, distance - e.length)
+      }
+    }
+    return buffer.toList
   }
 }

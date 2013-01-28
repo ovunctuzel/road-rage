@@ -233,7 +233,7 @@ class Simulation(roads: Array[Road], edges: Array[Edge], vertices: Array[Vertex]
 
 sealed trait Sim_Event {}
 // TODO maybe have this not here, since a client could make these up?
-final case class EV_Signal_Change(reds: Set[Turn], greens: Set[Turn]) extends Sim_Event {}
+final case class EV_Signal_Change(greens: Set[Turn]) extends Sim_Event {}
 
 object Simulation {
   // temporary stats for fast-path tests.
@@ -289,7 +289,7 @@ object Simulation {
   def policy_builder(name: String): (Intersection) => Policy = name match {
     case "NeverGo" => (i: Intersection) => new NeverGoPolicy(i)
     case "StopSign" => (i: Intersection) => new StopSignPolicy(i)
-    case "SignalCycle" => (i: Intersection) => new SignalCyclePolicy(i)
+    case "Signal" => (i: Intersection) => new SignalPolicy(i)
     case "Reservation" => (i: Intersection) => new ReservationPolicy(i)
     // TODO case _ => ???
   }

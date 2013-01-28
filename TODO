@@ -12,6 +12,7 @@ SMALL TASKS
   - slow down for turns (a speed limit)
   - quick code cleanup
     - draw per object
+    - sorted sets everywhere for determinism
 
 BIG TASKS
   - collapse degenerate vertices
@@ -34,11 +35,19 @@ BIG TASKS
     - maybe remove set_lines?
   - remove ui debugging stuff
 - revamp intersections
-  - agent lookahead needs to change a bit, and maybe routes...
+  - is_waiting needs to know how far away. determine, or provide?
+    - and we should technically allow an agent that doesnt know their turn yet
+      to idle and not even be considered
 
+  - agent lookahead needs to change a bit, and maybe routes...
+    - the edge case when we intend to stop
+  - add locks where necessary
+
+  - all policies want to know current turns / agents in some form..
   - refine active_intersections into new scheme
   - only really legit use of scheduled sim events is generators
   - sparse intersection execution, almost same as agents!
+    - stop sign fastpath: upon handle_exit, ping the next guy
 
 # Lane changing
 - agents get caught in loops because the general path isnt realizable

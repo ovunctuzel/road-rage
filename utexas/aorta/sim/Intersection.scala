@@ -131,7 +131,7 @@ abstract class Policy(val intersection: Intersection) {
 
   // Since we lookahead over small edges, we maybe won't/can't stop on the edge
   // right before the turn. As long as we validly stopped for us, then fine.
-  def is_waiting(a: Agent, t: Turn, far_away: Double) = far_away <= cfg.end_threshold
+  def is_waiting(a: Agent, far_away: Double) = far_away <= cfg.end_threshold
 }
 
 // Simplest base-line ever.

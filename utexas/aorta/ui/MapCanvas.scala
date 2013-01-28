@@ -18,7 +18,6 @@ import utexas.aorta.map._  // TODO yeah getting lazy.
 import utexas.aorta.sim.{Simulation, Agent, FixedSizeGenerator,
                          ContinuousGenerator, SpecificGenerator, Sim_Event,
                          EV_Signal_Change}
-import utexas.aorta.sim.policies.Cycle
 
 import utexas.aorta.{Util, cfg}
 
@@ -184,8 +183,8 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
 
   // Register to hear events
   sim.listeners :+= ((ev: Sim_Event) => { ev match {
-    case EV_Signal_Change(reds, greens) => {
-      green_turns --= reds
+    case EV_Signal_Change(greens) => {
+      green_turns.clear
       for (t <- greens) {
         green_turns(t) = GeomFactory.curved_turn(t)
       }
@@ -729,8 +728,7 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
         Util.log("WARNING: Nuking " + a)
         // simulate being done
         a.exit(a.at.on)
-        a.upcoming_intersections.foreach(i => i.unregister(a))
-        a.upcoming_intersections = Set()
+        a.cancel_intersection_reservations
         sim.agents -= a
       }
     }
@@ -780,7 +778,7 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
         message = "What policy should govern these intersections?",
         initial = "",
         // TODO populate seq from what sim uses
-        entries = Seq("Never Go", "Stop Sign", "Signal Cycle", "Reservation")
+        entries = Seq("Never Go", "Stop Sign", "Signal", "Reservation")
       ) match {
         case Some(name) => {
           val builder = Simulation.policy_builder(name.toString)
