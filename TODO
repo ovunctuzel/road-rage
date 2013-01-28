@@ -33,6 +33,12 @@ BIG TASKS
   - fix the geometry stuff later. what stuff?
     - maybe remove set_lines?
   - remove ui debugging stuff
+- revamp intersections
+  - agent lookahead needs to change a bit, and maybe routes...
+
+  - refine active_intersections into new scheme
+  - only really legit use of scheduled sim events is generators
+  - sparse intersection execution, almost same as agents!
 
 # Lane changing
 - agents get caught in loops because the general path isnt realizable

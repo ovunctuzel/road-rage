@@ -46,25 +46,12 @@ class Cycle(val offset: Double, val duration: Double) {
 // factory methods for cycles
 object Cycle {
   val nil_cycle = new Cycle(0, 1)
-  // TODO not necessarily the nicest way to group all of this or dole it out
-  // can't comptue this now; Agent.sim may not exist yet.
-  var greenflood_assignments: Map[Vertex, ListBuffer[Cycle]] = null
 
   // SignalCyclePolicy asks us, so we can do some one-time work and dole out the
   // results or lazily compute
   def cycles_for(i: Intersection): List[Cycle] = {
-    if (greenflood_assignments == null) {
-      Util.log("Green-flooding from " + i)
-      Util.log_push
-      // Start from any edge leading to this intersection
-      greenflood_assignments = GreenFlood.assign(Agent.sim, i.v.turns.head.from)
-      Util.log_pop
-    }
-
-    return greenflood_assignments(i.v).toList
-
     // for now...
-    //return arbitrary_cycles(i.v)
+    return arbitrary_cycles(i.v)
 
     // test standard-phase cycles... or enhanced with grouped lefts
     /*
@@ -230,6 +217,8 @@ class SignalCyclePolicy(intersection: Intersection)
   // find the cycle that should be active right now and how long it should last
   var end_at = 0.0
   def time_left = end_at - Agent.sim.tick
+
+  def react() = {}
 
   def schedule(at: Double) = {
     end_at = at

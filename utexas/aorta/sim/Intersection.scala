@@ -29,6 +29,7 @@ class Intersection(val v: Vertex) {
 
   // Delegate and log.
   def unregister(a: Agent) = policy.unregister(a)
+  def react = policy.react
   def can_go(a: Agent, turn: Turn, far_away: Double): Boolean = {
     // Sanity check...
     Util.assert_eq(turn.vert, v)
@@ -120,6 +121,7 @@ class Intersection(val v: Vertex) {
 }
 
 abstract class Policy(val intersection: Intersection) {
+  def react(): Unit
   def can_go(a: Agent, turn: Turn, far_away: Double): Boolean
   def validate_entry(a: Agent, turn: Turn): Boolean
   def handle_exit(a: Agent, turn: Turn)
@@ -134,6 +136,7 @@ abstract class Policy(val intersection: Intersection) {
 
 // Simplest base-line ever.
 class NeverGoPolicy(intersection: Intersection) extends Policy(intersection) {
+  def react = {}
   def can_go(a: Agent, turn: Turn, far_away: Double) = false
   def validate_entry(a: Agent, turn: Turn) = false
   def handle_exit(a: Agent, turn: Turn) = {}

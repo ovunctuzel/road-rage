@@ -18,7 +18,7 @@ import utexas.aorta.map._  // TODO yeah getting lazy.
 import utexas.aorta.sim.{Simulation, Agent, FixedSizeGenerator,
                          ContinuousGenerator, SpecificGenerator, Sim_Event,
                          EV_Signal_Change}
-import utexas.aorta.sim.policies.{GreenFlood, Cycle}
+import utexas.aorta.sim.policies.Cycle
 
 import utexas.aorta.{Util, cfg}
 

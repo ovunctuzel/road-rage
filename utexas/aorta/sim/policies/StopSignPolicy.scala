@@ -16,6 +16,8 @@ class StopSignPolicy(intersection: Intersection) extends Policy(intersection) {
   var current_owner: Option[Agent] = None
   var queue = List[Agent]()
 
+  def react() = {}
+
   def can_go(a: Agent, turn: Turn, far_away: Double): Boolean =
     current_owner match {
       // Do they have the lock?

@@ -171,6 +171,7 @@ class Simulation(roads: Array[Road], edges: Array[Edge], vertices: Array[Vertex]
       // Queues will lazily start_step, remembering their current state, when
       // they need to.
 
+      // Move agents.
       var active_cnt = 0
       agents.foreach(a => {
         if (a.step(cfg.dt_s)) {
@@ -188,6 +189,12 @@ class Simulation(roads: Array[Road], edges: Array[Edge], vertices: Array[Vertex]
 
       active_intersections.foreach(i => i.end_step)
 
+      // Let intersections react to the new world.
+      vertices.foreach(v => {
+        v.intersection.react
+      })
+
+      // Let agents react to the new world.
       agents.foreach(a => {
         // reap the done agents
         if (a.react) {

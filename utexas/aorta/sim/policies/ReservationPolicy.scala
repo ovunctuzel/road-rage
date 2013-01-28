@@ -30,6 +30,8 @@ class ReservationPolicy(intersection: Intersection)
   // When did the first group of reservations start waiting?
   private var others_started_waiting = -1.0
 
+  def react() = {}
+
   def shift_batches() = {
     if (current_batch.all_done) {
       lock_cur_batch = false
