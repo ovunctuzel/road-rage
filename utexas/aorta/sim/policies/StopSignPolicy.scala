@@ -4,74 +4,59 @@
 
 package utexas.aorta.sim.policies
 
-import scala.collection.mutable.{HashSet => MutableSet}
-import scala.collection.SortedSet
-
-import utexas.aorta.map.{Turn, Edge, Vertex}
+import utexas.aorta.map.Turn
 import utexas.aorta.sim.{Intersection, Policy, Agent}
 
 import utexas.aorta.{Util, cfg}
 
 // Always stop, then FIFO. Totally unoptimized.
 class StopSignPolicy(intersection: Intersection) extends Policy(intersection) {
-  // Since we only add somebody to our queue when they're sufficiently close,
-  // flood out to discover what edges we need to watch. This is independent of
-  // lookahead and dt.
-  private val monitor_edges = SortedSet((find_edges(intersection.v, cfg.end_threshold)): _*)
-  // We only add an agent to this once they satisfy our entrance requirements.
   // Head is the current owner.
   private var queue = List[Agent]()
-  // This just backs our queue
-  private val queued_agents = new MutableSet[Agent]()
 
-  override def is_waiting(a: Agent, far_away: Double) =
+  // Require agents to pause a moment
+  override def is_waiting(a: Agent) =
     super.is_waiting(a, far_away) && a.how_long_idle >= cfg.pause_at_stop
 
+  // Add agent to the queue if they satisfy our requirements.
   def react() = {
-    // If multiple agents get to enter the queue this step, the order is
-    // arbitrary but deterministic.
-    for (e <- monitor_edges) {
-      e.queue.head match {
-        case Some(a) if !queued_agents(a) && is_waiting(a) => {
-          queue :+= a
-          queued_agents += a
-        }
-        case _ =>
+    val orig_empty = queue.isEmpty
+    for ((a, _) <- waiting_agents) {
+      if (is_waiting(a)) {
+        queue :+= a
       }
+    }
+    if (orig_empty) {
+      approve_head
     }
   }
 
-  def can_go(a: Agent, turn: Turn, far_away: Double) =
+  def validate_entry(a: Agent, turn: Turn) =
     queue.headOption.getOrElse(null) == a
 
-  def validate_entry(a: Agent, turn: Turn) = can_go(a, turn, 0)
-
   def handle_exit(a: Agent, turn: Turn) = {
+    Util.assert_eq(queue.head, a)
     queue = queue.tail
-    queued_agents -= a
+    approve_head
   }
 
   def unregister(a: Agent) = {
+    val old_owner = queue.headOption
     queue = queue.filter(_ != a)
-    queued_agents -= a
+    waiting_agents = waiting_agents.filter(req => req._1 != a)
+    if (queue.headOption == old_owner) {
+      approve_head
+    }
   }
 
   def current_greens = intersection.turns.keys.toSet
 
   def dump_info() = {
     Util.log("Current queue: " + queue)
-    Util.log("Edges we watch: " + monitor_edges)
   }
 
-  private def find_edges(v: Vertex, distance: Double): List[Edge] = {
-    // TODO functionally?
-    val buffer = new MutableSet[Edge]()
-    for (e <- v.in_edges) {
-      buffer += e
-      if (distance >= e.length) {
-        buffer ++= find_edges(e.from, distance - e.length)
-      }
-    }
-    return buffer.toList
+  private def approve_head = queue.headOption match {
+    case Some(a) => a.allow_turn(intersection)
+    case None =>
   }
 }

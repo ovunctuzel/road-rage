@@ -6,6 +6,7 @@ package utexas.aorta.sim
 
 import scala.collection.mutable.{HashMap => MutableMap}
 import scala.collection.mutable.{HashSet => MutableSet}
+import scala.collection.mutable.TreeSet
 
 import utexas.aorta.sim.policies._
 import utexas.aorta.map.{Vertex, Turn}
@@ -30,7 +31,7 @@ class Intersection(val v: Vertex) {
   // Delegate and log.
   def unregister(a: Agent) = policy.unregister(a)
   def react = policy.react
-  def can_go(a: Agent, turn: Turn, far_away: Double): Boolean = {
+  def request_turn(a: Agent, turn: Turn) = {
     // Sanity check...
     Util.assert_eq(turn.vert, v)
     stats_requested += a
@@ -43,7 +44,7 @@ class Intersection(val v: Vertex) {
         )
       }
     }
-    return policy.can_go(a, turn, far_away)
+    policy.request_turn(a, turn)
   }
 
   // Multiple agents can be on the same turn; the corresponding queue will
@@ -121,24 +122,36 @@ class Intersection(val v: Vertex) {
 }
 
 abstract class Policy(val intersection: Intersection) {
+  // When intersections pull agents off this list, the order is arbitrary but
+  // deterministic.
+  protected var waiting_agents = new TreeSet[(Agent, Turn)]()
+  // TODO Ticket type useful?
+  // Agents inform intersections of their intention ONCE and receive a lease
+  // eventually.
+  def request_turn(a: Agent, turn: Turn) = {
+    waiting_agents += ((a, turn))
+    // TODO do extra book-keeping to verify agents aren't double requesting?
+  }
+
+  // The intersection grants leases to waiting_agents
   def react(): Unit
-  def can_go(a: Agent, turn: Turn, far_away: Double): Boolean
   def validate_entry(a: Agent, turn: Turn): Boolean
   def handle_exit(a: Agent, turn: Turn)
   def unregister(a: Agent)
-  def current_greens(): Set[Turn] = Set()
-  def dump_info() = {}
+  def current_greens(): Set[Turn]
+  def dump_info()
 
   // Since we lookahead over small edges, we maybe won't/can't stop on the edge
   // right before the turn. As long as we validly stopped for us, then fine.
-  def is_waiting(a: Agent, far_away: Double) = far_away <= cfg.end_threshold
+  def is_waiting(a: Agent) = a.how_far_away(intersection) <= cfg.end_threshold
 }
 
 // Simplest base-line ever.
 class NeverGoPolicy(intersection: Intersection) extends Policy(intersection) {
   def react = {}
-  def can_go(a: Agent, turn: Turn, far_away: Double) = false
   def validate_entry(a: Agent, turn: Turn) = false
   def handle_exit(a: Agent, turn: Turn) = {}
   def unregister(a: Agent) = {}
+  def current_greens = Set()
+  def dump_info = {}
 }

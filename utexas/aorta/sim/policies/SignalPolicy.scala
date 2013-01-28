@@ -21,18 +21,19 @@ class SignalPolicy(intersection: Intersection) extends Policy(intersection) {
   private var started_at = Agent.sim.tick
   // accumulated delay for letting vehicles finish turns
   private var delay = 0.0
-  val accepted_agents = new MutableSet[Agent]
+  private val accepted_agents = new MutableSet[Agent]
 
   def react() = {
     // TODO Flush out stalled slowpokes that can definitely stop and aren't
     // already in their turn? Helps prevent gridlock, that's all.
 
+    // Track delay if overtime is ending
     if (in_overtime && accepted_agents.isEmpty) {
       delay += Agent.sim.tick - end_at
     }
 
+    // Switch to the next phase
     if (Agent.sim.tick >= end_at && accepted_agents.isEmpty) {
-      // switch to the next phase
       phases = phases.tail
       started_at = Agent.sim.tick
       // TODO could account for delay and try to get back on schedule by
@@ -41,16 +42,15 @@ class SignalPolicy(intersection: Intersection) extends Policy(intersection) {
       // callback for UI usually
       Agent.sim.tell_listeners(EV_Signal_Change(current_phase.turns.toSet))
     }
-  }
 
-  def can_go(a: Agent, turn: Turn, far_away: Double): Boolean = {
-    if (in_overtime) {
-      return accepted_agents(a)
-    } else if (current_phase.has(turn) && could_make_light(a, far_away)) {
-      accepted_agents += a
-      return true
-    } else {
-      return false
+    // Accept new agents into the current phase
+    if (!in_overtime) {
+      for ((a, turn) <- waiting_agents) {
+        if (current_phase.has(turn) && could_make_light(a, a.how_far_away(intersection))) {
+          a.allow_turn(intersection)
+          accepted_agents += a
+        }
+      }
     }
   }
 
@@ -60,6 +60,8 @@ class SignalPolicy(intersection: Intersection) extends Policy(intersection) {
 
   def unregister(a: Agent) = {
     accepted_agents -= a
+    // TODO refactor this
+    waiting_agents = waiting_agents.filter(req => req._1 != a)
   }
 
   def current_greens =
