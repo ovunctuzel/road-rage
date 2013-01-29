@@ -1,28 +1,11 @@
 # TODO #
 
-SMALL TASKS
-  - draw turns good
-  - split the passes
-    - pass1 = read osm + normalize
-    - pass2 = pass2
-    - pass3 = (>make edge geometry), make edges, make turns,
-              (>nuke disconnected), (collapse degenerate verts), (>wards),
-              (small roads to long turns), trim lane lines at vertices
-  - separate maps/ and osm/ dir
-  - slow down for turns (a speed limit)
-  - quick code cleanup
-    - draw per object
-    - sorted sets everywhere for determinism
-    - more privates, make abstract members more explicit, delegates
+# Easy Parallelization
+- handle_exit and unregister approving stuff.. ok? this is in agent step phase..
+- add locks where necessary
+- dont forget RNGs
 
-BIG TASKS
-  - collapse degenerate vertices
-  - short roads -> longer turns
-  - redo all intersection stuff
-  - make turns better, more systematically
-  - variety of vehicle params
-  - contraction hierarchies
-
+# Map Construction
 - clean up roads with just 2 roads
   - pass3, since doomed pruning makes new problems
   - but keep pass 2 version? seems to prevent some stuff from getting doomed!
@@ -35,171 +18,39 @@ BIG TASKS
   - fix the geometry stuff later. what stuff?
     - maybe remove set_lines?
   - remove ui debugging stuff
-- revamp intersections
-  - handle_exit and unregister approving stuff.. ok? this is in agent step phase..
-  - add locks where necessary
+- make turns better, more systematically
+  - try to not remove pieces of maps at all
+- draw turns better
 
-  - agents should tell intersections in advance when they know
-    - the edge case when we intend to stop
-  - lookahead may not need to track distances anymore..
-
-  - refine active_intersections into new scheme
-  - only really legit use of scheduled sim events is generators
-  - sparse intersection execution, almost same as agents!
-    - stop sign fastpath: upon handle_exit, ping the next guy
-
-# Lane changing
-- agents get caught in loops because the general path isnt realizable
-- dont let agents start lc that depends on others getting out of way
-- lookbehind is feasible with lazy floodfilling
-- speculative desired_lane
-
-- test at scale. gridlock?
-
-- testing
-  - introduce automated test framework using scenarios
-  - wacky cases of 2 side-by-side agents wanting to swap places?
-
-# Administrative
-- website
-  - build instructions (with scala and such)
-  - osm scraper script
-  - wiki docs
-  - scaladoc
-- rename lanes/intersections/junctions in code too?
-  - rename policy -> controller
-- is there a way to analytically say "an agent will own this chunk" at some time, and
-  then solve for collisions?
-- switch ant to sbt? https://github.com/harrah/xsbt/wiki/Examples
-- repository of detailed cities with demand data?
-
-# Problems
-- at big timesteps, nobody moves?
-- simulate and headless deterministic, different often
-- calibration issues... distances totally off
-- different vehicle lengths, parameters
-- fastpaths for behavior (most agents lookahead just 1 step)
-- can we make timesteps equivalent? (probably not)
-
-# Behaviors, Policies, & Strategies
-- traffic signal
-  - cycles have to last long enough to let agent cross long intersection
-  - try backpressure idea
-  - visualize the green/red better
-    - do something with lanes still
-    - what i was imagining was picking some edge at some point in time, then flooding out
-      from there at some rate.
-  - improve greenflood
-  - diffused backwards allocation
-    - same idea, but goal: make one critical intersection super efficient
-    - what lanes lead to / feed the lanes that can do turns? repeat for those.
-- reservations
-  - use backpressurelike idea with inertia
-- structuring policy stuff as a state machine and events may be more elegant...
-
-# Profiling/Optimizations
-- sleep less in UI
-- we can do much better with ready agents... max capacity of edges, group them based on
-  where they want to spawn, maybe by generator?
-- is caching properties of linked list hurting us for iterating through big things?
-- we could check less queues atomically if we could step agents in some cool order
-  - or when we mess with an agent, see if they've moved yet this round?
-- dont need lots of behavior objects if they keep no state
-- throw away geometry in UI after converted to awt stuff
-- truncate lengths, other doubles or more compactly write
-- improve map loading
-  - scanner?
-  - why are traversable lines given not as point sequence?
-
-# Parallelizing
-- parallelize lookahead?
-  - safe_to_lanechange looks at other agents in a queue...
-  - entering/exit queue to lanechange or be done with route (lock per queue)
-  - canceling intersection reservations (lock per vert)
-  - lookahead looks for things close by on queues.
-  - polling intersections
-  => observing readonly state of simulation would be useful. this is another
-     argument for reverse computation.
-- meseoscopic in between regions? lockstep necessary?
-- dynamic load balancing? any need to split up by region?
-- actors / akka?
-
-# UI
-- cmdline switch to follow stuff or zoom in somewhere
-- ui speed controls.. step one tick, display a certain fps, sleep to match what?
-- visualize lookahead
-- work on svg
-- see how fast p3d can render static geometry
-- java3d optimized for static scenes?
-- the renderer for osm is actually nice..
-- http://technically.us/code/x/flocking-with-spde/
-  consider processing, partial 3d rendering of overpasses.
-- turn off generators
-- color agents from diff generators a certain way
-- when we speed up, sleep less in UI?
-- configurable intersection policies. and rep them better!
-- right click context menus
-- in sugarland, oneway bg lines arent thick enough
-- get rid of arrows, make roads transparent, change colors, something.
-  - dont show arrows when line segs are really clustered
-- show 'fps' in viewer
-- agents in middle of road makes ends of lines once again look sucky.
-- show agents who are currently GOING
-  - ui could show policy's current owner or something
-- show routes better
-- config
-- black road backgrounds dont meet up smoothly since we go by line segment
-  - add extra lanes on either side, dont color them white, but draw the stuff in between?
-- way better pruning of what to (re-draw) using quadtrees
-  - but is it even needed?
-- draw the orig corner of freehanded polygons differently or something
-
-# Map Gen
 - use http://wiki.openstreetmap.org/wiki/Relation:restriction
-- fix geom of edge lines
 - our pruning of pedestrian ways seems to be a bit too enthusiastic (see Guadalupe St)
 - deterministic construction is still wonky, with ward IDs and lines (due to meeting up)
-- make line segs meet up better.
-- style: xml out could be string.format or xml and then stringify, or use lazy?
 - cul-de-sac handling in p2... needed?
   - Claus Circle in BR... has no outgoing turns.
-- multi-lane situations dont have enough turns, and we need to do more trimming!
 - connectivity fixpoint algorithm shouldnt be necessary?
 - make xml as complete as plaintext?
+- lots of things break if we have a vertex with a self-loop
 
-# General Simulation
-- calibrate parameters.
-- osm/ and maps/ separate
-- modular design... if one agent breaks, dont break everyone
+# Simulation Realism
+- slow down for turns (a speed limit)
+- diversity... different vehicle lengths, parameters
+- calibration issues... distances totally off
 - have a notion of "I'm done with the turn, but I'm protruding into the intersection"
   by requiring not only we're done with a turn but also some dist along the new edge.
-- slow down for turns (a speed limit)
-- snapshot mode in headless with agents pos, to later render
-  (solve memory issue)
-- tweak cfg now that we have meters
 - give lanes/roads/etc the ability to be closed
-- lots of things break if we have a vertex with a self-loop
-- determinism: worker threads while running (can't help this)
-  - record when we introduce somebody, resim enforces this and blocks.
-
-# Applications
-- follow dist variable based on speed, so when a light goes green,
-  everyone starts simultaneously
-- contraflow
-- dynamic replanning + hierarchial planning
-- microtolling (not trolling)
-- traffic signals that learn
-- promoting stop signs -> lights
-  - mixing intersections!
-
-# Wards
-- find 'major' roads better
-  - crosses/links major roads
-- my wards!
-  - guarantee some kind of connectedness within a ward
-  - except in vs out edges to the whole neighborhood?
 
 # Code Cleanup
+- split the passes
+  - pass1 = read osm + normalize
+  - pass2 = pass2
+  - pass3 = (>make edge geometry), make edges, make turns,
+            (>nuke disconnected), (collapse degenerate verts), (>wards),
+            (small roads to long turns), trim lane lines at vertices
+- separate maps/ and osm/ dir
+- only really legit use of scheduled sim events is generators
+- draw per object
+- sorted sets everywhere for determinism
+- more privates, make abstract members more explicit, delegates
 - move all configable things to Util
 - make more immutable things / reduce more vars to vals
 - make everything possible immutable, but then have to figure out how to build
@@ -208,8 +59,84 @@ BIG TASKS
   - have more ids and methods that access based on those. that'll break it.
   - immutable construction is easy... have parent entity create child.
 
-# Testing Strategy
+# Contraction Hierarchies
+- understand...
+
+# Fastpaths
+- agents and intersections could wake each other up now
+
+# Intersection Policies
+- stop sign for only some directions
+- backpressure light optimization
+- agents should tell intersections in advance when they know
+  - the edge case when we intend to stop
+
+# Scaling
+- support ~million agents, memory-wise
+- gridlock?
+  - force different turns?
+  - agents get caught in loops because the path isnt realizable due to LC
+- at big timesteps, nobody moves?
+
+# Testing
 - determinism
-  - how to test it?
-- things to test
-  - invariance of dt_s (if possible)
+  - record when we introduce somebody, resim enforces this and blocks.
+- example scenarios
+  - mixed intersection policies
+  - wacky cases of 2 side-by-side agents wanting to swap places?
+
+# UI
+- 3D
+- visualize red/green lights better
+- cmdline switch to follow stuff or zoom in somewhere
+- ui speed controls.. step one tick, display a certain fps, sleep to match what?
+- visualize lookahead
+- turn off generators
+- color agents from diff generators a certain way
+- right click context menus
+- show 'fps' in viewer
+- config
+
+# Lane-changing
+- any missed opportunities?
+- dont let agents start lc that depends on others getting out of way
+- lookbehind is feasible with lazy floodfilling
+- speculative desired_lane
+
+# Micro-optimizations
+- sleep less in UI
+- we can do much better with ready agents... max capacity of edges, group them
+  based on where they want to spawn, maybe by generator?
+- throw away geometry in UI after converted to awt stuff
+- truncate lengths, other doubles or more compactly write
+- improve map loading
+  - scanner?
+  - why are traversable lines given not as point sequence?
+
+# Distributed Parallelization
+- meseoscopic in between regions? lockstep necessary?
+- dynamic load balancing? any need to split up by region?
+- actors / akka?
+
+# Applications
+- follow dist variable based on speed, so when a light goes green,
+  everyone starts simultaneously
+- contraflow
+- dynamic replanning + hierarchial planning (wards)
+- rewindable simulation
+
+# Theoretical
+- is there a way to analytically say "an agent will own this chunk" at some time, and
+  then solve for collisions?
+- can we make timesteps equivalent? (probably not)
+- varying dt mid-simulation
+
+# Administrative
+- website
+  - build instructions (with scala and such)
+  - wiki docs
+  - scaladoc
+- osm scraper script
+- rename lanes/intersections/junctions in code too? policy -> controller?
+- switch ant to sbt? https://github.com/harrah/xsbt/wiki/Examples
+- repository of detailed cities with demand data?
