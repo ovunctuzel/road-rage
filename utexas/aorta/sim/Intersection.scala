@@ -129,6 +129,7 @@ abstract class Policy(val intersection: Intersection) {
   // Agents inform intersections of their intention ONCE and receive a lease
   // eventually.
   def request_turn(a: Agent, turn: Turn) = {
+    // TODO this is the one thing that needs to be locked
     waiting_agents += ((a, turn))
     // TODO do extra book-keeping to verify agents aren't double requesting?
   }

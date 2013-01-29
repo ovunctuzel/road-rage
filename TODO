@@ -42,6 +42,7 @@ BIG TASKS
   - agent lookahead needs to change a bit, and maybe routes...
     - the edge case when we intend to stop
   - add locks where necessary
+  - handle_exit and unregister approving stuff.. ok? this is in agent step phase..
 
   - all policies want to know current turns / agents in some form..
   - refine active_intersections into new scheme

@@ -18,89 +18,37 @@ import utexas.aorta.{Util, cfg}
 class ReservationPolicy(intersection: Intersection) extends Policy(intersection)
 {
   private var reservations = new TurnBatch() :: Nil
-  private var lock_cur_batch = false    // because we're trying to preempt
-  private val accepted_agents = new MutableSet[Agent]()
-  // When did the first group of reservations start waiting?
-  private var others_started_waiting = -1.0
 
   def react() = {
+    // Process new requests
+    waiting_agents.foreach(req => add_agent(req._1, req._2))
+    waiting_agents = waiting_agents.empty
+
     // TODO flush stalled agents to avoid gridlock?
 
-
-  }
-
-  def shift_batches() = {
-    if (current_batch.all_done) {
-      lock_cur_batch = false
-      // Time for the next reservation! If there is none, then keep
-      // current_batch because it's empty anyway.
-      if (reservations.size != 0) {
-        current_batch = reservations.head
-        reservations = reservations.tail
-        if (reservations.nonEmpty) {
-          // If we had a previous preempt notification on the way, just ignore
-          // it when it arrives
-          dont_be_greedy
-        }
-      }
-    }
-  }
-
-  def can_go(a: Agent, turn: Turn, far_away: Double): Boolean = {
-    val first_req = !current_agents.contains(a)
-
-    // check everyone in the current batch. if any are not moving and not in
-    // their turn, then cancel them -- they're almost definitely stuck behind
-    // somebody who wants to do something different.
-    current_agents --= current_batch.flush_stalled
     shift_batches
 
-    return if (first_req) {
-      current_agents += a
-      if ((!lock_cur_batch) && current_batch.add_ticket(a, turn)) {
-        true
-      } else {
-        // A conflicting turn. Add it to the reservations.
-
-        // Is there an existing batch of reservations that doesn't conflict?
-        if (!reservations.find(r => r.add_ticket(a, turn)).isDefined) {
-          // new batch!
-          val batch = new TurnBatch()
-          batch.add_ticket(a, turn)
-          // Make sure these guys don't wait too long. Schedule the event system
-          // to poke us after a certain delay.
-          if (reservations.isEmpty) {
-            dont_be_greedy
-          }
-          reservations :+= batch
-        }
-
-        false
-      }
-    } else {
-      current_batch.has_ticket(a, turn)
-    }
+    // TODO preempt reservations that perservere too long, or enforce whatever
+    // load balancing strategy...
   }
+
 
   def validate_entry(a: Agent, turn: Turn) = current_batch.has_ticket(a, turn)
 
   def handle_exit(a: Agent, turn: Turn) = {
     assert(current_batch.has_ticket(a, turn))
     current_batch.remove_ticket(a, turn)
-    current_agents -= a
     shift_batches
   }
 
-  override def current_greens = current_batch.tickets.keys.toSet
+  def current_greens = current_batch.tickets.keys.toSet
 
   def unregister(a: Agent) = {
-    if (current_agents.contains(a)) {
-      // TODO what turn do they want to do? nuke-agent doesn't work till we get
-      // this right.
-    }
+    waiting_agents = waiting_agents.filter(req => req._1 != a)
+    reservations.foreach(b => b.remove_agent(a))
   }
 
-  override def dump_info() = {
+  def dump_info() = {
     Util.log(reservations.size + " reservations pending")
     Util.log("Currently:")
     Util.log_push
@@ -110,29 +58,32 @@ class ReservationPolicy(intersection: Intersection) extends Policy(intersection)
     Util.log_pop
   }
 
-  def dont_be_greedy() = {
-    // TODO swap based on recursive dependency count
-    others_started_waiting = Agent.sim.tick
-    // TODO there are similarities with signal cycle policy. perhaps refactor.
-    Agent.sim.schedule(Agent.sim.tick + cfg.signal_duration, { this.preempt })
+  private def current_batch = reservations.head
+
+  private def shift_batches() = {
+    if (current_batch.all_done) {
+      // Time for the next reservation! If there is none, then keep
+      // current_batch because it's empty anyway.
+      if (reservations.tail.nonEmpty) {
+        reservations = reservations.tail
+        current_batch.agents.foreach(a => a.approve_turn(intersection))
+      }
+    }
   }
 
-  // Delay the current cycle, they're hogging unfairly
-  def preempt() = {
-    if (Agent.sim.tick - others_started_waiting >= cfg.signal_duration
-        && reservations.nonEmpty && lock_cur_batch == false)
-    {
-      // it's quite the edge case when there are no current_agents... because
-      // then the intersection would have shifted to the next anyway.
-      assert(!current_batch.all_done)
+  private def add_agent(a: Agent, turn: Turn) = {
+    if (current_batch.add_ticket(a, turn)) {
+      a.approve_turn(intersection)
+    } else {
+      // A conflicting turn. Add it to the reservations.
 
-      // cant do it if there are some that can't stop. aka, just lock current
-      // cycle.
-      lock_cur_batch = true
-      //Util.log("locking " + intersection + " for preemption")
-      
-      // then all the other handling is normal, just don't let agents enter
-      // current_batch
+      // Is there an existing batch of reservations that doesn't conflict?
+      if (!reservations.find(r => r.add_ticket(a, turn)).isDefined) {
+        // New batch!
+        val batch = new TurnBatch()
+        batch.add_ticket(a, turn)
+        reservations :+= batch
+      }
     }
   }
 }
@@ -162,5 +113,13 @@ class TurnBatch() {
 
   def remove_ticket(a: Agent, t: Turn) = tickets.removeBinding(t, a)
 
+  def remove_agent(a: Agent) = {
+    for (turn <- tickets.keys) {
+      tickets.removeBinding(turn, a)
+    }
+  }
+
   def all_done = tickets.isEmpty
+
+  def agents = tickets.values.flatten
 }

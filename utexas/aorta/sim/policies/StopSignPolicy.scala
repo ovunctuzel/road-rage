@@ -21,9 +21,10 @@ class StopSignPolicy(intersection: Intersection) extends Policy(intersection) {
   // Add agent to the queue if they satisfy our requirements.
   def react() = {
     val orig_empty = queue.isEmpty
-    for ((a, _) <- waiting_agents) {
+    for ((a, turn) <- waiting_agents) {
       if (is_waiting(a)) {
         queue :+= a
+        waiting_agents -= ((a, turn)) // TODO mod while iterate?
       }
     }
     if (orig_empty) {
@@ -56,7 +57,7 @@ class StopSignPolicy(intersection: Intersection) extends Policy(intersection) {
   }
 
   private def approve_head = queue.headOption match {
-    case Some(a) => a.allow_turn(intersection)
+    case Some(a) => a.approve_turn(intersection)
     case None =>
   }
 }

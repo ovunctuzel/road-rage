@@ -4,12 +4,10 @@
 
 package utexas.aorta.sim.policies
 
-import scala.collection.immutable.{SortedSet, TreeSet}
 import scala.collection.mutable.{HashSet => MutableSet}
 import scala.collection.mutable.ListBuffer
-import scala.collection.mutable.{HashMap => MutableMap}
 
-import utexas.aorta.map.{Turn, Edge, Vertex, Road}
+import utexas.aorta.map.{Turn, Vertex}
 import utexas.aorta.sim.{Intersection, Policy, Agent, EV_Signal_Change}
 
 import utexas.aorta.{Util, cfg}
@@ -47,8 +45,9 @@ class SignalPolicy(intersection: Intersection) extends Policy(intersection) {
     if (!in_overtime) {
       for ((a, turn) <- waiting_agents) {
         if (current_phase.has(turn) && could_make_light(a, a.how_far_away(intersection))) {
-          a.allow_turn(intersection)
+          a.approve_turn(intersection)
           accepted_agents += a
+          waiting_agents -= ((a, turn))
         }
       }
     }
