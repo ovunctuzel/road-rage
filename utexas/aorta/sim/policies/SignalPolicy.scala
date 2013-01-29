@@ -87,7 +87,7 @@ class SignalPolicy(intersection: Intersection) extends Policy(intersection) {
 
     val turns_seen = new MutableSet[Turn]
     var expect_offset = phase_ls.head.offset
-    for (phase <- phases) {
+    for (phase <- phase_ls) {
       Util.assert_eq(phase.offset, expect_offset)
       expect_offset += phase.duration
       turns_seen ++= phase.turns
@@ -157,7 +157,7 @@ object Phase {
       // conflict relation is symmetric, but not transitive... so do quadratic
       // conflict checking
       for (candidate <- turns_remaining) {
-        if (!this_group.find(t => t.conflicts_with(t)).isDefined) {
+        if (!this_group.find(t => t.conflicts_with(candidate)).isDefined) {
           this_group += candidate
           turns_remaining -= candidate
         }

@@ -135,7 +135,7 @@ object Util {
       sys.exit
     }                                                                     
 
-    val prefix = """--cfg_(\w+)""".r
+    val cfg_prefix = """--cfg_(\w+)""".r
     for ((key, value) <- keys.zip(vals)) {
       // TODO multiple different ways of saying 'true'
       key match {
@@ -147,7 +147,7 @@ object Util {
         // TODO case "--run_for"     => { run_for = value.toDouble }
         case "--scenario"    => { load_scenario = value }
         case "--name"        => { exp_name = value }
-        case prefix(param)   => cfg.get_param_method(param) match {
+        case cfg_prefix(param)   => cfg.get_param_method(param) match {
           case Some(method) => {
             val param_type = method.getParameterTypes.head
             if (param_type == classOf[Int]) {

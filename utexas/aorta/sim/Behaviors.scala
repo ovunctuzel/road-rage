@@ -20,6 +20,7 @@ abstract class Behavior(a: Agent) {
   // just for debugging
   def dump_info()
   def wants_to_lc(): Boolean = target_lane != null && target_lane.isDefined
+  def how_far_away(i: Intersection): Double
 
   // As an optimization and to keep some stats on how successful lane-changing
   // is, remember the adjacent lane we'd like to switch into.
@@ -40,6 +41,8 @@ class IdleBehavior(a: Agent) extends Behavior(a) {
   override def dump_info() = {
     Util.log("Idle behavior")
   }
+
+  override def how_far_away(i: Intersection) = 42.0
 }
 
 // Reactively avoids collisions and obeys intersections by doing a conservative
@@ -309,13 +312,20 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
       // Otherwise, ask the intersection
       case e: Edge => {
         val i = e.to.intersection
-        a.upcoming_intersections += i   // remember we've registered here
-        // If the lookahead includes a next step, this should be consistent with
-        // what the route says, by the route's contract of consistent answers.
-        // But sometimes the lookahead terminates early due to not enough
-        // distance, so just always ask this.
-        val next_turn = route.pick_turn(e)
-        !i.can_go(a, next_turn, dist_from_agent_to_end)
+        if (a.turns_approved(i)) {
+          false
+        } else {
+          if (!a.turns_requested(i)) {
+            // If the lookahead includes a next step, this should be consistent
+            // with what the route says, by the route's contract of consistent
+            // answers. But sometimes the lookahead terminates early due to not
+            // enough distance, so just always ask this.
+            val next_turn = route.pick_turn(e)
+            i.request_turn(a, next_turn)
+            a.turns_requested += i
+          }
+          true
+        }
       }
     }
     if (!stop_at_end) {
@@ -369,6 +379,35 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
       // Special case for distance of 0: avoid a NaN, just stop.
       return a.accel_to_stop
     }
+  }
+
+  override def how_far_away(i: Intersection): Double = {
+    // Because the route should be determinstic, just keep asking it how to get
+    // there and sum distances.
+    var total = 0.0
+    // If we're being asked this, we've requested the turn, meaning no more
+    // lane-changing needs to happen.
+    var at = a.at.on
+    while (true) {
+      if (at == a.at.on) {
+        total += a.at.dist_left
+      } else {
+        total += at.length
+      }
+      at match {
+        case e: Edge => {
+          if (e.to.intersection == i) {
+            return total
+          } else {
+            at = route.pick_turn(e)
+          }
+        }
+        case t: Turn => {
+          at = t.to
+        }
+      }
+    }
+    throw new Exception(s"how_far_away broke looking for $i")
   }
 }
 

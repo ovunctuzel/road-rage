@@ -13,13 +13,14 @@ SMALL TASKS
   - quick code cleanup
     - draw per object
     - sorted sets everywhere for determinism
+    - more privates, make abstract members more explicit, delegates
 
 BIG TASKS
   - collapse degenerate vertices
   - short roads -> longer turns
+  - redo all intersection stuff
   - make turns better, more systematically
   - variety of vehicle params
-  - redo all intersection stuff
   - contraction hierarchies
 
 - clean up roads with just 2 roads
@@ -35,16 +36,13 @@ BIG TASKS
     - maybe remove set_lines?
   - remove ui debugging stuff
 - revamp intersections
-  - is_waiting needs to know how far away. determine, or provide?
-    - and we should technically allow an agent that doesnt know their turn yet
-      to idle and not even be considered
-
-  - agent lookahead needs to change a bit, and maybe routes...
-    - the edge case when we intend to stop
-  - add locks where necessary
   - handle_exit and unregister approving stuff.. ok? this is in agent step phase..
+  - add locks where necessary
 
-  - all policies want to know current turns / agents in some form..
+  - agents should tell intersections in advance when they know
+    - the edge case when we intend to stop
+  - lookahead may not need to track distances anymore..
+
   - refine active_intersections into new scheme
   - only really legit use of scheduled sim events is generators
   - sparse intersection execution, almost same as agents!

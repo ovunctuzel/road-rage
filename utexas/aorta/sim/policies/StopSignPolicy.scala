@@ -16,7 +16,7 @@ class StopSignPolicy(intersection: Intersection) extends Policy(intersection) {
 
   // Require agents to pause a moment
   override def is_waiting(a: Agent) =
-    super.is_waiting(a, far_away) && a.how_long_idle >= cfg.pause_at_stop
+    super.is_waiting(a) && a.how_long_idle >= cfg.pause_at_stop
 
   // Add agent to the queue if they satisfy our requirements.
   def react() = {
@@ -27,7 +27,7 @@ class StopSignPolicy(intersection: Intersection) extends Policy(intersection) {
         waiting_agents -= ((a, turn)) // TODO mod while iterate?
       }
     }
-    if (orig_empty) {
+    if (orig_empty && queue.nonEmpty) {
       approve_head
     }
   }
@@ -45,7 +45,7 @@ class StopSignPolicy(intersection: Intersection) extends Policy(intersection) {
     val old_owner = queue.headOption
     queue = queue.filter(_ != a)
     waiting_agents = waiting_agents.filter(req => req._1 != a)
-    if (queue.headOption == old_owner) {
+    if (old_owner.getOrElse(null) == a) {
       approve_head
     }
   }

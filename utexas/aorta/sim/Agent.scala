@@ -4,6 +4,8 @@
 
 package utexas.aorta.sim
 
+import scala.collection.mutable.{HashSet => MutableSet}
+
 import utexas.aorta.map.{Edge, Coordinate, Turn, Traversable, Graph, Position}
 import utexas.aorta.{Util, cfg}
 import utexas.aorta.ui.Renderable
@@ -44,8 +46,9 @@ class Agent(val id: Int, val route: Route) extends Ordered[Agent] with Renderabl
                       else
                         Agent.sim.tick - idle_since
 
-  // Track intersections we've contacted but not passed
-  var upcoming_intersections: Set[Intersection] = Set()
+  // Track intersections where we've asked for and received a lease
+  val turns_requested = new MutableSet[Intersection]()
+  val turns_approved = new MutableSet[Intersection]()
 
   override def toString = "Agent " + id
 
@@ -141,12 +144,11 @@ class Agent(val id: Int, val route: Route) extends Ordered[Agent] with Renderabl
         case (e: Edge, t: Turn) => {
           val i = t.vert.intersection
           i.enter(this, t)
-          upcoming_intersections += i
         }
         case (t: Turn, e: Edge) => {
           val i = t.vert.intersection
           i.exit(this, t)
-          upcoming_intersections -= i
+          turns_approved -= i
         }
       }
 
@@ -173,7 +175,7 @@ class Agent(val id: Int, val route: Route) extends Ordered[Agent] with Renderabl
     return new_dist > 0.0
   }
 
-  def safe_to_lc(target: Edge): Boolean = {
+  private def safe_to_lc(target: Edge): Boolean = {
     at.on match {
       case e: Edge => {
         if (e.road != target.road) {
@@ -255,8 +257,10 @@ class Agent(val id: Int, val route: Route) extends Ordered[Agent] with Renderabl
   }
 
   def cancel_intersection_reservations() = {
-    upcoming_intersections.foreach(i => i.policy.unregister(this))
-    upcoming_intersections = Set()
+    turns_requested.foreach(i => i.policy.unregister(this))
+    turns_approved.foreach(i => i.policy.unregister(this))
+    turns_requested.clear
+    turns_approved.clear
   }
 
   // returns distance traveled, updates speed. note unit of the argument.
@@ -364,6 +368,14 @@ class Agent(val id: Int, val route: Route) extends Ordered[Agent] with Renderabl
     behavior.dump_info
     Util.log_pop
   }
+
+  def approve_turn(i: Intersection) = {
+    Util.assert_eq(turns_requested(i), true)
+    turns_requested -= i
+    turns_approved += i
+  }
+
+  def how_far_away(i: Intersection) = behavior.how_far_away(i)
 }
 
 class SpawnAgent(val a: Agent, val e: Edge, val dist: Double) {}
