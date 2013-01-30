@@ -43,7 +43,7 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
           sim.step((System.currentTimeMillis - start).toDouble / 1000.0)
           camera_agent match {
             case Some(a) => {
-              if (sim.agents.contains(a)) {
+              if (sim.has_agent(a)) {
                 center_on(a.at.location)
               } else {
                 Util.log(a + " is done; the camera won't stalk them anymore")
@@ -616,7 +616,7 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
       prompt_int("What agent ID do you seek?") match {
         case Some(id) => {
           try {
-            sim.agents.find(a => a.id == id.toInt) match {
+            sim.get_agent(id.toInt) match {
               case Some(a) => {
                 Util.log("Here's " + a)
                 center_on(a.at.location)
@@ -726,8 +726,8 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
         val a = current_agent.get
         current_obj = None
         Util.log("WARNING: Nuking " + a)
-        a.terminate
-        sim.agents -= a
+        //a.terminate
+        // TODO remove the agent from the list
       }
     }
     case EV_Key_Press(Key.G) => {

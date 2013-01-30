@@ -61,8 +61,9 @@ class Stopwatch(val name: String) {
   private var from: Long = 0
   var seconds: Double = 0.0
 
-  @elidable(ASSERTION) def start = {
+  @elidable(ASSERTION) def start(): Stopwatch = {
     from = System.nanoTime
+    return this
   }
 
   @elidable(ASSERTION) def stop = {
@@ -78,5 +79,9 @@ class Stopwatch(val name: String) {
     } finally {
       stop
     }
+  }
+
+  def describe() = {
+    Util.log(s"$name took $seconds seconds")
   }
 }
