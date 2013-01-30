@@ -41,7 +41,7 @@ class Simulation(roads: Array[Road], edges: Array[Edge], vertices: Array[Vertex]
   Util.log("Creating queues and intersections for collision handling...")
   traversables.foreach(t => t.queue = new Queue(t))
   vertices.foreach(v => v.intersection = new Intersection(v))
-  var agents: SortedSet[Agent] = new TreeSet[Agent]
+  var agents: Vector[Agent] = Vector.empty
   var ready_to_spawn: List[SpawnAgent] = Nil
   private var generators: SortedSet[Generator] = new TreeSet[Generator]
   private var generator_count = 0   // just for informational/UI purposes
@@ -58,6 +58,19 @@ class Simulation(roads: Array[Road], edges: Array[Edge], vertices: Array[Vertex]
     id_cnt += 1
     return id_cnt
   }
+
+  def get_agent(id: Int): Option[Agent] = {
+    // Binary search for them.
+    def search(low: Int, high: Int): Option[Agent] = (low + high) / 2 match {
+      case _ if high < low => None
+      case mid if agents(mid).id > id => search(low, mid - 1)
+      case mid if agents(mid).id < id => search(mid + 1, high)
+      case mid => Some(agents(mid))
+    }
+    return search(0, agents.size - 1)
+  }
+
+  def has_agent(a: Agent) = get_agent(a.id).isDefined
 
   def add_gen(g: Generator) = {
     generators += g
@@ -195,9 +208,21 @@ class Simulation(roads: Array[Road], edges: Array[Edge], vertices: Array[Vertex]
       })
 
       // Let agents react to the new world.
-      val reap = agents.filter(a => a.react)
-      reap.foreach(a => a.terminate)
-      agents --= reap
+
+      // Sequential or parallel?
+      val reap = agents.filter(a => a.react).toSet
+      /*val sz = 500  // TODO how to tune this?
+      val max_idx = (agents.size.toDouble / sz).ceil.toInt
+      val reap = Range(0, max_idx).par.flatMap(
+        // TODO off by one?
+        idx => agents.view(sz * idx, sz * (idx + 1)).filter(a => a.react)
+      ).toSet*/
+
+      if (reap.nonEmpty) {
+        // TODO batch GC.
+        reap.foreach(a => a.terminate)
+        agents = agents.filter(a => !reap(a))
+      }
       
       // reset queues that need to be checked
       active_queues.clear
@@ -220,7 +245,7 @@ class Simulation(roads: Array[Road], edges: Array[Edge], vertices: Array[Vertex]
     if (spawn.e.queue.can_spawn_now(spawn.dist)) {
       spawn.a.at = spawn.a.enter(spawn.e, spawn.dist)
       spawn.a.started_trip_at = tick
-      agents += spawn.a
+      agents :+= spawn.a
       true
     } else {
       false

@@ -4,6 +4,9 @@
 - how to PAR
   - keep some things par collections by default. conversion is pricy.
   - batch for less overhead
+  - benchmark carefully
+
+  - verify threads or whatever stick around
   - test on laptop with more cores.
 
   - get rid of old route thread pool, or unify with new thing
@@ -19,7 +22,7 @@
   - LCing means chunking by road
   - figure out where everyone ends up, then merge queues in one thread?
 
-# Fastpaths
+# Fastpaths / Sparse Execution
 - agents and intersections could wake each other up now
 
 # Map Construction
@@ -87,6 +90,7 @@
 
 # Scaling
 - support ~million agents, memory-wise
+  - lazy construction?
 - gridlock?
   - force different turns?
   - agents get caught in loops because the path isnt realizable due to LC
