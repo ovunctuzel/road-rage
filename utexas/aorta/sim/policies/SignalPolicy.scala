@@ -21,7 +21,7 @@ class SignalPolicy(intersection: Intersection) extends Policy(intersection) {
   private var delay = 0.0
   private val accepted_agents = new MutableSet[Agent]
 
-  def react() = {
+  def react_body() = {
     // TODO Flush out stalled slowpokes that can definitely stop and aren't
     // already in their turn? Helps prevent gridlock, that's all.
 
@@ -57,10 +57,8 @@ class SignalPolicy(intersection: Intersection) extends Policy(intersection) {
 
   def handle_exit(a: Agent, turn: Turn) = unregister(a)
 
-  def unregister(a: Agent) = {
+  def unregister_body(a: Agent) = {
     accepted_agents -= a
-    // TODO refactor this
-    waiting_agents = waiting_agents.filter(req => req._1 != a)
   }
 
   def current_greens =

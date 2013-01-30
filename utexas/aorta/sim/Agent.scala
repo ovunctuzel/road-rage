@@ -9,7 +9,8 @@ import scala.collection.mutable.{HashSet => MutableSet}
 import utexas.aorta.map.{Edge, Coordinate, Turn, Traversable, Graph, Position}
 import utexas.aorta.{Util, cfg}
 import utexas.aorta.ui.Renderable
-import utexas.aorta.analysis.{Profiling, Stats, Wasted_Time_Stat}
+import utexas.aorta.analysis.{Profiling, Stats, Wasted_Time_Stat,
+                              Total_Trip_Stat}
 
 // TODO come up with a notion of dimension and movement capability. at first,
 // just use radius bounded by lane widths?
@@ -247,10 +248,6 @@ class Agent(val id: Int, val route: Route) extends Ordered[Agent] with Renderabl
         Util.assert_eq(at.on.asInstanceOf[Edge].directed_road, route.goal)
         // Trust behavior, don't abuse this.
         Util.assert_eq(speed, 0.0)
-        exit(at.on)
-        // and don't forget to tell intersections. this is normally just
-        // at.on.vert if at.on is a turn, but it could be more due to lookahead.
-        cancel_intersection_reservations
         true
       }
     }
@@ -370,12 +367,23 @@ class Agent(val id: Int, val route: Route) extends Ordered[Agent] with Renderabl
   }
 
   def approve_turn(i: Intersection) = {
-    Util.assert_eq(turns_requested(i), true)
-    turns_requested -= i
-    turns_approved += i
+    synchronized {
+      Util.assert_eq(turns_requested(i), true)
+      turns_requested -= i
+      turns_approved += i
+    }
   }
 
   def how_far_away(i: Intersection) = behavior.how_far_away(i)
+
+  // Caller must remove this agent from the simulation list
+  def terminate() = {
+    exit(at.on)
+    // don't forget to tell intersections. this is normally just
+    // at.on.vert if at.on is a turn, but it could be more due to lookahead.
+    cancel_intersection_reservations
+    Stats.record(Total_Trip_Stat(id, Agent.sim.tick - started_trip_at, total_dist))
+  }
 }
 
 class SpawnAgent(val a: Agent, val e: Edge, val dist: Double) {}

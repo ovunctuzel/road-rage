@@ -20,6 +20,7 @@ object Util {
   def log(msg: String) = println(indent + msg)
 
   // For simulation stuff
+  // TODO if diff threads ever make use of this, lock or duplicate
   private var sim_rng: Random = null  // icky...
   // For the UI and stuff that doesn't matter. Separate these so determinism
   // works between headless/UI.

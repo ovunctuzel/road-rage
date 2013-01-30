@@ -19,7 +19,7 @@ class StopSignPolicy(intersection: Intersection) extends Policy(intersection) {
     super.is_waiting(a) && a.how_long_idle >= cfg.pause_at_stop
 
   // Add agent to the queue if they satisfy our requirements.
-  def react() = {
+  def react_body() = {
     val orig_empty = queue.isEmpty
     for ((a, turn) <- waiting_agents) {
       if (is_waiting(a)) {
@@ -41,10 +41,9 @@ class StopSignPolicy(intersection: Intersection) extends Policy(intersection) {
     approve_head
   }
 
-  def unregister(a: Agent) = {
+  def unregister_body(a: Agent) = {
     val old_owner = queue.headOption
     queue = queue.filter(_ != a)
-    waiting_agents = waiting_agents.filter(req => req._1 != a)
     if (old_owner.getOrElse(null) == a) {
       approve_head
     }

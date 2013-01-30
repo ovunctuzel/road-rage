@@ -24,9 +24,8 @@ class Intersection(val v: Vertex) {
   override def toString = "Intersection(" + v + ")"
 
   // For stats.
-  var started_counting: Option[Double] = None
-  var stats_requested = new MutableSet[Agent]()
-  var cnt_entered = 0
+  private var stat_requested = 0
+  private var stat_entered = 0
 
   // Delegate and log.
   def unregister(a: Agent) = policy.unregister(a)
@@ -34,16 +33,7 @@ class Intersection(val v: Vertex) {
   def request_turn(a: Agent, turn: Turn) = {
     // Sanity check...
     Util.assert_eq(turn.vert, v)
-    stats_requested += a
-    started_counting match {
-      case Some(time) =>
-      case None => {
-        started_counting = Some(Agent.sim.tick)
-        Agent.sim.schedule(
-          Agent.sim.tick + cfg.thruput_stat_time, { this.count_stat }
-        )
-      }
-    }
+    stat_requested += 1
     policy.request_turn(a, turn)
   }
 
@@ -72,7 +62,7 @@ class Intersection(val v: Vertex) {
   }
 
   def enter(a: Agent, t: Turn) = {
-    cnt_entered += 1
+    stat_entered += 1
     if (!turns.contains(t)) {
       // We don't care until there are at least two... and this only changes when
       // we add a new one...
@@ -111,13 +101,10 @@ class Intersection(val v: Vertex) {
   def count_stat() = {
     // TODO I'm also not convinced this is the best way to measure this idea.
     Stats.record(Intersection_Throughput_Stat(
-      v.id, stats_requested.size, cnt_entered, Agent.sim.tick
+      v.id, stat_requested, stat_entered, Agent.sim.tick
     ))
-    started_counting = None
-    stats_requested.clear
-    cnt_entered = 0
-    // if there are others that have requested and not entered, they'll be
-    // re-added during the next interval correctly.
+    stat_requested = 0
+    stat_entered = 0
   }
 }
 
@@ -129,16 +116,31 @@ abstract class Policy(val intersection: Intersection) {
   // Agents inform intersections of their intention ONCE and receive a lease
   // eventually.
   def request_turn(a: Agent, turn: Turn) = {
-    // TODO this is the one thing that needs to be locked
-    waiting_agents += ((a, turn))
-    // TODO do extra book-keeping to verify agents aren't double requesting?
+    synchronized {
+      waiting_agents += ((a, turn))
+      // TODO do extra book-keeping to verify agents aren't double requesting?
+    }
+  }
+
+  def react() = {
+    if (Agent.sim.number_of_ticks % cfg.thruput_stat_time == 0) {
+      intersection.count_stat
+    }
+    react_body
+  }
+
+  def unregister(a: Agent) = {
+    synchronized {
+      waiting_agents = waiting_agents.filter(req => req._1 != a)
+      unregister_body(a)
+    }
   }
 
   // The intersection grants leases to waiting_agents
-  def react(): Unit
+  def react_body(): Unit
   def validate_entry(a: Agent, turn: Turn): Boolean
   def handle_exit(a: Agent, turn: Turn)
-  def unregister(a: Agent)
+  def unregister_body(a: Agent)
   def current_greens(): Set[Turn]
   def dump_info()
 
@@ -149,10 +151,10 @@ abstract class Policy(val intersection: Intersection) {
 
 // Simplest base-line ever.
 class NeverGoPolicy(intersection: Intersection) extends Policy(intersection) {
-  def react = {}
+  def react_body = {}
   def validate_entry(a: Agent, turn: Turn) = false
   def handle_exit(a: Agent, turn: Turn) = {}
-  def unregister(a: Agent) = {}
+  def unregister_body(a: Agent) = {}
   def current_greens = Set()
   def dump_info = {}
 }

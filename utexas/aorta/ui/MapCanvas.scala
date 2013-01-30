@@ -726,9 +726,7 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
         val a = current_agent.get
         current_obj = None
         Util.log("WARNING: Nuking " + a)
-        // simulate being done
-        a.exit(a.at.on)
-        a.cancel_intersection_reservations
+        a.terminate
         sim.agents -= a
       }
     }

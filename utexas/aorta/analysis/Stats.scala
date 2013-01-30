@@ -10,6 +10,8 @@ import scala.annotation.elidable.ASSERTION
 
 import utexas.aorta.Util
 
+// TODO lots of this stuff is probably not thread safe
+
 sealed trait Measurement {}
 final case class Wasted_Time_Stat(agent: Int, intersection: Int, lag: Double,
                                   time: Double) extends Measurement

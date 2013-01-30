@@ -18,8 +18,7 @@ import utexas.aorta.map.make.PlaintextReader
 import utexas.aorta.sim.policies._
 
 import utexas.aorta.{Util, cfg}
-import utexas.aorta.analysis.{Stats, Total_Trip_Stat, Active_Agents_Stat,
-                              Simulator_Speedup_Stat}
+import utexas.aorta.analysis.{Stats, Active_Agents_Stat, Simulator_Speedup_Stat}
 
 // This just adds a notion of agents
 class Simulation(roads: Array[Road], edges: Array[Edge], vertices: Array[Vertex],
@@ -92,6 +91,7 @@ class Simulation(roads: Array[Road], edges: Array[Edge], vertices: Array[Vertex]
   // normally. so far this is also just for external UIness, nothing internal
   // cares.
   var tick: Double = 0
+  def number_of_ticks = (tick / cfg.dt_s).toInt // TODO if dt_s changes, breaks
   // we only ever step with dt = cfg.dt_s, so we may have leftover.
   private var dt_accumulated: Double = 0
   // WE CAN GO FASTER
@@ -180,7 +180,7 @@ class Simulation(roads: Array[Road], edges: Array[Edge], vertices: Array[Vertex]
         active_cnt += 1
       })
       total_count += active_cnt
-      if (tick.toInt % 5 == 0) {
+      if (number_of_ticks % 5 == 0) {
         Stats.record(Active_Agents_Stat(tick.toInt, active_cnt))
       }
 
@@ -195,13 +195,9 @@ class Simulation(roads: Array[Road], edges: Array[Edge], vertices: Array[Vertex]
       })
 
       // Let agents react to the new world.
-      agents.foreach(a => {
-        // reap the done agents
-        if (a.react) {
-          agents -= a
-          Stats.record(Total_Trip_Stat(a.id, tick - a.started_trip_at, a.total_dist))
-        }
-      })
+      val reap = agents.filter(a => a.react)
+      reap.foreach(a => a.terminate)
+      agents --= reap
       
       // reset queues that need to be checked
       active_queues.clear

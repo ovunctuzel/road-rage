@@ -19,7 +19,7 @@ class ReservationPolicy(intersection: Intersection) extends Policy(intersection)
 {
   private var reservations = new TurnBatch() :: Nil
 
-  def react() = {
+  def react_body() = {
     // Process new requests
     waiting_agents.foreach(req => add_agent(req._1, req._2))
     waiting_agents = waiting_agents.empty
@@ -43,8 +43,7 @@ class ReservationPolicy(intersection: Intersection) extends Policy(intersection)
 
   def current_greens = current_batch.tickets.keys.toSet
 
-  def unregister(a: Agent) = {
-    waiting_agents = waiting_agents.filter(req => req._1 != a)
+  def unregister_body(a: Agent) = {
     reservations.foreach(b => b.remove_agent(a))
   }
 
