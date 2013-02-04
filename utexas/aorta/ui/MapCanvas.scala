@@ -441,6 +441,8 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
   def agent_bubble(a: Agent) = bubble(a.at.location)
 
   def handle_ev(ev: UI_Event): Unit = ev match {
+    case EV_Action(action) => handle_ev_action(action)
+    case EV_Key_Press(key) => handle_ev_keypress(key)
     case EV_Mouse_Moved(x, y) => {
       redo_mouseover(x, y)
       repaint
@@ -448,215 +450,6 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
     case EV_Param_Set("highlight", value) => {
       highlight_type = value
       repaint
-    }
-    // TODO this'll be tab someday, i vow!
-    case EV_Key_Press(Key.Control) => {
-      // cycle through turns
-      current_edge match {
-        case Some(e) => {
-          current_turn += 1
-          if (current_turn >= e.next_turns.size) {
-            current_turn = 0
-          }
-          repaint
-        }
-        case None =>
-      }
-    }
-    case EV_Key_Press(Key.P) => {
-      handle_ev(EV_Action("toggle-running"))
-    }
-    case EV_Action("spawn-army") => {
-      prompt_generator(sim.edges, sim.edges)
-    }
-    case EV_Action("step") => {
-      val note = if (running)
-                   ""
-                 else
-                   " [Paused]"
-      status.time.text = "%.1f %s".format(sim.tick, note)
-      status.update_speed(sim)
-      // agents have maybe moved, so...
-      status.agents.text = sim.describe_agents
-      update_plot
-      repaint
-    }
-    case EV_Action("toggle-running") => {
-      if (running) {
-        running = false
-      } else {
-        running = true
-      }
-    }
-    case EV_Action("pathfind") => {
-      switch_mode(Mode.PICK_1st)
-      chosen_edge1 = None
-      chosen_edge2 = None
-      route_members = Set[Edge]()
-      route_members_road = Set[Road]()
-      repaint
-    }
-    case EV_Action("clear-route") => {
-      switch_mode(Mode.EXPLORE)
-      chosen_edge1 = None
-      chosen_edge2 = None
-      route_members = Set[Edge]()
-      route_members_road = Set[Road]()
-      repaint
-    }
-    case EV_Action("teleport-edge") => {
-      prompt_int("What edge ID do you seek?") match {
-        case Some(id) => {
-          try {
-            val e = sim.edges(id.toInt)
-            // TODO center on some part of the edge and zoom in, rather than
-            // just vaguely moving that way
-            Util.log("Here's " + e)
-            center_on(e.lines.head.start)
-            chosen_edge2 = Some(e)  // just kind of use this to highlight it
-            repaint
-          } catch {
-            case _: NumberFormatException => Util.log("Bad edge ID " + id)
-          }
-        }
-        case _ =>
-      }
-      grab_focus
-    }
-    case EV_Action("teleport-road") => {
-      prompt_int("What road ID do you seek?") match {
-        case Some(id) => {
-          try {
-            val r = sim.roads(id.toInt)
-            // TODO center on some part of the road and zoom in, rather than
-            // just vaguely moving that way
-            Util.log("Here's " + r)
-            center_on(r.all_lanes.head.lines.head.start)
-            chosen_road = Some(r)
-            repaint
-          } catch {
-            case _: NumberFormatException => Util.log("Bad edge ID " + id)
-          }
-        }
-        case _ =>
-      }
-      grab_focus
-    }
-    case EV_Action("teleport-agent") => {
-      prompt_int("What agent ID do you seek?") match {
-        case Some(id) => {
-          try {
-            sim.get_agent(id.toInt) match {
-              case Some(a) => {
-                Util.log("Here's " + a)
-                center_on(a.at.location)
-                repaint
-              }
-              case _ => Util.log("Didn't find " + id)
-            }
-          } catch {
-            case _: NumberFormatException => Util.log("Bad agent ID " + id)
-          }
-        }
-        case _ =>
-      }
-      grab_focus
-    }
-    case EV_Action("teleport-vertex") => {
-      prompt_int("What vertex ID do you seek?") match {
-        case Some(id) => {
-          try {
-            val v = sim.vertices(id.toInt)
-            Util.log("Here's " + v)
-            center_on(v.location)
-            repaint
-          } catch {
-            case _: NumberFormatException => Util.log("Bad agent ID " + id)
-          }
-        }
-        case _ =>
-      }
-      grab_focus
-    }
-    case EV_Key_Press(Key.C) if current_edge.isDefined => {
-      mode match {
-        case Mode.PICK_1st => {
-          chosen_edge1 = current_edge
-          switch_mode(Mode.PICK_2nd)
-          repaint
-        }
-        case Mode.PICK_2nd => {
-          chosen_edge2 = current_edge
-          // TODO later, let this inform any client
-          show_pathfinding
-          switch_mode(Mode.EXPLORE)
-        }
-        case _ =>
-      }
-    }
-    case EV_Key_Press(Key.M) if current_edge.isDefined => {
-      mode match {
-        case Mode.EXPLORE => {
-          chosen_edge1 = current_edge
-          chosen_pos = current_obj.asInstanceOf[Option[Position]]
-          switch_mode(Mode.PICK_2nd)
-          repaint
-        }
-        case Mode.PICK_2nd => {
-          chosen_edge2 = current_edge
-          sim.add_gen(new SpecificGenerator(
-            sim, RouteStrategy.StaticAstar,
-            // TODO avoid some nasty casting if we specialize an EdgePosition
-            List((chosen_pos.get.on.asInstanceOf[Edge], current_edge.get, chosen_pos.get.dist))
-          ))
-          chosen_edge1 = None
-          chosen_edge2 = None
-          chosen_pos = None
-          switch_mode(Mode.EXPLORE)
-          repaint
-        }
-        case _ =>
-      }
-    }
-    case EV_Key_Press(Key.OpenBracket) => {
-      sim.slow_down()
-      status.update_speed(sim)
-    }
-    case EV_Key_Press(Key.CloseBracket) => {
-      sim.speed_up()
-      status.update_speed(sim)
-    }
-    case EV_Key_Press(Key.Minus) => {
-      sim.slow_down(5)
-      status.update_speed(sim)
-    }
-    case EV_Key_Press(Key.Equals) => {
-      sim.speed_up(5)
-      status.update_speed(sim)
-    }
-    // TODO move the debug string to the renderable trait
-    case EV_Key_Press(Key.D) => current_obj match {
-      case Some(a: Agent) => {
-        a.debug
-        sim.debug_agent = Some(a)
-      }
-      case Some(thing) => thing.debug
-      case None =>
-    }
-    case EV_Key_Press(Key.F) => { camera_agent = current_agent }
-    case EV_Key_Press(Key.X) if current_agent.isDefined => {
-      if (running) {
-        Util.log("Cannot nuke agents while simulation is running!")
-      } else {
-        val a = current_agent.get
-        current_obj = None
-        Util.log("WARNING: Nuking " + a)
-        //a.terminate
-        // TODO remove the agent from the list
-      }
-    }
-    case EV_Key_Press(Key.G) => {
-      show_green = !show_green
     }
     case EV_Select_Polygon_For_Army() => {
       // TODO continuation style would make this reasonable:
@@ -710,35 +503,223 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
         case None =>
       }
     }
-    case EV_Key_Press(_) => // Ignore the rest
     case _ =>
   }
 
-  // TODO ew, even refactored, these are a bit ugly.
-  def prompt_int(msg: String): Option[Int]
-    = Dialog.showInput(message = msg, initial = "") match
-  {
-    case Some(num) => {
-      try {
-        Some(num.toInt)
-      } catch {
-        case _: NumberFormatException => None
+  def handle_ev_action(ev: String): Unit = ev match {
+    case "spawn-army" => {
+      prompt_generator(sim.edges, sim.edges)
+    }
+    case "step" => {
+      val note = if (running)
+                   ""
+                 else
+                   " [Paused]"
+      status.time.text = "%.1f %s".format(sim.tick, note)
+      status.update_speed(sim)
+      // agents have maybe moved, so...
+      status.agents.text = sim.describe_agents
+      update_plot
+      repaint
+    }
+    case "toggle-running" => {
+      if (running) {
+        running = false
+      } else {
+        running = true
       }
     }
-    case _ => None
+    case "pathfind" => {
+      switch_mode(Mode.PICK_1st)
+      chosen_edge1 = None
+      chosen_edge2 = None
+      route_members = Set[Edge]()
+      route_members_road = Set[Road]()
+      repaint
+    }
+    case "clear-route" => {
+      switch_mode(Mode.EXPLORE)
+      chosen_edge1 = None
+      chosen_edge2 = None
+      route_members = Set[Edge]()
+      route_members_road = Set[Road]()
+      repaint
+    }
+    // TODO refactor the 4 teleports?
+    case "teleport-edge" => {
+      prompt_int("What edge ID do you seek?") match {
+        case Some(id) => {
+          try {
+            val e = sim.edges(id.toInt)
+            // TODO center on some part of the edge and zoom in, rather than
+            // just vaguely moving that way
+            Util.log("Here's " + e)
+            center_on(e.lines.head.start)
+            chosen_edge2 = Some(e)  // just kind of use this to highlight it
+            repaint
+          } catch {
+            case _: NumberFormatException => Util.log("Bad edge ID " + id)
+          }
+        }
+        case _ =>
+      }
+      grab_focus
+    }
+    case "teleport-road" => {
+      prompt_int("What road ID do you seek?") match {
+        case Some(id) => {
+          try {
+            val r = sim.roads(id.toInt)
+            // TODO center on some part of the road and zoom in, rather than
+            // just vaguely moving that way
+            Util.log("Here's " + r)
+            center_on(r.all_lanes.head.lines.head.start)
+            chosen_road = Some(r)
+            repaint
+          } catch {
+            case _: NumberFormatException => Util.log("Bad edge ID " + id)
+          }
+        }
+        case _ =>
+      }
+      grab_focus
+    }
+    case "teleport-agent" => {
+      prompt_int("What agent ID do you seek?") match {
+        case Some(id) => {
+          try {
+            sim.get_agent(id.toInt) match {
+              case Some(a) => {
+                Util.log("Here's " + a)
+                center_on(a.at.location)
+                repaint
+              }
+              case _ => Util.log("Didn't find " + id)
+            }
+          } catch {
+            case _: NumberFormatException => Util.log("Bad agent ID " + id)
+          }
+        }
+        case _ =>
+      }
+      grab_focus
+    }
+    case "teleport-vertex" => {
+      prompt_int("What vertex ID do you seek?") match {
+        case Some(id) => {
+          try {
+            val v = sim.vertices(id.toInt)
+            Util.log("Here's " + v)
+            center_on(v.location)
+            repaint
+          } catch {
+            case _: NumberFormatException => Util.log("Bad agent ID " + id)
+          }
+        }
+        case _ =>
+      }
+      grab_focus
+    }
   }
 
-  def prompt_double(msg: String): Option[Double]
-    = Dialog.showInput(message = msg, initial = "") match
-  {
-    case Some(num) => {
-      try {
-        Some(num.toDouble)
-      } catch {
-        case _: NumberFormatException => None
+  def handle_ev_keypress(key: Any): Unit = key match {
+    // TODO this'll be tab someday, i vow!
+    case Key.Control => {
+      // cycle through turns
+      current_edge match {
+        case Some(e) => {
+          current_turn += 1
+          if (current_turn >= e.next_turns.size) {
+            current_turn = 0
+          }
+          repaint
+        }
+        case None =>
       }
     }
-    case _ => None
+    case Key.P => {
+      handle_ev(EV_Action("toggle-running"))
+    }
+    case Key.C if current_edge.isDefined => {
+      mode match {
+        case Mode.PICK_1st => {
+          chosen_edge1 = current_edge
+          switch_mode(Mode.PICK_2nd)
+          repaint
+        }
+        case Mode.PICK_2nd => {
+          chosen_edge2 = current_edge
+          // TODO later, let this inform any client
+          show_pathfinding
+          switch_mode(Mode.EXPLORE)
+        }
+        case _ =>
+      }
+    }
+    case Key.M if current_edge.isDefined => {
+      mode match {
+        case Mode.EXPLORE => {
+          chosen_edge1 = current_edge
+          chosen_pos = current_obj.asInstanceOf[Option[Position]]
+          switch_mode(Mode.PICK_2nd)
+          repaint
+        }
+        case Mode.PICK_2nd => {
+          chosen_edge2 = current_edge
+          sim.add_gen(new SpecificGenerator(
+            sim, RouteStrategy.StaticAstar,
+            // TODO avoid some nasty casting if we specialize an EdgePosition
+            List((chosen_pos.get.on.asInstanceOf[Edge], current_edge.get, chosen_pos.get.dist))
+          ))
+          chosen_edge1 = None
+          chosen_edge2 = None
+          chosen_pos = None
+          switch_mode(Mode.EXPLORE)
+          repaint
+        }
+        case _ =>
+      }
+    }
+    case Key.OpenBracket => {
+      sim.slow_down()
+      status.update_speed(sim)
+    }
+    case Key.CloseBracket => {
+      sim.speed_up()
+      status.update_speed(sim)
+    }
+    case Key.Minus => {
+      sim.slow_down(5)
+      status.update_speed(sim)
+    }
+    case Key.Equals => {
+      sim.speed_up(5)
+      status.update_speed(sim)
+    }
+    case Key.D => current_obj match {
+      case Some(a: Agent) => {
+        a.debug
+        sim.debug_agent = Some(a)
+      }
+      case Some(thing) => thing.debug
+      case None =>
+    }
+    case Key.F => { camera_agent = current_agent }
+    case Key.X if current_agent.isDefined => {
+      if (running) {
+        Util.log("Cannot nuke agents while simulation is running!")
+      } else {
+        val a = current_agent.get
+        current_obj = None
+        Util.log("WARNING: Nuking " + a)
+        //a.terminate
+        // TODO remove the agent from the list
+      }
+    }
+    case Key.G => {
+      show_green = !show_green
+    }
+    case _ => // Ignore the rest
   }
 
   def prompt_generator(src: Seq[Edge], dst: Seq[Edge]): Unit = {

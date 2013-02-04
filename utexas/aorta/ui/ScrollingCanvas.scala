@@ -282,6 +282,33 @@ abstract class ScrollingCanvas extends Component {
   def viewing_window: Rectangle2D.Double =
     new Rectangle2D.Double(x1, y1, x2 - x1, y2 - y1)
 
+  // TODO ew, even refactored, these are a bit ugly.
+  def prompt_int(msg: String): Option[Int]
+    = Dialog.showInput(message = msg, initial = "") match
+  { 
+    case Some(num) => {
+      try {
+        Some(num.toInt)
+      } catch {
+        case _: NumberFormatException => None
+      }
+    }
+    case _ => None
+  }
+  
+  def prompt_double(msg: String): Option[Double]
+    = Dialog.showInput(message = msg, initial = "") match                   
+  {                                                                         
+    case Some(num) => {
+      try {
+        Some(num.toDouble)
+      } catch {
+        case _: NumberFormatException => None
+      }
+    }
+    case _ => None
+  }
+
   // implement these. render_canvas returns tooltip text desired
   def render_canvas(g2d: Graphics2D, window: Rectangle2D.Double): Option[String]
   def canvas_width: Int
