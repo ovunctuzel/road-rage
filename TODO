@@ -84,8 +84,7 @@
   - the edge case when we intend to stop
 
 # Scaling
-- support ~million agents, memory-wise
-  - lazy construction?
+- tighten memory usage, although 1GB supports 1 million agents
 - we can do much better with ready agents... max capacity of edges, group them
   based on where they want to spawn, maybe by generator?
 - gridlock?
