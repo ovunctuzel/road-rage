@@ -108,16 +108,21 @@ class Intersection(val v: Vertex) {
   }
 }
 
+case class Ticket(a: Agent, turn: Turn) extends Ordered[Ticket] {
+  override def compare(other: Ticket) = a.compare(other.a)
+
+  // TODO remember time requested, number of agents in front, etc
+}
+
 abstract class Policy(val intersection: Intersection) {
   // When intersections pull agents off this list, the order is arbitrary but
   // deterministic.
-  protected var waiting_agents = new TreeSet[(Agent, Turn)]()
-  // TODO Ticket type useful?
+  protected var waiting_agents = new TreeSet[Ticket]()
   // Agents inform intersections of their intention ONCE and receive a lease
   // eventually.
   def request_turn(a: Agent, turn: Turn) = {
     synchronized {
-      waiting_agents += ((a, turn))
+      waiting_agents += Ticket(a, turn)
       // TODO do extra book-keeping to verify agents aren't double requesting?
     }
   }
@@ -131,22 +136,19 @@ abstract class Policy(val intersection: Intersection) {
 
   def unregister(a: Agent) = {
     synchronized {
-      waiting_agents = waiting_agents.filter(req => req._1 != a)
+      waiting_agents = waiting_agents.filter(ticket => ticket.a != a)
       unregister_body(a)
     }
   }
 
   // The intersection grants leases to waiting_agents
   def react_body(): Unit
+  // TODO insist the client hands us a ticket for entry, exit?
   def validate_entry(a: Agent, turn: Turn): Boolean
   def handle_exit(a: Agent, turn: Turn)
   def unregister_body(a: Agent)
   def current_greens(): Set[Turn]
   def dump_info()
-
-  // Since we lookahead over small edges, we maybe won't/can't stop on the edge
-  // right before the turn. As long as we validly stopped for us, then fine.
-  def is_waiting(a: Agent) = a.how_far_away(intersection) <= cfg.end_threshold
 }
 
 // Simplest base-line ever.

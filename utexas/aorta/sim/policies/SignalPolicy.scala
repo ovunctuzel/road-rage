@@ -43,11 +43,11 @@ class SignalPolicy(intersection: Intersection) extends Policy(intersection) {
 
     // Accept new agents into the current phase
     if (!in_overtime) {
-      for ((a, turn) <- waiting_agents) {
-        if (current_phase.has(turn) && could_make_light(a, a.how_far_away(intersection))) {
-          a.approve_turn(intersection)
-          accepted_agents += a
-          waiting_agents -= ((a, turn))
+      for (ticket <- waiting_agents) {
+        if (current_phase.has(ticket.turn) && could_make_light(ticket.a, ticket.a.how_far_away(intersection))) {
+          ticket.a.approve_turn(intersection)
+          accepted_agents += ticket.a
+          waiting_agents -= ticket
         }
       }
     }

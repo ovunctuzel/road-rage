@@ -5,26 +5,30 @@
 package utexas.aorta.sim.policies
 
 import utexas.aorta.map.Turn
-import utexas.aorta.sim.{Intersection, Policy, Agent}
+import utexas.aorta.sim.{Intersection, Policy, Agent, Ticket}
 
 import utexas.aorta.{Util, cfg}
 
 // Always stop, then FIFO. Totally unoptimized.
 class StopSignPolicy(intersection: Intersection) extends Policy(intersection) {
   // Head is the current owner.
-  private var queue = List[Agent]()
+  private var queue = List[Ticket]()
 
-  // Require agents to pause a moment
-  override def is_waiting(a: Agent) =
-    super.is_waiting(a) && a.how_long_idle >= cfg.pause_at_stop
+  // Agents must pause a moment, be the head of their queue, and be close enough
+  // to us (in case they looked ahead over small edges).
+  def is_waiting(a: Agent)
+    = (a.how_long_idle >= cfg.pause_at_stop &&
+       // TODO head of their queue doesnt imply nobody's blocking them
+       a.cur_queue.head.get == a &&
+       a.how_far_away(intersection) <= cfg.end_threshold)
 
   // Add agent to the queue if they satisfy our requirements.
   def react_body() = {
     val orig_empty = queue.isEmpty
-    for ((a, turn) <- waiting_agents) {
-      if (is_waiting(a)) {
-        queue :+= a
-        waiting_agents -= ((a, turn)) // TODO mod while iterate?
+    for (ticket <- waiting_agents) {
+      if (is_waiting(ticket.a)) {
+        queue :+= ticket
+        waiting_agents -= ticket // TODO mod while iterate?
       }
     }
     if (orig_empty && queue.nonEmpty) {
@@ -32,19 +36,21 @@ class StopSignPolicy(intersection: Intersection) extends Policy(intersection) {
     }
   }
 
-  def validate_entry(a: Agent, turn: Turn) =
-    queue.headOption.getOrElse(null) == a
+  def validate_entry(agent: Agent, turn: Turn) = queue.headOption match {
+    case Some(Ticket(a, t)) => agent == a && turn == t
+    case None => false
+  }
 
   def handle_exit(a: Agent, turn: Turn) = {
-    Util.assert_eq(queue.head, a)
+    Util.assert_eq(queue.head.a, a)
     queue = queue.tail
     approve_head
   }
 
   def unregister_body(a: Agent) = {
     val old_owner = queue.headOption
-    queue = queue.filter(_ != a)
-    if (old_owner.getOrElse(null) == a) {
+    queue = queue.filter(_.a != a)
+    if (old_owner.isDefined && old_owner.get.a == a) {
       approve_head
     }
   }
@@ -56,7 +62,7 @@ class StopSignPolicy(intersection: Intersection) extends Policy(intersection) {
   }
 
   private def approve_head = queue.headOption match {
-    case Some(a) => a.approve_turn(intersection)
+    case Some(Ticket(a, _)) => a.approve_turn(intersection)
     case None =>
   }
 }

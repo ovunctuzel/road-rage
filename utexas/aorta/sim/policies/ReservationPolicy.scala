@@ -8,7 +8,7 @@ import scala.collection.mutable.{HashMap => MutableMap}
 import scala.collection.mutable.MultiMap
 import scala.collection.mutable.{Set => MutableSet}
 
-import utexas.aorta.sim.{Intersection, Policy, Agent}
+import utexas.aorta.sim.{Intersection, Policy, Agent, Ticket}
 import utexas.aorta.map.Turn
 
 import utexas.aorta.{Util, cfg}
@@ -21,7 +21,7 @@ class ReservationPolicy(intersection: Intersection) extends Policy(intersection)
 
   def react_body() = {
     // Process new requests
-    waiting_agents.foreach(req => add_agent(req._1, req._2))
+    waiting_agents.foreach(ticket => add_agent(ticket))
     waiting_agents = waiting_agents.empty
 
     // TODO flush stalled agents to avoid gridlock?
@@ -41,7 +41,7 @@ class ReservationPolicy(intersection: Intersection) extends Policy(intersection)
     shift_batches
   }
 
-  def current_greens = current_batch.tickets.keys.toSet
+  def current_greens = current_batch.turns.toSet
 
   def unregister_body(a: Agent) = {
     reservations.foreach(b => b.remove_agent(a))
@@ -51,8 +51,8 @@ class ReservationPolicy(intersection: Intersection) extends Policy(intersection)
     Util.log(reservations.size + " reservations pending")
     Util.log("Currently:")
     Util.log_push
-    for (t <- current_batch.tickets.keys) {
-      Util.log(t + ": " + current_batch.tickets(t))
+    for (t <- current_batch.turns) {
+      Util.log(t + ": " + current_batch.groups(t))
     }
     Util.log_pop
   }
@@ -70,17 +70,17 @@ class ReservationPolicy(intersection: Intersection) extends Policy(intersection)
     }
   }
 
-  private def add_agent(a: Agent, turn: Turn) = {
-    if (current_batch.add_ticket(a, turn)) {
-      a.approve_turn(intersection)
+  private def add_agent(ticket: Ticket) {
+    if (current_batch.add_ticket(ticket)) {
+      ticket.a.approve_turn(intersection)
     } else {
       // A conflicting turn. Add it to the reservations.
 
       // Is there an existing batch of reservations that doesn't conflict?
-      if (!reservations.find(r => r.add_ticket(a, turn)).isDefined) {
+      if (!reservations.find(r => r.add_ticket(ticket)).isDefined) {
         // New batch!
         val batch = new TurnBatch()
-        batch.add_ticket(a, turn)
+        batch.add_ticket(ticket)
         reservations :+= batch
       }
     }
@@ -90,17 +90,17 @@ class ReservationPolicy(intersection: Intersection) extends Policy(intersection)
 // Count what agents are doing each type of turn, and add turns that don't
 // conflict
 class TurnBatch() {
-  val tickets = new MutableMap[Turn, MutableSet[Agent]] with MultiMap[Turn, Agent]
+  val groups = new MutableMap[Turn, MutableSet[Agent]] with MultiMap[Turn, Agent]
 
   // false if it conflicts with this group
-  def add_ticket(a: Agent, t: Turn): Boolean =
-    if (tickets.contains(t)) {
+  def add_ticket(ticket: Ticket): Boolean =
+    if (groups.contains(ticket.turn)) {
       // existing turn
-      tickets.addBinding(t, a)
+      groups.addBinding(ticket.turn, ticket.a)
       true
-    } else if (!tickets.keys.find(c => t.conflicts_with(c)).isDefined) {
+    } else if (!groups.keys.find(c => ticket.turn.conflicts_with(c)).isDefined) {
       // new turn that doesn't conflict
-      tickets.addBinding(t, a)
+      groups.addBinding(ticket.turn, ticket.a)
       true
     } else {
       // conflict
@@ -108,17 +108,18 @@ class TurnBatch() {
     }
 
   def has_ticket(a: Agent, t: Turn) =
-    tickets.contains(t) && tickets(t).contains(a)
+    groups.contains(t) && groups(t).contains(a)
 
-  def remove_ticket(a: Agent, t: Turn) = tickets.removeBinding(t, a)
+  def remove_ticket(a: Agent, t: Turn) = groups.removeBinding(t, a)
 
   def remove_agent(a: Agent) = {
-    for (turn <- tickets.keys) {
-      tickets.removeBinding(turn, a)
+    for (turn <- turns) {
+      groups.removeBinding(turn, a)
     }
   }
 
-  def all_done = tickets.isEmpty
+  def all_done = groups.isEmpty
 
-  def agents = tickets.values.flatten
+  def turns = groups.keys
+  def agents = groups.values.flatten
 }
