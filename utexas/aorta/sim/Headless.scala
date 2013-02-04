@@ -16,7 +16,7 @@ object Headless {
     val (sim, is_scenario) = Util.process_args(args, false, true)
     if (!is_scenario) {
       sim.add_gen(new FixedSizeGenerator(
-        sim, sim.edges, sim.edges, cfg.army_size, "Drunken"
+        sim, sim.edges, sim.edges, cfg.army_size, RouteStrategy.Drunken
       ))
     }
     // We don't have to wait, but it's better for determinism if we do.

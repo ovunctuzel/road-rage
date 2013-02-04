@@ -86,6 +86,8 @@
 # Scaling
 - support ~million agents, memory-wise
   - lazy construction?
+- we can do much better with ready agents... max capacity of edges, group them
+  based on where they want to spawn, maybe by generator?
 - gridlock?
   - force different turns?
   - agents get caught in loops because the path isnt realizable due to LC
@@ -118,8 +120,6 @@
 
 # Micro-optimizations
 - sleep less in UI
-- we can do much better with ready agents... max capacity of edges, group them
-  based on where they want to spawn, maybe by generator?
 - throw away geometry in UI after converted to awt stuff
 - truncate lengths, other doubles or more compactly write
 - improve map loading

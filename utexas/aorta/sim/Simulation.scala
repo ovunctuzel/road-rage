@@ -42,7 +42,8 @@ class Simulation(roads: Array[Road], edges: Array[Edge], vertices: Array[Vertex]
   traversables.foreach(t => t.queue = new Queue(t))
   vertices.foreach(v => v.intersection = new Intersection(v))
   var agents: Vector[Agent] = Vector.empty
-  var ready_to_spawn: List[SpawnAgent] = Nil
+  // We pass ready_to_spawn to generators directly
+  private var ready_to_spawn = new ListBuffer[SpawnAgent]()
   private var generators: SortedSet[Generator] = new TreeSet[Generator]
   private var generator_count = 0   // just for informational/UI purposes
   private var id_cnt = -1
@@ -131,16 +132,12 @@ class Simulation(roads: Array[Road], edges: Array[Edge], vertices: Array[Vertex]
     }
 
     // Then, give generators a chance to introduce more agents into the system
-    var changed = false
-    var reap = new MutableSet[Generator]()
+    val changed = generators.nonEmpty
     generator_count = 0
-    generators.foreach(g => {
-      g.run match {
-        case Left(newbies) => { ready_to_spawn ++= newbies }
-        case Right(_)      => { reap += g }
-      }
+    val reap = generators.filter(g => {
+      val done = g.run(ready_to_spawn)
       generator_count += g.count_pending
-      changed = true
+      done
     })
     generators --= reap
 
@@ -306,22 +303,30 @@ object Simulation {
     return sim
   }
 
-  // TODO make it an enum
-  def policy_builder(name: String): (Intersection) => Policy = name match {
-    case "NeverGo" => (i: Intersection) => new NeverGoPolicy(i)
-    case "StopSign" => (i: Intersection) => new StopSignPolicy(i)
-    case "Signal" => (i: Intersection) => new SignalPolicy(i)
-    case "Reservation" => (i: Intersection) => new ReservationPolicy(i)
-    // TODO case _ => ???
+  def policy_builder(enum: IntersectionPolicy.Value): (Intersection) => Policy = enum match {
+    case IntersectionPolicy.NeverGo => (i: Intersection) => new NeverGoPolicy(i)
+    case IntersectionPolicy.StopSign => (i: Intersection) => new StopSignPolicy(i)
+    case IntersectionPolicy.Signal => (i: Intersection) => new SignalPolicy(i)
+    case IntersectionPolicy.Reservation => (i: Intersection) => new ReservationPolicy(i)
   }
 
-  def make_route(name: String, goal: DirectedRoad) = name match {
-    case "Static A*" => new StaticRoute(goal)
-    case "Drunken" => new DrunkenRoute(goal)
-    case "Directional Drunk" => new DirectionalDrunkRoute(goal)
-    case "Drunken Explorer" => new DrunkenExplorerRoute(goal)
-    // TODO case _ => ???
+  def make_route(enum: RouteStrategy.Value, goal: DirectedRoad) = enum match {
+    case RouteStrategy.StaticAstar => new StaticRoute(goal)
+    case RouteStrategy.Drunken => new DrunkenRoute(goal)
+    case RouteStrategy.DirectionalDrunk => new DirectionalDrunkRoute(goal)
+    case RouteStrategy.DrunkenExplorer => new DrunkenExplorerRoute(goal)
   }
 
-  def make_policy(i: Intersection) = policy_builder(cfg.policy)(i)
+  private lazy val default_policy = policy_builder(IntersectionPolicy.withName(cfg.policy))
+  def make_policy(i: Intersection) = default_policy(i)
+}
+
+object IntersectionPolicy extends Enumeration {
+  type IntersectionPolicy = Value
+  val NeverGo, StopSign, Signal, Reservation = Value
+}
+
+object RouteStrategy extends Enumeration {
+  type RouteStrategy = Value
+  val StaticAstar, Drunken, DirectionalDrunk, DrunkenExplorer = Value
 }

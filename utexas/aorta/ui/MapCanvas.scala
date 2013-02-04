@@ -18,7 +18,7 @@ import scala.language.implicitConversions
 import utexas.aorta.map._  // TODO yeah getting lazy.
 import utexas.aorta.sim.{Simulation, Agent, FixedSizeGenerator,
                          ContinuousGenerator, SpecificGenerator, Sim_Event,
-                         EV_Signal_Change}
+                         EV_Signal_Change, IntersectionPolicy, RouteStrategy}
 
 import utexas.aorta.{Util, cfg}
 
@@ -673,7 +673,7 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
         case Mode.PICK_2nd => {
           chosen_edge2 = current_edge
           sim.add_gen(new SpecificGenerator(
-            sim, "Static A*",
+            sim, RouteStrategy.StaticAstar,
             // TODO avoid some nasty casting if we specialize an EdgePosition
             List((chosen_pos.get.on.asInstanceOf[Edge], current_edge.get, chosen_pos.get.dist))
           ))
@@ -774,10 +774,10 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
         message = "What policy should govern these intersections?",
         initial = "",
         // TODO populate seq from what sim uses
-        entries = Seq("Never Go", "Stop Sign", "Signal", "Reservation")
+        entries = IntersectionPolicy.values.toList
       ) match {
         case Some(name) => {
-          val builder = Simulation.policy_builder(name.toString)
+          val builder = Simulation.policy_builder(IntersectionPolicy.withName(name.toString))
           intersections.foreach(i => i.policy = builder(i))
         }
         case None =>
@@ -823,10 +823,9 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
       message = "How should the agents route to their destination?",
       initial = "",
       // TODO populate seq from what sim uses
-      entries = Seq("Static A*", "Drunken", "Directional Drunk",
-                    "Drunken Explorer")
+      entries = RouteStrategy.values.toList
     ) match {
-      case Some(name) => name.toString
+      case Some(name) => RouteStrategy.withName(name.toString)
       case None => return
     }
 
