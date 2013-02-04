@@ -29,8 +29,6 @@ object Mode extends Enumeration {
   val PICK_2nd = Value("Pick 2nd edge")
 }
 
-// TODO maybe adaptor class for our map geometry? stick in a 'render road' bit
-
 class MapCanvas(sim: Simulation) extends ScrollingCanvas {
   // fire steps every now and then
   new Thread {
@@ -71,9 +69,7 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
   // state
   private var current_obj: Option[Renderable] = None
   private var highlight_type: Option[String] = None
-  private var show_ward_colors = false
   private var current_turn = -1  // for cycling through turns from an edge
-  private var show_wards = false
   private var mode = Mode.EXPLORE
   private var chosen_edge1: Option[Edge] = None
   private var chosen_edge2: Option[Edge] = None
@@ -98,17 +94,6 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
     case _ => None
   }
 
-  // this is like static config, except it's a function of the map and rng seed
-  private val special_ward_color = Color.BLACK
-  private val ward_colors = List(
-    Color.RED, Color.BLUE, Color.GREEN, Color.YELLOW, Color.CYAN, Color.ORANGE,
-    Color.PINK, Color.MAGENTA
-  ) // TODO cfg
-  // TODO do this better by shuffling once and then having a lazy cyclic
-  // infinite list
-  private val ward_colorings = sim.wards.map(
-    w => (w, scala.util.Random.shuffle(ward_colors).head)
-  ).toMap ++ List((sim.special_ward, special_ward_color)).toMap
   private val agent_colors = HashMap[Agent, Color]()
 
   def canvas_width = Graph.width.toInt
@@ -131,11 +116,6 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
   // pre-render lanes
   Util.log("Edge lines...")
   val fg_lines = build_fg_lines
-
-  // pre-render ward bubbles
-  Util.log("Ward bubbles...")
-  val ward_bubbles = sim.wards.map(new WardBubble(_))
-  Util.log_pop
 
   // just used during construction.
   // Note ListBuffer takes O(n) to access the last element, so only write to it,
@@ -210,18 +190,9 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
     val roads_seen = new ListBuffer[RoadLine]
 
     // Draw the first layer (roads) - either all or just major ones
-    for (l <- bg_lines if (l.line.intersects(window) &&
-                           (!show_wards || sim.special_ward.roads(l.road))))
-    {
+    for (l <- bg_lines if l.line.intersects(window)) {
       draw_road(g2d, l)
       roads_seen += l
-    }
-
-    // Draw wards?
-    if (show_wards) {
-      for (w <- ward_bubbles if w.bubble.intersects(window)) {
-        roads_seen ++= draw_ward(g2d, w)
-      }
     }
 
     // don't show tiny details when it doesn't matter (and when it's expensive
@@ -298,29 +269,6 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
       case None => None
     }
   }
-
-  // we return any new roads seen
-  def draw_ward(g2d: Graphics2D, w: WardBubble): Set[RoadLine] =
-    current_obj match {
-      // Show the roads of the highlighted ward
-      case (Some(ward: Ward)) if w.ward == ward => {
-        val lines = ward.roads.flatMap(road2lines(_))
-        lines.foreach(l => draw_road(g2d, l))
-        lines
-      }
-      case _ => {
-        // Show the center of the ward and all external connections
-        g2d.setColor(ward_colorings(w.ward))
-        g2d.fill(w.bubble)
-        g2d.setStroke(strokes(1)) // TODO
-        for (v <- w.ward.frontier) {
-          g2d.draw(new Line2D.Double(
-            w.bubble.getCenterX, w.bubble.getCenterY, v.location.x, v.location.y
-          ))
-        }
-        Set()
-      }
-    }
 
   def draw_road(g2d: Graphics2D, l: RoadLine) = {
     g2d.setColor(color_road(l.road))
@@ -405,8 +353,6 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
       Color.RED
     else if (polygon_roads2(r))
       Color.GREEN
-    else if (show_ward_colors)
-      ward_colorings(r.ward)
     else if (r.doomed)
       Color.RED
     else
@@ -468,7 +414,7 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
 
     def hit(shape: Shape) = shape.intersects(cursor)
 
-    // Order of search: agents, vertices, edges, roads, wards
+    // Order of search: agents, vertices, edges, roads
     // TODO ideally, center agent bubble where the vehicle center is drawn.
 
     // TODO this is _kind_ of ugly.
@@ -476,10 +422,6 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
       case None => sim.vertices.find(v => hit(bubble(v.location))) match {
         case None => fg_lines.find(l => hit(l.line)) match {
           case None => bg_lines.find(l => hit(l.line)) match {
-            case None if show_wards => ward_bubbles.find(b => hit(b.bubble)) match {
-              case None => None
-              case Some(b) => Some(b.ward)
-            }
             case None => None
             case Some(l) => Some(l.road)
           }
@@ -524,9 +466,6 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
     case EV_Key_Press(Key.P) => {
       handle_ev(EV_Action("toggle-running"))
     }
-    case EV_Key_Press(Key.W) => {
-      handle_ev(EV_Action("toggle-wards"))
-    }
     case EV_Action("spawn-army") => {
       prompt_generator(sim.edges, sim.edges)
     }
@@ -549,14 +488,7 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
         running = true
       }
     }
-    case EV_Action("toggle-wards") => {
-      show_wards = !show_wards
-      // TODO this doesnt quite seem to match until we actually move...
-      handle_ev(EV_Mouse_Moved(mouse_at_x, mouse_at_y))
-      repaint
-    }
     case EV_Action("pathfind") => {
-      show_ward_colors = false  // it's really hard to see otherwise
       switch_mode(Mode.PICK_1st)
       chosen_edge1 = None
       chosen_edge2 = None
@@ -686,11 +618,6 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
         case _ =>
       }
     }
-    case EV_Key_Press(Key.T) => {
-      // toggle road-coloring mode
-      show_ward_colors = !show_ward_colors
-      repaint
-    }
     case EV_Key_Press(Key.OpenBracket) => {
       sim.slow_down()
       status.update_speed(sim)
@@ -788,9 +715,9 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
   }
 
   // TODO ew, even refactored, these are a bit ugly.
-  def prompt_int(msg: String): Option[Int] = Dialog.showInput(
-    message = msg, initial = ""
-  ) match {
+  def prompt_int(msg: String): Option[Int]
+    = Dialog.showInput(message = msg, initial = "") match
+  {
     case Some(num) => {
       try {
         Some(num.toInt)
@@ -801,9 +728,9 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
     case _ => None
   }
 
-  def prompt_double(msg: String): Option[Double] = Dialog.showInput(
-    message = msg, initial = ""
-  ) match {
+  def prompt_double(msg: String): Option[Double]
+    = Dialog.showInput(message = msg, initial = "") match
+  {
     case Some(num) => {
       try {
         Some(num.toDouble)
@@ -905,13 +832,6 @@ final case class RoadLine(a: Coordinate, b: Coordinate, road: Road)
 final case class EdgeLine(l: Line, edge: Edge) extends ScreenLine {
   val line = new Line2D.Double(l.x1, l.y1, l.x2, l.y2)
   val arrow = GeomFactory.draw_arrow(l, l.midpt, 1)  // TODO cfg
-}
-// and, separately...
-class WardBubble(val ward: Ward) {
-  private val r = 2.0 + (0.1 * ward.roads.size) // TODO cfg
-  val bubble = new Ellipse2D.Double(
-    ward.center.x - r, ward.center.y - r, r * 2, r * 2
-  )
 }
 
 // TODO what else belongs?

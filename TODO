@@ -57,7 +57,7 @@
   - pass1 = read osm + normalize
   - pass2 = pass2
   - pass3 = (>make edge geometry), make edges, make turns,
-            (>nuke disconnected), (collapse degenerate verts), (>wards),
+            (>nuke disconnected), (collapse degenerate verts),
             (small roads to long turns), trim lane lines at vertices
 - only really legit use of scheduled sim events is generators, stats
 - draw per object

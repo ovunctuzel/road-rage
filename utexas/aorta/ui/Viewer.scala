@@ -101,8 +101,6 @@ object Viewer extends SimpleSwingApplication {
 
     // View
     contents += new Label("r   reset view")
-    contents += new Label("w   toggle wards display")
-    contents += new Label("t   toggle ward colors")
     contents += new Label("g   toggle greenflood colors")
     contents += new Label("CTRL   cycle through turns")
     contents += new Label("arrow keys pan")
@@ -158,9 +156,6 @@ object Viewer extends SimpleSwingApplication {
         }
         contents += new MenuItem(Action("Clear all highlighting") {
           canvas_2d.handle_ev(EV_Param_Set("highlight", None))
-        })
-        contents += new MenuItem(Action("Toggle wards display") {
-          canvas_2d.handle_ev(EV_Action("toggle-wards"))
         })
       }
 

@@ -12,7 +12,7 @@ import scala.collection.mutable.{MutableList, HashMap, MultiMap, ArrayBuffer}
 import scala.collection.mutable.{Set => MutableSet}
 
 import utexas.aorta.map.{Coordinate, Road, Vertex, Edge, Direction, Line,
-                   Turn, Graph, Ward}
+                   Turn, Graph}
 import utexas.aorta.sim.Simulation
 
 import utexas.aorta.{Util, cfg}
@@ -27,22 +27,19 @@ abstract class Reader(fn: String, with_geometry: Boolean) {
   var edges: Array[Edge] = null
   var verts: Array[Vertex] = null
 
-  val wards_map = new HashMap[Int, MutableSet[Road]] with MultiMap[Int, Road]
-  var special_ward_id: Int = -1
-
   class TmpLink(val id: Int, val from: Int, val to: Int, val length: Double, val conflict_line: Line)
 
   def load_map() = load match {
-    case (r, e, v, w, special_ward) => new Graph(r, e, v, w, special_ward)
+    case (r, e, v) => new Graph(r, e, v)
   }
   def load_simulation() = load match {
-    case (r, e, v, w, special_ward) => new Simulation(r, e, v, w, special_ward)
+    case (r, e, v) => new Simulation(r, e, v)
   }
 
   // Side effect of populating the per-graph data.
   def read_file()
 
-  private def load(): (Array[Road], Array[Edge], Array[Vertex], List[Ward], Ward) = {
+  private def load(): (Array[Road], Array[Edge], Array[Vertex]) = {
     Util.log("Loading map " + fn)
     Util.log_push
     read_file
@@ -62,17 +59,7 @@ abstract class Reader(fn: String, with_geometry: Boolean) {
       }
     }
 
-    Util.log("Recovering wards as well")
-    // Don't forget to separate out the special ward first
-    // Missing the special ward can happen on some oddly-constructed maps
-    val special_ward = if (wards_map.contains(special_ward_id))
-                         new Ward(special_ward_id, wards_map(special_ward_id).toSet)
-                       else
-                         new Ward(special_ward_id, Set())
-    wards_map -= special_ward_id
-    val wards: List[Ward] = wards_map.map(pair => new Ward(pair._1, pair._2.toSet)).toList
-
-    return (roads, edges, verts, wards, special_ward)
+    return (roads, edges, verts)
   }
 }
 
@@ -94,7 +81,7 @@ class XMLReader(fn: String, with_geometry: Boolean) extends Reader(fn, with_geom
 
     // per road
     var rd_name, rd_type: String = ""
-    var rd_osm, rd_id, rd_ward, rd_v1, rd_v2: Int = -1
+    var rd_osm, rd_id, rd_v1, rd_v2: Int = -1
     var rd_len: Double = -1
     var rd_pts: MutableList[Coordinate] = null
 
@@ -127,8 +114,6 @@ class XMLReader(fn: String, with_geometry: Boolean) extends Reader(fn, with_geom
           // it.
           Graph.set_params(width, height, xoff, yoff, scale)
 
-          special_ward_id = get_int(attribs)("special_ward")
-
           val num_roads = get_int(attribs)("roads")
           val num_edges = get_int(attribs)("edges")
           val num_verts = get_int(attribs)("verts")
@@ -147,7 +132,6 @@ class XMLReader(fn: String, with_geometry: Boolean) extends Reader(fn, with_geom
           rd_osm = get_int(attribs)("osmid")
           rd_len = get_double(attribs)("length")
           rd_id = get_int(attribs)("id")
-          rd_ward = get_int(attribs)("ward")
           rd_v1 = get_int(attribs)("v1")
           rd_v2 = get_int(attribs)("v2")
           rd_pts = new MutableList[Coordinate]
@@ -163,7 +147,6 @@ class XMLReader(fn: String, with_geometry: Boolean) extends Reader(fn, with_geom
           if (with_geometry) {
             road.set_points(rd_pts.toArray)
           }
-          wards_map.addBinding(rd_ward, road)
 
           // reset stuff
           rd_name = ""
@@ -171,7 +154,6 @@ class XMLReader(fn: String, with_geometry: Boolean) extends Reader(fn, with_geom
           rd_osm = -1
           rd_len = -1
           rd_id = -1
-          rd_ward = -1
           rd_v1 = -1
           rd_v2 = -1
           rd_pts.clear
@@ -279,12 +261,11 @@ class PlaintextReader(fn: String, with_geometry: Boolean) extends Reader(fn, wit
       if (state == 0) {
         // first line, the graph
         val Array(width, height, xoff, yoff, scale, num_roads, num_edges,
-                  num_verts, ward_id) = line.split(",")
+                  num_verts) = line.split(",")
         // Set this as early as possible! length() of any lines we make needs
         // it.
         Graph.set_params(width.toDouble, height.toDouble, xoff.toDouble,
                          yoff.toDouble, scale.toDouble)
-        special_ward_id = ward_id.toInt
         
         // set up all the temporary things to accumulate stuff
         roads = new Array[Road](num_roads.toInt)
@@ -328,7 +309,7 @@ class PlaintextReader(fn: String, with_geometry: Boolean) extends Reader(fn, wit
           state = 4
         } else {
           val Array(metadata, points) = line.split(":")
-          val Array(name, road_type, osm_id, v1, v2, ward, len, id) = metadata.split(",")
+          val Array(name, road_type, osm_id, v1, v2, len, id) = metadata.split(",")
 
           val road = new Road(
             id.toInt, len.toDouble, name, road_type, osm_id.toInt,
@@ -343,7 +324,6 @@ class PlaintextReader(fn: String, with_geometry: Boolean) extends Reader(fn, wit
               new Coordinate(x.toDouble, y.toDouble)
             }))
           }
-          wards_map.addBinding(ward.toInt, road)
         }
       } else if (state == 4) {
         // expecting an edge

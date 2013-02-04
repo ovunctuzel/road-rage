@@ -11,15 +11,9 @@ import utexas.aorta.map.make.PlaintextReader
 import utexas.aorta.Util
 
 class Graph(val roads: Array[Road], val edges: Array[Edge],
-            val vertices: Array[Vertex], val wards: List[Ward],
-            val special_ward: Ward)
+            val vertices: Array[Vertex])
 {
   val turns = vertices.foldLeft(List[Turn]())((l, v) => v.turns.toList ++ l)
-
-  // Tell road about their ward
-  for (w <- special_ward :: wards) {
-    w.roads.foreach(r => r.ward = w)
-  }
 
   def traversables() = edges ++ turns
 
