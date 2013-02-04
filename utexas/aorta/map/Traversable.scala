@@ -75,10 +75,6 @@ abstract class Traversable() {
 
   def start_pt = lines.head.start
   def end_pt  = lines.last.end
-
-  // TODO the UI nearly doesn't depend on these, remove?
-  def shifted_start_pt(shift: Double) = lines.head.shift_line(shift).start
-  def shifted_end_pt(shift: Double) = lines.last.shift_line(shift).end
 }
 
 // TODO noooo not var >_<
@@ -171,7 +167,7 @@ class Line(var x1: Double, var y1: Double, var x2: Double, var y2: Double) {
     )
   }
 
-  def shift_line(off: Double): Line = {
+  def perp_shift(off: Double): Line = {
     // just move in the direction of the road (as given by the ordering of the
     // points) plus 90 degrees clockwise
     // TODO why does the angle() that respects inversion fail?
@@ -190,13 +186,13 @@ class Line(var x1: Double, var y1: Double, var x2: Double, var y2: Double) {
   )
 
   // this takes a point along a line and moves it back
-  private val shift_mag = 1.0 // TODO cfg
+  private val shift_mag = 1.5 // TODO cfg
   // TODO y inversion problems still?!
-  private def shift_pt(x: Double, y: Double, theta: Double) = new Coordinate(
-    x + (shift_mag * math.cos(theta)), y - (shift_mag * math.sin(theta))
+  private def shift_pt(x: Double, y: Double, theta: Double, mag: Double) = new Coordinate(
+    x + (mag * math.cos(theta)), y - (mag * math.sin(theta))
   )
-  def shifted_start_pt = shift_pt(x1, y1, angle)
-  def shifted_end_pt = shift_pt(x2, y2, angle + math.Pi)  // reverse the angle
+  def shift_fwd(mag: Double = shift_mag) = shift_pt(x1, y1, angle, mag)
+  def shift_back(mag: Double = shift_mag) = shift_pt(x2, y2, angle + math.Pi, mag)
 }
 
 case class Position(val on: Traversable, val dist: Double) extends Renderable {

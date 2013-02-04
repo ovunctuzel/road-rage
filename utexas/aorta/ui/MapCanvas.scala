@@ -13,6 +13,7 @@ import java.awt.{Graphics2D, Shape, BasicStroke, Color, Polygon}
 import java.awt.geom._
 import swing.event.Key
 import swing.Dialog
+import scala.language.implicitConversions
 
 import utexas.aorta.map._  // TODO yeah getting lazy.
 import utexas.aorta.sim.{Simulation, Agent, FixedSizeGenerator,
@@ -86,6 +87,8 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
   private val green_turns = new HashMap[Turn, Shape]()
   private var show_green = false
 
+  implicit def line2awt(l: Line): Line2D.Double = new Line2D.Double(l.x1, l.y1, l.x2, l.y2)
+
   def current_edge: Option[Edge] = current_obj match {
     case Some(pos: Position) => Some(pos.on.asInstanceOf[Edge])
     case _ => None
@@ -150,7 +153,7 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
     val list = new ListBuffer[EdgeLine]()
     for (e <- sim.edges; l <- e.lines) {
       // draw the lines on the borders of lanes, not in the middle
-      val line = new EdgeLine(l.shift_line(0.5), e)
+      val line = new EdgeLine(l.perp_shift(0.5), e)
       edge2lines.addBinding(e, line)
       list += line
     }
@@ -186,7 +189,7 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
     case EV_Signal_Change(greens) => {
       green_turns.clear
       for (t <- greens) {
-        green_turns(t) = GeomFactory.curved_turn(t)
+        green_turns(t) = GeomFactory.turn_geom(t)
       }
     }
   } })
@@ -196,7 +199,7 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
   // TODO better solution
   for (v <- sim.vertices) {
     for (t <- v.intersection.policy.current_greens) {
-      green_turns(t) = GeomFactory.curved_turn(t)
+      green_turns(t) = GeomFactory.turn_geom(t)
     }
   }
 
@@ -428,27 +431,22 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
       Color.WHITE
 
   def draw_turn(g2d: Graphics2D, turn: Turn, color: Color) = {
-    val curve = GeomFactory.curved_turn(turn)
+    val line = GeomFactory.turn_geom(turn)
     g2d.setColor(color)
-    g2d.draw(curve)
-    // This is math copied from curved_turn :P
-    val pt2 = turn.from.to.location
-    val pt3 = turn.to.shifted_start_pt(0.5)
-    g2d.fill(
-      GeomFactory.draw_arrow(new Line(pt2.x, pt2.y, pt3.x, pt3.y), 2)
-    )
+    g2d.draw(line)
+    g2d.fill(GeomFactory.draw_arrow(line, line.shift_back(0.75), 2))
   }
 
   def draw_intersection(g2d: Graphics2D, e: Edge) = {
     if (current_turn == -1) {
       // show all turns
       for (turn <- e.next_turns) {
-        draw_turn(g2d, turn, Color.WHITE)
+        draw_turn(g2d, turn, Color.GREEN)
       }
     } else {
       // show one turn and its conflicts
       val turn = e.next_turns(current_turn)
-      draw_turn(g2d, turn, Color.WHITE)
+      draw_turn(g2d, turn, Color.GREEN)
 
       for (conflict <- turn.conflicts) {
         draw_turn(g2d, conflict, Color.RED)
@@ -899,7 +897,7 @@ final case class RoadLine(a: Coordinate, b: Coordinate, road: Road)
   val line = new Line2D.Double(a.x, a.y, b.x, b.y)
   // special for one-ways
   val bg_line = if (road.is_oneway) {
-                      val l = new Line(a, b).shift_line(road.num_lanes / 2.0)
+                      val l = new Line(a, b).perp_shift(road.num_lanes / 2.0)
                       new Line2D.Double(l.x1, l.y1, l.x2, l.y2)
                     } else {
                       line
@@ -907,7 +905,7 @@ final case class RoadLine(a: Coordinate, b: Coordinate, road: Road)
 }
 final case class EdgeLine(l: Line, edge: Edge) extends ScreenLine {
   val line = new Line2D.Double(l.x1, l.y1, l.x2, l.y2)
-  val arrow = GeomFactory.draw_arrow(l, 1)  // TODO cfg
+  val arrow = GeomFactory.draw_arrow(l, l.midpt, 1)  // TODO cfg
 }
 // and, separately...
 class WardBubble(val ward: Ward) {
@@ -919,7 +917,7 @@ class WardBubble(val ward: Ward) {
 
 // TODO what else belongs?
 object GeomFactory {
-  def draw_arrow(line: Line, size: Int): Shape = {
+  def draw_arrow(line: Line, base: Coordinate, size: Int): Shape = {
     // TODO enum for size
     // width = how far out is the tip
     val width = size match {
@@ -934,10 +932,9 @@ object GeomFactory {
       case _ => 0.5
     }
 
-    val mid = line.midpt
     val theta = line.broken_angle
-    val x = mid.x + (height * math.cos(theta))
-    val y = mid.y + (height * math.sin(theta))
+    val x = base.x + (height * math.cos(theta))
+    val y = base.y + (height * math.sin(theta))
 
     // Perpendiculous!
     val theta_perp1 = theta + (math.Pi / 2)
@@ -950,30 +947,18 @@ object GeomFactory {
 
     val arrow = new Path2D.Double()
     arrow.moveTo(x, y)
-    arrow.lineTo(mid.x + cos_perp1, mid.y + sin_perp1)
-    arrow.lineTo(mid.x + cos_perp2, mid.y + sin_perp2)
+    arrow.lineTo(base.x + cos_perp1, base.y + sin_perp1)
+    arrow.lineTo(base.x + cos_perp2, base.y + sin_perp2)
     return arrow
   }
 
-  def curved_turn(turn: Turn): Shape = {
+  def turn_geom(turn: Turn): Line = {
     // We don't use the conflict_line, since that doesn't draw very
     // informatively, unless lane lines are trimmed back well.
-    val pt1 = turn.from.shifted_end_pt(0.5)
-    val pt2 = turn.from.to.location
-    val pt3 = turn.to.shifted_start_pt(0.5)
-    return new CubicCurve2D.Double(
-      pt1.x, pt1.y, pt2.x, pt2.y, pt2.x, pt2.y, pt3.x, pt3.y
-    )
-
-    /*val line = turn.conflict_line
-    return new Line2D.Double(line.start.x, line.start.y, line.end.x, line.end.y)*/
-
-    /*val pt1 = turn.conflict_line.start
-    val pt2 = turn.from.to.location
-    val pt3 = turn.conflict_line.end
-    return new CubicCurve2D.Double(
-      pt1.x, pt1.y, pt2.x, pt2.y, pt2.x, pt2.y, pt3.x, pt3.y
-    )*/
+    // Shift the lines to match the EdgeLines we draw.
+    val pt1 = turn.from.lines.last.perp_shift(0.5).shift_back()
+    val pt2 = turn.to.lines.head.perp_shift(0.5).shift_fwd()
+    return new Line(pt1, pt2)
   }
 
   def rand_color() = new Color(

@@ -34,7 +34,6 @@
   - remove ui debugging stuff
 - make turns better, more systematically
   - try to not remove pieces of maps at all
-- draw turns better
 
 - use http://wiki.openstreetmap.org/wiki/Relation:restriction
 - our pruning of pedestrian ways seems to be a bit too enthusiastic (see Guadalupe St)
@@ -63,6 +62,8 @@
 - separate maps/ and osm/ dir
 - only really legit use of scheduled sim events is generators, stats
 - draw per object
+  - UI state needs to go somewhere accessible to all
+  - package for awt stuff to avoid importing
 - sorted sets everywhere for determinism
 - more privates, make abstract members more explicit, delegates
 - move all configable things to Util

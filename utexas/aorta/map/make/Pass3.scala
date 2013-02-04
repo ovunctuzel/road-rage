@@ -43,11 +43,11 @@ class Pass3(old_graph: PreGraph2) {
       // the -0.5 lets there be nice lane lines between lanes
       for (e <- r.pos_lanes) {
         e.set_lines(for ((from, to) <- r.pairs_of_points)
-                    yield new Line(from, to).shift_line(e.lane_offset - 0.5))
+                    yield new Line(from, to).perp_shift(e.lane_offset - 0.5))
       }
       for (e <- r.neg_lanes) {
         val ls = for ((from, to) <- r.pairs_of_points)
-                 yield new Line(to, from).shift_line(e.lane_offset - 0.5)
+                 yield new Line(to, from).perp_shift(e.lane_offset - 0.5)
         // TODO inefficient just because i wanted a two-liner?
         e.set_lines(ls.reverse)
       }
@@ -348,8 +348,8 @@ class Pass3(old_graph: PreGraph2) {
         // Correct for shifting the UI does by preventing intersections when
         // shifted over. Has a side effect of making cars stop a bit far back,
         // which is fine.
-        val l1 = in.lines.last.shift_line(0.5)
-        val l2 = out.lines.head.shift_line(0.5)
+        val l1 = in.lines.last.perp_shift(0.5)
+        val l2 = out.lines.head.perp_shift(0.5)
 
         // Just to be safe, don't allow ourselves to ever extend a line
         if (!shortest_line.contains(in)) {
@@ -384,7 +384,7 @@ class Pass3(old_graph: PreGraph2) {
                 e.lines.head
               else
                 e.lines.last
-      val use = best_line.shift_line(-0.5)
+      val use = best_line.perp_shift(-0.5)
       l.x1 = use.x1
       l.y1 = use.y1
       l.x2 = use.x2
