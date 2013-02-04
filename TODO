@@ -59,7 +59,6 @@
   - pass3 = (>make edge geometry), make edges, make turns,
             (>nuke disconnected), (collapse degenerate verts), (>wards),
             (small roads to long turns), trim lane lines at vertices
-- separate maps/ and osm/ dir
 - only really legit use of scheduled sim events is generators, stats
 - draw per object
   - UI state needs to go somewhere accessible to all

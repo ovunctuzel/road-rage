@@ -28,7 +28,7 @@ object MapSuite {
   }
 
   // Must run tests from the root project directory
-  def maps = new File("dat/").listFiles.map(_.getPath).filter(_.endsWith(".osm"))
+  def maps = new File("osm/").listFiles.map(_.getPath)
 
   def check_map(g: Graph) = {
     check_emptiness(g)

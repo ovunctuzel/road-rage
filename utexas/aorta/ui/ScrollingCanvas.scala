@@ -16,8 +16,6 @@ import utexas.aorta.Util
 // TODO we can't hear the tab key until we figure out how to
 // have 'with Component.SuperMixin' so we can do setFocusTraversalEnabled(false)
 
-// TODO maybe adaptor class for our map geometry?
-
 // TODO for now, we'll implement the free-hand drawing here, but eventually it
 // makes more sense as some kind of nifty mixin thing.
 

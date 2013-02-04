@@ -4,7 +4,7 @@
 
 package utexas.aorta.map.make
 
-import java.io.FileWriter
+import java.io.{File, FileWriter}
 
 import utexas.aorta.map.Graph
 
@@ -17,7 +17,7 @@ object Builder {
       throw new Exception(s"$input must end with .osm")
     }
 
-    val output = input.replace(".osm", ".map")
+    val output = input.replace("osm/", "maps/").replace(".osm", ".map")
 
     val graph1 = new Pass1(input).run()
     Graph.set_params(graph1.width, graph1.height, graph1.offX, graph1.offY, graph1.scale)
@@ -30,6 +30,7 @@ object Builder {
       s"Dumping map with ${graph3.roads.length} roads, ${graph3.edges.length}" +
       s" edges, and ${graph3.vertices.length} vertices"
     )
+    (new File("./maps")).mkdir
     val file = new FileWriter(output)
     graph3.to_plaintext(file, graph1)
     file.close
