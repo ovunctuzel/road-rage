@@ -75,6 +75,7 @@
 
 # Contraction Hierarchies
 - understand...
+- simplify generators by removing pending/worker threads
 
 # Intersection Policies
 - stop sign for only some directions

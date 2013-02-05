@@ -7,10 +7,12 @@ package utexas.aorta.sim
 import scala.collection.mutable.{HashSet => MutableSet}
 
 import utexas.aorta.map.{Edge, Coordinate, Turn, Traversable, Graph, Position}
-import utexas.aorta.{Util, cfg}
+import utexas.aorta.sim.market._
 import utexas.aorta.ui.Renderable
 import utexas.aorta.analysis.{Profiling, Stats, Wasted_Time_Stat,
                               Total_Trip_Stat}
+
+import utexas.aorta.{Util, cfg}
 
 // TODO come up with a notion of dimension and movement capability. at first,
 // just use radius bounded by lane widths?
@@ -30,6 +32,8 @@ class Agent(val id: Int, val route: Route) extends Ordered[Agent] with Renderabl
   var target_accel: Double = 0  // m/s^2
   // TODO who chooses this?
   val behavior = new LookaheadBehavior(this, route)
+  // TODO generator specifies this differently
+  val wallet: Wallet = new RandomWallet(this, 500.0)
 
   // old_lane is where we're shifting from. we immediately warp into the target
   // lane.

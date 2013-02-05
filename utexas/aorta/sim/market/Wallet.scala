@@ -37,3 +37,16 @@ class RandomWallet(a: Agent, initial_budget: Double)
     return (relevant_ticket(tickets, yours), Util.rand_double(0.0, budget))
   }
 }
+
+// Always bids some high amount.
+class EmergencyVehicleWallet(a: Agent, bid: Double = 1000.0)
+  extends Wallet(a, Double.PositiveInfinity)
+{
+  def bid_stop_sign(tickets: Set[Ticket], yours: Ticket): (Ticket, Double) = {
+    return (relevant_ticket(tickets, yours), bid)
+  }
+
+  // TODO Fixed high bid means multiple ambulances just compete based on how
+  // many are in each flow.
+  // TODO dont count payment from this towards revenue
+}
