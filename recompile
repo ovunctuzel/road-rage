@@ -17,5 +17,3 @@ scalac $BUILD_OPTS $FAST $SRCS
 if [[ $? != "0" ]]; then
     exit 1
 fi
-echo Done compiling.
-echo

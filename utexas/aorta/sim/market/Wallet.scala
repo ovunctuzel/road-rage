@@ -25,6 +25,7 @@ abstract class Wallet(a: Agent, initial_budget: Double) {
 
   // TODO or perhaps the auction should determine this for us and only ask for
   // our bid on the one ticket that makes sense?
+  // TODO this is only true if the agent hasnt done lookahead, anyway
   def relevant_ticket(tickets: Set[Ticket], ours: Ticket) =
     tickets.find(t => t.turn.from == ours.turn.from).get
 }
