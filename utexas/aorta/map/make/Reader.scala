@@ -8,7 +8,7 @@ import scala.io.Source
 import scala.xml.MetaData
 import scala.xml.pull._
 
-import scala.collection.mutable.{MutableList, HashMap, MultiMap, ArrayBuffer}
+import scala.collection.mutable.{MutableList, HashMap, ArrayBuffer}
 import scala.collection.mutable.{Set => MutableSet}
 
 import utexas.aorta.map.{Coordinate, Road, Vertex, Edge, Direction, Line,

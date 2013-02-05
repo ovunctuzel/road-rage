@@ -19,14 +19,14 @@ abstract class Wallet(a: Agent, initial_budget: Double) {
   }
 
   // How much is this agent willing to spend on some choice of tickets?
-  def bid_stop_sign(tickets: Set[Ticket], ours: Ticket): (Ticket, Double)
+  def bid_stop_sign(tickets: Iterable[Ticket], ours: Ticket): (Ticket, Double)
   // TODO most reasonable implementations will want a notion of continuity,
   // grouping all auctions for one of its turns together...
 
   // TODO or perhaps the auction should determine this for us and only ask for
   // our bid on the one ticket that makes sense?
   // TODO this is only true if the agent hasnt done lookahead, anyway
-  def relevant_ticket(tickets: Set[Ticket], ours: Ticket) =
+  def relevant_ticket(tickets: Iterable[Ticket], ours: Ticket) =
     tickets.find(t => t.turn.from == ours.turn.from).get
 }
 
@@ -34,7 +34,7 @@ abstract class Wallet(a: Agent, initial_budget: Double) {
 class RandomWallet(a: Agent, initial_budget: Double)
   extends Wallet(a, initial_budget)
 {
-  def bid_stop_sign(tickets: Set[Ticket], yours: Ticket): (Ticket, Double) = {
+  def bid_stop_sign(tickets: Iterable[Ticket], yours: Ticket): (Ticket, Double) = {
     return (relevant_ticket(tickets, yours), Util.rand_double(0.0, budget))
   }
 }
@@ -43,7 +43,7 @@ class RandomWallet(a: Agent, initial_budget: Double)
 class EmergencyVehicleWallet(a: Agent, bid: Double = 1000.0)
   extends Wallet(a, Double.PositiveInfinity)
 {
-  def bid_stop_sign(tickets: Set[Ticket], yours: Ticket): (Ticket, Double) = {
+  def bid_stop_sign(tickets: Iterable[Ticket], yours: Ticket): (Ticket, Double) = {
     return (relevant_ticket(tickets, yours), bid)
   }
 

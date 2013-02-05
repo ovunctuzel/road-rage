@@ -7,6 +7,9 @@ package utexas.aorta.sim.policies
 import utexas.aorta.map.Turn
 import utexas.aorta.sim.{Intersection, Policy, Agent, Ticket}
 
+import scala.collection.mutable.{HashMap, MultiMap}
+import scala.collection.mutable.{Set => MutableSet}
+
 import utexas.aorta.{Util, cfg}
 
 // Always stop, then FIFO. Totally unoptimized.
@@ -67,19 +70,21 @@ class StopSignPolicy(intersection: Intersection) extends Policy(intersection) {
   }
 }
 
-// TODO generalize to other policies, probably.
+// TODO generalize to other policies, probably by generalizing ticket.
 abstract class TicketOrdering() {
-  def add(ticket: Ticket)
-  def shift_next(waiting_participants: Iterable[Ticket]): Option[Ticket]
-  def remove_agent(a: Agent)
-}
+  protected var queue = List[Ticket]()
 
-class FIFO_Ordering() extends TicketOrdering() {
-  private var queue = List[Ticket]()
+  def shift_next(waiting_participants: Iterable[Ticket]): Option[Ticket]
 
   def add(ticket: Ticket) = {
     queue :+= ticket
   }
+  def remove_agent(a: Agent) = {
+    queue = queue.filter(_.a != a)
+  }
+}
+
+class FIFO_Ordering() extends TicketOrdering() {
   def shift_next(waiting_participants: Iterable[Ticket]): Option[Ticket] = {
     if (queue.nonEmpty) {
       val next = queue.head
@@ -89,10 +94,50 @@ class FIFO_Ordering() extends TicketOrdering() {
       return None
     }
   }
-  def remove_agent(a: Agent) = {
-    queue = queue.filter(_.a != a)
-  }
 }
 
-//class AuctionOrdering() extends TicketOrdering() {
-//}
+// Who's willing to pay what
+case class Bid(who: Ticket, amount: Double)
+
+class AuctionOrdering() extends TicketOrdering() {
+  def shift_next(waiting_participants: Iterable[Ticket]): Option[Ticket] = {
+    // Handle degenerate cases where we don't hold auctions.
+    if (queue.isEmpty) {
+      return None
+    }
+    if (queue.size == 1) {
+      val next = queue.head
+      queue = queue.tail
+      return Some(next)
+    }
+
+    // Collect bids, remembering what each agent bids, and group by ticket.
+    val bids = new HashMap[Ticket, MutableSet[Bid]] with MultiMap[Ticket, Bid]
+    (waiting_participants ++ queue).foreach(who => {
+      who.a.wallet.bid_stop_sign(queue, who) match {
+        case (ticket, amount) if amount > 0.0 => {
+          bids.addBinding(ticket, Bid(who, amount))
+        }
+        case _ =>
+      }
+    })
+
+    if (bids.isEmpty) {
+      // They're all apathetic, so just do FIFO.
+      val next = queue.head
+      queue = queue.tail
+      return Some(next)
+    } else {
+      val winner = bids.keys.map(t => (bids(t).map(_.amount).sum, t)).max
+      collect_payment(winner._1, bids(winner._2))
+      queue = queue.filter(_ != winner._2)
+      return Some(winner._2)
+    }
+  }
+
+  private def collect_payment(total: Double, participants: Iterable[Bid]) = {
+    // TODO track revenue.
+    // TODO Simple division for now -- make them pay their full bid.
+    participants.foreach(bid => bid.who.a.wallet.spend(bid.amount))
+  }
+}
