@@ -185,7 +185,7 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
 
   // TODO colors for everything belong in cfg.
 
-  def render_canvas(g2d: Graphics2D, window: Rectangle2D.Double): Option[String] = {
+  def render_canvas(g2d: Graphics2D, window: Rectangle2D.Double): List[String] = {
     // remember these so we can draw center lines more efficiently
     val roads_seen = new ListBuffer[RoadLine]
 
@@ -264,9 +264,8 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
 
     // What tooltip do we want?
     return current_obj match {
-      case Some(pos: Position) => Some(f"${pos.on} at ${pos.dist}%.2f")
-      case Some(thing) => Some(thing.toString)
-      case None => None
+      case Some(thing) => thing.tooltip
+      case None => Nil
     }
   }
 

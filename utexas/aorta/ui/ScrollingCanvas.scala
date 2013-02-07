@@ -250,27 +250,10 @@ abstract class ScrollingCanvas extends Component {
     g2d.setRenderingHints(antialiasing)
 
     // provide a tool-tip rendering service to the client.
-    render_canvas(g2d, viewing_window) match {
-      case Some(text) => {
-        // TODO only if you want tooltips...
-        g2d.setTransform(orig_transform)
-        val width = g2d.getFontMetrics.getStringBounds(text, g2d).getWidth
-        val height = g2d.getFontMetrics.getStringBounds(text, g2d).getHeight
-        // center the text
-        val x = mouse_at_x - (width / 2.0)
-        // don't draw right on top of the cursor
-        val y = mouse_at_y - 10.0
-
-        // draw a nice backdrop
-        g2d.setColor(Color.WHITE)
-        g2d.fill(new RoundRectangle2D.Double(
-          x, y - height - 2.0, width, height + 4.0, 1.0, 1.0
-        ))
-        g2d.setColor(Color.BLACK)
-        // TODO tweak font size, colors.
-        g2d.drawString(text, x.toFloat, y.toFloat)
-      }
-      case None =>
+    val lines = render_canvas(g2d, viewing_window)
+    if (lines.nonEmpty) {
+      g2d.setTransform(orig_transform)
+      draw_tooltip(g2d, lines)
     }
   }
 
@@ -309,8 +292,37 @@ abstract class ScrollingCanvas extends Component {
     case _ => None
   }
 
+  def draw_tooltip(g2d: Graphics2D, lines: List[String]) = {
+    val longest = lines.maxBy(_.length)
+    val width = g2d.getFontMetrics.getStringBounds(longest, g2d).getWidth
+    // assume the height of each line is the same
+    val height = g2d.getFontMetrics.getStringBounds(longest, g2d).getHeight
+    val total_height = height * lines.length
+    // center the text
+    val x = mouse_at_x - (width / 2.0)
+    // don't draw right on top of the cursor
+    // TODO fancy: when drawing above cursor would occlude, draw below
+    val top = mouse_at_y - total_height - 10.0
+
+    // draw a nice backdrop
+    g2d.setColor(Color.WHITE)
+    g2d.fill(new RoundRectangle2D.Double(
+      x - 2.0, top - 2.0, width + 4.0, total_height + 6.0, 1.0, 1.0
+    ))
+    g2d.setColor(Color.BLACK)
+    // TODO tweak font size, colors.
+    def draw_line(text: List[String], y: Double): Unit = text match {
+      case line :: more => {
+        g2d.drawString(line, x.toFloat, y.toFloat)
+        draw_line(text.tail, y + height)
+      }
+      case Nil =>
+    }
+    draw_line(lines, top + height)
+  }
+
   // implement these. render_canvas returns tooltip text desired
-  def render_canvas(g2d: Graphics2D, window: Rectangle2D.Double): Option[String]
+  def render_canvas(g2d: Graphics2D, window: Rectangle2D.Double): List[String]
   def canvas_width: Int
   def canvas_height: Int
   def handle_ev(ev: UI_Event)
@@ -332,6 +344,7 @@ final case class EV_Select_Polygon_For_Policy() extends UI_Event {}
 
 trait Renderable {
   def debug(): Unit
+  def tooltip(): List[String] = List(toString)
 
   // TODO someday, right-click context menus!
 }

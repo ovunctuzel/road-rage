@@ -207,6 +207,7 @@ case class Position(val on: Traversable, val dist: Double) extends Renderable {
   def location = on.location(dist)
   def dist_left = on.length - dist
   override def toString = s"($on, $dist)"
+  override def tooltip = List(f"$on at $dist%.2f")
   
   def debug = {
     Util.log(toString)

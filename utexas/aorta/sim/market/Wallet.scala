@@ -76,3 +76,9 @@ class EmergencyVehicleWallet(a: Agent, amount: Double = 1000.0)
   // many are in each flow.
   // TODO dont count payment from this towards revenue
 }
+
+// Never participate.
+class FreeriderWallet(a: Agent) extends Wallet(a, 0.0) {
+  def bid_stop_sign(tickets: Iterable[Ticket], ours: Ticket) = (tickets.head, 0.0)
+  def bid_signal(phases: Iterable[Phase], ours: Ticket) = (phases.head, 0.0)
+}
