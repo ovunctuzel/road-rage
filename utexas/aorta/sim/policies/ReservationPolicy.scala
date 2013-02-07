@@ -46,14 +46,14 @@ class ReservationPolicy(intersection: Intersection) extends Policy(intersection)
 
   def unregister_body(a: Agent) = {
     current_batch.remove_agent(a)
-    ordering.queue = ordering.filter(b => {
+    ordering.queue = ordering.queue.filter(b => {
       b.remove_agent(a)
       !b.all_done
     })
   }
 
   def dump_info() = {
-    Util.log(ordering.size + " reservations pending")
+    Util.log(ordering.queue.size + " reservations pending")
     Util.log("Currently:")
     Util.log_push
     for (t <- current_batch.turns) {
@@ -66,7 +66,7 @@ class ReservationPolicy(intersection: Intersection) extends Policy(intersection)
     if (current_batch.all_done) {
       // Time for the next reservation! If there is none, then keep
       // current_batch because it's empty anyway.
-      ordering.shift_next(who) match {
+      ordering.shift_next(ordering.queue.flatMap(b => b.tickets)) match {
         case Some(b) => {
           current_batch = b
           current_batch.agents.foreach(a => a.approve_turn(intersection))
@@ -128,4 +128,5 @@ class TurnBatch() {
 
   def turns = groups.keys
   def agents = groups.values.flatten
+  def tickets = turns.flatMap(t => groups(t).map(a => Ticket(a, t)))
 }
