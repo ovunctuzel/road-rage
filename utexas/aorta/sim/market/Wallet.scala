@@ -45,6 +45,8 @@ abstract class Wallet(a: Agent, initial_budget: Double) {
 class RandomWallet(a: Agent, initial_budget: Double)
   extends Wallet(a, initial_budget)
 {
+  override def toString = f"RND $budget%.2f"
+
   def bid_stop_sign(tickets: Iterable[Ticket], ours: Ticket): (Ticket, Double) = {
     return relevant_stop_sign(tickets, ours) match {
       case Some(t) => (t, Util.rand_double(0.0, budget))
@@ -61,6 +63,7 @@ class RandomWallet(a: Agent, initial_budget: Double)
 class EmergencyVehicleWallet(a: Agent, amount: Double = 1000.0)
   extends Wallet(a, Double.PositiveInfinity)
 {
+  override def toString = "EMERG"
   def bid_stop_sign(tickets: Iterable[Ticket], ours: Ticket): (Ticket, Double) = {
     return relevant_stop_sign(tickets, ours) match {
       case Some(t) => (t, amount)
@@ -79,6 +82,7 @@ class EmergencyVehicleWallet(a: Agent, amount: Double = 1000.0)
 
 // Never participate.
 class FreeriderWallet(a: Agent) extends Wallet(a, 0.0) {
+  override def toString = "FR"
   def bid_stop_sign(tickets: Iterable[Ticket], ours: Ticket) = (tickets.head, 0.0)
   def bid_signal(phases: Iterable[Phase], ours: Ticket) = (phases.head, 0.0)
 }

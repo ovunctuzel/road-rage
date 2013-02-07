@@ -296,16 +296,7 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
   }
 
   def draw_agent(g2d: Graphics2D, a: Agent) = {
-    // try to avoid flashing red, this feature is used to visually spot true
-    // clumps
-    if (a.speed == 0.0 && a.how_long_idle >= 5.0) {
-      g2d.setColor(Color.RED)
-    } else {
-      if (!agent_colors.contains(a)) {
-        agent_colors(a) = GeomFactory.rand_color
-      }
-      g2d.setColor(agent_colors(a))
-    }
+    g2d.setColor(color_agent(a))
     if (zoomed_in) {
       // TODO cfg. just tweak these by sight.
       val vehicle_length = 0.5  // along the edge
@@ -374,6 +365,22 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
       Color.RED
     else
       Color.WHITE
+
+  def color_agent(a: Agent): Color = current_obj match {
+    case Some(v: Vertex) if !a.involved_with(v.intersection) => Color.GRAY
+    case _ => {
+      // try to avoid flashing red, this feature is used to visually spot true
+      // clumps
+      if (a.speed == 0.0 && a.how_long_idle >= 5.0) {
+        Color.RED
+      } else {
+        if (!agent_colors.contains(a)) {
+          agent_colors(a) = GeomFactory.rand_color
+        }
+        agent_colors(a)
+      }
+    }
+  }
 
   def draw_turn(g2d: Graphics2D, turn: Turn, color: Color) = {
     val line = GeomFactory.turn_geom(turn)

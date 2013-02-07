@@ -54,8 +54,12 @@ class Agent(val id: Int, val route: Route) extends Ordered[Agent] with Renderabl
   // Track intersections where we've asked for and received a lease
   val turns_requested = new MutableSet[Intersection]()
   val turns_approved = new MutableSet[Intersection]()
+  
+  def involved_with(i: Intersection) =
+    turns_requested.contains(i) || turns_approved.contains(i)
 
   override def toString = "Agent " + id
+  override def tooltip = List(toString, wallet.toString)
 
   // Returns true if we move or do anything at all
   def step(dt_s: Double): Boolean = {
