@@ -8,7 +8,7 @@ import scala.collection.mutable.{HashMap => MutableMap}
 import scala.collection.mutable.MultiMap
 import scala.collection.mutable.{Set => MutableSet}
 
-import utexas.aorta.sim.{Intersection, Policy, Agent, Ticket}
+import utexas.aorta.sim.{Simulation, Intersection, Policy, Agent, Ticket}
 import utexas.aorta.map.Turn
 
 import utexas.aorta.{Util, cfg}
@@ -17,7 +17,8 @@ import utexas.aorta.{Util, cfg}
 // TODO make it generalizable to lots of ordering/batching/liveness rules
 class ReservationPolicy(intersection: Intersection) extends Policy(intersection)
 {
-  private var reservations = new TurnBatch() :: Nil
+  private val ordering = Simulation.make_intersection_ordering[TurnBatch](cfg.ordering)
+  private var current_batch = new TurnBatch()
 
   def react_body() = {
     // Process new requests
@@ -44,11 +45,15 @@ class ReservationPolicy(intersection: Intersection) extends Policy(intersection)
   def current_greens = current_batch.turns.toSet
 
   def unregister_body(a: Agent) = {
-    reservations.foreach(b => b.remove_agent(a))
+    current_batch.remove_agent(a)
+    ordering.queue = ordering.filter(b => {
+      b.remove_agent(a)
+      !b.all_done
+    })
   }
 
   def dump_info() = {
-    Util.log(reservations.size + " reservations pending")
+    Util.log(ordering.size + " reservations pending")
     Util.log("Currently:")
     Util.log_push
     for (t <- current_batch.turns) {
@@ -57,15 +62,16 @@ class ReservationPolicy(intersection: Intersection) extends Policy(intersection)
     Util.log_pop
   }
 
-  private def current_batch = reservations.head
-
   private def shift_batches() = {
     if (current_batch.all_done) {
       // Time for the next reservation! If there is none, then keep
       // current_batch because it's empty anyway.
-      if (reservations.tail.nonEmpty) {
-        reservations = reservations.tail
-        current_batch.agents.foreach(a => a.approve_turn(intersection))
+      ordering.shift_next(who) match {
+        case Some(b) => {
+          current_batch = b
+          current_batch.agents.foreach(a => a.approve_turn(intersection))
+        }
+        case None =>
       }
     }
   }
@@ -77,11 +83,11 @@ class ReservationPolicy(intersection: Intersection) extends Policy(intersection)
       // A conflicting turn. Add it to the reservations.
 
       // Is there an existing batch of reservations that doesn't conflict?
-      if (!reservations.find(r => r.add_ticket(ticket)).isDefined) {
+      if (!ordering.queue.find(b => b.add_ticket(ticket)).isDefined) {
         // New batch!
         val batch = new TurnBatch()
         batch.add_ticket(ticket)
-        reservations :+= batch
+        ordering.add(batch)
       }
     }
   }
