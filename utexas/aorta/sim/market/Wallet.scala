@@ -5,6 +5,7 @@
 package utexas.aorta.sim.market
 
 import utexas.aorta.sim.{Agent, Ticket}
+import utexas.aorta.sim.policies.Phase
 
 import utexas.aorta.{Util, cfg}
 
@@ -18,33 +19,57 @@ abstract class Wallet(a: Agent, initial_budget: Double) {
     budget -= amount
   }
 
-  // How much is this agent willing to spend on some choice of tickets?
-  def bid_stop_sign(tickets: Iterable[Ticket], ours: Ticket): (Ticket, Double)
+  // How much is this agent willing to spend on some choice?
   // TODO most reasonable implementations will want a notion of continuity,
   // grouping all auctions for one of its turns together...
+  def bid[T](choices: Iterable[T], ours: Ticket): (T, Double) = choices.head match {
+    // TODO this kind of dispatch is hokey
+    case _: Ticket => bid_stop_sign(choices.asInstanceOf[Iterable[Ticket]], ours).asInstanceOf[(T, Double)]
+    case _: Phase => bid_signal(choices.asInstanceOf[Iterable[Phase]], ours).asInstanceOf[(T, Double)]
+    case _ => throw new Exception("Dunno how to bid on " + choices)
+  }
+  def bid_stop_sign(tickets: Iterable[Ticket], ours: Ticket): (Ticket, Double)
+  def bid_signal(phases: Iterable[Phase], ours: Ticket): (Phase, Double)
 
-  // TODO or perhaps the auction should determine this for us and only ask for
-  // our bid on the one ticket that makes sense?
-  // TODO this is only true if the agent hasnt done lookahead, anyway
-  def relevant_ticket(tickets: Iterable[Ticket], ours: Ticket) =
-    tickets.find(t => t.turn.from == ours.turn.from).get
+  // May fail when the agent is bidding ahead more than one step, or when nobody
+  // in their queue is ready yet.
+  def relevant_stop_sign(tickets: Iterable[Ticket], ours: Ticket) =
+    tickets.find(t => t.turn.from == ours.turn.from)
+
+  // TODO if there are multiple...
+  def relevant_phase(phases: Iterable[Phase], ours: Ticket) =
+    phases.find(p => p.has(ours.turn)).get
 }
 
 // Bids a random amount on any turn that helps the agent.
 class RandomWallet(a: Agent, initial_budget: Double)
   extends Wallet(a, initial_budget)
 {
-  def bid_stop_sign(tickets: Iterable[Ticket], yours: Ticket): (Ticket, Double) = {
-    return (relevant_ticket(tickets, yours), Util.rand_double(0.0, budget))
+  def bid_stop_sign(tickets: Iterable[Ticket], ours: Ticket): (Ticket, Double) = {
+    return relevant_stop_sign(tickets, ours) match {
+      case Some(t) => (t, Util.rand_double(0.0, budget))
+      case None => (tickets.head, 0.0)
+    }
+  }
+
+  def bid_signal(phases: Iterable[Phase], ours: Ticket): (Phase, Double) = {
+    return (relevant_phase(phases, ours), Util.rand_double(0.0, budget))
   }
 }
 
 // Always bids some high amount.
-class EmergencyVehicleWallet(a: Agent, bid: Double = 1000.0)
+class EmergencyVehicleWallet(a: Agent, amount: Double = 1000.0)
   extends Wallet(a, Double.PositiveInfinity)
 {
-  def bid_stop_sign(tickets: Iterable[Ticket], yours: Ticket): (Ticket, Double) = {
-    return (relevant_ticket(tickets, yours), bid)
+  def bid_stop_sign(tickets: Iterable[Ticket], ours: Ticket): (Ticket, Double) = {
+    return relevant_stop_sign(tickets, ours) match {
+      case Some(t) => (t, amount)
+      case None => (tickets.head, 0.0)
+    }
+  }
+
+  def bid_signal(phases: Iterable[Phase], ours: Ticket): (Phase, Double) = {
+    return (relevant_phase(phases, ours), amount)
   }
 
   // TODO Fixed high bid means multiple ambulances just compete based on how

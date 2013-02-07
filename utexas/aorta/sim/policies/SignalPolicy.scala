@@ -9,12 +9,19 @@ import scala.collection.mutable.ListBuffer
 
 import utexas.aorta.map.{Turn, Vertex}
 import utexas.aorta.sim.{Intersection, Policy, Agent, EV_Signal_Change}
+import utexas.aorta.sim.market.{IntersectionOrdering, FIFO_Ordering,
+                                AuctionOrdering}
 
 import utexas.aorta.{Util, cfg}
 
 // A phase-based light.
 class SignalPolicy(intersection: Intersection) extends Policy(intersection) {
-  private var phases: Stream[Phase] = setup_phases
+  // TODO with an auction or not?
+  private val ordering: IntersectionOrdering[Phase] = new FIFO_Ordering[Phase]()
+  setup_phases.foreach(p => ordering.add(p))
+  private var current_phase: Phase = ordering.shift_next(Nil).get
+  ordering.add(current_phase)
+
   // Tracks when the current phase began
   private var started_at = Agent.sim.tick
   // accumulated delay for letting vehicles finish turns
@@ -32,7 +39,9 @@ class SignalPolicy(intersection: Intersection) extends Policy(intersection) {
 
     // Switch to the next phase
     if (Agent.sim.tick >= end_at && accepted_agents.isEmpty) {
-      phases = phases.tail
+      current_phase = ordering.shift_next(waiting_agents).get
+      // Cycle through the phases
+      ordering.add(current_phase)
       started_at = Agent.sim.tick
       // TODO could account for delay and try to get back on schedule by
       // decreasing duration
@@ -73,14 +82,13 @@ class SignalPolicy(intersection: Intersection) extends Policy(intersection) {
     }
   }
 
-  private def current_phase = phases.head
   // Ideally, ignoring overtime for slow agents.
   private def end_at = started_at + current_phase.duration
   // May be negative if we're in overtime
   private def time_left = end_at - Agent.sim.tick
   private def in_overtime = Agent.sim.tick > end_at
 
-  private def setup_phases(): Stream[Phase] = {
+  private def setup_phases(): List[Phase] = {
     val phase_ls = Phase.phases_for(intersection)
 
     val turns_seen = new MutableSet[Turn]
@@ -92,7 +100,7 @@ class SignalPolicy(intersection: Intersection) extends Policy(intersection) {
     }
     Util.assert_eq(turns_seen.size, intersection.v.turns.size)
 
-    return Stream.continually(phase_ls).flatten
+    return phase_ls
   }
 
   // If we admit agents that run up overtime, that's safe but adds to our delay
