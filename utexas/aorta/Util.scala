@@ -217,7 +217,8 @@ object cfg {
   ).map({c => c._1 -> new Int_Cfgable(c._2, c._3, c._4, c._5)}).toMap
 
   val strings = List(
-    ("policy", "StopSign")
+    ("policy", "StopSign"),
+    ("ordering", "FIFO")
   ).map({c => c._1 -> new String_Cfgable(c._2)}).toMap
 
   // TODO val colors = ... (I'm not kidding)
@@ -249,6 +250,7 @@ object cfg {
   var signal_duration = 0
 
   var policy = ""
+  var ordering = ""
 
   // Do this early.
   init_params

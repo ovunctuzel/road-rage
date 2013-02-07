@@ -493,7 +493,6 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
       Dialog.showInput(
         message = "What policy should govern these intersections?",
         initial = "",
-        // TODO populate seq from what sim uses
         entries = IntersectionPolicy.values.toList
       ) match {
         case Some(name) => {
@@ -730,7 +729,6 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
     val route_type = Dialog.showInput(
       message = "How should the agents route to their destination?",
       initial = "",
-      // TODO populate seq from what sim uses
       entries = RouteStrategy.values.toList
     ) match {
       case Some(name) => RouteStrategy.withName(name.toString)

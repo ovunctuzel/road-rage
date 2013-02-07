@@ -5,9 +5,7 @@
 package utexas.aorta.sim.policies
 
 import utexas.aorta.map.Turn
-import utexas.aorta.sim.{Intersection, Policy, Agent, Ticket}
-import utexas.aorta.sim.market.{IntersectionOrdering, FIFO_Ordering,
-                                AuctionOrdering}
+import utexas.aorta.sim.{Simulation, Intersection, Policy, Agent, Ticket}
 
 import scala.collection.mutable.{HashMap, MultiMap}
 import scala.collection.mutable.{Set => MutableSet}
@@ -17,8 +15,7 @@ import utexas.aorta.{Util, cfg}
 // Always stop, then FIFO. Totally unoptimized.
 class StopSignPolicy(intersection: Intersection) extends Policy(intersection) {
   private var current_owner: Option[Ticket] = None
-  // TODO with an auction or not?
-  private val ordering: IntersectionOrdering[Ticket] = new FIFO_Ordering[Ticket]()
+  private val ordering = Simulation.make_intersection_ordering[Ticket](cfg.ordering)
 
   // Agents must pause a moment, be the head of their queue, and be close enough
   // to us (in case they looked ahead over small edges).

@@ -16,6 +16,8 @@ import scala.xml.pull._
 import utexas.aorta.map.{Graph, Road, Edge, Vertex, Turn, DirectedRoad}
 import utexas.aorta.map.make.PlaintextReader
 import utexas.aorta.sim.policies._
+import utexas.aorta.sim.market.{IntersectionOrdering, FIFO_Ordering,
+                                AuctionOrdering}
 
 import utexas.aorta.{Util, cfg}
 import utexas.aorta.analysis.{Stats, Active_Agents_Stat, Simulator_Speedup_Stat}
@@ -309,6 +311,9 @@ object Simulation {
     case IntersectionPolicy.Reservation => (i: Intersection) => new ReservationPolicy(i)
   }
 
+  private lazy val default_policy = policy_builder(IntersectionPolicy.withName(cfg.policy))
+  def make_policy(i: Intersection) = default_policy(i)
+
   def make_route(enum: RouteStrategy.Value, goal: DirectedRoad) = enum match {
     case RouteStrategy.StaticAstar => new StaticRoute(goal)
     case RouteStrategy.Drunken => new DrunkenRoute(goal)
@@ -316,8 +321,13 @@ object Simulation {
     case RouteStrategy.DrunkenExplorer => new DrunkenExplorerRoute(goal)
   }
 
-  private lazy val default_policy = policy_builder(IntersectionPolicy.withName(cfg.policy))
-  def make_policy(i: Intersection) = default_policy(i)
+  def make_intersection_ordering[T](enum: IntersectionOrderingEnum.Value) = enum match
+  {
+    case IntersectionOrderingEnum.FIFO => new FIFO_Ordering[T]()
+    case IntersectionOrderingEnum.Auction => new AuctionOrdering[T]()
+  }
+  def make_intersection_ordering[T](enum: String): IntersectionOrdering[T] =
+    make_intersection_ordering[T](IntersectionOrderingEnum.withName(enum))
 }
 
 object IntersectionPolicy extends Enumeration {
@@ -328,4 +338,9 @@ object IntersectionPolicy extends Enumeration {
 object RouteStrategy extends Enumeration {
   type RouteStrategy = Value
   val StaticAstar, Drunken, DirectionalDrunk, DrunkenExplorer = Value
+}
+
+object IntersectionOrderingEnum extends Enumeration {
+  type IntersectionOrderingEnum = Value
+  val FIFO, Auction = Value
 }
