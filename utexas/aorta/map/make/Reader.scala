@@ -43,10 +43,8 @@ abstract class Reader(fn: String, with_geometry: Boolean) {
     Util.log("Loading map " + fn)
     Util.log_push
     read_file
-    Util.log("")
     Util.log_pop
 
-    Util.log("Adding references at intersections")
     // turns just want edges, doesn't matter what trait they're endowed with
     for (v <- verts) {
       for (link <- vertLinks(v.id)) {

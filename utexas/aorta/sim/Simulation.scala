@@ -344,3 +344,8 @@ object IntersectionOrderingEnum extends Enumeration {
   type IntersectionOrderingEnum = Value
   val FIFO, Auction = Value
 }
+
+object WalletType extends Enumeration {
+  type WalletType = Value
+  val Random, Emergency, Freerider = Value
+}

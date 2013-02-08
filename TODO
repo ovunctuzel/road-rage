@@ -92,11 +92,13 @@
   - agents get caught in loops because the path isnt realizable due to LC
 - at big timesteps, nobody moves?
 
-# Testing
-- determinism
-  - record when we introduce somebody, resim enforces this and blocks.
-- example scenarios
-  - mixed intersection policies
+# Testing/Experiments
+- load from scenarios completely
+- same old headless behavior, quickly
+- standalone programs to make/mod scenarios
+- no shared RNGs
+- make scenarios from UI
+- things to test
   - wacky cases of 2 side-by-side agents wanting to swap places?
 
 # UI
