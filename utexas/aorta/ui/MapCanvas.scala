@@ -19,6 +19,7 @@ import utexas.aorta.map._  // TODO yeah getting lazy.
 import utexas.aorta.sim.{Simulation, Agent, FixedSizeGenerator,
                          ContinuousGenerator, SpecificGenerator, Sim_Event,
                          EV_Signal_Change, IntersectionPolicy, RouteStrategy}
+import utexas.aorta.sim.policies.StopSignPolicy
 
 import utexas.aorta.{Util, cfg}
 
@@ -185,7 +186,10 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
 
   // TODO colors for everything belong in cfg.
 
-  def render_canvas(g2d: Graphics2D, window: Rectangle2D.Double): List[String] = {
+  def render_canvas(g2d: Graphics2D, window: Rectangle2D.Double,
+                    orig_transform: AffineTransform,
+                    new_transform: AffineTransform): List[String] =
+  {
     // remember these so we can draw center lines more efficiently
     val roads_seen = new ListBuffer[RoadLine]
 
@@ -212,16 +216,6 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
       g2d.setStroke(center_stroke)
       for (l <- roads_seen) {
         g2d.draw(l.line)
-      }
-
-      current_obj match {
-        case Some(pos: Position) => draw_intersection(g2d, pos.on.asInstanceOf[Edge])
-        case Some(v: Vertex) => {
-          for (t <- v.intersection.policy.current_greens) {
-            draw_turn(g2d, t, Color.GREEN)
-          }
-        }
-        case _ =>
       }
 
       // Show traffic signal stuff
@@ -261,6 +255,20 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
     g2d.setColor(Color.RED)
     g2d.setStroke(drawing_stroke)
     g2d.draw(polygon)
+
+    if (zoomed_in) {
+      // TODO occlude other stuff
+      current_obj match {
+        case Some(pos: Position) => draw_turns(g2d, pos.on.asInstanceOf[Edge])
+        case Some(v: Vertex) => {
+          g2d.setTransform(orig_transform)
+          draw_vert(g2d, v)
+          g2d.setTransform(new_transform)
+        }
+        case _ =>
+      }
+
+    }
 
     // What tooltip do we want?
     return current_obj match {
@@ -389,7 +397,7 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
     g2d.fill(GeomFactory.draw_arrow(line, line.shift_back(0.75), 2))
   }
 
-  def draw_intersection(g2d: Graphics2D, e: Edge) = {
+  def draw_turns(g2d: Graphics2D, e: Edge) = {
     if (current_turn == -1) {
       // show all turns
       for (turn <- e.next_turns) {
@@ -403,6 +411,29 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
       for (conflict <- turn.conflicts) {
         draw_turn(g2d, conflict, Color.RED)
       }
+    }
+  }
+
+  def draw_vert(g2d: Graphics2D, v: Vertex) = {
+    for (t <- v.intersection.policy.current_greens) {
+      draw_turn(g2d, t, Color.GREEN)
+    }
+
+    // TODO push to policy's render
+    v.intersection.policy match {
+      case p: StopSignPolicy => {
+        var idx = 1
+        // TODO reset transform?
+        p.current_order.foreach(t => {
+          println(s"$idx at ${map_to_screen_x(v.location.x)}, ${map_to_screen_y(v.location.y)}")
+          draw_tooltip(
+            g2d, map_to_screen_x(v.location.x), map_to_screen_y(v.location.y),
+            List(s"$idx")
+          )
+          idx += 1
+        })
+      }
+      case _ =>
     }
   }
 

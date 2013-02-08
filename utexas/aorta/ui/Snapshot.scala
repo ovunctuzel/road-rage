@@ -45,7 +45,8 @@ object Snapshot {
     )
     g2d.setRenderingHints(antialiasing)
 
-    ui.render_canvas(g2d, new Rectangle2D.Double(0, 0, w, h))
+    ui.render_canvas(g2d, new Rectangle2D.Double(0, 0, w, h), g2d.getTransform,
+                     g2d.getTransform)
     ImageIO.write(img, "PNG", new File(fn))
   }
 }

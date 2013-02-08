@@ -67,4 +67,6 @@ class StopSignPolicy(intersection: Intersection) extends Policy(intersection) {
       current_owner.get.a.approve_turn(intersection)
     }
   }
+
+  def current_order = ordering.queue
 }
