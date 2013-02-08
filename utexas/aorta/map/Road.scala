@@ -74,7 +74,7 @@ class Road(var id: Int, val length: Double, val name: String,
 
   def pairs_of_points = points zip points.tail
 
-  lazy val speed_limit = Util.mph_to_si(road_type match {
+  lazy val speed_limit = mph_to_si(road_type match {
     case "residential"    => 30
     case "motorway"       => 80
     // Actually these don't have a speed limit legally...  35 is suggested, but NOBODY does that
@@ -102,6 +102,8 @@ class Road(var id: Int, val length: Double, val name: String,
     
     case _                => 35 // Generally a safe speed, right?
   })
+  // to meters/sec
+  def mph_to_si(r: Double) = r * 0.44704
 
   def debug = {
     Util.log(this + " is a " + road_type + " of length " + length + " meters")

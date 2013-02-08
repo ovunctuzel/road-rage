@@ -9,7 +9,7 @@ import java.io.FileWriter
 import scala.annotation.elidable
 import scala.annotation.elidable.ASSERTION
 
-import utexas.aorta.sim.Simulation
+import utexas.aorta.sim.{Simulation, Scenario}
 import utexas.aorta.analysis.{Stats, Profiling}
 
 object Util {
@@ -79,9 +79,7 @@ object Util {
   @elidable(ASSERTION) def assert_lt(a: Double, b: Double) = assert(a < b, a + " >= " + b)
   @elidable(ASSERTION) def assert_le(a: Double, b: Double) = assert(a <= b, a + " > " + b)
 
-  // to meters/sec, that is. SI units.
-  def mph_to_si(r: Double) = r * 0.44704
-
+  // TODO move elsewhere
   // Capped when speed goes negative.
   def dist_at_constant_accel(accel: Double, time: Double, initial_speed: Double): Double = {
     // Don't deaccelerate into going backwards, just cap things off.
@@ -91,64 +89,40 @@ object Util {
                         math.min(time, -1 * initial_speed / accel)
     return (initial_speed * actual_time) + (0.5 * accel * (actual_time * actual_time))
   }
-  def accel_to_achieve(cur_speed: Double, target_speed: Double)
-    = (target_speed - cur_speed) / cfg.dt_s
-  // find the time to cover dist by accelerating first, then cruising at
-  // constant speed
-  def two_phase_time(speed_i: Double = 0, speed_f: Double = 0, dist: Double = 0,
-                     accel: Double = 0): Double =
+
+  def process_args(args: Array[String], with_geo: Boolean, shutdown: Boolean): Simulation =
   {
-    // v_f = v_i + a*t
-    val time_to_cruise = (speed_f - speed_i) / accel
-    val dist_during_accel = dist_at_constant_accel(
-      accel, time_to_cruise, speed_i
-    )
-
-    return if (dist_during_accel < dist) {
-      // so then the remainder happens at constant cruisin speed
-      return time_to_cruise + ((dist - dist_during_accel) / speed_f)
-    } else {
-      // We spent the whole time accelerating
-      // solve dist = a(t^2) + (v_i)t
-      val discrim = math.sqrt((speed_i * speed_i) + (4 * accel * dist))
-      val time = (-speed_i + discrim) / (2 * accel) // this is the positive root
-      assert_ge(time, 0)   // make sure we have the right solution to this
-      time
-    }
-  }
-
-  // The boolean says whether or not a pre-defined scenario is being run.
-  def process_args(args: Array[String], with_geo: Boolean, shutdown: Boolean): (Simulation, Boolean) = {
-    dump_at_shutdown = shutdown
-    // TODO write with 'partition'
-    val keys = args.zipWithIndex.filter(p => p._2 % 2 == 0).map(p => p._1)
-    val vals = args.zipWithIndex.filter(p => p._2 % 2 == 1).map(p => p._1)
-    var fn = ""
-    var rng = System.currentTimeMillis
-    var diff_rng = false
-    var load_scenario = ""
-    var exp_name = ""
-    var with_geometry = with_geo  // allow override with parameters
-
     if (args.size % 2 != 0) {
       // TODO better usage
       Util.log("Command-line parameters must be pairs of key => value")
       sys.exit
-    }                                                                     
+    }
+
+    dump_at_shutdown = shutdown
+
+    // TODO write with 'partition'
+    val keys = args.zipWithIndex.filter(p => p._2 % 2 == 0).map(p => p._1)
+    val vals = args.zipWithIndex.filter(p => p._2 % 2 == 1).map(p => p._1)
+
+    var load_map = ""
+    var load_scenario = ""
+  
+    var rng = System.currentTimeMillis
+
+    var with_geometry = with_geo  // allow override with parameters
 
     val cfg_prefix = """--cfg_(\w+)""".r
     for ((key, value) <- keys.zip(vals)) {
       // TODO multiple different ways of saying 'true'
       key match {
-        case "--input"       => { fn = value }
-        case "--rng"         => { rng = value.toLong; diff_rng = true }
+        case "--map" => { load_map = value }
+        case "--scenario" => { load_scenario = value }
+        case "--rng" => { rng = value.toLong }
         case "--print_stats" => { Stats.use_print = value == "1" }
-        case "--log_stats"   => { Stats.use_log = value == "1" }
-        case "--use_geo"     => { with_geometry = value == "1" }
-        // TODO case "--run_for"     => { run_for = value.toDouble }
-        case "--scenario"    => { load_scenario = value }
-        case "--name"        => { exp_name = value }
-        case cfg_prefix(param)   => cfg.get_param_method(param) match {
+        case "--log_stats" => { Stats.use_log = value == "1" }
+        case "--use_geo" => { with_geometry = value == "1" }
+        // TODO case "--run_for" => { run_for = value.toDouble }
+        case cfg_prefix(param) => cfg.get_param_method(param) match {
           case Some(method) => {
             val param_type = method.getParameterTypes.head
             if (param_type == classOf[Int]) {
@@ -161,26 +135,21 @@ object Util {
               method.invoke(cfg, value: java.lang.String)
             }
           }
-          case None => { Util.log(s"No parameter $param"); sys.exit }
+          case None => { Util.log(s"No config param $param"); sys.exit }
         }
-        case _               => { Util.log("Unknown argument: " + key); sys.exit }
+        case _ => { Util.log("Unknown argument: " + key); sys.exit }
       }
     }
-    if (exp_name.isEmpty) {
-      exp_name = "Experiment " + rng
-    }
-    Stats.setup_experiment(exp_name)
+    //Stats.setup_experiment(exp_name)  TODO rethink this stuff too
 
-    return if (load_scenario.isEmpty) {
-      Util.init_rng(rng)
-      (Simulation.load(fn, with_geometry), false)
+    // TODO rng stuff changing soon anyway...
+    Util.init_rng(rng)
+
+    return if (load_scenario.nonEmpty) {
+      Scenario.load(load_scenario).make_sim(with_geometry)
     } else {
-      val sim = Simulation.load_scenario(load_scenario, with_geometry)
-      // It's useful to retry a scenario with a new seed.
-      if (diff_rng) {
-        Util.init_rng(rng)
-      }
-      (sim, true)
+      // TODO take an arg for how many default agents to make
+      null
     }
   }
 }

@@ -17,9 +17,10 @@ import utexas.aorta.analysis.{Stats, Intersection_Throughput_Stat}
 // Common stuff goes here, particular implementations are in utexas.aorta.sim.policies
 
 // Reason about collisions from conflicting simultaneous turns.
-class Intersection(val v: Vertex) {
-  // TODO possible issues when switching when agents are close by
-  var policy: Policy = Simulation.make_policy(this)
+class Intersection(val v: Vertex, policy_type: IntersectionType.Value,
+                   ordering_type: OrderingType.Value)
+{
+  val policy = Factory.make_policy(this, policy_type, ordering_type)
 
   override def toString = "Intersection(" + v + ")"
 

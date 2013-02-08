@@ -9,15 +9,17 @@ import scala.collection.mutable.MultiMap
 import scala.collection.mutable.{Set => MutableSet}
 
 import utexas.aorta.sim.{Simulation, Intersection, Policy, Agent, Ticket}
+import utexas.aorta.sim.market.IntersectionOrdering
 import utexas.aorta.map.Turn
 
 import utexas.aorta.{Util, cfg}
 
 // FIFO based on request, batched by non-conflicting turns.
 // TODO make it generalizable to lots of ordering/batching/liveness rules
-class ReservationPolicy(intersection: Intersection) extends Policy(intersection)
+class ReservationPolicy(intersection: Intersection,
+                        ordering: IntersectionOrdering[TurnBatch])
+  extends Policy(intersection)
 {
-  private val ordering = Simulation.make_intersection_ordering[TurnBatch](cfg.ordering)
   private var current_batch = new TurnBatch()
 
   def react_body() = {

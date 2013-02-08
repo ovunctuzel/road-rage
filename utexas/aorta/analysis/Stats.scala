@@ -69,7 +69,6 @@ class Aggregate_Stat(name: String) {
   )
 }
 
-// TODO move to analysis/
 object Stats {
   var log: FileWriter = null
   var use_log = false

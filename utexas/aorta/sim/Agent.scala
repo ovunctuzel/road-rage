@@ -17,8 +17,10 @@ import utexas.aorta.{Util, cfg}
 // TODO come up with a notion of dimension and movement capability. at first,
 // just use radius bounded by lane widths?
 
-class Agent(val id: Int, val route: Route) extends Ordered[Agent] with Renderable
+class Agent(val id: Int, val route: Route, wallet_spec: MkWallet) extends Ordered[Agent] with Renderable
 {
+  val wallet = wallet_spec.make(this)
+
   // null just until they're introduced!
   var at: Position = null
 
@@ -32,8 +34,6 @@ class Agent(val id: Int, val route: Route) extends Ordered[Agent] with Renderabl
   var target_accel: Double = 0  // m/s^2
   // TODO who chooses this?
   val behavior = new LookaheadBehavior(this, route)
-  // TODO generator specifies this differently
-  val wallet: Wallet = new RandomWallet(this, 500.0)
 
   // old_lane is where we're shifting from. we immediately warp into the target
   // lane.
@@ -293,7 +293,7 @@ class Agent(val id: Int, val route: Route) extends Ordered[Agent] with Renderabl
         // suppose nobody was in our way because the intersection did a good
         // job, and it also let us go immediately. we should be able to traverse
         // this edge at _about_ its speed limit (accounting for acceleration).
-        val optimal_time = Util.two_phase_time(
+        val optimal_time = two_phase_time(
           speed_i = entered_last._3, speed_f = e.road.speed_limit,
           dist = e.length - entered_last._2, accel = max_accel
         )
@@ -350,9 +350,7 @@ class Agent(val id: Int, val route: Route) extends Ordered[Agent] with Renderabl
     max_next_dist + stopping_distance(max_next_speed)
   def max_lookahead_dist = max_next_dist_plus_stopping
 
-  def accel_to_achieve(target_speed: Double) = Util.accel_to_achieve(
-    speed, target_speed
-  )
+  def accel_to_achieve(target_speed: Double) = (target_speed - speed) / cfg.dt_s
   // d = (v_i)(t) + (1/2)(a)(t^2), solved for a
   def accel_to_cover(dist: Double) = (2 * (dist - (speed * cfg.dt_s)) /
                                       (cfg.dt_s * cfg.dt_s))
@@ -391,6 +389,30 @@ class Agent(val id: Int, val route: Route) extends Ordered[Agent] with Renderabl
     // at.on.vert if at.on is a turn, but it could be more due to lookahead.
     cancel_intersection_reservations
     Stats.record(Total_Trip_Stat(id, Agent.sim.tick - started_trip_at, total_dist))
+  }
+
+  // find the time to cover dist by accelerating first, then cruising at
+  // constant speed
+  def two_phase_time(speed_i: Double = 0, speed_f: Double = 0, dist: Double = 0,
+                     accel: Double = 0): Double =
+  {
+    // v_f = v_i + a*t
+    val time_to_cruise = (speed_f - speed_i) / accel
+    val dist_during_accel = Util.dist_at_constant_accel(
+      accel, time_to_cruise, speed_i
+    )
+
+    return if (dist_during_accel < dist) {
+      // so then the remainder happens at constant cruisin speed
+      return time_to_cruise + ((dist - dist_during_accel) / speed_f)
+    } else {
+      // We spent the whole time accelerating
+      // solve dist = a(t^2) + (v_i)t
+      val discrim = math.sqrt((speed_i * speed_i) + (4 * accel * dist))
+      val time = (-speed_i + discrim) / (2 * accel) // this is the positive root
+      Util.assert_ge(time, 0)   // make sure we have the right solution to this
+      time
+    }
   }
 }
 

@@ -13,9 +13,6 @@ import utexas.aorta.{Util, cfg}
 abstract class Route(val goal: DirectedRoad) {
   def done(at: Edge) = at.directed_road == goal
 
-  // Can return work to delegate to a thread pool that MUST be done before the
-  // client asks us questions.
-  def compute_route(): Option[Callable[Unit]]
   // The client tells us they've physically moved
   def transition(from: Traversable, to: Traversable)
   // The client is being forced to pick a turn. If they ask us repeatedly, we
@@ -32,13 +29,7 @@ abstract class Route(val goal: DirectedRoad) {
 // or something... even a compressed data structure that's a bit slower to read
 // from.
 class StaticRoute(goal: DirectedRoad) extends Route(goal) {
-  var costs: Array[Double] = null
-
-  def compute_route = Some(new Callable[Unit]() {
-    def call = {
-      costs = Agent.sim.shortest_paths(goal)
-    }
-  })
+  val costs = Agent.sim.shortest_paths(goal)
 
   // We don't care.
   def transition(from: Traversable, to: Traversable) = {}
@@ -66,8 +57,6 @@ class DrunkenRoute(goal: DirectedRoad) extends Route(goal) {
   // Remember answers we've given for the sake of consistency
   var desired_lane: Option[Edge] = None
   val chosen_turns = new MutableMap[Edge, Turn]()
-
-  def compute_route = None
 
   // Forget what we've remembered
   def transition(from: Traversable, to: Traversable) = {

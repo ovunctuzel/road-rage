@@ -3,7 +3,6 @@
 # Easy Parallelization
 - how to PAR
   - benchmark carefully
-  - get rid of old route thread pool, or unify with new thing
 
 - easy PAR
   - queue end_step
@@ -53,6 +52,7 @@
 - give lanes/roads/etc the ability to be closed
 
 # Code Cleanup
+- a Common object
 - split the passes
   - pass1 = read osm + normalize
   - pass2 = pass2
@@ -93,11 +93,13 @@
 - at big timesteps, nobody moves?
 
 # Testing/Experiments
-- load from scenarios completely
-- same old headless behavior, quickly
-- standalone programs to make/mod scenarios
 - no shared RNGs
+- same old headless behavior, quickly
+  - cfg stuff mods the defaults in the scenario made
+- equiv of continuous generators
+- standalone programs to make/mod scenarios
 - make scenarios from UI
+- the stats side of the story
 - things to test
   - wacky cases of 2 side-by-side agents wanting to swap places?
 
@@ -124,6 +126,7 @@
 - throw away geometry in UI after converted to awt stuff
 - truncate lengths, other doubles or more compactly write
 - improve map loading
+  - java serialization with case classes?
   - scanner?
   - why are traversable lines given not as point sequence?
 

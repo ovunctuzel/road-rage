@@ -13,10 +13,9 @@ import scala.collection.mutable.{Set => MutableSet}
 
 import utexas.aorta.map.{Coordinate, Road, Vertex, Edge, Direction, Line,
                    Turn, Graph}
-import utexas.aorta.sim.Simulation
+import utexas.aorta.sim.{Simulation, Scenario}
 
 import utexas.aorta.{Util, cfg}
-import utexas.aorta.analysis.Profiling  // TODO
 
 abstract class Reader(fn: String, with_geometry: Boolean) {
   // we know all of this as soon as we read the graph tag...
@@ -32,8 +31,8 @@ abstract class Reader(fn: String, with_geometry: Boolean) {
   def load_map() = load match {
     case (r, e, v) => new Graph(r, e, v)
   }
-  def load_simulation() = load match {
-    case (r, e, v) => new Simulation(r, e, v)
+  def load_simulation(scenario: Scenario) = load match {
+    case (r, e, v) => new Simulation(r, e, v, scenario)
   }
 
   // Side effect of populating the per-graph data.
@@ -50,6 +49,7 @@ abstract class Reader(fn: String, with_geometry: Boolean) {
       for (link <- vertLinks(v.id)) {
         if (with_geometry) {
           v.turns = Turn(link.id, edges(link.from), edges(link.to)) :: v.turns
+          Util.assert_eq(link.length, v.turns.head.length)
         } else {
           v.turns = new Turn(link.id, edges(link.from), edges(link.to), link.length, link.conflict_line) :: v.turns
         }
@@ -254,7 +254,6 @@ class PlaintextReader(fn: String, with_geometry: Boolean) extends Reader(fn, wit
 
     // TODO enum, dont do an if everytime, fix lots...
     var state = 0
-    val t = Profiling.timer("loading map")  // TODO
     for (line <- Source.fromFile(fn).getLines) {
       if (state == 0) {
         // first line, the graph
@@ -337,6 +336,7 @@ class PlaintextReader(fn: String, with_geometry: Boolean) extends Reader(fn, wit
             val Array(x1, y1, x2, y2) = e_line.split(",")
             new Line(x1.toDouble, y1.toDouble, x2.toDouble, y2.toDouble)
           }))
+          Util.assert_eq(e.length, length.toDouble)
         } else {
           e.set_length(length.toDouble)
         }

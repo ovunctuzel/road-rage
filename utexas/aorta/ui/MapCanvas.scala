@@ -16,9 +16,8 @@ import swing.Dialog
 import scala.language.implicitConversions
 
 import utexas.aorta.map._  // TODO yeah getting lazy.
-import utexas.aorta.sim.{Simulation, Agent, FixedSizeGenerator,
-                         ContinuousGenerator, SpecificGenerator, Sim_Event,
-                         EV_Signal_Change, IntersectionPolicy, RouteStrategy}
+import utexas.aorta.sim.{Simulation, Agent, Sim_Event, EV_Signal_Change,
+                         IntersectionType, RouteType}
 
 import utexas.aorta.{Util, cfg}
 
@@ -53,12 +52,6 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
           }
           // always render
           handle_ev(EV_Action("step"))
-        } else {
-          // poll the generators
-          if (sim.pre_step) {
-            // only render when a generator did something
-            handle_ev(EV_Action("step"))
-          }
         }
       }
     }
@@ -165,7 +158,7 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
   def zoomed_in = zoom > cfg.zoom_threshold
 
   // Register to hear events
-  sim.listeners :+= ((ev: Sim_Event) => { ev match {
+  sim.listen((ev: Sim_Event) => { ev match {
     case EV_Signal_Change(greens) => {
       green_turns.clear
       for (t <- greens) {
@@ -499,11 +492,12 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
       Dialog.showInput(
         message = "What policy should govern these intersections?",
         initial = "",
-        entries = IntersectionPolicy.values.toList
+        entries = IntersectionType.values.toList
       ) match {
         case Some(name) => {
-          val builder = Simulation.policy_builder(IntersectionPolicy.withName(name.toString))
-          intersections.foreach(i => i.policy = builder(i))
+          // TODO make a new scenario...
+          /*val builder = Simulation.policy_builder(IntersectionType.withName(name.toString))
+          intersections.foreach(i => i.policy = builder(i))*/
         }
         case None =>
       }
@@ -671,11 +665,7 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
         }
         case Mode.PICK_2nd => {
           chosen_edge2 = current_edge
-          sim.add_gen(new SpecificGenerator(
-            sim, RouteStrategy.StaticAstar,
-            // TODO avoid some nasty casting if we specialize an EdgePosition
-            List((chosen_pos.get.on.asInstanceOf[Edge], current_edge.get, chosen_pos.get.dist))
-          ))
+          // TODO make one agent from chosen_pos to current_edge
           chosen_edge1 = None
           chosen_edge2 = None
           chosen_pos = None
@@ -702,10 +692,6 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
       status.update_speed(sim)
     }
     case Key.D => current_obj match {
-      case Some(a: Agent) => {
-        a.debug
-        sim.debug_agent = Some(a)
-      }
       case Some(thing) => thing.debug
       case None =>
     }
@@ -735,9 +721,9 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
     val route_type = Dialog.showInput(
       message = "How should the agents route to their destination?",
       initial = "",
-      entries = RouteStrategy.values.toList
+      entries = RouteType.values.toList
     ) match {
-      case Some(name) => RouteStrategy.withName(name.toString)
+      case Some(name) => RouteType.withName(name.toString)
       case None => return
     }
 
@@ -752,9 +738,7 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
         // Fixed
         prompt_int("How many agents?") match {
           case Some(num) => {
-            sim.add_gen(new FixedSizeGenerator(
-              sim, src, dst, num, route_type
-            ))
+            // TODO make em
           }
           case _ =>
         }
@@ -765,9 +749,7 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
           "How often (in simulation-time seconds) do you want one new agent?"
         ) match {
           case Some(time) => {
-            sim.add_gen(new ContinuousGenerator(
-              sim, src, dst, time, route_type
-            ))
+            // TODO make em
           }
           case _ =>
         }

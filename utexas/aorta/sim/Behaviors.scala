@@ -113,24 +113,20 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
     // TODO go back and prove these are equivalent to the original semantics
     if (no_lc && not_near_end) {
       if (not_tailing && at_speed) {
-        Simulation.did_fp += 1
         return Act_Set_Accel(0)
       } else if (not_tailing) {
         // so we're not at speed
-        Simulation.did_fp += 1
         return Act_Set_Accel(
           math.min(a.accel_to_achieve(a.at.on.speed_limit), a.max_accel)
         )
       } else if (at_speed) {
         // so we're tailing
-        Simulation.did_fp += 1
         return Act_Set_Accel(math.max(
           accel_to_follow(lead.get, lead.get.at.dist - a.at.dist),
           -a.max_accel
         ))
       }
     }
-    Simulation.didnt_fp += 1
 
     // TODO refactor and pull in max_safe_accel here? maybe this function is for
     // fast-paths.

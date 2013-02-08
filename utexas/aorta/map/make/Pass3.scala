@@ -114,6 +114,9 @@ class Pass3(old_graph: PreGraph2) {
     Util.log("Tidying up geometry...")
     graph.vertices.foreach(v => adjust_lines(v))
 
+    // Recalculate length
+    graph.traversables.foreach(t => t.set_lines(t.lines))
+
     return graph
   }
 

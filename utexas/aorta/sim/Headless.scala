@@ -13,20 +13,7 @@ object Headless {
   var run_for: Double = -1.0
 
   def main(args: Array[String]) = {
-    val (sim, is_scenario) = Util.process_args(args, false, true)
-    if (!is_scenario) {
-      sim.add_gen(new FixedSizeGenerator(
-        sim, sim.edges, sim.edges, cfg.army_size, RouteStrategy.Drunken
-      ))
-    }
-    // We don't have to wait, but it's better for determinism if we do.
-    // TODO hard to get the # of routes now
-    Util.log("Waiting for all routes to be computed")
-    Util.log_push
-    val t = Profiling.timer("Computing routes")
-    sim.wait_for_all_generators
-    t.stop
-    Util.log_pop
+    val sim = Util.process_args(args, false, true)
 
     val timer = Profiling.timer("running the sim")
     Util.log("Starting simulation with time-steps of " + cfg.dt_s + "s")
@@ -35,6 +22,7 @@ object Headless {
     var max_movements = 0
     var total_agent_steps = 0
 
+    // TODO move to sim
     def done() = if (run_for == -1.0)
                    sim.done
                  else
@@ -48,10 +36,6 @@ object Headless {
           sim.tick, sim.tick - last_virtual_time, sim.describe_agents,
           max_movements, Util.comma_num(total_agent_steps)
         ))
-        Util.log("  " + Util.comma_num(Simulation.did_fp) + " did fp, " +
-                 Util.comma_num(Simulation.didnt_fp) + " didnt")
-        Simulation.did_fp = 0
-        Simulation.didnt_fp = 0
         last_real_time = now
         last_virtual_time = sim.tick
         max_movements = 0
@@ -67,6 +51,5 @@ object Headless {
     Util.log("Simulation took " + sim.tick + " virtual seconds")
     timer.stop
     Util.log("Average of " + (sim.tick / timer.so_far) + "x speedup with dt=" + cfg.dt_s)
-    sim.shutdown
   }
 }

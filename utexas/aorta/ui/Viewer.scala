@@ -16,7 +16,7 @@ import utexas.aorta.{Util, cfg}
 
 object Status_Bar {
   val zoom       = new Label("1.0") // TODO from cfg
-  val agents     = new Label("0 / 0 / 0 (0 generators)")
+  val agents     = new Label("0 / 0")
   val time       = new Label("0.0 [Paused]")
   val sim_speed = new Label("1.0x / 1.0x")
 
@@ -120,7 +120,7 @@ object Viewer extends SimpleSwingApplication {
   chart.getAxisY.getAxisTitle.setTitle("Number of agents")
 
   override def main(args: Array[String]) = {
-    val (sim, _) = Util.process_args(args, true, true)
+    val sim = Util.process_args(args, true, true)
     canvas_2d = new MapCanvas(sim)
     canvas_3d = new MapCanvas3D(sim)
     super.main(args)
@@ -138,9 +138,10 @@ object Viewer extends SimpleSwingApplication {
         contents += new MenuItem(
           Action("Save scenario for later resimulation")
         {
+          // TODO
           val fn = "resim_log"
-          Simulation.save_log(fn)
-          Dialog.showMessage(message = "Scenario saved in '" + fn + "'")
+          //Simulation.save_log(fn)
+          Dialog.showMessage(message = "TODO Scenario saved in '" + fn + "'")
         })
         contents += new Separator
         contents += new MenuItem(Action("Quit") {

@@ -10,12 +10,15 @@ import scala.collection.mutable.ListBuffer
 import utexas.aorta.map.{Turn, Vertex}
 import utexas.aorta.sim.{Simulation, Intersection, Policy, Agent,
                          EV_Signal_Change}
+import utexas.aorta.sim.market.IntersectionOrdering
 
 import utexas.aorta.{Util, cfg}
 
 // A phase-based light.
-class SignalPolicy(intersection: Intersection) extends Policy(intersection) {
-  private val ordering = Simulation.make_intersection_ordering[Phase](cfg.ordering)
+class SignalPolicy(intersection: Intersection,
+                   ordering: IntersectionOrdering[Phase])
+  extends Policy(intersection)
+{
   setup_phases.foreach(p => ordering.add(p))
   private var current_phase: Phase = ordering.shift_next(Nil).get
   ordering.add(current_phase)
