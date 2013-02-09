@@ -19,20 +19,6 @@ object Util {
   def indent = "  " * indent_log
   def log(msg: String) = println(indent + msg)
 
-  // For simulation stuff
-  // TODO if diff threads ever make use of this, lock or duplicate
-  private var sim_rng: Random = null  // icky...
-  // For the UI and stuff that doesn't matter. Separate these so determinism
-  // works between headless/UI.
-  val util_rng = new Random()
-  var seed: Long = -1
-
-  def init_rng(s: Long) = {
-    seed = s
-    sim_rng = new Random(seed)
-    Util.log("RNG seed: " + seed)
-  }
-
   private var dump_at_shutdown = false
 
   // Convenient to see this at the very end if it was a long log.
@@ -40,27 +26,11 @@ object Util {
     if (dump_at_shutdown) {
       println("")
       println("-" * 80)
-      if (seed != -1) {
-        Util.log("\nRNG seed: " + Util.seed)
-      }
-      println("")
       Stats.shutdown
       println("")
       Profiling.shutdown
     }
   })
-
-  def rand_double(min: Double, max: Double, rng: Random = sim_rng): Double =
-    if (min > max)
-      throw new Exception("rand(" + min + ", " + max + ") requested")
-    else if (min == max)
-      min
-    else
-      min + rng.nextDouble * (max - min)
-  def rand_int(min: Int, max: Int) = rand_double(min, max).toInt
-  def choose_rand[T](from: Seq[T]): T = from(sim_rng.nextInt(from.length))
-  // return true 'p'% of the time. p is [0.0, 1.0]
-  def percent(p: Double) = rand_double(0.0, 1.0) < p
 
   // due to internationalization, printf doesn't have a way of adding commas
   // after every 3 orders of mag
@@ -107,8 +77,6 @@ object Util {
     var load_map = ""
     var load_scenario = ""
   
-    var rng = System.currentTimeMillis
-
     var with_geometry = with_geo  // allow override with parameters
 
     val cfg_prefix = """--cfg_(\w+)""".r
@@ -117,7 +85,6 @@ object Util {
       key match {
         case "--map" => { load_map = value }
         case "--scenario" => { load_scenario = value }
-        case "--rng" => { rng = value.toLong }
         case "--print_stats" => { Stats.use_print = value == "1" }
         case "--log_stats" => { Stats.use_log = value == "1" }
         case "--use_geo" => { with_geometry = value == "1" }
@@ -142,9 +109,6 @@ object Util {
     }
     //Stats.setup_experiment(exp_name)  TODO rethink this stuff too
 
-    // TODO rng stuff changing soon anyway...
-    Util.init_rng(rng)
-
     return if (load_scenario.nonEmpty) {
       Scenario.load(load_scenario).make_sim(with_geometry)
     } else {
@@ -152,6 +116,24 @@ object Util {
       null
     }
   }
+}
+
+class RNG(seed: Long = System.currentTimeMillis) {
+  private val rng = new Random(seed)
+
+  def rand_double(min: Double, max: Double): Double =
+    if (min > max)
+      throw new Exception("rand(" + min + ", " + max + ") requested")
+    else if (min == max)
+      min
+    else
+      min + rng.nextDouble * (max - min)
+  def rand_int(min: Int, max: Int) = rand_double(min, max).toInt
+  def choose_rand[T](from: Seq[T]): T = from(rng.nextInt(from.length))
+  // return true 'p'% of the time. p is [0.0, 1.0]
+  def percent(p: Double) = rand_double(0.0, 1.0) < p
+  // for making a new RNG
+  def new_seed = rng.nextLong
 }
 
 object cfg {

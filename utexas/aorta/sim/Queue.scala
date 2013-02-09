@@ -10,7 +10,7 @@ import scala.collection.JavaConversions.collectionAsScalaIterable
 
 import utexas.aorta.map.{Edge, Traversable, Position}
 
-import utexas.aorta.{Util, cfg}
+import utexas.aorta.{Util, RNG, cfg}
 
 // TODO introduce a notion of dimension
 // TODO logs -> asserts once things work right
@@ -159,7 +159,7 @@ class Queue(t: Traversable) {
   
   // TODO geometric argument
   // TODO sometimes the max arg is < the min arg. :)
-  def safe_spawn_dist = Util.rand_double(
+  def safe_spawn_dist(rng: RNG) = rng.rand_double(
     worst_entry_dist + cfg.follow_dist, t.length - cfg.end_threshold
   )
 

@@ -95,7 +95,6 @@
 - at big timesteps, nobody moves?
 
 # Testing/Experiments
-- no shared RNGs
 - same old headless behavior, quickly
   - cfg stuff mods the defaults in the scenario made
 - equiv of continuous generators

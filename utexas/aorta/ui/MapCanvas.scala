@@ -19,7 +19,7 @@ import utexas.aorta.map._  // TODO yeah getting lazy.
 import utexas.aorta.sim.{Simulation, Agent, Sim_Event, EV_Signal_Change,
                          IntersectionType, RouteType}
 
-import utexas.aorta.{Util, cfg}
+import utexas.aorta.{Util, RNG, cfg}
 
 object Mode extends Enumeration {
   type Mode = Value
@@ -803,6 +803,8 @@ final case class EdgeLine(l: Line, edge: Edge) extends ScreenLine {
 
 // TODO what else belongs?
 object GeomFactory {
+  private val rng = new RNG()
+
   def draw_arrow(line: Line, base: Coordinate, size: Int): Shape = {
     // TODO enum for size
     // width = how far out is the tip
@@ -848,8 +850,8 @@ object GeomFactory {
   }
 
   def rand_color() = new Color(
-    Util.rand_double(0.0, 1.0, Util.util_rng).toFloat,
-    Util.rand_double(0.0, 1.0, Util.util_rng).toFloat,
-    Util.rand_double(0.0, 1.0, Util.util_rng).toFloat
+    rng.rand_double(0.0, 1.0).toFloat,
+    rng.rand_double(0.0, 1.0).toFloat,
+    rng.rand_double(0.0, 1.0).toFloat
   )
 }

@@ -12,12 +12,12 @@ import utexas.aorta.ui.Renderable
 import utexas.aorta.analysis.{Profiling, Stats, Wasted_Time_Stat,
                               Total_Trip_Stat}
 
-import utexas.aorta.{Util, cfg}
+import utexas.aorta.{Util, RNG, cfg}
 
 // TODO come up with a notion of dimension and movement capability. at first,
 // just use radius bounded by lane widths?
 
-class Agent(val id: Int, val route: Route, wallet_spec: MkWallet) extends Ordered[Agent] with Renderable
+class Agent(val id: Int, val route: Route, val rng: RNG, wallet_spec: MkWallet) extends Ordered[Agent] with Renderable
 {
   val wallet = wallet_spec.make(this)
 

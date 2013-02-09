@@ -7,10 +7,10 @@ package utexas.aorta.sim
 import scala.collection.mutable.{HashMap => MutableMap}
 import java.util.concurrent.Callable
 import utexas.aorta.map.{Edge, DirectedRoad, Traversable, Turn}
-import utexas.aorta.{Util, cfg}
+import utexas.aorta.{Util, RNG, cfg}
 
 // Get a client to their goal by any means possible.
-abstract class Route(val goal: DirectedRoad) {
+abstract class Route(val goal: DirectedRoad, rng: RNG) {
   def done(at: Edge) = at.directed_road == goal
 
   // The client tells us they've physically moved
@@ -28,7 +28,7 @@ abstract class Route(val goal: DirectedRoad) {
 // TODO does this wind up being too expensive memory-wise? maybe approx as ints
 // or something... even a compressed data structure that's a bit slower to read
 // from.
-class StaticRoute(goal: DirectedRoad) extends Route(goal) {
+class StaticRoute(goal: DirectedRoad, rng: RNG) extends Route(goal, rng) {
   val costs = Agent.sim.shortest_paths(goal)
 
   // We don't care.
@@ -53,7 +53,7 @@ class StaticRoute(goal: DirectedRoad) extends Route(goal) {
 }
 
 // DOOMED TO WALK FOREVER (until we happen to reach our goal)
-class DrunkenRoute(goal: DirectedRoad) extends Route(goal) {
+class DrunkenRoute(goal: DirectedRoad, rng: RNG) extends Route(goal, rng) {
   // Remember answers we've given for the sake of consistency
   var desired_lane: Option[Edge] = None
   val chosen_turns = new MutableMap[Edge, Turn]()
@@ -72,7 +72,7 @@ class DrunkenRoute(goal: DirectedRoad) extends Route(goal) {
   }
 
   // With the right amount of alcohol, a drunk can choose uniformly at random
-  def choose_turn(e: Edge) = Util.choose_rand(e.next_turns)
+  def choose_turn(e: Edge) = rng.choose_rand(e.next_turns)
 
   def pick_turn(e: Edge) =
     chosen_turns.getOrElseUpdate(e, choose_turn(e))
@@ -80,7 +80,7 @@ class DrunkenRoute(goal: DirectedRoad) extends Route(goal) {
   def pick_lane(e: Edge): Edge = {
     if (!desired_lane.isDefined) {
       if (e.queue.ok_to_lanechange) {
-        desired_lane = Some(Util.choose_rand(e.other_lanes))
+        desired_lane = Some(rng.choose_rand(e.other_lanes))
       } else {
         desired_lane = Some(e)
       }
@@ -96,25 +96,29 @@ class DrunkenRoute(goal: DirectedRoad) extends Route(goal) {
 }
 
 // Wanders around slightly less aimlessly by picking directions
-class DirectionalDrunkRoute(goal: DirectedRoad) extends DrunkenRoute(goal) { 
+class DirectionalDrunkRoute(goal: DirectedRoad, rng: RNG)
+  extends DrunkenRoute(goal, rng)
+{
   def heuristic(t: Turn) = t.to.to.location.dist_to(goal.start_pt)
 
   // pick the most direct path 75% of the time
   override def choose_turn(e: Edge) =
-    if (Util.percent(.75))
+    if (rng.percent(.75))
       e.next_turns.sortBy(heuristic).head
     else
       super.choose_turn(e)
 }
 
 // Don't keep making the same choices for roads
-class DrunkenExplorerRoute(goal: DirectedRoad) extends DirectionalDrunkRoute(goal) {
+class DrunkenExplorerRoute(goal: DirectedRoad, rng: RNG)
+  extends DirectionalDrunkRoute(goal, rng)
+{
   val past = new MutableMap[DirectedRoad, Int]()
 
   override def choose_turn(e: Edge): Turn = {
     // break ties by the heuristic of distance to goal
     val choice = e.next_turns.sortBy(turn => (
-      past.getOrElse(turn.to.directed_road, -1) + Util.rand_int(0, 5),
+      past.getOrElse(turn.to.directed_road, -1) + rng.rand_int(0, 5),
       heuristic(turn)
     )).head
     val road = choice.to.directed_road

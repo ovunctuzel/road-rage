@@ -56,20 +56,22 @@ class RandomWallet(a: Agent, initial_budget: Double)
 {
   override def toString = f"RND $budget%.2f"
 
+  def rng = a.rng
+
   def bid_stop_sign(tickets: Iterable[Ticket], ours: Ticket): (Ticket, Double) = {
     return relevant_stop_sign(tickets, ours) match {
-      case Some(t) => (t, Util.rand_double(0.0, budget))
+      case Some(t) => (t, rng.rand_double(0.0, budget))
       case None => (tickets.head, 0.0)
     }
   }
 
   def bid_signal(phases: Iterable[Phase], ours: Ticket): (Phase, Double) = {
-    return (relevant_phase(phases, ours), Util.rand_double(0.0, budget))
+    return (relevant_phase(phases, ours), rng.rand_double(0.0, budget))
   }
 
   def bid_reservation(batches: Iterable[TurnBatch], ours: Ticket): (TurnBatch, Double) = {
     return relevant_batch(batches, ours) match {
-      case Some(b) => (b, Util.rand_double(0.0, budget))
+      case Some(b) => (b, rng.rand_double(0.0, budget))
       case None => (batches.head, 0.0)
     }
   }

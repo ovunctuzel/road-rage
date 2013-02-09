@@ -13,9 +13,9 @@ import java.io.{ObjectOutputStream, FileOutputStream, ObjectInputStream,
                 FileInputStream}
 import scala.collection.mutable.ArrayBuffer
 
-import utexas.aorta.{Util, cfg}
+import utexas.aorta.{Util, RNG, cfg}
 
-@SerialVersionUID(420001)
+@SerialVersionUID(1)
 case class Scenario(map: String, agents: Array[MkAgent],
                     intersections: Array[MkIntersection])
 {
@@ -40,9 +40,10 @@ object Scenario {
 
 // The "Mk" prefix means "Make". These're small serializable classes to make
 // agents/intersections/etc.
+// TODO associate directly with their corresponding class?
 
-@SerialVersionUID(420002)
-case class MkAgent(id: Int, birth_tick: Double, start_edge: Int,
+@SerialVersionUID(1)
+case class MkAgent(id: Int, birth_tick: Double, seed: Long, start_edge: Int,
                    start_dist: Double, route: MkRoute, wallet: MkWallet)
 {
   def make() = {
@@ -52,25 +53,24 @@ case class MkAgent(id: Int, birth_tick: Double, start_edge: Int,
 
   def make_agent(): Unit = {
     val sim = Agent.sim
-    val a = new Agent(id, route.make(sim), wallet)
+    val a = new Agent(id, route.make(sim), new RNG(seed), wallet)
     sim.ready_to_spawn += new SpawnAgent(a, sim.edges(start_edge), start_dist)
   }
 }
 
-// TODO maybe a rng seed?
-@SerialVersionUID(420003)
-case class MkRoute(strategy: RouteType.Value, goal: Integer) {
+@SerialVersionUID(1)
+case class MkRoute(strategy: RouteType.Value, goal: Integer, seed: Long) {
   def make(sim: Simulation) =
-    Factory.make_route(strategy, sim.edges(goal).directed_road)
+    Factory.make_route(strategy, sim.edges(goal).directed_road, new RNG(seed))
 }
 
 // TODO other params?
-@SerialVersionUID(420004)
+@SerialVersionUID(1)
 case class MkWallet(policy: WalletType.Value, budget: Double) {
   def make(a: Agent) = Factory.make_wallet(a, policy, budget)
 }
 
-@SerialVersionUID(420005)
+@SerialVersionUID(1)
 case class MkIntersection(id: Integer, policy: IntersectionType.Value,
                           ordering: OrderingType.Value)
 {
@@ -83,7 +83,8 @@ object ScenarioMaker {
   // TODO agent distribution... time, O/D distribution, wallet params
 
   def default_scenario(graph: Graph, map_fn: String): Scenario = {
-    Util.init_rng(System.currentTimeMillis)
+    val rng = new RNG()
+
     graph.edges.foreach(e => e.queue = new Queue(e))
     val start_candidates = graph.edges.filter(e => e.queue.ok_to_spawn).toArray
 
@@ -91,11 +92,11 @@ object ScenarioMaker {
     val agents = new ArrayBuffer[MkAgent]()
     val budget = 1000.0
     for (id <- (0 until cfg.army_size)) {
-      val start = Util.choose_rand[Edge](start_candidates)
-      val end = Util.choose_rand[Edge](graph.edges)
+      val start = rng.choose_rand[Edge](start_candidates)
+      val end = rng.choose_rand[Edge](graph.edges)
       agents += MkAgent(
-        id, 0.0, start.id, start.queue.safe_spawn_dist,
-        MkRoute(RouteType.Drunken, end.id),
+        id, 0.0, rng.new_seed, start.id, start.queue.safe_spawn_dist(rng),
+        MkRoute(RouteType.Drunken, end.id, rng.new_seed),
         MkWallet(WalletType.Random, budget)
       )
     }
@@ -157,11 +158,11 @@ object Factory {
       new ReservationPolicy(i, make_intersection_ordering[TurnBatch](ordering))
   }
   
-  def make_route(enum: RouteType.Value, goal: DirectedRoad) = enum match {
-    case RouteType.StaticAstar => new StaticRoute(goal)
-    case RouteType.Drunken => new DrunkenRoute(goal)
-    case RouteType.DirectionalDrunk => new DirectionalDrunkRoute(goal)
-    case RouteType.DrunkenExplorer => new DrunkenExplorerRoute(goal)
+  def make_route(enum: RouteType.Value, goal: DirectedRoad, rng: RNG) = enum match {
+    case RouteType.StaticAstar => new StaticRoute(goal, rng)
+    case RouteType.Drunken => new DrunkenRoute(goal, rng)
+    case RouteType.DirectionalDrunk => new DirectionalDrunkRoute(goal, rng)
+    case RouteType.DrunkenExplorer => new DrunkenExplorerRoute(goal, rng)
   }
   
   def make_intersection_ordering[T](enum: OrderingType.Value) = enum match
@@ -171,7 +172,7 @@ object Factory {
   }
 
   def make_wallet(a: Agent, enum: WalletType.Value, budget: Double) = enum match {
-    case WalletType.Random => new RandomWallet(a, budget)
+    case WalletType.Random => new RandomWallet(a, budget)    
     // TODO budget is misnomer for emergency
     case WalletType.Emergency => new EmergencyVehicleWallet(a, budget)    
     case WalletType.Freerider => new FreeriderWallet(a)
