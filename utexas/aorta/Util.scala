@@ -9,7 +9,7 @@ import java.io.FileWriter
 import scala.annotation.elidable
 import scala.annotation.elidable.ASSERTION
 
-import utexas.aorta.sim.{Simulation, Scenario}
+import utexas.aorta.sim.{Simulation, Scenario, DynamicScenario}
 import utexas.aorta.analysis.{Stats, Profiling}
 
 object Util {
@@ -109,12 +109,10 @@ object Util {
     }
     //Stats.setup_experiment(exp_name)  TODO rethink this stuff too
 
-    return if (load_scenario.nonEmpty) {
+    return if (load_scenario.nonEmpty)
       Scenario.load(load_scenario).make_sim(with_geometry)
-    } else {
-      // TODO take an arg for how many default agents to make
-      null
-    }
+    else
+      (new DynamicScenario(load_map)).make_sim(with_geometry)
   }
 }
 

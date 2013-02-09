@@ -95,10 +95,9 @@
 - at big timesteps, nobody moves?
 
 # Testing/Experiments
-- same old headless behavior, quickly
-  - cfg stuff mods the defaults in the scenario made
 - equiv of continuous generators
 - standalone programs to make/mod scenarios
+  - and make DynamicScenario use default distributions of both
 - make scenarios from UI
 - the stats side of the story
 - things to test

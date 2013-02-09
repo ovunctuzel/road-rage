@@ -27,8 +27,8 @@ class Simulation(roads: Array[Road], edges: Array[Edge],
   Agent.sim = this  // let them get to us
   // TODO always do this, and forget this map/sim separation?
   traversables.foreach(t => t.queue = new Queue(t))
-  vertices.foreach(v => v.intersection = scenario.intersections(v.id).make(v))
-  scenario.agents.foreach(a => a.make)
+  vertices.foreach(v => v.intersection = scenario.make_intersection(v))
+  scenario.make_agents
 
   // TODO if we have a viral event that's making more and more agents, then we
   // need a time_limit

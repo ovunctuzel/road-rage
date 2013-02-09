@@ -15,18 +15,44 @@ import scala.collection.mutable.ArrayBuffer
 
 import utexas.aorta.{Util, RNG, cfg}
 
+abstract class Scenario() {
+  def make_sim(with_geo: Boolean): Simulation
+  def write(fn: String): Unit
+  def make_intersection(v: Vertex): Intersection
+  def make_agents(): Unit
+}
+
 @SerialVersionUID(1)
-case class Scenario(map: String, agents: Array[MkAgent],
-                    intersections: Array[MkIntersection])
+case class FixedScenario(map: String, agents: Array[MkAgent],
+                         intersections: Array[MkIntersection])
+  extends Scenario
 {
+  def make_sim(with_geo: Boolean) =
+    (new PlaintextReader(map, with_geo)).load_simulation(this)
   def write(fn: String) = {
     val out = new ObjectOutputStream(new FileOutputStream(fn))
     out.writeObject(this)
     out.close
   }
 
+  def make_intersection(v: Vertex) = intersections(v.id).make(v)
+  def make_agents() = agents.foreach(a => a.make)
+}
+
+// To just load a map, dynamically populate the map with defaults.
+@SerialVersionUID(1)
+class DynamicScenario(map: String) extends Scenario {
   def make_sim(with_geo: Boolean) =
     (new PlaintextReader(map, with_geo)).load_simulation(this)
+  def write(fn: String) = {
+    // TODO 
+  }
+
+  // TODO cfg / use same defaults
+  def make_intersection(v: Vertex)
+    = new Intersection(v, IntersectionType.StopSign, OrderingType.FIFO)
+  // TODO make the default number
+  def make_agents() = {}
 }
 
 object Scenario {
@@ -109,7 +135,7 @@ object ScenarioMaker {
       intersections += MkIntersection(v.id, policy, ordering)
     }
 
-    return Scenario(map_fn, agents.toArray, intersections.toArray)
+    return FixedScenario(map_fn, agents.toArray, intersections.toArray)
   }
 }
 
