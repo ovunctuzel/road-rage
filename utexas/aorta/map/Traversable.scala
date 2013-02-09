@@ -80,11 +80,15 @@ abstract class Traversable() {
 // TODO noooo not var >_<
 class Line(var x1: Double, var y1: Double, var x2: Double, var y2: Double) {
   // Compute and store it once, since the math isn't free
-  // TODO the other math has issues with the synthetic map
-  //val length = math.sqrt(math.pow(x2 - x1, 2) + math.pow(y2 - y1, 2))
-  val length = Coordinate.gps_dist_in_meters(
-    Graph.world_to_gps(x1, y1), Graph.world_to_gps(x2, y2)
-  )
+  var length: Double = 0
+  recompute_length
+
+  // TODO temporary approach.
+  def recompute_length() = {
+    length = Coordinate.gps_dist_in_meters(
+      Graph.world_to_gps(x1, y1), Graph.world_to_gps(x2, y2)
+    )
+  }
 
   def this(pt1: Coordinate, pt2: Coordinate) = this(pt1.x, pt1.y, pt2.x, pt2.y)
   def this(v1: Vertex, v2: Vertex) = this(v1.location, v2.location)

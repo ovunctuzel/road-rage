@@ -47,13 +47,20 @@ abstract class Reader(fn: String, with_geometry: Boolean) {
     // turns just want edges, doesn't matter what trait they're endowed with
     for (v <- verts) {
       for (link <- vertLinks(v.id)) {
+        // TODO in principle, these should be equivalent, but it doesnt cost us
+        // extra time/memory to use this always, and its at least consistent
+        // until some weird bugs are hashed out.
+        val t = new Turn(link.id, edges(link.from), edges(link.to), link.length, link.conflict_line)
         if (with_geometry) {
+          t.set_lines(Array(new Line(t.from.lines.last.end, t.to.lines.head.start)))
+        }
+        v.turns = t :: v.turns
+        /*if (with_geometry) {
           v.turns = Turn(link.id, edges(link.from), edges(link.to)) :: v.turns
           Util.assert_eq(link.length, v.turns.head.length)
         } else {
           v.turns = new Turn(link.id, edges(link.from), edges(link.to), link.length, link.conflict_line) :: v.turns
-        }
-
+        }*/
       }
     }
 

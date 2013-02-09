@@ -19,6 +19,7 @@
 - agents and intersections could wake each other up now
 
 # Map Construction
+- keep orig GPS coords and only scale around for UI
 - clean up roads with just 2 roads
   - pass3, since doomed pruning makes new problems
   - but keep pass 2 version? seems to prevent some stuff from getting doomed!
@@ -53,6 +54,7 @@
 
 # Code Cleanup
 - a Common object
+- pull some math in one place
 - split the passes
   - pass1 = read osm + normalize
   - pass2 = pass2

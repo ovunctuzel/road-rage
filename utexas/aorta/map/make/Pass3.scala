@@ -114,8 +114,11 @@ class Pass3(old_graph: PreGraph2) {
     Util.log("Tidying up geometry...")
     graph.vertices.foreach(v => adjust_lines(v))
 
-    // Recalculate length
-    graph.traversables.foreach(t => t.set_lines(t.lines))
+    // Recalculate length. TODO temporary approach.
+    graph.traversables.foreach(t => {
+      t.lines.foreach(l => l.recompute_length)
+      t.set_lines(t.lines)
+    })
 
     return graph
   }
@@ -474,6 +477,7 @@ class Pass3(old_graph: PreGraph2) {
           // TODO turn ids dont seem to need to be contiguous.
           e.from.turns = Turn(
             next_id, orig_turn.from, tail_turn.to,
+            // TODO i dont even think this is appropriate anymore
             orig_turn.length + tail_turn.length
           ) :: e.from.turns
         }
