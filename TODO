@@ -96,10 +96,11 @@
 
 # Testing/Experiments
 - equiv of continuous generators
+  - subclass MkAgent, but get IDs right
 - standalone programs to make/mod scenarios
-  - and make DynamicScenario use default distributions of both
 - make scenarios from UI
 - the stats side of the story
+- verify determinism retained... ordering events queue
 - things to test
   - wacky cases of 2 side-by-side agents wanting to swap places?
 

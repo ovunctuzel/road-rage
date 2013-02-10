@@ -48,9 +48,8 @@ class DynamicScenario(map: String) extends Scenario {
     // TODO 
   }
 
-  // TODO cfg / use same defaults
   def make_intersection(v: Vertex)
-    = new Intersection(v, IntersectionType.StopSign, OrderingType.FIFO)
+    = new Intersection(v, ScenarioMaker.default_policy, ScenarioMaker.default_ordering)
   // TODO make the default number
   def make_agents() = {}
 }
@@ -105,6 +104,9 @@ case class MkIntersection(id: Integer, policy: IntersectionType.Value,
 
 // TODO how to organize stuff like this?
 object ScenarioMaker {
+  lazy val default_policy = IntersectionType.withName(cfg.policy)
+  lazy val default_ordering = OrderingType.withName(cfg.ordering)
+
   // TODO separate agent creation and intersection assignment a bit
   // TODO agent distribution... time, O/D distribution, wallet params
 
@@ -127,16 +129,37 @@ object ScenarioMaker {
       )
     }
 
-    // Assign every intersection the same policy and ordering
-    val intersections = new ArrayBuffer[MkIntersection]()
-    val policy = IntersectionType.withName(cfg.policy)
-    val ordering = OrderingType.withName(cfg.ordering)
-    for (v <- graph.vertices) {
-      intersections += MkIntersection(v.id, policy, ordering)
-    }
-
-    return FixedScenario(map_fn, agents.toArray, intersections.toArray)
+    return FixedScenario(
+      map_fn, agents.toArray, IntersectionDistribution.same_for_all(graph)
+    )
   }
+}
+
+object IntersectionDistribution {
+  private val rng = new RNG()
+
+  def same_for_all(
+    graph: Graph, policy: IntersectionType.Value = ScenarioMaker.default_policy,
+    ordering: OrderingType.Value = ScenarioMaker.default_ordering
+   ): Array[MkIntersection] =
+    graph.vertices.map(v => MkIntersection(v.id, policy, ordering))
+
+  private val policy_choices = IntersectionType.values.toArray
+  private val ordering_choices = OrderingType.values.toArray
+  private def rand_policy =
+    rng.choose_rand[IntersectionType.Value](policy_choices)
+  private def rand_ordering =
+    rng.choose_rand[OrderingType.Value](ordering_choices)
+
+  def randomized(graph: Graph, fixed_policy: Option[IntersectionType.Value],
+                 fixed_ordering: Option[OrderingType.Value])
+    = graph.vertices.map(v => MkIntersection(
+      v.id, fixed_policy.getOrElse(rand_policy),
+      fixed_ordering.getOrElse(rand_ordering)
+    ))
+
+  // TODO realistic assignment, with signs at small crossings, and signals for
+  // heavy direction of big crossings
 }
 
 // TODO rm
