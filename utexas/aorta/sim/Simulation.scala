@@ -135,8 +135,7 @@ class Simulation(roads: Array[Road], edges: Array[Edge],
     if (spawn.e.queue.can_spawn_now(spawn.dist)) {
       spawn.a.at = spawn.a.enter(spawn.e, spawn.dist)
       spawn.a.started_trip_at = tick
-      // TODO make sure the ID matches up!
-      agents :+= spawn.a
+      insert_agent(spawn.a)
       true
     } else {
       false
@@ -178,20 +177,25 @@ trait EventQueue {
 }
 
 trait AgentManager {
-  var agents: Vector[Agent] = Vector.empty
+  var agents: SortedSet[Agent] = TreeSet.empty[Agent]
   var ready_to_spawn = new ListBuffer[SpawnAgent]()
-  def get_agent(id: Int): Option[Agent] = {
-    // Binary search for them.
-    def search(low: Int, high: Int): Option[Agent] = (low + high) / 2 match {
-      case _ if high < low => None
-      case mid if agents(mid).id > id => search(low, mid - 1)
-      case mid if agents(mid).id < id => search(mid + 1, high)
-      case mid => Some(agents(mid))
-    }
-    return search(0, agents.size - 1)
-  }
-  def has_agent(a: Agent) = get_agent(a.id).isDefined
+  private var max_agent_id = -1
+
   def describe_agents = s"${agents.size} / ${ready_to_spawn.size}"
+  def insert_agent(a: Agent) = {
+    // TODO assume this isn't a duplicate
+    agents += a
+    max_agent_id = math.max(max_agent_id, a.id)
+  }
+  // This reserves the ID returned to the caller, so it'll never be reused.
+  def next_agent_id(): Int = {
+    max_agent_id += 1
+    return max_agent_id
+  }
+
+  // Only used by the UI, so is O(n) rather than a binary search.
+  def get_agent(id: Int) = agents.find(a => a.id == id)
+  def has_agent(a: Agent) = agents.contains(a)
 }
 
 trait VirtualTiming {

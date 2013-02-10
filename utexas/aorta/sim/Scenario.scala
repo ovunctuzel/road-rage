@@ -50,8 +50,9 @@ class DynamicScenario(map: String) extends Scenario {
 
   def make_intersection(v: Vertex)
     = new Intersection(v, ScenarioMaker.default_policy, ScenarioMaker.default_ordering)
-  // TODO make the default number
-  def make_agents() = {}
+  def make_agents() = {
+    // TODO do something default
+  }
 }
 
 object Scenario {
@@ -67,19 +68,41 @@ object Scenario {
 // agents/intersections/etc.
 // TODO associate directly with their corresponding class?
 
+abstract class MkAgent() {
+  def make(): Unit
+}
+
 @SerialVersionUID(1)
-case class MkAgent(id: Int, birth_tick: Double, seed: Long, start_edge: Int,
-                   start_dist: Double, route: MkRoute, wallet: MkWallet)
+case class MkSingleAgent(id: Int, birth_tick: Double, seed: Long,
+                         start_edge: Int, start_dist: Double, route: MkRoute,
+                         wallet: MkWallet)
+  extends MkAgent
 {
   def make() = {
     // TODO worry about order...
     Agent.sim.schedule(birth_tick, make_agent)
   }
 
-  def make_agent(): Unit = {
+  private def make_agent(): Unit = {
     val sim = Agent.sim
     val a = new Agent(id, route.make(sim), new RNG(seed), wallet)
     sim.ready_to_spawn += new SpawnAgent(a, sim.edges(start_edge), start_dist)
+  }
+}
+
+// Spawns some distribution of agents every frequency seconds.
+@SerialVersionUID(1)
+case class MkAgentSpawner(frequency: Double, seed: Long) extends MkAgent {
+  def make() = {
+    spawn
+  }
+
+  private def spawn(): Unit = {
+    val sim = Agent.sim
+    // Re-schedule ourselves
+    sim.schedule(sim.tick + frequency, spawn)
+
+    // TODO do something interesting
   }
 }
 
@@ -122,7 +145,7 @@ object ScenarioMaker {
     for (id <- (0 until cfg.army_size)) {
       val start = rng.choose_rand[Edge](start_candidates)
       val end = rng.choose_rand[Edge](graph.edges)
-      agents += MkAgent(
+      agents += MkSingleAgent(
         id, 0.0, rng.new_seed, start.id, start.queue.safe_spawn_dist(rng),
         MkRoute(RouteType.Drunken, end.id, rng.new_seed),
         MkWallet(WalletType.Random, budget)

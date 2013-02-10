@@ -95,8 +95,6 @@
 - at big timesteps, nobody moves?
 
 # Testing/Experiments
-- equiv of continuous generators
-  - subclass MkAgent, but get IDs right
 - standalone programs to make/mod scenarios
 - make scenarios from UI
 - the stats side of the story
