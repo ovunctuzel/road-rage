@@ -75,6 +75,18 @@ abstract class Traversable() {
 
   def start_pt = lines.head.start
   def end_pt  = lines.last.end
+
+  // TODO this gets a bit more conservative when cars have different accelerations.
+  // This is hinged on the fact that lookahead works. Agents can't enter e
+  // faster than its speed limit, so we have to reason about how far they could
+  // possibly go.
+  def worst_entry_dist(): Double = {
+    val lim = speed_limit
+    val accel = cfg.max_accel
+    // TODO share this formula with Agent by util or something
+    val stopping_dist = Util.dist_at_constant_accel(-accel, lim / accel, lim)
+    return (lim * cfg.dt_s) + stopping_dist
+  }
 }
 
 // TODO noooo not var >_<

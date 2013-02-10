@@ -8,7 +8,7 @@ import java.io.FileWriter
 
 import utexas.aorta.ui.Renderable
 
-import utexas.aorta.{cfg, Util}
+import utexas.aorta.{cfg, RNG, Util}
 
 // TODO subclass Edge for pos/neg.. seems easier for lots of things
 
@@ -95,7 +95,7 @@ class Edge(var id: Int, val road: Road, val dir: Direction.Direction)
 
   def debug = {
     Util.log(this + " has length " + length + " m, min entry dist " +
-             (queue.worst_entry_dist + cfg.follow_dist))
+             (worst_entry_dist + cfg.follow_dist))
     Util.log("(lanechange dist is " + (cfg.lanechange_dist +
              cfg.end_threshold) + ")")
     Util.log("Queue contains " + queue.agents)
@@ -106,6 +106,21 @@ class Edge(var id: Int, val road: Road, val dir: Direction.Direction)
 
   // For debug only
   def doomed = next_turns.isEmpty || prev_turns.isEmpty
+
+  // TODO Starting on highways or in the middle lane seems weird, but allow it for now
+  // TODO justify this better, or cite the paper.
+  def ok_to_spawn = length >= worst_entry_dist + cfg.end_threshold + (2 * cfg.follow_dist)
+
+  // TODO geometric argument
+  // TODO sometimes the max arg is < the min arg. :)
+  def safe_spawn_dist(rng: RNG) = rng.rand_double(
+    worst_entry_dist + cfg.follow_dist, length - cfg.end_threshold
+  )
+
+  def ok_to_lanechange =
+    (length >= cfg.lanechange_dist + cfg.end_threshold) &&
+    // this second constraint can be removed once lookbehind is implemented
+    (length >= worst_entry_dist + cfg.follow_dist)
 }
 
 object Direction extends Enumeration {
@@ -129,7 +144,7 @@ class DirectedRoad(val road: Road, val dir: Direction.Direction) {
   // TODO could even predict/take into account the current distance to see if
   // there's room left
   def naive_leads_to = edges.flatMap(_.succs).map(_.directed_road).toSet
-  def leads_to(from: Edge) = if (from.queue.ok_to_lanechange)
+  def leads_to(from: Edge) = if (from.ok_to_lanechange)
                                naive_leads_to
                              else
                                from.succs.map(_.directed_road).toSet

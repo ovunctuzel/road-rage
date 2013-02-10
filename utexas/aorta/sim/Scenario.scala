@@ -48,8 +48,10 @@ class DynamicScenario(map: String) extends Scenario {
     // TODO 
   }
 
-  def make_intersection(v: Vertex)
-    = new Intersection(v, ScenarioMaker.default_policy, ScenarioMaker.default_ordering)
+  def make_intersection(v: Vertex) = new Intersection(
+    v, IntersectionDistribution.default_policy,
+    IntersectionDistribution.default_ordering
+  )
   def make_agents() = {
     // TODO do something default
   }
@@ -92,15 +94,19 @@ case class MkSingleAgent(id: Int, birth_tick: Double, seed: Long,
 
 // Spawns some distribution of agents every frequency seconds.
 @SerialVersionUID(1)
-case class MkAgentSpawner(frequency: Double, seed: Long) extends MkAgent {
+case class MkAgentSpawner(frequency: Double, expires: Double, seed: Long)
+  extends MkAgent
+{
   def make() = {
     spawn
   }
 
   private def spawn(): Unit = {
     val sim = Agent.sim
-    // Re-schedule ourselves
-    sim.schedule(sim.tick + frequency, spawn)
+    if (sim.tick < expires) {
+      // Re-schedule ourselves
+      sim.schedule(sim.tick + frequency, spawn)
+    }
 
     // TODO do something interesting
   }
@@ -127,17 +133,13 @@ case class MkIntersection(id: Integer, policy: IntersectionType.Value,
 
 // TODO how to organize stuff like this?
 object ScenarioMaker {
-  lazy val default_policy = IntersectionType.withName(cfg.policy)
-  lazy val default_ordering = OrderingType.withName(cfg.ordering)
-
   // TODO separate agent creation and intersection assignment a bit
   // TODO agent distribution... time, O/D distribution, wallet params
 
   def default_scenario(graph: Graph, map_fn: String): Scenario = {
     val rng = new RNG()
 
-    graph.edges.foreach(e => e.queue = new Queue(e))
-    val start_candidates = graph.edges.filter(e => e.queue.ok_to_spawn).toArray
+    val start_candidates = graph.edges.filter(e => e.ok_to_spawn).toArray
 
     // Just spawn some agents all at the start with a fixed budget
     val agents = new ArrayBuffer[MkAgent]()
@@ -146,7 +148,7 @@ object ScenarioMaker {
       val start = rng.choose_rand[Edge](start_candidates)
       val end = rng.choose_rand[Edge](graph.edges)
       agents += MkSingleAgent(
-        id, 0.0, rng.new_seed, start.id, start.queue.safe_spawn_dist(rng),
+        id, 0.0, rng.new_seed, start.id, start.safe_spawn_dist(rng),
         MkRoute(RouteType.Drunken, end.id, rng.new_seed),
         MkWallet(WalletType.Random, budget)
       )
@@ -159,11 +161,13 @@ object ScenarioMaker {
 }
 
 object IntersectionDistribution {
+  lazy val default_policy = IntersectionType.withName(cfg.policy)
+  lazy val default_ordering = OrderingType.withName(cfg.ordering)
   private val rng = new RNG()
 
   def same_for_all(
-    graph: Graph, policy: IntersectionType.Value = ScenarioMaker.default_policy,
-    ordering: OrderingType.Value = ScenarioMaker.default_ordering
+    graph: Graph, policy: IntersectionType.Value = default_policy,
+    ordering: OrderingType.Value = default_ordering
    ): Array[MkIntersection] =
     graph.vertices.map(v => MkIntersection(v.id, policy, ordering))
 

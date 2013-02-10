@@ -79,7 +79,7 @@ class DrunkenRoute(goal: DirectedRoad, rng: RNG) extends Route(goal, rng) {
 
   def pick_lane(e: Edge): Edge = {
     if (!desired_lane.isDefined) {
-      if (e.queue.ok_to_lanechange) {
+      if (e.ok_to_lanechange) {
         desired_lane = Some(rng.choose_rand(e.other_lanes))
       } else {
         desired_lane = Some(e)

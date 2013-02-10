@@ -219,7 +219,7 @@ class Agent(val id: Int, val route: Route, val rng: RNG, wallet_spec: MkWallet) 
     // distance and don't start a lane-change too early in the road. This
     // gives agents time next tick to notice us during their lookahead.
     if (!target.queue.closest_behind(at.dist).isDefined &&
-        at.dist <= at.on.queue.worst_entry_dist + cfg.follow_dist)
+        at.dist <= at.on.worst_entry_dist + cfg.follow_dist)
     {
       return false
     }

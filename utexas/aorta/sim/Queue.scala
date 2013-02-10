@@ -10,7 +10,7 @@ import scala.collection.JavaConversions.collectionAsScalaIterable
 
 import utexas.aorta.map.{Edge, Traversable, Position}
 
-import utexas.aorta.{Util, RNG, cfg}
+import utexas.aorta.{Util, cfg}
 
 // TODO introduce a notion of dimension
 // TODO logs -> asserts once things work right
@@ -130,38 +130,6 @@ class Queue(t: Traversable) {
   def closest_behind(dist: Double) = wrap_option(agents.higherEntry(-dist))
   def closest_ahead(dist: Double) = wrap_option(agents.lowerEntry(-dist))
   def all_in_range(from: Double, to: Double) = agents.subMap(-to, true, -from, true)
-
-  // Geometric logic for spawning.
-
-  // TODO this gets a bit more conservative when cars have different accelerations.
-  // This is hinged on the fact that lookahead works. Agents can't enter e
-  // faster than its speed limit, so we have to reason about how far they could
-  // possibly go.
-  def worst_entry_dist(): Double = {
-    val lim = t match {
-      case e: Edge => e.road.speed_limit
-      case _       => throw new Exception("Only valid for edges, not turns!")
-    }
-    val accel = cfg.max_accel
-    // TODO share this formula with Agent by util or something
-    val stopping_dist = Util.dist_at_constant_accel(-accel, lim / accel, lim)
-    return (lim * cfg.dt_s) + stopping_dist
-  }
-  
-  // TODO Starting on highways or in the middle lane seems weird, but allow it for now
-  // TODO justify this better, or cite the paper.
-  def ok_to_spawn = t.length >= worst_entry_dist + cfg.end_threshold + (2 * cfg.follow_dist)
-
-  def ok_to_lanechange =
-    (t.length >= cfg.lanechange_dist + cfg.end_threshold) &&
-    // this second constraint can be removed once lookbehind is implemented
-    (t.length >= worst_entry_dist + cfg.follow_dist)
-  
-  // TODO geometric argument
-  // TODO sometimes the max arg is < the min arg. :)
-  def safe_spawn_dist(rng: RNG) = rng.rand_double(
-    worst_entry_dist + cfg.follow_dist, t.length - cfg.end_threshold
-  )
 
   // The real-time spawning magic is really quite simple if worst_entry_dist and
   // lookahead work.
