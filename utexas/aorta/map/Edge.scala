@@ -6,6 +6,7 @@ package utexas.aorta.map
 
 import java.io.FileWriter
 
+import utexas.aorta.map.analysis.{AbstractEdge, AbstractGraph}
 import utexas.aorta.ui.Renderable
 
 import utexas.aorta.{cfg, RNG, Util}
@@ -43,7 +44,7 @@ class Edge(var id: Int, val road: Road, val dir: Direction.Direction)
   def shift_right: Option[Edge] = if (is_rightmost) None else Some(other_lanes(lane_num - 1))
   def adjacent_lanes: List[Edge] = List(shift_left, shift_right, Some(this)).flatten
   def best_adj_lane(to_reach: Edge)
-    = adjacent_lanes.sortBy(e => math.abs(to_reach.lane_num - e.lane_num)).head
+    = adjacent_lanes.minBy(e => math.abs(to_reach.lane_num - e.lane_num))
 
   def next_turns = to.turns_from(this)
   def prev_turns = from.turns_to(this)
@@ -130,7 +131,9 @@ object Direction extends Enumeration {
 }
 
 // Represent a group of directed edges on one road
-class DirectedRoad(val road: Road, val dir: Direction.Direction) {
+class DirectedRoad(val road: Road, val id: Int, val dir: Direction.Direction)
+  extends AbstractEdge
+{
   override def toString = "%s's %s lanes".format(road, dir)
 
   def edges = if (dir == Direction.POS)
@@ -150,4 +153,14 @@ class DirectedRoad(val road: Road, val dir: Direction.Direction) {
                                from.succs.map(_.directed_road).toSet
 
   def length = road.length
+
+  def succs = edges.flatMap(e => e.next_turns.map(t => (t.to.directed_road, t.length)))
+  def preds = edges.flatMap(e => e.prev_turns.map(t => (t.from.directed_road, t.length)))
+
+  def costs_to = AbstractGraph.dijkstras(
+    Road.num_directed_roads, this, (e: AbstractEdge) => e.preds
+  )
+  def costs_from = AbstractGraph.dijkstras(
+    Road.num_directed_roads, this, (e: AbstractEdge) => e.succs
+  )
 }

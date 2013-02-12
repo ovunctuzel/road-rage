@@ -28,23 +28,24 @@ abstract class Route(val goal: DirectedRoad, rng: RNG) {
 // TODO does this wind up being too expensive memory-wise? maybe approx as ints
 // or something... even a compressed data structure that's a bit slower to read
 // from.
-class StaticRoute(goal: DirectedRoad, rng: RNG) extends Route(goal, rng) {
-  val costs = Agent.sim.shortest_paths(goal)
+class StaticDijkstraRoute(goal: DirectedRoad, rng: RNG) extends Route(goal, rng) {
+  // TODO We used to assign a cost to every edge, now we go by directed road.
+  val costs = goal.costs_to
 
   // We don't care.
   def transition(from: Traversable, to: Traversable) = {}
 
-  def pick_turn(e: Edge) = e.next_turns.sortBy(t => costs(t.to.id)).head
+  def pick_turn(e: Edge) = e.next_turns.minBy(t => costs(t.to.directed_road.id))
   def pick_lane(from: Edge): Edge = {
     // Break ties for the best lane overall by picking the lane closest to the
     // current.
-    val target_lane = from.other_lanes.sortBy(
-      e => (costs(e.id), math.abs(from.lane_num - e.lane_num))
-    ).head
+    val target_lane = from.other_lanes.minBy(
+      e => (costs(pick_turn(e).to.directed_road.id), math.abs(from.lane_num - e.lane_num))
+    )
     // Get as close to target_lane as possible.
-    return from.adjacent_lanes.sortBy(
+    return from.adjacent_lanes.minBy(
       e => math.abs(target_lane.lane_num - e.lane_num)
-    ).head
+    )
   }
 
   def dump_info() = {
@@ -104,7 +105,7 @@ class DirectionalDrunkRoute(goal: DirectedRoad, rng: RNG)
   // pick the most direct path 75% of the time
   override def choose_turn(e: Edge) =
     if (rng.percent(.75))
-      e.next_turns.sortBy(heuristic).head
+      e.next_turns.minBy(heuristic)
     else
       super.choose_turn(e)
 }
@@ -117,10 +118,10 @@ class DrunkenExplorerRoute(goal: DirectedRoad, rng: RNG)
 
   override def choose_turn(e: Edge): Turn = {
     // break ties by the heuristic of distance to goal
-    val choice = e.next_turns.sortBy(turn => (
+    val choice = e.next_turns.minBy(turn => (
       past.getOrElse(turn.to.directed_road, -1) + rng.rand_int(0, 5),
       heuristic(turn)
-    )).head
+    ))
     val road = choice.to.directed_road
     past(road) = past.getOrElse(road, 0) + 1
     return choice

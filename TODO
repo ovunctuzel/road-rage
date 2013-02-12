@@ -77,7 +77,10 @@
 
 # Contraction Hierarchies
 - understand...
-- simplify generators by removing pending/worker threads
+- waypoints, in the meantime
+  = choose waypoints (TEST)
+  - router that answers queries using it
+  - get table saved/loaded
 
 # Intersection Policies
 - stop sign for only some directions

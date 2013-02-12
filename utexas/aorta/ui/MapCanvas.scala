@@ -16,6 +16,7 @@ import swing.Dialog
 import scala.language.implicitConversions
 
 import utexas.aorta.map._  // TODO yeah getting lazy.
+import utexas.aorta.map.analysis.AbstractGraph
 import utexas.aorta.sim.{Simulation, Agent, Sim_Event, EV_Signal_Change,
                          IntersectionType, RouteType}
 
@@ -763,12 +764,15 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
 
   def show_pathfinding() = {
     // contract: must be called when current_edge1 and 2 are set
-    val r = sim.pathfind_astar(chosen_edge1.get, chosen_edge2.get)
+    val costs = chosen_edge2.get.directed_road.costs_to
+    val route = AbstractGraph.hillclimb(
+      costs, chosen_edge1.get.directed_road
+    ).asInstanceOf[List[DirectedRoad]]
     // Filter and just remember the edges; the UI doesn't want to highlight
     // turns.
     // TODO pathfinding is by directed road now, not edge. just pick some edge
     // in each group.
-    route_members = r.map(_.edges.head).toSet
+    route_members = route.map(_.edges.head).toSet
     route_members_road = route_members.map(_.road)
     repaint
   }

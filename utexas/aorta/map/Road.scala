@@ -28,8 +28,8 @@ class Road(var id: Int, val length: Double, val name: String,
     Util.assert_eq(v2.location, points.last)
   }
 
-  val pos_group = new DirectedRoad(this, Direction.POS)
-  val neg_group = new DirectedRoad(this, Direction.NEG)
+  val pos_group = new DirectedRoad(this, Road.next_directed_id, Direction.POS)
+  val neg_group = new DirectedRoad(this, Road.next_directed_id, Direction.NEG)
 
   // + lanes go from v1->v2; - lanes go from v2->v1
   // pass 3 doesn't set this, only Reader does. kinda sucks how we do it now.
@@ -118,4 +118,11 @@ object Road {
     pts.zip(pts.tail).map(p => new Line(p._1, p._2)).foldLeft(0.0)(
       (a, b) => a + b.length
     )
+
+  var num_directed_roads = 0
+  def next_directed_id(): Int = {
+    val id = num_directed_roads
+    num_directed_roads += 1
+    return id
+  }
 }
