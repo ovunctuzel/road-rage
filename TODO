@@ -78,8 +78,9 @@
 # Contraction Hierarchies
 - understand...
 - waypoints, in the meantime
-  - agent route that uses it
+  - handle when we dont follow the waypt->goal path well
   - choose waypoints better
+- better router interface
 
 # Intersection Policies
 - stop sign for only some directions

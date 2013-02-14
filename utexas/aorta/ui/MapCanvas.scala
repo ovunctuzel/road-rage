@@ -769,8 +769,8 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
 
     // TODO need a common notion of routers
     //val costs = to.costs_to
-    //val route = AbstractGraph.hillclimb(costs, from).asInstanceOf[List[DirectedRoad]]
-    val route = sim.router.pathfind(from, to).asInstanceOf[List[DirectedRoad]]
+    //val route = AbstractGraph.hillclimb(costs, from)
+    val route = sim.router.pathfind(from, to)
 
     // Filter and just remember the edges; the UI doesn't want to highlight
     // turns.

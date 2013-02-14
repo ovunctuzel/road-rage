@@ -7,6 +7,7 @@ package utexas.aorta.map.analysis
 import java.io.Serializable
 
 import utexas.aorta.map.{Graph, Road, DirectedRoad}
+import utexas.aorta.sim.Agent
 
 import utexas.aorta.Util
 
@@ -21,9 +22,9 @@ object WaypointGenerator {
 }
 
 @SerialVersionUID(1)
-// TODO base's id?
 // TODO make these case classes, yo?
-class Waypoint(base: DirectedRoad) extends Serializable {
+class Waypoint(base_id: Int) extends Serializable {
+  def base = Agent.sim.directed_roads(base_id)
   val costs_to_waypt = base.costs_to
   val costs_from_waypt = base.costs_from
 
@@ -31,11 +32,15 @@ class Waypoint(base: DirectedRoad) extends Serializable {
   def dist_btwn(from: DirectedRoad, to: DirectedRoad) =
     costs_to_waypt(from.id) + costs_from_waypt(to.id)
 
+  // TODO assume from != base
+  def step_to_waypt(from: DirectedRoad) =
+    from.next_roads.minBy(r => costs_to_waypt(r.id))
+
   def path_to_waypt(from: DirectedRoad) =
-    AbstractGraph.hillclimb(costs_to_waypt, from)
+    AbstractGraph.hillclimb(costs_to_waypt, from).asInstanceOf[List[DirectedRoad]]
 
   def path_from_waypt(to: DirectedRoad) =
-    AbstractGraph.hillclimb_backwards(costs_from_waypt, to).reverse
+    AbstractGraph.hillclimb_backwards(costs_from_waypt, to).reverse.asInstanceOf[List[DirectedRoad]]
 
   // Trim the common overlap, which is waypt
   def path_btwn(from: DirectedRoad, to: DirectedRoad) =

@@ -51,6 +51,8 @@ class Edge(var id: Int, val road: Road, val dir: Direction.Direction)
   def succs: List[Edge] = next_turns.map(t => t.to)
   def preds: List[Edge] = prev_turns.map(t => t.from)
 
+  def next_roads = next_turns.map(t => t.to.directed_road)
+
   def is_rightmost = lane_num == 0
   def is_leftmost  = lane_num == other_lanes.size - 1
 
@@ -156,6 +158,8 @@ class DirectedRoad(val road: Road, val id: Int, val dir: Direction.Direction)
 
   def succs = edges.flatMap(e => e.next_turns.map(t => (t.to.directed_road, t.length)))
   def preds = edges.flatMap(e => e.prev_turns.map(t => (t.from.directed_road, t.length)))
+
+  def next_roads = edges.flatMap(e => e.next_roads).toSet
 
   def costs_to = AbstractGraph.dijkstras(
     Road.num_directed_roads, this, (e: AbstractEdge) => e.preds

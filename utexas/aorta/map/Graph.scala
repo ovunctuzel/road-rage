@@ -16,9 +16,16 @@ import utexas.aorta.Util
 class Graph(val roads: Array[Road], val edges: Array[Edge],
             val vertices: Array[Vertex], map_fn: String)
 {
-  val turns = vertices.foldLeft(List[Turn]())((l, v) => v.turns.toList ++ l)
-  val router = load_router
+  val directed_roads = Array.fill[DirectedRoad](Road.num_directed_roads)(null)
+  roads.foreach(r => {
+    directed_roads(r.pos_group.id) = r.pos_group
+    directed_roads(r.neg_group.id) = r.neg_group
+  })
 
+  // TODO dont want this to be lazy, but its a workaround so Agent.sim gets set
+  lazy val router = load_router
+
+  def turns = vertices.foldLeft(List[Turn]())((l, v) => v.turns.toList ++ l)
   def traversables() = edges ++ turns
 
   // TODO replace with a general map serializer instead. dont take map_fn.
@@ -33,7 +40,7 @@ class Graph(val roads: Array[Road], val edges: Array[Edge],
     } else {
       println("Generating waypoints...")
       val r = new WaypointRouter(
-        WaypointGenerator.choose_waypoints(this).map(r => new Waypoint(r))
+        WaypointGenerator.choose_waypoints(this).map(r => new Waypoint(r.id))
       )
       val out = new ObjectOutputStream(new FileOutputStream(fn))
       out.writeObject(r)

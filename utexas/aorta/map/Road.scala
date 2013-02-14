@@ -28,6 +28,8 @@ class Road(var id: Int, val length: Double, val name: String,
     Util.assert_eq(v2.location, points.last)
   }
 
+  // Since roads should get reconstructed in the same order, the IDs should be
+  // deterministic
   val pos_group = new DirectedRoad(this, Road.next_directed_id, Direction.POS)
   val neg_group = new DirectedRoad(this, Road.next_directed_id, Direction.NEG)
 
