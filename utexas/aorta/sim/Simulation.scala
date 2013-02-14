@@ -14,7 +14,6 @@ import scala.xml.MetaData
 import scala.xml.pull._
 
 import utexas.aorta.map.{Graph, Road, Edge, Vertex, Turn, DirectedRoad}
-import utexas.aorta.map.make.PlaintextReader
 
 import utexas.aorta.{Util, cfg}
 import utexas.aorta.analysis.{Stats, Active_Agents_Stat, Simulator_Speedup_Stat}

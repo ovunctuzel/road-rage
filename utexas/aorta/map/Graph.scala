@@ -8,7 +8,7 @@ import scala.collection.mutable.{HashMap, PriorityQueue, HashSet}
 import java.io.{ObjectOutputStream, FileOutputStream, ObjectInputStream,
                 FileInputStream, File}
 
-import utexas.aorta.map.make.PlaintextReader
+import utexas.aorta.map.make.BinaryReader
 import utexas.aorta.map.analysis.{WaypointGenerator, WaypointRouter, Waypoint}
 
 import utexas.aorta.Util
@@ -74,5 +74,5 @@ object Graph {
 
   // TODO deprecate this
   def load(fn: String, with_geometry: Boolean) =
-    (new PlaintextReader(fn, with_geometry)).load_map
+    (new BinaryReader(fn, with_geometry)).load_map
 }

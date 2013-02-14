@@ -9,6 +9,9 @@ import java.io.FileWriter
 import scala.annotation.elidable
 import scala.annotation.elidable.ASSERTION
 
+import java.io.{ObjectOutputStream, FileOutputStream, ObjectInputStream,
+                FileInputStream}
+
 import utexas.aorta.sim.{Simulation, Scenario, DynamicScenario}
 import utexas.aorta.analysis.{Stats, Profiling}
 
@@ -113,6 +116,19 @@ object Util {
       Scenario.load(load_scenario).make_sim(with_geometry)
     else
       (new DynamicScenario(load_map)).make_sim(with_geometry)
+  }
+
+  def serialize(obj: Any, fn: String) = {
+    val out = new ObjectOutputStream(new FileOutputStream(fn))
+    out.writeObject(obj)
+    out.close
+  }
+
+  def unserialize(fn: String): Any = {
+    val in = new ObjectInputStream(new FileInputStream(fn))
+    val obj = in.readObject
+    in.close
+    return obj
   }
 }
 

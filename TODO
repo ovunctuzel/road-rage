@@ -128,8 +128,19 @@
 - sleep less in UI
 - throw away geometry in UI after converted to awt stuff
 - truncate lengths, other doubles or more compactly write
+
 - improve map loading
   - java serialization with case classes?
+    - get rid of old reader/writer.
+    - why set_params?
+    - ditch Reader interface, probably
+    - inter-obj references are serialized just fine. serialize graph directly.
+
+
+    - maybe still xml. argument for beans or protobufs?
+
+
+  (relevant anymore?)
   - scanner?
   - why are traversable lines given not as point sequence?
 

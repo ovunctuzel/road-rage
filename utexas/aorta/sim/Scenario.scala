@@ -5,12 +5,10 @@
 package utexas.aorta.sim
 
 import utexas.aorta.map.{Graph, Edge, Vertex, DirectedRoad}
-import utexas.aorta.map.make.PlaintextReader
+import utexas.aorta.map.make.BinaryReader
 import utexas.aorta.sim.policies._
 import utexas.aorta.sim.market._
 
-import java.io.{ObjectOutputStream, FileOutputStream, ObjectInputStream,
-                FileInputStream}
 import scala.collection.mutable.ArrayBuffer
 
 import utexas.aorta.{Util, RNG, cfg}
@@ -30,12 +28,8 @@ case class FixedScenario(map: String, agents: Array[MkAgent],
 {
   def map_fn = map
   def make_sim(with_geo: Boolean) =
-    (new PlaintextReader(map, with_geo)).load_simulation(this)
-  def write(fn: String) = {
-    val out = new ObjectOutputStream(new FileOutputStream(fn))
-    out.writeObject(this)
-    out.close
-  }
+    (new BinaryReader(map, with_geo)).load_simulation(this)
+  def write(fn: String) = Util.serialize(this, fn)
 
   def make_intersection(v: Vertex) = intersections(v.id).make(v)
   def make_agents() = agents.foreach(a => a.make)
@@ -46,7 +40,7 @@ case class FixedScenario(map: String, agents: Array[MkAgent],
 class DynamicScenario(map: String) extends Scenario {
   def map_fn = map
   def make_sim(with_geo: Boolean) =
-    (new PlaintextReader(map, with_geo)).load_simulation(this)
+    (new BinaryReader(map, with_geo)).load_simulation(this)
   def write(fn: String) = {
     // TODO 
   }
@@ -61,12 +55,7 @@ class DynamicScenario(map: String) extends Scenario {
 }
 
 object Scenario {
-  def load(fn: String): Scenario = {
-    val in = new ObjectInputStream(new FileInputStream(fn))
-    val scenario = in.readObject
-    in.close
-    return scenario.asInstanceOf[Scenario]
-  }
+  def load(fn: String) = Util.unserialize(fn).asInstanceOf[Scenario]
 }
 
 // The "Mk" prefix means "Make". These're small serializable classes to make
@@ -196,7 +185,7 @@ object IntersectionDistribution {
 object ScenarioTest {
   def main(args: Array[String]) = {
     val fn = args.head
-    val map = (new PlaintextReader(fn, false)).load_map
+    val map = (new BinaryReader(fn, false)).load_map
     val scenario = ScenarioMaker.default_scenario(map, fn)
     scenario.write("tmp")
     val copy = Scenario.load("tmp")
