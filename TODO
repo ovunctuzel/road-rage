@@ -78,9 +78,8 @@
 # Contraction Hierarchies
 - understand...
 - waypoints, in the meantime
-  = choose waypoints (TEST)
-  - router that answers queries using it
-  - get table saved/loaded
+  - agent route that uses it
+  - choose waypoints better
 
 # Intersection Policies
 - stop sign for only some directions
@@ -106,6 +105,7 @@
   - wacky cases of 2 side-by-side agents wanting to swap places?
 
 # UI
+- javafx?
 - 3D
 - visualize red/green lights better
 - cmdline switch to follow stuff or zoom in somewhere

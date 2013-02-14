@@ -764,10 +764,14 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
 
   def show_pathfinding() = {
     // contract: must be called when current_edge1 and 2 are set
-    val costs = chosen_edge2.get.directed_road.costs_to
-    val route = AbstractGraph.hillclimb(
-      costs, chosen_edge1.get.directed_road
-    ).asInstanceOf[List[DirectedRoad]]
+    val from = chosen_edge1.get.directed_road
+    val to = chosen_edge2.get.directed_road
+
+    // TODO need a common notion of routers
+    //val costs = to.costs_to
+    //val route = AbstractGraph.hillclimb(costs, from).asInstanceOf[List[DirectedRoad]]
+    val route = sim.router.pathfind(from, to).asInstanceOf[List[DirectedRoad]]
+
     // Filter and just remember the edges; the UI doesn't want to highlight
     // turns.
     // TODO pathfinding is by directed road now, not edge. just pick some edge

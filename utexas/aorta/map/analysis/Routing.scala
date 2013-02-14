@@ -71,4 +71,13 @@ object AbstractGraph {
         costs, start.succs.minBy(t => costs(t._1.id))._1
       )
     }
+
+  // TODO refactor, and return the reverse, since thats what client has to do.
+  def hillclimb_backwards(costs: Array[Double], end: AbstractEdge): List[AbstractEdge] =
+    costs(end.id) match {
+      case 0 => end :: Nil
+      case c => end :: hillclimb_backwards(
+        costs, end.preds.minBy(t => costs(t._1.id))._1
+      )
+    }
 }

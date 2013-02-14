@@ -29,7 +29,7 @@ abstract class Reader(fn: String, with_geometry: Boolean) {
   class TmpLink(val id: Int, val from: Int, val to: Int, val length: Double, val conflict_line: Line)
 
   def load_map() = load match {
-    case (r, e, v) => new Graph(r, e, v)
+    case (r, e, v) => new Graph(r, e, v, fn)
   }
   def load_simulation(scenario: Scenario) = load match {
     case (r, e, v) => new Simulation(r, e, v, scenario)

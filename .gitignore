@@ -10,6 +10,7 @@
 !synthetic.osm
 *.map
 *.svg
+*.router
 
 # tex stuff
 *.aux

@@ -16,6 +16,7 @@ import scala.collection.mutable.ArrayBuffer
 import utexas.aorta.{Util, RNG, cfg}
 
 abstract class Scenario() {
+  def map_fn(): String
   def make_sim(with_geo: Boolean): Simulation
   def write(fn: String): Unit
   def make_intersection(v: Vertex): Intersection
@@ -27,6 +28,7 @@ case class FixedScenario(map: String, agents: Array[MkAgent],
                          intersections: Array[MkIntersection])
   extends Scenario
 {
+  def map_fn = map
   def make_sim(with_geo: Boolean) =
     (new PlaintextReader(map, with_geo)).load_simulation(this)
   def write(fn: String) = {
@@ -42,6 +44,7 @@ case class FixedScenario(map: String, agents: Array[MkAgent],
 // To just load a map, dynamically populate the map with defaults.
 @SerialVersionUID(1)
 class DynamicScenario(map: String) extends Scenario {
+  def map_fn = map
   def make_sim(with_geo: Boolean) =
     (new PlaintextReader(map, with_geo)).load_simulation(this)
   def write(fn: String) = {

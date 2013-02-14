@@ -21,8 +21,9 @@ import utexas.aorta.analysis.{Stats, Active_Agents_Stat, Simulator_Speedup_Stat}
 
 class Simulation(roads: Array[Road], edges: Array[Edge],
                  vertices: Array[Vertex], scenario: Scenario)
-  extends Graph(roads, edges, vertices) with ListenerPattern[Sim_Event]
-  with EventQueue with AgentManager with VirtualTiming
+  extends Graph(roads, edges, vertices, scenario.map_fn)
+  with ListenerPattern[Sim_Event] with EventQueue with AgentManager
+  with VirtualTiming
 {
   Agent.sim = this  // let them get to us
   // TODO always do this, and forget this map/sim separation?
