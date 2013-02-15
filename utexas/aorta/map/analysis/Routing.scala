@@ -4,10 +4,20 @@
 
 package utexas.aorta.map.analysis
 
-import scala.collection.mutable.{PriorityQueue, HashSet}
+import scala.collection.mutable.{PriorityQueue, HashSet, ListBuffer}
+import com.graphhopper.storage.{LevelGraphStorage, RAMDirectory}
+import com.graphhopper.routing.ch.PrepareContractionHierarchies
+
+import utexas.aorta.map.{Graph, DirectedRoad}
 
 import utexas.aorta.Util
 
+abstract class Router(graph: Graph) {
+  def path(from: DirectedRoad, to: DirectedRoad): Seq[DirectedRoad]
+}
+
+// A convenient abstraction if we ever switch to pathfinding on
+// edges/roads/others.
 abstract class AbstractEdge {
   var id: Int // TODO var because fix_ids
   def length: Double
@@ -17,7 +27,14 @@ abstract class AbstractEdge {
   def preds: Seq[(AbstractEdge, Double)]
 }
 
-object AbstractGraph {
+class DijkstraRouter(graph: Graph) extends Router(graph) {
+  def costs_to(r: DirectedRoad) = dijkstras(
+    graph.directed_roads.size, r, (e: AbstractEdge) => e.succs
+  )
+
+  def path(from: DirectedRoad, to: DirectedRoad) =
+    hillclimb(costs_to(to), from).asInstanceOf[Seq[DirectedRoad]]
+
   // Precomputes a table of the cost from source to everything.
   def dijkstras(size: Int, source: AbstractEdge,
                 next: AbstractEdge => Seq[(AbstractEdge, Double)]): Array[Double] =
@@ -71,13 +88,25 @@ object AbstractGraph {
         costs, start.succs.minBy(t => costs(t._1.id))._1
       )
     }
+}
 
-  // TODO refactor, and return the reverse, since thats what client has to do.
-  def hillclimb_backwards(costs: Array[Double], end: AbstractEdge): List[AbstractEdge] =
-    costs(end.id) match {
-      case 0 => end :: Nil
-      case c => end :: hillclimb_backwards(
-        costs, end.preds.minBy(t => costs(t._1.id))._1
-      )
+class CHRouter(graph: Graph) extends Router(graph) {
+  private val gh = new LevelGraphStorage(
+    new RAMDirectory(s"maps/route_${graph.name}", true)
+  )
+  var usable = gh.loadExisting
+  private val algo = new PrepareContractionHierarchies().graph(gh).createAlgo
+
+  def path(from: DirectedRoad, to: DirectedRoad): Seq[DirectedRoad] = {
+    Util.assert_eq(usable, true)
+    val path = algo.calcPath(from.id, to.id).calcNodes
+    algo.clear
+
+    val result = new ListBuffer[DirectedRoad]()
+    var iter = path.iterator
+    while (iter.hasNext) {
+      result += graph.directed_roads(iter.next)
     }
+    return result.toList
+  }
 }

@@ -7,7 +7,7 @@ package utexas.aorta.map
 import scala.collection.mutable.{HashMap, PriorityQueue, HashSet}
 import java.io.Serializable
 
-import utexas.aorta.map.analysis.{WaypointGenerator, WaypointRouter, Waypoint}
+import utexas.aorta.map.analysis.{Router, DijkstraRouter, CHRouter}
 
 import utexas.aorta.{Util, Common}
 
@@ -23,10 +23,19 @@ class Graph(
     directed_roads(r.pos_group.id) = r.pos_group
     directed_roads(r.neg_group.id) = r.neg_group
   })
-  Util.log("Precomputing waypoints...")
-  val router = new WaypointRouter(
-    WaypointGenerator.choose_waypoints(this).map(r => new Waypoint(r))
-  )
+
+  @transient lazy val router: Router = choose_router
+  @transient lazy val dijkstra_router = new DijkstraRouter(this)
+
+  // Prefer CH if this map has been prerouted.
+  private def choose_router(): Router = {
+    val ch = new CHRouter(this)
+    if (ch.usable) {
+      return ch
+    } else {
+      return dijkstra_router
+    }
+  }
 
   def turns = vertices.foldLeft(List[Turn]())((l, v) => v.turns.toList ++ l)
   def traversables() = edges ++ turns

@@ -2,4 +2,4 @@
 
 . common
 
-scala -cp $CLASSPATH:$GRAPHHOPPER $JVM_OPTS utexas.aorta.tests.Debug $@
+scala -cp $CLASSPATH $JVM_OPTS utexas.aorta.tests.Debug $@

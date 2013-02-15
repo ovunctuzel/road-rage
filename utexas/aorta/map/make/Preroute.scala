@@ -33,7 +33,7 @@ object Preroute {
 
     // Precompute a contraction hierarchy.
     println("Computing contraction hierarchy...")
-    val timer = Common.timer("making ch")
+    val timer = Common.timer("CH computation")
     val prepare = new PrepareContractionHierarchies().graph(graph)
     prepare.doWork
     timer.stop

@@ -6,7 +6,7 @@ package utexas.aorta.map
 
 import java.io.Serializable
 
-import utexas.aorta.map.analysis.{AbstractEdge, AbstractGraph}
+import utexas.aorta.map.analysis.AbstractEdge
 import utexas.aorta.ui.Renderable
 
 import utexas.aorta.{cfg, RNG, Util}
@@ -146,11 +146,4 @@ class DirectedRoad(val road: Road, var id: Int, val dir: Direction.Value)
   def preds = edges.flatMap(e => e.prev_turns.map(t => (t.from.directed_road, t.length)))
 
   def next_roads = edges.flatMap(e => e.next_roads).toSet
-
-  def costs_to = AbstractGraph.dijkstras(
-    Road.num_directed_roads, this, (e: AbstractEdge) => e.preds
-  )
-  def costs_from = AbstractGraph.dijkstras(
-    Road.num_directed_roads, this, (e: AbstractEdge) => e.succs
-  )
 }

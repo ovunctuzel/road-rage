@@ -79,9 +79,8 @@
   - immutable construction is easy... have parent entity create child.
 
 # Contraction Hierarchies
-- better router interface
-- remove waypoints
-- load CH when it's available, else fallback
+- smaller problem possibly if verts=Vertex, edges=Roads (oneway or not).
+  - directed roads really that useful?
 - use CH routing for agents
   - next step cost? dist btwn nodes? OneToManyDIjkstraCH? shortestWeightMapTo?
 

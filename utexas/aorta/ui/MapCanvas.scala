@@ -16,7 +16,6 @@ import swing.Dialog
 import scala.language.implicitConversions
 
 import utexas.aorta.map._  // TODO yeah getting lazy.
-import utexas.aorta.map.analysis.AbstractGraph
 import utexas.aorta.sim.{Simulation, Agent, Sim_Event, EV_Signal_Change,
                          IntersectionType, RouteType}
 
@@ -767,10 +766,7 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
     val from = chosen_edge1.get.directed_road
     val to = chosen_edge2.get.directed_road
 
-    // TODO need a common notion of routers
-    //val costs = to.costs_to
-    //val route = AbstractGraph.hillclimb(costs, from)
-    val route = sim.graph.router.pathfind(from, to)
+    val route = sim.graph.router.path(from, to)
 
     // Filter and just remember the edges; the UI doesn't want to highlight
     // turns.

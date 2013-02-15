@@ -7,7 +7,6 @@ package utexas.aorta.sim
 import scala.collection.mutable.{HashMap => MutableMap}
 
 import utexas.aorta.map.{Edge, DirectedRoad, Traversable, Turn}
-import utexas.aorta.map.analysis.Waypoint
 
 import utexas.aorta.{Util, RNG, Common, cfg}
 
@@ -32,7 +31,7 @@ abstract class Route(val goal: DirectedRoad, rng: RNG) {
 // from.
 class DijkstraRoute(goal: DirectedRoad, rng: RNG) extends Route(goal, rng) {
   // TODO We used to assign a cost to every edge, now we go by directed road.
-  val costs = goal.costs_to
+  val costs = Common.sim.graph.dijkstra_router.costs_to(goal)
 
   // We don't care.
   def transition(from: Traversable, to: Traversable) = {}
@@ -52,69 +51,6 @@ class DijkstraRoute(goal: DirectedRoad, rng: RNG) extends Route(goal, rng) {
 
   def dump_info() = {
     Util.log(s"Static route to $goal")
-  }
-}
-
-class WaypointRoute(goal: DirectedRoad, rng: RNG) extends Route(goal, rng) {
-  // We don't know where we are until the first time a client pokes us
-  var waypt: Waypoint = null
-  // We can navigate to the waypoint by little O(1) lookups at each step, but
-  // once we reach the waypoint, we need to grab a path and follow it. Head of
-  // path is always the next step.
-  // TODO it'd almost be useful to polymorph this object as we go
-  var path: List[DirectedRoad] = Nil
-
-  def transition(from: Traversable, to: Traversable) = {
-    to match {
-      case e: Edge if path.nonEmpty => {
-        // TODO if we dont manage, this is actully fragile... would have to return
-        // to waypt!
-        if (path.head == e.directed_road) {
-          path = path.tail
-        } else {
-          throw new Exception(s"Not following route from $waypt well... wound up at $e instead of ${path.head}")
-        }
-      }
-      case _ =>
-    }
-  }
-
-  def pick_turn(e: Edge) =
-    if (path.isEmpty)
-      e.next_turns.minBy(t => waypt.costs_to_waypt(t.to.directed_road.id))
-    else
-      // TODO assume it exists
-      e.next_turns.find(t => path.head == t.to.directed_road).get
-
-  def pick_lane(from: Edge): Edge = {
-    if (waypt == null) {
-      waypt = Common.sim.graph.router.best_waypt(from.directed_road, goal)
-    }
-
-    // Have we reached the waypoint?
-    if (from.directed_road == waypt.base) {
-      path = waypt.path_from_waypt(goal).tail
-    }
-
-    // Break ties for the best lane overall by picking the lane closest to the
-    // current.
-    val target_lane =
-      if (path.isEmpty)
-        from.other_lanes.minBy(
-          e => (waypt.costs_to_waypt(pick_turn(e).to.directed_road.id), math.abs(from.lane_num - e.lane_num))
-        )
-      else
-        from.other_lanes.filter(e => e.next_roads.contains(path.head)).minBy(
-          e => math.abs(from.lane_num - e.lane_num)
-        )
-    // Get as close to target_lane as possible.
-    return from.adjacent_lanes.minBy(
-      e => math.abs(target_lane.lane_num - e.lane_num)
-    )
-  }
-
-  def dump_info() = {
-    Util.log(s"Static route to $goal using $waypt as a waypoint")
   }
 }
 

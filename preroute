@@ -2,4 +2,4 @@
 
 . common
 
-scala -cp $CLASSPATH:$GRAPHHOPPER $JVM_OPTS utexas.aorta.map.make.Preroute $@
+scala -cp $CLASSPATH $JVM_OPTS utexas.aorta.map.make.Preroute $@
