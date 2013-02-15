@@ -88,7 +88,7 @@ class WaypointRoute(goal: DirectedRoad, rng: RNG) extends Route(goal, rng) {
 
   def pick_lane(from: Edge): Edge = {
     if (waypt == null) {
-      waypt = Agent.sim.router.best_waypt(from.directed_road, goal)
+      waypt = Agent.sim.graph.router.best_waypt(from.directed_road, goal)
     }
 
     // Have we reached the waypoint?

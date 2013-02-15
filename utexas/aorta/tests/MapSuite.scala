@@ -21,7 +21,7 @@ object MapSuite {
       val output = Builder.convert(fn)
       println(s"Loading $output...")
       // TODO add tests to make sure the XML encoding still yields the same map
-      val graph = Graph.load(output, true)
+      val graph = Graph.load(output)
       println(s"Checking $output...")
       check_map(graph)
     }

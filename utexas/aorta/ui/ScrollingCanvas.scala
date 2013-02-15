@@ -31,7 +31,7 @@ abstract class ScrollingCanvas extends Component {
 
   // this defines the current viewing window. these values are arbitrary;
   // reset_window will clobber them.
-  var zoom = 1.0    // public for Snapshot
+  protected var zoom = 1.0
   protected var x_off, y_off = 0.0
   reset_window
 

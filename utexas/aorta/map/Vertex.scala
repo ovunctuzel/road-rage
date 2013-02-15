@@ -5,6 +5,7 @@
 package utexas.aorta.map
 
 import scala.collection.mutable.MutableList
+import java.io.Serializable
 
 import utexas.aorta.ui.Renderable
 
@@ -15,9 +16,12 @@ import utexas.aorta.Util
 import utexas.aorta.sim.Intersection
 
 // TODO var id due to tarjan
-class Vertex(val location: Coordinate, var id: Int) extends Renderable {
+@SerialVersionUID(1)
+class Vertex(val location: Coordinate, var id: Int) extends Renderable
+  with Serializable
+{
   // TODO this is a temporary solution
-  var intersection: Intersection = null
+  @transient var intersection: Intersection = null
 
   // TODO we could keep a map for faster lookup, sure, but determinism's cool
   // too.

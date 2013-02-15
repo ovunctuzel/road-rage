@@ -16,17 +16,21 @@ import utexas.aorta.map.{Graph, Road, Edge, Vertex, Turn, DirectedRoad}
 import utexas.aorta.{Util, cfg}
 import utexas.aorta.analysis.{Stats, Active_Agents_Stat, Simulator_Speedup_Stat}
 
-class Simulation(roads: Array[Road], edges: Array[Edge],
-                 vertices: Array[Vertex], scenario: Scenario)
-  extends Graph(roads, edges, vertices, scenario.map_fn)
-  with ListenerPattern[Sim_Event] with EventQueue with AgentManager
+// TODO take just a scenario, or graph and scenario?
+class Simulation(val graph: Graph, scenario: Scenario)
+  extends ListenerPattern[Sim_Event] with EventQueue with AgentManager
   with VirtualTiming
 {
   Agent.sim = this  // let them get to us
   // TODO always do this, and forget this map/sim separation?
-  traversables.foreach(t => t.queue = new Queue(t))
-  vertices.foreach(v => v.intersection = scenario.make_intersection(v))
+  graph.traversables.foreach(t => t.queue = new Queue(t))
+  graph.vertices.foreach(v => v.intersection = scenario.make_intersection(v))
   scenario.make_agents
+
+  // Provide convenient shortcut to graph stuff
+  def roads = graph.roads
+  def vertices = graph.vertices
+  def edges = graph.edges
 
   // TODO if we have a viral event that's making more and more agents, then we
   // need a time_limit

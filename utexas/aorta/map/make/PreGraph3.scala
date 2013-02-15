@@ -68,7 +68,7 @@ class PreGraph3(old_graph: PreGraph2) {
       v
     }
 
-  private def add_edge(r: Road, dir: Direction.Direction) = {
+  private def add_edge(r: Road, dir: Direction.Value) = {
     // TODO ahh counting constantly is so slow!
     val e = new Edge(edges.length, r, dir)
     edges += e
@@ -146,6 +146,8 @@ class PreGraph3(old_graph: PreGraph2) {
     // clone each structure and have a mapping from old to new... worth it?
     for ((e, id) <- edges.zipWithIndex) {
       e.id = id
+      e.next_turns.foreach(t => t.from_id = id)
+      e.prev_turns.foreach(t => t.to_id = id)
     }
     for ((v, id) <- vertices.zipWithIndex) {
       v.id = id

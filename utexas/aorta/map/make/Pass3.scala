@@ -16,7 +16,7 @@ import scala.collection.mutable.MutableList
 import utexas.aorta.map.{Road, Edge, Vertex, Turn, Line, Coordinate,
                          Traversable, DirectedRoad}
 
-import utexas.aorta.{Util, cfg}
+import utexas.aorta.{Util, Common, cfg}
 
 // TODO split this file up
 
@@ -35,6 +35,8 @@ class Pass3(old_graph: PreGraph2) {
   var dfs = 0   // counter numbering
 
   def run(): PreGraph3 = {
+    Common.edges = graph.edges.toArray
+
     for (r <- graph.roads) {
       roads_per_vert.addBinding(r.v1, r)
       roads_per_vert.addBinding(r.v2, r)

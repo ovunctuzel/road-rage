@@ -7,7 +7,6 @@ package utexas.aorta.map.analysis
 import java.io.Serializable
 
 import utexas.aorta.map.{Graph, Road, DirectedRoad}
-import utexas.aorta.sim.Agent
 
 import utexas.aorta.Util
 
@@ -22,9 +21,7 @@ object WaypointGenerator {
 }
 
 @SerialVersionUID(1)
-// TODO make these case classes, yo?
-class Waypoint(base_id: Int) extends Serializable {
-  def base = Agent.sim.directed_roads(base_id)
+class Waypoint(val base: DirectedRoad) extends Serializable {
   val costs_to_waypt = base.costs_to
   val costs_from_waypt = base.costs_from
 

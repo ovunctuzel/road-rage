@@ -131,12 +131,13 @@
 - truncate lengths, other doubles or more compactly write
 - why are traversable lines given not as point sequence?
 
-- improve map loading
-  - java serialization with case classes?
+    - get rid of map_fn
+    - convert to Common in all cases
+    - get rid of geometryless mode
     - why set_params?
-    - ditch Reader interface, probably
-    - inter-obj references are serialized just fine. serialize graph directly.
-    - serialize directed roads too, dont recreate
+    - too much being serialized? about 8mb too big...
+    - dont need to plumb scenarios to sim anymore,
+      but it could be useful for viral stuff?
 
 # Distributed Parallelization
 - meseoscopic in between regions? lockstep necessary?

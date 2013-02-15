@@ -4,6 +4,8 @@
 
 package utexas.aorta.map
 
+import java.io.Serializable
+
 import utexas.aorta.map.analysis.{AbstractEdge, AbstractGraph}
 import utexas.aorta.ui.Renderable
 
@@ -12,8 +14,9 @@ import utexas.aorta.{cfg, RNG, Util}
 // TODO subclass Edge for pos/neg.. seems easier for lots of things
 
 // TODO var id due to tarjan
-class Edge(var id: Int, val road: Road, val dir: Direction.Direction)
-  extends Traversable with Renderable with Ordered[Edge]
+@SerialVersionUID(1)
+class Edge(var id: Int, val road: Road, val dir: Direction.Value)
+  extends Traversable with Renderable with Ordered[Edge] with Serializable
 {
   var lane_num: Int = -1  // TODO needs to be initialized to be defined.. bleh.
 
@@ -114,8 +117,9 @@ object Direction extends Enumeration {
 }
 
 // Represent a group of directed edges on one road
-class DirectedRoad(val road: Road, val id: Int, val dir: Direction.Direction)
-  extends AbstractEdge
+@SerialVersionUID(1)
+class DirectedRoad(val road: Road, val id: Int, val dir: Direction.Value)
+  extends AbstractEdge with Serializable
 {
   override def toString = "%s's %s lanes".format(road, dir)
 

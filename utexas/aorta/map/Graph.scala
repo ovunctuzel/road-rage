@@ -5,49 +5,31 @@
 package utexas.aorta.map
 
 import scala.collection.mutable.{HashMap, PriorityQueue, HashSet}
-import java.io.{ObjectOutputStream, FileOutputStream, ObjectInputStream,
-                FileInputStream, File}
+import java.io.Serializable
 
-import utexas.aorta.map.make.BinaryReader
 import utexas.aorta.map.analysis.{WaypointGenerator, WaypointRouter, Waypoint}
 
-import utexas.aorta.Util
+import utexas.aorta.{Util, Common}
 
-class Graph(val roads: Array[Road], val edges: Array[Edge],
-            val vertices: Array[Vertex], map_fn: String)
+@SerialVersionUID(1)
+class Graph(
+  val roads: Array[Road], val edges: Array[Edge], val vertices: Array[Vertex],
+  val width: Double, val height: Double, val offX: Double, val offY: Double,
+  val scale: Double
+) extends Serializable
 {
   val directed_roads = Array.fill[DirectedRoad](Road.num_directed_roads)(null)
   roads.foreach(r => {
     directed_roads(r.pos_group.id) = r.pos_group
     directed_roads(r.neg_group.id) = r.neg_group
   })
-
-  // TODO dont want this to be lazy, but its a workaround so Agent.sim gets set
-  lazy val router = load_router
+  Util.log("Precomputing waypoints...")
+  val router = new WaypointRouter(
+    WaypointGenerator.choose_waypoints(this).map(r => new Waypoint(r))
+  )
 
   def turns = vertices.foldLeft(List[Turn]())((l, v) => v.turns.toList ++ l)
   def traversables() = edges ++ turns
-
-  // TODO replace with a general map serializer instead. dont take map_fn.
-  def load_router(): WaypointRouter = {
-    val fn = map_fn.replace("maps/", "maps/_").replace(".map", ".router")
-    if ((new File(fn)).exists) {
-      val in = new ObjectInputStream(new FileInputStream(fn))
-      val r = in.readObject
-      in.close
-      // TODO generalize the interface
-      return r.asInstanceOf[WaypointRouter]
-    } else {
-      println("Generating waypoints...")
-      val r = new WaypointRouter(
-        WaypointGenerator.choose_waypoints(this).map(r => new Waypoint(r.id))
-      )
-      val out = new ObjectOutputStream(new FileOutputStream(fn))
-      out.writeObject(r)
-      out.close
-      return r
-    }
-  }
 }
 
 // It's a bit funky, but the actual graph instance doesn't have this; we do.
@@ -72,7 +54,11 @@ object Graph {
     (x / scale) - xoff, ((height - y) / scale) - yoff
   )
 
-  // TODO deprecate this
-  def load(fn: String, with_geometry: Boolean) =
-    (new BinaryReader(fn, with_geometry)).load_map
+  def load(fn: String): Graph = {
+    Util.log(s"Loading $fn...")
+    val g = Util.unserialize(fn).asInstanceOf[Graph]
+    set_params(g.width, g.height, g.offX, g.offY, g.scale)
+    Common.edges = g.edges
+    return g
+  }
 }

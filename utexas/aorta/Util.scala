@@ -258,3 +258,9 @@ class Int_Cfgable(default: Int, descr: String, min: Int, max: Int) {
 class String_Cfgable(default: String) {
   var value = default
 }
+
+// Plumbing some stuff everywhere is hard, so share here sometimes.
+object Common {
+  // Because turns don't directly reference edges to break a serialization cycle
+  var edges: Array[utexas.aorta.map.Edge] = null
+}

@@ -5,7 +5,6 @@
 package utexas.aorta.sim
 
 import utexas.aorta.map.{Graph, Edge, Vertex, DirectedRoad}
-import utexas.aorta.map.make.BinaryReader
 import utexas.aorta.sim.policies._
 import utexas.aorta.sim.market._
 
@@ -14,8 +13,9 @@ import scala.collection.mutable.ArrayBuffer
 import utexas.aorta.{Util, RNG, cfg}
 
 abstract class Scenario() {
+  def make_sim(with_geo: Boolean) = new Simulation(Graph.load(map_fn), this)
+
   def map_fn(): String
-  def make_sim(with_geo: Boolean): Simulation
   def write(fn: String): Unit
   def make_intersection(v: Vertex): Intersection
   def make_agents(): Unit
@@ -27,8 +27,6 @@ case class FixedScenario(map: String, agents: Array[MkAgent],
   extends Scenario
 {
   def map_fn = map
-  def make_sim(with_geo: Boolean) =
-    (new BinaryReader(map, with_geo)).load_simulation(this)
   def write(fn: String) = Util.serialize(this, fn)
 
   def make_intersection(v: Vertex) = intersections(v.id).make(v)
@@ -39,8 +37,6 @@ case class FixedScenario(map: String, agents: Array[MkAgent],
 @SerialVersionUID(1)
 class DynamicScenario(map: String) extends Scenario {
   def map_fn = map
-  def make_sim(with_geo: Boolean) =
-    (new BinaryReader(map, with_geo)).load_simulation(this)
   def write(fn: String) = {
     // TODO 
   }
@@ -128,7 +124,8 @@ object ScenarioMaker {
   // TODO separate agent creation and intersection assignment a bit
   // TODO agent distribution... time, O/D distribution, wallet params
 
-  def default_scenario(graph: Graph, map_fn: String): Scenario = {
+  def default_scenario(map_fn: String): Scenario = {
+    val graph = Graph.load(map_fn)
     val rng = new RNG()
 
     val start_candidates = graph.edges.filter(e => e.ok_to_spawn).toArray
@@ -185,8 +182,7 @@ object IntersectionDistribution {
 object ScenarioTest {
   def main(args: Array[String]) = {
     val fn = args.head
-    val map = (new BinaryReader(fn, false)).load_map
-    val scenario = ScenarioMaker.default_scenario(map, fn)
+    val scenario = ScenarioMaker.default_scenario(fn)
     scenario.write("tmp")
     val copy = Scenario.load("tmp")
   }

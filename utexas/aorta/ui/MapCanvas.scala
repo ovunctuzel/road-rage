@@ -90,8 +90,8 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
 
   private val agent_colors = HashMap[Agent, Color]()
 
-  def canvas_width = Graph.width.toInt
-  def canvas_height = Graph.height.toInt
+  def canvas_width = sim.graph.width.toInt
+  def canvas_height = sim.graph.height.toInt
 
   // pre-render base roads.
   // TODO this was too ridiculous a sequence comprehension, so use a ListBuffer,
@@ -770,7 +770,7 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
     // TODO need a common notion of routers
     //val costs = to.costs_to
     //val route = AbstractGraph.hillclimb(costs, from)
-    val route = sim.router.pathfind(from, to)
+    val route = sim.graph.router.pathfind(from, to)
 
     // Filter and just remember the edges; the UI doesn't want to highlight
     // turns.

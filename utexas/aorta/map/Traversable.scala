@@ -7,16 +7,18 @@ package utexas.aorta.map
 // TODO I don't want this dependency, but at the moment, it leads to a great
 // perf boost due to dropping a pricy hash lookup
 import utexas.aorta.sim.Queue
-
 import utexas.aorta.ui.Renderable
+
+import java.io.Serializable
 
 import utexas.aorta.{cfg, Util}
 
 // Something with a sequence of lines forming a path and a way to get to more
 // somethings
-abstract class Traversable() {
+@SerialVersionUID(1)
+abstract class Traversable() extends Serializable {
   // TODO temporary perf fix
-  var queue: Queue = null
+  @transient var queue: Queue = null
 
   var lines: Array[Line] = null // till set_lines happens.
   def leads_to: List[Traversable]
@@ -63,6 +65,7 @@ abstract class Traversable() {
       }
     }
 
+    // TODO dont do this anymore!!!
     // Here's the deal. Normally this would be a bug, but actually,
     // map.make.Reader artificially bumps up tiny edges to a min of 0.1 meters
     // to avoid breaking lookahead. So just... cheat and claim they're at the
@@ -88,7 +91,10 @@ abstract class Traversable() {
 }
 
 // TODO noooo not var >_<
-class Line(var x1: Double, var y1: Double, var x2: Double, var y2: Double) {
+@SerialVersionUID(1)
+class Line(var x1: Double, var y1: Double, var x2: Double, var y2: Double)
+  extends Serializable
+{
   // Compute and store it once, since the math isn't free
   var length: Double = 0
   recompute_length
@@ -187,13 +193,13 @@ class Line(var x1: Double, var y1: Double, var x2: Double, var y2: Double) {
   )
 
   // this takes a point along a line and moves it back
-  private val shift_mag = 1.5 // TODO cfg
   // TODO y inversion problems still?!
   private def shift_pt(x: Double, y: Double, theta: Double, mag: Double) = new Coordinate(
     x + (mag * math.cos(theta)), y - (mag * math.sin(theta))
   )
-  def shift_fwd(mag: Double = shift_mag) = shift_pt(x1, y1, angle, mag)
-  def shift_back(mag: Double = shift_mag) = shift_pt(x2, y2, angle + math.Pi, mag)
+  // TODO cfg for shift_mag
+  def shift_fwd(mag: Double = 1.5) = shift_pt(x1, y1, angle, mag)
+  def shift_back(mag: Double = 1.5) = shift_pt(x2, y2, angle + math.Pi, mag)
 }
 
 case class Position(val on: Traversable, val dist: Double) extends Renderable {
