@@ -10,11 +10,13 @@ import utexas.aorta.sim.market._
 
 import scala.collection.mutable.ArrayBuffer
 
-import utexas.aorta.{Util, RNG, cfg}
+import utexas.aorta.{Util, RNG, Common, cfg}
 
 abstract class Scenario() {
-  def make_sim(with_geo: Boolean) = new Simulation(Graph.load(map_fn), this)
+  def make_sim = new Simulation(Graph.load(map_fn), this)
 
+  // Can't pass map_fn into the constructor since serialization needs a
+  // parameterless version
   def map_fn(): String
   def write(fn: String): Unit
   def make_intersection(v: Vertex): Intersection
@@ -70,11 +72,11 @@ case class MkSingleAgent(id: Int, birth_tick: Double, seed: Long,
 {
   def make() = {
     // TODO worry about order...
-    Agent.sim.schedule(birth_tick, make_agent)
+    Common.sim.schedule(birth_tick, make_agent)
   }
 
   private def make_agent(): Unit = {
-    val sim = Agent.sim
+    val sim = Common.sim
     val a = new Agent(id, route.make(sim), new RNG(seed), wallet)
     sim.ready_to_spawn += new SpawnAgent(a, sim.edges(start_edge), start_dist)
   }
@@ -90,7 +92,7 @@ case class MkAgentSpawner(frequency: Double, expires: Double, seed: Long)
   }
 
   private def spawn(): Unit = {
-    val sim = Agent.sim
+    val sim = Common.sim
     if (sim.tick < expires) {
       // Re-schedule ourselves
       sim.schedule(sim.tick + frequency, spawn)

@@ -19,7 +19,9 @@
 - agents and intersections could wake each other up now
 
 # Map Construction
+- turn geometry looks wacky again
 - keep orig GPS coords and only scale around for UI
+  - then obselete set_params
 - xml output too for non-aorta clients
 - clean up roads with just 2 roads
   - pass3, since doomed pruning makes new problems
@@ -130,14 +132,7 @@
 - throw away geometry in UI after converted to awt stuff
 - truncate lengths, other doubles or more compactly write
 - why are traversable lines given not as point sequence?
-
-    - get rid of map_fn
-    - convert to Common in all cases
-    - get rid of geometryless mode
-    - why set_params?
-    - too much being serialized? about 8mb too big...
-    - dont need to plumb scenarios to sim anymore,
-      but it could be useful for viral stuff?
+- serialize less, reconstruct more?
 
 # Distributed Parallelization
 - meseoscopic in between regions? lockstep necessary?

@@ -141,7 +141,7 @@ class Pass3(old_graph: PreGraph2) {
       // link corresponding lane numbers
       val r = roads.head
       for ((from, to) <- r.incoming_lanes(v) zip r.outgoing_lanes(v)) {
-        v.turns = Turn(next_id, from, to) :: v.turns
+        v.turns = new Turn(next_id, from.id, to.id) :: v.turns
       }
     }
 
@@ -150,7 +150,7 @@ class Pass3(old_graph: PreGraph2) {
     val incoming_roads = roads filter (_.incoming_lanes(v).length != 0)
     val outgoing_roads = roads filter (_.outgoing_lanes(v).length != 0)
 
-    def make_turn(pair: (Edge, Edge)) = Turn(next_id, pair._1, pair._2)
+    def make_turn(pair: (Edge, Edge)) = new Turn(next_id, pair._1.id, pair._2.id)
 
     // this is a Cartesian product.
     for (r1 <- incoming_roads; r2 <- outgoing_roads if r1 != r2) {
@@ -466,8 +466,7 @@ class Pass3(old_graph: PreGraph2) {
       return
     }
 
-    // TODO testing this just at one spot, for now
-    Util.log(s"$r is short, removing...")
+    /*Util.log(s"$r is short, removing...")
     // Find all turns leading to each edge of this bad road
     for (e <- r.all_lanes) {
       Util.log("  gonna end up doing " + (e.prev_turns.size * e.next_turns.size) +
@@ -489,6 +488,6 @@ class Pass3(old_graph: PreGraph2) {
     // TODO ever nix the vertices?
     graph.roads = graph.roads.filter(road => road != r)
     graph.edges = graph.edges.filter(e => e.road != r)
-    graph.fix_ids
+    graph.fix_ids*/
   }
 }

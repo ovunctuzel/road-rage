@@ -13,7 +13,7 @@ object Headless {
   var run_for: Double = -1.0
 
   def main(args: Array[String]) = {
-    val sim = Util.process_args(args, false, true)
+    val sim = Util.process_args(args, true)
 
     val timer = Profiling.timer("running the sim")
     Util.log("Starting simulation with time-steps of " + cfg.dt_s + "s")

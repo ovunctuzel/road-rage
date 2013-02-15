@@ -12,7 +12,7 @@ import utexas.aorta.ui.Renderable
 import utexas.aorta.analysis.{Profiling, Stats, Wasted_Time_Stat,
                               Total_Trip_Stat}
 
-import utexas.aorta.{Util, RNG, cfg}
+import utexas.aorta.{Util, RNG, Common, cfg}
 
 // TODO come up with a notion of dimension and movement capability. at first,
 // just use radius bounded by lane widths?
@@ -49,7 +49,7 @@ class Agent(val id: Int, val route: Route, val rng: RNG, wallet_spec: MkWallet) 
   def how_long_idle = if (idle_since == -1.0)
                         0
                       else
-                        Agent.sim.tick - idle_since
+                        Common.tick - idle_since
 
   // Track intersections where we've asked for and received a lease
   val turns_requested = new MutableSet[Intersection]()
@@ -105,12 +105,12 @@ class Agent(val id: Int, val route: Route, val rng: RNG, wallet_spec: MkWallet) 
     // To confirm determinism, enable and diff the logs. (Grep out
     // timing/profiling stuff)
     /*Util.log(
-      f"At ${Agent.sim.tick}%.1f, $this is at $at with speed ${speed}%.1f and accel ${target_accel}%.1f"
+      f"At ${Common.tick}%.1f, $this is at $at with speed ${speed}%.1f and accel ${target_accel}%.1f"
     )*/
 
     if (speed == 0.0 && target_accel == 0.0) {
       if (idle_since == -1.0) {
-        idle_since = Agent.sim.tick
+        idle_since = Common.tick
       }
       // short-circuit... we're not going anywhere.
       return false
@@ -120,7 +120,7 @@ class Agent(val id: Int, val route: Route, val rng: RNG, wallet_spec: MkWallet) 
     val old_dist = at.dist
 
     idle_since = if (speed == 0.0 && idle_since == -1.0)
-                   Agent.sim.tick   // we've started idling
+                   Common.tick   // we've started idling
                  else if (speed == 0.0)
                    idle_since   // keep same
                  else
@@ -282,14 +282,14 @@ class Agent(val id: Int, val route: Route, val rng: RNG, wallet_spec: MkWallet) 
   // Delegate to the queues and intersections that simulation manages
   def enter(t: Traversable, dist: Double): Position = {
     // Remember for stats
-    entered_last = (Agent.sim.tick, dist, speed)
+    entered_last = (Common.tick, dist, speed)
     t.queue.enter(this, dist)
   }
   def exit(t: Traversable) = {
     // If we were on an edge, how long were we idling about?
     t match {
       case e: Edge => {
-        val time_spent = Agent.sim.tick - entered_last._1
+        val time_spent = Common.tick - entered_last._1
         // suppose nobody was in our way because the intersection did a good
         // job, and it also let us go immediately. we should be able to traverse
         // this edge at _about_ its speed limit (accounting for acceleration).
@@ -307,7 +307,7 @@ class Agent(val id: Int, val route: Route, val rng: RNG, wallet_spec: MkWallet) 
           // TODO this number still seems off (it's not 0 even when nobody
           // stops, it's occasionally negative)
           Stats.record(
-            Wasted_Time_Stat(id, e.to.id, wasted_time, Agent.sim.tick)
+            Wasted_Time_Stat(id, e.to.id, wasted_time, Common.tick)
           )
         }
       }
@@ -388,7 +388,7 @@ class Agent(val id: Int, val route: Route, val rng: RNG, wallet_spec: MkWallet) 
     // don't forget to tell intersections. this is normally just
     // at.on.vert if at.on is a turn, but it could be more due to lookahead.
     cancel_intersection_reservations
-    Stats.record(Total_Trip_Stat(id, Agent.sim.tick - started_trip_at, total_dist))
+    Stats.record(Total_Trip_Stat(id, Common.tick - started_trip_at, total_dist))
   }
 
   // find the time to cover dist by accelerating first, then cruising at
@@ -417,8 +417,3 @@ class Agent(val id: Int, val route: Route, val rng: RNG, wallet_spec: MkWallet) 
 }
 
 class SpawnAgent(val a: Agent, val e: Edge, val dist: Double) {}
-
-// the singleton just lets us get at the simulation to look up queues
-object Agent {
-  var sim: Simulation = null
-}

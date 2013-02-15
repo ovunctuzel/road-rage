@@ -12,7 +12,7 @@ import utexas.aorta.sim.{Simulation, Intersection, Policy, Agent,
                          EV_Signal_Change}
 import utexas.aorta.sim.market.IntersectionOrdering
 
-import utexas.aorta.{Util, cfg}
+import utexas.aorta.{Util, Common, cfg}
 
 // A phase-based light.
 class SignalPolicy(intersection: Intersection,
@@ -24,7 +24,7 @@ class SignalPolicy(intersection: Intersection,
   ordering.add(current_phase)
 
   // Tracks when the current phase began
-  private var started_at = Agent.sim.tick
+  private var started_at = Common.tick
   // accumulated delay for letting vehicles finish turns
   private var delay = 0.0
   private val accepted_agents = new MutableSet[Agent]
@@ -35,20 +35,20 @@ class SignalPolicy(intersection: Intersection,
 
     // Track delay if overtime is ending
     if (in_overtime && accepted_agents.isEmpty) {
-      delay += Agent.sim.tick - end_at
+      delay += Common.tick - end_at
     }
 
     // Switch to the next phase
-    if (Agent.sim.tick >= end_at && accepted_agents.isEmpty) {
+    if (Common.tick >= end_at && accepted_agents.isEmpty) {
       current_phase = ordering.shift_next(waiting_agents).get
       // Cycle through the phases
       ordering.add(current_phase)
-      started_at = Agent.sim.tick
+      started_at = Common.tick
       // TODO could account for delay and try to get back on schedule by
       // decreasing duration
 
       // callback for UI usually
-      Agent.sim.tell_listeners(EV_Signal_Change(current_phase.turns.toSet))
+      Common.sim.tell_listeners(EV_Signal_Change(current_phase.turns.toSet))
     }
 
     // Accept new agents into the current phase
@@ -86,8 +86,8 @@ class SignalPolicy(intersection: Intersection,
   // Ideally, ignoring overtime for slow agents.
   private def end_at = started_at + current_phase.duration
   // May be negative if we're in overtime
-  private def time_left = end_at - Agent.sim.tick
-  private def in_overtime = Agent.sim.tick > end_at
+  private def time_left = end_at - Common.tick
+  private def in_overtime = Common.tick > end_at
 
   private def setup_phases(): List[Phase] = {
     val phase_ls = Phase.phases_for(intersection)

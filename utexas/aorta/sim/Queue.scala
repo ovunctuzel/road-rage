@@ -10,7 +10,7 @@ import scala.collection.JavaConversions.collectionAsScalaIterable
 
 import utexas.aorta.map.{Edge, Traversable, Position}
 
-import utexas.aorta.{Util, cfg}
+import utexas.aorta.{Util, Common, cfg}
 
 // TODO introduce a notion of dimension
 // TODO logs -> asserts once things work right
@@ -34,9 +34,9 @@ class Queue(t: Traversable) {
 
   // Called lazily.
   def start_step() = {
-    if (last_tick != Agent.sim.tick) {
+    if (last_tick != Common.tick) {
       prev_agents = agents.values.toSet
-      last_tick = Agent.sim.tick
+      last_tick = Common.tick
     }
   }
   
@@ -101,7 +101,7 @@ class Queue(t: Traversable) {
     // If we're not entering at the end of the queue, something _could_ be odd,
     // so check it.
     if (closest_behind(dist).isDefined) {
-      Agent.sim.active_queues += this
+      Common.sim.active_queues += this
     }
 
     return Position(t, dist)
@@ -113,7 +113,7 @@ class Queue(t: Traversable) {
     // We should leave from the front of the queue generally, unless
     // lane-changing
     if (agents.firstEntry.getValue != a) {
-      Agent.sim.active_queues += this
+      Common.sim.active_queues += this
     }
 
     agents.remove(-old_dist)

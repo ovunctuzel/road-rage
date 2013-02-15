@@ -11,7 +11,7 @@ import scala.collection.mutable.TreeSet
 import utexas.aorta.sim.policies._
 import utexas.aorta.map.{Vertex, Turn}
 
-import utexas.aorta.{Util, cfg}
+import utexas.aorta.{Util, Common, cfg}
 import utexas.aorta.analysis.{Stats, Intersection_Throughput_Stat}
 
 // Common stuff goes here, particular implementations are in utexas.aorta.sim.policies
@@ -70,7 +70,7 @@ class Intersection(val v: Vertex, policy_type: IntersectionType.Value,
       // It's not really that much better to do the checking in-place and only
       // atomic-check when there could be a problem.
       if (turns.size == 1) {
-        Agent.sim.active_intersections += this
+        Common.sim.active_intersections += this
       }
 
       turns(t) = 0
@@ -81,8 +81,8 @@ class Intersection(val v: Vertex, policy_type: IntersectionType.Value,
       // code hasn't finished moving them.
       Util.log("!!! %s illegally entered intersection, going %f m/s".format(a, a.speed))
       Util.log("  Illegal entry was near " + t.from + " and " + t + " (vert " + t.from.to.id + ")")
-      Util.log("  Origin lane length: " + t.from.length + "; time " + Agent.sim.tick)
-      Util.log("  Happened at " + Agent.sim.tick)
+      Util.log("  Origin lane length: " + t.from.length + "; time " + Common.tick)
+      Util.log("  Happened at " + Common.tick)
       sys.exit
     }
   }
@@ -93,7 +93,7 @@ class Intersection(val v: Vertex, policy_type: IntersectionType.Value,
       turns -= t
       // Potentially we now don't care...
       if (turns.size == 1) {
-        Agent.sim.active_intersections -= this
+        Common.sim.active_intersections -= this
       }
     }
     policy.handle_exit(a, t)
@@ -102,7 +102,7 @@ class Intersection(val v: Vertex, policy_type: IntersectionType.Value,
   def count_stat() = {
     // TODO I'm also not convinced this is the best way to measure this idea.
     Stats.record(Intersection_Throughput_Stat(
-      v.id, stat_requested, stat_entered, Agent.sim.tick
+      v.id, stat_requested, stat_entered, Common.tick
     ))
     stat_requested = 0
     stat_entered = 0
@@ -129,7 +129,7 @@ abstract class Policy(val intersection: Intersection) {
   }
 
   def react() = {
-    if (Agent.sim.number_of_ticks % cfg.thruput_stat_time == 0) {
+    if (Common.sim.number_of_ticks % cfg.thruput_stat_time == 0) {
       intersection.count_stat
     }
     react_body

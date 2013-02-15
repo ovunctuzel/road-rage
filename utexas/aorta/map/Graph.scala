@@ -41,6 +41,7 @@ object Graph {
   var scale = 0.0
 
   // this MUST be set before world_to_gps is called.
+  // TODO get rid of this approach once GPS coordinates always retained
   def set_params(w: Double, h: Double, x: Double, y: Double, s: Double) = {
     width = w
     height = h

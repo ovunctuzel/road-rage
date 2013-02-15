@@ -11,8 +11,7 @@ import utexas.aorta.Util
 // Misc, temporary stuff
 object Debug {
   def main(args: Array[String]) = {
-    val with_geo = false
-    val sim = Util.process_args(args, with_geo, false)
+    val sim = Util.process_args(args, false)
 
     degenerate_verts(sim)
     doomed_stuff(sim)

@@ -63,7 +63,7 @@ object Util {
     return (initial_speed * actual_time) + (0.5 * accel * (actual_time * actual_time))
   }
 
-  def process_args(args: Array[String], with_geo: Boolean, shutdown: Boolean): Simulation =
+  def process_args(args: Array[String], shutdown: Boolean): Simulation =
   {
     if (args.size % 2 != 0) {
       // TODO better usage
@@ -80,8 +80,6 @@ object Util {
     var load_map = ""
     var load_scenario = ""
   
-    var with_geometry = with_geo  // allow override with parameters
-
     val cfg_prefix = """--cfg_(\w+)""".r
     for ((key, value) <- keys.zip(vals)) {
       // TODO multiple different ways of saying 'true'
@@ -90,7 +88,6 @@ object Util {
         case "--scenario" => { load_scenario = value }
         case "--print_stats" => { Stats.use_print = value == "1" }
         case "--log_stats" => { Stats.use_log = value == "1" }
-        case "--use_geo" => { with_geometry = value == "1" }
         // TODO case "--run_for" => { run_for = value.toDouble }
         case cfg_prefix(param) => cfg.get_param_method(param) match {
           case Some(method) => {
@@ -113,9 +110,9 @@ object Util {
     //Stats.setup_experiment(exp_name)  TODO rethink this stuff too
 
     return if (load_scenario.nonEmpty)
-      Scenario.load(load_scenario).make_sim(with_geometry)
+      Scenario.load(load_scenario).make_sim
     else
-      (new DynamicScenario(load_map)).make_sim(with_geometry)
+      (new DynamicScenario(load_map)).make_sim
   }
 
   def serialize(obj: Any, fn: String) = {
@@ -263,4 +260,7 @@ class String_Cfgable(default: String) {
 object Common {
   // Because turns don't directly reference edges to break a serialization cycle
   var edges: Array[utexas.aorta.map.Edge] = null
+
+  var sim: utexas.aorta.sim.Simulation = null
+  def tick = sim.tick
 }

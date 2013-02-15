@@ -9,7 +9,7 @@ import scala.collection.mutable.{HashMap => MutableMap}
 import utexas.aorta.map.{Edge, DirectedRoad, Traversable, Turn}
 import utexas.aorta.map.analysis.Waypoint
 
-import utexas.aorta.{Util, RNG, cfg}
+import utexas.aorta.{Util, RNG, Common, cfg}
 
 // Get a client to their goal by any means possible.
 abstract class Route(val goal: DirectedRoad, rng: RNG) {
@@ -88,7 +88,7 @@ class WaypointRoute(goal: DirectedRoad, rng: RNG) extends Route(goal, rng) {
 
   def pick_lane(from: Edge): Edge = {
     if (waypt == null) {
-      waypt = Agent.sim.graph.router.best_waypt(from.directed_road, goal)
+      waypt = Common.sim.graph.router.best_waypt(from.directed_road, goal)
     }
 
     // Have we reached the waypoint?

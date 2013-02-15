@@ -13,7 +13,7 @@ import scala.io.Source
 
 import utexas.aorta.map.{Graph, Road, Edge, Vertex, Turn, DirectedRoad}
 
-import utexas.aorta.{Util, cfg}
+import utexas.aorta.{Util, Common, cfg}
 import utexas.aorta.analysis.{Stats, Active_Agents_Stat, Simulator_Speedup_Stat}
 
 // TODO take just a scenario, or graph and scenario?
@@ -21,7 +21,8 @@ class Simulation(val graph: Graph, scenario: Scenario)
   extends ListenerPattern[Sim_Event] with EventQueue with AgentManager
   with VirtualTiming
 {
-  Agent.sim = this  // let them get to us
+  Common.sim = this
+
   // TODO always do this, and forget this map/sim separation?
   graph.traversables.foreach(t => t.queue = new Queue(t))
   graph.vertices.foreach(v => v.intersection = scenario.make_intersection(v))
