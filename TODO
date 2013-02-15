@@ -20,6 +20,7 @@
 
 # Map Construction
 - keep orig GPS coords and only scale around for UI
+- xml output too for non-aorta clients
 - clean up roads with just 2 roads
   - pass3, since doomed pruning makes new problems
   - but keep pass 2 version? seems to prevent some stuff from getting doomed!
@@ -128,21 +129,14 @@
 - sleep less in UI
 - throw away geometry in UI after converted to awt stuff
 - truncate lengths, other doubles or more compactly write
+- why are traversable lines given not as point sequence?
 
 - improve map loading
   - java serialization with case classes?
-    - get rid of old reader/writer.
     - why set_params?
     - ditch Reader interface, probably
     - inter-obj references are serialized just fine. serialize graph directly.
-
-
-    - maybe still xml. argument for beans or protobufs?
-
-
-  (relevant anymore?)
-  - scanner?
-  - why are traversable lines given not as point sequence?
+    - serialize directed roads too, dont recreate
 
 # Distributed Parallelization
 - meseoscopic in between regions? lockstep necessary?

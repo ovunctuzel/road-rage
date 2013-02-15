@@ -4,8 +4,6 @@
 
 package utexas.aorta.map
 
-import java.io.FileWriter
-
 import utexas.aorta.map.analysis.{AbstractEdge, AbstractGraph}
 import utexas.aorta.ui.Renderable
 
@@ -64,23 +62,6 @@ class Edge(var id: Int, val road: Road, val dir: Direction.Direction)
 
   def from: Vertex = if (dir == Direction.POS) road.v1 else road.v2
   def to: Vertex   = if (dir == Direction.POS) road.v2 else road.v1
-
-  def to_xml(out: FileWriter) = {
-    out.write(
-      "  <edge id=\"" + id + "\" road=\"" + road.id + "\" dir=\"" + dir
-      + "\" laneNum=\"" + lane_num + "\" length=\"" + length + "\">\n"
-    )
-    lines.foreach(l => l.to_xml(out))
-    out.write("  </edge>\n")
-  }
-
-  def to_plaintext(out: FileWriter) = {
-    out.write(
-      id + "," + road.id + "," + dir + "," + lane_num + "," + length + ":"
-    )
-    lines.foreach(l => l.to_plaintext(out))
-    out.write("\n")
-  }
 
   //////// Geometry. TODO separate somewhere?
 

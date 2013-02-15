@@ -4,8 +4,6 @@
 
 package utexas.aorta.map.make
 
-import java.io.FileWriter
-
 import scala.collection.mutable.HashMap
 import scala.collection.mutable.MutableList
 
@@ -155,38 +153,5 @@ class PreGraph3(old_graph: PreGraph2) {
     for ((r, id) <- roads.zipWithIndex) {
       r.id = id
     }
-  }
-
-  // TODO pregraph1 should have a 'data' structure or something
-  // it's important to dump vertices first, since roads need them. and edges
-  // need roads, so the order works out well.
-  // scala has nice xml construction, but it's a memory hog.
-  def to_xml(out: FileWriter, dat: PreGraph1) = {
-    out.write(
-      "<graph width=\"" + dat.width + "\" height=\"" + dat.height
-      + "\" xoff=\"" + dat.offX + "\" yoff=\"" + dat.offY
-      + "\" scale=\"" + dat.scale + "\" roads=\"" + roads.length
-      + "\" edges=\"" + edges.length + "\" verts=\"" + vertices.length 
-      + "\">\n"
-    )
-    vertices.foreach(v => v.to_xml(out))
-    roads.foreach(r => r.to_xml(out))
-    edges.foreach(e => e.to_xml(out))
-    out.write("</graph>\n")
-  }
-
-  def to_plaintext(out: FileWriter, dat: PreGraph1) = {
-    // CSV header line
-    out.write(
-      dat.width + "," + dat.height + "," + dat.offX + "," + dat.offY +
-      "," + dat.scale + "," + roads.length + "," + edges.length + "," +
-      vertices.length + "\n"
-    )
-    out.write("---vertices---\n")
-    vertices.foreach(v => v.to_plaintext(out))
-    out.write("---roads---\n")
-    roads.foreach(r => r.to_plaintext(out))
-    out.write("---edges---\n")
-    edges.foreach(e => e.to_plaintext(out))
   }
 }

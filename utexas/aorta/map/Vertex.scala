@@ -4,8 +4,6 @@
 
 package utexas.aorta.map
 
-import java.io.FileWriter
-
 import scala.collection.mutable.MutableList
 
 import utexas.aorta.ui.Renderable
@@ -42,24 +40,6 @@ class Vertex(val location: Coordinate, var id: Int) extends Renderable {
 
   // Priority of a vertex is the sum of speed limits of roads surrounding it
   def get_priority = roads.foldLeft(0.0)((a,b) => a + b.speed_limit)
-
-  // Somewhere due to unordered hashes, the turns list winds up in an
-  // inconsistent order. To make diffs of output be the same for the same code,
-  // impose an ordering on the turns, sorting first by the 'from' edge and then
-  // the 'to' edge.
-  def to_xml(out: FileWriter) = {
-    out.write(
-      "  <vertex id=\"" + id + "\" x=\"" + location.x + "\" y=\"" + location.y + "\">\n"
-    )
-    turns.sortBy(t => (t.from.id, t.to.id)).foreach(t => t.to_xml(out))
-    out.write("  </vertex>\n")
-  }
-
-  def to_plaintext(out: FileWriter) = {
-    out.write(id + "," + location.x + "," + location.y + ":")
-    turns.sortBy(t => (t.from.id, t.to.id)).foreach(t => t.to_plaintext(out))
-    out.write("\n")
-  }
 
   override def toString = "[V" + id + "]"
 

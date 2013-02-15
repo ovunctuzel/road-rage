@@ -8,8 +8,6 @@ package utexas.aorta.map
 // perf boost due to dropping a pricy hash lookup
 import utexas.aorta.sim.Queue
 
-import java.io.FileWriter
-
 import utexas.aorta.ui.Renderable
 
 import utexas.aorta.{cfg, Util}
@@ -126,19 +124,6 @@ class Line(var x1: Double, var y1: Double, var x2: Double, var y2: Double) {
   def end = new Coordinate(x2, y2)
 
   override def toString = "(%f, %f) ---> (%f, %f)".format(x1, y1, x2, y2)
-
-  def to_xml(out: FileWriter) = {
-    out.write(
-      "    <line x1=\"" + x1 + "\" y1=\"" + y1 + "\" x2=\"" + x2 + "\" y2=\""
-      + y2 + "\"/>\n"
-    )
-  }
-
-  def to_plaintext(out: FileWriter) = {
-    out.write(
-      x1 + "," + y1 + "," + x2 + "," + y2 + ";"
-    )
-  }
 
   // assuming the two lines share an origin
   def dot(l2: Line) = (x2 - x1) * (l2.x2 - l2.x1) + (y2 - y1) * (l2.y2 - l2.y1)

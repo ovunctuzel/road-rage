@@ -4,8 +4,6 @@
 
 package utexas.aorta.map
 
-import java.io.FileWriter
-
 import scala.collection.mutable.HashSet
 
 // This constructor eschews geometry, taking a length and two points for
@@ -18,22 +16,6 @@ class Turn(
   set_length(length)
 
   override def compare(other: Turn) = id.compare(other.id)
-
-  // id is just for comparisons, not indexing
-  def to_xml(out: FileWriter) = {
-    out.write(
-      "    <link from=\"" + from.id + "\" to=\"" + to.id
-      + "\" length=\"" + length + "\" id=\"" + id + "\"/>\n"
-    )
-  }
-
-  def to_plaintext(out: FileWriter) = {
-    out.write(
-      from.id + "," + to.id + "," + + length + "," + id +
-      "," + conflict_line.x1 + "," + conflict_line.y1 + "," + conflict_line.x2 +
-      "," + conflict_line.y2 + ";"
-    )
-  }
 
   override def toString = "turn[" + id + "](" + from + ", " + to + ")"
   // Short form is nice.

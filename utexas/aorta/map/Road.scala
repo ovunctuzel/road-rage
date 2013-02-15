@@ -4,8 +4,6 @@
 
 package utexas.aorta.map
 
-import java.io.FileWriter
-
 import scala.collection.mutable.MutableList
 
 import utexas.aorta.ui.Renderable
@@ -46,27 +44,6 @@ class Road(var id: Int, val length: Double, val name: String,
   def oneway_lanes = if (pos_lanes.length == 0) neg_lanes else pos_lanes
 
   def num_lanes = pos_lanes.length + neg_lanes.length
-
-  def to_xml(out: FileWriter) = {
-    out.write(
-      "  <road name=\"" + scala.xml.Utility.escape(name) + "\" type=\"" + road_type
-      + "\" osmid=\"" + osm_id + "\" v1=\"" + v1.id + "\" v2=\"" + v2.id
-      + "\" length=\"" + length
-      + "\" id=\"" + id + "\">\n"
-    )
-    points.foreach(pt => pt.to_xml(out))
-    out.write("</road>\n")
-  }
-
-  def to_plaintext(out: FileWriter) = {
-    out.write(
-      // TODO worry about names with commas!
-      scala.xml.Utility.escape(name) + "," + road_type + "," + osm_id + "," +
-      v1.id + "," + v2.id + "," + length + "," + id + ":"
-    )
-    points.foreach(pt => pt.to_plaintext(out))
-    out.write("\n")
-  }
 
   override def toString = name + " [R" + id + "]"
   

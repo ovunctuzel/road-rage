@@ -4,8 +4,6 @@
 
 package utexas.aorta.map
 
-import java.io.FileWriter
-
 /*
  * A vital note about coordinate systems:
  * - (longitude, latitude) corresponds to (x, y) where y increases upwards
@@ -29,14 +27,6 @@ class Coordinate(val x: Double, val y: Double) extends Ordered[Coordinate] {
                                               x.compare(other.x)
   // pretty printer
   override def toString = "(%f, %f)".format(x, y)
-
-  def to_xml(out: FileWriter) = {
-    out.write("    <pt x=\"" + x + "\" y=\"" + y + "\"/>\n")
-  }
-
-  def to_plaintext(out: FileWriter) = {
-    out.write(x + "," + y + ";")
-  }
 
   def +(other: Coordinate) = new Coordinate(x + other.x, y + other.y)
   def dist_to(o: Coordinate) = Coordinate.gps_dist_in_meters(

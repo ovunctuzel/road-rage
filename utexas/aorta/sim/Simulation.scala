@@ -10,8 +10,6 @@ import scala.collection.mutable.{MutableList, PriorityQueue, ListBuffer}
 import scala.collection.mutable.{HashSet => MutableSet}
 import java.io.FileWriter
 import scala.io.Source
-import scala.xml.MetaData
-import scala.xml.pull._
 
 import utexas.aorta.map.{Graph, Road, Edge, Vertex, Turn, DirectedRoad}
 
