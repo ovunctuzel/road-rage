@@ -1,3 +1,5 @@
 #!/bin/bash
 
-scala -cp .build utexas.aorta.tests.MapSuite $@
+. common
+
+scala -cp $CLASSPATH $JVM_OPTS utexas.aorta.tests.MapSuite $@

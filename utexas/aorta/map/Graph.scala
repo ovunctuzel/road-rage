@@ -15,7 +15,7 @@ import utexas.aorta.{Util, Common}
 class Graph(
   val roads: Array[Road], val edges: Array[Edge], val vertices: Array[Vertex],
   val width: Double, val height: Double, val offX: Double, val offY: Double,
-  val scale: Double
+  val scale: Double, val name: String
 ) extends Serializable
 {
   val directed_roads = Array.fill[DirectedRoad](Road.num_directed_roads)(null)

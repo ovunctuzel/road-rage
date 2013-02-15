@@ -9,7 +9,7 @@ import scala.collection.mutable.{PriorityQueue, HashSet}
 import utexas.aorta.Util
 
 abstract class AbstractEdge {
-  val id: Int
+  var id: Int // TODO var because fix_ids
   def length: Double
   // List and not Set means there could be multiple transitions, with possibly
   // different weights.

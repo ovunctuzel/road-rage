@@ -118,7 +118,8 @@ object Direction extends Enumeration {
 
 // Represent a group of directed edges on one road
 @SerialVersionUID(1)
-class DirectedRoad(val road: Road, val id: Int, val dir: Direction.Value)
+// TODO var id because things get chopped up
+class DirectedRoad(val road: Road, var id: Int, val dir: Direction.Value)
   extends AbstractEdge with Serializable
 {
   override def toString = "%s's %s lanes".format(road, dir)

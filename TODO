@@ -79,11 +79,11 @@
   - immutable construction is easy... have parent entity create child.
 
 # Contraction Hierarchies
-- understand...
-- waypoints, in the meantime
-  - handle when we dont follow the waypt->goal path well
-  - choose waypoints better
 - better router interface
+- remove waypoints
+- load CH when it's available, else fallback
+- use CH routing for agents
+  - next step cost? dist btwn nodes? OneToManyDIjkstraCH? shortestWeightMapTo?
 
 # Intersection Policies
 - stop sign for only some directions

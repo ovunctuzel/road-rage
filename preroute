@@ -1,0 +1,5 @@
+#!/bin/bash
+
+. common
+
+scala -cp $CLASSPATH:$GRAPHHOPPER $JVM_OPTS utexas.aorta.map.make.Preroute $@

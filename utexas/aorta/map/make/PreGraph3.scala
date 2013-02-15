@@ -152,8 +152,14 @@ class PreGraph3(old_graph: PreGraph2) {
     for ((v, id) <- vertices.zipWithIndex) {
       v.id = id
     }
+    var cnt = 0
     for ((r, id) <- roads.zipWithIndex) {
       r.id = id
+      r.pos_group.id = cnt
+      cnt += 1
+      r.neg_group.id = cnt
+      cnt += 1
     }
+    Road.num_directed_roads = cnt
   }
 }

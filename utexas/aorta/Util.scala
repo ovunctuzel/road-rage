@@ -256,11 +256,14 @@ class String_Cfgable(default: String) {
   var value = default
 }
 
-// Plumbing some stuff everywhere is hard, so share here sometimes.
+// Plumbing some stuff everywhere is hard, so share here sometimes. Plus,
+// convenience methods.
 object Common {
   // Because turns don't directly reference edges to break a serialization cycle
   var edges: Array[utexas.aorta.map.Edge] = null
 
   var sim: utexas.aorta.sim.Simulation = null
   def tick = sim.tick
+
+  def timer(name: String) = utexas.aorta.analysis.Profiling.timer(name)
 }

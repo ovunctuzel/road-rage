@@ -1,3 +1,5 @@
 #!/bin/bash
 
-scala -cp .build utexas.aorta.map.make.Builder $@
+. common
+
+scala -cp $CLASSPATH $JVM_OPTS utexas.aorta.map.make.Builder $@

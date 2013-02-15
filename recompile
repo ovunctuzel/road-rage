@@ -1,10 +1,9 @@
 #!/bin/bash
 
+. common
+
 SRCS=`find utexas/ -name '*.scala' -print | xargs`
-SWING="/usr/share/java/scala-swing.jar"
-#SWING="/usr/share/scala/lib/scala-swing.jar"
-JCHART2D="jchart2d/jchart2d-3.2.2.jar"
-BUILD_OPTS="-d .build -deprecation -unchecked -feature -cp $SWING:$JCHART2D"
+BUILD_OPTS="-d .build -deprecation -unchecked -feature -cp $SWING:$JCHART:$GRAPHHOPPER"
 FAST=""
 #FAST="-Xelide-below 3000"   # disables asserts, timers, and stats
 
@@ -15,5 +14,5 @@ scalac $BUILD_OPTS $FAST $SRCS
 
 # How did the compile go?
 if [[ $? != "0" ]]; then
-    exit 1
+  exit 1
 fi

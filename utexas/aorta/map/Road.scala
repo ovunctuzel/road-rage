@@ -97,6 +97,7 @@ object Road {
       (a, b) => a + b.length
     )
 
+  // PreGraph3's fix_ids also mods us.
   var num_directed_roads = 0
   def next_directed_id(): Int = {
     val id = num_directed_roads
