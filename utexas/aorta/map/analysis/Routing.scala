@@ -13,7 +13,8 @@ import utexas.aorta.map.{Graph, DirectedRoad}
 import utexas.aorta.Util
 
 abstract class Router(graph: Graph) {
-  def path(from: DirectedRoad, to: DirectedRoad): Seq[DirectedRoad]
+  // Doesn't include 'from' as the first step
+  def path(from: DirectedRoad, to: DirectedRoad): List[DirectedRoad]
 }
 
 // A convenient abstraction if we ever switch to pathfinding on
@@ -29,11 +30,11 @@ abstract class AbstractEdge {
 
 class DijkstraRouter(graph: Graph) extends Router(graph) {
   def costs_to(r: DirectedRoad) = dijkstras(
-    graph.directed_roads.size, r, (e: AbstractEdge) => e.succs
+    graph.directed_roads.size, r, (e: AbstractEdge) => e.preds
   )
 
   def path(from: DirectedRoad, to: DirectedRoad) =
-    hillclimb(costs_to(to), from).asInstanceOf[Seq[DirectedRoad]]
+    hillclimb(costs_to(to), from).tail.asInstanceOf[List[DirectedRoad]]
 
   // Precomputes a table of the cost from source to everything.
   def dijkstras(size: Int, source: AbstractEdge,
@@ -97,16 +98,17 @@ class CHRouter(graph: Graph) extends Router(graph) {
   var usable = gh.loadExisting
   private val algo = new PrepareContractionHierarchies().graph(gh).createAlgo
 
-  def path(from: DirectedRoad, to: DirectedRoad): Seq[DirectedRoad] = {
+  def path(from: DirectedRoad, to: DirectedRoad): List[DirectedRoad] = {
     Util.assert_eq(usable, true)
-    val path = algo.calcPath(from.id, to.id).calcNodes
+    val path = algo.calcPath(from.id, to.id)
+    Util.assert_eq(path.found, true)
     algo.clear
 
     val result = new ListBuffer[DirectedRoad]()
-    var iter = path.iterator
+    var iter = path.calcNodes.iterator
     while (iter.hasNext) {
       result += graph.directed_roads(iter.next)
     }
-    return result.toList
+    return result.tail.toList
   }
 }

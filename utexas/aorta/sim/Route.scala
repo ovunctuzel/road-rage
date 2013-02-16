@@ -25,10 +25,8 @@ abstract class Route(val goal: DirectedRoad, rng: RNG) {
   def dump_info
 }
 
-// Compute the cost of the path from every source to our single goal. 
-// TODO does this wind up being too expensive memory-wise? maybe approx as ints
-// or something... even a compressed data structure that's a bit slower to read
-// from.
+// Compute the cost of the path from every source to our single goal, then
+// hillclimb each step.
 class DijkstraRoute(goal: DirectedRoad, rng: RNG) extends Route(goal, rng) {
   // TODO We used to assign a cost to every edge, now we go by directed road.
   val costs = Common.sim.graph.dijkstra_router.costs_to(goal)
@@ -51,6 +49,67 @@ class DijkstraRoute(goal: DirectedRoad, rng: RNG) extends Route(goal, rng) {
 
   def dump_info() = {
     Util.log(s"Static route to $goal")
+  }
+}
+
+// Compute and follow a specific path to the goal. When we deviate from the path
+// accidentally, recalculate the path.
+class PathRoute(goal: DirectedRoad, rng: RNG) extends Route(goal, rng) {
+  // Head is the next step. If that step isn't immediately reachable, we have to
+  // re-route.
+  var path: List[DirectedRoad] = goal :: Nil
+
+  def transition(from: Traversable, to: Traversable) = {
+    to match {
+      case e: Edge if e.directed_road == path.head => {
+        path = path.tail
+      }
+      // Otherwise, we were just lane-changing, or we were forced to go
+      // off-route. In the latter case, we'll recompute later.
+      case _ =>
+    }
+  }
+
+  private def best_turn(e: Edge) =
+    e.next_turns.find(t => t.to.directed_road == path.head)
+
+  def pick_turn(e: Edge) =
+    // Is the next step reachable?
+   best_turn(e) match {
+      case Some(t) => t
+      case None => {
+        // Re-route! Shouldn't fail if graph is connected.
+        path = Common.sim.graph.router.path(e.directed_road, goal)
+        best_turn(e).get
+      }
+    }
+
+  private def candidate_lanes(from: Edge) =
+    from.other_lanes.filter(
+      f => f.succs.find(t => t.directed_road == path.head).isDefined
+    ).toList
+
+  def pick_lane(from: Edge): Edge = {
+    // Find any lane going to the next step. If none do, re-route and repeat.
+    val candidates = candidate_lanes(from) match {
+      case Nil => {
+        path = Common.sim.graph.router.path(from.directed_road, goal)
+        candidate_lanes(from)
+      }
+      case lanes => lanes
+    }
+    Util.assert_eq(candidates.isEmpty, false)
+
+    // Pick the lane closest to the current, then get as close as possible.
+    val target_lane = candidates.minBy(e => math.abs(from.lane_num - e.lane_num))
+    // Get as close to target_lane as possible.
+    return from.adjacent_lanes.minBy(
+      e => math.abs(target_lane.lane_num - e.lane_num)
+    )
+  }
+
+  def dump_info() = {
+    Util.log(s"Static route to $goal using $path")
   }
 }
 

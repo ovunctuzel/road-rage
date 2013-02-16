@@ -79,10 +79,9 @@
   - immutable construction is easy... have parent entity create child.
 
 # Contraction Hierarchies
+- pathfinding isnt actually working that great... plus, empty directed roads!
 - smaller problem possibly if verts=Vertex, edges=Roads (oneway or not).
   - directed roads really that useful?
-- use CH routing for agents
-  - next step cost? dist btwn nodes? OneToManyDIjkstraCH? shortestWeightMapTo?
 
 # Intersection Policies
 - stop sign for only some directions
