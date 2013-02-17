@@ -100,7 +100,7 @@ class Edge(var id: Int, val road: Road, val dir: Direction.Value)
 
   // TODO geometric argument
   // TODO sometimes the max arg is < the min arg. :)
-  def safe_spawn_dist(rng: RNG) = rng.rand_double(
+  def safe_spawn_dist(rng: RNG) = rng.double(
     worst_entry_dist + cfg.follow_dist, length - cfg.end_threshold
   )
 

@@ -854,8 +854,8 @@ object GeomFactory {
   }
 
   def rand_color() = new Color(
-    rng.rand_double(0.0, 1.0).toFloat,
-    rng.rand_double(0.0, 1.0).toFloat,
-    rng.rand_double(0.0, 1.0).toFloat
+    rng.double(0.0, 1.0).toFloat,
+    rng.double(0.0, 1.0).toFloat,
+    rng.double(0.0, 1.0).toFloat
   )
 }

@@ -39,8 +39,8 @@ object Debug {
       if (i % 1000 == 0) {
         println(s"round $i")
       }
-      val from = rng.choose_rand[DirectedRoad](sim.graph.directed_roads)
-      val to = rng.choose_rand[DirectedRoad](sim.graph.directed_roads)
+      val from = rng.choose(sim.graph.directed_roads)
+      val to = rng.choose(sim.graph.directed_roads)
       sim.graph.router.path(from, to)
     }
     t.stop

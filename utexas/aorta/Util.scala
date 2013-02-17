@@ -12,7 +12,8 @@ import scala.annotation.elidable.ASSERTION
 import java.io.{ObjectOutputStream, FileOutputStream, ObjectInputStream,
                 FileInputStream}
 
-import utexas.aorta.sim.{Simulation, Scenario, DynamicScenario}
+import utexas.aorta.map.Graph
+import utexas.aorta.sim.{Simulation, Scenario}
 import utexas.aorta.analysis.{Stats, Profiling}
 
 object Util {
@@ -109,10 +110,12 @@ object Util {
     }
     //Stats.setup_experiment(exp_name)  TODO rethink this stuff too
 
-    return if (load_scenario.nonEmpty)
-      Scenario.load(load_scenario).make_sim
-    else
-      (new DynamicScenario(load_map)).make_sim
+    return if (load_scenario.nonEmpty) {
+      Scenario.load(load_scenario).make_sim()
+    } else {
+      val graph = Graph.load(load_map)
+      Scenario.default(load_map, graph).make_sim(graph)
+    }
   }
 
   def serialize(obj: Any, fn: String) = {
@@ -132,17 +135,17 @@ object Util {
 class RNG(seed: Long = System.currentTimeMillis) {
   private val rng = new Random(seed)
 
-  def rand_double(min: Double, max: Double): Double =
+  def double(min: Double, max: Double): Double =
     if (min > max)
       throw new Exception("rand(" + min + ", " + max + ") requested")
     else if (min == max)
       min
     else
       min + rng.nextDouble * (max - min)
-  def rand_int(min: Int, max: Int) = rand_double(min, max).toInt
-  def choose_rand[T](from: Seq[T]): T = from(rng.nextInt(from.length))
+  def int(min: Int, max: Int) = double(min, max).toInt
+  def choose[T](from: Seq[T]): T = from(rng.nextInt(from.length))
   // return true 'p'% of the time. p is [0.0, 1.0]
-  def percent(p: Double) = rand_double(0.0, 1.0) < p
+  def percent(p: Double) = double(0.0, 1.0) < p
   // for making a new RNG
   def new_seed = rng.nextLong
 }
@@ -180,7 +183,9 @@ object cfg {
 
   val strings = List(
     ("policy", "StopSign"),
-    ("ordering", "FIFO")
+    ("ordering", "FIFO"),
+    ("route", "Drunken"),
+    ("wallet", "Random")
   ).map({c => c._1 -> new String_Cfgable(c._2)}).toMap
 
   // TODO val colors = ... (I'm not kidding)
@@ -213,6 +218,8 @@ object cfg {
 
   var policy = ""
   var ordering = ""
+  var route = ""
+  var wallet = ""
 
   // Do this early.
   init_params

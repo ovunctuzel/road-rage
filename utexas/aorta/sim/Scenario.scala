@@ -8,52 +8,36 @@ import utexas.aorta.map.{Graph, Edge, Vertex, DirectedRoad}
 import utexas.aorta.sim.policies._
 import utexas.aorta.sim.market._
 
+import java.io.File
 import scala.collection.mutable.ArrayBuffer
 
 import utexas.aorta.{Util, RNG, Common, cfg}
 
-abstract class Scenario() {
-  def make_sim = new Simulation(Graph.load(map_fn), this)
-
-  // Can't pass map_fn into the constructor since serialization needs a
-  // parameterless version
-  def map_fn(): String
-  def write(fn: String): Unit
-  def make_intersection(v: Vertex): Intersection
-  def make_agents(): Unit
-}
-
 @SerialVersionUID(1)
-case class FixedScenario(map: String, agents: Array[MkAgent],
-                         intersections: Array[MkIntersection])
-  extends Scenario
+case class Scenario(map_fn: String, agents: Array[MkAgent],
+               intersections: Array[MkIntersection])
 {
-  def map_fn = map
-  def write(fn: String) = Util.serialize(this, fn)
+  def make_sim(graph: Graph = Graph.load(map_fn)) = new Simulation(graph, this)
+  def save(fn: String) = Util.serialize(this, fn)
 
   def make_intersection(v: Vertex) = intersections(v.id).make(v)
   def make_agents() = agents.foreach(a => a.make)
 }
 
-// To just load a map, dynamically populate the map with defaults.
-@SerialVersionUID(1)
-class DynamicScenario(map: String) extends Scenario {
-  def map_fn = map
-  def write(fn: String) = {
-    // TODO 
-  }
-
-  def make_intersection(v: Vertex) = new Intersection(
-    v, IntersectionDistribution.default_policy,
-    IntersectionDistribution.default_ordering
-  )
-  def make_agents() = {
-    // TODO do something default
-  }
-}
-
 object Scenario {
   def load(fn: String) = Util.unserialize(fn).asInstanceOf[Scenario]
+
+  def default(map_fn: String, graph: Graph): Scenario = {
+    val s = Scenario(
+      map_fn,
+      AgentDistribution.default(graph),
+      IntersectionDistribution.default(graph)
+    )
+    // Always save it, so resimulation is easy.
+    (new File("./scenarios")).mkdir
+    s.save(s"scenarios/default_${graph.name}")
+    return s
+  }
 }
 
 // The "Mk" prefix means "Make". These're small serializable classes to make
@@ -83,7 +67,7 @@ case class MkSingleAgent(id: Int, birth_tick: Double, seed: Long,
 }
 
 // Spawns some distribution of agents every frequency seconds.
-@SerialVersionUID(1)
+/*@SerialVersionUID(1)
 case class MkAgentSpawner(frequency: Double, expires: Double, seed: Long)
   extends MkAgent
 {
@@ -100,7 +84,7 @@ case class MkAgentSpawner(frequency: Double, expires: Double, seed: Long)
 
     // TODO do something interesting
   }
-}
+}*/
 
 @SerialVersionUID(1)
 case class MkRoute(strategy: RouteType.Value, goal: Integer, seed: Long) {
@@ -108,7 +92,6 @@ case class MkRoute(strategy: RouteType.Value, goal: Integer, seed: Long) {
     Factory.make_route(strategy, sim.edges(goal).directed_road, new RNG(seed))
 }
 
-// TODO other params?
 @SerialVersionUID(1)
 case class MkWallet(policy: WalletType.Value, budget: Double) {
   def make(a: Agent) = Factory.make_wallet(a, policy, budget)
@@ -121,74 +104,66 @@ case class MkIntersection(id: Integer, policy: IntersectionType.Value,
   def make(v: Vertex) = new Intersection(v, policy, ordering)
 }
 
-// TODO how to organize stuff like this?
-object ScenarioMaker {
-  // TODO separate agent creation and intersection assignment a bit
-  // TODO agent distribution... time, O/D distribution, wallet params
-
-  def default_scenario(map_fn: String): Scenario = {
-    val graph = Graph.load(map_fn)
-    val rng = new RNG()
-
-    val start_candidates = graph.edges.filter(e => e.ok_to_spawn).toArray
-
-    // Just spawn some agents all at the start with a fixed budget
-    val agents = new ArrayBuffer[MkAgent]()
-    val budget = 1000.0
-    for (id <- (0 until cfg.army_size)) {
-      val start = rng.choose_rand[Edge](start_candidates)
-      val end = rng.choose_rand[Edge](graph.edges)
-      agents += MkSingleAgent(
-        id, 0.0, rng.new_seed, start.id, start.safe_spawn_dist(rng),
-        MkRoute(RouteType.Drunken, end.id, rng.new_seed),
-        MkWallet(WalletType.Random, budget)
-      )
-    }
-
-    return FixedScenario(
-      map_fn, agents.toArray, IntersectionDistribution.same_for_all(graph)
-    )
-  }
-}
-
 object IntersectionDistribution {
-  lazy val default_policy = IntersectionType.withName(cfg.policy)
-  lazy val default_ordering = OrderingType.withName(cfg.ordering)
   private val rng = new RNG()
 
-  def same_for_all(
-    graph: Graph, policy: IntersectionType.Value = default_policy,
-    ordering: OrderingType.Value = default_ordering
-   ): Array[MkIntersection] =
-    graph.vertices.map(v => MkIntersection(v.id, policy, ordering))
+  val all_policies = IntersectionType.values.toArray
+  val all_orderings = OrderingType.values.toArray
+  lazy val default_policy = IntersectionType.withName(cfg.policy)
+  lazy val default_ordering = OrderingType.withName(cfg.ordering)
 
-  private val policy_choices = IntersectionType.values.toArray
-  private val ordering_choices = OrderingType.values.toArray
-  private def rand_policy =
-    rng.choose_rand[IntersectionType.Value](policy_choices)
-  private def rand_ordering =
-    rng.choose_rand[OrderingType.Value](ordering_choices)
-
-  def randomized(graph: Graph, fixed_policy: Option[IntersectionType.Value],
-                 fixed_ordering: Option[OrderingType.Value])
-    = graph.vertices.map(v => MkIntersection(
-      v.id, fixed_policy.getOrElse(rand_policy),
-      fixed_ordering.getOrElse(rand_ordering)
+  // TODO specify "80% x, 20% y" for stuff...
+  def uniform(graph: Graph, policies: Array[IntersectionType.Value],
+              orderings: Array[OrderingType.Value]) =
+    graph.vertices.map(v => MkIntersection(
+      v.id, rng.choose(policies), rng.choose(orderings)
     ))
+
+  def default(graph: Graph) = uniform(
+    graph, Array(default_policy), Array(default_ordering)
+  )
 
   // TODO realistic assignment, with signs at small crossings, and signals for
   // heavy direction of big crossings
 }
 
-// TODO rm
-object ScenarioTest {
-  def main(args: Array[String]) = {
-    val fn = args.head
-    val scenario = ScenarioMaker.default_scenario(fn)
-    scenario.write("tmp")
-    val copy = Scenario.load("tmp")
+object AgentDistribution {
+  // TODO share RNGs so the cmdline tool can be parametrized by one random
+  // thing?
+  private val rng = new RNG()
+
+  val all_routes = RouteType.values.toArray
+  val all_wallets = WalletType.values.toArray
+  lazy val default_route = RouteType.withName(cfg.route)
+  lazy val default_wallet = WalletType.withName(cfg.wallet)
+
+  def filter_candidates(starts: Array[Edge]) = starts.filter(_.ok_to_spawn)
+
+  // TODO specify "80% x, 20% y" for stuff...
+  def uniform(ids: Range, starts: Array[Edge], ends: Array[Edge],
+              times: (Double, Double), routes: Array[RouteType.Value], 
+              wallets: Array[WalletType.Value],
+              budgets: (Double, Double)): Array[MkAgent] =
+  {
+    val actual_starts = filter_candidates(starts)
+    return ids.map(id => {
+      val start = rng.choose(actual_starts)
+      MkSingleAgent(
+        id, rng.double(times._1, times._2), rng.new_seed, start.id,
+        start.safe_spawn_dist(rng),
+        MkRoute(rng.choose(routes), rng.choose(ends).id, rng.new_seed),
+        MkWallet(rng.choose(wallets), rng.double(budgets._1, budgets._2))
+      )
+    }).toArray
   }
+
+  def default(graph: Graph) = uniform(
+    Range(0, cfg.army_size), graph.edges, graph.edges, (0.0, 60.0),
+    Array(default_route), Array(default_wallet), (100.0, 1000.0)
+  )
 }
+
+// Enumeration stuff
 
 object IntersectionType extends Enumeration {
   type IntersectionType = Value

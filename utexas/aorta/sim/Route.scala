@@ -133,7 +133,7 @@ class DrunkenRoute(goal: DirectedRoad, rng: RNG) extends Route(goal, rng) {
   }
 
   // With the right amount of alcohol, a drunk can choose uniformly at random
-  def choose_turn(e: Edge) = rng.choose_rand(e.next_turns)
+  def choose_turn(e: Edge) = rng.choose(e.next_turns)
 
   def pick_turn(e: Edge) =
     chosen_turns.getOrElseUpdate(e, choose_turn(e))
@@ -141,7 +141,7 @@ class DrunkenRoute(goal: DirectedRoad, rng: RNG) extends Route(goal, rng) {
   def pick_lane(e: Edge): Edge = {
     if (!desired_lane.isDefined) {
       if (e.ok_to_lanechange) {
-        desired_lane = Some(rng.choose_rand(e.other_lanes))
+        desired_lane = Some(rng.choose(e.other_lanes))
       } else {
         desired_lane = Some(e)
       }
@@ -179,7 +179,7 @@ class DrunkenExplorerRoute(goal: DirectedRoad, rng: RNG)
   override def choose_turn(e: Edge): Turn = {
     // break ties by the heuristic of distance to goal
     val choice = e.next_turns.minBy(turn => (
-      past.getOrElse(turn.to.directed_road, -1) + rng.rand_int(0, 5),
+      past.getOrElse(turn.to.directed_road, -1) + rng.int(0, 5),
       heuristic(turn)
     ))
     val road = choice.to.directed_road
