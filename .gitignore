@@ -1,16 +1,14 @@
-# class files
+# compiled stuff
 .build
-.scala_dependencies
 
 # vim swapfiles
 *.swp
 
-# in and output maps
-*.osm
-!synthetic.osm
-*.map
-*.svg
-maps/route_*
+# raw/transformed maps
+osm/*
+!osm/synthetic.osm
+maps/*
+scenarios/*
 
 # tex stuff
 *.aux
@@ -19,12 +17,8 @@ maps/route_*
 *.blg
 *.eps
 
-# experiment data
-stats_log
-resim_log
-log_*
-
 # unrefined notes
 papers/thesis/*
 papers/itsc_2012/*.tex
 papers/itsc_2012/root.bib
+papers/itsc_2012/log_*
