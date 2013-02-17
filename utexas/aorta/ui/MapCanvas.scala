@@ -761,17 +761,11 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
     mode = m
   }
 
+  // Must be called when current_edge1 and 2 are set
   def show_pathfinding() = {
-    // contract: must be called when current_edge1 and 2 are set
-    val from = chosen_edge1.get.directed_road
-    val to = chosen_edge2.get.directed_road
-
-    val route = sim.graph.router.path(from, to)
-
-    // Filter and just remember the edges; the UI doesn't want to highlight
-    // turns.
-    // TODO pathfinding is by directed road now, not edge. just pick some edge
-    // in each group.
+    val from = chosen_edge1.get.from
+    val to = chosen_edge2.get.to
+    val route = sim.graph.router.path_as_roads(from, to)
     route_members = route.map(_.edges.head).toSet
     route_members_road = route_members.map(_.road)
     repaint

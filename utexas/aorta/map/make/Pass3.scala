@@ -55,7 +55,7 @@ class Pass3(old_graph: PreGraph2) {
       }
 
       // force line segments to meet up on the inside
-      for (e <- r.all_lanes; (l1, l2) <- e.lines zip e.lines.tail) {
+      for (e <- r.all_lanes; (l1, l2) <- e.lines.zip(e.lines.tail)) {
         l1.segment_intersection(l2) match {
           case Some(pt) => {
             l1.x2 = pt.x
@@ -140,7 +140,7 @@ class Pass3(old_graph: PreGraph2) {
     if (roads.size == 1) {
       // link corresponding lane numbers
       val r = roads.head
-      for ((from, to) <- r.incoming_lanes(v) zip r.outgoing_lanes(v)) {
+      for ((from, to) <- r.incoming_lanes(v).zip(r.outgoing_lanes(v))) {
         v.turns = new Turn(next_id, from.id, to.id) :: v.turns
       }
     }

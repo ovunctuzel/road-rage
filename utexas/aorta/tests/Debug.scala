@@ -5,7 +5,7 @@
 package utexas.aorta.tests
 
 import utexas.aorta.sim.Simulation
-import utexas.aorta.map.DirectedRoad
+import utexas.aorta.map.Vertex
 
 import utexas.aorta.{Util, Common}
 
@@ -39,8 +39,8 @@ object Debug {
       if (i % 1000 == 0) {
         println(s"round $i")
       }
-      val from = rng.choose_rand[DirectedRoad](sim.graph.directed_roads)
-      val to = rng.choose_rand[DirectedRoad](sim.graph.directed_roads)
+      val from = rng.choose_rand[Vertex](sim.graph.vertices)
+      val to = rng.choose_rand[Vertex](sim.graph.vertices)
       sim.graph.router.path(from, to)
     }
     t.stop

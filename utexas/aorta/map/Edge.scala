@@ -128,6 +128,14 @@ class DirectedRoad(val road: Road, var id: Int, val dir: Direction.Value)
                 road.pos_lanes
               else
                 road.neg_lanes
+  def v1 = if (dir == Direction.POS)
+             road.v1
+           else
+             road.v2
+  def v2 = if (dir == Direction.POS)
+             road.v2
+           else
+             road.v1
 
   def start_pt = edges.head.from.location
   def end_pt = edges.head.to.location

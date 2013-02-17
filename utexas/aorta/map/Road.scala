@@ -50,7 +50,7 @@ class Road(var id: Int, val length: Double, val name: String,
   def incoming_lanes(v: Vertex) = if (v == v1) neg_lanes else pos_lanes
   def outgoing_lanes(v: Vertex) = if (v == v1) pos_lanes else neg_lanes
 
-  def pairs_of_points = points zip points.tail
+  def pairs_of_points = points.zip(points.tail)
 
   lazy val speed_limit = mph_to_si(road_type match {
     case "residential"    => 30

@@ -16,19 +16,16 @@ object Preroute {
   def main(args: Array[String]) = {
     val map = Graph.load(args.head)
 
-    // Build the graph. Vertices are directed roads and edges are turns, but we
-    // can mangle the total cost for a turn as its incoming edge's length + its
+    // Build the graph. Vertices are our vertices, and edges are our roads
+    // (oneway or not). Cost of an edge is road length. For now, discard turn
     // length.
     println("Building GraphHopper graph...")
     val graph = new LevelGraphStorage(
       new RAMDirectory(s"maps/route_${map.name}", true)
     )
     graph.createNew(map.directed_roads.size)
-    for (r1 <- map.directed_roads) {
-      for ((r2, turn_length) <- r1.succs) {
-        // TODO incoming edge length, or road length?
-        graph.edge(r1.id, r2.id, r1.length + turn_length, false)
-      }
+    for (r <- map.roads) {
+      graph.edge(r.v1.id, r.v2.id, r.length, !r.is_oneway)
     }
 
     // Precompute a contraction hierarchy.

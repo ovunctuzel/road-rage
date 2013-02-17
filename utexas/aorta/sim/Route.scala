@@ -27,7 +27,7 @@ abstract class Route(val goal: DirectedRoad, rng: RNG) {
 
 // Compute the cost of the path from every source to our single goal, then
 // hillclimb each step.
-class DijkstraRoute(goal: DirectedRoad, rng: RNG) extends Route(goal, rng) {
+/*class DijkstraRoute(goal: DirectedRoad, rng: RNG) extends Route(goal, rng) {
   // TODO We used to assign a cost to every edge, now we go by directed road.
   val costs = Common.sim.graph.dijkstra_router.costs_to(goal)
 
@@ -50,11 +50,11 @@ class DijkstraRoute(goal: DirectedRoad, rng: RNG) extends Route(goal, rng) {
   def dump_info() = {
     Util.log(s"Static route to $goal")
   }
-}
+}*/
 
 // Compute and follow a specific path to the goal. When we deviate from the path
 // accidentally, recalculate the path.
-class PathRoute(goal: DirectedRoad, rng: RNG) extends Route(goal, rng) {
+/*class PathRoute(goal: DirectedRoad, rng: RNG) extends Route(goal, rng) {
   // Head is the next step. If that step isn't immediately reachable, we have to
   // re-route.
   var path: List[DirectedRoad] = goal :: Nil
@@ -111,7 +111,7 @@ class PathRoute(goal: DirectedRoad, rng: RNG) extends Route(goal, rng) {
   def dump_info() = {
     Util.log(s"Static route to $goal using $path")
   }
-}
+}*/
 
 // DOOMED TO WALK FOREVER (until we happen to reach our goal)
 class DrunkenRoute(goal: DirectedRoad, rng: RNG) extends Route(goal, rng) {

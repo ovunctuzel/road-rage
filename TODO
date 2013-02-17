@@ -79,9 +79,15 @@
   - immutable construction is easy... have parent entity create child.
 
 # Contraction Hierarchies
-- pathfinding isnt actually working that great... plus, empty directed roads!
-- smaller problem possibly if verts=Vertex, edges=Roads (oneway or not).
-  - directed roads really that useful?
+or try a directional router. but test it!
+
+if keep DRs, prune empty ones
+
+= switch to pathing using vertices, not directed roads
+- deprecate directed roads as much as possible
+- make sure all vertices connected
+- a loop back to same vert might not work well. force it easily though.
+- test CHRouter and DijkstraRouter fully again.
 
 # Intersection Policies
 - stop sign for only some directions

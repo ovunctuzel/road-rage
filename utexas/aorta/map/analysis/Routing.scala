@@ -8,13 +8,21 @@ import scala.collection.mutable.{PriorityQueue, HashSet, ListBuffer}
 import com.graphhopper.storage.{LevelGraphStorage, RAMDirectory}
 import com.graphhopper.routing.ch.PrepareContractionHierarchies
 
-import utexas.aorta.map.{Graph, DirectedRoad}
+import utexas.aorta.map.{Graph, Vertex, DirectedRoad}
 
 import utexas.aorta.Util
 
 abstract class Router(graph: Graph) {
   // Doesn't include 'from' as the first step
-  def path(from: DirectedRoad, to: DirectedRoad): List[DirectedRoad]
+  def path(from: Vertex, to: Vertex): List[Vertex]
+
+  // This is mainly useful for UI
+  def path_as_roads(from: Vertex, to: Vertex): List[DirectedRoad] = {
+    val p = path(from, to)
+    return p.zip(p.tail).map(
+      pair => pair._1.directed_roads.find(r => r.v2 == pair._2).get
+    )
+  }
 }
 
 // A convenient abstraction if we ever switch to pathfinding on
@@ -29,7 +37,7 @@ abstract class AbstractEdge {
 }
 
 class DijkstraRouter(graph: Graph) extends Router(graph) {
-  def costs_to(r: DirectedRoad) = dijkstras(
+  def costs_to(v: DirectedRoad) = dijkstras(
     graph.directed_roads.size, r, (e: AbstractEdge) => e.preds
   )
 
@@ -98,16 +106,16 @@ class CHRouter(graph: Graph) extends Router(graph) {
   var usable = gh.loadExisting
   private val algo = new PrepareContractionHierarchies().graph(gh).createAlgo
 
-  def path(from: DirectedRoad, to: DirectedRoad): List[DirectedRoad] = {
+  def path(from: Vertex, to: Vertex): List[Vertex] = {
     Util.assert_eq(usable, true)
     val path = algo.calcPath(from.id, to.id)
     Util.assert_eq(path.found, true)
     algo.clear
 
-    val result = new ListBuffer[DirectedRoad]()
+    val result = new ListBuffer[Vertex]()
     var iter = path.calcNodes.iterator
     while (iter.hasNext) {
-      result += graph.directed_roads(iter.next)
+      result += graph.vertices(iter.next)
     }
     return result.tail.toList
   }

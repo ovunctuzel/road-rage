@@ -38,6 +38,7 @@ class Vertex(val location: Coordinate, var id: Int) extends Renderable
   def out_verts = turns.map(t => t.to.to).toSet
 
   def roads = turns.flatMap(t => List(t.from.road, t.to.road)).toSet
+  def directed_roads = turns.flatMap(t => List(t.from.directed_road, t.to.directed_road)).toSet
   def edges = turns.flatMap(t => List(t.from, t.to))
   def in_edges = turns.map(t => t.from).toSet
   def out_edges = turns.map(t => t.to).toSet
