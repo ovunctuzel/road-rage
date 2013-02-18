@@ -14,7 +14,7 @@ import java.io.{ObjectOutputStream, FileOutputStream, ObjectInputStream,
 
 import utexas.aorta.map.Graph
 import utexas.aorta.sim.{Simulation, Scenario}
-import utexas.aorta.analysis.{Stats, Profiling}
+import utexas.aorta.analysis.{Stats, Timer}
 
 object Util {
   private var indent_log = 0
@@ -22,19 +22,6 @@ object Util {
   def log_pop =  { indent_log -= 1 }
   def indent = "  " * indent_log
   def log(msg: String) = println(indent + msg)
-
-  private var dump_at_shutdown = false
-
-  // Convenient to see this at the very end if it was a long log.
-  scala.sys.ShutdownHookThread({
-    if (dump_at_shutdown) {
-      println("")
-      println("-" * 80)
-      Stats.shutdown
-      println("")
-      Profiling.shutdown
-    }
-  })
 
   // due to internationalization, printf doesn't have a way of adding commas
   // after every 3 orders of mag
@@ -64,15 +51,13 @@ object Util {
     return (initial_speed * actual_time) + (0.5 * accel * (actual_time * actual_time))
   }
 
-  def process_args(args: Array[String], shutdown: Boolean): Simulation =
+  def process_args(args: Array[String]): Simulation =
   {
     if (args.size % 2 != 0) {
       // TODO better usage
       Util.log("Command-line parameters must be pairs of key => value")
       sys.exit
     }
-
-    dump_at_shutdown = shutdown
 
     // TODO write with 'partition'
     val keys = args.zipWithIndex.filter(p => p._2 % 2 == 0).map(p => p._1)
@@ -83,12 +68,10 @@ object Util {
   
     val cfg_prefix = """--cfg_(\w+)""".r
     for ((key, value) <- keys.zip(vals)) {
-      // TODO multiple different ways of saying 'true'
       key match {
         case "--map" => { load_map = value }
         case "--scenario" => { load_scenario = value }
-        case "--print_stats" => { Stats.use_print = value == "1" }
-        case "--log_stats" => { Stats.use_log = value == "1" }
+        case "--log" => { Stats.setup_logging(value) }
         // TODO case "--run_for" => { run_for = value.toDouble }
         case cfg_prefix(param) => cfg.get_param_method(param) match {
           case Some(method) => {
@@ -108,7 +91,6 @@ object Util {
         case _ => { Util.log("Unknown argument: " + key); sys.exit }
       }
     }
-    //Stats.setup_experiment(exp_name)  TODO rethink this stuff too
 
     return if (load_scenario.nonEmpty) {
       Scenario.load(load_scenario).make_sim()
@@ -278,5 +260,5 @@ object Common {
   var sim: utexas.aorta.sim.Simulation = null
   def tick = sim.tick
 
-  def timer(name: String) = utexas.aorta.analysis.Profiling.timer(name)
+  def timer(name: String) = new Timer(name)
 }

@@ -22,7 +22,7 @@ class ReservationPolicy(intersection: Intersection,
 {
   private var current_batch = new TurnBatch()
 
-  def react_body() = {
+  def react() = {
     // Process new requests
     waiting_agents.foreach(ticket => add_agent(ticket))
     waiting_agents = waiting_agents.empty

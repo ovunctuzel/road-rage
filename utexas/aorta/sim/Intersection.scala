@@ -12,7 +12,6 @@ import utexas.aorta.sim.policies._
 import utexas.aorta.map.{Vertex, Turn}
 
 import utexas.aorta.{Util, Common, cfg}
-import utexas.aorta.analysis.{Stats, Intersection_Throughput_Stat}
 
 // Common stuff goes here, particular implementations are in utexas.aorta.sim.policies
 
@@ -24,17 +23,12 @@ class Intersection(val v: Vertex, policy_type: IntersectionType.Value,
 
   override def toString = "Intersection(" + v + ")"
 
-  // For stats.
-  private var stat_requested = 0
-  private var stat_entered = 0
-
   // Delegate and log.
   def unregister(a: Agent) = policy.unregister(a)
   def react = policy.react
   def request_turn(a: Agent, turn: Turn) = {
     // Sanity check...
     Util.assert_eq(turn.vert, v)
-    stat_requested += 1
     policy.request_turn(a, turn)
   }
 
@@ -63,7 +57,6 @@ class Intersection(val v: Vertex, policy_type: IntersectionType.Value,
   }
 
   def enter(a: Agent, t: Turn) = {
-    stat_entered += 1
     if (!turns.contains(t)) {
       // We don't care until there are at least two... and this only changes when
       // we add a new one...
@@ -98,15 +91,6 @@ class Intersection(val v: Vertex, policy_type: IntersectionType.Value,
     }
     policy.handle_exit(a, t)
   }
-
-  def count_stat() = {
-    // TODO I'm also not convinced this is the best way to measure this idea.
-    Stats.record(Intersection_Throughput_Stat(
-      v.id, stat_requested, stat_entered, Common.tick
-    ))
-    stat_requested = 0
-    stat_entered = 0
-  }
 }
 
 case class Ticket(a: Agent, turn: Turn) extends Ordered[Ticket] {
@@ -128,13 +112,6 @@ abstract class Policy(val intersection: Intersection) {
     }
   }
 
-  def react() = {
-    if (Common.sim.number_of_ticks % cfg.thruput_stat_time == 0) {
-      intersection.count_stat
-    }
-    react_body
-  }
-
   def unregister(a: Agent) = {
     synchronized {
       waiting_agents = waiting_agents.filter(ticket => ticket.a != a)
@@ -143,7 +120,7 @@ abstract class Policy(val intersection: Intersection) {
   }
 
   // The intersection grants leases to waiting_agents
-  def react_body(): Unit
+  def react(): Unit
   // TODO insist the client hands us a ticket for entry, exit?
   def validate_entry(a: Agent, turn: Turn): Boolean
   def handle_exit(a: Agent, turn: Turn)
@@ -154,7 +131,7 @@ abstract class Policy(val intersection: Intersection) {
 
 // Simplest base-line ever.
 class NeverGoPolicy(intersection: Intersection) extends Policy(intersection) {
-  def react_body = {}
+  def react = {}
   def validate_entry(a: Agent, turn: Turn) = false
   def handle_exit(a: Agent, turn: Turn) = {}
   def unregister_body(a: Agent) = {}

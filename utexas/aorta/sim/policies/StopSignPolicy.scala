@@ -29,7 +29,7 @@ class StopSignPolicy(intersection: Intersection,
        a.how_far_away(intersection) <= cfg.end_threshold)
 
   // Add agent to the queue if they satisfy our requirements.
-  def react_body() = {
+  def react() = {
     for (ticket <- waiting_agents) {
       if (is_waiting(ticket.a)) {
         ordering.add(ticket)

@@ -7,7 +7,9 @@ package utexas.aorta.sim
 import scala.collection.mutable.ListBuffer
 
 import utexas.aorta.map.{Edge, Turn, Traversable, DirectedRoad}
-import utexas.aorta.{Util, cfg}
+import utexas.aorta.analysis.{Stats, Turn_Request_Stat}
+
+import utexas.aorta.{Util, Common, cfg}
 
 abstract class Behavior(a: Agent) {
   // asked every tick after everybody has moved
@@ -318,6 +320,9 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
             val next_turn = route.pick_turn(e)
             i.request_turn(a, next_turn)
             a.turns_requested += i
+            Stats.record(Turn_Request_Stat(
+              a.id, e.to.id, Common.tick, a.wallet.budget
+            ))
           }
           true
         }

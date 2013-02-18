@@ -5,45 +5,11 @@
 package utexas.aorta.analysis
 
 import scala.annotation.elidable
-import scala.annotation.elidable.ASSERTION
 
 import utexas.aorta.Util
 
 // Ironically, using timers in tight loops has caused up to 3x slowdown before.
 // Java profilers might be safer.
-
-object Profiling {
-  def timer(msg: String) = new Timer(msg)
-  def stopwatch(name: String = "") = new Stopwatch(name)
-
-  // Figure out what eats the most time simulating each tick
-  // TODO generalize this idea of breaking down
-  val whole_step = stopwatch("entire ticks")
-  val agent_step = stopwatch("agent steps")
-  val react = stopwatch("agent reactions")
-  val choose_act = stopwatch("  choose_act")
-  val desired_lane = stopwatch("    desired_lane")
-  val safe_lane = stopwatch("    safe_to_lanechange")
-  val react_accel = stopwatch("    max_safe_accel")
-  val constraint_agents = stopwatch("      agent constraints")
-  val constraint_stops = stopwatch("      intersection constraints")
-  val lookahead = stopwatch("      determining next steps")
-  private val watches = List(
-    agent_step, react, choose_act, desired_lane, safe_lane, react_accel,
-    constraint_agents, constraint_stops, lookahead
-  )
-  // TODO break down more. GUI? iterating over agents vs calling methods?
-
-  def shutdown() = {
-    if (whole_step.seconds != 0.0) {
-      Util.log(f"Cumulatively, ${whole_step.seconds}%.2f seconds spent simulating ticks")
-      for (watch <- watches) {
-        val percentage = (watch.seconds / whole_step.seconds) * 100.0
-        Util.log(f"${watch.name}: $percentage%.2f%   (${watch.seconds}%.2fs)")
-      }
-    }
-  }
-}
 
 // One use
 class Timer(val msg: String = "") {
@@ -61,12 +27,12 @@ class Stopwatch(val name: String) {
   private var from: Long = 0
   var seconds: Double = 0.0
 
-  @elidable(ASSERTION) def start(): Stopwatch = {
+  @elidable(elidable.ASSERTION) def start(): Stopwatch = {
     from = System.nanoTime
     return this
   }
 
-  @elidable(ASSERTION) def stop = {
+  @elidable(elidable.ASSERTION) def stop = {
     val now = System.nanoTime
     seconds += (now - from) / 1000000000.0
   }

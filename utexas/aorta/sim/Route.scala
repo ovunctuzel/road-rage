@@ -23,6 +23,7 @@ abstract class Route(val goal: DirectedRoad, rng: RNG) {
   def pick_lane(e: Edge): Edge
   // Debug
   def dump_info
+  def route_type(): RouteType.Value
 }
 
 // Compute the cost of the path from every source to our single goal, then
@@ -50,6 +51,7 @@ class DijkstraRoute(goal: DirectedRoad, rng: RNG) extends Route(goal, rng) {
   def dump_info() = {
     Util.log(s"Static route to $goal")
   }
+  def route_type = RouteType.Dijkstra
 }
 
 // Compute and follow a specific path to the goal. When we deviate from the path
@@ -111,6 +113,7 @@ class PathRoute(goal: DirectedRoad, rng: RNG) extends Route(goal, rng) {
   def dump_info() = {
     Util.log(s"Static route to $goal using $path")
   }
+  def route_type = RouteType.Path
 }
 
 // DOOMED TO WALK FOREVER (until we happen to reach our goal)
@@ -154,6 +157,7 @@ class DrunkenRoute(goal: DirectedRoad, rng: RNG) extends Route(goal, rng) {
     Util.log(s"  Desired lane: $desired_lane")
     Util.log(s"  Chosen turns: $chosen_turns")
   }
+  def route_type = RouteType.Drunken
 }
 
 // Wanders around slightly less aimlessly by picking directions
@@ -168,6 +172,8 @@ class DirectionalDrunkRoute(goal: DirectedRoad, rng: RNG)
       e.next_turns.minBy(heuristic)
     else
       super.choose_turn(e)
+
+  override def route_type = RouteType.DirectionalDrunk
 }
 
 // Don't keep making the same choices for roads
@@ -186,4 +192,6 @@ class DrunkenExplorerRoute(goal: DirectedRoad, rng: RNG)
     past(road) = past.getOrElse(road, 0) + 1
     return choice
   }
+
+  override def route_type = RouteType.DrunkenExplorer
 }

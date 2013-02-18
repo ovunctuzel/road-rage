@@ -104,6 +104,9 @@
   - breakdown other categories when describing
 - make scenarios from UI
 - the stats side of the story
+  - be able to read them back offline
+  - comparing experiments
+- piecewise resimulation (savestating)
 - verify determinism retained... ordering events queue
 - things to test
   - wacky cases of 2 side-by-side agents wanting to swap places?

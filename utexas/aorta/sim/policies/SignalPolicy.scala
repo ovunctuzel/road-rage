@@ -29,7 +29,7 @@ class SignalPolicy(intersection: Intersection,
   private var delay = 0.0
   private val accepted_agents = new MutableSet[Agent]
 
-  def react_body() = {
+  def react() = {
     // TODO Flush out stalled slowpokes that can definitely stop and aren't
     // already in their turn? Helps prevent gridlock, that's all.
 

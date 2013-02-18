@@ -4,121 +4,67 @@
 
 package utexas.aorta.analysis
 
-import java.io.FileWriter
+import java.io.{ObjectOutputStream, FileOutputStream}
 import scala.annotation.elidable
-import scala.annotation.elidable.ASSERTION
+
+import utexas.aorta.sim.{MkIntersection, RouteType, WalletType}
 
 import utexas.aorta.Util
 
-// TODO lots of this stuff is probably not thread safe
-
-sealed trait Measurement {}
-final case class Wasted_Time_Stat(agent: Int, intersection: Int, lag: Double,
-                                  time: Double) extends Measurement
-{
-  override def toString = "s1 %d %d %.2f %d".format(
-    agent, intersection, lag, time.toInt
-  )
-}
-final case class Total_Trip_Stat(agent: Int, time: Double, dist: Double)
-  extends Measurement
-{
-  // TODO want average speed?
-  override def toString = "s2 %d %.2f %.2f".format(agent, time, dist)
-}
-final case class Intersection_Throughput_Stat(intersection: Int, requests: Int,
-                                              entered: Int, time: Double)
-  extends Measurement
-{
-  // TODO should entered > requests?
-  override def toString = "s3 %d %d %d %d".format(
-    intersection, requests, entered, time.toInt
-  )
-}
-final case class Active_Agents_Stat(time: Int, cnt: Int) extends Measurement
-{
-  override def toString = "s4 %d %d".format(time, cnt)
-}
-final case class Simulator_Speedup_Stat(factor: Double, time: Double)
-  extends Measurement
-{
-  override def toString = "s5 %.2f %.2f".format(factor, time)
-}
-
-class Aggregate_Stat(name: String) {
-  var total: Double = 0.0
-  var count = 0
-  var min: Double = 0.0
-  var max: Double = 0.0
-
-  def update(entry: Double) = {
-    if (count == 0) {
-      min = entry
-      max = entry
-    }
-    total += entry
-    count += 1
-    min = math.min(min, entry)
-    max = math.max(max, entry)
-  }
-
-  def mean = total / count.toDouble
-
-  def describe = "%s: %.2f average (%.2f min, %.2f max, %d samples)".format(
-    name, mean, min, max, count
-  )
-}
+// Anything that we log online and post-process offline.
+abstract class Measurement
 
 object Stats {
-  var log: FileWriter = null
-  var use_log = false
-  var use_print = false
-  var initialized = false
+  // TODO will the file get closed and flushed automatically?
+  var log: ObjectOutputStream = null
 
-  val trip_time = new Aggregate_Stat("trip time (s)")
-  val simulator_speedup = new Aggregate_Stat("simulator speedup (factor)")
-  val time_wasted = new Aggregate_Stat("time wasted at individual intersections (s)")
-
-  def setup_experiment(name: String) = {
-    initialized = true
-    if (use_log) {
-      Util.assert_eq(log, null)
-      log = new FileWriter("stats_log")
-      log.write(name + "\n")
-    }
-    if (use_print) {
-      Util.log("Experiment name: " + name)
-    }
+  def setup_logging(fn: String) = {
+    log = new ObjectOutputStream(new FileOutputStream(fn))
   }
 
-  @elidable(ASSERTION) def record(item: Measurement) = {
-    if (use_log) {
-      log.write(item.toString + "\n")
-    }
-    if (use_print) {
-      Util.log("Stat: " + item)
-    }
-
-    item match {
-      case Wasted_Time_Stat(_, _, lag, _) => time_wasted.update(lag)
-      case Total_Trip_Stat(_, time, _) => trip_time.update(time)
-      case Simulator_Speedup_Stat(factor, _) => simulator_speedup.update(factor)
-      case _ =>
-    }
-  }
-
-  // flush any logs we were writing
-  def shutdown() = {
-    if (initialized) {
-      if (log != null) {
-        log.close
+  @elidable(elidable.ASSERTION) def record(item: Measurement) = {
+    if (log != null) {
+      synchronized {
+        log.writeObject(item)
       }
-
-      // emit a summary
-      // TODO tabulate it?
-      println(trip_time.describe)
-      println(time_wasted.describe)
-      println(simulator_speedup.describe)
     }
   }
 }
+
+// Just to record where we're simulating and what the intersections do.
+case class Scenario_Stat(
+  map_fn: String, intersections: Array[MkIntersection]
+) extends Measurement
+
+case class Agent_Start_Stat(
+  id: Int, tick: Double, start: Int, end: Int, route: RouteType.Value,
+  wallet: WalletType.Value, budget: Double
+) extends Measurement
+
+case class Agent_Finish_Stat(
+  id: Int, tick: Double, budget: Double
+) extends Measurement
+
+// TODO when we first request a turn?
+case class Turn_Request_Stat(
+  agent: Int, vert: Int, tick: Double, budget: Double
+) extends Measurement
+
+// When the intersection accepts us. The budget difference should imply how much
+// we spent on this intersection only.
+case class Turn_Accept_Stat(
+  agent: Int, vert: Int, tick: Double, budget: Double
+) extends Measurement
+
+// When we completely finish a turn.
+case class Turn_Done_Stat(
+  agent: Int, vert: Int, tick: Double
+) extends Measurement
+
+// Logged every 1.0 real-time seconds. Number of agent_steps is since the last
+// heartbeat; this is one of the few things tracked online. Active agents is the
+// number that moved the specific tick that this heartbeat was taken.
+case class Heartbeat_Stat(
+  active_agents: Int, live_agents: Int, spawning_agents: Int, tick: Double,
+  agent_steps: Int
+) extends Measurement

@@ -14,7 +14,8 @@ import scala.io.Source
 import utexas.aorta.map.{Graph, Road, Edge, Vertex, Turn, DirectedRoad}
 
 import utexas.aorta.{Util, Common, cfg}
-import utexas.aorta.analysis.{Stats, Active_Agents_Stat, Simulator_Speedup_Stat}
+import utexas.aorta.analysis.{Stats, Heartbeat_Stat, Scenario_Stat,
+                              Agent_Start_Stat}
 
 // TODO take just a scenario, or graph and scenario?
 class Simulation(val graph: Graph, scenario: Scenario)
@@ -27,6 +28,7 @@ class Simulation(val graph: Graph, scenario: Scenario)
   graph.traversables.foreach(t => t.queue = new Queue(t))
   graph.vertices.foreach(v => v.intersection = scenario.make_intersection(v))
   scenario.make_agents
+  Stats.record(Scenario_Stat(scenario.map_fn, scenario.intersections))
 
   // Provide convenient shortcut to graph stuff
   def roads = graph.roads
@@ -50,17 +52,13 @@ class Simulation(val graph: Graph, scenario: Scenario)
     ready_to_spawn = ready_to_spawn.filter(a => !try_spawn(a))
   }
 
-  // TODO just for stats
+  // Track this for stats.
   private var last_real_time = 0.0
-  private var last_sim_time = 0.0
+  private var steps_since_last_time = 0
 
-  // Returns (the number of agents that moved, total number of agents processed)
-  def step(dt_s: Double): (Int, Int) = {
+  def step(dt_s: Double) = {
     // This value is dt in simulation time, not real time
     dt_accumulated += dt_s * desired_sim_speed
-
-    var moved_count = 0
-    var total_count = 0
 
     // Agents can't react properly in the presence of huge time-steps. So chop
     // up this time-step into exactly consistent/equal pieces, if needed.
@@ -81,14 +79,10 @@ class Simulation(val graph: Graph, scenario: Scenario)
       var active_cnt = 0
       agents.foreach(a => {
         if (a.step(cfg.dt_s)) {
-          moved_count += 1
+          active_cnt += 1
         }
-        active_cnt += 1
+        steps_since_last_time += 1
       })
-      total_count += active_cnt
-      if (number_of_ticks % 5 == 0) {
-        Stats.record(Active_Agents_Stat(tick.toInt, active_cnt))
-      }
 
       // Just check the ones we need to.
       active_queues.foreach(q => q.end_step)
@@ -119,26 +113,33 @@ class Simulation(val graph: Graph, scenario: Scenario)
       
       // reset queues that need to be checked
       active_queues.clear
-    }
 
-    val now = System.currentTimeMillis
-    if (now - last_real_time >= 1000.0) {
-      actual_sim_speed = tick - last_sim_time
-      last_sim_time = tick
-      last_real_time = now
-      Stats.record(Simulator_Speedup_Stat(actual_sim_speed, tick))
+      // Record a heartbeat every 1.0s
+      val now = System.currentTimeMillis
+      if (now - last_real_time >= 1000.0) {
+        val measurement = Heartbeat_Stat(
+          active_cnt, agents.size, ready_to_spawn.size, tick,
+          steps_since_last_time
+        )
+        Stats.record(measurement)
+        tell_listeners(EV_Heartbeat(measurement))
+        last_real_time = now
+        steps_since_last_time = 0
+      }
     }
-
-    return (moved_count, total_count)
   }
 
   // True if we've correctly promoted into real agents. Does the work of
   // spawning as well.
   def try_spawn(spawn: SpawnAgent): Boolean =
     if (spawn.e.queue.can_spawn_now(spawn.dist)) {
-      spawn.a.at = spawn.a.enter(spawn.e, spawn.dist)
-      spawn.a.started_trip_at = tick
-      insert_agent(spawn.a)
+      val a = spawn.a
+      a.at = a.enter(spawn.e, spawn.dist)
+      insert_agent(a)
+      Stats.record(Agent_Start_Stat(
+        a.id, tick, spawn.e.id, a.route.goal.id, a.route.route_type,
+        a.wallet.wallet_type, a.wallet.budget
+      ))
       true
     } else {
       false
@@ -152,9 +153,10 @@ trait ListenerPattern[T] {
     listeners :+= subscriber
   }
 }
-sealed trait Sim_Event {}
+abstract class Sim_Event
 // TODO maybe have this not here, since a client could make these up?
-final case class EV_Signal_Change(greens: Set[Turn]) extends Sim_Event {}
+final case class EV_Signal_Change(greens: Set[Turn]) extends Sim_Event
+final case class EV_Heartbeat(heartbeat: Heartbeat_Stat) extends Sim_Event
 
 trait EventQueue {
   class Callback(val at: Double, val cb: () => Unit) extends Ordered[Callback] {
@@ -204,7 +206,6 @@ trait AgentManager {
 trait VirtualTiming {
   // this represents total "real seconds"
   var tick: Double = 0
-  def number_of_ticks = (tick / cfg.dt_s).toInt // TODO if dt_s changes, breaks
   // we only ever step with dt = cfg.dt_s, so we may have leftover.
   var dt_accumulated: Double = 0
   // WE CAN GO FASTER

@@ -12,7 +12,7 @@ import utexas.aorta.{Util, Common}
 // Misc, temporary stuff
 object Debug {
   def main(args: Array[String]) = {
-    val sim = Util.process_args(args, false)
+    val sim = Util.process_args(args)
 
     degenerate_verts(sim)
     doomed_stuff(sim)

@@ -4,7 +4,7 @@
 
 package utexas.aorta.sim.market
 
-import utexas.aorta.sim.{Agent, Ticket}
+import utexas.aorta.sim.{Agent, Ticket, WalletType}
 import utexas.aorta.sim.policies.{Phase, TurnBatch}
 
 import utexas.aorta.{Util, cfg}
@@ -48,6 +48,8 @@ abstract class Wallet(a: Agent, initial_budget: Double) {
   // TODO for now, theres always some batch that will match
   def relevant_batch(batches: Iterable[TurnBatch], ours: Ticket) =
     batches.find(b => b.has_ticket(ours.a, ours.turn))
+
+  def wallet_type(): WalletType.Value
 }
 
 // Bids a random amount on any turn that helps the agent.
@@ -55,6 +57,7 @@ class RandomWallet(a: Agent, initial_budget: Double)
   extends Wallet(a, initial_budget)
 {
   override def toString = f"RND $budget%.2f"
+  def wallet_type = WalletType.Random
 
   def rng = a.rng
 
@@ -82,6 +85,8 @@ class EmergencyVehicleWallet(a: Agent, amount: Double = 1000.0)
   extends Wallet(a, Double.PositiveInfinity)
 {
   override def toString = "EMERG"
+  def wallet_type = WalletType.Emergency
+
   def bid_stop_sign(tickets: Iterable[Ticket], ours: Ticket): (Ticket, Double) = {
     return relevant_stop_sign(tickets, ours) match {
       case Some(t) => (t, amount)
@@ -108,6 +113,8 @@ class EmergencyVehicleWallet(a: Agent, amount: Double = 1000.0)
 // Never participate.
 class FreeriderWallet(a: Agent) extends Wallet(a, 0.0) {
   override def toString = "FR"
+  def wallet_type = WalletType.Freerider
+
   def bid_stop_sign(tickets: Iterable[Ticket], ours: Ticket) = (tickets.head, 0.0)
   def bid_signal(phases: Iterable[Phase], ours: Ticket) = (phases.head, 0.0)
   def bid_reservation(batches: Iterable[TurnBatch], ours: Ticket) = (batches.head, 0.0)

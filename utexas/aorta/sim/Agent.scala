@@ -9,8 +9,8 @@ import scala.collection.mutable.{HashSet => MutableSet}
 import utexas.aorta.map.{Edge, Coordinate, Turn, Traversable, Graph, Position}
 import utexas.aorta.sim.market._
 import utexas.aorta.ui.Renderable
-import utexas.aorta.analysis.{Profiling, Stats, Wasted_Time_Stat,
-                              Total_Trip_Stat}
+import utexas.aorta.analysis.{Stats, Agent_Finish_Stat, Turn_Accept_Stat,
+                              Turn_Done_Stat}
 
 import utexas.aorta.{Util, RNG, Common, cfg}
 
@@ -41,11 +41,8 @@ class Agent(val id: Int, val route: Route, val rng: RNG, wallet_spec: MkWallet) 
   var lanechange_dist_left: Double = 0
   def is_lanechanging = old_lane.isDefined
 
-  // stats stuff
-  var idle_since = -1.0   // how long has our speed been 0?
-  var entered_last = (-1.0, -1.0, -1.0)  // time, distance, speed
-  var started_trip_at = -1.0
-  var total_dist = 0.0
+  // how long has our speed been 0?
+  var idle_since = -1.0
   def how_long_idle = if (idle_since == -1.0)
                         0
                       else
@@ -66,7 +63,6 @@ class Agent(val id: Int, val route: Route, val rng: RNG, wallet_spec: MkWallet) 
     // Do physics to update current speed and figure out how far we've traveled
     // in this timestep.
     val new_dist = update_kinematics(dt_s)
-    total_dist += new_dist
 
     // If they're not already lane-changing, should they start?
     if (!is_lanechanging && behavior.wants_to_lc) {
@@ -158,6 +154,7 @@ class Agent(val id: Int, val route: Route, val rng: RNG, wallet_spec: MkWallet) 
           val i = t.vert.intersection
           i.exit(this, t)
           turns_approved -= i
+          Stats.record(Turn_Done_Stat(id, i.v.id, Common.tick))
         }
       }
 
@@ -280,41 +277,8 @@ class Agent(val id: Int, val route: Route, val rng: RNG, wallet_spec: MkWallet) 
   }
 
   // Delegate to the queues and intersections that simulation manages
-  def enter(t: Traversable, dist: Double): Position = {
-    // Remember for stats
-    entered_last = (Common.tick, dist, speed)
-    t.queue.enter(this, dist)
-  }
-  def exit(t: Traversable) = {
-    // If we were on an edge, how long were we idling about?
-    t match {
-      case e: Edge => {
-        val time_spent = Common.tick - entered_last._1
-        // suppose nobody was in our way because the intersection did a good
-        // job, and it also let us go immediately. we should be able to traverse
-        // this edge at _about_ its speed limit (accounting for acceleration).
-        val optimal_time = two_phase_time(
-          speed_i = entered_last._3, speed_f = e.road.speed_limit,
-          dist = e.length - entered_last._2, accel = max_accel
-        )
-        //Util.assert_ge(time_spent, optimal_time)  // TODO we shouldn't have sped
-        val wasted_time = time_spent - optimal_time
-        // The alternatives for this measurement all suck:
-        // - from 1st request till entering (includes legit travel time too)
-        // - can_go = no to = yes (could change, still misses following delay)
-        // - how_long_idle when can_go becomes = yes (same problem)
-        if (wasted_time >= 0) {
-          // TODO this number still seems off (it's not 0 even when nobody
-          // stops, it's occasionally negative)
-          Stats.record(
-            Wasted_Time_Stat(id, e.to.id, wasted_time, Common.tick)
-          )
-        }
-      }
-      case _ =>
-    }
-    t.queue.exit(this, at.dist)
-  }
+  def enter(t: Traversable, dist: Double) = t.queue.enter(this, dist)
+  def exit(t: Traversable) = t.queue.exit(this, at.dist)
   def move(t: Traversable, new_dist: Double, old_dist: Double) =
     t.queue.move(this, new_dist, old_dist)
 
@@ -377,6 +341,7 @@ class Agent(val id: Int, val route: Route, val rng: RNG, wallet_spec: MkWallet) 
       Util.assert_eq(turns_requested(i), true)
       turns_requested -= i
       turns_approved += i
+      Stats.record(Turn_Accept_Stat(id, i.v.id, Common.tick, wallet.budget))
     }
   }
 
@@ -388,7 +353,7 @@ class Agent(val id: Int, val route: Route, val rng: RNG, wallet_spec: MkWallet) 
     // don't forget to tell intersections. this is normally just
     // at.on.vert if at.on is a turn, but it could be more due to lookahead.
     cancel_intersection_reservations
-    Stats.record(Total_Trip_Stat(id, Common.tick - started_trip_at, total_dist))
+    Stats.record(Agent_Finish_Stat(id, Common.tick, wallet.budget))
   }
 
   // find the time to cover dist by accelerating first, then cruising at
