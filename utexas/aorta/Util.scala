@@ -130,6 +130,12 @@ object Util {
     in.close
     return obj
   }
+
+  def diff[T](a: T, b: T, header: String = ""): Option[String] =
+    if (a == b)
+      None
+    else
+      Some(s"$header ($a -> $b)")
 }
 
 class RNG(seed: Long = System.currentTimeMillis) {

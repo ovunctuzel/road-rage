@@ -30,6 +30,7 @@ case class Scenario(map_fn: String, agents: Array[MkAgent],
   // distribution function originally, we just see the individual list in the
   // end. So compute basic stats about it.
   def summarize() = {
+    Util.log(s"Scenario for $map_fn\n")
     // TODO breakdown combos of policy/ordering, and wallet/budget
     Util.log("Intersection policies:")
     percentages(intersections.map(_.policy))
@@ -39,14 +40,16 @@ case class Scenario(map_fn: String, agents: Array[MkAgent],
 
     Util.log(s"${agents.size} agents total")
     // TODO where are agents starting/going?
-    Util.log_push
-    Util.log("Spawning time (s): " + basic_stats(agents.map(_.birth_tick)))
-    Util.log("Routes:")
-    percentages(agents.map(_.route.strategy))
-    Util.log("Wallets:")
-    percentages(agents.map(_.wallet.policy))
-    Util.log("Budget ($): " + basic_stats(agents.map(_.wallet.budget)))
-    Util.log_pop
+    if (agents.nonEmpty) {
+      Util.log_push
+      Util.log("Spawning time (s): " + basic_stats(agents.map(_.birth_tick)))
+      Util.log("Routes:")
+      percentages(agents.map(_.route.strategy))
+      Util.log("Wallets:")
+      percentages(agents.map(_.wallet.policy))
+      Util.log("Budget ($): " + basic_stats(agents.map(_.wallet.budget)))
+      Util.log_pop
+    }
   }
 
   // Describe the percentages of each thing
@@ -65,6 +68,18 @@ case class Scenario(map_fn: String, agents: Array[MkAgent],
   // Min, max, average
   private def basic_stats(nums: Iterable[Double]) =
     f"${nums.min}%.2f - ${nums.max}%.2f (average ${nums.sum / nums.size}%.2f)"
+
+  def diff(other: Scenario): Unit = {
+    if (map_fn != other.map_fn) {
+      Util.log(s"Scenarios are for different maps: $map_fn and ${other.map_fn}")
+      return
+    }
+    intersections.zip(other.intersections).foreach(pair => pair._1.diff(pair._2))
+    agents.zip(other.agents).foreach(pair => pair._1.diff(pair._2))
+    if (agents.size != other.agents.size) {
+      Util.log(s"Scenarios have different numbers of agents: ${agents.size} and ${other.agents.size}")
+    }
+  }
 }
 
 object Scenario {
@@ -101,6 +116,23 @@ case class MkAgent(id: Int, birth_tick: Double, seed: Long,
     val sim = Common.sim
     val a = new Agent(id, route.make(sim), new RNG(seed), wallet)
     sim.ready_to_spawn += new SpawnAgent(a, sim.edges(start_edge), start_dist)
+  }
+
+  def diff(other: MkAgent) = {
+    Util.assert_eq(id, other.id)
+    val d = List(
+      Util.diff(birth_tick, other.birth_tick, "spawn time"),
+      Util.diff(seed, other.seed, "RNG seed"),
+      Util.diff(start_edge, other.start_edge, "start"),
+      Util.diff(start_dist, other.start_dist, "start distance"),
+      Util.diff(route.goal, other.route.goal, "end"),
+      Util.diff(route.strategy, other.route.strategy, "route"),
+      Util.diff(wallet.policy, other.wallet.policy, "wallet"),
+      Util.diff(wallet.budget, other.wallet.budget, "budget")
+    ).flatten.mkString(", ")
+    if (d.nonEmpty) {
+      Util.log(s"Agent $id different: $d")
+    }
   }
 }
 
@@ -140,6 +172,17 @@ case class MkIntersection(id: Integer, policy: IntersectionType.Value,
                           ordering: OrderingType.Value)
 {
   def make(v: Vertex) = new Intersection(v, policy, ordering)
+
+  def diff(other: MkIntersection) = {
+    Util.assert_eq(id, other.id)
+    val d = List(
+      Util.diff(policy, other.policy, "policy"),
+      Util.diff(ordering, other.ordering, "ordering")
+    ).flatten.mkString(", ")
+    if (d.nonEmpty) {
+      Util.log(s"Intersection $id different: $d")
+    }
+  }
 }
 
 object IntersectionDistribution {
@@ -266,7 +309,9 @@ object ScenarioTool {
     ("scenarios/foo --out scenarios/new_foo [--vert ...]* [--agent ...]* [--spawn ...]*\n" +
      "  --vert 42 policy=StopSign ordering=FIFO\n" +
      "  --agent 3 start=0 end=100 time=16.2 route=Drunken wallet=Random budget=90.0\n" +
-     "  --spawn 500 start=0 end=100 time=16.2 route=Drunken wallet=Random budget=90.0")
+     "  --spawn 500 start=0 end=100 time=16.2 route=Drunken wallet=Random budget=90.0\n" +
+     "\n" +
+     "Or pass two scenarios to get a diff")
      // TODO removing all existing agents, or something
 
   private def dump_usage() = {
@@ -276,6 +321,15 @@ object ScenarioTool {
 
   // TODO split it up a bit for readability
   def main(arg_array: Array[String]) = {
+    if (arg_array.size == 2) {
+      val Array(a1, a2) = arg_array
+      Util.log(s"Diffing $a1 with $a2\n")
+      val s1 = Scenario.load(a1)
+      val s2 = Scenario.load(a2)
+      s1.diff(s2)
+      sys.exit
+    }
+
     var args = arg_array.toList
     def shift_args(): String = {
       if (args.isEmpty) {
@@ -295,9 +349,27 @@ object ScenarioTool {
       }).toMap
     }
 
-    var s = Scenario.load(shift_args)
-    // the logging will be ugly. :(
+    // If they pass in a map instead, make an empty scenario
+    val input = shift_args
+    var s: Scenario = null
+    // the logging will be ugly if this gets initialized in the middle of
+    // something
     lazy val graph = Graph.load(s.map_fn)
+
+    try {
+      s = Scenario.load(input)
+    } catch {
+      case _: Throwable => {
+        Util.log(s"Initializing empty scenario on $input...")
+        s = Scenario(
+          input, Array(), Array()
+        )
+        s = s.copy(
+          intersections = IntersectionDistribution.default(graph)
+        )
+      }
+    }
+
     var output = ""
     val rng = new RNG()
 
@@ -321,7 +393,7 @@ object ScenarioTool {
             )
           )
           
-          Util.log(s"Changing $old_v to $new_v")
+          old_v.diff(new_v)
           s.intersections(id) = new_v
         }
         // --agent 3 start=0 end=100 time=16.2 route=Drunken wallet=Random budget=90.0
@@ -363,7 +435,7 @@ object ScenarioTool {
             )
           )
           
-          Util.log(s"Changing $old_a to $new_a")
+          old_a.diff(new_a)
           s.agents(id) = new_a
         }
         // TODO specifying ranges or choices for stuff.
@@ -403,6 +475,22 @@ object ScenarioTool {
           Util.log(s"Adding $number new agents")
           s = s.copy(agents = s.agents ++ new_agents)
         }
+        // --all_verts policy=StopSign ordering=FIFO
+        case "--all_verts" => {
+          val params = slurp_params
+
+          val policy = IntersectionType.withName(
+            params.getOrElse("policy", cfg.policy)
+          )
+          val ordering = OrderingType.withName(
+            params.getOrElse("ordering", cfg.ordering)
+          )
+
+          Util.log(s"Changing all intersections to $policy with $ordering ordering")
+          s = s.copy(intersections = IntersectionDistribution.uniform(
+            graph, Array(policy), Array(ordering)
+          ))
+        }
         case _ => dump_usage
       }
     }
@@ -417,3 +505,5 @@ object ScenarioTool {
     }
   }
 }
+
+// TODO Most of this file is ripe for a java beans-esque generalization.

@@ -100,7 +100,6 @@
 
 # Testing/Experiments
 - standalone programs to make/mod scenarios
-  - diff two scenarios (in the 'changing' msg, maybe print it there)
   - specify distribution of rand things, discrete or continuous.
   - breakdown other categories when describing
 - make scenarios from UI
