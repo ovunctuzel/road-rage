@@ -101,8 +101,8 @@
 # Testing/Experiments
 - standalone programs to make/mod scenarios
   - specify distribution of rand things, discrete or continuous.
-  - summarize a scenario
-
+  - breakdown other categories when describing
+  - diff two scenarios
 - make scenarios from UI
 - the stats side of the story
 - verify determinism retained... ordering events queue

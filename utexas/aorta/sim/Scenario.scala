@@ -10,18 +10,59 @@ import utexas.aorta.sim.market._
 
 import java.io.File
 import scala.collection.mutable.ArrayBuffer
+import scala.collection.mutable.{HashMap => MutableMap}
 
 import utexas.aorta.{Util, RNG, Common, cfg}
 
 @SerialVersionUID(1)
 case class Scenario(map_fn: String, agents: Array[MkAgent],
-               intersections: Array[MkIntersection])
+                    intersections: Array[MkIntersection])
 {
   def make_sim(graph: Graph = Graph.load(map_fn)) = new Simulation(graph, this)
   def save(fn: String) = Util.serialize(this, fn)
 
   def make_intersection(v: Vertex) = intersections(v.id).make(v)
   def make_agents() = agents.foreach(a => a.make)
+
+  // Although the massive numbers of agents were probably created with a
+  // distribution function originally, we just see the individual list in the
+  // end. So compute basic stats about it.
+  def summarize() = {
+    // TODO breakdown combos of policy/ordering, and wallet/budget
+    Util.log("Intersection policies:")
+    percentages(intersections.map(_.policy))
+    Util.log("Intersection orderings:")
+    percentages(intersections.map(_.ordering))
+    Util.log("")
+
+    Util.log(s"${agents.size} agents total")
+    // TODO where are agents starting/going?
+    Util.log_push
+    Util.log("Spawning time (s): " + basic_stats(agents.map(_.birth_tick)))
+    Util.log("Routes:")
+    percentages(agents.map(_.route.strategy))
+    Util.log("Wallets:")
+    percentages(agents.map(_.wallet.policy))
+    Util.log("Budget ($): " + basic_stats(agents.map(_.wallet.budget)))
+    Util.log_pop
+  }
+
+  // Describe the percentages of each thing
+  private def percentages[T](things: Iterable[T]) = {
+    val count = new MutableMap[T, Int]().withDefaultValue(0)
+    things.foreach(t => count(t) += 1)
+    val total = things.size
+    Util.log_push
+    for (key <- count.keys) {
+      val percent = count(key) / total * 100.0
+      Util.log(f"$key: ${percent}%.2f%")
+    }
+    Util.log_pop
+  }
+
+  // Min, max, average
+  private def basic_stats(nums: Iterable[Double]) =
+    f"${nums.min}%.2f - ${nums.max}%.2f (average ${nums.sum / nums.size}%.2f)"
 }
 
 object Scenario {
@@ -44,15 +85,10 @@ object Scenario {
 // agents/intersections/etc.
 // TODO associate directly with their corresponding class?
 
-abstract class MkAgent() {
-  def make(): Unit
-}
-
 @SerialVersionUID(1)
-case class MkSingleAgent(id: Int, birth_tick: Double, seed: Long,
-                         start_edge: Int, start_dist: Double, route: MkRoute,
-                         wallet: MkWallet)
-  extends MkAgent
+case class MkAgent(id: Int, birth_tick: Double, seed: Long,
+                   start_edge: Int, start_dist: Double, route: MkRoute,
+                   wallet: MkWallet)
 {
   def make() = {
     // TODO worry about order...
@@ -148,7 +184,7 @@ object AgentDistribution {
     val actual_starts = filter_candidates(starts)
     return ids.map(id => {
       val start = rng.choose(actual_starts)
-      MkSingleAgent(
+      MkAgent(
         id, rng.double(times._1, times._2), rng.new_seed, start.id,
         start.safe_spawn_dist(rng),
         MkRoute(rng.choose(routes), rng.choose(ends).id, rng.new_seed),
@@ -218,5 +254,14 @@ object Factory {
     // TODO budget is misnomer for emergency
     case WalletType.Emergency => new EmergencyVehicleWallet(a, budget)    
     case WalletType.Freerider => new FreeriderWallet(a)
+  }
+}
+
+// Command-line interface
+object ScenarioTool {
+  def main(args: Array[String]) = {
+    // For now, just query.
+    val s = Scenario.load(args.head)
+    s.summarize
   }
 }
