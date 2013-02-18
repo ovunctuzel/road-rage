@@ -145,7 +145,7 @@ object Viewer extends SimpleSwingApplication {
         })
         contents += new Separator
         contents += new MenuItem(Action("Quit") {
-          System.exit(0)
+          sys.exit
         })
       }
 

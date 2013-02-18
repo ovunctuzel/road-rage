@@ -15,6 +15,8 @@ import scala.collection.mutable.{HashMap => MutableMap}
 import utexas.aorta.{Util, RNG, Common, cfg}
 
 @SerialVersionUID(1)
+// Array index and agent/intersection ID must correspond. Client's
+// responsibility.
 case class Scenario(map_fn: String, agents: Array[MkAgent],
                     intersections: Array[MkIntersection])
 {
@@ -54,7 +56,7 @@ case class Scenario(map_fn: String, agents: Array[MkAgent],
     val total = things.size
     Util.log_push
     for (key <- count.keys) {
-      val percent = count(key) / total * 100.0
+      val percent = count(key).toDouble / total * 100.0
       Util.log(f"$key: ${percent}%.2f%")
     }
     Util.log_pop
@@ -259,9 +261,159 @@ object Factory {
 
 // Command-line interface
 object ScenarioTool {
-  def main(args: Array[String]) = {
-    // For now, just query.
-    val s = Scenario.load(args.head)
+  // TODO generate choices for things!
+  val usage =
+    ("scenarios/foo --out scenarios/new_foo [--vert ...]* [--agent ...]* [--spawn ...]*\n" +
+     "  --vert 42 policy=StopSign ordering=FIFO\n" +
+     "  --agent 3 start=0 end=100 time=16.2 route=Drunken wallet=Random budget=90.0\n" +
+     "  --spawn 500 start=0 end=100 time=16.2 route=Drunken wallet=Random budget=90.0")
+     // TODO removing all existing agents, or something
+
+  private def dump_usage() = {
+    Util.log(usage)
+    sys.exit
+  }
+
+  // TODO split it up a bit for readability
+  def main(arg_array: Array[String]) = {
+    var args = arg_array.toList
+    def shift_args(): String = {
+      if (args.isEmpty) {
+        dump_usage
+      }
+      val head = args.head
+      args = args.tail
+      return head
+    }
+
+    def slurp_params(): Map[String, String] = {
+      val pair = args.span(a => !a.startsWith("--"))
+      args = pair._2
+      return pair._1.map(p => {
+        val Array(k, v) = p.split("=")
+        k -> v
+      }).toMap
+    }
+
+    var s = Scenario.load(shift_args)
+    // the logging will be ugly. :(
+    lazy val graph = Graph.load(s.map_fn)
+    var output = ""
+    val rng = new RNG()
+
+    while (args.nonEmpty) {
+      shift_args match {
+        case "--out" => {
+          output = shift_args
+        }
+        // --vert 42 policy=StopSign ordering=FIFO
+        case "--vert" => {
+          val id = shift_args.toInt
+          val old_v = s.intersections(id)
+          Util.assert_eq(old_v.id, id)
+          val params = slurp_params
+          val new_v = old_v.copy(
+            policy = IntersectionType.withName(
+              params.getOrElse("policy", old_v.policy.toString)
+            ),
+            ordering = OrderingType.withName(
+              params.getOrElse("ordering", old_v.ordering.toString)
+            )
+          )
+          
+          Util.log(s"Changing $old_v to $new_v")
+          s.intersections(id) = new_v
+        }
+        // --agent 3 start=0 end=100 time=16.2 route=Drunken wallet=Random budget=90.0
+        case "--agent" => {
+          val id = shift_args.toInt
+          val old_a = s.agents(id)
+          Util.assert_eq(old_a.id, id)
+          val params = slurp_params
+
+          // Preserve the original spawning distance, or choose an appropriate
+          // new one
+          val start_dist = params.get("start") match {
+            case Some(e) if e.toInt == old_a.start_edge => old_a.start_dist
+            case Some(e) => graph.edges(e.toInt).safe_spawn_dist(rng)
+            case None => old_a.start_dist
+          }
+
+          val new_a = old_a.copy(
+            start_edge = params.getOrElse(
+              "start", old_a.start_edge.toString
+            ).toInt,
+            start_dist = start_dist,
+            birth_tick = params.getOrElse(
+              "time", old_a.birth_tick.toString
+            ).toDouble,
+            route = old_a.route.copy(
+              strategy = RouteType.withName(
+                params.getOrElse("route", old_a.route.strategy.toString)
+              ),
+              goal = params.getOrElse("end", old_a.route.goal.toString).toInt
+            ),
+            wallet = old_a.wallet.copy(
+              policy = WalletType.withName(
+                params.getOrElse("wallet", old_a.wallet.policy.toString)
+              ),
+              budget = params.getOrElse(
+                "budget", old_a.wallet.budget.toString
+              ).toDouble
+            )
+          )
+          
+          Util.log(s"Changing $old_a to $new_a")
+          s.agents(id) = new_a
+        }
+        // TODO specifying ranges or choices for stuff.
+        // --spawn 500 start=0 end=100 time=16.2 route=Drunken wallet=Random budget=90.0
+        case "--spawn" => {
+          val number = shift_args.toInt
+          val params = slurp_params
+
+          val starts = params.get("start") match {
+            case Some(e) => Array(graph.edges(e.toInt))
+            case None => graph.edges
+          }
+          val ends = params.get("end") match {
+            case Some(e) => Array(graph.edges(e.toInt))
+            case None => graph.edges
+          }
+          val time = params.get("time") match {
+            case Some(t) => (t.toDouble, t.toDouble)
+            case None => (0.0, 60.0)
+          }
+          val route = Array(
+            RouteType.withName(params.getOrElse("route", cfg.route))
+          )
+          val wallet = Array(
+            WalletType.withName(params.getOrElse("wallet", cfg.wallet))
+          )
+          val budget = params.get("budget") match {
+            case Some(t) => (t.toDouble, t.toDouble)
+            case None => (100.0, 1000.0)
+          }
+          val new_agents = AgentDistribution.uniform(
+            Range(s.agents.size, s.agents.size + number), starts, ends, time,
+            route, wallet, budget
+          )
+
+          // TODO describe more?
+          Util.log(s"Adding $number new agents")
+          s = s.copy(agents = s.agents ++ new_agents)
+        }
+        case _ => dump_usage
+      }
+    }
+    Util.log("")
+
     s.summarize
+
+    if (output.nonEmpty) {
+      s.save(output)
+      Util.log("\nSaved scenario to $output")
+      // TODO warn if overwriting? prompt?
+    }
   }
 }
