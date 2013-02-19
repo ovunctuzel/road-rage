@@ -151,9 +151,9 @@ object Viewer extends SimpleSwingApplication {
 
       contents += new Menu("View") {
         contents += new Menu("Highlight type of road") {
-          contents ++= road_types.map(t => new MenuItem(t) {
+          contents ++= road_types.map(t => new MenuItem(Action(t) {
             canvas_2d.handle_ev(EV_Param_Set("highlight", Some(t)))
-          })
+          }))
         }
         contents += new MenuItem(Action("Clear all highlighting") {
           canvas_2d.handle_ev(EV_Param_Set("highlight", None))
@@ -184,7 +184,6 @@ object Viewer extends SimpleSwingApplication {
       }
 
       contents += new Menu("Simulate") {
-        //contents += new MenuItem("Spawn Agent") // TODO
         contents += new MenuItem(Action("Spawn Army") {
           canvas_2d.handle_ev(EV_Action("spawn-army"))
         })

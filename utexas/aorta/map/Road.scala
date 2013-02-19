@@ -89,6 +89,10 @@ class Road(var id: Int, val length: Double, val name: String,
 
   // For debug only
   def doomed = all_lanes.find(e => e.doomed).isDefined
+
+  // TODO better heuristic, based on how much this extended road touches other
+  // roads
+  def is_major = road_type != "residential"
 }
 
 object Road {

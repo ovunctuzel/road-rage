@@ -8,7 +8,7 @@ import scala.collection.mutable.{HashMap => MutableMap}
 import scala.collection.mutable.MultiMap
 import scala.collection.mutable.{Set => MutableSet}
 
-import utexas.aorta.sim.{Simulation, Intersection, Policy, Agent, Ticket}
+import utexas.aorta.sim.{Intersection, Policy, Agent, Ticket}
 import utexas.aorta.sim.market.IntersectionOrdering
 import utexas.aorta.map.Turn
 
@@ -55,6 +55,7 @@ class ReservationPolicy(intersection: Intersection,
   }
 
   def dump_info() = {
+    Util.log(s"Reservation policy for $intersection")
     Util.log(ordering.queue.size + " reservations pending")
     Util.log("Currently:")
     Util.log_push

@@ -8,8 +8,7 @@ import scala.collection.mutable.{HashSet => MutableSet}
 import scala.collection.mutable.ListBuffer
 
 import utexas.aorta.map.{Turn, Vertex}
-import utexas.aorta.sim.{Simulation, Intersection, Policy, Agent,
-                         EV_Signal_Change}
+import utexas.aorta.sim.{Intersection, Policy, Agent, EV_Signal_Change}
 import utexas.aorta.sim.market.IntersectionOrdering
 
 import utexas.aorta.{Util, Common, cfg}
@@ -78,6 +77,8 @@ class SignalPolicy(intersection: Intersection,
       current_phase.turns.toSet
 
   def dump_info() = {
+    Util.log(s"Signal policy for $intersection")
+    Util.log(s"Current phase: $current_phase")
     if (in_overtime) {
       Util.log("Waiting on: " + accepted_agents)
     }

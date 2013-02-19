@@ -56,7 +56,6 @@
 - give lanes/roads/etc the ability to be closed
 
 # Code Cleanup
-- a Common object
 - pull some math in one place
 - split the passes
   - pass1 = read osm + normalize
@@ -64,7 +63,6 @@
   - pass3 = (>make edge geometry), make edges, make turns,
             (>nuke disconnected), (collapse degenerate verts),
             (small roads to long turns), trim lane lines at vertices
-- only really legit use of scheduled sim events is generators, stats
 - draw per object
   - UI state needs to go somewhere accessible to all
   - package for awt stuff to avoid importing
@@ -132,10 +130,8 @@
 
 # Micro-optimizations
 - sleep less in UI
-- throw away geometry in UI after converted to awt stuff
 - truncate lengths, other doubles or more compactly write
 - why are traversable lines given not as point sequence?
-- serialize less, reconstruct more?
 
 # Distributed Parallelization
 - meseoscopic in between regions? lockstep necessary?

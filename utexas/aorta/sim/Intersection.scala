@@ -136,5 +136,7 @@ class NeverGoPolicy(intersection: Intersection) extends Policy(intersection) {
   def handle_exit(a: Agent, turn: Turn) = {}
   def unregister_body(a: Agent) = {}
   def current_greens = Set()
-  def dump_info = {}
+  def dump_info = {
+    Util.log(s"Never go policy for $intersection")
+  }
 }

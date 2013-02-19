@@ -5,7 +5,7 @@
 package utexas.aorta.sim.policies
 
 import utexas.aorta.map.Turn
-import utexas.aorta.sim.{Simulation, Intersection, Policy, Agent, Ticket}
+import utexas.aorta.sim.{Intersection, Policy, Agent, Ticket}
 import utexas.aorta.sim.market.IntersectionOrdering
 
 import scala.collection.mutable.{HashMap, MultiMap}
@@ -61,6 +61,7 @@ class StopSignPolicy(intersection: Intersection,
   def current_greens = intersection.turns.keys.toSet
 
   def dump_info() = {
+    Util.log(s"Stop sign policy for $intersection")
     Util.log("Current owner: " + current_owner)
   }
 

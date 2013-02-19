@@ -96,18 +96,15 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
   // TODO this was too ridiculous a sequence comprehension, so use a ListBuffer,
   // which is supposed to be O(1) append and conversion to list.
   Util.log("Pre-rendering road geometry...")
-  Util.log_push
 
   val road2lines = new HashMap[Road, MutableSet[RoadLine]]
     with MultiMap[Road, RoadLine]
-  Util.log("Road lines...")
   val bg_lines = build_bg_lines
 
   // this is only used for finer granularity searching...
   val edge2lines = new HashMap[Edge, MutableSet[EdgeLine]]
     with MultiMap[Edge, EdgeLine]
   // pre-render lanes
-  Util.log("Edge lines...")
   val fg_lines = build_fg_lines
 
   // just used during construction.

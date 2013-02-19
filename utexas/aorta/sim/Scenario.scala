@@ -200,12 +200,25 @@ object IntersectionDistribution {
       v.id, rng.choose(policies), rng.choose(orderings)
     ))
 
-  def default(graph: Graph) = uniform(
+  def uniform_default(graph: Graph) = uniform(
     graph, Array(default_policy), Array(default_ordering)
   )
 
-  // TODO realistic assignment, with signs at small crossings, and signals for
-  // heavy direction of big crossings
+  def default(graph: Graph) = realistic(graph)
+
+  // Put stop signs at crossings of all small roads, signals or reservations at
+  // crossings of all big roads, and common case hybrids at mixtures
+  def realistic(graph: Graph) = graph.vertices.map(v => {
+    val (big, small) = v.roads.partition(_.is_major)
+    val policy =
+      if (big.isEmpty)
+        IntersectionType.StopSign
+      else if (small.isEmpty)
+        IntersectionType.Reservation  // TODO or signal?
+      else
+        IntersectionType.CommonCase
+    MkIntersection(v.id, policy, default_ordering)
+  })
 }
 
 object AgentDistribution {
@@ -248,7 +261,7 @@ object AgentDistribution {
 
 object IntersectionType extends Enumeration {
   type IntersectionType = Value
-  val NeverGo, StopSign, Signal, Reservation = Value
+  val NeverGo, StopSign, Signal, Reservation, CommonCase = Value
 }
 
 object RouteType extends Enumeration {
@@ -278,6 +291,8 @@ object Factory {
       new SignalPolicy(i, make_intersection_ordering[Phase](ordering))
     case IntersectionType.Reservation =>
       new ReservationPolicy(i, make_intersection_ordering[TurnBatch](ordering))
+    case IntersectionType.CommonCase =>
+      new CommonCasePolicy(i, make_intersection_ordering[Ticket](ordering))
   }
   
   def make_route(enum: RouteType.Value, goal: DirectedRoad, rng: RNG) = enum match {
