@@ -165,6 +165,7 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
         green_turns(t) = GeomFactory.turn_geom(t)
       }
     }
+    case _ =>
   } })
 
   // At this point, signal policies have already fired up and sent the first

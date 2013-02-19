@@ -310,6 +310,7 @@ object ScenarioTool {
      "  --vert 42 policy=StopSign ordering=FIFO\n" +
      "  --agent 3 start=0 end=100 time=16.2 route=Drunken wallet=Random budget=90.0\n" +
      "  --spawn 500 start=0 end=100 time=16.2 route=Drunken wallet=Random budget=90.0\n" +
+     "  --all_verts policy=StopSign ordering=FIFO\n" +
      "\n" +
      "Or pass two scenarios to get a diff")
      // TODO removing all existing agents, or something
@@ -500,7 +501,7 @@ object ScenarioTool {
 
     if (output.nonEmpty) {
       s.save(output)
-      Util.log("\nSaved scenario to $output")
+      Util.log(s"\nSaved scenario to $output")
       // TODO warn if overwriting? prompt?
     }
   }

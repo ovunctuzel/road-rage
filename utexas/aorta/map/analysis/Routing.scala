@@ -112,3 +112,24 @@ class CHRouter(graph: Graph) extends Router(graph) {
     return result.tail.toList
   }
 }
+
+// TODO maybe not a good idea at all. just evaluate it.
+class DirectionalRouter(graph: Graph) extends Router(graph) {
+  def path(from: DirectedRoad, to: DirectedRoad): List[DirectedRoad] = {
+    val goal = to.to.location
+    val visited = new HashSet[DirectedRoad]()
+    var current = from
+    while (current != to) {
+      if (visited.contains(current)) {
+        throw new Exception(s"Directional route $from -> $to failed at $current")
+      }
+      visited += current
+      current = current.succs.minBy(
+        r => r._1.asInstanceOf[DirectedRoad].to.location.dist_to(goal)
+      )._1.asInstanceOf[DirectedRoad]
+    }
+    Util.log("Yay, found a route!")
+    // TODO return it
+    return Nil
+  }
+}

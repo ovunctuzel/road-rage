@@ -4,7 +4,8 @@
 
 package utexas.aorta.analysis
 
-import java.io.{ObjectOutputStream, FileOutputStream}
+import java.io.{ObjectOutputStream, FileOutputStream, ObjectInputStream,
+                FileInputStream}
 import scala.annotation.elidable
 
 import utexas.aorta.sim.{MkIntersection, RouteType, WalletType}
@@ -68,3 +69,18 @@ case class Heartbeat_Stat(
   active_agents: Int, live_agents: Int, spawning_agents: Int, tick: Double,
   agent_steps: Int
 ) extends Measurement
+
+// Offline, read the measurements and figure stuff out.
+object PostProcess {
+  def main(args: Array[String]) = {
+    val fn = args.head
+    val log = new ObjectInputStream(new FileInputStream(fn))
+
+    // TODO do different stuff for each analysis, but the general paradigm is
+    // read everything, aggregate data, then run through aggregate again
+    // probably.
+    
+    // analysis: make a histogram of the time to get through an intersection
+    // (from requesting the turn to finishing it)
+  }
+}
