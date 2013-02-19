@@ -17,8 +17,15 @@ import utexas.aorta.Common
 class Turn(val id: Int, var from_id: Int, var to_id: Int)
   extends Traversable with Ordered[Turn] with Serializable
 {
-  val conflict_line = new Line(from.end_pt, to.start_pt)
+  // TODO var because points change
+  var conflict_line = new Line(from.end_pt, to.start_pt)
   set_lines(Array(conflict_line))
+
+  override def set_lines(l: Array[Line]) = {
+    // Ignore the input and just recompute our conflict line.
+    conflict_line = new Line(from.end_pt, to.start_pt)
+    super.set_lines(Array(conflict_line))
+  }
 
   // The serialization dependency cycle has to be broken somewhere, or the order
   // causes stack overflow. Break it here.

@@ -119,5 +119,13 @@ object MapSuite {
         throw new Exception(s"$e has length ${e.length}")
       }
     }
+
+    // Make sure cached length is correct.
+    g.traversables.foreach(t => {
+      val l = t.lines.foldLeft(0.0)((a, b) => a + b.length)
+      if (l != t.length) {
+        println(s"$t has recorded length ${t.length} and computed $l")
+      }
+    })
   }
 }

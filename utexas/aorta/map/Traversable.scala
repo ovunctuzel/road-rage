@@ -25,8 +25,9 @@ abstract class Traversable() extends Serializable {
   def speed_limit: Double
 
   // Store; it's not free to compute it constantly
-  var length: Double = 0
+  var length: Double = -1.0
 
+  // TODO dont think this has to stick around that much longer.
   def set_lines(ls: Array[Line]) = {
     lines = ls
     length = lines.foldLeft(0.0)((a, b) => a + b.length)
@@ -61,13 +62,7 @@ abstract class Traversable() extends Serializable {
       }
     }
 
-    // TODO dont do this anymore!!!
-    // Here's the deal. Normally this would be a bug, but actually,
-    // map.make.Reader artificially bumps up tiny edges to a min of 0.1 meters
-    // to avoid breaking lookahead. So just... cheat and claim they're at the
-    // end of the tiny, tiny edge.
-    Util.assert_eq(length, 0.1)
-    return (lines.last, lines.last.length)
+    throw new Exception(s"$dist is too long for $this (length $length)")
   }
 
   def start_pt = lines.head.start
@@ -91,16 +86,10 @@ abstract class Traversable() extends Serializable {
 class Line(var x1: Double, var y1: Double, var x2: Double, var y2: Double)
   extends Serializable
 {
-  // Compute and store it once, since the math isn't free
-  var length: Double = 0
-  recompute_length
-
-  // TODO temporary approach.
-  def recompute_length() = {
-    length = Coordinate.gps_dist_in_meters(
-      Graph.world_to_gps(x1, y1), Graph.world_to_gps(x2, y2)
-    )
-  }
+  // TODO Compute and store it once, since the math isn't free?
+  def length = Coordinate.gps_dist_in_meters(
+    Graph.world_to_gps(x1, y1), Graph.world_to_gps(x2, y2)
+  )
 
   def this(pt1: Coordinate, pt2: Coordinate) = this(pt1.x, pt1.y, pt2.x, pt2.y)
   def this(v1: Vertex, v2: Vertex) = this(v1.location, v2.location)

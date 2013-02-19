@@ -19,7 +19,9 @@
 - agents and intersections could wake each other up now
 
 # Map Construction
-- turn geometry looks wacky again
+- var lines are so confusing and bug-prone
+  when we mod part of a line, line's length AND traversables length gets screwed
+
 - keep orig GPS coords and only scale around for UI
   - then obselete set_params
 - xml output too for non-aorta clients

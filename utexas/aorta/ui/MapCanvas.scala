@@ -377,7 +377,7 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
     val line = GeomFactory.turn_geom(turn)
     g2d.setColor(color)
     g2d.draw(line)
-    g2d.fill(GeomFactory.draw_arrow(line, line.shift_back(0.75), 2))
+    g2d.fill(GeomFactory.draw_arrow(line, line.shift_back(0.75), 3))
   }
 
   def draw_intersection(g2d: Graphics2D, e: Edge) = {
