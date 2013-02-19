@@ -5,8 +5,10 @@
 package utexas.aorta.analysis
 
 import java.io.{ObjectOutputStream, FileOutputStream, ObjectInputStream,
-                FileInputStream}
+                FileInputStream, EOFException}
 import scala.annotation.elidable
+import scala.collection.mutable.{HashMap => MutableMap}
+import scala.collection.mutable.ListBuffer
 
 import utexas.aorta.sim.{MkIntersection, RouteType, WalletType}
 
@@ -70,17 +72,93 @@ case class Heartbeat_Stat(
   agent_steps: Int
 ) extends Measurement
 
+// Summarizes an entire turn. Built offline.
+case class Turn_Summary_Stat(
+  agent: Int, vert: Int, req_tick: Double, accept_tick: Double,
+  done_tick: Double, budget_at_req: Double, budget_at_accept: Double
+) extends Measurement
+{
+  // TODO if we pay for stuff in the future, gonna be wrong
+  def cost_paid = budget_at_req - budget_at_accept
+}
+
+// Summarizes an agent's lifetime. Built offline.
+case class Agent_Summary_Stat(
+  id: Int, start_tick: Double, start: Int, end: Int, route: RouteType.Value,
+  wallet: WalletType.Value, start_budget: Double, end_tick: Double,
+  end_budget: Double
+) extends Measurement
+{
+  def trip_time = end_tick - start_tick
+  def total_spent = end_budget - start_budget
+}
+
 // Offline, read the measurements and figure stuff out.
 object PostProcess {
   def main(args: Array[String]) = {
     val fn = args.head
     val log = new ObjectInputStream(new FileInputStream(fn))
 
-    // TODO do different stuff for each analysis, but the general paradigm is
-    // read everything, aggregate data, then run through aggregate again
-    // probably.
-    
-    // analysis: make a histogram of the time to get through an intersection
-    // (from requesting the turn to finishing it)
+    val stats = group_raw_stats(log)
+    log.close
+
+    stats.foreach(s => Util.log(s"$s"))
+
+    // TODO show min (and where/who), max, average
+    // TODO correlate with the combos of intersection policy and ordering
+    // TODO correlate with agent budget (only expect relation when Auction
+    // ordering)
+  }
+
+  // First pair the raw stats into bigger-picture stats.
+  private def group_raw_stats(log: ObjectInputStream): List[Measurement] = {
+    val stats = new ListBuffer[Measurement]()
+    try {
+      // map from (agent, vert) to the request and accept stats
+      val last_turn = new MutableMap[(Int, Int), (Turn_Request_Stat, Turn_Accept_Stat)]()
+      val agent_start = new MutableMap[Int, Agent_Start_Stat]()
+      while (true) {
+        log.readObject match {
+          // Group turns
+          case s: Turn_Request_Stat => {
+            val key = (s.agent, s.vert)
+            Util.assert_eq(last_turn.contains(key), false)
+            last_turn(key) = ((s, null))
+          }
+          case s: Turn_Accept_Stat => {
+            val key = (s.agent, s.vert)
+            val pair = last_turn(key)
+            Util.assert_eq(pair._2, null)
+            last_turn(key) = (pair._1, s)
+          }
+          case Turn_Done_Stat(a, v, tick) => {
+            val pair = last_turn.remove((a, v)).get
+            stats += Turn_Summary_Stat(
+              a, v, pair._1.tick, pair._2.tick, tick, pair._1.budget,
+              pair._2.budget
+            )
+          }
+
+          // Group agent lifetimes
+          case s: Agent_Start_Stat => {
+            Util.assert_eq(agent_start.contains(s.id), false)
+            agent_start(s.id) = s
+          }
+          case Agent_Finish_Stat(id, tick, budget) => {
+            val orig = agent_start(id)
+            stats += Agent_Summary_Stat(
+              id, orig.tick, orig.start, orig.end, orig.route, orig.wallet,
+              orig.budget, tick, budget
+            )
+          }
+
+          // Echo other stuff
+          case s: Measurement => stats += s
+        }
+      }
+    } catch {
+      case e: EOFException =>
+    }
+    return stats.toList
   }
 }
