@@ -21,7 +21,7 @@
 # Map Construction
 - var lines are so confusing and bug-prone
   when we mod part of a line, line's length AND traversables length gets screwed
-
+  get rid of set_lines
 - keep orig GPS coords and only scale around for UI
   - then obselete set_params
 - xml output too for non-aorta clients
@@ -84,7 +84,6 @@
   - directed roads really that useful?
 
 # Intersection Policies
-- stop sign for only some directions
 - backpressure light optimization
 - agents should tell intersections in advance when they know
   - the edge case when we intend to stop

@@ -22,7 +22,7 @@ class StopSignPolicy(intersection: Intersection,
 
   // Agents must pause a moment, be the head of their queue, and be close enough
   // to us (in case they looked ahead over small edges).
-  def is_waiting(a: Agent)
+  private def is_waiting(a: Agent)
     = (a.how_long_idle >= cfg.pause_at_stop &&
        // TODO head of their queue doesnt imply nobody's blocking them
        a.cur_queue.head.get == a &&
