@@ -152,13 +152,21 @@ class PreGraph3(old_graph: PreGraph2) {
     for ((v, id) <- vertices.zipWithIndex) {
       v.id = id
     }
+    // Get rid of directed roads with no lanes.
     var cnt = 0
     for ((r, id) <- roads.zipWithIndex) {
       r.id = id
-      r.pos_group.id = cnt
-      cnt += 1
-      r.neg_group.id = cnt
-      cnt += 1
+
+      if (r.pos_group.isDefined && r.pos_group.get.edges.isEmpty) {
+        r.pos_group = None
+      }
+      if (r.neg_group.isDefined && r.neg_group.get.edges.isEmpty) {
+        r.neg_group = None
+      }
+      List(r.pos_group, r.neg_group).flatten.foreach(r => {
+        r.id = cnt
+        cnt += 1
+      })
     }
     Road.num_directed_roads = cnt
   }

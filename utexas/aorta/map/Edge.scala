@@ -29,9 +29,9 @@ class Edge(var id: Int, val road: Road, val dir: Direction.Value)
   def speed_limit = road.speed_limit
 
   def directed_road = if (dir == Direction.POS)
-                        road.pos_group
+                        road.pos_group.get
                       else
-                        road.neg_group
+                        road.neg_group.get
   def turns_leading_to(group: DirectedRoad) =
     next_turns.filter(t => t.to.directed_road == group)
 

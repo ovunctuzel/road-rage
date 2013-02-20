@@ -20,8 +20,9 @@ class Graph(
 {
   val directed_roads = Array.fill[DirectedRoad](Road.num_directed_roads)(null)
   roads.foreach(r => {
-    directed_roads(r.pos_group.id) = r.pos_group
-    directed_roads(r.neg_group.id) = r.neg_group
+    List(r.pos_group, r.neg_group).flatten.foreach(dr => {
+      directed_roads(dr.id) = dr
+    })
   })
 
   @transient lazy val router: Router = choose_router

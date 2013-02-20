@@ -9,6 +9,7 @@ import utexas.aorta.sim.Simulation
 import utexas.aorta.{Util, Common}
 
 // Misc, temporary stuff
+// TODO slowly it's stealing from tests.MapSuite! :P
 object Debug {
   def main(args: Array[String]) = {
     val sim = Util.process_args(args)

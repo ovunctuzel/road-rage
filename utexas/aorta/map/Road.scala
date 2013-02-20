@@ -14,9 +14,10 @@ import utexas.aorta.Util
 // TODO enum for type. also, it's var because of tarjan's...
 // TODO var id due to tarjan
 @SerialVersionUID(1)
-class Road(var id: Int, val length: Double, val name: String,
-           var road_type: String, val osm_id: Int, val v1: Vertex,
-           val v2: Vertex) extends Renderable with Serializable
+class Road(
+  var id: Int, val length: Double, val name: String, var road_type: String,
+  val osm_id: Int, val v1: Vertex, val v2: Vertex
+) extends Renderable with Serializable
 {
   var points: Array[Coordinate] = null
 
@@ -28,8 +29,12 @@ class Road(var id: Int, val length: Double, val name: String,
     Util.assert_eq(v2.location, points.last)
   }
 
-  val pos_group = new DirectedRoad(this, Road.next_directed_id, Direction.POS)
-  val neg_group = new DirectedRoad(this, Road.next_directed_id, Direction.NEG)
+  var pos_group: Option[DirectedRoad] = Some(new DirectedRoad(
+    this, Road.next_directed_id, Direction.POS
+  ))
+  var neg_group: Option[DirectedRoad] = Some(new DirectedRoad(
+    this, Road.next_directed_id, Direction.NEG
+  ))
 
   // + lanes go from v1->v2; - lanes go from v2->v1
   val pos_lanes = new MutableList[Edge]
