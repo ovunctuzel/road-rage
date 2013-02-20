@@ -5,7 +5,6 @@
 package utexas.aorta.tests
 
 import utexas.aorta.sim.Simulation
-import utexas.aorta.map.DirectedRoad
 
 import utexas.aorta.{Util, Common}
 
@@ -16,6 +15,7 @@ object Debug {
 
     degenerate_verts(sim)
     doomed_stuff(sim)
+    disconnected_directed_roads(sim)
     stress_test_pathfind(sim)
   }
 
@@ -31,8 +31,18 @@ object Debug {
     println(sim.edges.filter(_.doomed).size + " doomed edges")
   }
 
+  private def disconnected_directed_roads(sim: Simulation) = {
+    for (r <- sim.graph.directed_roads) {
+      if (r.succs.isEmpty || r.preds.isEmpty) {
+        println(s"$r has succs ${r.succs} and preds ${r.preds}. Big road oneway? ${r.road.is_oneway}")
+      }
+    }
+  }
+
   private def stress_test_pathfind(sim: Simulation) = {
     val rng = new utexas.aorta.RNG()
+    // CH (if available), or Dijkstra's
+    val router = sim.graph.router
     val t = Common.timer("routing")
 
     for (i <- 1 until 500000) {
@@ -41,7 +51,14 @@ object Debug {
       }
       val from = rng.choose(sim.graph.directed_roads)
       val to = rng.choose(sim.graph.directed_roads)
-      sim.graph.router.path(from, to)
+      try {
+        router.path(from, to)
+      } catch {
+        case e: Throwable => {
+          println(s"Problem on round $i going $from -> $to: $e")
+        }
+      }
+      // TODO verify path
     }
     t.stop
   }

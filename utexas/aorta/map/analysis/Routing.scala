@@ -101,8 +101,8 @@ class CHRouter(graph: Graph) extends Router(graph) {
   def path(from: DirectedRoad, to: DirectedRoad): List[DirectedRoad] = {
     Util.assert_eq(usable, true)
     val path = algo.calcPath(from.id, to.id)
-    Util.assert_eq(path.found, true)
     algo.clear
+    Util.assert_eq(path.found, true)
 
     val result = new ListBuffer[DirectedRoad]()
     var iter = path.calcNodes.iterator
@@ -110,26 +110,5 @@ class CHRouter(graph: Graph) extends Router(graph) {
       result += graph.directed_roads(iter.next)
     }
     return result.tail.toList
-  }
-}
-
-// TODO maybe not a good idea at all. just evaluate it.
-class DirectionalRouter(graph: Graph) extends Router(graph) {
-  def path(from: DirectedRoad, to: DirectedRoad): List[DirectedRoad] = {
-    val goal = to.to.location
-    val visited = new HashSet[DirectedRoad]()
-    var current = from
-    while (current != to) {
-      if (visited.contains(current)) {
-        throw new Exception(s"Directional route $from -> $to failed at $current")
-      }
-      visited += current
-      current = current.succs.minBy(
-        r => r._1.asInstanceOf[DirectedRoad].to.location.dist_to(goal)
-      )._1.asInstanceOf[DirectedRoad]
-    }
-    Util.log("Yay, found a route!")
-    // TODO return it
-    return Nil
   }
 }
