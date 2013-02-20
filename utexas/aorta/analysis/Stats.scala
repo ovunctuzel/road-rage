@@ -8,15 +8,15 @@ import java.io.{ObjectOutputStream, FileOutputStream, ObjectInputStream,
                 FileInputStream, EOFException}
 import scala.annotation.elidable
 import scala.collection.mutable.{HashMap => MutableMap}
-import scala.collection.mutable.ListBuffer
+import scala.collection.mutable.{ListBuffer, ArrayBuffer}
 
 import org.jfree.chart.ChartFactory
 import org.jfree.chart.plot.PlotOrientation
-import org.jfree.data.xy.{XYSeries, XYSeriesCollection}
+import org.jfree.data.statistics.HistogramDataset
 import java.io.File
 import javax.imageio.ImageIO
 
-import utexas.aorta.sim.{MkIntersection, RouteType, WalletType}
+import utexas.aorta.sim.{MkIntersection, RouteType, WalletType, IntersectionType}
 
 import utexas.aorta.Util
 
@@ -86,7 +86,9 @@ case class Turn_Summary_Stat(
 {
   // TODO if we pay for stuff in the future, gonna be wrong
   def cost_paid = budget_at_req - budget_at_accept
+  // Total delay means turn length factors in.
   def total_delay = done_tick - req_tick
+  def accept_delay = accept_tick - req_tick
 }
 
 // Summarizes an agent's lifetime. Built offline.
@@ -115,6 +117,7 @@ object PostProcess {
 
   // First pair the raw stats into bigger-picture stats.
   private def group_raw_stats(log: ObjectInputStream): List[Measurement] = {
+    Util.log("Post-processing raw stats into higher-level stats...")
     val stats = new ListBuffer[Measurement]()
     // map from (agent, vert) to the request and accept stats
     val last_turn = new MutableMap[(Int, Int), (Turn_Request_Stat, Turn_Accept_Stat)]()
@@ -166,25 +169,43 @@ object PostProcess {
     return stats.toList
   }
 
+  // TODO take directory where to dump stuff
   private def analyze_turn_times(stats: List[Measurement]) = {
+    Util.log("Analyzing turn delays...")
+
+    // TODO turn length matters!
+
+    val intersections = stats.head match {
+      case Scenario_Stat(_, i) => i
+      case _ => throw new Exception("Didn't find Scenario Stat first!")
+    }
+
     // Histogram showing times, broken down by just policy.
 
-    // TODO first, all timings!
-    val all_delays = new XYSeries("All turn delays")
+    val delays_per_policy = IntersectionType.values.toList.map(
+      p => p -> new ArrayBuffer[Double]()
+    ).toMap
+    // TODO groupBy? filter?
     for (stat <- stats) {
       stat match {
         case s: Turn_Summary_Stat => {
-          all_delays.add(s.total_delay, 1.0)
+          delays_per_policy(intersections(s.vert).policy) += s.accept_delay
         }
         case _ =>
       }
     }
-    val dataset = new XYSeriesCollection()
-    dataset.addSeries(all_delays)
+    val dataset = new HistogramDataset() // TODO relative freq?
+    for ((policy, delays) <- delays_per_policy if delays.nonEmpty) {
+      dataset.addSeries(
+        // TODO buckets?
+        // TODO set a global min and max?
+        policy.toString, delays.toArray, 15, delays.min, delays.max
+      )
+    }
 
-    val chart = ChartFactory.createXYBarChart(
-      "Turn delays", "x axis - delay?", true, "y axis - freq?", dataset,
-      PlotOrientation.HORIZONTAL, true, false, false
+    val chart = ChartFactory.createHistogram(
+      "Turn delays (from request to acceptance)", "Delay (s)", "Frequency",
+      dataset, PlotOrientation.VERTICAL, true, false, false
     )
     val img = chart.createBufferedImage(800, 600)
     ImageIO.write(img, "png", new File("test.png"))
