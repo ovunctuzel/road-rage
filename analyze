@@ -2,4 +2,4 @@
 
 . common
 
-scala -cp $CLASSPATH $JVM_OPTS utexas.aorta.analysis.PostProcess $@
+scala -cp $CLASSPATH:$JFREECHART $JVM_OPTS utexas.aorta.analysis.PostProcess $@

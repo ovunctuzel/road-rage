@@ -10,6 +10,12 @@ import scala.annotation.elidable
 import scala.collection.mutable.{HashMap => MutableMap}
 import scala.collection.mutable.ListBuffer
 
+import org.jfree.chart.ChartFactory
+import org.jfree.chart.plot.PlotOrientation
+import org.jfree.data.xy.{XYSeries, XYSeriesCollection}
+import java.io.File
+import javax.imageio.ImageIO
+
 import utexas.aorta.sim.{MkIntersection, RouteType, WalletType}
 
 import utexas.aorta.Util
@@ -80,6 +86,7 @@ case class Turn_Summary_Stat(
 {
   // TODO if we pay for stuff in the future, gonna be wrong
   def cost_paid = budget_at_req - budget_at_accept
+  def total_delay = done_tick - req_tick
 }
 
 // Summarizes an agent's lifetime. Built offline.
@@ -95,19 +102,15 @@ case class Agent_Summary_Stat(
 
 // Offline, read the measurements and figure stuff out.
 object PostProcess {
-  def main(args: Array[String]) = {
+  def main(args: Array[String]): Unit = {
     val fn = args.head
     val log = new ObjectInputStream(new FileInputStream(fn))
 
     val stats = group_raw_stats(log)
     log.close
 
-    stats.foreach(s => Util.log(s"$s"))
-
-    // TODO show min (and where/who), max, average
-    // TODO correlate with the combos of intersection policy and ordering
-    // TODO correlate with agent budget (only expect relation when Auction
-    // ordering)
+    //stats.foreach(s => Util.log(s"$s"))
+    analyze_turn_times(stats)
   }
 
   // First pair the raw stats into bigger-picture stats.
@@ -161,5 +164,34 @@ object PostProcess {
     }
     Util.assert_eq(last_turn.isEmpty, true)
     return stats.toList
+  }
+
+  private def analyze_turn_times(stats: List[Measurement]) = {
+    // Histogram showing times, broken down by just policy.
+
+    // TODO first, all timings!
+    val all_delays = new XYSeries("All turn delays")
+    for (stat <- stats) {
+      stat match {
+        case s: Turn_Summary_Stat => {
+          all_delays.add(s.total_delay, 1.0)
+        }
+        case _ =>
+      }
+    }
+    val dataset = new XYSeriesCollection()
+    dataset.addSeries(all_delays)
+
+    val chart = ChartFactory.createXYBarChart(
+      "Turn delays", "x axis - delay?", true, "y axis - freq?", dataset,
+      PlotOrientation.HORIZONTAL, true, false, false
+    )
+    val img = chart.createBufferedImage(800, 600)
+    ImageIO.write(img, "png", new File("test.png"))
+
+    // TODO show min (and where/who), max, average
+    // TODO correlate with the combos of intersection policy and ordering
+    // TODO correlate with agent budget (only expect relation when Auction
+    // ordering)
   }
 }

@@ -1,7 +1,10 @@
 #!/bin/bash
 
-JVM_OPTS="-J-Xmx1024m"
-GRAPHHOPPER="graphhopper/graphhopper-0.1-SNAPSHOT-jar-with-dependencies.jar"
+GRAPHHOPPER="3rd_party/graphhopper-0.1.jar"
 SWING="/usr/share/java/scala-swing.jar"
-JCHART="jchart2d/jchart2d-3.2.2.jar"
+JCHART="3rd_party/jchart2d-3.2.2.jar"
+JFREECHART="3rd_party/jfreechart-1.0.14.jar:3rd_party/jcommon-1.0.17.jar"
+
 CLASSPATH=".build:$GRAPHHOPPER"
+JVM_OPTS="-J-Xmx1024m"
+FULL_CP="$GRAPHHOPPER:$SWING:$JCHART:$JFREECHART"

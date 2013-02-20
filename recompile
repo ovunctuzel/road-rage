@@ -3,7 +3,7 @@
 . common
 
 SRCS=`find utexas/ -name '*.scala' -print | xargs`
-BUILD_OPTS="-d .build -deprecation -unchecked -feature -cp $SWING:$JCHART:$GRAPHHOPPER"
+BUILD_OPTS="-d .build -deprecation -unchecked -feature -cp $FULL_CP"
 FAST=""
 #FAST="-Xelide-below 3000"   # disables asserts, timers, and stats
 
