@@ -99,6 +99,12 @@ class CHRouter(graph: Graph) extends Router(graph) {
   private val algo = new PrepareContractionHierarchies().graph(gh).createAlgo
 
   def path(from: DirectedRoad, to: DirectedRoad): List[DirectedRoad] = {
+    // GraphHopper can't handle loops. For now, empty path; freebie.
+    // TODO force a loop by starting on a road directly after 'from'
+    if (from == to) {
+      return Nil
+    }
+
     Util.assert_eq(usable, true)
     val path = algo.calcPath(from.id, to.id)
     algo.clear
