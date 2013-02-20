@@ -4,12 +4,13 @@
 # vim swapfiles
 *.swp
 
-# maps/scenarios/logs
+# maps/scenarios/logs/plots
 osm/*
 !osm/synthetic.osm
 maps/*
 scenarios/*
 logs/*
+plots/*
 
 # tex stuff
 *.aux

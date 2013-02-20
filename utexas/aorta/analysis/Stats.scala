@@ -110,9 +110,13 @@ object PostProcess {
 
     val stats = group_raw_stats(log)
     log.close
+    val dir = "plots/" + fn.replace("logs/", "")
+    (new File(dir)).mkdirs
 
     //stats.foreach(s => Util.log(s"$s"))
-    analyze_turn_times(stats)
+    analyze_turn_times(stats, dir)
+    analyze_trip_times(stats, dir)
+    Util.log(s"\nResults at: $dir")
   }
 
   // First pair the raw stats into bigger-picture stats.
@@ -169,19 +173,40 @@ object PostProcess {
     return stats.toList
   }
 
-  // TODO take directory where to dump stuff
-  private def analyze_turn_times(stats: List[Measurement]) = {
-    Util.log("Analyzing turn delays...")
+  private def histogram[T](
+    data: Map[T, ArrayBuffer[Double]], title: String, x_axis: String, fn: String
+  ) = {
+    val dataset = new HistogramDataset() // TODO relative freq?
+    for ((group, numbers) <- data if numbers.nonEmpty) {
+      dataset.addSeries(
+        // TODO buckets?
+        // TODO set a global min and max?
+        group.toString, numbers.toArray, 15, numbers.min, numbers.max
+      )
+    }
 
-    // TODO turn length matters!
+    val chart = ChartFactory.createHistogram(
+      title, x_axis, "Frequency", dataset, PlotOrientation.VERTICAL, true,
+      false, false
+    )
+    val img = chart.createBufferedImage(800, 600)
+    ImageIO.write(img, "png", new File(fn))
+  }
+
+  private def analyze_turn_times(stats: List[Measurement], dir: String) = {
+    Util.log("Analyzing turn delays...")
 
     val intersections = stats.head match {
       case Scenario_Stat(_, i) => i
       case _ => throw new Exception("Didn't find Scenario Stat first!")
     }
 
-    // Histogram showing times, broken down by just policy.
+    // TODO show min (and where/who), max, average
+    // TODO correlate with the combos of intersection policy and ordering
+    // TODO correlate with agent budget (only expect relation when Auction
+    // ordering)
 
+    // Histogram showing times, broken down by just policy.
     val delays_per_policy = IntersectionType.values.toList.map(
       p => p -> new ArrayBuffer[Double]()
     ).toMap
@@ -194,25 +219,40 @@ object PostProcess {
         case _ =>
       }
     }
-    val dataset = new HistogramDataset() // TODO relative freq?
-    for ((policy, delays) <- delays_per_policy if delays.nonEmpty) {
-      dataset.addSeries(
-        // TODO buckets?
-        // TODO set a global min and max?
-        policy.toString, delays.toArray, 15, delays.min, delays.max
-      )
-    }
 
-    val chart = ChartFactory.createHistogram(
-      "Turn delays (from request to acceptance)", "Delay (s)", "Frequency",
-      dataset, PlotOrientation.VERTICAL, true, false, false
+    histogram(
+      data = delays_per_policy,
+      title = "Turn delays (from request to acceptance",
+      x_axis = "Delay (s)",
+      fn = s"$dir/turn_delay_per_policy.png"
     )
-    val img = chart.createBufferedImage(800, 600)
-    ImageIO.write(img, "png", new File("test.png"))
+  }
+
+  private def analyze_trip_times(stats: List[Measurement], dir: String) = {
+    Util.log("Analyzing trip times...")
 
     // TODO show min (and where/who), max, average
-    // TODO correlate with the combos of intersection policy and ordering
-    // TODO correlate with agent budget (only expect relation when Auction
-    // ordering)
+    // TODO lots of weighted/unweighted stuff
+
+    // Histogram showing times, broken down by just route.
+    val times_per_route = RouteType.values.toList.map(
+      r => r -> new ArrayBuffer[Double]()
+    ).toMap
+    // TODO groupBy? filter?
+    for (stat <- stats) {
+      stat match {
+        case s: Agent_Summary_Stat => {
+          times_per_route(s.route) += s.trip_time
+        }
+        case _ =>
+      }
+    }
+
+    histogram(
+      data = times_per_route,
+      title = "Agent trip times",
+      x_axis = "Total time (s)",
+      fn = s"$dir/trip_time_per_route.png"
+    )
   }
 }
