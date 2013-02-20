@@ -113,9 +113,9 @@ object PostProcess {
   // First pair the raw stats into bigger-picture stats.
   private def group_raw_stats(log: ObjectInputStream): List[Measurement] = {
     val stats = new ListBuffer[Measurement]()
+    // map from (agent, vert) to the request and accept stats
+    val last_turn = new MutableMap[(Int, Int), (Turn_Request_Stat, Turn_Accept_Stat)]()
     try {
-      // map from (agent, vert) to the request and accept stats
-      val last_turn = new MutableMap[(Int, Int), (Turn_Request_Stat, Turn_Accept_Stat)]()
       val agent_start = new MutableMap[Int, Agent_Start_Stat]()
       while (true) {
         log.readObject match {
@@ -159,6 +159,7 @@ object PostProcess {
     } catch {
       case e: EOFException =>
     }
+    Util.assert_eq(last_turn.isEmpty, true)
     return stats.toList
   }
 }

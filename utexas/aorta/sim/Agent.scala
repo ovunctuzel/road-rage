@@ -181,19 +181,8 @@ class Agent(val id: Int, val route: Route, val rng: RNG, wallet_spec: MkWallet) 
     return new_dist > 0.0
   }
 
-  private def safe_to_lc(target: Edge): Boolean = {
-    at.on match {
-      case e: Edge => {
-        if (e.road != target.road) {
-          throw new Exception(this + " wants to lane-change across roads")
-        }
-        if (math.abs(target.lane_num - e.lane_num) != 1) {
-          throw new Exception(this + " wants to skip lanes when lane-changing")
-        }                                                               
-      }
-      case _ => throw new Exception(this + " wants to lane-change from a turn!")
-    }
-
+  // Just see if we have enough static space to pull off a lane-change.
+  def room_to_lc(target: Edge): Boolean = {
     // One lane could be shorter than the other. When we want to avoid the end
     // of a lane, worry about the shorter one to be safe.
     val min_len = math.min(at.on.length, target.length)
@@ -208,6 +197,26 @@ class Agent(val id: Int, val route: Route, val rng: RNG, wallet_spec: MkWallet) 
     // have enough room to do that.
     // TODO not also travel dist?
     if (at.dist + stopping_distance(max_next_speed) >= min_len) {
+      return false
+    }
+    
+    return true
+  }
+
+  private def safe_to_lc(target: Edge): Boolean = {
+    at.on match {
+      case e: Edge => {
+        if (e.road != target.road) {
+          throw new Exception(this + " wants to lane-change across roads")
+        }
+        if (math.abs(target.lane_num - e.lane_num) != 1) {
+          throw new Exception(this + " wants to skip lanes when lane-changing")
+        }                                                               
+      }
+      case _ => throw new Exception(this + " wants to lane-change from a turn!")
+    }
+
+    if (!room_to_lc(target)) {
       return false
     }
 

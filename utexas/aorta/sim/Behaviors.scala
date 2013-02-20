@@ -49,32 +49,29 @@ class IdleBehavior(a: Agent) extends Behavior(a) {
 // Reactively avoids collisions and obeys intersections by doing a conservative
 // analysis of the next few steps.
 class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
-  def reset_target_lane(base: Edge) = {
+  private def reset_target_lane(base: Edge) = {
     target_lane = None
-    base match {
-      case e: Edge => {
-        val target = route.pick_lane(e)
-        if (target != base) {
-          target_lane = Some(target)
+    // Did lookahead previously schedule a turn for this road? We can't
+    // lane-change, then! Already committed.
+    val i = base.to.intersection
+    if (!a.turns_requested(i) && !a.turns_approved(i)) {
+      base match {
+        case e: Edge => {
+          val target = route.pick_lane(e)
+          if (target != base) {
+            target_lane = Some(target)
+          }
         }
+        case _ =>
       }
-      case _ =>
     }
   }
+
+  private def committed_to_lane = !target_lane.isDefined
 
   override def choose_turn(e: Edge) = route.pick_turn(e)
   
   override def transition(from: Traversable, to: Traversable) = {
-    (from, to) match {
-      // When we lane-change, hopefully we haven't scheduled reservations,
-      // right?
-      case (_: Edge, _: Edge) => {
-        // TODO actually, make sure there arent any of these...
-        a.cancel_intersection_reservations
-      }
-      case _ =>
-    }
-
     route.transition(from, to)
     // reset state
     to match {
@@ -97,6 +94,15 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
     if (target_lane == null) {
       // Should be an edge, since we start on edges.
       reset_target_lane(a.at.on.asInstanceOf[Edge])
+    }
+
+    // Commit to not lane-changing if it's too late. That way, we can decide on
+    // a turn.
+    target_lane match {
+      case Some(target) if !a.room_to_lc(target) => {
+        target_lane = None
+      }
+      case _ =>
     }
 
     // Try a fast-path!
@@ -308,22 +314,27 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
       }
       // Otherwise, ask the intersection
       case e: Edge => {
-        val i = e.to.intersection
-        if (a.turns_approved(i)) {
-          false
-        } else {
-          if (!a.turns_requested(i)) {
-            // If the lookahead includes a next step, this should be consistent
-            // with what the route says, by the route's contract of consistent
-            // answers. But sometimes the lookahead terminates early due to not
-            // enough distance, so just always ask this.
-            val next_turn = route.pick_turn(e)
-            i.request_turn(a, next_turn)
-            a.turns_requested += i
-            Stats.record(Turn_Request_Stat(
-              a.id, e.to.id, Common.tick, a.wallet.budget
-            ))
+        if (committed_to_lane) {
+          val i = e.to.intersection
+          if (a.turns_approved(i)) {
+            false
+          } else {
+            if (!a.turns_requested(i)) {
+              // If the lookahead includes a next step, this should be
+              // consistent with what the route says, by the route's contract of
+              // consistent answers. But sometimes the lookahead terminates
+              // early due to not enough distance, so just always ask this.
+              val next_turn = route.pick_turn(e)
+              i.request_turn(a, next_turn)
+              a.turns_requested += i
+              Stats.record(Turn_Request_Stat(
+                a.id, i.v.id, Common.tick, a.wallet.budget
+              ))
+            }
+            true
           }
+        } else {
+          // And we should probably stop trying to LC, since we're so close!
           true
         }
       }

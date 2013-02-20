@@ -26,7 +26,7 @@ class SignalPolicy(intersection: Intersection,
   private var started_at = Common.tick
   // accumulated delay for letting vehicles finish turns
   private var delay = 0.0
-  private val accepted_agents = new MutableSet[Agent]
+  private val accepted_agents = new MutableSet[(Agent, Turn)]
 
   def react() = {
     // TODO Flush out stalled slowpokes that can definitely stop and aren't
@@ -55,19 +55,19 @@ class SignalPolicy(intersection: Intersection,
       for (ticket <- waiting_agents) {
         if (current_phase.has(ticket.turn) && could_make_light(ticket.a, ticket.a.how_far_away(intersection))) {
           ticket.a.approve_turn(intersection)
-          accepted_agents += ticket.a
+          accepted_agents += ((ticket.a, ticket.turn))
           waiting_agents -= ticket
         }
       }
     }
   }
 
-  def validate_entry(a: Agent, turn: Turn) = accepted_agents(a)
+  def validate_entry(a: Agent, turn: Turn) = accepted_agents.contains((a, turn))
 
   def handle_exit(a: Agent, turn: Turn) = unregister(a)
 
   def unregister_body(a: Agent) = {
-    accepted_agents -= a
+    accepted_agents.retain(pair => pair._1 != a)
   }
 
   def current_greens =

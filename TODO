@@ -102,9 +102,7 @@
   - specify distribution of rand things, discrete or continuous.
   - breakdown other categories when describing
 - make scenarios from UI
-- the stats side of the story
-  - be able to read them back offline
-  - comparing experiments (pairwise, and average over many trials)
+- comparing experiments (pairwise, and average over many trials)
 - piecewise resimulation (savestating)
 - verify determinism retained... ordering events queue
 - things to test
