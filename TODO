@@ -93,7 +93,6 @@
   based on where they want to spawn, maybe by generator?
 - gridlock?
   - force different turns?
-  - agents get caught in loops because the path isnt realizable due to LC
 - at big timesteps, nobody moves?
 
 # Testing/Experiments
