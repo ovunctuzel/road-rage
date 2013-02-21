@@ -18,6 +18,7 @@ import scala.language.implicitConversions
 import utexas.aorta.map._  // TODO yeah getting lazy.
 import utexas.aorta.sim.{Simulation, Agent, Sim_Event, EV_Signal_Change,
                          IntersectionType, RouteType}
+import utexas.aorta.sim.PathRoute
 
 import utexas.aorta.{Util, RNG, cfg}
 
@@ -43,9 +44,17 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
             case Some(a) => {
               if (sim.has_agent(a)) {
                 center_on(a.at.location)
+                // TODO detect when route changes?
+                a.route match {
+                  case r: PathRoute => {
+                    route_members = r.path.map(_.road).toSet
+                  }
+                  case _ =>
+                }
               } else {
                 Util.log(a + " is done; the camera won't stalk them anymore")
                 camera_agent = None
+                route_members = Set[Road]()
               }
             }
             case None =>
@@ -68,8 +77,7 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
   private var chosen_edge2: Option[Edge] = None
   private var chosen_road: Option[Road] = None
   private var chosen_pos: Option[Position] = None
-  private var route_members = Set[Edge]()
-  private var route_members_road = Set[Road]()
+  private var route_members = Set[Road]()
   private var polygon_roads1: Set[Road] = Set()
   private var polygon_roads2: Set[Road] = Set()
   private var camera_agent: Option[Agent] = None
@@ -262,7 +270,7 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
 
   def draw_road(g2d: Graphics2D, l: RoadLine) = {
     g2d.setColor(color_road(l.road))
-    if (route_members_road(l.road)) {
+    if (route_members(l.road) && !zoomed_in) {
       g2d.setStroke(strokes(l.road.num_lanes * 2))
     } else {
       g2d.setStroke(strokes(l.road.num_lanes))
@@ -271,11 +279,7 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
   }
 
   def draw_edge(g2d: Graphics2D, l: EdgeLine) = {
-    if (route_members(l.edge)) {
-      g2d.setStroke(route_lane_stroke)
-    } else {
-      g2d.setStroke(lane_stroke)
-    }
+    g2d.setStroke(lane_stroke)
     g2d.setColor(color_edge(l.edge))
     g2d.draw(l.line)
     g2d.setColor(Color.BLUE)
@@ -328,7 +332,7 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
   def color_road(r: Road): Color =
     if (chosen_road.isDefined && chosen_road.get == r)
       Color.RED
-    else if (route_members_road(r))
+    else if (route_members(r))
       Color.GREEN
     else if (polygon_roads1(r))
       Color.RED
@@ -349,8 +353,6 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
       Color.BLUE
     else if (chosen_edge2.isDefined && chosen_edge2.get == e)
       Color.RED
-    else if (route_members(e))
-      Color.GREEN
     else if (e.doomed)
       // TODO configurable.
       Color.RED
@@ -530,16 +532,14 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
       switch_mode(Mode.PICK_1st)
       chosen_edge1 = None
       chosen_edge2 = None
-      route_members = Set[Edge]()
-      route_members_road = Set[Road]()
+      route_members = Set[Road]()
       repaint
     }
     case "clear-route" => {
       switch_mode(Mode.EXPLORE)
       chosen_edge1 = None
       chosen_edge2 = None
-      route_members = Set[Edge]()
-      route_members_road = Set[Road]()
+      route_members = Set[Road]()
       repaint
     }
     // TODO refactor the 4 teleports?
@@ -693,7 +693,12 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
       case Some(thing) => thing.debug
       case None =>
     }
-    case Key.F => { camera_agent = current_agent }
+    case Key.F => {
+      camera_agent = current_agent
+      if (!camera_agent.isDefined) {
+        route_members = Set[Road]()
+      }
+    }
     case Key.X if current_agent.isDefined => {
       if (running) {
         Util.log("Cannot nuke agents while simulation is running!")
@@ -770,8 +775,7 @@ class MapCanvas(sim: Simulation) extends ScrollingCanvas {
     // turns.
     // TODO pathfinding is by directed road now, not edge. just pick some edge
     // in each group.
-    route_members = route.map(_.edges.head).toSet
-    route_members_road = route_members.map(_.road)
+    route_members = route.map(_.road).toSet
     repaint
   }
 
