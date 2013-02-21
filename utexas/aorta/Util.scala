@@ -172,7 +172,7 @@ object cfg {
   val strings = List(
     ("policy", "StopSign"),
     ("ordering", "FIFO"),
-    ("route", "Drunken"),
+    ("route", "Path"),
     ("wallet", "Random")
   ).map({c => c._1 -> new String_Cfgable(c._2)}).toMap
 

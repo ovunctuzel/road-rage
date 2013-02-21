@@ -140,51 +140,6 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
     return max_safe_accel
   }
 
-  // This is a lazy sequence of edges/turns that tracks distances away from the
-  // original spot. This assumes no lane-changing: where the agent starts
-  // predicting is where they'll end up.
-  class LookaheadStep(
-    // TODO dist_left_to_analyze, dist_so_far?
-    val at: Traversable, val predict_dist: Double, val dist_ahead: Double,
-    val this_dist: Double)
-  {
-    // Steps start at the beginning of 'at', except for the 'first' lookahead
-    // step. this_dist encodes that case. But dist_ahead is a way of measuring
-    // how far the agent really is right now from something in the future.
-    // predict_dist = how far ahead we still have to look
-    // TODO consider seeding dist_ahead with not 0 but this_dist, then lots of
-    // stuff may get simpler.
-    // dist_ahead = how far have we looked ahead so far
-    // at = where do we end up
-    // this_dist = how much distance from 'at' we'll consider. it would just be
-    // length, except for the very first step of a lookahead, since the agent
-    // doesnt start at the beginning of the step.
-    override def toString = "Lookahead to %s with %.2f m left".format(at, predict_dist)
-
-    // TODO iterator syntax
-
-    // TODO this and next_at, maybe move them out of this class
-    // TODO the way this gets used is a bit redundant
-    def is_last_step = at match {
-      case e: Edge => route.done(e)
-      case _ => false
-    }
-
-    lazy val next_at = at match {
-      case e: Edge => route.pick_turn(e)
-      case t: Turn => t.to
-    }
-
-    lazy val next_step: Option[LookaheadStep] =
-      if (predict_dist - this_dist <= 0.0 || is_last_step)
-        None
-      else
-        Some(new LookaheadStep(
-          next_at, predict_dist - this_dist, dist_ahead + this_dist,
-          next_at.length
-        ))
-  }
-
   // Returns Act_Set_Accel almost always.
   def max_safe_accel(): Action = {
     // Since we can't react instantly, we have to consider the worst-case of the
@@ -204,7 +159,7 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
     // between us and it, cant we stop looking for agents?
 
     var step = new LookaheadStep(
-      a.at.on, a.max_lookahead_dist, 0, a.at.dist_left
+      a.at.on, a.max_lookahead_dist, 0, a.at.dist_left, route
     )
 
     accel_for_lc_agent = constraint_lc_agent
@@ -421,6 +376,52 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
     throw new Exception(s"how_far_away broke looking for $i")
   }
 }
+
+// This is a lazy sequence of edges/turns that tracks distances away from the
+// original spot. This assumes no lane-changing: where the agent starts
+// predicting is where they'll end up.
+class LookaheadStep(
+  // TODO dist_left_to_analyze, dist_so_far?
+  val at: Traversable, val predict_dist: Double, val dist_ahead: Double,
+  val this_dist: Double, route: Route
+) {
+  // Steps start at the beginning of 'at', except for the 'first' lookahead
+  // step. this_dist encodes that case. But dist_ahead is a way of measuring
+  // how far the agent really is right now from something in the future.
+  // predict_dist = how far ahead we still have to look
+  // TODO consider seeding dist_ahead with not 0 but this_dist, then lots of
+  // stuff may get simpler.
+  // dist_ahead = how far have we looked ahead so far
+  // at = where do we end up
+  // this_dist = how much distance from 'at' we'll consider. it would just be
+  // length, except for the very first step of a lookahead, since the agent
+  // doesnt start at the beginning of the step.
+  override def toString = "Lookahead to %s with %.2f m left".format(at, predict_dist)
+
+  // TODO iterator syntax
+
+  // TODO this and next_at, maybe move them out of this class
+  // TODO the way this gets used is a bit redundant
+  def is_last_step = at match {
+    case e: Edge => route.done(e)
+    case _ => false
+  }
+
+  lazy val next_at = at match {
+    case e: Edge => route.pick_turn(e)
+    case t: Turn => t.to
+  }
+
+  lazy val next_step: Option[LookaheadStep] =
+    if (predict_dist - this_dist <= 0.0 || is_last_step)
+      None
+    else
+      Some(new LookaheadStep(
+        next_at, predict_dist - this_dist, dist_ahead + this_dist,
+        next_at.length, route
+      ))
+}
+
 
 // TODO this would be the coolest thing ever... driving game!
 //class HumanControlBehavior(a: Agent) extends Behavior(a) {

@@ -54,53 +54,92 @@ class DijkstraRoute(goal: DirectedRoad, rng: RNG) extends Route(goal, rng) {
   def route_type = RouteType.Dijkstra
 }
 
-// Compute and follow a specific path to the goal. When we deviate from the path
-// accidentally, recalculate the path.
+// Compute and follow a specific path to the goal. When we're forced to deviate
+// from the path, recalculate.
 class PathRoute(goal: DirectedRoad, rng: RNG) extends Route(goal, rng) {
-  // Head is the next step. If that step isn't immediately reachable, we have to
-  // re-route.
-  var path: List[DirectedRoad] = goal :: Nil
+  // Head is the current step. If that step isn't immediately reachable, we have
+  // to re-route.
+  var path: List[DirectedRoad] = null
 
   def transition(from: Traversable, to: Traversable) = {
-    to match {
-      case e: Edge if e.directed_road == path.head => {
-        path = path.tail
+    (from, to) match {
+      case (e: Edge, _: Turn) => {
+        if (e.directed_road == path.head) {
+          path = path.tail
+        } else {
+          throw new Exception(
+            s"Route not being followed! $from -> $to happened, with path $path"
+          )
+        }
       }
-      // Otherwise, we were just lane-changing, or we were forced to go
-      // off-route. In the latter case, we'll recompute later.
       case _ =>
     }
   }
 
-  private def best_turn(e: Edge) =
-    e.next_turns.find(t => t.to.directed_road == path.head)
+  private def best_turn(e: Edge, dest: DirectedRoad) =
+    e.next_turns.find(t => t.to.directed_road == dest)
 
-  def pick_turn(e: Edge) =
+  def pick_turn(e: Edge): Turn = {
+    // Lookahead could be calling us from anywhere. Figure out where we are in
+    // the path.
+    val pair = path.span(r => r != e.directed_road)
+    val before = pair._1
+    val slice = pair._2
+    Util.assert_eq(slice.nonEmpty, true)
+
     // Is the next step reachable?
-   best_turn(e) match {
-      case Some(t) => t
+    best_turn(e, slice.tail.head) match {
+      case Some(t) => {
+        return t
+      }
       case None => {
-        // Re-route! Shouldn't fail if graph is connected.
-        path = Common.sim.graph.router.path(e.directed_road, goal)
-        best_turn(e).get
+        // Re-route, but start from a source we can definitely reach without
+        // lane-changing. Namely, pick a turn randomly and start pathing from
+        // that road. (Not quite randomly, one that'll definitely get picked
+        // again when we call this method again.)
+        // TODO heuristic instead of arbitrary?
+        val choice = e.next_turns.head
+        val source = choice.to.directed_road
+        // Stitch together the new path into the full thing
+        val new_path = slice.head :: source :: Common.sim.graph.router.path(source, goal)
+        path = before ++ new_path
+        return choice
       }
     }
+  }
 
-  private def candidate_lanes(from: Edge) =
+  private def candidate_lanes(from: Edge, dest: DirectedRoad) =
     from.other_lanes.filter(
-      f => f.succs.find(t => t.directed_road == path.head).isDefined
+      f => f.succs.find(t => t.directed_road == dest).isDefined
     ).toList
 
   def pick_lane(from: Edge): Edge = {
-    // Find any lane going to the next step. If none do, re-route and repeat.
-    val candidates = candidate_lanes(from) match {
+    if (path == null) {
+      path = from.directed_road :: Common.sim.graph.router.path(from.directed_road, goal)
+    }
+
+    // Lookahead could be calling us from anywhere. Figure out where we are in
+    // the path.
+    val pair = path.span(r => r != from.directed_road)
+    val before = pair._1
+    val slice = pair._2
+    Util.assert_eq(slice.nonEmpty, true)
+
+    // We could be done!
+    if (slice.tail.isEmpty) {
+      Util.assert_eq(from.directed_road, goal)
+      return from
+    }
+
+    // Find all lanes going to the next step.
+    val candidates = candidate_lanes(from, slice.tail.head) match {
       case Nil => {
-        path = Common.sim.graph.router.path(from.directed_road, goal)
-        candidate_lanes(from)
+        throw new Exception(
+          s"Other lanes around $from don't lead to ${slice.tail.head}!"
+        )
       }
       case lanes => lanes
     }
-    Util.assert_eq(candidates.isEmpty, false)
 
     // Pick the lane closest to the current, then get as close as possible.
     val target_lane = candidates.minBy(e => math.abs(from.lane_num - e.lane_num))
