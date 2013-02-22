@@ -67,8 +67,14 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
     }
   }
 
-  private def committed_to_lane = !target_lane.isDefined
-
+  // Don't commit to turning from some lane in lookahead unless we're there are
+  // LCing could still happen, or if it's a future edge with no other lanes.
+  private def committed_to_lane(step: LookaheadStep) = step.at match {
+    case e if e == a.at.on => !target_lane.isDefined
+    case e: Edge => e.other_lanes.size == 1
+    case t: Turn => throw new Exception(s"Requesting a turn from a turn $step?!")
+  }
+  
   override def choose_turn(e: Edge) = route.pick_turn(e)
   
   override def transition(from: Traversable, to: Traversable) = {
@@ -270,7 +276,7 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
       }
       // Otherwise, ask the intersection
       case e: Edge => {
-        if (committed_to_lane) {
+        if (committed_to_lane(step)) {
           val i = e.to.intersection
           if (a.turns_approved(i)) {
             false
