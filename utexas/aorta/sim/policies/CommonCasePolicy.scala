@@ -6,7 +6,7 @@ package utexas.aorta.sim.policies
 
 import scala.collection.mutable.{HashSet => MutableSet}
 
-import utexas.aorta.map.Turn
+import utexas.aorta.map.{Turn, Edge}
 import utexas.aorta.sim.{Intersection, Policy, Ticket, Agent}
 import utexas.aorta.sim.market.IntersectionOrdering
 
@@ -74,6 +74,9 @@ class CommonCasePolicy(intersection: Intersection,
     accepted_commoners.retain(t => t.a != a)
     accepted_rares.retain(t => t.a != a)
   }
+
+  def approveds_to(e: Edge) =
+    (accepted_commoners ++ accepted_rares).filter(t => t.turn.to == e).map(_.a)
 
   def current_greens = common_turns
 

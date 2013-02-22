@@ -220,14 +220,20 @@ class Agent(val id: Int, val route: Route, val rng: RNG, wallet_spec: MkWallet) 
       return false
     }
 
-    // It's impractical to flood backwards and find all the possible cars that
-    // could enter our target lane soon. So use the same idea as safe spawning
-    // distance and don't start a lane-change too early in the road. This
-    // gives agents time next tick to notice us during their lookahead.
+    // If there's somebody behind us on the target, or if we're beyond the
+    // worst-case entry distance, we don't have to worry about drivers on other
+    // roads about to take turns and fly into the new lane. But if we are
+    // concerned, just ask the intersection!
     if (!target.queue.closest_behind(at.dist).isDefined &&
         at.dist <= at.on.worst_entry_dist + cfg.follow_dist)
     {
-      return false
+      // Smart look-behind: the intersection knows.
+      val beware = target.from.intersection.policy.approveds_to(target)
+      // TODO for now, if theres any -- worry. could do more work using the
+      // below to see if they'll wind up too close, though.
+      if (beware.nonEmpty) {
+        return false
+      }
     }
 
     // We don't want to merge in too closely to the agent ahead of us, nor do we

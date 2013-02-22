@@ -10,7 +10,7 @@ import scala.collection.mutable.{Set => MutableSet}
 
 import utexas.aorta.sim.{Intersection, Policy, Agent, Ticket}
 import utexas.aorta.sim.market.IntersectionOrdering
-import utexas.aorta.map.Turn
+import utexas.aorta.map.{Turn, Edge}
 
 import utexas.aorta.{Util, cfg}
 
@@ -53,6 +53,10 @@ class ReservationPolicy(intersection: Intersection,
       !b.all_done
     })
   }
+
+  // TODO could be a bit more efficient?
+  def approveds_to(e: Edge) =
+    current_batch.tickets.filter(t => t.turn.to == e).map(_.a)
 
   def dump_info() = {
     Util.log(s"Reservation policy for $intersection")

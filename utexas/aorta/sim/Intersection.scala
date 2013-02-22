@@ -9,7 +9,7 @@ import scala.collection.mutable.{HashSet => MutableSet}
 import scala.collection.mutable.TreeSet
 
 import utexas.aorta.sim.policies._
-import utexas.aorta.map.{Vertex, Turn}
+import utexas.aorta.map.{Vertex, Turn, Edge}
 
 import utexas.aorta.{Util, Common, cfg}
 
@@ -125,6 +125,7 @@ abstract class Policy(val intersection: Intersection) {
   def validate_entry(a: Agent, turn: Turn): Boolean
   def handle_exit(a: Agent, turn: Turn)
   def unregister_body(a: Agent)
+  def approveds_to(target: Edge): Iterable[Agent]
   def current_greens(): Set[Turn]
   def dump_info()
 }
@@ -135,6 +136,7 @@ class NeverGoPolicy(intersection: Intersection) extends Policy(intersection) {
   def validate_entry(a: Agent, turn: Turn) = false
   def handle_exit(a: Agent, turn: Turn) = {}
   def unregister_body(a: Agent) = {}
+  def approveds_to(target: Edge) = Nil
   def current_greens = Set()
   def dump_info = {
     Util.log(s"Never go policy for $intersection")

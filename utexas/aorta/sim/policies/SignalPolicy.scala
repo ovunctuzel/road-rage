@@ -7,7 +7,7 @@ package utexas.aorta.sim.policies
 import scala.collection.mutable.{HashSet => MutableSet}
 import scala.collection.mutable.ListBuffer
 
-import utexas.aorta.map.{Turn, Vertex}
+import utexas.aorta.map.{Turn, Vertex, Edge}
 import utexas.aorta.sim.{Intersection, Policy, Agent, EV_Signal_Change}
 import utexas.aorta.sim.market.IntersectionOrdering
 
@@ -69,6 +69,9 @@ class SignalPolicy(intersection: Intersection,
   def unregister_body(a: Agent) = {
     accepted_agents.retain(pair => pair._1 != a)
   }
+
+  def approveds_to(e: Edge) =
+    accepted_agents.filter(pair => pair._2.to == e).map(_._1)
 
   def current_greens =
     if (in_overtime)

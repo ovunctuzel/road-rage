@@ -5,7 +5,6 @@
 package utexas.aorta.sim
 
 import scala.collection.mutable.{HashMap => MutableMap}
-import scala.collection.mutable.{HashSet => MutableSet}
 
 import utexas.aorta.map.{Edge, DirectedRoad, Traversable, Turn}
 
@@ -61,18 +60,12 @@ class PathRoute(goal: DirectedRoad, rng: RNG) extends Route(goal, rng) {
   // Head is the current step. If that step isn't immediately reachable, we have
   // to re-route.
   var path: List[DirectedRoad] = null
-  
-  // Some paths aren't realizable because there's not enough room to
-  // lane-change. The only reasonable fix is a hack: remember roads we've tried,
-  // and avoid making a loop. It's not a full fix, either.
-  private val roads_tried = new MutableSet[DirectedRoad]()
 
   def transition(from: Traversable, to: Traversable) = {
     (from, to) match {
       case (e: Edge, _: Turn) => {
         if (e.directed_road == path.head) {
           path = path.tail
-          roads_tried += e.directed_road
         } else {
           throw new Exception(
             s"Route not being followed! $from -> $to happened, with path $path"
@@ -94,24 +87,18 @@ class PathRoute(goal: DirectedRoad, rng: RNG) extends Route(goal, rng) {
     val slice = pair._2
     Util.assert_eq(slice.nonEmpty, true)
 
-    // Try to avoid roads we've traveled before.
-    val untried_turn = e.next_turns.find(t => !roads_tried(t.to.directed_road))
-    val avoid_loop = roads_tried(slice.tail.head) && untried_turn.isDefined
-
     // Is the next step reachable?
     best_turn(e, slice.tail.head) match {
-      // Should we go, if so?
-      case Some(t) if !avoid_loop => {
+      case Some(t) => {
         return t
       }
-      case _ => {
+      case None => {
         // Re-route, but start from a source we can definitely reach without
         // lane-changing. Namely, pick a turn randomly and start pathing from
         // that road. (Not quite randomly, one that'll definitely get picked
         // again when we call this method again.)
         // TODO heuristic instead of arbitrary?
-        // Also, avoid heading to roads we've tried before if possible.
-        val choice = untried_turn.getOrElse(e.next_turns.head)
+        val choice = e.next_turns.head
         val source = choice.to.directed_road
         // Stitch together the new path into the full thing
         val new_path = slice.head :: source :: Common.sim.graph.router.path(source, goal)

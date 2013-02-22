@@ -4,7 +4,7 @@
 
 package utexas.aorta.sim.policies
 
-import utexas.aorta.map.Turn
+import utexas.aorta.map.{Turn, Edge}
 import utexas.aorta.sim.{Intersection, Policy, Agent, Ticket}
 import utexas.aorta.sim.market.IntersectionOrdering
 
@@ -56,6 +56,11 @@ class StopSignPolicy(intersection: Intersection,
     if (current_owner.isDefined && current_owner.get.a == a) {
       approve_next
     }
+  }
+
+  def approveds_to(e: Edge) = current_owner match {
+    case Some(t) if t.turn.to == e => List(t.a)
+    case _ => Nil
   }
 
   def current_greens = intersection.turns.keys.toSet

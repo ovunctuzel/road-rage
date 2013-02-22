@@ -122,8 +122,9 @@
 # Lane-changing
 - any missed opportunities?
 - dont let agents start lc that depends on others getting out of way
-- lookbehind is feasible with lazy floodfilling
 - speculative desired_lane
+- remove lanes from roads too short for any LCing, or road lengthening.
+- removal approach doesnt handle having to LC many times on one road
 
 # Micro-optimizations
 - sleep less in UI
