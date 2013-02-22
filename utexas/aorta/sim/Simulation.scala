@@ -208,7 +208,7 @@ trait VirtualTiming {
   var tick: Double = 0
   // we only ever step with dt = cfg.dt_s, so we may have leftover.
   var dt_accumulated: Double = 0
-  // WE CAN GO FASTER
+  // The UI can tell us to make every one step count as multiple.
   var desired_sim_speed = 1.0
   var actual_sim_speed = 0.0
 

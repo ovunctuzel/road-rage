@@ -123,6 +123,11 @@ object Viewer extends SimpleSwingApplication {
     super.main(args)
   }
 
+  def launch_from_headless(canvas: MapCanvas) = {
+    canvas_2d = canvas
+    super.main(Array())
+  }
+
   def top = new MainFrame {
     title = "AORTA"
     preferredSize = new Dimension(800, 600)

@@ -4,8 +4,11 @@
 
 package utexas.aorta.sim
 
+import java.io.File
+
+import utexas.aorta.ui.{MapCanvas, Viewer, EV_Action}
+
 import utexas.aorta.{Util, cfg}
-import utexas.aorta.map.Coordinate
 
 object Headless {
   // cut off some simulations by time
@@ -13,6 +16,10 @@ object Headless {
 
   def main(args: Array[String]) = {
     val sim = Util.process_args(args)
+
+    // When this file exists, launch a GUI for sudden interactive watching.
+    val gui_signal = new File(".headless_gui")
+    var gui: Option[MapCanvas] = None
 
     // Print an update every second
     var last_tick = sim.tick
@@ -23,6 +30,17 @@ object Headless {
           info.active_agents, Util.comma_num(info.agent_steps)
         ))
         last_tick = info.tick
+
+        if (!gui.isDefined && gui_signal.exists) {
+          gui_signal.delete
+          println("Launching the GUI...")
+          gui = Some(new MapCanvas(sim, headless = true))
+          Viewer.launch_from_headless(gui.get)
+        }
+        gui match {
+          case Some(ui) => ui.handle_ev(EV_Action("step"))
+          case None =>
+        }
       }
     } })
 

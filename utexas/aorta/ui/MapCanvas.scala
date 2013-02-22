@@ -29,42 +29,45 @@ object Mode extends Enumeration {
   val PICK_2nd = Value("Pick 2nd edge")
 }
 
-class MapCanvas(sim: Simulation) extends ScrollingCanvas {
-  // fire steps every now and then
-  new Thread {
-    override def run(): Unit = {
-      while (true) {
-        val start = System.currentTimeMillis
-        // we should fire about 10x/second. optimal/useful rate is going to be
-        // related to desired_sim_speed and cfg.dt_s   TODO
-        Thread.sleep(10)
-        if (running) {
-          sim.step((System.currentTimeMillis - start).toDouble / 1000.0)
-          camera_agent match {
-            case Some(a) => {
-              if (sim.has_agent(a)) {
-                center_on(a.at.location)
-                // TODO detect when route changes?
-                a.route match {
-                  case r: PathRoute => {
-                    route_members = r.path.map(_.road).toSet
+class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCanvas {
+  // Headless mode might be controlling us...
+  if (!headless) {
+    // fire steps every now and then
+    new Thread {
+      override def run(): Unit = {
+        while (true) {
+          val start = System.currentTimeMillis
+          // we should fire about 10x/second. optimal/useful rate is going to be
+          // related to desired_sim_speed and cfg.dt_s   TODO
+          Thread.sleep(10)
+          if (running) {
+            sim.step((System.currentTimeMillis - start).toDouble / 1000.0)
+            camera_agent match {
+              case Some(a) => {
+                if (sim.has_agent(a)) {
+                  center_on(a.at.location)
+                  // TODO detect when route changes?
+                  a.route match {
+                    case r: PathRoute => {
+                      route_members = r.path.map(_.road).toSet
+                    }
+                    case _ =>
                   }
-                  case _ =>
+                } else {
+                  Util.log(a + " is done; the camera won't stalk them anymore")
+                  camera_agent = None
+                  route_members = Set[Road]()
                 }
-              } else {
-                Util.log(a + " is done; the camera won't stalk them anymore")
-                camera_agent = None
-                route_members = Set[Road]()
               }
+              case None =>
             }
-            case None =>
+            // always render
+            handle_ev(EV_Action("step"))
           }
-          // always render
-          handle_ev(EV_Action("step"))
         }
       }
-    }
-  }.start
+    }.start
+  }
   // but we can also pause
   var running = false
 
