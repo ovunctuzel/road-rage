@@ -82,6 +82,7 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
 
   override def dump_info() = {
     Util.log("Route-following behavior")
+    Util.log(s"Target lane: $target_lane")
     route.dump_info
   }
 

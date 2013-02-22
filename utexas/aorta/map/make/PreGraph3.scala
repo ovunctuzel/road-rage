@@ -9,6 +9,8 @@ import scala.collection.mutable.MutableList
 
 import utexas.aorta.map.{Coordinate, Vertex, Road, Edge, Direction, Turn}
 
+import utexas.aorta.{Util, cfg}
+
 // TODO we should really subclass the real Graph, but not sure yet.
 
 class PreGraph3(old_graph: PreGraph2) {
@@ -40,7 +42,11 @@ class PreGraph3(old_graph: PreGraph2) {
     road_id_cnt += 1
 
     // now make the directed edges too
-    val lanes = how_many_lanes(old_edge.dat)
+    val lanes = 
+      if (ok_to_lc_multi_lanes(r))
+        how_many_lanes(old_edge.dat)
+      else
+        1
 
     // v1 -> v2 lanes
     for (l <- 1 to lanes) {
@@ -56,6 +62,17 @@ class PreGraph3(old_graph: PreGraph2) {
     }
 
     return r
+  }
+
+  private def ok_to_lc_multi_lanes(r: Road): Boolean = {
+    // A driver should be able to enter at the speed limit and still have room
+    // to finish the lane-change before the end.
+    val min_len =
+      cfg.lanechange_dist + cfg.end_threshold + Util.worst_entry_dist(r.speed_limit)
+    // TODO this length gets trimmed later when we clean up geometry. cant
+    // really get that this early, so just conservatively over-estimate. it's
+    // always safe to reduce things to 1 lane.
+    return (r.length * .80) >= min_len
   }
 
   private def get_vert(at: Coordinate): Vertex =

@@ -347,6 +347,8 @@ class Agent(val id: Int, val route: Route, val rng: RNG, wallet_spec: MkWallet) 
     Util.log("Stopping distance next: " + stopping_distance(max_next_speed))
     Util.log("Lookahead dist: " + max_lookahead_dist)
     Util.log("Dist left here: " + at.dist_left)
+    Util.log("Turns requested: " + turns_requested)
+    Util.log("Turns accepted: " + turns_accepted)
     behavior.dump_info
     Util.log_pop
   }

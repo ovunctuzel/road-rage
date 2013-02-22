@@ -51,6 +51,16 @@ object Util {
     return (initial_speed * actual_time) + (0.5 * accel * (actual_time * actual_time))
   }
 
+  // TODO this gets a bit more conservative when cars have different
+  // accelerations.  This is hinged on the fact that lookahead works. Agents
+  // can't enter e faster than its speed limit, so we have to reason about how
+  // far they could possibly go.
+  def worst_entry_dist(lim: Double): Double = {
+    val accel = cfg.max_accel
+    val stopping_dist = Util.dist_at_constant_accel(-accel, lim / accel, lim)
+    return (lim * cfg.dt_s) + stopping_dist
+  }
+
   def process_args(args: Array[String]): Simulation =
   {
     if (args.size % 2 != 0) {
