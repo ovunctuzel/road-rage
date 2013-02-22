@@ -7,6 +7,7 @@ package utexas.aorta.ui
 import swing._  // TODO figure out exactly what
 import java.awt.{Color, Component}
 import swing.Dialog
+import javax.swing.WindowConstants
 import info.monitorenter.gui.chart.Chart2D
 import info.monitorenter.gui.chart.traces.Trace2DLtd
 
@@ -117,6 +118,8 @@ object Viewer extends SimpleSwingApplication {
   chart.getAxisX.getAxisTitle.setTitle("Time (s)")
   chart.getAxisY.getAxisTitle.setTitle("Number of agents")
 
+  private var headless = false
+
   override def main(args: Array[String]) = {
     val sim = Util.process_args(args)
     canvas_2d = new MapCanvas(sim)
@@ -124,6 +127,7 @@ object Viewer extends SimpleSwingApplication {
   }
 
   def launch_from_headless(canvas: MapCanvas) = {
+    headless = true
     canvas_2d = canvas
     super.main(Array())
   }
@@ -131,6 +135,16 @@ object Viewer extends SimpleSwingApplication {
   def top = new MainFrame {
     title = "AORTA"
     preferredSize = new Dimension(800, 600)
+    peer.setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE)
+
+    override def closeOperation() = {
+      if (headless) {
+        println("Closing GUI...")
+        close
+      } else {
+        sys.exit
+      }
+    }
     
     menuBar = new MenuBar {
       contents += new Menu("File") {

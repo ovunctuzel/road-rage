@@ -31,12 +31,21 @@ object Headless {
         ))
         last_tick = info.tick
 
-        if (!gui.isDefined && gui_signal.exists) {
+        if (gui_signal.exists) {
           gui_signal.delete
           println("Launching the GUI...")
-          gui = Some(new MapCanvas(sim, headless = true))
-          Viewer.launch_from_headless(gui.get)
+          gui match {
+            case Some(ui) => {
+              // TODO only if not opened already
+              Viewer.top.open
+            }
+            case None => {
+              gui = Some(new MapCanvas(sim, headless = true))
+              Viewer.launch_from_headless(gui.get)
+            }
+          }
         }
+        // TODO ideally, detect if the UI has been closed and stop doing this
         gui match {
           case Some(ui) => ui.handle_ev(EV_Action("step"))
           case None =>
