@@ -9,7 +9,6 @@ import java.awt.{Color, Component}
 import swing.Dialog
 import info.monitorenter.gui.chart.Chart2D
 import info.monitorenter.gui.chart.traces.Trace2DLtd
-import javax.media.j3d.Canvas3D
 
 import utexas.aorta.sim.Simulation
 import utexas.aorta.{Util, cfg}
@@ -72,7 +71,6 @@ object Viewer extends SimpleSwingApplication {
   )
   // null just because it's parametric from argv
   var canvas_2d: MapCanvas = null
-  var canvas_3d: MapCanvas3D = null
 
   val helper = new BoxPanel(Orientation.Vertical) {
     border = Swing.MatteBorder(5, 5, 5, 5, Color.BLACK)
@@ -122,7 +120,6 @@ object Viewer extends SimpleSwingApplication {
   override def main(args: Array[String]) = {
     val sim = Util.process_args(args)
     canvas_2d = new MapCanvas(sim)
-    canvas_3d = new MapCanvas3D(sim)
     super.main(args)
   }
 
@@ -194,7 +191,8 @@ object Viewer extends SimpleSwingApplication {
     }
 
     // TODO toggle between helper and other stuff in right pane
-    val main_content = new SplitPane(
+    val main_content = canvas_2d
+    /*new SplitPane(
       Orientation.Vertical,
       new scala.swing.Component {
         override lazy val peer = new javax.swing.JComponent {
@@ -202,10 +200,9 @@ object Viewer extends SimpleSwingApplication {
         }
       },
       canvas_2d
-      /*new scala.swing.Component {
+      new scala.swing.Component {
         override lazy val peer = chart
       }*/
-    )
 
     contents = new BorderPanel {
       background = Color.LIGHT_GRAY
