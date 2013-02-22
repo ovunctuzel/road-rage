@@ -33,22 +33,24 @@ object Headless {
 
         if (gui_signal.exists) {
           gui_signal.delete
-          println("Launching the GUI...")
           gui match {
             case Some(ui) => {
-              // TODO only if not opened already
-              Viewer.top.open
+              if (Viewer.closed) {
+                println("Resuming the GUI...")
+                Viewer.top.open
+                Viewer.closed = false
+              }
             }
             case None => {
+              println("Launching the GUI...")
               gui = Some(new MapCanvas(sim, headless = true))
               Viewer.launch_from_headless(gui.get)
             }
           }
         }
-        // TODO ideally, detect if the UI has been closed and stop doing this
         gui match {
-          case Some(ui) => ui.handle_ev(EV_Action("step"))
-          case None =>
+          case Some(ui) if !Viewer.closed => ui.handle_ev(EV_Action("step"))
+          case _ =>
         }
       }
     } })

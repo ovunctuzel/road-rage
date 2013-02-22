@@ -119,6 +119,7 @@ object Viewer extends SimpleSwingApplication {
   chart.getAxisY.getAxisTitle.setTitle("Number of agents")
 
   private var headless = false
+  var closed = false
 
   override def main(args: Array[String]) = {
     val sim = Util.process_args(args)
@@ -141,6 +142,7 @@ object Viewer extends SimpleSwingApplication {
       if (headless) {
         println("Closing GUI...")
         close
+        closed = true
       } else {
         sys.exit
       }
