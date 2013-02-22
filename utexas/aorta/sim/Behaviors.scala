@@ -141,6 +141,38 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
     return max_safe_accel
   }
 
+  // Max lookahead distance only pays attention to the speed limit of the
+  // current road. Scan ahead using this overly conservative guess, but then
+  // figure out the speed limit cap along that path and use THAT to drive the
+  // true lookahead distance.
+  private def true_lookahead_dist(): Double = {
+    var step = new LookaheadStep(
+      a.at.on, a.max_lookahead_dist, 0, a.at.dist_left, route
+    )
+    var min_speed_limit = Double.MaxValue
+
+    while (step != null) {
+      min_speed_limit = math.min(min_speed_limit, step.at.speed_limit)
+      step = step.next_step match {
+        case Some(s) => s
+        case None => null
+      }
+    }
+
+    val max_next_accel = (min_speed_limit - a.speed) / cfg.dt_s
+    val max_next_dist = Util.dist_at_constant_accel(
+      max_next_accel, cfg.dt_s, a.speed
+    )
+    // Cap for physical bounds at the end.
+    return math.min(
+      math.max(
+        max_next_dist + a.stopping_distance(min_speed_limit),
+        a.min_next_dist_plus_stopping
+      ),
+      a.max_next_dist_plus_stopping
+    )
+  }
+
   // Returns Act_Set_Accel almost always.
   def max_safe_accel(): Action = {
     // Since we can't react instantly, we have to consider the worst-case of the
@@ -160,7 +192,7 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
     // between us and it, cant we stop looking for agents?
 
     var step = new LookaheadStep(
-      a.at.on, a.max_lookahead_dist, 0, a.at.dist_left, route
+      a.at.on, true_lookahead_dist, 0, a.at.dist_left, route
     )
 
     accel_for_lc_agent = constraint_lc_agent

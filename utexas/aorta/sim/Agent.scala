@@ -317,6 +317,7 @@ class Agent(val id: Int, val route: Route, val rng: RNG, wallet_spec: MkWallet) 
   )
   // We'll be constrained by the current edge's speed limit and maybe other
   // stuff, but at least this speed lim.
+  // TODO assumes we'll be speeding up
   def max_next_accel = math.min(max_accel, (at.on.speed_limit - speed) / cfg.dt_s)
 
   def max_next_speed = speed + (max_next_accel * cfg.dt_s)
@@ -348,7 +349,7 @@ class Agent(val id: Int, val route: Route, val rng: RNG, wallet_spec: MkWallet) 
     Util.log("Lookahead dist: " + max_lookahead_dist)
     Util.log("Dist left here: " + at.dist_left)
     Util.log("Turns requested: " + turns_requested)
-    Util.log("Turns accepted: " + turns_accepted)
+    Util.log("Turns approved: " + turns_approved)
     behavior.dump_info
     Util.log_pop
   }
