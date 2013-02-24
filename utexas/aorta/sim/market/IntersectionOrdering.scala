@@ -20,6 +20,10 @@ abstract class IntersectionOrdering[T]() {
   def add(item: T) = {
     queue :+= item
   }
+
+  def clear() = {
+    queue = Nil
+  }
 }
 
 class FIFO_Ordering[T]() extends IntersectionOrdering[T]() {

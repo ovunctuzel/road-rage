@@ -35,10 +35,12 @@ class Queue(t: Traversable) {
   // Called lazily.
   def start_step() = {
     if (last_tick != Common.tick) {
-      prev_agents = agents.values.toSet
+      prev_agents = all_agents
       last_tick = Common.tick
     }
   }
+
+  def all_agents = agents.values.toSet
   
   // Check for collisions by detecting abnormal changes in ordering.
   def end_step(): Unit = {
@@ -125,6 +127,7 @@ class Queue(t: Traversable) {
     return enter(a, new_dist)
   }
 
+  // TODO all_ahead_of(dist)
   def ahead_of(a: Agent) = closest_ahead(a.at.dist)
   def behind(a: Agent) = closest_behind(a.at.dist)
   def closest_behind(dist: Double) = wrap_option(agents.higherEntry(-dist))

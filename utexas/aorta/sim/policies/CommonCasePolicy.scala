@@ -80,7 +80,7 @@ class CommonCasePolicy(intersection: Intersection,
   def approveds_to(e: Edge) =
     (accepted_commoners ++ accepted_rares).filter(t => t.turn.to == e).map(_.a)
 
-  def current_greens = common_turns
+  def current_greens = (accepted_commoners ++ accepted_rares).map(_.turn).toSet
 
   def dump_info() = {
     Util.log(s"Common Case policy for $intersection")

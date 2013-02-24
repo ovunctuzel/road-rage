@@ -21,7 +21,6 @@ abstract class Behavior(a: Agent) {
   // just for debugging
   def dump_info()
   def wants_to_lc(): Boolean = target_lane != null && target_lane.isDefined
-  def how_far_away(i: Intersection): Double
 
   // As an optimization and to keep some stats on how successful lane-changing
   // is, remember the adjacent lane we'd like to switch into.
@@ -33,17 +32,15 @@ abstract class Behavior(a: Agent) {
 
 // Never speeds up from rest, so effectively never does anything
 class IdleBehavior(a: Agent) extends Behavior(a) {
-  override def choose_action(): Action = Act_Set_Accel(0)
+  def choose_action(): Action = Act_Set_Accel(0)
 
-  override def choose_turn(e: Edge) = e.next_turns.head
+  def choose_turn(e: Edge) = e.next_turns.head
 
-  override def transition(from: Traversable, to: Traversable) = {}
+  def transition(from: Traversable, to: Traversable) = {}
 
-  override def dump_info() = {
+  def dump_info() = {
     Util.log("Idle behavior")
   }
-
-  override def how_far_away(i: Intersection) = 42.0
 }
 
 // Reactively avoids collisions and obeys intersections by doing a conservative
@@ -75,9 +72,9 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
     case t: Turn => throw new Exception(s"Requesting a turn from a turn $step?!")
   }
   
-  override def choose_turn(e: Edge) = route.pick_turn(e)
+  def choose_turn(e: Edge) = route.pick_turn(e)
   
-  override def transition(from: Traversable, to: Traversable) = {
+  def transition(from: Traversable, to: Traversable) = {
     route.transition(from, to)
     // reset state
     to match {
@@ -86,13 +83,13 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
     }
   }
 
-  override def dump_info() = {
+  def dump_info() = {
     Util.log("Route-following behavior")
     Util.log(s"Target lane: $target_lane")
     route.dump_info
   }
 
-  override def choose_action(): Action = {
+  def choose_action(): Action = {
     // Do we want to lane change?
     // TODO 1) discretionary lane changing to pass people
     // TODO 2) routes can lookahead a bit to tell us to lane-change early
@@ -348,35 +345,6 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
       // Special case for distance of 0: avoid a NaN, just stop.
       return a.accel_to_stop
     }
-  }
-
-  override def how_far_away(i: Intersection): Double = {
-    // Because the route should be determinstic, just keep asking it how to get
-    // there and sum distances.
-    var total = 0.0
-    // If we're being asked this, we've requested the turn, meaning no more
-    // lane-changing needs to happen.
-    var at = a.at.on
-    while (true) {
-      if (at == a.at.on) {
-        total += a.at.dist_left
-      } else {
-        total += at.length
-      }
-      at match {
-        case e: Edge => {
-          if (e.to.intersection == i) {
-            return total
-          } else {
-            at = route.pick_turn(e)
-          }
-        }
-        case t: Turn => {
-          at = t.to
-        }
-      }
-    }
-    throw new Exception(s"how_far_away broke looking for $i")
   }
 }
 

@@ -121,7 +121,7 @@ abstract class Policy(val intersection: Intersection) {
     }
   }
 
-  def approve_unless_blocked(ticket: Ticket) =
+  protected def approve_unless_blocked(ticket: Ticket) =
     if (turn_blocked(ticket)) {
       false
     } else {

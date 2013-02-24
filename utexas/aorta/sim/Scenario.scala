@@ -223,7 +223,7 @@ object IntersectionDistribution {
       if (big.isEmpty)
         IntersectionType.StopSign
       else if (small.isEmpty)
-        IntersectionType.Signal // TODO or reservations?!
+        IntersectionType.Reservation  // TODO or signals?
       else
         IntersectionType.CommonCase
     MkIntersection(v.id, policy, default_ordering)
@@ -299,7 +299,7 @@ object Factory {
     case IntersectionType.Signal =>
       new SignalPolicy(i, make_intersection_ordering[Phase](ordering))
     case IntersectionType.Reservation =>
-      new ReservationPolicy(i, make_intersection_ordering[TurnBatch](ordering))
+      new ReservationPolicy(i, make_intersection_ordering[Ticket](ordering))
     case IntersectionType.CommonCase =>
       new CommonCasePolicy(i, make_intersection_ordering[Ticket](ordering))
   }

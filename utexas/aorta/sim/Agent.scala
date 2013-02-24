@@ -363,7 +363,8 @@ class Agent(val id: Int, val route: Route, val rng: RNG, wallet_spec: MkWallet) 
     }
   }
 
-  def how_far_away(i: Intersection) = behavior.how_far_away(i)
+  def how_far_away(i: Intersection) =
+    route.steps_to(at.on, i.v).map(_.length).sum - (at.on.length - at.dist_left)
 
   // Caller must remove this agent from the simulation list
   def terminate() = {

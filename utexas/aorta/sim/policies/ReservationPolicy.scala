@@ -4,139 +4,72 @@
 
 package utexas.aorta.sim.policies
 
-import scala.collection.mutable.{HashMap => MutableMap}
-import scala.collection.mutable.MultiMap
-import scala.collection.mutable.{Set => MutableSet}
+import scala.collection.mutable.{HashSet => MutableSet}
 
-import utexas.aorta.sim.{Intersection, Policy, Agent, Ticket, IntersectionType}
-import utexas.aorta.sim.market.IntersectionOrdering
 import utexas.aorta.map.{Turn, Edge}
+import utexas.aorta.sim.{Intersection, Policy, Ticket, Agent, IntersectionType}
+import utexas.aorta.sim.market.IntersectionOrdering
 
 import utexas.aorta.{Util, cfg}
 
-// FIFO based on request, batched by non-conflicting turns.
-// TODO make it generalizable to lots of ordering/batching/liveness rules
+// Accept as many compatible turns as possible.
 class ReservationPolicy(intersection: Intersection,
-                        ordering: IntersectionOrdering[TurnBatch])
+                        ordering: IntersectionOrdering[Ticket])
   extends Policy(intersection)
 {
-  private var current_batch = new TurnBatch()
+  private val accepted = new MutableSet[Ticket]()
+  private def accepted_agent(a: Agent) = accepted.find(t => t.a == a).isDefined
+  def approveds_to(e: Edge) = accepted.filter(_.turn.to == e).map(_.a)
 
-  def react() = {
-    // Process new requests
-    waiting_agents.foreach(ticket => add_agent(ticket))
-    waiting_agents = waiting_agents.empty
+  // Turn can't be blocked, nobody unaccepted in front of them, have a
+  // compatible turn
+  private def candidates = waiting_agents.filter(ticket => {
+    val c1 = !accepted.find(t => t.turn.conflicts_with(ticket.turn)).isDefined
+    lazy val c2 = !turn_blocked(ticket)
+    lazy val steps = ticket.a.route.steps_to(ticket.a.at.on, ticket.turn.vert)
+    // TODO dont search behind us
+    lazy val c3 = !steps.head.queue.all_agents.find(
+      a => a.at.dist > ticket.a.at.dist && !accepted_agent(a)
+    ).isDefined
+    lazy val c4 = !steps.tail.find(step => step.queue.all_agents.find(
+      a => !accepted_agent(a)
+    ).isDefined).isDefined
+    c1 && c2 && c3 && c4
+  })
 
-    // TODO flush stalled agents to avoid gridlock?
-
-    shift_batches
-
-    // TODO preempt reservations that perservere too long, or enforce whatever
-    // load balancing strategy...
+  def react(): Unit = {
+    // Approve candidates as long as there are candidates.
+    while (true) {
+      // TODO should payment change for this?
+      ordering.clear
+      candidates.foreach(o => ordering.add(o))
+      ordering.shift_next(waiting_agents, IntersectionType.Reservation) match {
+        case Some(ticket) => {
+          ticket.a.approve_turn(intersection)
+          accepted += ticket
+          waiting_agents -= ticket
+        }
+        case None => return
+      }
+    }
   }
 
+  def validate_entry(a: Agent, turn: Turn) =
+    accepted.find(t => t.a == a && t.turn == turn).isDefined
 
-  def validate_entry(a: Agent, turn: Turn) = current_batch.has_ticket(a, turn)
-
-  def handle_exit(a: Agent, turn: Turn) = {
-    assert(current_batch.has_ticket(a, turn))
-    current_batch.remove_ticket(a, turn)
-    shift_batches
+  def handle_exit(a: Agent, t: Turn) = {
+    unregister_body(a)
   }
-
-  def current_greens = current_batch.turns.toSet
 
   def unregister_body(a: Agent) = {
-    current_batch.remove_agent(a)
-    ordering.queue = ordering.queue.filter(b => {
-      b.remove_agent(a)
-      !b.all_done
-    })
+    accepted.retain(t => t.a != a)
   }
 
-  // TODO could be a bit more efficient?
-  def approveds_to(e: Edge) =
-    current_batch.tickets.filter(t => t.turn.to == e).map(_.a)
+  def current_greens = accepted.map(_.turn).toSet
 
   def dump_info() = {
     Util.log(s"Reservation policy for $intersection")
-    Util.log(ordering.queue.size + " reservations pending")
-    Util.log("Currently:")
-    Util.log_push
-    for (t <- current_batch.turns) {
-      Util.log(t + ": " + current_batch.groups(t))
-    }
-    Util.log_pop
+    Util.log(s"Currently accepted: $accepted")
   }
   def policy_type = IntersectionType.Reservation
-
-  private def shift_batches() = {
-    if (current_batch.all_done) {
-      // Time for the next reservation! If there is none, then keep
-      // current_batch because it's empty anyway.
-      ordering.shift_next(
-        ordering.queue.flatMap(b => b.tickets), IntersectionType.Reservation
-      ) match {
-        case Some(b) => {
-          current_batch = b
-          current_batch.agents.foreach(a => a.approve_turn(intersection))
-        }
-        case None =>
-      }
-    }
-  }
-
-  private def add_agent(ticket: Ticket) {
-    if (current_batch.add_ticket(ticket)) {
-      ticket.a.approve_turn(intersection)
-    } else {
-      // A conflicting turn. Add it to the reservations.
-
-      // Is there an existing batch of reservations that doesn't conflict?
-      if (!ordering.queue.find(b => b.add_ticket(ticket)).isDefined) {
-        // New batch!
-        val batch = new TurnBatch()
-        batch.add_ticket(ticket)
-        ordering.add(batch)
-      }
-    }
-  }
-}
-
-// Count what agents are doing each type of turn, and add turns that don't
-// conflict
-class TurnBatch() {
-  val groups = new MutableMap[Turn, MutableSet[Agent]] with MultiMap[Turn, Agent]
-
-  // false if it conflicts with this group
-  def add_ticket(ticket: Ticket): Boolean =
-    if (groups.contains(ticket.turn)) {
-      // existing turn
-      groups.addBinding(ticket.turn, ticket.a)
-      true
-    } else if (!groups.keys.find(c => ticket.turn.conflicts_with(c)).isDefined) {
-      // new turn that doesn't conflict
-      groups.addBinding(ticket.turn, ticket.a)
-      true
-    } else {
-      // conflict
-      false
-    }
-
-  def has_ticket(a: Agent, t: Turn) =
-    groups.contains(t) && groups(t).contains(a)
-
-  def remove_ticket(a: Agent, t: Turn) = groups.removeBinding(t, a)
-
-  def remove_agent(a: Agent) = {
-    for (turn <- turns) {
-      groups.removeBinding(turn, a)
-    }
-  }
-
-  def all_done = groups.isEmpty
-
-  def turns = groups.keys
-  def agents = groups.values.flatten
-  def tickets = turns.flatMap(t => groups(t).map(a => Ticket(a, t)))
 }

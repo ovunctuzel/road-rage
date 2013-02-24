@@ -6,13 +6,19 @@ package utexas.aorta.sim
 
 import scala.collection.mutable.{HashMap => MutableMap}
 
-import utexas.aorta.map.{Edge, DirectedRoad, Traversable, Turn}
+import utexas.aorta.map.{Edge, DirectedRoad, Traversable, Turn, Vertex}
 
 import utexas.aorta.{Util, RNG, Common, cfg}
 
 // Get a client to their goal by any means possible.
 abstract class Route(val goal: DirectedRoad, rng: RNG) {
   def done(at: Edge) = at.directed_road == goal
+  // For lookahead clients. No lane-changing.
+  def steps_to(at: Traversable, v: Vertex): List[Traversable] = at match {
+    case e: Edge if e.to == v => at :: Nil
+    case e: Edge => at :: steps_to(pick_turn(e), v)
+    case t: Turn => at :: steps_to(t.to, v)
+  }
 
   // The client tells us they've physically moved
   def transition(from: Traversable, to: Traversable)

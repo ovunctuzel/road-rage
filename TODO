@@ -94,7 +94,6 @@
 - gridlock
   - when we accept early and check for blockedness, see if theyre anywhere close
     to the turn yet! moot point if the turns not blocked when they ask...
-  - redesign reservations so that liveness is possible
   - less conservative 'is turn blocked' analysis (for speedup)
   - force different turns?
 - at big timesteps, nobody moves?
