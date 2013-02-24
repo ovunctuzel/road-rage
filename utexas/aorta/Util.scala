@@ -61,8 +61,11 @@ object Util {
     return (lim * cfg.dt_s) + stopping_dist
   }
 
-  def process_args(args: Array[String]): Simulation =
-  {
+  def process_args(raw_args: Array[String]): Simulation = {
+    // First argument must be the map/scenario
+    val load = raw_args.head
+    val args = raw_args.tail
+
     if (args.size % 2 != 0) {
       // TODO better usage
       Util.log("Command-line parameters must be pairs of key => value")
@@ -73,14 +76,9 @@ object Util {
     val keys = args.zipWithIndex.filter(p => p._2 % 2 == 0).map(p => p._1)
     val vals = args.zipWithIndex.filter(p => p._2 % 2 == 1).map(p => p._1)
 
-    var load_map = ""
-    var load_scenario = ""
-  
     val cfg_prefix = """--cfg_(\w+)""".r
     for ((key, value) <- keys.zip(vals)) {
       key match {
-        case "--map" => { load_map = value }
-        case "--scenario" => { load_scenario = value }
         case "--log" => { Stats.setup_logging(value) }
         // TODO case "--run_for" => { run_for = value.toDouble }
         case cfg_prefix(param) => cfg.get_param_method(param) match {
@@ -102,12 +100,7 @@ object Util {
       }
     }
 
-    return if (load_scenario.nonEmpty) {
-      Scenario.load(load_scenario).make_sim()
-    } else {
-      val graph = Graph.load(load_map)
-      Scenario.default(load_map, graph).make_sim(graph)
-    }
+    return Scenario.load_or_default_sim(load)
   }
 
   def serialize(obj: Any, fn: String) = {
