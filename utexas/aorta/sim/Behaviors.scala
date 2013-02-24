@@ -261,9 +261,9 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
     // end of this current step's edge, that is
     val dist_from_agent_to_end = step.dist_ahead + step.this_dist
 
-    val stop_at_end: Boolean = step.at match {
+    val can_go: Boolean = step.at match {
       // Don't stop at the end of a turn
-      case t: Turn => false
+      case t: Turn => true
       // Stop if we're arriving at destination
       case e: Edge if route.done(e) => {
         // Are we completely done?
@@ -272,14 +272,22 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
           // TODO dont return from deep inside here
           return Right(true)
         }
-        true
+        false
       }
       // Otherwise, ask the intersection
       case e: Edge => {
         if (committed_to_lane(step)) {
           val i = e.to.intersection
           if (a.turns_approved(i)) {
-            false
+            turn_blocked(route.pick_turn(e)) match {
+              // Optimistically only worry if we're blocked by somebody who
+              // isn't moving.
+              case Some(other) if other.speed == 0.0 => {
+                println(s"$a blocked from turn by $other who's stopped")
+                false
+              }
+              case _ => true
+            }
           } else {
             if (!a.turns_requested(i)) {
               // If the lookahead includes a next step, this should be
@@ -293,15 +301,15 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
                 a.id, i.v.id, Common.tick, a.wallet.budget
               ))
             }
-            true
+            false
           }
         } else {
           // And we should probably stop trying to LC, since we're so close!
-          true
+          false
         }
       }
     }
-    if (!stop_at_end) {
+    if (can_go) {
       return Left(None)
     }
 
@@ -311,6 +319,25 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
     // to the start of the edge.
     val want_dist = math.max(step.dist_ahead, dist_from_agent_to_end - cfg.end_threshold)
     return Left(Some(accel_to_end(want_dist)))
+  }
+
+  private def turn_blocked(turn: Turn): Option[Agent] = {
+    val max_dist = turn.length + cfg.follow_dist
+    var step: Option[LookaheadStep] = Some(new LookaheadStep(
+      turn, max_dist, 0, turn.length, route
+    ))
+
+    while (step.isDefined) {
+      val this_step = step.get
+      this_step.at.queue.last match {
+        case Some(a) if this_step.dist_ahead + a.at.dist <= max_dist => {
+          return Some(a)
+        }
+        case _ =>
+      }
+      step = this_step.next_step
+    }
+    return None
   }
 
   private def accel_to_follow(follow: Agent, dist_from_them_now: Double): Double = {
