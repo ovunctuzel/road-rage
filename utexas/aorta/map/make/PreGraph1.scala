@@ -27,13 +27,13 @@ class PreGraph1() {
   var scale: Double = 5000
 
   def add_edge(name: String, road_type: String, oneway: Boolean,
-               orig_id: Int, points: MutableList[Coordinate], lanes: Option[Int]) =
+               orig_id: String, points: MutableList[Coordinate], lanes: Option[Int]) =
   {
     edges += new PreEdge1(name, road_type, oneway, orig_id, points, lanes)
   }
 
   // Further evidence in the OSM source suggests these edges are bogus
-  def remove_edges(ids: Set[Int]) = {
+  def remove_edges(ids: Set[String]) = {
     edges = edges.filter(e => !ids.contains(e.orig_id))
   }
 
@@ -96,5 +96,5 @@ class PreGraph1() {
 }
 
 class PreEdge1(val name: String, val road_type: String, val oneway: Boolean,
-               val orig_id: Int, var points: MutableList[Coordinate],
+               val orig_id: String, var points: MutableList[Coordinate],
                var lanes: Option[Int]) {}

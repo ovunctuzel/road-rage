@@ -16,7 +16,7 @@ import utexas.aorta.Util
 @SerialVersionUID(1)
 class Road(
   var id: Int, val length: Double, val name: String, var road_type: String,
-  val osm_id: Int, val v1: Vertex, val v2: Vertex
+  val osm_id: String, val v1: Vertex, val v2: Vertex
 ) extends Renderable with Serializable
 {
   var points: Array[Coordinate] = null

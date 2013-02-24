@@ -16,10 +16,10 @@ import utexas.aorta.Util
 
 class Pass1(fn: String) {
   // OSM's id to (longitude, latitude)
-  val id_to_node = new HashMap[Int, Coordinate]
+  val id_to_node = new HashMap[String, Coordinate]
 
   // How many OSM roads reference a point?
-  val id_to_uses = new HashMap[Int, Int]
+  val id_to_uses = new HashMap[String, Int]
 
   val graph = new PreGraph1()
 
@@ -66,12 +66,12 @@ class Pass1(fn: String) {
     var road_type: String = ""
     var oneway: Boolean = false
     var skip_way: Boolean = false
-    var id: Int = -1
-    var refs: MutableList[Int] = new MutableList[Int]
+    var id: String = ""
+    var refs: MutableList[String] = new MutableList[String]
     var lanes: Option[Int] = None
 
     // per relation:
-    var relation_members: Set[Int] = Set()
+    var relation_members: Set[String] = Set()
     var skip_relation: Boolean = false
 
     var ev_count = 0
@@ -96,7 +96,7 @@ class Pass1(fn: String) {
           (get_attrib_default(attribs, "visible", "true"), get_attrib_default(attribs, "action", "modify")) match {
             case ("true", "modify") => {
               // record the node
-              val id = get_attrib(attribs, "id").toInt
+              val id = get_attrib(attribs, "id")
               val x = get_attrib(attribs, "lon").toDouble
               val y = get_attrib(attribs, "lat").toDouble
 
@@ -109,12 +109,12 @@ class Pass1(fn: String) {
         case EvElemStart(_, "way", attribs, _) =>
           (get_attrib_default(attribs, "visible", "true"), get_attrib_default(attribs, "action", "modify")) match {
             case ("true", "modify") => {
-              id = get_attrib(attribs, "id").toInt
+              id = get_attrib(attribs, "id")
               name = ""
               road_type = ""
               oneway = false
               skip_way = false
-              refs = new MutableList[Int]
+              refs = new MutableList[String]
               lanes = None
             }
             case _ =>
@@ -130,7 +130,7 @@ class Pass1(fn: String) {
           if (!skip_way) {
             // still handle missing names
             // TODO write a String.||= maybe?
-            name = if (name == "") "NO-NAME (ID %d)".format(id) else name
+            name = if (name == "") "NO-NAME (ID %s)".format(id) else name
             road_type = if (road_type == "") "null" else road_type
 
             if (forced_oneways(road_type)) {
@@ -156,7 +156,7 @@ class Pass1(fn: String) {
             graph.add_vertex(points.last)
           }
 
-          id = -1
+          id = ""
         }
 
         case EvElemStart(_, "tag", attribs, _) if id != -1 => {
@@ -179,7 +179,7 @@ class Pass1(fn: String) {
 
         case EvElemStart(_, "nd", attribs, _) => {
           if (!skip_way) {
-            val ref = get_attrib(attribs, "ref").toInt
+            val ref = get_attrib(attribs, "ref")
             if (id_to_node.contains(ref)) {
               refs :+= ref
             } else {
@@ -204,7 +204,7 @@ class Pass1(fn: String) {
 
         case EvElemStart(_, "member", attribs, _) => {
           if (get_attrib(attribs, "type") == "way") {
-            relation_members += get_attrib(attribs, "ref").toInt
+            relation_members += get_attrib(attribs, "ref")
           }
         }
 
