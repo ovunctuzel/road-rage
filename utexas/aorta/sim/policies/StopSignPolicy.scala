@@ -69,6 +69,7 @@ class StopSignPolicy(intersection: Intersection,
     Util.log(s"Stop sign policy for $intersection")
     Util.log("Current owner: " + current_owner)
   }
+  def policy_type = IntersectionType.StopSign
 
   private def approve_next = {
     current_owner = ordering.shift_next(

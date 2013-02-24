@@ -157,6 +157,7 @@ abstract class Policy(val intersection: Intersection) {
   def approveds_to(target: Edge): Iterable[Agent]
   def current_greens(): Set[Turn]
   def dump_info()
+  def policy_type(): IntersectionType.Value
 }
 
 // Simplest base-line ever.
@@ -170,4 +171,5 @@ class NeverGoPolicy(intersection: Intersection) extends Policy(intersection) {
   def dump_info = {
     Util.log(s"Never go policy for $intersection")
   }
+  def policy_type = IntersectionType.NeverGo
 }

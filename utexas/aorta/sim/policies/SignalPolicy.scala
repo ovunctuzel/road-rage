@@ -89,6 +89,7 @@ class SignalPolicy(intersection: Intersection,
       Util.log("Waiting on: " + accepted_agents)
     }
   }
+  def policy_type = IntersectionType.Signal
 
   // Ideally, ignoring overtime for slow agents.
   private def end_at = started_at + current_phase.duration

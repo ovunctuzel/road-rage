@@ -7,7 +7,7 @@ package utexas.aorta.sim.policies
 import scala.collection.mutable.{HashSet => MutableSet}
 
 import utexas.aorta.map.{Turn, Edge}
-import utexas.aorta.sim.{Intersection, Policy, Ticket, Agent}
+import utexas.aorta.sim.{Intersection, Policy, Ticket, Agent, IntersectionType}
 import utexas.aorta.sim.market.IntersectionOrdering
 
 import utexas.aorta.{Util, cfg}
@@ -84,6 +84,7 @@ class CommonCasePolicy(intersection: Intersection,
     Util.log(s"Common Case policy for $intersection")
     Util.log(s"Common turns: $common_turns")
   }
+  def policy_type = IntersectionType.CommonCase
 
   private def compute_common_turns(): Set[Turn] = {
     // Heuristic...

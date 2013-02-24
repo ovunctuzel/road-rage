@@ -86,6 +86,12 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
   private var camera_agent: Option[Agent] = None
   private val green_turns = new HashMap[Turn, Shape]()
   private var show_green = false
+  private val policy_colors = Map(
+    IntersectionType.StopSign -> Color.RED,
+    IntersectionType.Signal -> Color.YELLOW,
+    IntersectionType.Reservation -> Color.GREEN,
+    IntersectionType.CommonCase -> Color.BLUE
+  )
 
   implicit def line2awt(l: Line): Line2D.Double = new Line2D.Double(l.x1, l.y1, l.x2, l.y2)
 
@@ -238,11 +244,11 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
         })
       }
 
-      // TODO tmp -- trying out intersection merging
-      g2d.setColor(Color.CYAN)
+      // Illustrate the intersection policies
       for (v <- sim.vertices) {
         val bub = bubble(v.location)
         if (bub.intersects(window)) {
+          g2d.setColor(policy_colors(v.intersection.policy.policy_type))
           g2d.draw(bub)
         }
       }

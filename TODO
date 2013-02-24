@@ -91,7 +91,9 @@
 - tighten memory usage, although 1GB supports 1 million agents
 - we can do much better with ready agents... max capacity of edges, group them
   based on where they want to spawn, maybe by generator?
-- gridlock?
+- gridlock
+  - less conservative 'is turn blocked' analysis
+  - make intersections enforce liveness
   - force different turns?
 - at big timesteps, nobody moves?
 

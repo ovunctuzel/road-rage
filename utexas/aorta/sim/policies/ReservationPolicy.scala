@@ -68,6 +68,7 @@ class ReservationPolicy(intersection: Intersection,
     }
     Util.log_pop
   }
+  def policy_type = IntersectionType.Reservation
 
   private def shift_batches() = {
     if (current_batch.all_done) {
