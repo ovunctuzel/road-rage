@@ -8,7 +8,8 @@ import scala.collection.mutable.{HashSet => MutableSet}
 import scala.collection.mutable.ListBuffer
 
 import utexas.aorta.map.{Turn, Vertex, Edge}
-import utexas.aorta.sim.{Intersection, Policy, Agent, EV_Signal_Change}
+import utexas.aorta.sim.{Intersection, Policy, Agent, EV_Signal_Change,
+                         IntersectionType}
 import utexas.aorta.sim.market.IntersectionOrdering
 
 import utexas.aorta.{Util, Common, cfg}
@@ -19,7 +20,8 @@ class SignalPolicy(intersection: Intersection,
   extends Policy(intersection)
 {
   setup_phases.foreach(p => ordering.add(p))
-  private var current_phase: Phase = ordering.shift_next(Nil).get
+  private var current_phase: Phase =
+    ordering.shift_next(Nil, IntersectionType.Signal).get
   ordering.add(current_phase)
 
   // Tracks when the current phase began
@@ -39,7 +41,8 @@ class SignalPolicy(intersection: Intersection,
 
     // Switch to the next phase
     if (Common.tick >= end_at && accepted_agents.isEmpty) {
-      current_phase = ordering.shift_next(waiting_agents).get
+      current_phase =
+        ordering.shift_next(waiting_agents, IntersectionType.Signal).get
       // Cycle through the phases
       ordering.add(current_phase)
       started_at = Common.tick

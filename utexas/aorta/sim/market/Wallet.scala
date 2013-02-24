@@ -4,7 +4,7 @@
 
 package utexas.aorta.sim.market
 
-import utexas.aorta.sim.{Agent, Ticket, WalletType}
+import utexas.aorta.sim.{Agent, Ticket, WalletType, IntersectionType}
 import utexas.aorta.sim.policies.{Phase, TurnBatch}
 
 import utexas.aorta.{Util, cfg}
@@ -22,16 +22,24 @@ abstract class Wallet(a: Agent, initial_budget: Double) {
   // How much is this agent willing to spend on some choice?
   // TODO most reasonable implementations will want a notion of continuity,
   // grouping all auctions for one of its turns together...
-  def bid[T](choices: Iterable[T], ours: Ticket): (T, Double) = choices.head match {
-    // TODO this kind of dispatch is hokey
-    case _: Ticket => bid_stop_sign(choices.asInstanceOf[Iterable[Ticket]], ours).asInstanceOf[(T, Double)]
-    case _: Phase => bid_signal(choices.asInstanceOf[Iterable[Phase]], ours).asInstanceOf[(T, Double)]
-    case _: TurnBatch => bid_reservation(choices.asInstanceOf[Iterable[TurnBatch]], ours).asInstanceOf[(T, Double)]
-    case _ => throw new Exception("Dunno how to bid on " + choices)
+  def bid[T](choices: Iterable[T], ours: Ticket, itype: IntersectionType.Value): Option[(T, Double)] = itype match {
+    case IntersectionType.StopSign =>
+      bid_stop_sign(
+        choices.asInstanceOf[Iterable[Ticket]], ours
+      ).asInstanceOf[Option[(T, Double)]]
+    case IntersectionType.Signal =>
+      bid_signal(
+        choices.asInstanceOf[Iterable[Phase]], ours
+      ).asInstanceOf[Option[(T, Double)]]
+    case IntersectionType.Reservation =>
+      bid_reservation(
+        choices.asInstanceOf[Iterable[TurnBatch]], ours
+      ).asInstanceOf[Option[(T, Double)]]
+    case _ => throw new Exception(s"Dunno how to bid on $itype ordering")
   }
-  def bid_stop_sign(tickets: Iterable[Ticket], ours: Ticket): (Ticket, Double)
-  def bid_signal(phases: Iterable[Phase], ours: Ticket): (Phase, Double)
-  def bid_reservation(batches: Iterable[TurnBatch], ours: Ticket): (TurnBatch, Double)
+  def bid_stop_sign(tickets: Iterable[Ticket], ours: Ticket): Option[(Ticket, Double)]
+  def bid_signal(phases: Iterable[Phase], ours: Ticket): Option[(Phase, Double)]
+  def bid_reservation(batches: Iterable[TurnBatch], ours: Ticket): Option[(TurnBatch, Double)]
 
   // TODO maybe just have default behavior of bidding for the relevant whatever
 
@@ -61,23 +69,20 @@ class RandomWallet(a: Agent, initial_budget: Double)
 
   def rng = a.rng
 
-  def bid_stop_sign(tickets: Iterable[Ticket], ours: Ticket): (Ticket, Double) = {
-    return relevant_stop_sign(tickets, ours) match {
-      case Some(t) => (t, rng.double(0.0, budget))
-      case None => (tickets.head, 0.0)
+  def bid_stop_sign(tickets: Iterable[Ticket], ours: Ticket) =
+    relevant_stop_sign(tickets, ours) match {
+      case Some(t) => Some((t, rng.double(0.0, budget)))
+      case None => None
     }
-  }
 
-  def bid_signal(phases: Iterable[Phase], ours: Ticket): (Phase, Double) = {
-    return (relevant_phase(phases, ours), rng.double(0.0, budget))
-  }
+  def bid_signal(phases: Iterable[Phase], ours: Ticket) =
+    Some(relevant_phase(phases, ours), rng.double(0.0, budget))
 
-  def bid_reservation(batches: Iterable[TurnBatch], ours: Ticket): (TurnBatch, Double) = {
-    return relevant_batch(batches, ours) match {
-      case Some(b) => (b, rng.double(0.0, budget))
-      case None => (batches.head, 0.0)
+  def bid_reservation(batches: Iterable[TurnBatch], ours: Ticket) =
+    relevant_batch(batches, ours) match {
+      case Some(b) => Some((b, rng.double(0.0, budget)))
+      case None => None
     }
-  }
 }
 
 // Always bids some high amount.
@@ -87,23 +92,20 @@ class EmergencyVehicleWallet(a: Agent, amount: Double = 1000.0)
   override def toString = "EMERG"
   def wallet_type = WalletType.Emergency
 
-  def bid_stop_sign(tickets: Iterable[Ticket], ours: Ticket): (Ticket, Double) = {
-    return relevant_stop_sign(tickets, ours) match {
-      case Some(t) => (t, amount)
-      case None => (tickets.head, 0.0)
+  def bid_stop_sign(tickets: Iterable[Ticket], ours: Ticket) =
+    relevant_stop_sign(tickets, ours) match {
+      case Some(t) => Some((t, amount))
+      case None => None
     }
-  }
 
-  def bid_signal(phases: Iterable[Phase], ours: Ticket): (Phase, Double) = {
-    return (relevant_phase(phases, ours), amount)
-  }
+  def bid_signal(phases: Iterable[Phase], ours: Ticket) =
+    Some((relevant_phase(phases, ours), amount))
 
-  def bid_reservation(batches: Iterable[TurnBatch], ours: Ticket): (TurnBatch, Double) = {
-    return relevant_batch(batches, ours) match {
-      case Some(b) => (b, amount)
-      case None => (batches.head, 0.0)
+  def bid_reservation(batches: Iterable[TurnBatch], ours: Ticket) =
+    relevant_batch(batches, ours) match {
+      case Some(b) => Some((b, amount))
+      case None => None
     }
-  }
 
   // TODO Fixed high bid means multiple ambulances just compete based on how
   // many are in each flow.
@@ -115,7 +117,7 @@ class FreeriderWallet(a: Agent) extends Wallet(a, 0.0) {
   override def toString = "FR"
   def wallet_type = WalletType.Freerider
 
-  def bid_stop_sign(tickets: Iterable[Ticket], ours: Ticket) = (tickets.head, 0.0)
-  def bid_signal(phases: Iterable[Phase], ours: Ticket) = (phases.head, 0.0)
-  def bid_reservation(batches: Iterable[TurnBatch], ours: Ticket) = (batches.head, 0.0)
+  def bid_stop_sign(tickets: Iterable[Ticket], ours: Ticket) = None
+  def bid_signal(phases: Iterable[Phase], ours: Ticket) = None
+  def bid_reservation(batches: Iterable[TurnBatch], ours: Ticket) = None
 }

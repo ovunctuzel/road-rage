@@ -8,7 +8,7 @@ import scala.collection.mutable.{HashMap => MutableMap}
 import scala.collection.mutable.MultiMap
 import scala.collection.mutable.{Set => MutableSet}
 
-import utexas.aorta.sim.{Intersection, Policy, Agent, Ticket}
+import utexas.aorta.sim.{Intersection, Policy, Agent, Ticket, IntersectionType}
 import utexas.aorta.sim.market.IntersectionOrdering
 import utexas.aorta.map.{Turn, Edge}
 
@@ -73,7 +73,9 @@ class ReservationPolicy(intersection: Intersection,
     if (current_batch.all_done) {
       // Time for the next reservation! If there is none, then keep
       // current_batch because it's empty anyway.
-      ordering.shift_next(ordering.queue.flatMap(b => b.tickets)) match {
+      ordering.shift_next(
+        ordering.queue.flatMap(b => b.tickets), IntersectionType.Reservation
+      ) match {
         case Some(b) => {
           current_batch = b
           current_batch.agents.foreach(a => a.approve_turn(intersection))

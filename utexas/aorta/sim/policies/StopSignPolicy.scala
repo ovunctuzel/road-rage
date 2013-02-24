@@ -5,7 +5,7 @@
 package utexas.aorta.sim.policies
 
 import utexas.aorta.map.{Turn, Edge}
-import utexas.aorta.sim.{Intersection, Policy, Agent, Ticket}
+import utexas.aorta.sim.{Intersection, Policy, Agent, Ticket, IntersectionType}
 import utexas.aorta.sim.market.IntersectionOrdering
 
 import scala.collection.mutable.{HashMap, MultiMap}
@@ -71,7 +71,9 @@ class StopSignPolicy(intersection: Intersection,
   }
 
   private def approve_next = {
-    current_owner = ordering.shift_next(waiting_agents ++ ordering.queue)
+    current_owner = ordering.shift_next(
+      waiting_agents ++ ordering.queue, IntersectionType.StopSign
+    )
     if (current_owner.isDefined) {
       current_owner.get.a.approve_turn(intersection)
     }
