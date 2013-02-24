@@ -31,7 +31,7 @@ class StopSignPolicy(intersection: Intersection,
   // Add agent to the queue if they satisfy our requirements.
   def react() = {
     for (ticket <- waiting_agents) {
-      if (is_waiting(ticket.a)) {
+      if (is_waiting(ticket.a) && !turn_blocked(ticket)) {
         ordering.add(ticket)
         waiting_agents -= ticket // TODO mod while iterate?
       }

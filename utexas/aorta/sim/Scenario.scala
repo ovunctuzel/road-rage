@@ -223,7 +223,7 @@ object IntersectionDistribution {
       if (big.isEmpty)
         IntersectionType.StopSign
       else if (small.isEmpty)
-        IntersectionType.Reservation  // TODO or signal?
+        IntersectionType.Signal // TODO or reservations?!
       else
         IntersectionType.CommonCase
     MkIntersection(v.id, policy, default_ordering)

@@ -40,9 +40,10 @@ class CommonCasePolicy(intersection: Intersection,
     // and conflicting has been approved.
     for (ticket <- waiting_agents) {
       if (common_turns.contains(ticket.turn) && !rare_blocks(ticket.turn)) {
-        accepted_commoners += ticket
-        waiting_agents -= ticket
-        ticket.a.approve_turn(intersection)
+        if (approve_unless_blocked(ticket)) {
+          accepted_commoners += ticket
+          waiting_agents -= ticket
+        }
       }
     }
 
@@ -55,9 +56,10 @@ class CommonCasePolicy(intersection: Intersection,
       if (!common_turns.contains(ticket.turn) && is_ready(ticket.a) &&
           !commoner_blocks(ticket.turn) && !rare_blocks(ticket.turn))
       {
-        accepted_rares += ticket
-        waiting_agents -= ticket
-        ticket.a.approve_turn(intersection)
+        if (approve_unless_blocked(ticket)) {
+          accepted_rares += ticket
+          waiting_agents -= ticket
+        }
       }
     }
   }

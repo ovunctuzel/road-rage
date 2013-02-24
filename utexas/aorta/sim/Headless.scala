@@ -53,6 +53,7 @@ object Headless {
           case _ =>
         }
       }
+      case _ =>
     } })
 
     // TODO move to sim

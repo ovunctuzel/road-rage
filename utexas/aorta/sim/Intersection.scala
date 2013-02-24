@@ -121,6 +121,14 @@ abstract class Policy(val intersection: Intersection) {
     }
   }
 
+  def approve_unless_blocked(ticket: Ticket) =
+    if (turn_blocked(ticket)) {
+      false
+    } else {
+      ticket.a.approve_turn(intersection)
+      true
+    }
+
   // Policies must enforce liveness by never accepting agents if they couldn't
   // finish a turn.
   protected def turn_blocked(ticket: Ticket): Boolean = {
