@@ -104,10 +104,7 @@ class Edge(var id: Int, val road: Road, val dir: Direction.Value)
     worst_entry_dist + cfg.follow_dist, length - cfg.end_threshold
   )
 
-  def ok_to_lanechange =
-    (length >= cfg.lanechange_dist + cfg.end_threshold) &&
-    // this second constraint can be removed once lookbehind is implemented
-    (length >= worst_entry_dist + cfg.follow_dist)
+  def ok_to_lanechange = length >= cfg.lanechange_dist + cfg.end_threshold
 }
 
 object Direction extends Enumeration {

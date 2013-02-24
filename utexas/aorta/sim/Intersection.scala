@@ -121,6 +121,33 @@ abstract class Policy(val intersection: Intersection) {
     }
   }
 
+  // Policies must enforce liveness by never accepting agents if they couldn't
+  // finish a turn.
+  protected def turn_blocked(ticket: Ticket): Boolean = {
+    val turn = ticket.turn
+    val max_dist = turn.length + cfg.follow_dist
+    var step: Option[LookaheadStep] = Some(new LookaheadStep(
+      turn, max_dist, 0, turn.length, ticket.a.route
+    ))
+
+    while (step.isDefined) {
+      val this_step = step.get
+      this_step.at.queue.last match {
+        case Some(a) if this_step.dist_ahead + a.at.dist <= max_dist => {
+          // TODO can't conclude yes, this is way over-conservative!
+          return true
+        }
+        case _ =>
+      }
+      step = this_step.next_step
+    }
+    // Can conclude no, since nobody can LC into a spot that could block
+    // somebody without using lookbehind to ask us! If a turning agent could end
+    // up close to another agent beyond an intersection where it hasn't had a
+    // turn accepted, then they have to stop anyway.
+    return false
+  }
+
   // The intersection grants leases to waiting_agents
   def react(): Unit
   // TODO insist the client hands us a ticket for entry, exit?
