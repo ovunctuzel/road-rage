@@ -89,6 +89,7 @@ class Edge(var id: Int, val road: Road, val dir: Direction.Value)
     Util.log("Speed lim " + speed_limit)
     Util.log("Succs: " + next_turns)
     Util.log("Preds: " + prev_turns)
+    Util.log("Capacity: " + queue.capacity + " agents")
   }
 
   // For debug only

@@ -8,13 +8,13 @@ import java.io.File
 
 import utexas.aorta.ui.{MapCanvas, Viewer, EV_Action}
 
-import utexas.aorta.{Util, cfg}
+import utexas.aorta.{Util, Common, cfg}
 
 object Headless {
   // cut off some simulations by time
   var run_for: Double = -1.0
 
-  def main(args: Array[String]) = {
+  def main(args: Array[String]): Unit = {
     val sim = Util.process_args(args)
 
     // When this file exists, launch a GUI for sudden interactive watching.
@@ -63,8 +63,11 @@ object Headless {
                    sim.tick >= run_for
 
     Util.log("Starting simulation with time-steps of " + cfg.dt_s + "s")
+    val t = Common.timer("headless simulation")
     while (!done) {
       sim.step(cfg.dt_s)
     }
+    t.stop
+    sys.exit
   }
 }

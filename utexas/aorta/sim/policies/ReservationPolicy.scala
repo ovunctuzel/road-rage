@@ -45,7 +45,7 @@ class ReservationPolicy(intersection: Intersection,
       candidates.foreach(o => ordering.add(o))
       ordering.shift_next(waiting_agents, IntersectionType.Reservation) match {
         case Some(ticket) => {
-          ticket.a.approve_turn(intersection)
+          ticket.approve
           accepted += ticket
           waiting_agents -= ticket
         }

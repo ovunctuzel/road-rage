@@ -163,4 +163,7 @@ class Queue(t: Traversable) {
     })
     return safe
   }
+
+  // Round down. How many drivers max could squish together here?
+  def capacity = math.floor(t.length / cfg.follow_dist).toInt
 }

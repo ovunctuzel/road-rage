@@ -98,6 +98,8 @@ class Intersection(val v: Vertex, policy_type: IntersectionType.Value,
 case class Ticket(a: Agent, turn: Turn) extends Ordered[Ticket] {
   override def compare(other: Ticket) = a.compare(other.a)
 
+  def approve() = a.approve_turn(turn.vert.intersection)
+
   // TODO remember time requested, number of agents in front, etc
 }
 
@@ -121,39 +123,43 @@ abstract class Policy(val intersection: Intersection) {
     }
   }
 
-  protected def approve_unless_blocked(ticket: Ticket) =
-    if (turn_blocked(ticket)) {
-      false
-    } else {
-      ticket.a.approve_turn(intersection)
-      true
-    }
-
   // Policies must enforce liveness by never accepting agents if they couldn't
   // finish a turn.
   protected def turn_blocked(ticket: Ticket): Boolean = {
     val turn = ticket.turn
-    val max_dist = turn.length + cfg.follow_dist
-    var step: Option[LookaheadStep] = Some(new LookaheadStep(
-      turn, max_dist, 0, turn.length, ticket.a.route
-    ))
+    val target = turn.to
+    val next_vert = target.to.intersection
 
-    while (step.isDefined) {
-      val this_step = step.get
-      this_step.at.queue.last match {
-        case Some(a) if this_step.dist_ahead + a.at.dist <= max_dist => {
-          // TODO can't conclude yes, this is way over-conservative!
-          return true
-        }
-        case _ =>
-      }
-      step = this_step.next_step
+    // All techniques rely on lookbehind for LCing. Somebody can't appear on the
+    // target queue without this intersection's permission first.
+
+    // Fast as possible, completely unsafe
+    //return false
+
+    // Overly conservative: if there's anybody on the turn or too close on the
+    // target queue, don't try.
+    /*return (turn.queue.last, target.queue.last) match {
+      case (Some(a), _) => true
+      case (None, Some(a)) if a.at.dist <= cfg.follow_dist => true
+      case _ => false
+    }*/
+
+    // Hopefully safe, certainly less conservative: assume the intersection at
+    // target.to won't accept anybody else, so everybody on turn and target have
+    // to squish together on target. Can we fit as well?
+    // TODO there's some trickery since others can LC into target, but will
+    // handle that momentarily.
+    val count = (turn.queue.all_agents ++ target.queue.all_agents).filter(
+      a => !a.turns_approved(next_vert)
+    ).size
+    // Expect all policies to enforce liveness, so we should never exceed
+    // capacity...
+    Util.assert_le(count, target.queue.capacity)
+    if (count == target.queue.capacity) {
+      // TODO
+      println(s"${ticket.a} doing ${ticket.turn} hit capacity $count")
     }
-    // Can conclude no, since nobody can LC into a spot that could block
-    // somebody without using lookbehind to ask us! If a turning agent could end
-    // up close to another agent beyond an intersection where it hasn't had a
-    // turn accepted, then they have to stop anyway.
-    return false
+    return count + 1 > target.queue.capacity
   }
 
   // The intersection grants leases to waiting_agents

@@ -76,7 +76,7 @@ class StopSignPolicy(intersection: Intersection,
       waiting_agents ++ ordering.queue, IntersectionType.StopSign
     )
     if (current_owner.isDefined) {
-      current_owner.get.a.approve_turn(intersection)
+      current_owner.get.approve
     }
   }
 }
