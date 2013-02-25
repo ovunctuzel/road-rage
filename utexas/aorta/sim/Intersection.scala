@@ -155,10 +155,6 @@ abstract class Policy(val intersection: Intersection) {
     // Expect all policies to enforce liveness, so we should never exceed
     // capacity...
     Util.assert_le(count, target.queue.capacity)
-    if (count == target.queue.capacity) {
-      // TODO
-      println(s"${ticket.a} doing ${ticket.turn} hit capacity $count")
-    }
     return count + 1 > target.queue.capacity
   }
 

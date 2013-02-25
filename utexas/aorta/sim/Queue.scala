@@ -164,6 +164,7 @@ class Queue(t: Traversable) {
     return safe
   }
 
-  // Round down. How many drivers max could squish together here?
-  def capacity = math.floor(t.length / cfg.follow_dist).toInt
+  // Round down. How many drivers max could squish together here? Minimum 1,
+  // short edges just support 1.
+  def capacity = math.max(1, math.floor(t.length / cfg.follow_dist).toInt)
 }

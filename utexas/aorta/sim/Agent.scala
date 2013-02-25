@@ -350,6 +350,11 @@ class Agent(val id: Int, val route: Route, val rng: RNG, wallet_spec: MkWallet) 
     Util.log("Dist left here: " + at.dist_left)
     Util.log("Turns requested: " + turns_requested)
     Util.log("Turns approved: " + turns_approved)
+    if (is_lanechanging) {
+      Util.log(s"Lane-changing from ${old_lane.get}. $lanechange_dist_left to go!")
+    } else {
+      Util.log("Not lane-changing")
+    }
     behavior.dump_info
     Util.log_pop
   }

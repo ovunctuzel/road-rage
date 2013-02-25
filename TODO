@@ -127,7 +127,8 @@
 # Lane-changing
 - roads arent shortened enough when conservative lookahead picks too high a speed, then caps itself... two brief passes, to get the right amount of lookahead? :P
 - any missed opportunities?
-- dont let agents start lc that depends on others getting out of way
+- dont let agents start lc that depends on others getting out of way. till then,
+  funky patterns of backup
 - speculative desired_lane
 - road lengthening means we dont have to reduce numbers of lanes for LCing
 - removal approach doesnt handle having to LC many times on one road
