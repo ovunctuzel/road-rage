@@ -97,8 +97,15 @@ class Intersection(val v: Vertex, policy_type: IntersectionType.Value,
 
 case class Ticket(a: Agent, turn: Turn) extends Ordered[Ticket] {
   override def compare(other: Ticket) = a.compare(other.a)
+  override def toString = s"Ticket($a, $turn)"
 
-  def approve() = a.approve_turn(turn.vert.intersection)
+  def approve() = {
+    a.approve_turn(turn.vert.intersection)
+    // Allocate a spot for them. This must be called when the turn isn't
+    // blocked.
+    // TODO this messes up parallelism again...
+    turn.to.queue.allocate_slot
+  }
 
   // TODO remember time requested, number of agents in front, etc
 }
@@ -144,18 +151,10 @@ abstract class Policy(val intersection: Intersection) {
       case _ => false
     }*/
 
-    // Hopefully safe, certainly less conservative: assume the intersection at
-    // target.to won't accept anybody else, so everybody on turn and target have
-    // to squish together on target. Can we fit as well?
-    // TODO there's some trickery since others can LC into target, but will
-    // handle that momentarily.
-    val count = (turn.queue.all_agents ++ target.queue.all_agents).filter(
-      a => !a.turns_approved(next_vert)
-    ).size
-    // Expect all policies to enforce liveness, so we should never exceed
-    // capacity...
-    Util.assert_le(count, target.queue.capacity)
-    return count + 1 > target.queue.capacity
+    // Much less conservative: assume the intersection at target.to won't accept
+    // anybody else, so everybody on turn and target have to squish together on
+    // target. Can we fit as well? Available slots actually enforced everywhere!
+    return !target.queue.slot_avail
   }
 
   // The intersection grants leases to waiting_agents

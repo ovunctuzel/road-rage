@@ -29,6 +29,31 @@ class Queue(t: Traversable) {
   // to verify no collisions occurred in a step
   var prev_agents: Set[Agent] = Set()
 
+  // Maintain this to determine if it's safe to LC or turn to a lane. If we
+  // over-subscribe, agents may block the intersection. For edges only, not
+  // turns.
+  // TODO methods to mod this, that check bounds
+  var avail_slots = capacity
+
+  def allocate_slot() = {
+    Util.assert_gt(avail_slots, 0)
+    avail_slots -= 1
+  }
+
+  // It's the client's responsability to call this. Agents could skip short
+  // lanes entirely with big time-steps, sometimes, so calling only in exit()
+  // isn't sufficient.
+  def free_slot() = {
+    Util.assert_lt(avail_slots, capacity)
+    avail_slots += 1
+  }
+
+  def slot_avail = avail_slots > 0
+
+  // Round down. How many drivers max could squish together here? Minimum 1,
+  // short edges just support 1.
+  def capacity = math.max(1, math.floor(t.length / cfg.follow_dist).toInt)
+
   def head = wrap_option(agents.firstEntry)
   def last = wrap_option(agents.lastEntry)
 
@@ -137,6 +162,10 @@ class Queue(t: Traversable) {
   // The real-time spawning magic is really quite simple if worst_entry_dist and
   // lookahead work.
   def can_spawn_now(dist: Double): Boolean = {
+    if (!slot_avail) {
+      return false
+    }
+
     var safe = true
     // Find the first agent that makes us conclude there's a problem or we're
     // truly safe. This closure yields true when it wants to short-circuit.
@@ -163,8 +192,4 @@ class Queue(t: Traversable) {
     })
     return safe
   }
-
-  // Round down. How many drivers max could squish together here? Minimum 1,
-  // short edges just support 1.
-  def capacity = math.max(1, math.floor(t.length / cfg.follow_dist).toInt)
 }

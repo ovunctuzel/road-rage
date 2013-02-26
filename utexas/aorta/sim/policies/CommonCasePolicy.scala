@@ -48,7 +48,6 @@ class CommonCasePolicy(intersection: Intersection,
       }
     }
 
-
     // TODO how to use ordering to do diff stuff than from normal?
     // TODO looking ahead is unfair to waiting people...
     // Now admit rare agents who're ready and wouldn't interrupt an accepted

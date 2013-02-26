@@ -1,6 +1,8 @@
 # TODO #
 
 # Easy Parallelization
+- PARALLEL DETERMINISM INVALID: queue avail_slots
+
 - how to PAR
   - benchmark carefully
 
@@ -92,11 +94,10 @@
 - we can do much better with ready agents... max capacity of edges, group them
   based on where they want to spawn, maybe by generator?
 - gridlock
+  - increase avail slots when we're accepted, not leaving (except route end)
   - when we accept early and check for blockedness, see if theyre anywhere close
     to the turn yet! moot point if the turns not blocked when they ask...
     - aka, make all policies do 'is anyone ahead of you unaccepted'
-    - necessary to make LCing agents not cut off somebody thats accepted?
-      (but we wont ever req turn till we're done LCing... this'd stop ALL LCing!)
   - force different turns?
 - at big timesteps, nobody moves?
 

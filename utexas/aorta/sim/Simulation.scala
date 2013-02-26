@@ -136,6 +136,7 @@ class Simulation(val graph: Graph, scenario: Scenario)
       val a = spawn.a
       a.at = a.enter(spawn.e, spawn.dist)
       insert_agent(a)
+      spawn.e.queue.allocate_slot
       Stats.record(Agent_Start_Stat(
         a.id, tick, spawn.e.id, a.route.goal.id, a.route.route_type,
         a.wallet.wallet_type, a.wallet.budget

@@ -8,8 +8,7 @@ import utexas.aorta.map.{Turn, Edge}
 import utexas.aorta.sim.{Intersection, Policy, Agent, Ticket, IntersectionType}
 import utexas.aorta.sim.market.IntersectionOrdering
 
-import scala.collection.mutable.{HashMap, MultiMap}
-import scala.collection.mutable.{Set => MutableSet}
+import scala.collection.mutable.{Queue => MutableQueue}
 
 import utexas.aorta.{Util, cfg}
 
@@ -19,6 +18,8 @@ class StopSignPolicy(intersection: Intersection,
   extends Policy(intersection)
 {
   private var current_owner: Option[Ticket] = None
+  // Remember the order of request
+  private val queue = new MutableQueue[Ticket]()
 
   // Agents must pause a moment, be the head of their queue, and be close enough
   // to us (in case they looked ahead over small edges).
@@ -31,11 +32,9 @@ class StopSignPolicy(intersection: Intersection,
   // Add agent to the queue if they satisfy our requirements.
   def react() = {
     for (ticket <- waiting_agents) {
-      if (is_waiting(ticket.a) && !turn_blocked(ticket)) {
-        ordering.add(ticket)
-        waiting_agents -= ticket // TODO mod while iterate?
-      }
+      queue += ticket
     }
+    waiting_agents.clear
     if (!current_owner.isDefined) {
       approve_next
     }
@@ -48,13 +47,13 @@ class StopSignPolicy(intersection: Intersection,
 
   def handle_exit(a: Agent, turn: Turn) = {
     Util.assert_eq(current_owner.get.a, a)
-    approve_next
+    current_owner = None
   }
 
   def unregister_body(a: Agent) = {
-    ordering.queue = ordering.queue.filter(_.a != a)
+    queue.dequeueFirst((ticket) => ticket.a == a)
     if (current_owner.isDefined && current_owner.get.a == a) {
-      approve_next
+      current_owner = None
     }
   }
 
@@ -72,11 +71,19 @@ class StopSignPolicy(intersection: Intersection,
   def policy_type = IntersectionType.StopSign
 
   private def approve_next = {
+    ordering.clear
+    for (ticket <- queue if is_waiting(ticket.a) && !turn_blocked(ticket)) {
+      ordering.add(ticket)
+    }
     current_owner = ordering.shift_next(
       waiting_agents ++ ordering.queue, IntersectionType.StopSign
     )
-    if (current_owner.isDefined) {
-      current_owner.get.approve
+    current_owner match {
+      case Some(ticket) => {
+        ticket.approve
+        queue.dequeueFirst((t) => t == ticket)
+      }
+      case None =>
     }
   }
 }

@@ -78,6 +78,7 @@ class Agent(val id: Int, val route: Route, val rng: RNG, wallet_spec: MkWallet) 
         // Immediately enter the target lane
         behavior.transition(at.on, lane)
         at = enter(lane, at.dist)
+        lane.queue.allocate_slot
       }
     }
 
@@ -88,6 +89,7 @@ class Agent(val id: Int, val route: Route, val rng: RNG, wallet_spec: MkWallet) 
         if (lanechange_dist_left <= 0) {
           // Done! Leave the old queue
           exit(lane)
+          lane.queue.free_slot
 
           // Return to normality
           old_lane = None
@@ -149,6 +151,7 @@ class Agent(val id: Int, val route: Route, val rng: RNG, wallet_spec: MkWallet) 
         case (e: Edge, t: Turn) => {
           val i = t.vert.intersection
           i.enter(this, t)
+          e.queue.free_slot
         }
         case (t: Turn, e: Edge) => {
           val i = t.vert.intersection
@@ -217,6 +220,11 @@ class Agent(val id: Int, val route: Route, val rng: RNG, wallet_spec: MkWallet) 
     }
 
     if (!room_to_lc(target)) {
+      return false
+    }
+
+    // Does the target queue have capacity? Don't cause gridlock!
+    if (!target.queue.slot_avail) {
       return false
     }
 
@@ -374,6 +382,10 @@ class Agent(val id: Int, val route: Route, val rng: RNG, wallet_spec: MkWallet) 
   // Caller must remove this agent from the simulation list
   def terminate() = {
     exit(at.on)
+    at.on match {
+      case e: Edge => e.queue.free_slot
+      case _ =>
+    }
     // don't forget to tell intersections. this is normally just
     // at.on.vert if at.on is a turn, but it could be more due to lookahead.
     cancel_intersection_reservations
