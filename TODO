@@ -1,5 +1,20 @@
 # TODO #
 
+# Auctions #
+
+- plaintext serialization (version compatible)
+  test btwn machines
+- how big should tests be?
+  - no more than upper limit at a time, but spread out (poisson?)
+
+- payment for reservations
+- fair wallet
+- emergency wallet -> never spend, bid full
+- system bid: penalty if not much capacity
+- system bid: bonus to long-waiting group
+
+- specific experiments: everyone bids equally => greatest demand
+
 # Easy Parallelization
 - PARALLEL DETERMINISM INVALID: queue avail_slots
 

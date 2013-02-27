@@ -14,10 +14,21 @@ object Debug {
   def main(args: Array[String]) = {
     val sim = Util.process_args(args)
 
+    calc_capacity(sim)
     degenerate_verts(sim)
     doomed_stuff(sim)
     disconnected_directed_roads(sim)
     stress_test_pathfind(sim)
+  }
+
+  private def calc_capacity(sim: Simulation) = {
+    var capacity = 0
+    for (r <- sim.graph.roads) {
+      List(r.pos_lanes.headOption, r.neg_lanes.headOption).flatten.foreach(
+        e => capacity += e.queue.capacity
+      )
+    }
+    Util.log(s"Lower bound on total capacity: $capacity")
   }
 
   private def degenerate_verts(sim: Simulation) = {
