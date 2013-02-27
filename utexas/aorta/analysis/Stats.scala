@@ -13,6 +13,7 @@ import scala.collection.mutable.{ListBuffer, ArrayBuffer}
 import org.jfree.chart.ChartFactory
 import org.jfree.chart.plot.PlotOrientation
 import org.jfree.data.statistics.HistogramDataset
+import org.jfree.data.xy.{XYSeries, XYSeriesCollection}
 import java.io.File
 import javax.imageio.ImageIO
 
@@ -118,6 +119,7 @@ object PostProcess {
     //stats.foreach(s => Util.log(s"$s"))
     analyze_turn_times(stats, dir)
     analyze_trip_times(stats, dir)
+    analyze_agent_count(stats, dir)
     Util.log(s"\nResults at: $dir")
   }
 
@@ -264,5 +266,31 @@ object PostProcess {
 
     Util.log("Unweighted total trip time: " + unweighted_total)
     Util.log("Weighted total trip time: " + weighted_total)
+  }
+
+  private def analyze_agent_count(stats: List[Measurement], dir: String) = {
+    Util.log("Analyzing agent counts...")
+
+    val live_count = new XYSeries("Live agents")
+    val active_count = new XYSeries("Active agents")
+    for (stat <- stats) {
+      stat match {
+        case s: Heartbeat_Stat => {
+          live_count.add(s.tick, s.live_agents)
+          active_count.add(s.tick, s.active_agents)
+        }
+        case _ =>
+      }
+    }
+    val dataset = new XYSeriesCollection()
+    dataset.addSeries(live_count)
+    dataset.addSeries(active_count)
+
+    val chart = ChartFactory.createXYLineChart(
+      "Agent counts per time", "Time (s)", "Number of agents", dataset,
+      PlotOrientation.VERTICAL, true, false, false
+    )
+    val img = chart.createBufferedImage(800, 600)
+    ImageIO.write(img, "png", new File(s"$dir/agent_count_per_time.png"))
   }
 }

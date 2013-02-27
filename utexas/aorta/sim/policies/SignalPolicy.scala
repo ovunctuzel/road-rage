@@ -90,6 +90,7 @@ class SignalPolicy(intersection: Intersection,
     if (in_overtime) {
       Util.log("Waiting on: " + accepted_agents)
     }
+    Util.log(s"Waiting agents: $waiting_agents")
   }
   def policy_type = IntersectionType.Signal
 

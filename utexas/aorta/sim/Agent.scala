@@ -325,7 +325,6 @@ class Agent(val id: Int, val route: Route, val rng: RNG, wallet_spec: MkWallet) 
   )
   // We'll be constrained by the current edge's speed limit and maybe other
   // stuff, but at least this speed lim.
-  // TODO assumes we'll be speeding up
   def max_next_accel = math.min(max_accel, (at.on.speed_limit - speed) / cfg.dt_s)
 
   def max_next_speed = speed + (max_next_accel * cfg.dt_s)

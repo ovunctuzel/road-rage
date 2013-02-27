@@ -478,7 +478,7 @@ object ScenarioTool {
             case None => graph.edges
           }
           val time = params.get("time") match {
-            case Some(t) => (t.toDouble, t.toDouble)
+            case Some(t) => (0.0, t.toDouble)
             case None => (0.0, 60.0)
           }
           val route = Array(

@@ -70,6 +70,7 @@ class ReservationPolicy(intersection: Intersection,
   def dump_info() = {
     Util.log(s"Reservation policy for $intersection")
     Util.log(s"Currently accepted: $accepted")
+    Util.log(s"Waiting agents: $waiting_agents")
   }
   def policy_type = IntersectionType.Reservation
 }

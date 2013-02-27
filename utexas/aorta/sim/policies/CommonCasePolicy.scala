@@ -86,6 +86,7 @@ class CommonCasePolicy(intersection: Intersection,
   def dump_info() = {
     Util.log(s"Common Case policy for $intersection")
     Util.log(s"Common turns: $common_turns")
+    Util.log(s"Waiting agents: $waiting_agents")
   }
   def policy_type = IntersectionType.CommonCase
 

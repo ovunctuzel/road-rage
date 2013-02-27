@@ -85,6 +85,7 @@
   - but cant get from every incoming road to every outgoing road... can we?
 
 # Intersection Policies
+- bug: two tickets at an intersection
 - backpressure light optimization
 - agents should tell intersections in advance when they know
   - the edge case when we intend to stop

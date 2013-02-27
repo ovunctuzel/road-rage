@@ -67,6 +67,7 @@ class StopSignPolicy(intersection: Intersection,
   def dump_info() = {
     Util.log(s"Stop sign policy for $intersection")
     Util.log("Current owner: " + current_owner)
+    Util.log(s"Waiting agents: $waiting_agents")
   }
   def policy_type = IntersectionType.StopSign
 
