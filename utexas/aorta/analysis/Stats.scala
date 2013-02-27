@@ -24,7 +24,6 @@ import utexas.aorta.Util
 abstract class Measurement
 
 object Stats {
-  // TODO will the file get closed and flushed automatically?
   var log: ObjectOutputStream = null
 
   def setup_logging(fn: String) = {
@@ -54,7 +53,7 @@ case class Agent_Finish_Stat(
   id: Int, tick: Double, budget: Double
 ) extends Measurement
 
-// TODO when we first request a turn?
+// When we first request a turn.
 case class Turn_Request_Stat(
   agent: Int, vert: Int, tick: Double, budget: Double
 ) extends Measurement
@@ -100,6 +99,9 @@ case class Agent_Summary_Stat(
 {
   def trip_time = end_tick - start_tick
   def total_spent = end_budget - start_budget
+  // High priority and long trip time is bad; low priority or low trip time is
+  // good.
+  def weighted_value = start_budget * trip_time
 }
 
 // Offline, read the measurements and figure stuff out.
@@ -231,6 +233,9 @@ object PostProcess {
   private def analyze_trip_times(stats: List[Measurement], dir: String) = {
     Util.log("Analyzing trip times...")
 
+    var unweighted_total = 0.0
+    var weighted_total = 0.0
+
     // TODO show min (and where/who), max, average
     // TODO lots of weighted/unweighted stuff
 
@@ -243,6 +248,8 @@ object PostProcess {
       stat match {
         case s: Agent_Summary_Stat => {
           times_per_route(s.route) += s.trip_time
+          unweighted_total += s.trip_time
+          weighted_total += s.weighted_value
         }
         case _ =>
       }
@@ -254,5 +261,8 @@ object PostProcess {
       x_axis = "Total time (s)",
       fn = s"$dir/trip_time_per_route.png"
     )
+
+    Util.log("Unweighted total trip time: " + unweighted_total)
+    Util.log("Weighted total trip time: " + weighted_total)
   }
 }

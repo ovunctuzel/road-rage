@@ -81,6 +81,7 @@ class RandomWallet(a: Agent, initial_budget: Double)
 }
 
 // Always bids some high amount.
+// TODO infinite budget will mess up some analyses.
 class EmergencyVehicleWallet(a: Agent, amount: Double = 1000.0)
   extends Wallet(a, Double.PositiveInfinity)
 {
