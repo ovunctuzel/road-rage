@@ -8,7 +8,7 @@
   - no more than upper limit at a time, but spread out (poisson?)
 - get several big maps, for running all experiments on.
 
-- payment for reservations
+- dont let people just join reservation flow!
 - fair wallet
 - system bid: penalty if not much capacity
 - system bid: bonus to long-waiting group
