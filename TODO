@@ -8,8 +8,8 @@
   - no more than upper limit at a time, but spread out (poisson?)
 - get several big maps, for running all experiments on.
 
-- dont let people just join reservation flow!
 - fair wallet
+- system bid: reservation, prefer batching
 - system bid: penalty if not much capacity
 - system bid: bonus to long-waiting group
 

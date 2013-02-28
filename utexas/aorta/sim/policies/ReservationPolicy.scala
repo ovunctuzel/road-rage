@@ -12,19 +12,25 @@ import utexas.aorta.sim.market.IntersectionOrdering
 
 import utexas.aorta.{Util, cfg}
 
-// Accept as many compatible turns as possible.
+// Accept as many compatible turns as possible, until an interruption occurs.
+// (To get the old greedy behavior, add the constraint back to candidates, or
+// reimplement it with an ordering with "inertia.")
 class ReservationPolicy(intersection: Intersection,
                         ordering: IntersectionOrdering[Ticket])
   extends Policy(intersection)
 {
   private val accepted = new MutableSet[Ticket]()
   private def accepted_agent(a: Agent) = accepted.find(t => t.a == a).isDefined
+  private def accepted_conflicts(turn: Turn)
+    = accepted.find(t => t.turn.conflicts_with(turn)).isDefined
   def approveds_to(e: Edge) = accepted.filter(_.turn.to == e).map(_.a)
+  // Prevent more from being accepted until this ticket is approved.
+  private var interruption: Option[Ticket] = None
 
-  // Turn can't be blocked, nobody unaccepted in front of them, have a
-  // compatible turn
+  // Turn can't be blocked and nobody unaccepted in front of them
   private def candidates = waiting_agents.filter(ticket => {
-    val c1 = !accepted.find(t => t.turn.conflicts_with(ticket.turn)).isDefined
+    // Can have an incompatible turn.
+    //val c1 = !accepted_conflicts(ticket.turn)
     lazy val c2 = !turn_blocked(ticket)
     lazy val steps = ticket.a.route.steps_to(ticket.a.at.on, ticket.turn.vert)
     // TODO dont search behind us
@@ -34,20 +40,41 @@ class ReservationPolicy(intersection: Intersection,
     lazy val c4 = !steps.tail.find(step => step.queue.all_agents.find(
       a => !accepted_agent(a)
     ).isDefined).isDefined
-    c1 && c2 && c3 && c4
+    c2 && c3 && c4
   })
 
   def react(): Unit = {
+    interruption match {
+      case Some(ticket) => {
+        // Can we admit them now?
+        if (accepted_conflicts(ticket.turn)) {
+          // Not yet, and don't let anyone else in either.
+          return
+        } else {
+          // Yes! Resume admitting others now, too.
+          ticket.approve
+          accepted += ticket
+          interruption = None
+        }
+      }
+      case None =>
+    }
+
     // Approve candidates as long as there are candidates.
-    while (true) {
-      // TODO should payment change for this?
+    while (!interruption.isDefined) {
       ordering.clear
       candidates.foreach(o => ordering.add(o))
       ordering.shift_next(waiting_agents, IntersectionType.Reservation) match {
         case Some(ticket) => {
-          ticket.approve
-          accepted += ticket
           waiting_agents -= ticket
+          // Admit them immediately and continue, or reserve an interruption?
+          if (accepted_conflicts(ticket.turn)) {
+            interruption = Some(ticket)
+            return
+          } else {
+            ticket.approve
+            accepted += ticket
+          }
         }
         case None => return
       }
