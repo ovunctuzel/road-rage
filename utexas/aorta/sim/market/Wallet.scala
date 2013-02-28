@@ -80,32 +80,29 @@ class RandomWallet(a: Agent, initial_budget: Double)
     }
 }
 
-// Always bids some high amount.
-// TODO infinite budget will mess up some analyses.
-class EmergencyVehicleWallet(a: Agent, amount: Double = 1000.0)
-  extends Wallet(a, Double.PositiveInfinity)
-{
-  override def toString = "EMERG"
-  def wallet_type = WalletType.Emergency
+// Always bid the full budget, but never lose any money.
+class StaticWallet(a: Agent, budget: Double) extends Wallet(a, budget) {
+  override def toString = "STATIC"
+  def wallet_type = WalletType.Static
 
   def bid_stop_sign(tickets: Iterable[Ticket], ours: Ticket) =
     relevant_ticket(tickets, ours) match {
-      case Some(t) => Some((t, amount))
+      case Some(t) => Some((t, budget))
       case None => None
     }
 
   def bid_signal(phases: Iterable[Phase], ours: Ticket) =
-    Some((relevant_phase(phases, ours), amount))
+    Some((relevant_phase(phases, ours), budget))
 
   def bid_reservation(tickets: Iterable[Ticket], ours: Ticket) =
     relevant_ticket(tickets, ours) match {
-      case Some(b) => Some((b, amount))
+      case Some(b) => Some((b, budget))
       case None => None
     }
 
-  // TODO Fixed high bid means multiple ambulances just compete based on how
-  // many are in each flow.
-  // TODO dont count payment from this towards revenue
+  override def spend(amount: Double) = {
+    Util.assert_eq(amount, budget)
+  }
 }
 
 // Never participate.

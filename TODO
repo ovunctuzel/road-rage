@@ -9,7 +9,7 @@
 
 - payment for reservations
 - fair wallet
-- emergency wallet -> never spend, bid full
+= explicitly log costs; inference is weird.
 - system bid: penalty if not much capacity
 - system bid: bonus to long-waiting group
 

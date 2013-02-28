@@ -285,7 +285,7 @@ object OrderingType extends Enumeration {
 
 object WalletType extends Enumeration {
   type WalletType = Value
-  val Random, Emergency, Freerider = Value
+  val Random, Static, Freerider = Value
 }                                                                         
 
 object Factory {
@@ -320,8 +320,7 @@ object Factory {
 
   def make_wallet(a: Agent, enum: WalletType.Value, budget: Double) = enum match {
     case WalletType.Random => new RandomWallet(a, budget)    
-    // TODO budget is misnomer for emergency
-    case WalletType.Emergency => new EmergencyVehicleWallet(a, budget)    
+    case WalletType.Static => new StaticWallet(a, budget)    
     case WalletType.Freerider => new FreeriderWallet(a)
   }
 }
