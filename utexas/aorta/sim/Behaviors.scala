@@ -282,9 +282,7 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
               val next_turn = route.pick_turn(e)
               i.request_turn(a, next_turn)
               a.turns_requested += i
-              Stats.record(Turn_Request_Stat(
-                a.id, i.v.id, Common.tick, a.wallet.budget
-              ))
+              Stats.record(Turn_Request_Stat(a.id, i.v.id, Common.tick))
             }
             false
           }

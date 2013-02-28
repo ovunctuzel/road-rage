@@ -56,13 +56,18 @@ case class Agent_Finish_Stat(
 
 // When we first request a turn.
 case class Turn_Request_Stat(
-  agent: Int, vert: Int, tick: Double, budget: Double
+  agent: Int, vert: Int, tick: Double
 ) extends Measurement
 
-// When the intersection accepts us. The budget difference should imply how much
-// we spent on this intersection only.
+// When we pay as part of our turn. May happen multiple times, and we may pay
+// for something that isn't ours to get to our turn faster.
+case class Turn_Pay_Stat(
+  agent: Int, vert: Int, amount: Double
+) extends Measurement
+
+// When the intersection accepts us.
 case class Turn_Accept_Stat(
-  agent: Int, vert: Int, tick: Double, budget: Double
+  agent: Int, vert: Int, tick: Double
 ) extends Measurement
 
 // When we completely finish a turn.
@@ -81,11 +86,9 @@ case class Heartbeat_Stat(
 // Summarizes an entire turn. Built offline.
 case class Turn_Summary_Stat(
   agent: Int, vert: Int, req_tick: Double, accept_tick: Double,
-  done_tick: Double, budget_at_req: Double, budget_at_accept: Double
+  done_tick: Double, cost_paid: Double
 ) extends Measurement
 {
-  // TODO if we pay for stuff in the future, gonna be wrong
-  def cost_paid = budget_at_req - budget_at_accept
   // Total delay means turn length factors in.
   def total_delay = done_tick - req_tick
   def accept_delay = accept_tick - req_tick
@@ -127,8 +130,8 @@ object PostProcess {
   private def group_raw_stats(log: ObjectInputStream): List[Measurement] = {
     Util.log("Post-processing raw stats into higher-level stats...")
     val stats = new ListBuffer[Measurement]()
-    // map from (agent, vert) to the request and accept stats
-    val last_turn = new MutableMap[(Int, Int), (Turn_Request_Stat, Turn_Accept_Stat)]()
+    // map from (agent, vert) to the requestand accept stats and total cost
+    val last_turn = new MutableMap[(Int, Int), (Turn_Request_Stat, Turn_Accept_Stat, Double)]()
     try {
       val agent_start = new MutableMap[Int, Agent_Start_Stat]()
       while (true) {
@@ -137,19 +140,23 @@ object PostProcess {
           case s: Turn_Request_Stat => {
             val key = (s.agent, s.vert)
             Util.assert_eq(last_turn.contains(key), false)
-            last_turn(key) = ((s, null))
+            last_turn(key) = (s, null, 0.0)
+          }
+          case Turn_Pay_Stat(a, v, amount) => {
+            val key = (a, v)
+            val triple = last_turn(key)
+            last_turn(key) = (triple._1, null, triple._3 + amount)
           }
           case s: Turn_Accept_Stat => {
             val key = (s.agent, s.vert)
-            val pair = last_turn(key)
-            Util.assert_eq(pair._2, null)
-            last_turn(key) = (pair._1, s)
+            val triple = last_turn(key)
+            Util.assert_eq(triple._2, null)
+            last_turn(key) = (triple._1, s, triple._3)
           }
           case Turn_Done_Stat(a, v, tick) => {
-            val pair = last_turn.remove((a, v)).get
+            val triple = last_turn.remove((a, v)).get
             stats += Turn_Summary_Stat(
-              a, v, pair._1.tick, pair._2.tick, tick, pair._1.budget,
-              pair._2.budget
+              a, v, triple._1.tick, triple._2.tick, tick, triple._3
             )
           }
 

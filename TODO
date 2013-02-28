@@ -6,10 +6,10 @@
   test btwn machines
 - how big should tests be?
   - no more than upper limit at a time, but spread out (poisson?)
+- get several big maps, for running all experiments on.
 
 - payment for reservations
 - fair wallet
-= explicitly log costs; inference is weird.
 - system bid: penalty if not much capacity
 - system bid: bonus to long-waiting group
 

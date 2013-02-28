@@ -83,12 +83,14 @@ class AuctionOrdering[T]() extends IntersectionOrdering[T]() {
     val winner = sums.head._1
 
     // Direct payment... all the winners pay their full bid.
-    //bids(winner).foreach(bid => bid.who.a.wallet.spend(bid.amount))
+    //bids(winner).foreach(bid => bid.who.a.wallet.spend(bid.amount, bid.who.turn))
 
     // Proportional payment... the winner must pay the amount that the runner-up
     // bid. Each member of the winner pays proportional to what they bid.
     val rate = sums.tail.head._2 / sums.head._2
-    bids(winner).foreach(bid => bid.who.a.wallet.spend(bid.amount * rate))
+    bids(winner).foreach(
+      bid => bid.who.a.wallet.spend(bid.amount * rate, bid.who.turn)
+    )
 
     return winner
   }

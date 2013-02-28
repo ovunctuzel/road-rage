@@ -371,7 +371,7 @@ class Agent(val id: Int, val route: Route, val rng: RNG, wallet_spec: MkWallet) 
       Util.assert_eq(turns_requested(i), true)
       turns_requested -= i
       turns_approved += i
-      Stats.record(Turn_Accept_Stat(id, i.v.id, Common.tick, wallet.budget))
+      Stats.record(Turn_Accept_Stat(id, i.v.id, Common.tick))
     }
   }
 

@@ -5,7 +5,9 @@
 package utexas.aorta.sim.market
 
 import utexas.aorta.sim.{Agent, Ticket, WalletType, IntersectionType}
+import utexas.aorta.map.Turn
 import utexas.aorta.sim.policies.Phase
+import utexas.aorta.analysis.{Stats, Turn_Pay_Stat}
 
 import utexas.aorta.{Util, cfg}
 
@@ -14,9 +16,10 @@ abstract class Wallet(a: Agent, initial_budget: Double) {
   // How much the agent may spend during its one-trip lifetime
   var budget = initial_budget
 
-  def spend(amount: Double) = {
+  def spend(amount: Double, turn: Turn) = {
     Util.assert_ge(budget, amount)
     budget -= amount
+    Stats.record(Turn_Pay_Stat(a.id, turn.vert.id, amount))
   }
 
   // How much is this agent willing to spend on some choice?
@@ -100,8 +103,9 @@ class StaticWallet(a: Agent, budget: Double) extends Wallet(a, budget) {
       case None => None
     }
 
-  override def spend(amount: Double) = {
-    Util.assert_eq(amount, budget)
+  override def spend(amount: Double, turn: Turn) = {
+    Util.assert_ge(budget, amount)
+    Stats.record(Turn_Pay_Stat(a.id, turn.vert.id, amount))
   }
 }
 
