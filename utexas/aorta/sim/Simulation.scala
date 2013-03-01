@@ -148,10 +148,13 @@ class Simulation(val graph: Graph, scenario: Scenario)
 }
 
 trait ListenerPattern[T] {
-  private var listeners: List[T => Any] = Nil
-  def tell_listeners(ev: T) = listeners.foreach(l => l(ev))
-  def listen(subscriber: T => Any) = {
-    listeners :+= subscriber
+  private var listeners: List[(String, T => Any)] = Nil
+  def tell_listeners(ev: T) = listeners.foreach(l => l._2(ev))
+  def listen(tag: String, subscriber: T => Any) = {
+    listeners :+= (tag, subscriber)
+  }
+  def unlisten(tag: String) = {
+    listeners = listeners.filter(l => l._1 != tag)
   }
 }
 abstract class Sim_Event

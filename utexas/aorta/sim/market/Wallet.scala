@@ -4,8 +4,9 @@
 
 package utexas.aorta.sim.market
 
-import utexas.aorta.sim.{Agent, Ticket, WalletType, IntersectionType}
-import utexas.aorta.map.Turn
+import utexas.aorta.sim.{Agent, Ticket, WalletType, IntersectionType,
+                         Route_Event, EV_Transition, EV_Reroute}
+import utexas.aorta.map.{Turn, Vertex}
 import utexas.aorta.sim.policies.Phase
 import utexas.aorta.analysis.{Stats, Turn_Pay_Stat}
 
@@ -23,8 +24,6 @@ abstract class Wallet(a: Agent, initial_budget: Double) {
   }
 
   // How much is this agent willing to spend on some choice?
-  // TODO most reasonable implementations will want a notion of continuity,
-  // grouping all auctions for one of its turns together...
   def bid[T](choices: Iterable[T], ours: Ticket, itype: IntersectionType.Value): Option[(T, Double)] = itype match {
     case IntersectionType.StopSign =>
       bid_stop_sign(
@@ -44,21 +43,17 @@ abstract class Wallet(a: Agent, initial_budget: Double) {
   def bid_signal(phases: Iterable[Phase], ours: Ticket): Option[(Phase, Double)]
   def bid_reservation(tickets: Iterable[Ticket], ours: Ticket): Option[(Ticket, Double)]
 
-  // TODO maybe just have default behavior of bidding for the relevant whatever
-
-  // May fail when the agent is bidding ahead more than one step, or when nobody
-  // in their queue is ready yet. TODO hmm?
-  def relevant_ticket(tickets: Iterable[Ticket], ours: Ticket) =
+  def my_ticket(tickets: Iterable[Ticket], ours: Ticket) =
     tickets.find(t => t.a == ours.a)
 
-  // TODO if there are multiple...
-  def relevant_phase(phases: Iterable[Phase], ours: Ticket) =
-    phases.find(p => p.has(ours.turn)).get
+  // TODO if there are multiple... then what?
+  def my_phase(phases: Iterable[Phase], ours: Ticket) =
+    phases.find(p => p.has(ours.turn))
 
   def wallet_type(): WalletType.Value
 }
 
-// Bids a random amount on any turn that helps the agent.
+// Bids a random amount on our turn.
 class RandomWallet(a: Agent, initial_budget: Double)
   extends Wallet(a, initial_budget)
 {
@@ -67,20 +62,20 @@ class RandomWallet(a: Agent, initial_budget: Double)
 
   def rng = a.rng
 
+  private def bid_rnd[T](choice: Option[T]): Option[(T, Double)] = choice match
+  {
+    case Some(thing) => Some((thing, rng.double(0.0, budget)))
+    case None => None
+  }
+
   def bid_stop_sign(tickets: Iterable[Ticket], ours: Ticket) =
-    relevant_ticket(tickets, ours) match {
-      case Some(t) => Some((t, rng.double(0.0, budget)))
-      case None => None
-    }
+    bid_rnd(my_ticket(tickets, ours))
 
   def bid_signal(phases: Iterable[Phase], ours: Ticket) =
-    Some(relevant_phase(phases, ours), rng.double(0.0, budget))
+    bid_rnd(my_phase(phases, ours))
 
   def bid_reservation(tickets: Iterable[Ticket], ours: Ticket) =
-    relevant_ticket(tickets, ours) match {
-      case Some(b) => Some((b, rng.double(0.0, budget)))
-      case None => None
-    }
+    bid_rnd(my_ticket(tickets, ours))
 }
 
 // Always bid the full budget, but never lose any money.
@@ -88,20 +83,20 @@ class StaticWallet(a: Agent, budget: Double) extends Wallet(a, budget) {
   override def toString = "STATIC"
   def wallet_type = WalletType.Static
 
+  private def bid_full[T](choice: Option[T]): Option[(T, Double)] = choice match
+  {
+    case Some(thing) => Some((thing, budget))
+    case None => None
+  }
+
   def bid_stop_sign(tickets: Iterable[Ticket], ours: Ticket) =
-    relevant_ticket(tickets, ours) match {
-      case Some(t) => Some((t, budget))
-      case None => None
-    }
+    bid_full(my_ticket(tickets, ours))
 
   def bid_signal(phases: Iterable[Phase], ours: Ticket) =
-    Some((relevant_phase(phases, ours), budget))
+    bid_full(my_phase(phases, ours))
 
   def bid_reservation(tickets: Iterable[Ticket], ours: Ticket) =
-    relevant_ticket(tickets, ours) match {
-      case Some(b) => Some((b, budget))
-      case None => None
-    }
+    bid_full(my_ticket(tickets, ours))
 
   override def spend(amount: Double, turn: Turn) = {
     Util.assert_ge(budget, amount)
@@ -117,4 +112,53 @@ class FreeriderWallet(a: Agent) extends Wallet(a, 0.0) {
   def bid_stop_sign(tickets: Iterable[Ticket], ours: Ticket) = None
   def bid_signal(phases: Iterable[Phase], ours: Ticket) = None
   def bid_reservation(tickets: Iterable[Ticket], ours: Ticket) = None
+}
+
+// Bid once per intersection some amount proportional to the rest of the trip.
+class FairWallet(a: Agent, budget: Double) extends Wallet(a, budget) {
+  override def toString = "FAIR"
+  def wallet_type = WalletType.Fair
+
+  private var total_weight = 0.0
+
+  a.route.listen("fair_wallet", (ev: Route_Event) => { ev match {
+    case EV_Reroute(path) => {
+      total_weight = path.map(r => weight(r.to)).sum
+    }
+    case EV_Transition(from, to) => to match {
+      case t: Turn => {
+        total_weight -= weight(t.vert)
+      }
+      case _ =>
+    }
+  } })
+
+  private def bid_fair[T](choice: Option[T], v: Vertex): Option[(T, Double)] = choice match
+  {
+    case Some(thing) => Some((thing, budget * (weight(v) / total_weight)))
+    case None => None
+  }
+
+  def bid_stop_sign(tickets: Iterable[Ticket], ours: Ticket) =
+    bid_fair(my_ticket(tickets, ours), ours.turn.vert)
+
+  def bid_signal(phases: Iterable[Phase], ours: Ticket) =
+    bid_fair(my_phase(phases, ours), ours.turn.vert)
+
+  def bid_reservation(tickets: Iterable[Ticket], ours: Ticket) =
+    bid_fair(my_ticket(tickets, ours), ours.turn.vert)
+
+  // How much should we plan on spending, or actually spend, at this
+  // intersection?
+  // TODO better heuristic? base it on the policy, too!
+  private def weight(v: Vertex): Double = {
+    val (big, small) = v.roads.partition(_.is_major)
+    val policy_weight = v.intersection.policy.policy_type match {
+      case IntersectionType.StopSign => 1.0
+      case IntersectionType.Signal => 2.5
+      case IntersectionType.Reservation => 1.5
+      case IntersectionType.CommonCase => 0.0
+    }
+    return (1.0 * big.size) + (0.5 * small.size) + (1.0 * policy_weight)
+  }
 }

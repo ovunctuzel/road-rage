@@ -11,7 +11,9 @@ import utexas.aorta.map.{Edge, DirectedRoad, Traversable, Turn, Vertex}
 import utexas.aorta.{Util, RNG, Common, cfg}
 
 // Get a client to their goal by any means possible.
-abstract class Route(val goal: DirectedRoad, rng: RNG) {
+abstract class Route(val goal: DirectedRoad, rng: RNG)
+  extends ListenerPattern[Route_Event]
+{
   def done(at: Edge) = at.directed_road == goal
   // For lookahead clients. No lane-changing.
   def steps_to(at: Traversable, v: Vertex): List[Traversable] = at match {
@@ -31,6 +33,10 @@ abstract class Route(val goal: DirectedRoad, rng: RNG) {
   def dump_info
   def route_type(): RouteType.Value
 }
+
+abstract class Route_Event
+final case class EV_Transition(from: Traversable, to: Traversable) extends Route_Event
+final case class EV_Reroute(path: List[DirectedRoad]) extends Route_Event
 
 // Compute the cost of the path from every source to our single goal, then
 // hillclimb each step.
@@ -80,6 +86,7 @@ class PathRoute(goal: DirectedRoad, rng: RNG) extends Route(goal, rng) {
       }
       case _ =>
     }
+    tell_listeners(EV_Transition(from, to))
   }
 
   private def best_turn(e: Edge, dest: DirectedRoad) =
@@ -109,6 +116,7 @@ class PathRoute(goal: DirectedRoad, rng: RNG) extends Route(goal, rng) {
         // Stitch together the new path into the full thing
         val new_path = slice.head :: source :: Common.sim.graph.router.path(source, goal)
         path = before ++ new_path
+        tell_listeners(EV_Reroute(path))
         return choice
       }
     }
@@ -122,6 +130,7 @@ class PathRoute(goal: DirectedRoad, rng: RNG) extends Route(goal, rng) {
   def pick_lane(from: Edge): Edge = {
     if (path == null) {
       path = from.directed_road :: Common.sim.graph.router.path(from.directed_road, goal)
+      tell_listeners(EV_Reroute(path))
     }
 
     // Lookahead could be calling us from anywhere. Figure out where we are in

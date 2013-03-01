@@ -176,7 +176,7 @@ object cfg {
     ("policy", "StopSign"),
     ("ordering", "FIFO"),
     ("route", "Path"),
-    ("wallet", "Random")
+    ("wallet", "Fair")
   ).map({c => c._1 -> new String_Cfgable(c._2)}).toMap
 
   // TODO val colors = ... (I'm not kidding)

@@ -17,7 +17,8 @@ import scala.language.implicitConversions
 
 import utexas.aorta.map._  // TODO yeah getting lazy.
 import utexas.aorta.sim.{Simulation, Agent, Sim_Event, EV_Signal_Change,
-                         IntersectionType, RouteType}
+                         IntersectionType, RouteType, Route_Event,
+                         EV_Transition, EV_Reroute}
 import utexas.aorta.sim.PathRoute
 
 import utexas.aorta.{Util, RNG, cfg}
@@ -46,13 +47,6 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
               case Some(a) => {
                 if (sim.has_agent(a)) {
                   center_on(a.at.location)
-                  // TODO detect when route changes?
-                  a.route match {
-                    case r: PathRoute => {
-                      route_members = r.path.map(_.road).toSet
-                    }
-                    case _ =>
-                  }
                 } else {
                   Util.log(a + " is done; the camera won't stalk them anymore")
                   camera_agent = None
@@ -172,7 +166,7 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
   def zoomed_in = zoom > cfg.zoom_threshold
 
   // Register to hear events
-  sim.listen((ev: Sim_Event) => { ev match {
+  sim.listen("UI", (ev: Sim_Event) => { ev match {
     case EV_Signal_Change(greens) => {
       green_turns.clear
       for (t <- greens) {
@@ -703,9 +697,34 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
       case None =>
     }
     case Key.F => {
+      // Unregister old listener
+      camera_agent match {
+        case Some(a) => a.route.unlisten("UI")
+        case None =>
+      }
+
       camera_agent = current_agent
-      if (!camera_agent.isDefined) {
-        route_members = Set[Road]()
+      camera_agent match {
+        case Some(a) => a.route match {
+          case r: PathRoute => {
+            route_members = r.path.map(_.road).toSet
+            r.listen("UI", (ev: Route_Event) => { ev match {
+              case EV_Reroute(path) => {
+                route_members = path.map(_.road).toSet
+              }
+              case EV_Transition(from, to) => from match {
+                case e: Edge => {
+                  route_members -= e.road
+                }
+                case _ =>
+              }
+            } })
+          }
+          case _ =>
+        }
+        case None => {
+          route_members = Set[Road]()
+        }
       }
     }
     case Key.X if current_agent.isDefined => {

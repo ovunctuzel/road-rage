@@ -23,7 +23,7 @@ object Headless {
 
     // Print an update every second
     var last_tick = sim.tick
-    sim.listen((ev: Sim_Event) => { ev match {
+    sim.listen("headless", (ev: Sim_Event) => { ev match {
       case EV_Heartbeat(info) => {
         Util.log("At t=%.1f (%.1fs later): %s [%d agents moved] {%s moves/sec}".format(
           info.tick, info.tick - last_tick, sim.describe_agents,
