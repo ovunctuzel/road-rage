@@ -273,7 +273,15 @@ class Agent(val id: Int, val route: Route, val rng: RNG, wallet_spec: MkWallet) 
       }
       case Act_Done_With_Route() => {
         // TODO untrue when our dest is tiny and we stop right before it!
-        Util.assert_eq(at.on.asInstanceOf[Edge].directed_road, route.goal)
+        at.on match {
+          case e: Edge => // normal
+          case t: Turn => {
+            // Tiny destination edge? TODO dont allow this kinda hack...
+            t.to.queue.free_slot
+            t.vert.intersection.exit(this, t)
+          }
+        }
+        //Util.assert_eq(at.on.asInstanceOf[Edge].directed_road, route.goal)
         // Trust behavior, don't abuse this.
         Util.assert_eq(speed, 0.0)
         true
@@ -282,6 +290,7 @@ class Agent(val id: Int, val route: Route, val rng: RNG, wallet_spec: MkWallet) 
   }
 
   def cancel_intersection_reservations() = {
+    // TODO is this ever sensible to use?
     turns_requested.foreach(i => i.policy.unregister(this))
     turns_approved.foreach(i => i.policy.unregister(this))
     turns_requested.clear
