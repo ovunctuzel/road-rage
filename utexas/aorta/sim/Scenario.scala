@@ -333,7 +333,7 @@ object ScenarioTool {
     ("scenarios/foo --out scenarios/new_foo [--vert ...]* [--agent ...]* [--spawn ...]*\n" +
      "  --vert 42 policy=StopSign ordering=FIFO\n" +
      "  --agent 3 start=0 end=100 time=16.2 route=Drunken wallet=Random budget=90.0\n" +
-     "  --spawn 500 start=0 end=100 time=16.2 route=Drunken wallet=Random budget=90.0\n" +
+     "  --spawn 500 start=0 end=100 time=16.2 generations=1 lifetime=3600 route=Drunken wallet=Random budget=90.0\n" +
      "  --all_verts policy=StopSign ordering=FIFO\n" +
      "\n" +
      "Or pass two scenarios to get a diff")
@@ -464,7 +464,7 @@ object ScenarioTool {
           s.agents(id) = new_a
         }
         // TODO specifying ranges or choices for stuff.
-        // --spawn 500 start=0 end=100 time=16.2 route=Drunken wallet=Random budget=90.0
+        // --spawn 500 start=0 end=100 time=16.2 generations=1 lifetime=3600 route=Drunken wallet=Random budget=90.0
         case "--spawn" => {
           val number = shift_args.toInt
           val params = slurp_params
@@ -477,9 +477,17 @@ object ScenarioTool {
             case Some(e) => Array(graph.edges(e.toInt))
             case None => graph.edges
           }
-          val time = params.get("time") match {
-            case Some(t) => (0.0, t.toDouble)
-            case None => (0.0, 60.0)
+          val delay = params.get("time") match {
+            case Some(t) => t.toDouble
+            case None => 0.0
+          }
+          val generations = params.get("generations") match {
+            case Some(t) => t.toInt
+            case None => 1
+          }
+          val lifetime = params.get("lifetime") match {
+            case Some(t) => t.toDouble
+            case None => 3600.0
           }
           val route = Array(
             RouteType.withName(params.getOrElse("route", cfg.route))
@@ -491,14 +499,17 @@ object ScenarioTool {
             case Some(t) => (t.toDouble, t.toDouble)
             case None => (100.0, 1000.0)
           }
-          val new_agents = AgentDistribution.uniform(
-            Range(s.agents.size, s.agents.size + number), starts, ends, time,
-            route, wallet, budget
-          )
 
           // TODO describe more?
-          Util.log(s"Adding $number new agents")
-          s = s.copy(agents = s.agents ++ new_agents)
+          Util.log(s"Adding $number * $generations new agents")
+          for (generation <- Range(0, generations)) {
+            val time = (generation * lifetime, generation * lifetime + delay)
+            val new_agents = AgentDistribution.uniform(
+              Range(s.agents.size, s.agents.size + number), starts, ends, time,
+              route, wallet, budget
+            )
+            s = s.copy(agents = s.agents ++ new_agents)
+          }
         }
         // --all_verts policy=StopSign ordering=FIFO
         case "--all_verts" => {

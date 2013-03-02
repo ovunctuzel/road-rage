@@ -4,9 +4,7 @@
 
 - plaintext serialization (version compatible)
   test btwn machines
-- how big should tests be?
-  - no more than upper limit at a time, but spread out (poisson?)
-- get several big maps, for running all experiments on.
+- get several big maps, for running all experiments on. sizes foreach.
 
 - system bid: reservation, prefer batching
   - commoncase = reservation with certain system bid for compatible turns
@@ -122,6 +120,7 @@
   - specify distribution of rand things, discrete or continuous.
   - breakdown other categories when describing
 - make scenarios from UI
+- poisson for introducing vehicles
 - comparing experiments (pairwise, and average over many trials)
 - piecewise resimulation (savestating)
 - verify determinism retained... ordering events queue
@@ -129,6 +128,7 @@
   - wacky cases of 2 side-by-side agents wanting to swap places?
 
 # UI
+- label agents with their number in the GUI
 - javafx?
 - 3D
 - visualize red/green lights better
