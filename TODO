@@ -179,6 +179,7 @@
   - wiki docs
   - scaladoc
 - osm scraper script
+  https://github.com/migurski/Extractotron/
 - rename lanes/intersections/junctions in code too? policy -> controller?
 - switch ant to sbt? https://github.com/harrah/xsbt/wiki/Examples
 - repository of detailed cities with demand data?

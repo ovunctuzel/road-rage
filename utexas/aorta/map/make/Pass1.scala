@@ -170,7 +170,14 @@ class Pass1(fn: String) {
                 case "name"    => { name = value }
                 case "highway" => { road_type = value }
                 case "oneway"  => { oneway = value == "yes" }
-                case "lanes"   => { lanes = Some(value.toInt) }
+                case "lanes"   => {
+                  // TODO fancy "x; y" format... handle eventually
+                  try {
+                    lanes = Some(value.toInt)
+                  } catch {
+                    case _: NumberFormatException =>
+                  }
+                }
                 case _         => {}
               }
             }
@@ -183,7 +190,9 @@ class Pass1(fn: String) {
             if (id_to_node.contains(ref)) {
               refs :+= ref
             } else {
-              Util.log("WARNING: way references unknown node")
+              //Util.log(s"Way $id references unknown node $ref")
+              // Nothing else we can do...
+              skip_way = true
             }
           }
         }
