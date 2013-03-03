@@ -110,6 +110,9 @@ case class Agent_Summary_Stat(
 
 // Offline, read the measurements and figure stuff out.
 object PostProcess {
+  // TODO when this is true, dont demand a scenario to have completed.
+  private val allow_unfinished = true
+
   def main(args: Array[String]): Unit = {
     val fn = args.head
     val log = new ObjectInputStream(new FileInputStream(fn))
@@ -132,8 +135,8 @@ object PostProcess {
     val stats = new ListBuffer[Measurement]()
     // map from (agent, vert) to the requestand accept stats and total cost
     val last_turn = new MutableMap[(Int, Int), (Turn_Request_Stat, Turn_Accept_Stat, Double)]()
+    val agent_start = new MutableMap[Int, Agent_Start_Stat]()
     try {
-      val agent_start = new MutableMap[Int, Agent_Start_Stat]()
       while (true) {
         log.readObject match {
           // Group turns
@@ -166,7 +169,7 @@ object PostProcess {
             agent_start(s.id) = s
           }
           case Agent_Finish_Stat(id, tick, budget) => {
-            val orig = agent_start(id)
+            val orig = agent_start.remove(id).get
             stats += Agent_Summary_Stat(
               id, orig.tick, orig.start, orig.end, orig.route, orig.wallet,
               orig.budget, tick, budget
@@ -180,7 +183,19 @@ object PostProcess {
     } catch {
       case e: EOFException =>
     }
-    Util.assert_eq(last_turn.isEmpty, true)
+    if (allow_unfinished) {
+      for (s <- agent_start.values) {
+        // Never finished, so infinity
+        // and hard to figure out budget
+        stats += Agent_Summary_Stat(
+          s.id, s.tick, s.start, s.end, s.route, s.wallet,
+          s.budget, Double.PositiveInfinity, -1.0
+        )
+      }
+    } else {
+      Util.assert_eq(last_turn.isEmpty, true)
+      Util.assert_eq(agent_start.isEmpty, true)
+    }
     return stats.toList
   }
 
