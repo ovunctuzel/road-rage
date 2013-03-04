@@ -33,6 +33,14 @@ object Util {
     else
       comma_num(n / 1000, pad = false) + "," + comma_num(n % 1000)
 
+  // print HH:MM:SS
+  def time_num(total: Double): String = {
+    val hours = math.floor(total / 3600).toInt
+    val minutes = math.floor((total - 3600.0 * hours) / 60).toInt
+    val seconds = math.floor(total - (3600.0 * hours) - (60.0 * minutes)).toInt
+    return "%02d:%02d:%02d".format(hours, minutes, seconds)
+  }
+
   @elidable(ASSERTION) def assert_eq(a: Any, b: Any) = assert(a == b, a + " != " + b)
   @elidable(ASSERTION) def assert_ne(a: Any, b: Any) = assert(a != b, a + " == " + b)
   @elidable(ASSERTION) def assert_gt(a: Double, b: Double) = assert(a > b, a + " <= " + b)
@@ -159,11 +167,10 @@ object cfg {
     // account for crosswalks, vehicle length...
     ("end_threshold",   5.0, "The end of a traversable is its length - this",  0.1,  3.0),
     // this kind of gives dimension to cars, actually
-    ("follow_dist",     20.0, "Even if stopped, don't get closer than this", 0.1, 1.0),
+    ("follow_dist",     5.0, "Even if stopped, don't get closer than this", 0.1, 1.0),
     ("max_accel",       2.7, "A car's physical capability",                  0.5, 5.0),
     ("pause_at_stop",   1.0, "Wait this long at a stop sign before going",   0.5, 5.0),
-    ("min_lane_length", 0.1, "It's unreasonable to have anything shorter",   0.0, 1.0),
-    ("thruput_stat_time", 60.0, "Record throughput per this time",   0.5, 5.0)
+    ("min_lane_length", 0.1, "It's unreasonable to have anything shorter",   0.0, 1.0)
   ).map({c => c._1 -> new Double_Cfgable(c._2, c._3, c._4, c._5)}).toMap
 
   val ints = List(
@@ -200,7 +207,6 @@ object cfg {
   var max_accel = 0.0
   var pause_at_stop = 0.0
   var min_lane_length = 0.0
-  var thruput_stat_time = 0.0
   var dt_s = 0.0
 
   var max_lanes = 0

@@ -2,16 +2,24 @@
 
 # Auctions #
 
-- plaintext serialization (version compatible)
-  test btwn machines
-- get several big maps, for running all experiments on. sizes foreach.
+- mem problems running
+- mem problems doing stats
+
+- get several maps, and tuned params/sizes foreach.
+- poisson departures
 
 - system bid: reservation, prefer batching
   - commoncase = reservation with certain system bid for compatible turns
 - system bid: penalty if not much capacity
 - system bid: bonus to long-waiting group
 
-- specific experiments: everyone bids equally => greatest demand
+
+
+- plaintext serialization (version compatible)
+  - implement readObject and writeObject?
+  - test btwn machines
+  - protobufs?
+  - stats too!
 
 # Easy Parallelization
 - PARALLEL DETERMINISM INVALID: queue avail_slots
