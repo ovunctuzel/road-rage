@@ -35,6 +35,9 @@ object Stats {
     if (log != null) {
       synchronized {
         log.writeObject(item)
+        // Forget about other entries; they're never related, and holding onto
+        // them is a memory leak.
+        log.reset
       }
     }
   }
