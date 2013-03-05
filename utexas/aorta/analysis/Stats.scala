@@ -283,11 +283,17 @@ class TripTimeAnalysis(dir: String) extends StatAnalysis(dir) {
 class AgentCountAnalysis(dir: String) extends StatAnalysis(dir) {
   val live_count = new XYSeries("Live agents")
   val active_count = new XYSeries("Active agents")
+  val done_count = new XYSeries("Finished agents")
+  var total_done = 0
 
   def process(stat: Measurement) = stat match {
     case s: Heartbeat_Stat => {
       live_count.add(s.tick, s.live_agents)
       active_count.add(s.tick, s.active_agents)
+    }
+    case s: Agent_Lifetime_Stat => {
+      total_done += 1
+      done_count.add(s.end_tick, total_done)
     }
     case _ =>
   }
@@ -296,7 +302,9 @@ class AgentCountAnalysis(dir: String) extends StatAnalysis(dir) {
     val dataset = new XYSeriesCollection()
     dataset.addSeries(live_count)
     dataset.addSeries(active_count)
+    dataset.addSeries(done_count)
 
+    // TODO use some TimeSeries for nicer printing of x axis?
     val chart = ChartFactory.createXYLineChart(
       "Agent counts per time", "Time (s)", "Number of agents", dataset,
       PlotOrientation.VERTICAL, true, false, false
