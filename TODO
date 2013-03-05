@@ -2,9 +2,9 @@
 
 # Auctions #
 
-- mem problems running
-  - logging is the problem?
 - mem problems doing stats
+  - on second thought, the 'grouping raw stats' step is wasteful
+  - and read through log once, farming out to each client
 
 - get several maps, and tuned params/sizes foreach.
 - poisson departures

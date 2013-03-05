@@ -22,7 +22,12 @@ import utexas.aorta.sim.{MkIntersection, RouteType, WalletType, IntersectionType
 import utexas.aorta.Util
 
 // Anything that we log online and post-process offline.
-abstract class Measurement
+// Hacky fast, memory-happy serialization... use java's convenient way to
+// read/write primitives, but don't even use their stuff to encode class.
+// TODO header should be a byte, not 4 byte int.
+abstract class Measurement {
+  def write(stream: ObjectOutputStream)
+}
 
 object Stats {
   var log: ObjectOutputStream = null
@@ -34,10 +39,7 @@ object Stats {
   @elidable(elidable.ASSERTION) def record(item: Measurement) = {
     if (log != null) {
       synchronized {
-        log.writeObject(item)
-        // Forget about other entries; they're never related, and holding onto
-        // them is a memory leak.
-        log.reset
+        item.write(log)
       }
     }
   }
@@ -46,37 +48,111 @@ object Stats {
 // Just to record where we're simulating and what the intersections do.
 case class Scenario_Stat(
   map_fn: String, intersections: Array[MkIntersection]
-) extends Measurement
+) extends Measurement {
+  // ID 0
+
+  def write(stream: ObjectOutputStream) = {
+    stream.writeInt(0)
+    // TODO being lazy, reconstructing an array is hard :|
+    stream.writeObject(this)
+    /*stream.writeString(map_fn)
+    stream.writeInt(intersections.size)
+    for (i <- intersections) {
+      // TODO dont need to write the ID, really
+      stream.write(i.id)
+      stream.write(i.policy.id)
+      stream.write(i.ordering.id)
+    }*/
+  }
+}
 
 case class Agent_Start_Stat(
   id: Int, tick: Double, start: Int, end: Int, route: RouteType.Value,
   wallet: WalletType.Value, budget: Double
-) extends Measurement
+) extends Measurement {
+  // ID 1
+
+  def write(stream: ObjectOutputStream) = {
+    stream.writeInt(1)
+    stream.writeInt(id)
+    stream.writeDouble(tick)
+    stream.writeInt(start)
+    stream.writeInt(end)
+    stream.writeInt(route.id)
+    stream.writeInt(wallet.id)
+    stream.writeDouble(budget)
+  }
+}
 
 case class Agent_Finish_Stat(
   id: Int, tick: Double, budget: Double
-) extends Measurement
+) extends Measurement {
+  // ID 2
+
+  def write(stream: ObjectOutputStream) = {
+    stream.writeInt(2)
+    stream.writeInt(id)
+    stream.writeDouble(tick)
+    stream.writeDouble(budget)
+  }
+}
 
 // When we first request a turn.
 case class Turn_Request_Stat(
   agent: Int, vert: Int, tick: Double
-) extends Measurement
+) extends Measurement {
+  // ID 3
+
+  def write(stream: ObjectOutputStream) = {
+    stream.writeInt(3)
+    stream.writeInt(agent)
+    stream.writeInt(vert)
+    stream.writeDouble(tick)
+  }
+}
 
 // When we pay as part of our turn. May happen multiple times, and we may pay
 // for something that isn't ours to get to our turn faster.
 case class Turn_Pay_Stat(
   agent: Int, vert: Int, amount: Double
-) extends Measurement
+) extends Measurement {
+  // ID 4
+
+  def write(stream: ObjectOutputStream) = {
+    stream.writeInt(4)
+    stream.writeInt(agent)
+    stream.writeInt(vert)
+    stream.writeDouble(amount)
+  }
+}
 
 // When the intersection accepts us.
 case class Turn_Accept_Stat(
   agent: Int, vert: Int, tick: Double
-) extends Measurement
+) extends Measurement {
+  // ID 5
+
+  def write(stream: ObjectOutputStream) = {
+    stream.writeInt(5)
+    stream.writeInt(agent)
+    stream.writeInt(vert)
+    stream.writeDouble(tick)
+  }
+}
 
 // When we completely finish a turn.
 case class Turn_Done_Stat(
   agent: Int, vert: Int, tick: Double
-) extends Measurement
+) extends Measurement {
+  // ID 6
+
+  def write(stream: ObjectOutputStream) = {
+    stream.writeInt(6)
+    stream.writeInt(agent)
+    stream.writeInt(vert)
+    stream.writeDouble(tick)
+  }
+}
 
 // Logged every 1.0 real-time seconds. Number of agent_steps is since the last
 // heartbeat; this is one of the few things tracked online. Active agents is the
@@ -84,7 +160,18 @@ case class Turn_Done_Stat(
 case class Heartbeat_Stat(
   active_agents: Int, live_agents: Int, spawning_agents: Int, tick: Double,
   agent_steps: Int
-) extends Measurement
+) extends Measurement {
+  // ID 7
+
+  def write(stream: ObjectOutputStream) = {
+    stream.writeInt(7)
+    stream.writeInt(active_agents)
+    stream.writeInt(live_agents)
+    stream.writeInt(spawning_agents)
+    stream.writeDouble(tick)
+    stream.writeInt(agent_steps)
+  }
+}
 
 // Summarizes an entire turn. Built offline.
 case class Turn_Summary_Stat(
@@ -95,6 +182,10 @@ case class Turn_Summary_Stat(
   // Total delay means turn length factors in.
   def total_delay = done_tick - req_tick
   def accept_delay = accept_tick - req_tick
+
+  def write(stream: ObjectOutputStream) = {
+    // TODO
+  }
 }
 
 // Summarizes an agent's lifetime. Built offline.
@@ -109,6 +200,10 @@ case class Agent_Summary_Stat(
   // High priority and long trip time is bad; low priority or low trip time is
   // good.
   def weighted_value = start_budget * trip_time
+
+  def write(stream: ObjectOutputStream) = {
+    // TODO
+  }
 }
 
 // Offline, read the measurements and figure stuff out.
@@ -132,6 +227,22 @@ object PostProcess {
     Util.log(s"\nResults at: $dir")
   }
 
+  def read_stat(s: ObjectInputStream): Measurement = s.readInt match {
+    case 0 => s.readObject.asInstanceOf[Scenario_Stat]
+    case 1 => Agent_Start_Stat(
+      s.readInt, s.readDouble, s.readInt, s.readInt, RouteType(s.readInt),
+      WalletType(s.readInt), s.readDouble
+    )
+    case 2 => Agent_Finish_Stat(s.readInt, s.readDouble, s.readDouble)
+    case 3 => Turn_Request_Stat(s.readInt, s.readInt, s.readDouble)
+    case 4 => Turn_Pay_Stat(s.readInt, s.readInt, s.readDouble)
+    case 5 => Turn_Accept_Stat(s.readInt, s.readInt, s.readDouble)
+    case 6 => Turn_Done_Stat(s.readInt, s.readInt, s.readDouble)
+    case 7 => Heartbeat_Stat(
+      s.readInt, s.readInt, s.readInt, s.readDouble, s.readInt
+    )
+  }
+
   // First pair the raw stats into bigger-picture stats.
   private def group_raw_stats(log: ObjectInputStream): List[Measurement] = {
     Util.log("Post-processing raw stats into higher-level stats...")
@@ -140,8 +251,9 @@ object PostProcess {
     val last_turn = new MutableMap[(Int, Int), (Turn_Request_Stat, Turn_Accept_Stat, Double)]()
     val agent_start = new MutableMap[Int, Agent_Start_Stat]()
     try {
+      var iters = 0
       while (true) {
-        log.readObject match {
+        read_stat(log) match {
           // Group turns
           case s: Turn_Request_Stat => {
             val key = (s.agent, s.vert)
@@ -181,6 +293,11 @@ object PostProcess {
 
           // Echo other stuff
           case s: Measurement => stats += s
+        }
+
+        iters += 1
+        if (iters % 1000 == 0) {
+          Util.log("Processed " + Util.comma_num(iters) + " raw stats")
         }
       }
     } catch {
