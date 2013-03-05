@@ -41,7 +41,7 @@ class StopSignPolicy(intersection: Intersection,
   }
 
   def validate_entry(agent: Agent, turn: Turn) = current_owner match {
-    case Some(ticket) => ticket.agent == agent && ticket.turn == turn
+    case Some(ticket) => ticket.a == agent && ticket.turn == turn
     case None => false
   }
 

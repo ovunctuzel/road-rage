@@ -139,118 +139,60 @@ case class Heartbeat_Stat(
 
 // Offline, read the measurements and figure stuff out.
 object PostProcess {
-  // TODO when this is true, dont demand a scenario to have completed.
-  private val allow_unfinished = true
-
   def main(args: Array[String]): Unit = {
     val fn = args.head
-    val log = new ObjectInputStream(new FileInputStream(fn))
-
-    val stats = group_raw_stats(log)
-    log.close
+    Util.log(s"Analyzing $fn...")
     val dir = "plots/" + fn.replace("logs/", "")
     (new File(dir)).mkdirs
+    val log = new ObjectInputStream(new FileInputStream(fn))
 
-    //stats.foreach(s => Util.log(s"$s"))
-    analyze_turn_times(stats, dir)
-    analyze_trip_times(stats, dir)
-    analyze_agent_count(stats, dir)
-    Util.log(s"\nResults at: $dir")
-  }
-
-  def read_stat(s: ObjectInputStream): Measurement = s.readInt match {
-    case 0 => s.readObject.asInstanceOf[Scenario_Stat]
-    case 1 => Agent_Start_Stat(
-      s.readInt, s.readDouble, s.readInt, s.readInt, RouteType(s.readInt),
-      WalletType(s.readInt), s.readDouble
+    val analyses = List(
+      new TurnTimeAnalysis(dir), new TripTimeAnalysis(dir), new
+      AgentCountAnalysis(dir)
     )
-    case 2 => Agent_Finish_Stat(s.readInt, s.readDouble, s.readDouble)
-    case 3 => Turn_Request_Stat(s.readInt, s.readInt, s.readDouble)
-    case 4 => Turn_Pay_Stat(s.readInt, s.readInt, s.readDouble)
-    case 5 => Turn_Accept_Stat(s.readInt, s.readInt, s.readDouble)
-    case 6 => Turn_Done_Stat(s.readInt, s.readInt, s.readDouble)
-    case 7 => Heartbeat_Stat(
-      s.readInt, s.readInt, s.readInt, s.readDouble, s.readInt
-    )
-  }
 
-  // First pair the raw stats into bigger-picture stats.
-  private def group_raw_stats(log: ObjectInputStream): List[Measurement] = {
-    Util.log("Post-processing raw stats into higher-level stats...")
-    val stats = new ListBuffer[Measurement]()
-    // map from (agent, vert) to the requestand accept stats and total cost
-    val last_turn = new MutableMap[(Int, Int), (Turn_Request_Stat, Turn_Accept_Stat, Double)]()
-    val agent_start = new MutableMap[Int, Agent_Start_Stat]()
     try {
       var iters = 0
       while (true) {
-        read_stat(log) match {
-          // Group turns
-          case s: Turn_Request_Stat => {
-            val key = (s.agent, s.vert)
-            Util.assert_eq(last_turn.contains(key), false)
-            last_turn(key) = (s, null, 0.0)
-          }
-          case Turn_Pay_Stat(a, v, amount) => {
-            val key = (a, v)
-            val triple = last_turn(key)
-            last_turn(key) = (triple._1, null, triple._3 + amount)
-          }
-          case s: Turn_Accept_Stat => {
-            val key = (s.agent, s.vert)
-            val triple = last_turn(key)
-            Util.assert_eq(triple._2, null)
-            last_turn(key) = (triple._1, s, triple._3)
-          }
-          case Turn_Done_Stat(a, v, tick) => {
-            val triple = last_turn.remove((a, v)).get
-            stats += Turn_Summary_Stat(
-              a, v, triple._1.tick, triple._2.tick, tick, triple._3
-            )
-          }
-
-          // Group agent lifetimes
-          case s: Agent_Start_Stat => {
-            Util.assert_eq(agent_start.contains(s.id), false)
-            agent_start(s.id) = s
-          }
-          case Agent_Finish_Stat(id, tick, budget) => {
-            val orig = agent_start.remove(id).get
-            stats += Agent_Summary_Stat(
-              id, orig.tick, orig.start, orig.end, orig.route, orig.wallet,
-              orig.budget, tick, budget
-            )
-          }
-
-          // Echo other stuff
-          case s: Measurement => stats += s
-        }
+        val s = read_stat(log)
+        analyses.foreach(a => a.process(s))
 
         iters += 1
-        if (iters % 1000 == 0) {
-          Util.log("Processed " + Util.comma_num(iters) + " raw stats")
+        if (iters % 100000 == 0) {
+          print("\rProcessed " + Util.comma_num(iters) + " stats")
         }
       }
     } catch {
       case e: EOFException =>
     }
-    if (allow_unfinished) {
-      for (s <- agent_start.values) {
-        // Never finished, so infinity
-        // and hard to figure out budget
-        stats += Agent_Summary_Stat(
-          s.id, s.tick, s.start, s.end, s.route, s.wallet,
-          s.budget, Double.PositiveInfinity, -1.0
-        )
-      }
-    } else {
-      Util.assert_eq(last_turn.isEmpty, true)
-      Util.assert_eq(agent_start.isEmpty, true)
-    }
-    return stats.toList
+    Util.log("\n")
+    log.close
+
+    analyses.foreach(a => a.finish)
+    Util.log(s"\nResults at: $dir")
   }
 
-  private def histogram[T](
+  def read_stat(s: ObjectInputStream): Measurement = s.readInt match {
+    case 0 => s.readObject.asInstanceOf[Scenario_Stat]
+    case 1 => Agent_Lifetime_Stat(
+      s.readInt, s.readDouble, s.readInt, s.readInt, RouteType(s.readInt),
+      WalletType(s.readInt), s.readDouble, s.readDouble, s.readDouble
+    )
+    case 2 => Turn_Stat(
+      s.readInt, s.readInt, s.readDouble, s.readDouble, s.readDouble,
+      s.readDouble
+    )
+    case 3 => Heartbeat_Stat(
+      s.readInt, s.readInt, s.readInt, s.readDouble, s.readInt
+    )
+  }
+}
+
+abstract class StatAnalysis(dir: String) {
+  def process(stat: Measurement)
+  def finish()
+
+  def histogram[T](
     data: Map[T, ArrayBuffer[Double]], title: String, x_axis: String, fn: String
   ) = {
     val dataset = new HistogramDataset() // TODO relative freq?
@@ -269,33 +211,31 @@ object PostProcess {
     val img = chart.createBufferedImage(800, 600)
     ImageIO.write(img, "png", new File(fn))
   }
+}
 
-  private def analyze_turn_times(stats: List[Measurement], dir: String) = {
-    Util.log("Analyzing turn delays...")
+class TurnTimeAnalysis(dir: String) extends StatAnalysis(dir) {
+  var intersections: Array[MkIntersection] = null
 
-    val intersections = stats.head match {
-      case Scenario_Stat(_, i) => i
-      case _ => throw new Exception("Didn't find Scenario Stat first!")
+  // Histogram showing times, broken down by just policy.
+  val delays_per_policy = IntersectionType.values.toList.map(
+    p => p -> new ArrayBuffer[Double]()
+  ).toMap
+
+  def process(stat: Measurement) = stat match {
+    case s: Turn_Stat => {
+      delays_per_policy(intersections(s.vert).policy) += s.accept_delay
     }
+    case Scenario_Stat(_, i) => {
+      intersections = i
+    }
+    case _ =>
+  }
 
+  def finish() = {
     // TODO show min (and where/who), max, average
     // TODO correlate with the combos of intersection policy and ordering
     // TODO correlate with agent budget (only expect relation when Auction
     // ordering)
-
-    // Histogram showing times, broken down by just policy.
-    val delays_per_policy = IntersectionType.values.toList.map(
-      p => p -> new ArrayBuffer[Double]()
-    ).toMap
-    // TODO groupBy? filter?
-    for (stat <- stats) {
-      stat match {
-        case s: Turn_Summary_Stat => {
-          delays_per_policy(intersections(s.vert).policy) += s.accept_delay
-        }
-        case _ =>
-      }
-    }
 
     histogram(
       data = delays_per_policy,
@@ -304,32 +244,30 @@ object PostProcess {
       fn = s"$dir/turn_delay_per_policy.png"
     )
   }
+}
 
-  private def analyze_trip_times(stats: List[Measurement], dir: String) = {
-    Util.log("Analyzing trip times...")
+class TripTimeAnalysis(dir: String) extends StatAnalysis(dir) {
+  var unweighted_total = 0.0
+  var weighted_total = 0.0
 
-    var unweighted_total = 0.0
-    var weighted_total = 0.0
+  // TODO show min (and where/who), max, average
+  // TODO lots of weighted/unweighted stuff
 
-    // TODO show min (and where/who), max, average
-    // TODO lots of weighted/unweighted stuff
+  // Histogram showing times, broken down by just route.
+  val times_per_route = RouteType.values.toList.map(
+    r => r -> new ArrayBuffer[Double]()
+  ).toMap
 
-    // Histogram showing times, broken down by just route.
-    val times_per_route = RouteType.values.toList.map(
-      r => r -> new ArrayBuffer[Double]()
-    ).toMap
-    // TODO groupBy? filter?
-    for (stat <- stats) {
-      stat match {
-        case s: Agent_Summary_Stat => {
-          times_per_route(s.route) += s.trip_time
-          unweighted_total += s.trip_time
-          weighted_total += s.weighted_value
-        }
-        case _ =>
-      }
+  def process(stat: Measurement) = stat match {
+    case s: Agent_Lifetime_Stat => {
+      times_per_route(s.route) += s.trip_time
+      unweighted_total += s.trip_time
+      weighted_total += s.weighted_value
     }
+    case _ =>
+  }
 
+  def finish() = {
     histogram(
       data = times_per_route,
       title = "Agent trip times",
@@ -340,21 +278,21 @@ object PostProcess {
     Util.log("Unweighted total trip time: " + unweighted_total)
     Util.log("Weighted total trip time: " + weighted_total)
   }
+}
 
-  private def analyze_agent_count(stats: List[Measurement], dir: String) = {
-    Util.log("Analyzing agent counts...")
+class AgentCountAnalysis(dir: String) extends StatAnalysis(dir) {
+  val live_count = new XYSeries("Live agents")
+  val active_count = new XYSeries("Active agents")
 
-    val live_count = new XYSeries("Live agents")
-    val active_count = new XYSeries("Active agents")
-    for (stat <- stats) {
-      stat match {
-        case s: Heartbeat_Stat => {
-          live_count.add(s.tick, s.live_agents)
-          active_count.add(s.tick, s.active_agents)
-        }
-        case _ =>
-      }
+  def process(stat: Measurement) = stat match {
+    case s: Heartbeat_Stat => {
+      live_count.add(s.tick, s.live_agents)
+      active_count.add(s.tick, s.active_agents)
     }
+    case _ =>
+  }
+
+  def finish() = {
     val dataset = new XYSeriesCollection()
     dataset.addSeries(live_count)
     dataset.addSeries(active_count)

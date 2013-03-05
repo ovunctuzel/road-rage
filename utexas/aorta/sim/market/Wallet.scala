@@ -8,7 +8,6 @@ import utexas.aorta.sim.{Agent, Ticket, WalletType, IntersectionType,
                          Route_Event, EV_Transition, EV_Reroute}
 import utexas.aorta.map.{Turn, Vertex}
 import utexas.aorta.sim.policies.Phase
-import utexas.aorta.analysis.{Stats, Turn_Pay_Stat}
 
 import utexas.aorta.{Util, cfg}
 

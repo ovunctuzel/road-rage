@@ -282,6 +282,7 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
               val ticket = new Ticket(a, next_turn)
               a.tickets(i) = ticket
               i.request_turn(ticket)
+              false
             }
           }
         } else {

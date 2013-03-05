@@ -2,25 +2,14 @@
 
 # Auctions #
 
-- mem problems doing stats
-  - on second thought, the 'grouping raw stats' step is wasteful
-  - and read through log once, farming out to each client
-
 - get several maps, and tuned params/sizes foreach.
 - poisson departures
+- compatible serialization
 
 - system bid: reservation, prefer batching
   - commoncase = reservation with certain system bid for compatible turns
 - system bid: penalty if not much capacity
 - system bid: bonus to long-waiting group
-
-
-
-- plaintext serialization (version compatible)
-  - implement readObject and writeObject?
-  - test btwn machines
-  - protobufs?
-  - stats too!
 
 # Easy Parallelization
 - PARALLEL DETERMINISM INVALID: queue avail_slots

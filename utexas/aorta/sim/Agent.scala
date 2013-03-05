@@ -9,8 +9,7 @@ import scala.collection.mutable.{HashMap => MutableMap}
 import utexas.aorta.map.{Edge, Coordinate, Turn, Traversable, Graph, Position}
 import utexas.aorta.sim.market._
 import utexas.aorta.ui.Renderable
-import utexas.aorta.analysis.{Stats, Agent_Lifetime_Stat, Turn_Accept_Stat,
-                              Turn_Done_Stat}
+import utexas.aorta.analysis.{Stats, Agent_Lifetime_Stat}
 
 import utexas.aorta.{Util, RNG, Common, cfg}
 
@@ -155,7 +154,7 @@ class Agent(val id: Int, val route: Route, val rng: RNG, wallet_spec: MkWallet) 
         case (t: Turn, e: Edge) => {
           val i = t.vert.intersection
           i.exit(this, t)
-          val ticket = tickets.remove(i)
+          val ticket = tickets.remove(i).get
           ticket.stat = ticket.stat.copy(done_tick = Common.tick)
           Stats.record(ticket.stat)
         }
@@ -386,8 +385,8 @@ class Agent(val id: Int, val route: Route, val rng: RNG, wallet_spec: MkWallet) 
     // at.on.vert if at.on is a turn, but it could be more due to lookahead.
     cancel_intersection_reservations
     Stats.record(Agent_Lifetime_Stat(
-      id, stat_memory._1, stat_memory._2, route.goal.id, route.route_type.id,
-      wallet.wallet_type.id, stat_memory._3, Common.tick, wallet.budget
+      id, stat_memory._1, stat_memory._2, route.goal.id, route.route_type,
+      wallet.wallet_type, stat_memory._3, Common.tick, wallet.budget
     ))
   }
 
