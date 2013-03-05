@@ -14,8 +14,7 @@ import scala.io.Source
 import utexas.aorta.map.{Graph, Road, Edge, Vertex, Turn, DirectedRoad}
 
 import utexas.aorta.{Util, Common, cfg}
-import utexas.aorta.analysis.{Stats, Heartbeat_Stat, Scenario_Stat,
-                              Agent_Start_Stat}
+import utexas.aorta.analysis.{Stats, Heartbeat_Stat, Scenario_Stat}
 
 // TODO take just a scenario, or graph and scenario?
 class Simulation(val graph: Graph, scenario: Scenario)
@@ -137,10 +136,7 @@ class Simulation(val graph: Graph, scenario: Scenario)
       a.at = a.enter(spawn.e, spawn.dist)
       insert_agent(a)
       spawn.e.queue.allocate_slot
-      Stats.record(Agent_Start_Stat(
-        a.id, tick, spawn.e.id, a.route.goal.id, a.route.route_type,
-        a.wallet.wallet_type, a.wallet.budget
-      ))
+      a.stat_memory = (tick, spawn.e.id, a.wallet.budget)
       true
     } else {
       false

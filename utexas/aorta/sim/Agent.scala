@@ -9,7 +9,7 @@ import scala.collection.mutable.{HashSet => MutableSet}
 import utexas.aorta.map.{Edge, Coordinate, Turn, Traversable, Graph, Position}
 import utexas.aorta.sim.market._
 import utexas.aorta.ui.Renderable
-import utexas.aorta.analysis.{Stats, Agent_Finish_Stat, Turn_Accept_Stat,
+import utexas.aorta.analysis.{Stats, Agent_Lifetime_Stat, Turn_Accept_Stat,
                               Turn_Done_Stat}
 
 import utexas.aorta.{Util, RNG, Common, cfg}
@@ -23,6 +23,9 @@ class Agent(val id: Int, val route: Route, val rng: RNG, wallet_spec: MkWallet) 
 
   // null just until they're introduced!
   var at: Position = null
+
+  // Just for stats. Not hard to maintain. (tick, where we spawned, budget)
+  var stat_memory: (Double, Int, Double) = null
 
   override def compare(other: Agent) = id.compare(other.id)
 
@@ -397,7 +400,10 @@ class Agent(val id: Int, val route: Route, val rng: RNG, wallet_spec: MkWallet) 
     // don't forget to tell intersections. this is normally just
     // at.on.vert if at.on is a turn, but it could be more due to lookahead.
     cancel_intersection_reservations
-    Stats.record(Agent_Finish_Stat(id, Common.tick, wallet.budget))
+    Stats.record(Agent_Lifetime_Stat(
+      id, stat_memory._1, stat_memory._2, route.goal.id, route.route_type.id,
+      wallet.wallet_type.id, stat_memory._3, Common.tick, wallet.budget
+    ))
   }
 
   // find the time to cover dist by accelerating first, then cruising at

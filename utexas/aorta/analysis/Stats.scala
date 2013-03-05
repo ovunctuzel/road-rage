@@ -66,91 +66,55 @@ case class Scenario_Stat(
   }
 }
 
-case class Agent_Start_Stat(
-  id: Int, tick: Double, start: Int, end: Int, route: RouteType.Value,
-  wallet: WalletType.Value, budget: Double
-) extends Measurement {
+// Summarizes an agent's lifetime
+case class Agent_Lifetime_Stat(
+  id: Int, start_tick: Double, start: Int, end: Int, route: RouteType.Value,
+  wallet: WalletType.Value, start_budget: Double, end_tick: Double,
+  end_budget: Double
+) extends Measurement
+{
   // ID 1
+
+  def trip_time = end_tick - start_tick
+  def total_spent = end_budget - start_budget
+  // High priority and long trip time is bad; low priority or low trip time is
+  // good.
+  def weighted_value = start_budget * trip_time
 
   def write(stream: ObjectOutputStream) = {
     stream.writeInt(1)
     stream.writeInt(id)
-    stream.writeDouble(tick)
+    stream.writeDouble(start_tick)
     stream.writeInt(start)
     stream.writeInt(end)
     stream.writeInt(route.id)
     stream.writeInt(wallet.id)
-    stream.writeDouble(budget)
+    stream.writeDouble(start_budget)
+    stream.writeDouble(end_tick)
+    stream.writeDouble(end_budget)
   }
 }
 
-case class Agent_Finish_Stat(
-  id: Int, tick: Double, budget: Double
-) extends Measurement {
+// Describes a turn.
+case class Turn_Stat(
+  agent: Int, vert: Int, req_tick: Double, accept_tick: Double,
+  done_tick: Double, cost_paid: Double
+) extends Measurement
+{
   // ID 2
+
+  // Total delay means turn length factors in.
+  def total_delay = done_tick - req_tick
+  def accept_delay = accept_tick - req_tick
 
   def write(stream: ObjectOutputStream) = {
     stream.writeInt(2)
-    stream.writeInt(id)
-    stream.writeDouble(tick)
-    stream.writeDouble(budget)
-  }
-}
-
-// When we first request a turn.
-case class Turn_Request_Stat(
-  agent: Int, vert: Int, tick: Double
-) extends Measurement {
-  // ID 3
-
-  def write(stream: ObjectOutputStream) = {
-    stream.writeInt(3)
     stream.writeInt(agent)
     stream.writeInt(vert)
-    stream.writeDouble(tick)
-  }
-}
-
-// When we pay as part of our turn. May happen multiple times, and we may pay
-// for something that isn't ours to get to our turn faster.
-case class Turn_Pay_Stat(
-  agent: Int, vert: Int, amount: Double
-) extends Measurement {
-  // ID 4
-
-  def write(stream: ObjectOutputStream) = {
-    stream.writeInt(4)
-    stream.writeInt(agent)
-    stream.writeInt(vert)
-    stream.writeDouble(amount)
-  }
-}
-
-// When the intersection accepts us.
-case class Turn_Accept_Stat(
-  agent: Int, vert: Int, tick: Double
-) extends Measurement {
-  // ID 5
-
-  def write(stream: ObjectOutputStream) = {
-    stream.writeInt(5)
-    stream.writeInt(agent)
-    stream.writeInt(vert)
-    stream.writeDouble(tick)
-  }
-}
-
-// When we completely finish a turn.
-case class Turn_Done_Stat(
-  agent: Int, vert: Int, tick: Double
-) extends Measurement {
-  // ID 6
-
-  def write(stream: ObjectOutputStream) = {
-    stream.writeInt(6)
-    stream.writeInt(agent)
-    stream.writeInt(vert)
-    stream.writeDouble(tick)
+    stream.writeDouble(req_tick)
+    stream.writeDouble(accept_tick)
+    stream.writeDouble(done_tick)
+    stream.writeDouble(cost_paid)
   }
 }
 
@@ -161,48 +125,15 @@ case class Heartbeat_Stat(
   active_agents: Int, live_agents: Int, spawning_agents: Int, tick: Double,
   agent_steps: Int
 ) extends Measurement {
-  // ID 7
+  // ID 3
 
   def write(stream: ObjectOutputStream) = {
-    stream.writeInt(7)
+    stream.writeInt(3)
     stream.writeInt(active_agents)
     stream.writeInt(live_agents)
     stream.writeInt(spawning_agents)
     stream.writeDouble(tick)
     stream.writeInt(agent_steps)
-  }
-}
-
-// Summarizes an entire turn. Built offline.
-case class Turn_Summary_Stat(
-  agent: Int, vert: Int, req_tick: Double, accept_tick: Double,
-  done_tick: Double, cost_paid: Double
-) extends Measurement
-{
-  // Total delay means turn length factors in.
-  def total_delay = done_tick - req_tick
-  def accept_delay = accept_tick - req_tick
-
-  def write(stream: ObjectOutputStream) = {
-    // TODO
-  }
-}
-
-// Summarizes an agent's lifetime. Built offline.
-case class Agent_Summary_Stat(
-  id: Int, start_tick: Double, start: Int, end: Int, route: RouteType.Value,
-  wallet: WalletType.Value, start_budget: Double, end_tick: Double,
-  end_budget: Double
-) extends Measurement
-{
-  def trip_time = end_tick - start_tick
-  def total_spent = end_budget - start_budget
-  // High priority and long trip time is bad; low priority or low trip time is
-  // good.
-  def weighted_value = start_budget * trip_time
-
-  def write(stream: ObjectOutputStream) = {
-    // TODO
   }
 }
 

@@ -10,6 +10,7 @@ import scala.collection.mutable.TreeSet
 
 import utexas.aorta.sim.policies._
 import utexas.aorta.map.{Vertex, Turn, Edge}
+import utexas.aorta.analysis.Turn_Stat
 
 import utexas.aorta.{Util, Common, cfg}
 
@@ -95,9 +96,13 @@ class Intersection(val v: Vertex, policy_type: IntersectionType.Value,
   }
 }
 
-case class Ticket(a: Agent, turn: Turn) extends Ordered[Ticket] {
-  override def compare(other: Ticket) = a.compare(other.a)
+class Ticket(a: Agent, turn: Turn) extends Ordered[Ticket] {
+  // TODO where was compare used?
+  //override def compare(other: Ticket) = a.compare(other.a)
   override def toString = s"Ticket($a, $turn)"
+
+  // Don't initially know: accept_tick, done_tick, cost_paid.
+  var stat = Turn_Stat(a.id, turn.vert.id, Common.tick, 0.0, 0.0, 0.0)
 
   def approve() = {
     a.approve_turn(turn.vert.intersection)
@@ -107,7 +112,7 @@ case class Ticket(a: Agent, turn: Turn) extends Ordered[Ticket] {
     turn.to.queue.allocate_slot
   }
 
-  // TODO remember time requested, number of agents in front, etc
+  // TODO remember number of agents in front, etc
 }
 
 abstract class Policy(val intersection: Intersection) {
