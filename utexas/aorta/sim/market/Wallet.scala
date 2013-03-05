@@ -17,10 +17,10 @@ abstract class Wallet(a: Agent, initial_budget: Double) {
   // How much the agent may spend during its one-trip lifetime
   var budget = initial_budget
 
-  def spend(amount: Double, turn: Turn) = {
+  def spend(amount: Double, ticket: Ticket) = {
     Util.assert_ge(budget, amount)
     budget -= amount
-    Stats.record(Turn_Pay_Stat(a.id, turn.vert.id, amount))
+    ticket.stat = ticket.stat.copy(cost_paid = amount)
   }
 
   // How much is this agent willing to spend on some choice?
@@ -98,9 +98,9 @@ class StaticWallet(a: Agent, budget: Double) extends Wallet(a, budget) {
   def bid_reservation(tickets: Iterable[Ticket], ours: Ticket) =
     bid_full(my_ticket(tickets, ours))
 
-  override def spend(amount: Double, turn: Turn) = {
+  override def spend(amount: Double, ticket: Ticket) = {
     Util.assert_ge(budget, amount)
-    Stats.record(Turn_Pay_Stat(a.id, turn.vert.id, amount))
+    ticket.stat = ticket.stat.copy(cost_paid = amount)
   }
 }
 

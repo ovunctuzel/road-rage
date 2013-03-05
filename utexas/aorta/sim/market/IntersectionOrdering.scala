@@ -109,14 +109,14 @@ class AuctionOrdering[T]() extends IntersectionOrdering[T]() {
   // A group splits some cost somehow.
   private def pay(who: Iterable[Bid], total: Double) = {
     // Direct payment... all the winners pay their full bid.
-    //who.foreach(bid => bid.who.a.wallet.spend(bid.amount, bid.who.turn))
+    //who.foreach(bid => bid.who.a.wallet.spend(bid.amount, bid.who))
 
     // Proportional payment... Each member of the winner pays proportional to
     // what they bid.
     val total_winners = who.map(_.amount).sum
     val rate = total / total_winners
     who.foreach(
-      bid => bid.who.a.wallet.spend(bid.amount * rate, bid.who.turn)
+      bid => bid.who.a.wallet.spend(bid.amount * rate, bid.who)
     )
   }
 }

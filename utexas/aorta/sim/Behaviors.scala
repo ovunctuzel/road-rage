@@ -7,7 +7,7 @@ package utexas.aorta.sim
 import scala.collection.mutable.ListBuffer
 
 import utexas.aorta.map.{Edge, Turn, Traversable, DirectedRoad}
-import utexas.aorta.analysis.{Stats, Turn_Request_Stat}
+import utexas.aorta.analysis.Stats
 
 import utexas.aorta.{Util, Common, cfg}
 
@@ -51,7 +51,7 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
     // Did lookahead previously schedule a turn for this road? We can't
     // lane-change, then! Already committed.
     val i = base.to.intersection
-    if (!a.turns_requested(i) && !a.turns_approved(i)) {
+    if (!a.involved_with(i)) {
       base match {
         case e: Edge => {
           val target = route.pick_lane(e)
@@ -271,20 +271,18 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
       case e: Edge => {
         if (committed_to_lane(step)) {
           val i = e.to.intersection
-          if (a.turns_approved(i)) {
-            true
-          } else {
-            if (!a.turns_requested(i)) {
+          a.tickets.get(i) match {
+            case Some(ticket) => ticket.is_approved
+            case None => {
               // If the lookahead includes a next step, this should be
               // consistent with what the route says, by the route's contract of
               // consistent answers. But sometimes the lookahead terminates
               // early due to not enough distance, so just always ask this.
               val next_turn = route.pick_turn(e)
-              i.request_turn(a, next_turn)
-              a.turns_requested += i
-              Stats.record(Turn_Request_Stat(a.id, i.v.id, Common.tick))
+              val ticket = new Ticket(a, next_turn)
+              a.tickets(i) = ticket
+              i.request_turn(ticket)
             }
-            false
           }
         } else {
           // And we should probably stop trying to LC, since we're so close!

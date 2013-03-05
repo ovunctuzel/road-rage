@@ -4,7 +4,7 @@
 
 package utexas.aorta.sim
 
-import scala.collection.mutable.{HashSet => MutableSet}
+import scala.collection.mutable.{HashMap => MutableMap}
 
 import utexas.aorta.map.{Edge, Coordinate, Turn, Traversable, Graph, Position}
 import utexas.aorta.sim.market._
@@ -51,12 +51,8 @@ class Agent(val id: Int, val route: Route, val rng: RNG, wallet_spec: MkWallet) 
                       else
                         Common.tick - idle_since
 
-  // Track intersections where we've asked for and received a lease
-  val turns_requested = new MutableSet[Intersection]()
-  val turns_approved = new MutableSet[Intersection]()
-  
-  def involved_with(i: Intersection) =
-    turns_requested.contains(i) || turns_approved.contains(i)
+  val tickets = new MutableMap[Intersection, Ticket]()
+  def involved_with(i: Intersection) = tickets.contains(i)
 
   override def toString = "Agent " + id
   override def tooltip = List(toString, wallet.toString)
@@ -159,8 +155,9 @@ class Agent(val id: Int, val route: Route, val rng: RNG, wallet_spec: MkWallet) 
         case (t: Turn, e: Edge) => {
           val i = t.vert.intersection
           i.exit(this, t)
-          turns_approved -= i
-          Stats.record(Turn_Done_Stat(id, i.v.id, Common.tick))
+          val ticket = tickets.remove(i)
+          ticket.stat = ticket.stat.copy(done_tick = Common.tick)
+          Stats.record(ticket.stat)
         }
       }
 
@@ -294,10 +291,8 @@ class Agent(val id: Int, val route: Route, val rng: RNG, wallet_spec: MkWallet) 
 
   def cancel_intersection_reservations() = {
     // TODO is this ever sensible to use?
-    turns_requested.foreach(i => i.policy.unregister(this))
-    turns_approved.foreach(i => i.policy.unregister(this))
-    turns_requested.clear
-    turns_approved.clear
+    tickets.keys.foreach(i => i.policy.unregister(this))
+    tickets.clear
   }
 
   // returns distance traveled, updates speed. note unit of the argument.
@@ -367,8 +362,7 @@ class Agent(val id: Int, val route: Route, val rng: RNG, wallet_spec: MkWallet) 
     Util.log("Stopping distance next: " + stopping_distance(max_next_speed))
     Util.log("Lookahead dist: " + max_lookahead_dist)
     Util.log("Dist left here: " + at.dist_left)
-    Util.log("Turns requested: " + turns_requested)
-    Util.log("Turns approved: " + turns_approved)
+    Util.log("Tickets: " + tickets)
     if (is_lanechanging) {
       Util.log(s"Lane-changing from ${old_lane.get}. $lanechange_dist_left to go!")
     } else {
@@ -376,15 +370,6 @@ class Agent(val id: Int, val route: Route, val rng: RNG, wallet_spec: MkWallet) 
     }
     behavior.dump_info
     Util.log_pop
-  }
-
-  def approve_turn(i: Intersection) = {
-    synchronized {
-      Util.assert_eq(turns_requested(i), true)
-      turns_requested -= i
-      turns_approved += i
-      Stats.record(Turn_Accept_Stat(id, i.v.id, Common.tick))
-    }
   }
 
   def how_far_away(i: Intersection) =

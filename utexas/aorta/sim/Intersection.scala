@@ -27,10 +27,10 @@ class Intersection(val v: Vertex, policy_type: IntersectionType.Value,
   // Delegate and log.
   def unregister(a: Agent) = policy.unregister(a)
   def react = policy.react
-  def request_turn(a: Agent, turn: Turn) = {
+  def request_turn(ticket: Ticket) = {
     // Sanity check...
-    Util.assert_eq(turn.vert, v)
-    policy.request_turn(a, turn)
+    Util.assert_eq(ticket.turn.vert, v)
+    policy.request_turn(ticket)
   }
 
   // Multiple agents can be on the same turn; the corresponding queue will
@@ -96,21 +96,25 @@ class Intersection(val v: Vertex, policy_type: IntersectionType.Value,
   }
 }
 
-class Ticket(a: Agent, turn: Turn) extends Ordered[Ticket] {
-  // TODO where was compare used?
+// TODO when we talk to intersection, dont pass agent, pass this!
+class Ticket(val a: Agent, val turn: Turn) extends Ordered[Ticket] {
+  // TODO where was compare used? do we need it for a policy?
   //override def compare(other: Ticket) = a.compare(other.a)
   override def toString = s"Ticket($a, $turn)"
 
   // Don't initially know: accept_tick, done_tick, cost_paid.
-  var stat = Turn_Stat(a.id, turn.vert.id, Common.tick, 0.0, 0.0, 0.0)
+  // TODO keep state, dont shuffle it into this >_<
+  var stat = Turn_Stat(a.id, turn.vert.id, Common.tick, -1.0, -1.0, -1.0)
 
   def approve() = {
-    a.approve_turn(turn.vert.intersection)
+    stat = stat.copy(accept_tick = Common.tick)
     // Allocate a spot for them. This must be called when the turn isn't
     // blocked.
     // TODO this messes up parallelism again...
     turn.to.queue.allocate_slot
   }
+
+  def is_approved = stat.accept_tick != -1.0
 
   // TODO remember number of agents in front, etc
 }
@@ -121,9 +125,9 @@ abstract class Policy(val intersection: Intersection) {
   protected var waiting_agents = new TreeSet[Ticket]()
   // Agents inform intersections of their intention ONCE and receive a lease
   // eventually.
-  def request_turn(a: Agent, turn: Turn) = {
+  def request_turn(ticket: Ticket) = {
     synchronized {
-      waiting_agents += Ticket(a, turn)
+      waiting_agents += ticket
       // TODO do extra book-keeping to verify agents aren't double requesting?
     }
   }
@@ -138,6 +142,7 @@ abstract class Policy(val intersection: Intersection) {
   // Policies must enforce liveness by never accepting agents if they couldn't
   // finish a turn.
   protected def turn_blocked(ticket: Ticket): Boolean = {
+    // TODO move to ticket class?
     val turn = ticket.turn
     val target = turn.to
     val next_vert = target.to.intersection
