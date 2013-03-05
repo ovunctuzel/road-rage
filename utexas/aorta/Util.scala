@@ -129,19 +129,6 @@ object Util {
       None
     else
       Some(s"$header ($a -> $b)")
-
-  // Print memory usage, then do GC, then print again. Should reveal how much
-  // temporary heapstuff is getting created in certain places.
-  def mem_check() = {
-    val rt = java.lang.Runtime.getRuntime
-    log("%d / %d MB free/total".format(
-      rt.freeMemory / 1024 / 1024, rt.totalMemory / 1024 / 1024
-    ))
-    /*rt.gc
-    log("AFTER: %d / %d MB free/total".format(
-      rt.freeMemory / 1024 / 1024, rt.totalMemory / 1024 / 1024
-    ))*/
-  }
 }
 
 class RNG(seed: Long = System.currentTimeMillis) {

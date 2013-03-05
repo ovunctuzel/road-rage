@@ -29,7 +29,6 @@ object Headless {
           Util.time_num(info.tick), info.tick - last_tick, sim.describe_agents,
           info.active_agents, Util.comma_num(info.agent_steps)
         ))
-        Util.mem_check
         last_tick = info.tick
 
         if (gui_signal.exists) {
