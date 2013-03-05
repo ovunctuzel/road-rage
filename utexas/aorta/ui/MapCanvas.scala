@@ -520,7 +520,7 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
       status.time.text = "%.1f %s".format(sim.tick, note)
       status.update_speed(sim)
       // agents have maybe moved, so...
-      status.agents.text = sim.describe_agents
+      //status.agents.text = sim.describe_agents
       update_plot
       repaint
     }

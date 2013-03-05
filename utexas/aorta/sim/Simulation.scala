@@ -186,7 +186,6 @@ trait AgentManager {
   var ready_to_spawn = new ListBuffer[SpawnAgent]()
   private var max_agent_id = -1
 
-  def describe_agents = s"${agents.size} / ${ready_to_spawn.size}"
   def insert_agent(a: Agent) = {
     // TODO assume this isn't a duplicate
     agents += a

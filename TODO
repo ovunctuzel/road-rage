@@ -3,7 +3,6 @@
 # Auctions #
 
 - get several maps, and tuned params/sizes foreach.
-- poisson departures
 - compatible serialization
 
 - system bid: reservation, prefer batching
