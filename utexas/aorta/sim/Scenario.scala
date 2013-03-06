@@ -285,7 +285,7 @@ object OrderingType extends Enumeration {
 
 object WalletType extends Enumeration {
   type WalletType = Value
-  val Random, Static, Freerider, Fair = Value
+  val Random, Static, Freerider, Fair, System = Value
 }                                                                         
 
 object Factory {

@@ -21,7 +21,7 @@ class SignalPolicy(intersection: Intersection,
 {
   setup_phases.foreach(p => ordering.add(p))
   private var current_phase: Phase =
-    ordering.shift_next(Nil, IntersectionType.Signal).get
+    ordering.shift_next(Nil, this).get
   ordering.add(current_phase)
 
   // Tracks when the current phase began
@@ -42,7 +42,7 @@ class SignalPolicy(intersection: Intersection,
     // Switch to the next phase
     if (Common.tick >= end_at && accepted_agents.isEmpty) {
       current_phase =
-        ordering.shift_next(waiting_agents, IntersectionType.Signal).get
+        ordering.shift_next(waiting_agents, this).get
       // Cycle through the phases
       ordering.add(current_phase)
       started_at = Common.tick

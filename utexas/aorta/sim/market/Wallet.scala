@@ -4,7 +4,7 @@
 
 package utexas.aorta.sim.market
 
-import utexas.aorta.sim.{Agent, Ticket, WalletType, IntersectionType,
+import utexas.aorta.sim.{Agent, Ticket, WalletType, Policy, IntersectionType,
                          Route_Event, EV_Transition, EV_Reroute}
 import utexas.aorta.map.{Turn, Vertex}
 import utexas.aorta.sim.policies.Phase
@@ -12,6 +12,7 @@ import utexas.aorta.sim.policies.Phase
 import utexas.aorta.{Util, cfg}
 
 // Express an agent's preferences of trading between time and cost.
+// TODO dont require an agent, ultimately
 abstract class Wallet(a: Agent, initial_budget: Double) {
   // How much the agent may spend during its one-trip lifetime
   var budget = initial_budget
@@ -23,7 +24,7 @@ abstract class Wallet(a: Agent, initial_budget: Double) {
   }
 
   // How much is this agent willing to spend on some choice?
-  def bid[T](choices: Iterable[T], ours: Ticket, itype: IntersectionType.Value): Option[(T, Double)] = itype match {
+  def bid[T](choices: Iterable[T], ours: Ticket, policy: Policy): Option[(T, Double)] = policy.policy_type match {
     case IntersectionType.StopSign =>
       bid_stop_sign(
         choices.asInstanceOf[Iterable[Ticket]], ours
@@ -36,7 +37,7 @@ abstract class Wallet(a: Agent, initial_budget: Double) {
       bid_reservation(
         choices.asInstanceOf[Iterable[Ticket]], ours
       ).asInstanceOf[Option[(T, Double)]]
-    case _ => throw new Exception(s"Dunno how to bid on $itype ordering")
+    case _ => throw new Exception(s"Dunno how to bid on $policy")
   }
   def bid_stop_sign(tickets: Iterable[Ticket], ours: Ticket): Option[(Ticket, Double)]
   def bid_signal(phases: Iterable[Phase], ours: Ticket): Option[(Phase, Double)]
@@ -160,4 +161,17 @@ class FairWallet(a: Agent, budget: Double) extends Wallet(a, budget) {
     }
     return (1.0 * big.size) + (0.5 * small.size) + (1.0 * policy_weight)
   }
+}
+
+// Bids to maintain "fairness."
+class SystemWallet() extends Wallet(null, 0.0) {
+  override def toString = "SYS"
+  def wallet_type = WalletType.System
+
+  def bid_stop_sign(tickets: Iterable[Ticket], ours: Ticket) = None
+  def bid_signal(phases: Iterable[Phase], ours: Ticket) = None
+  def bid_reservation(tickets: Iterable[Ticket], ours: Ticket) = None
+
+  // Infinite budget.
+  override def spend(amount: Double, ticket: Ticket) = {}
 }

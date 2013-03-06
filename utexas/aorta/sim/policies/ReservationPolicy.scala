@@ -74,7 +74,7 @@ class ReservationPolicy(intersection: Intersection,
     while (!interruption.isDefined) {
       ordering.clear
       candidates.foreach(o => ordering.add(o))
-      ordering.shift_next(waiting_agents ++ queue, IntersectionType.Reservation) match {
+      ordering.shift_next(waiting_agents ++ queue, this) match {
         case Some(ticket) => {
           queue.dequeueFirst((t) => t == ticket)
           // Admit them immediately and continue, or reserve an interruption?
