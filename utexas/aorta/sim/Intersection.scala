@@ -161,6 +161,28 @@ abstract class Policy(val intersection: Intersection) {
       case _ => false
     }*/
 
+    // Perform gridlock detection!
+    /*var current = target
+    val seen = new MutableSet[Edge]()
+    seen += turn.from
+    while (current != null && !current.queue.slot_avail) {
+      // A cycle!
+      if (seen(current)) {
+        Util.log(s"Gridlock detected by $ticket. Seen: $seen")
+        return true
+      }
+      seen += current
+
+      // Where's the head of that stuck queue trying to go?
+      current = current.queue.head match {
+        case Some(a) => a.tickets.get(current.to.intersection) match {
+          case Some(ticket) => ticket.turn.to
+          case None => null
+        }
+        case None => null
+      }
+    }*/
+
     // Much less conservative: assume the intersection at target.to won't accept
     // anybody else, so everybody on turn and target have to squish together on
     // target. Can we fit as well? Available slots actually enforced everywhere!
