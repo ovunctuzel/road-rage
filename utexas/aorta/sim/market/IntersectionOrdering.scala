@@ -95,9 +95,6 @@ class AuctionOrdering[T <: Ordered[T]]() extends IntersectionOrdering[T]() {
     val sums = sums_by_item.sortBy(pair => pair._2)
 
     val winner = sums.head._1
-    if (client.intersection.v.id == 1) {
-      println(s"winner $winner")
-    }
 
     client.policy_type match {
       case IntersectionType.Reservation => {

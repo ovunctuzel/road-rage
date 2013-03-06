@@ -98,8 +98,9 @@ class Intersection(val v: Vertex, policy_type: IntersectionType.Value,
 
 // TODO when we talk to intersection, dont pass agent, pass this!
 class Ticket(val a: Agent, val turn: Turn) extends Ordered[Ticket] {
-  override def compare(other: Ticket) = turn.compare(other.turn)
-  override def toString = s"Ticket($a, $turn)"
+  override def compare(other: Ticket) =
+    implicitly[Ordering[Tuple2[Agent, Turn]]].compare((a, turn), (other.a, other.turn))
+  override def toString = s"Ticket($a, $turn, approved? $is_approved)"
 
   // Don't initially know: accept_tick, done_tick, cost_paid.
   // TODO keep state, dont shuffle it into this >_<

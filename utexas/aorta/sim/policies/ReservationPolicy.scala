@@ -74,7 +74,7 @@ class ReservationPolicy(intersection: Intersection,
     while (!interruption.isDefined) {
       ordering.clear
       candidates.foreach(o => ordering.add(o))
-      ordering.shift_next(waiting_agents ++ queue, this) match {
+      ordering.shift_next(queue, this) match {
         case Some(ticket) => {
           queue.dequeueFirst((t) => t == ticket)
           // Admit them immediately and continue, or reserve an interruption?
@@ -107,9 +107,9 @@ class ReservationPolicy(intersection: Intersection,
 
   def dump_info() = {
     Util.log(s"Reservation policy for $intersection")
-    Util.log(s"Currently accepted: $accepted")
-    Util.log(s"Waiting agents: $waiting_agents")
-    Util.log(s"Queue: $queue")
+    Util.log(s"Currently accepted (${accepted.size}): $accepted")
+    Util.log(s"Waiting agents (${waiting_agents.size}): $waiting_agents")
+    Util.log(s"Queue (${queue.size}): $queue")
   }
   def policy_type = IntersectionType.Reservation
 }

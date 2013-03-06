@@ -6,11 +6,10 @@
   - manually mark danger areas of each map, diff behavior there?
 - compatible serialization
 
-= system bid: reservation, prefer batching
-  it aint working
 - configure system bids in scenarios
   - parameters
   - which are active, if drivers can bid
+- even demand wallets
 - system bid: penalty if not much capacity
 - system bid: bonus to long-waiting group
 - commoncase auctions and system bid

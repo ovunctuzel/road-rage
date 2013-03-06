@@ -56,7 +56,7 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
         case e: Edge => {
           val target = route.pick_lane(e)
           if (target != base) {
-            target_lane = Some(target)
+            //target_lane = Some(target)
           }
         }
         case _ =>
@@ -110,7 +110,7 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
     }
 
     // Try a fast-path!
-    val no_lc = (!a.is_lanechanging)
+    /*val no_lc = (!a.is_lanechanging)
     val not_near_end = a.at.dist_left >= a.max_lookahead_dist + cfg.end_threshold // TODO +buf?
     val lead = a.our_lead
     val not_tailing = lead match {
@@ -137,7 +137,7 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
           -a.max_accel
         ))
       }
-    }
+    }*/
 
     // TODO refactor and pull in max_safe_accel here? maybe this function is for
     // fast-paths.

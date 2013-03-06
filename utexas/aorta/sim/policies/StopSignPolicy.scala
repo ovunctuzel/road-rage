@@ -77,7 +77,7 @@ class StopSignPolicy(intersection: Intersection,
     for (ticket <- queue if is_waiting(ticket.a) && !turn_blocked(ticket)) {
       ordering.add(ticket)
     }
-    current_owner = ordering.shift_next(waiting_agents ++ ordering.queue, this)
+    current_owner = ordering.shift_next(queue, this)
     current_owner match {
       case Some(ticket) => {
         ticket.approve

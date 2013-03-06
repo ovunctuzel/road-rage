@@ -297,7 +297,7 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
     g2d.setColor(color_agent(a))
     if (zoomed_in) {
       // TODO cfg. just tweak these by sight.
-      val vehicle_length = 0.5  // along the edge
+      val vehicle_length = 0.2  // along the edge
       val vehicle_width = 0.25  // perpendicular
 
       var (line, front_dist) = a.at.on.current_pos(a.at.dist)
