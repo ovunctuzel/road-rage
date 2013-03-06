@@ -363,17 +363,24 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
       Color.WHITE
 
   def color_agent(a: Agent): Color = current_obj match {
-    case Some(v: Vertex) if !a.involved_with(v.intersection) => Color.GRAY
-    case _ => {
-      // try to avoid flashing red, this feature is used to visually spot true
-      // clumps
-      if (a.speed == 0.0 && a.how_long_idle >= 5.0) {
-        Color.RED
-      } else {
-        if (!agent_colors.contains(a)) {
-          agent_colors(a) = GeomFactory.rand_color
+    case Some(v: Vertex) => a.tickets.get(v.intersection) match {
+      case Some(ticket) if ticket.is_approved => Color.GREEN
+      case Some(ticket) if !ticket.is_approved => Color.RED
+      case None => Color.GRAY
+    }
+    case _ => camera_agent match {
+      case Some(agent) if a == agent => Color.WHITE
+      case _ => {
+        // try to avoid flashing red, this feature is used to visually spot true
+        // clumps
+        if (a.how_long_idle >= 5.0) {
+          Color.RED
+        } else {
+          if (!agent_colors.contains(a)) {
+            agent_colors(a) = GeomFactory.rand_color
+          }
+          agent_colors(a)
         }
-        agent_colors(a)
       }
     }
   }
@@ -591,7 +598,8 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
             sim.get_agent(id.toInt) match {
               case Some(a) => {
                 Util.log("Here's " + a)
-                center_on(a.at.location)
+                current_obj = Some(a)
+                handle_ev_keypress(Key.F)
                 repaint
               }
               case _ => Util.log("Didn't find " + id)

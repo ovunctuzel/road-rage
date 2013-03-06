@@ -132,12 +132,25 @@ class Simulation(val graph: Graph, scenario: Scenario)
   // spawning as well.
   def try_spawn(spawn: SpawnAgent): Boolean =
     if (spawn.e.queue.can_spawn_now(spawn.dist)) {
-      val a = spawn.a
-      a.at = a.enter(spawn.e, spawn.dist)
-      insert_agent(a)
-      spawn.e.queue.allocate_slot
-      a.stat_memory = (tick, spawn.e.id, a.wallet.budget)
-      true
+      // Will we block anybody that's ready?
+      val intersection = spawn.e.to.intersection
+      val will_block =
+        if (!spawn.a.route.done(spawn.e))
+          spawn.e.queue.all_agents.find(
+            agent => agent.at.dist < spawn.dist && agent.wont_block(intersection)
+          ).isDefined
+        else
+          false
+      if (will_block) {
+        false
+      } else {
+        val a = spawn.a
+        a.at = a.enter(spawn.e, spawn.dist)
+        insert_agent(a)
+        spawn.e.queue.allocate_slot
+        a.stat_memory = (tick, spawn.e.id, a.wallet.budget)
+        true
+      }
     } else {
       false
     }

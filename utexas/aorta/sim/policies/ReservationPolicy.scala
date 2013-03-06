@@ -11,7 +11,7 @@ import utexas.aorta.map.{Turn, Edge}
 import utexas.aorta.sim.{Intersection, Policy, Ticket, Agent, IntersectionType}
 import utexas.aorta.sim.market.IntersectionOrdering
 
-import utexas.aorta.{Util, cfg}
+import utexas.aorta.{Util, Common, cfg}
 
 // Accept as many compatible turns as possible, until an interruption occurs.
 // (To get the old greedy behavior, add the constraint back to candidates, or
@@ -40,10 +40,10 @@ class ReservationPolicy(intersection: Intersection,
     lazy val steps = ticket.a.route.steps_to(ticket.a.at.on, ticket.turn.vert)
     // TODO dont search behind us
     lazy val c3 = !steps.head.queue.all_agents.find(
-      a => a.at.dist > ticket.a.at.dist && !accepted_agent(a)
+      a => a.at.dist > ticket.a.at.dist && !a.wont_block(intersection)
     ).isDefined
     lazy val c4 = !steps.tail.find(step => step.queue.all_agents.find(
-      a => !accepted_agent(a)
+      a => !a.wont_block(intersection)
     ).isDefined).isDefined
     c2 && c3 && c4
   })
@@ -108,6 +108,7 @@ class ReservationPolicy(intersection: Intersection,
   def dump_info() = {
     Util.log(s"Reservation policy for $intersection")
     Util.log(s"Currently accepted (${accepted.size}): $accepted")
+    Util.log(s"Interruption by $interruption")
     Util.log(s"Waiting agents (${waiting_agents.size}): $waiting_agents")
     Util.log(s"Queue (${queue.size}): $queue")
   }
