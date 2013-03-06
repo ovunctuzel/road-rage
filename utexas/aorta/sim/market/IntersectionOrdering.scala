@@ -11,7 +11,7 @@ import scala.collection.mutable.{Set => MutableSet}
 
 import utexas.aorta.{Util, cfg}
 
-abstract class IntersectionOrdering[T]() {
+abstract class IntersectionOrdering[T <: Ordered[T]]() {
   // The client can muck with this directly if they, say, want to filter it out.
   var queue = List[T]()
 
@@ -26,7 +26,7 @@ abstract class IntersectionOrdering[T]() {
   }
 }
 
-class FIFO_Ordering[T]() extends IntersectionOrdering[T]() {
+class FIFO_Ordering[T <: Ordered[T]]() extends IntersectionOrdering[T]() {
   def shift_next(waiting_participants: Iterable[Ticket], client: Policy): Option[T] = {
     if (queue.nonEmpty) {
       val next = queue.head
@@ -47,7 +47,7 @@ case class Bid[T](who: Wallet, item: T, amount: Double, purpose: Ticket)
   override def toString = s"Bid($amount for $item)"
 }
 
-class AuctionOrdering[T]() extends IntersectionOrdering[T]() {
+class AuctionOrdering[T <: Ordered[T]]() extends IntersectionOrdering[T]() {
   def shift_next(voters: Iterable[Ticket], client: Policy): Option[T] = {
     // Handle degenerate cases where we don't hold auctions.
     if (queue.isEmpty) {
@@ -86,11 +86,18 @@ class AuctionOrdering[T]() extends IntersectionOrdering[T]() {
 
   private def process_auction(bids: MultiMap[T, Bid[T]], client: Policy): T =
   {
-    val sums: List[(T, Double)] = bids.keys.map(
+    // Break ties arbitrarily but deterministically.
+    val sums_by_item: List[(T, Double)] = bids.keys.map(
       t => (t, bids(t).map(_.amount).sum)
-    ).toList.sortBy(_._2).reverse
+    ).toList.sortBy(pair => pair._1)
+    // Now sort by sum. As long as this is a stable sort, fine.
+    // (Lotsa type nonsense when I try to do this in one go.)
+    val sums = sums_by_item.sortBy(pair => pair._2)
 
     val winner = sums.head._1
+    if (client.intersection.v.id == 1) {
+      println(s"winner $winner")
+    }
 
     client.policy_type match {
       case IntersectionType.Reservation => {

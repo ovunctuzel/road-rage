@@ -98,8 +98,7 @@ class Intersection(val v: Vertex, policy_type: IntersectionType.Value,
 
 // TODO when we talk to intersection, dont pass agent, pass this!
 class Ticket(val a: Agent, val turn: Turn) extends Ordered[Ticket] {
-  // TODO more cautious compare? just used for ordering tickets at ONE vert
-  override def compare(other: Ticket) = a.compare(other.a)
+  override def compare(other: Ticket) = turn.compare(other.turn)
   override def toString = s"Ticket($a, $turn)"
 
   // Don't initially know: accept_tick, done_tick, cost_paid.

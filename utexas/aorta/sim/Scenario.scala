@@ -312,7 +312,7 @@ object Factory {
     case RouteType.DrunkenExplorer => new DrunkenExplorerRoute(goal, rng)
   }
   
-  def make_intersection_ordering[T](enum: OrderingType.Value) = enum match
+  def make_intersection_ordering[T <: Ordered[T]](enum: OrderingType.Value) = enum match
   { 
     case OrderingType.FIFO => new FIFO_Ordering[T]()            
     case OrderingType.Auction => new AuctionOrdering[T]()       

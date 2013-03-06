@@ -244,6 +244,20 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
   // Returns an optional acceleration, or 'true', which indicates the agent
   // is totally done.
   def constraint_stop(step: LookaheadStep): Either[Option[Double], Boolean] = {
+    // Request a turn early?
+    step.at match {
+      case e: Edge if !route.done(e) && committed_to_lane(step) => {
+        val i = e.to.intersection
+        if (!a.involved_with(i)) {
+          val next_turn = route.pick_turn(e)
+          val ticket = new Ticket(a, next_turn)
+          a.tickets(i) = ticket
+          i.request_turn(ticket)
+        }
+      }
+      case _ =>
+    }
+
     // The goal is to stop in the range [length - end_threshold, length),
     // preferably right at that left border.
 
@@ -268,27 +282,9 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
         false
       }
       // Otherwise, ask the intersection
-      case e: Edge => {
-        if (committed_to_lane(step)) {
-          val i = e.to.intersection
-          a.tickets.get(i) match {
-            case Some(ticket) => ticket.is_approved
-            case None => {
-              // If the lookahead includes a next step, this should be
-              // consistent with what the route says, by the route's contract of
-              // consistent answers. But sometimes the lookahead terminates
-              // early due to not enough distance, so just always ask this.
-              val next_turn = route.pick_turn(e)
-              val ticket = new Ticket(a, next_turn)
-              a.tickets(i) = ticket
-              i.request_turn(ticket)
-              false
-            }
-          }
-        } else {
-          // And we should probably stop trying to LC, since we're so close!
-          false
-        }
+      case e: Edge => a.tickets.get(e.to.intersection) match {
+        case Some(ticket) => ticket.is_approved
+        case None => false
       }
     }
     if (can_go) {

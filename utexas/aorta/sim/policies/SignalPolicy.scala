@@ -127,7 +127,12 @@ class SignalPolicy(intersection: Intersection,
   }
 }
 
-class Phase(val turns: Set[Turn], val offset: Double, val duration: Double) {
+class Phase(val turns: Set[Turn], val offset: Double, val duration: Double)
+  extends Ordered[Phase]
+{
+  // Can only order phases at one intersection! Offsets must be unique!
+  override def compare(other: Phase) = offset.compare(other.offset)
+
   Util.assert_ge(offset, 0)
   Util.assert_gt(duration, 0)
   for (t1 <- turns; t2 <- turns if t1 < t2) {
