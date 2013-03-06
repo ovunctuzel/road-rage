@@ -55,8 +55,9 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
       base match {
         case e: Edge => {
           val target = route.pick_lane(e)
-          if (target != base) {
-            //target_lane = Some(target)
+          // Tough liveness guarantees... give up early.
+          if (target != base && a.can_lc_without_blocking(target)) {
+            target_lane = Some(target)
           }
         }
         case _ =>

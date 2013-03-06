@@ -214,6 +214,15 @@ class Agent(val id: Int, val route: Route, val rng: RNG, wallet_spec: MkWallet) 
     return true
   }
 
+  // Would we cut anybody off if we LC in front of them?
+  def can_lc_without_blocking(target: Edge): Boolean = {
+    // TODO is it ok to cut off somebody thats done with their route?
+    val intersection = target.to.intersection
+    return !target.queue.all_agents.find(
+      agent => agent.at.dist < at.dist && agent.wont_block(intersection)
+    ).isDefined
+  }
+
   private def safe_to_lc(target: Edge): Boolean = {
     at.on match {
       case e: Edge => {
@@ -233,6 +242,9 @@ class Agent(val id: Int, val route: Route, val rng: RNG, wallet_spec: MkWallet) 
 
     // Does the target queue have capacity? Don't cause gridlock!
     if (!target.queue.slot_avail) {
+      return false
+    }
+    if (!can_lc_without_blocking(target)) {
       return false
     }
 
