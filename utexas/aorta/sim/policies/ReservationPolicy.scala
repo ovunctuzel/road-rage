@@ -26,7 +26,7 @@ class ReservationPolicy(intersection: Intersection,
 
   private val accepted = new MutableSet[Ticket]()
   private def accepted_agent(a: Agent) = accepted.find(t => t.a == a).isDefined
-  private def accepted_conflicts(turn: Turn)
+  def accepted_conflicts(turn: Turn)
     = accepted.find(t => t.turn.conflicts_with(turn)).isDefined
   def approveds_to(e: Edge) = accepted.filter(_.turn.to == e).map(_.a)
   // Prevent more from being accepted until this ticket is approved.

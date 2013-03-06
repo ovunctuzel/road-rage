@@ -42,7 +42,9 @@ class FIFO_Ordering[T]() extends IntersectionOrdering[T]() {
 // null for system bids.
 case class Bid[T](who: Wallet, item: T, amount: Double, purpose: Ticket)
 {
-  Util.assert_gt(amount, 0.0)
+  Util.assert_ge(amount, 0.0)
+
+  override def toString = s"Bid($amount for $item)"
 }
 
 class AuctionOrdering[T]() extends IntersectionOrdering[T]() {
@@ -61,12 +63,16 @@ class AuctionOrdering[T]() extends IntersectionOrdering[T]() {
     val bids = new HashMap[T, MutableSet[Bid[T]]] with MultiMap[T, Bid[T]]
     voters.foreach(who => {
       who.a.wallet.bid(queue, who, client) match {
-        case Some((ticket, amount)) => {
+        case Some((ticket, amount)) if amount > 0.0 => {
           bids.addBinding(ticket, Bid(who.a.wallet, ticket, amount, who))
         }
-        case None =>
+        case _ =>
       }
     })
+    // Ask the System, too
+    for (bid <- SystemWallets.meta_bid(queue, client) if bid.amount > 0.0) {
+      bids.addBinding(bid.item, bid)
+    }
 
     return if (bids.isEmpty) {
       // They're all apathetic, so just do FIFO.

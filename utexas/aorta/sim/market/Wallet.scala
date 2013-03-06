@@ -7,7 +7,7 @@ package utexas.aorta.sim.market
 import utexas.aorta.sim.{Agent, Ticket, WalletType, Policy, IntersectionType,
                          Route_Event, EV_Transition, EV_Reroute}
 import utexas.aorta.map.{Turn, Vertex}
-import utexas.aorta.sim.policies.Phase
+import utexas.aorta.sim.policies.{Phase, ReservationPolicy}
 
 import utexas.aorta.{Util, cfg}
 
@@ -174,4 +174,21 @@ class SystemWallet() extends Wallet(null, 0.0) {
 
   // Infinite budget.
   override def spend(amount: Double, ticket: Ticket) = {}
+}
+
+object SystemWallets {
+  // Keep these separate just for book-keeping
+  val thruput = new SystemWallet()
+  // TODO by how much?
+  val thruput_bonus = 3.00
+
+  def meta_bid[T](items: List[T], policy: Policy) = policy match {
+    case p: ReservationPolicy => bid_thruput(items, p)
+    case _ => Nil
+  }
+
+  // Promote bids that don't conflict
+  def bid_thruput[T](items: List[T], policy: ReservationPolicy) =
+    for (ticket <- items if !policy.accepted_conflicts(ticket.asInstanceOf[Ticket].turn))
+      yield Bid(thruput, ticket, thruput_bonus, null)
 }
