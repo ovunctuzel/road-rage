@@ -57,7 +57,7 @@ class SignalPolicy(intersection: Intersection,
     if (!in_overtime) {
       for (ticket <- waiting_agents) {
         if (current_phase.has(ticket.turn) && could_make_light(ticket.a, ticket.a.how_far_away(intersection))) {
-          if (!turn_blocked(ticket)) {
+          if (!ticket.turn_blocked) {
             ticket.approve
             accepted_agents += ((ticket.a, ticket.turn))
             waiting_agents -= ticket

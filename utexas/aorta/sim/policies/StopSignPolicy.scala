@@ -25,7 +25,6 @@ class StopSignPolicy(intersection: Intersection,
   // to us (in case they looked ahead over small edges).
   private def is_waiting(a: Agent)
     = (a.how_long_idle >= cfg.pause_at_stop &&
-       // TODO head of their queue doesnt imply nobody's blocking them
        a.cur_queue.head.get == a &&
        a.how_far_away(intersection) <= cfg.end_threshold)
 
@@ -74,7 +73,7 @@ class StopSignPolicy(intersection: Intersection,
 
   private def approve_next = {
     ordering.clear
-    for (ticket <- queue if is_waiting(ticket.a) && !turn_blocked(ticket)) {
+    for (ticket <- queue if is_waiting(ticket.a) && !ticket.turn_blocked) {
       ordering.add(ticket)
     }
     current_owner = ordering.shift_next(queue, this)

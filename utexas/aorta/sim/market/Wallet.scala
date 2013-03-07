@@ -153,7 +153,7 @@ class FairWallet(a: Agent, budget: Double) extends Wallet(a, budget) {
   // TODO better heuristic? base it on the policy, too!
   private def weight(v: Vertex): Double = {
     // Grant me the serenity to accept the things I can't change...
-    v.intersection.ordering.ordering_type match {
+    v.intersection.ordering_type match {
       case OrderingType.FIFO => return 0
       case _ =>
     }

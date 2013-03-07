@@ -32,21 +32,7 @@ class ReservationPolicy(intersection: Intersection,
   // Prevent more from being accepted until this ticket is approved.
   private var interruption: Option[Ticket] = None
 
-  // Turn can't be blocked and nobody unaccepted in front of them
-  private def candidates = queue.filter(ticket => {
-    // Can have an incompatible turn.
-    //val c1 = !accepted_conflicts(ticket.turn)
-    lazy val c2 = !turn_blocked(ticket)
-    lazy val steps = ticket.a.route.steps_to(ticket.a.at.on, ticket.turn.vert)
-    // TODO dont search behind us
-    lazy val c3 = !steps.head.queue.all_agents.find(
-      a => a.at.dist > ticket.a.at.dist && !a.wont_block(intersection)
-    ).isDefined
-    lazy val c4 = !steps.tail.find(step => step.queue.all_agents.find(
-      a => !a.wont_block(intersection)
-    ).isDefined).isDefined
-    c2 && c3 && c4
-  })
+  private def candidates = queue.filter(ticket => !ticket.turn_blocked)
 
   def react(): Unit = {
     for (ticket <- waiting_agents) {

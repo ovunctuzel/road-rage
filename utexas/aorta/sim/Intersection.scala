@@ -18,7 +18,7 @@ import utexas.aorta.{Util, Common, cfg}
 
 // Reason about collisions from conflicting simultaneous turns.
 class Intersection(val v: Vertex, policy_type: IntersectionType.Value,
-                   ordering_type: OrderingType.Value)
+                   val ordering_type: OrderingType.Value)
 {
   val policy = Factory.make_policy(this, policy_type, ordering_type)
 
@@ -117,49 +117,39 @@ class Ticket(val a: Agent, val turn: Turn) extends Ordered[Ticket] {
   def is_approved = stat.accept_tick != -1.0
 
   // TODO remember number of agents in front, etc
-}
 
-abstract class Policy(val intersection: Intersection) {
-  // When intersections pull agents off this list, the order is arbitrary but
-  // deterministic.
-  protected var waiting_agents = new TreeSet[Ticket]()
-  // Agents inform intersections of their intention ONCE and receive a lease
-  // eventually.
-  def request_turn(ticket: Ticket) = {
-    synchronized {
-      waiting_agents += ticket
-      // TODO do extra book-keeping to verify agents aren't double requesting?
-    }
-  }
-
-  def unregister(a: Agent) = {
-    synchronized {
-      waiting_agents = waiting_agents.filter(ticket => ticket.a != a)
-      unregister_body(a)
-    }
-  }
-
-  // Policies must enforce liveness by never accepting agents if they couldn't
-  // finish a turn.
-  protected def turn_blocked(ticket: Ticket): Boolean = {
-    // TODO move to ticket class?
-    val turn = ticket.turn
+  // To enforce liveness, policies shouldn't accept a turn that can't certainly
+  // be finished. Once a turn is accepted, lane-changing and spawning and such
+  // have to maintain the stability of this property.
+  def turn_blocked(): Boolean = {
     val target = turn.to
-    val next_vert = target.to.intersection
+    val intersection = turn.vert.intersection
 
-    // All techniques rely on lookbehind for LCing. Somebody can't appear on the
-    // target queue without this intersection's permission first.
+    // Lane-changing and spawning respect allocations of capacity too, so this
+    // tells us if we can finish the turn.
+    if (!target.queue.slot_avail) {
+      return true
+    }
 
-    // Fast as possible, completely unsafe
-    //return false
+    val steps = a.route.steps_to(a.at.on, turn.vert)
+    // TODO efficiency... dont search behind us, only look one person ahead once
+    // this is really an enforced invariant
+    val blocked_cur_step = steps.head.queue.all_agents.find(
+      agent => agent.at.dist > a.at.dist && !agent.wont_block(intersection)
+    ).isDefined
+    if (blocked_cur_step) {
+      return true
+    }
 
-    // Overly conservative: if there's anybody on the turn or too close on the
-    // target queue, don't try.
-    /*return (turn.queue.last, target.queue.last) match {
-      case (Some(a), _) => true
-      case (None, Some(a)) if a.at.dist <= cfg.follow_dist => true
-      case _ => false
-    }*/
+    val blocked_future_step = steps.tail.find(step => step.queue.all_agents.find(
+      agent => !agent.wont_block(intersection)
+    ).isDefined).isDefined
+    if (blocked_future_step) {
+      return true
+    }
+
+    // We're clear!
+    return false
 
     // Perform gridlock detection!
     /*var current = target
@@ -182,11 +172,27 @@ abstract class Policy(val intersection: Intersection) {
         case None => null
       }
     }*/
+  }
+}
 
-    // Much less conservative: assume the intersection at target.to won't accept
-    // anybody else, so everybody on turn and target have to squish together on
-    // target. Can we fit as well? Available slots actually enforced everywhere!
-    return !target.queue.slot_avail
+abstract class Policy(val intersection: Intersection) {
+  // When intersections pull agents off this list, the order is arbitrary but
+  // deterministic.
+  protected var waiting_agents = new TreeSet[Ticket]()
+  // Agents inform intersections of their intention ONCE and receive a lease
+  // eventually.
+  def request_turn(ticket: Ticket) = {
+    synchronized {
+      waiting_agents += ticket
+      // TODO do extra book-keeping to verify agents aren't double requesting?
+    }
+  }
+
+  def unregister(a: Agent) = {
+    synchronized {
+      waiting_agents = waiting_agents.filter(ticket => ticket.a != a)
+      unregister_body(a)
+    }
   }
 
   // The intersection grants leases to waiting_agents
