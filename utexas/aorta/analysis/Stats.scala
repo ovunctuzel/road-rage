@@ -135,6 +135,8 @@ case class Heartbeat_Stat(
     stream.writeDouble(tick)
     stream.writeInt(agent_steps)
   }
+
+  def describe = s"$active_agents moved / $live_agents live / $spawning_agents ready"
 }
 
 // Offline, read the measurements and figure stuff out.

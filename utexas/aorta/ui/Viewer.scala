@@ -16,7 +16,7 @@ import utexas.aorta.{Util, cfg}
 
 object Status_Bar {
   val zoom       = new Label("1.0") // TODO from cfg
-  val agents     = new Label("0 / 0")
+  val agents     = new Label("0 moved / 0 live / 0 ready")
   val time       = new Label("0.0 [Paused]")
   val sim_speed = new Label("1.0x / 1.0x")
 

@@ -18,7 +18,7 @@ import scala.language.implicitConversions
 import utexas.aorta.map._  // TODO yeah getting lazy.
 import utexas.aorta.sim.{Simulation, Agent, Sim_Event, EV_Signal_Change,
                          IntersectionType, RouteType, Route_Event,
-                         EV_Transition, EV_Reroute}
+                         EV_Transition, EV_Reroute, EV_Heartbeat}
 import utexas.aorta.sim.PathRoute
 
 import utexas.aorta.{Util, RNG, cfg}
@@ -62,6 +62,15 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
       }
     }.start
   }
+
+  sim.listen("statusbar", (ev: Sim_Event) => { ev match {
+    case EV_Heartbeat(info) => {
+      status.agents.text = info.describe
+      status.time.text = Util.time_num(info.tick)
+    }
+    case _ =>
+  }})
+
   // but we can also pause
   var running = false
 
@@ -524,10 +533,7 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
                    ""
                  else
                    " [Paused]"
-      status.time.text = "%.1f %s".format(sim.tick, note)
       status.update_speed(sim)
-      // agents have maybe moved, so...
-      //status.agents.text = sim.describe_agents
       update_plot
       repaint
     }
