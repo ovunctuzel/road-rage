@@ -223,6 +223,19 @@ class Agent(val id: Int, val route: Route, val rng: RNG, wallet_spec: MkWallet) 
     ).isDefined
   }
 
+  def can_lc_without_hitting_head(target: Edge): Boolean = {
+    // We don't want to merge in too closely to the agent ahead of us, nor do we
+    // want to make somebody behind us risk running into us. So just make sure
+    // there are no agents in that danger range.
+    // TODO expanding the search to twice follow dist is a hack; I'm not sure
+    // why agents are winding up about a meter too close sometimes.
+    val ahead_dist = (2.0 * cfg.follow_dist) + stopping_distance(max_next_speed)
+    // TODO assumes all vehicles the same. not true forever.
+    val behind_dist = (2.0 * cfg.follow_dist) + stopping_distance(target.road.speed_limit)
+    val nearby = target.queue.all_in_range(at.dist - behind_dist, at.dist + ahead_dist)
+    return nearby.isEmpty
+  }
+
   private def safe_to_lc(target: Edge): Boolean = {
     at.on match {
       case e: Edge => {
@@ -264,16 +277,7 @@ class Agent(val id: Int, val route: Route, val rng: RNG, wallet_spec: MkWallet) 
       }
     }
 
-    // We don't want to merge in too closely to the agent ahead of us, nor do we
-    // want to make somebody behind us risk running into us. So just make sure
-    // there are no agents in that danger range.
-    // TODO expanding the search to twice follow dist is a hack; I'm not sure
-    // why agents are winding up about a meter too close sometimes.
-    val ahead_dist = (2.0 * cfg.follow_dist) + stopping_distance(max_next_speed)
-    // TODO assumes all vehicles the same. not true forever.
-    val behind_dist = (2.0 * cfg.follow_dist) + stopping_distance(target.road.speed_limit)
-    val nearby = target.queue.all_in_range(at.dist - behind_dist, at.dist + ahead_dist)
-    if (!nearby.isEmpty) {
+    if (!can_lc_without_hitting_head(target)) {
       return false
     }
 

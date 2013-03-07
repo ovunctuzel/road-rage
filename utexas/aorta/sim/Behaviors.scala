@@ -56,6 +56,7 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
         case e: Edge => {
           val target = route.pick_lane(e)
           // Tough liveness guarantees... give up early.
+          // TODO move this check to give up to react()
           if (target != base && a.can_lc_without_blocking(target)) {
             target_lane = Some(target)
           }
@@ -104,8 +105,14 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
     // Commit to not lane-changing if it's too late. That way, we can decide on
     // a turn.
     target_lane match {
-      case Some(target) if !a.room_to_lc(target) => {
-        target_lane = None
+      case Some(target) => {
+        // No room? Fundamentally impossible
+        // Somebody in the way? If we're stalled and somebody's in the way,
+        // we're probably waiting in a queue. Don't waste time hoping, grab a
+        // turn now.
+        if (!a.room_to_lc(target) || (a.speed == 0.0 && !a.can_lc_without_hitting_head(target))) {
+          target_lane = None
+        }
       }
       case _ =>
     }
