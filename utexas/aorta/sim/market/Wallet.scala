@@ -5,7 +5,7 @@
 package utexas.aorta.sim.market
 
 import utexas.aorta.sim.{Agent, Ticket, WalletType, Policy, IntersectionType,
-                         Route_Event, EV_Transition, EV_Reroute}
+                         Route_Event, EV_Transition, EV_Reroute, OrderingType}
 import utexas.aorta.map.{Turn, Vertex}
 import utexas.aorta.sim.policies.{Phase, ReservationPolicy}
 
@@ -152,7 +152,14 @@ class FairWallet(a: Agent, budget: Double) extends Wallet(a, budget) {
   // intersection?
   // TODO better heuristic? base it on the policy, too!
   private def weight(v: Vertex): Double = {
+    // Grant me the serenity to accept the things I can't change...
+    v.intersection.ordering.ordering_type match {
+      case OrderingType.FIFO => return 0
+      case _ =>
+    }
+
     val (big, small) = v.roads.partition(_.is_major)
+    // Yes, these are arbitrary numbers.
     val policy_weight = v.intersection.policy.policy_type match {
       case IntersectionType.StopSign => 1.0
       case IntersectionType.Signal => 2.5
