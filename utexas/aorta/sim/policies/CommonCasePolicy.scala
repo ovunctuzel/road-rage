@@ -5,6 +5,7 @@
 package utexas.aorta.sim.policies
 
 import scala.collection.mutable.{HashSet => MutableSet}
+import scala.collection.mutable.TreeSet
 
 import utexas.aorta.map.{Turn, Edge}
 import utexas.aorta.sim.{Intersection, Policy, Ticket, Agent, IntersectionType}
@@ -14,7 +15,6 @@ import utexas.aorta.{Util, cfg}
 
 // Automatically admit agents requesting common turns, and make the others queue
 // and go when they can.
-// TODO make sure early registration => commoners dont ever really stop
 class CommonCasePolicy(intersection: Intersection,
                        ordering: IntersectionOrdering[Ticket])
   extends Policy(intersection)
@@ -32,18 +32,29 @@ class CommonCasePolicy(intersection: Intersection,
   // case they looked ahead over small edges).
   private def is_ready(a: Agent) =
     (a.cur_queue.head.get == a &&
-     // TODO head of their queue doesnt imply nobody's blocking them
      a.how_far_away(intersection) <= cfg.end_threshold)
 
   def react() = {
     // First admit everybody trying to do a common turn, unless somebody rare
     // and conflicting has been approved.
-    for (ticket <- waiting_agents) {
-      if (common_turns.contains(ticket.turn) && !rare_blocks(ticket.turn)) {
+
+    // Because we have to maintain turn invariants as we accept, do a fixpoint
+    // approach and accept till there's nobody left that we can.
+    // TODO ^ refactor this by making an abstract 'candidates' routine
+    val candidates = new TreeSet[Ticket]()
+    candidates ++= waiting_agents.filter(
+      ticket => common_turns.contains(ticket.turn) && !rare_blocks(ticket.turn)
+    )
+    var changed = true
+    while (changed && candidates.nonEmpty) {
+      changed = false
+      for (ticket <- candidates) {
         if (!ticket.turn_blocked) {
           ticket.approve
           accepted_commoners += ticket
           waiting_agents -= ticket
+          candidates -= ticket
+          changed = true
         }
       }
     }
@@ -51,7 +62,9 @@ class CommonCasePolicy(intersection: Intersection,
     // TODO how to use ordering to do diff stuff than from normal?
     // TODO looking ahead is unfair to waiting people...
     // Now admit rare agents who're ready and wouldn't interrupt an accepted
-    // commoner.
+    // commoner. We don't need to do a fixpoint here, since is_ready demands
+    // they be the head of their queue. We're really not nice to rare turns;
+    // they've got to act like a stop sign.
     for (ticket <- waiting_agents) {
       if (!common_turns.contains(ticket.turn) && is_ready(ticket.a) &&
           !commoner_blocks(ticket.turn) && !rare_blocks(ticket.turn))
