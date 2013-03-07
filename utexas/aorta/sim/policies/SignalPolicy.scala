@@ -5,7 +5,7 @@
 package utexas.aorta.sim.policies
 
 import scala.collection.mutable.{HashSet => MutableSet}
-import scala.collection.mutable.ListBuffer
+import scala.collection.mutable.{ListBuffer, TreeSet}
 
 import utexas.aorta.map.{Turn, Vertex, Edge}
 import utexas.aorta.sim.{Intersection, Policy, Agent, EV_Signal_Change,
@@ -120,7 +120,12 @@ class SignalPolicy(intersection: Intersection,
   private def could_make_light(a: Agent, far_away: Double): Boolean = {
     // TODO choose a policy. tend to accept and let delay creep in, or ban
     // people who could've made it in order to stay on schedule?
-    return true
+
+    // No control, admit everyone?
+    //return true
+
+    // Simple heuristic: can we make it in time at the speed limit?
+    return far_away / a.at.on.speed_limit < time_left
 
     // if our worst-case speeding-up distance still lets us back out and stop,
     // then fine, allow it. <-- the old policy
@@ -167,8 +172,7 @@ object Phase {
   // Least number of phases can be modeled as graph coloring, but we're just
   // going to do a simple greedy approach.
   def arbitrary_phases(vert: Vertex): List[Phase] = {
-    // TODO needs to be sorted for determinism
-    val turns_remaining = new MutableSet[Turn]()
+    val turns_remaining = new TreeSet[Turn]()
     turns_remaining ++= vert.turns
 
     val groups = new ListBuffer[Set[Turn]]()
