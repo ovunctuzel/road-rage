@@ -515,17 +515,23 @@ object ScenarioTool {
         case "--all_verts" => {
           val params = slurp_params
 
-          val policy = IntersectionType.withName(
-            params.getOrElse("policy", cfg.policy)
-          )
-          val ordering = OrderingType.withName(
-            params.getOrElse("ordering", cfg.ordering)
-          )
+          params.get("policy") match {
+            case Some(name) => {
+              val p = IntersectionType.withName(name)
+              Util.log(s"Changing all intersections to $p")
+              s = s.copy(intersections = s.intersections.map(_.copy(policy = p)))
+            }
+            case None =>
+          }
 
-          Util.log(s"Changing all intersections to $policy with $ordering ordering")
-          s = s.copy(intersections = IntersectionDistribution.uniform(
-            graph, Array(policy), Array(ordering)
-          ))
+          params.get("ordering") match {
+            case Some(name) => {
+              val o = OrderingType.withName(name)
+              Util.log(s"Changing all intersections to use $o ordering")
+              s = s.copy(intersections = s.intersections.map(_.copy(ordering = o)))
+            }
+            case None =>
+          }
         }
         case _ => dump_usage
       }

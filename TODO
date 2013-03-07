@@ -5,16 +5,16 @@
 - get several maps, and tuned params/sizes foreach.
   - manually mark danger areas of each map, diff behavior there?
 - compatible serialization
+- bug: illegal entry when everythings reservation in BTR
 
 - configure system bids in scenarios
   - parameters
-  - which are active, if drivers can bid
-- even demand wallets
+  - which are active
 - system bid: penalty if not much capacity
 - system bid: bonus to long-waiting group
+- system bid: far-off people
 - commoncase auctions and system bid
   - reservation with certain system bid for compatible turns
-- handle ties
 
 # Easy Parallelization
 - PARALLEL DETERMINISM INVALID: queue avail_slots
@@ -101,10 +101,18 @@
   - but cant get from every incoming road to every outgoing road... can we?
 
 # Intersection Policies
-- bug: two tickets at an intersection
 - backpressure light optimization
-- agents should tell intersections in advance when they know
-  - the edge case when we intend to stop
+- fix fastpaths, not hard
+- do it faster with invariants, look at just the next guy
+  - BUT we can be route-done, but have somebody blocking in front of us
+    initially. so in that case, search forward?
+    - this only happens because we join a queue without demanding invariants of
+      stuff in front of us
+- make new stuff faster, mark when first elgiible or something with very
+  powerful FPs
+  - aka candidate list can be greatly narrowed, or ordered
+- move queue query stuff elsewhere
+- refactor candidates/waiting_agents->queue/accepted_agents stuff.
 
 # Scaling
 - tighten memory usage, although 1GB supports 1 million agents
