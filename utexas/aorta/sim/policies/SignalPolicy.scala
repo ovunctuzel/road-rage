@@ -9,7 +9,7 @@ import scala.collection.mutable.{ListBuffer, TreeSet}
 
 import utexas.aorta.map.{Turn, Vertex, Edge}
 import utexas.aorta.sim.{Intersection, Policy, Agent, EV_Signal_Change,
-                         IntersectionType}
+                         IntersectionType, Ticket}
 import utexas.aorta.sim.market.IntersectionOrdering
 
 import utexas.aorta.{Util, Common, cfg}
@@ -55,12 +55,22 @@ class SignalPolicy(intersection: Intersection,
 
     // Accept new agents into the current phase
     if (!in_overtime) {
-      for (ticket <- waiting_agents) {
-        if (current_phase.has(ticket.turn) && could_make_light(ticket.a, ticket.a.how_far_away(intersection))) {
+      // Because we have to maintain turn invariants as we accept, do a fixpoint
+      // approach and accept till there's nobody left that we can.
+      val candidates = new TreeSet[Ticket]()
+      candidates ++= waiting_agents.filter(
+        ticket => current_phase.has(ticket.turn) && could_make_light(ticket.a, ticket.a.how_far_away(intersection))
+      )
+      var changed = true
+      while (changed && candidates.nonEmpty) {
+        changed = false
+        for (ticket <- candidates) {
           if (!ticket.turn_blocked) {
             ticket.approve
             accepted_agents += ((ticket.a, ticket.turn))
             waiting_agents -= ticket
+            candidates -= ticket
+            changed = true
           }
         }
       }
