@@ -220,7 +220,7 @@ class Agent(val id: Int, val route: Route, val rng: RNG, wallet_spec: MkWallet) 
     val intersection = target.to.intersection
     return !target.queue.all_agents.find(
       agent => agent.at.dist < at.dist && agent.wont_block(intersection)
-    ).isDefined
+    ).isDefined && !target.dont_block
   }
 
   def can_lc_without_hitting_head(target: Edge): Boolean = {

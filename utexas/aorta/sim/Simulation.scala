@@ -138,7 +138,7 @@ class Simulation(val graph: Graph, scenario: Scenario)
         if (!spawn.a.route.done(spawn.e))
           spawn.e.queue.all_agents.find(
             agent => agent.at.dist < spawn.dist && agent.wont_block(intersection)
-          ).isDefined
+          ).isDefined || spawn.e.dont_block
         else
           false
       if (will_block) {

@@ -106,6 +106,11 @@ class Edge(var id: Int, val road: Road, val dir: Direction.Value)
   )
 
   def ok_to_lanechange = length >= cfg.lanechange_dist + cfg.end_threshold
+
+  // If true, somebody's turning into this lane and already has a turn secured.
+  def dont_block() = from.intersection.policy.approveds_to(this).find(
+    a => a.wont_block(from.intersection)
+  ).isDefined
 }
 
 object Direction extends Enumeration {
