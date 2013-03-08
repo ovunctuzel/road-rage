@@ -96,7 +96,7 @@ class AuctionOrdering[T <: Ordered[T]]() extends IntersectionOrdering[T]() {
     }
     // Now sort by sum. As long as this is a stable sort, fine.
     // (Lotsa type nonsense when I try to do this in one go.)
-    val sums = sums_by_item.sortBy(pair => pair._2)
+    val sums = sums_by_item.sortBy(pair => pair._2).reverse
 
     val winner = sums.head._1
 
@@ -124,15 +124,15 @@ class AuctionOrdering[T <: Ordered[T]]() extends IntersectionOrdering[T]() {
   }
 
   // A group splits some cost somehow.
-  private def pay(who: Iterable[Bid[T]], total: Double) = {
+  private def pay(who: Iterable[Bid[T]], total_runnerup: Double) = {
     // Direct payment... all the winners pay their full bid.
     //who.foreach(bid => bid.who.spend(bid.amount, bid.purpose))
 
     // Proportional payment... Each member of the winner pays proportional to
     // what they bid.
     val total_winners = who.map(_.amount).sum
-    val rate = total / total_winners
-    Util.assert_ge(total_winners, total)
+    Util.assert_ge(total_winners, total_runnerup)
+    val rate = total_runnerup / total_winners
     who.foreach(
       bid => bid.who.spend(bid.amount * rate, bid.purpose)
     )

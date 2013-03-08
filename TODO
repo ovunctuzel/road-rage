@@ -12,7 +12,6 @@
   - parameters
   - which are active
 - system bid: bonus to long-waiting group
-- system bid: far-off people
 - commoncase auctions and system bid
   - reservation with certain system bid for compatible turns
 

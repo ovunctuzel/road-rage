@@ -59,7 +59,7 @@ class SignalPolicy(intersection: Intersection,
       // approach and accept till there's nobody left that we can.
       val candidates = new TreeSet[Ticket]()
       candidates ++= waiting_agents.filter(
-        ticket => current_phase.has(ticket.turn) && could_make_light(ticket.a, ticket.a.how_far_away(intersection))
+        ticket => current_phase.has(ticket.turn) && could_make_light(ticket)
       )
       var changed = true
       while (changed && candidates.nonEmpty) {
@@ -127,7 +127,7 @@ class SignalPolicy(intersection: Intersection,
 
   // If we admit agents that run up overtime, that's safe but adds to our delay
   // and makes the light unfair.
-  private def could_make_light(a: Agent, far_away: Double): Boolean = {
+  private def could_make_light(ticket: Ticket): Boolean = {
     // TODO choose a policy. tend to accept and let delay creep in, or ban
     // people who could've made it in order to stay on schedule?
 
@@ -135,7 +135,7 @@ class SignalPolicy(intersection: Intersection,
     //return true
 
     // Simple heuristic: can we make it in time at the speed limit?
-    return far_away / a.at.on.speed_limit < time_left
+    return ticket.time_till_arrival < time_left
 
     // if our worst-case speeding-up distance still lets us back out and stop,
     // then fine, allow it. <-- the old policy

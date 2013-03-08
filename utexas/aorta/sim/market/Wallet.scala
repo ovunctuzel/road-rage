@@ -193,8 +193,12 @@ object SystemWallets {
   val capacity_threshold = .75
   val capacity_bonus = 3.00
 
+  val far_away = new SystemWallet()
+  val time_rate = 3.00
+
   def meta_bid[T](items: List[T], policy: Policy): List[Bid[T]] =
-    bid_thruput(items, policy) ++ bid_pointless_impatience(items, policy)
+    (bid_thruput(items, policy) ++ bid_pointless_impatience(items, policy) ++
+     bid_far_away(items, policy))
 
   // Promote bids that don't conflict
   def bid_thruput[T](items: List[T], policy: Policy) = policy match {
@@ -218,5 +222,18 @@ object SystemWallets {
       else
         None
     })
+  }
+
+  // Stop signs and signals already take this into account. Help reservations by
+  // penalizing people the farther away they are from doing their turn.
+  def bid_far_away[T](items: List[T], policy: Policy) = policy match {
+    case _: ReservationPolicy =>
+      for (ticket <- items)
+        yield Bid(
+          far_away, ticket,
+          time_rate / ticket.asInstanceOf[Ticket].time_till_arrival, null
+        )
+
+    case _ => Nil
   }
 }
