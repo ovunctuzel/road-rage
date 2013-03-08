@@ -187,14 +187,14 @@ object SystemWallets {
   // Keep these separate just for book-keeping
 
   val thruput = new SystemWallet()
-  val thruput_bonus = 3.00
+  val thruput_bonus = 5.00
 
   val capacity = new SystemWallet()
   val capacity_threshold = .75
-  val capacity_bonus = 3.00
+  val capacity_bonus = 2.00
 
   val far_away = new SystemWallet()
-  val time_rate = 3.00
+  val time_rate = 2.00
 
   def meta_bid[T](items: List[T], policy: Policy): List[Bid[T]] =
     (bid_thruput(items, policy) ++ bid_pointless_impatience(items, policy) ++

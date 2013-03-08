@@ -116,6 +116,9 @@ class Ticket(val a: Agent, val turn: Turn) extends Ordered[Ticket] {
 
   def is_approved = stat.accept_tick != -1.0
 
+  // If we interrupt a reservation successfully, don't let people block us.
+  var is_interruption = false
+
   // TODO remember number of agents in front, etc
 
   // To enforce liveness, policies shouldn't accept a turn that can't certainly

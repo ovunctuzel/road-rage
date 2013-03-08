@@ -54,7 +54,7 @@ class Agent(val id: Int, val route: Route, val rng: RNG, wallet_spec: MkWallet) 
   def involved_with(i: Intersection) = tickets.contains(i)
   // If true, we will NOT block when trying to proceed past this intersection
   def wont_block(i: Intersection) = tickets.get(i) match {
-    case Some(ticket) => ticket.is_approved
+    case Some(ticket) => ticket.is_approved || ticket.is_interruption
     case None => at.on match {
       // We won't block any intersection if we're about to vanish
       case e: Edge if route.done(e) => true

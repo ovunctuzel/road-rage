@@ -32,6 +32,8 @@ class ReservationPolicy(intersection: Intersection,
   // Prevent more from being accepted until this ticket is approved.
   private var interruption: Option[Ticket] = None
 
+  // TODO and are reasonably close? otherwise somebody who looks ahead a tick
+  // earlier than another gets an advantage, even if theyre really far away
   private def candidates = queue.filter(ticket => !ticket.turn_blocked)
 
   def react(): Unit = {
@@ -66,6 +68,7 @@ class ReservationPolicy(intersection: Intersection,
           // Admit them immediately and continue, or reserve an interruption?
           if (accepted_conflicts(ticket.turn)) {
             interruption = Some(ticket)
+            ticket.is_interruption = true
             return
           } else {
             ticket.approve
