@@ -8,8 +8,6 @@ import swing._  // TODO figure out exactly what
 import java.awt.{Color, Component}
 import swing.Dialog
 import javax.swing.WindowConstants
-import info.monitorenter.gui.chart.Chart2D
-import info.monitorenter.gui.chart.traces.Trace2DLtd
 
 import utexas.aorta.sim.Simulation
 import utexas.aorta.{Util, cfg}
@@ -108,16 +106,6 @@ object Viewer extends SimpleSwingApplication {
     // TODO and option to hide the panel
   }
 
-  val chart = new Chart2D
-  // Remember enough points for the last 2 minutes
-  // TODO tweak more chart stuff
-  val chart_data = new Trace2DLtd((120.0 / cfg.dt_s).toInt)
-  chart_data.setColor(Color.RED)
-  chart.addTrace(chart_data)
-  chart.setMinPaintLatency(1000)  // only one redraw per second
-  chart.getAxisX.getAxisTitle.setTitle("Time (s)")
-  chart.getAxisY.getAxisTitle.setTitle("Number of agents")
-
   private var headless = false
   var closed = false
 
@@ -213,17 +201,6 @@ object Viewer extends SimpleSwingApplication {
 
     // TODO toggle between helper and other stuff in right pane
     val main_content = canvas_2d
-    /*new SplitPane(
-      Orientation.Vertical,
-      new scala.swing.Component {
-        override lazy val peer = new javax.swing.JComponent {
-          add(canvas_3d.canvas)
-        }
-      },
-      canvas_2d
-      new scala.swing.Component {
-        override lazy val peer = chart
-      }*/
 
     contents = new BorderPanel {
       background = Color.LIGHT_GRAY

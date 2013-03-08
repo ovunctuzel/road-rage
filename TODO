@@ -5,6 +5,7 @@
 - get several maps, and tuned params/sizes foreach.
   - manually mark danger areas of each map, diff behavior there?
 - compatible serialization
+- run_for cutoff time, handling unfinished agents appropriately
 - bug: illegal entry when everythings reservation in BTR
 
 - configure system bids in scenarios

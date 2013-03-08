@@ -534,7 +534,6 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
                  else
                    " [Paused]"
       status.update_speed(sim)
-      update_plot
       repaint
     }
     case "toggle-running" => {
@@ -819,12 +818,6 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
     // in each group.
     route_members = route.map(_.road).toSet
     repaint
-  }
-
-  def update_plot() = {
-    // TODO plot multiple things, or let the user select, etc.
-    // TODO and we should own the chart, not viewer.
-    Viewer.chart_data.addPoint(sim.tick, sim.agents.size)
   }
 }
 
