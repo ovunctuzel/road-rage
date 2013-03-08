@@ -196,9 +196,12 @@ object SystemWallets {
   val far_away = new SystemWallet()
   val time_rate = 2.00
 
+  val dependency = new SystemWallet()
+  val dependency_rate = 0.50
+
   def meta_bid[T](items: List[T], policy: Policy): List[Bid[T]] =
     (bid_thruput(items, policy) ++ bid_pointless_impatience(items, policy) ++
-     bid_far_away(items, policy))
+     bid_far_away(items, policy) ++ bid_dependency(items, policy))
 
   // Promote bids that don't conflict
   def bid_thruput[T](items: List[T], policy: Policy) = policy match {
@@ -235,5 +238,27 @@ object SystemWallets {
         )
 
     case _ => Nil
+  }
+
+  // Reward the lane with the most people.
+  // TODO for full queues, recursing to find ALL dependency would be cool.
+  def bid_dependency[T](items: List[T], policy: Policy) = policy match {
+    case p: SignalPolicy =>
+      for (phase <- items)
+        yield Bid(dependency, phase, dependency_rate * num_phase(phase), null)
+    case _ =>
+      // Just bid for the head of the queue, aka, for multi-auction
+      // reservations, just start things right.
+      for (ticket <- items)
+        yield Bid(dependency, ticket, dependency_rate * num_ticket(ticket), null)
+  }
+  private def num_phase(phase: Any) =
+    phase.asInstanceOf[Phase].turns.map(_.from.queue.agents.size).sum
+  private def num_ticket(ticket: Any): Int = {
+    val t = ticket.asInstanceOf[Ticket]
+    return if (t.a.cur_queue.head.get == t.a)
+      t.turn.from.queue.all_in_range(0.0, t.a.at.dist).size
+    else
+      0
   }
 }
