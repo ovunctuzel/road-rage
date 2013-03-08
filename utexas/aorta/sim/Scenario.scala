@@ -409,6 +409,12 @@ object ScenarioTool {
           val old_v = s.intersections(id)
           Util.assert_eq(old_v.id, id)
           val params = slurp_params
+          val bad_params = params.keys.toSet.diff(Set("policy", "ordering"))
+          if (!bad_params.isEmpty) {
+            Util.log(s"$bad_params aren't valid params for --vert")
+            sys.exit
+          }
+
           val new_v = old_v.copy(
             policy = IntersectionType.withName(
               params.getOrElse("policy", old_v.policy.toString)
@@ -427,6 +433,13 @@ object ScenarioTool {
           val old_a = s.agents(id)
           Util.assert_eq(old_a.id, id)
           val params = slurp_params
+          val bad_params = params.keys.toSet.diff(Set(
+            "start", "time", "route", "end", "wallet", "budget"
+          ))
+          if (!bad_params.isEmpty) {
+            Util.log(s"$bad_params aren't valid params for --agent")
+            sys.exit
+          }
 
           // Preserve the original spawning distance, or choose an appropriate
           // new one
@@ -468,6 +481,14 @@ object ScenarioTool {
         case "--spawn" => {
           val number = shift_args.toInt
           val params = slurp_params
+          val bad_params = params.keys.toSet.diff(Set(
+            "start", "end", "time", "generations", "lifetime", "route",
+            "wallet", "budget"
+          ))
+          if (!bad_params.isEmpty) {
+            Util.log(s"$bad_params aren't valid params for --spawn")
+            sys.exit
+          }
 
           val starts = params.get("start") match {
             case Some(e) => Array(graph.edges(e.toInt))
@@ -514,6 +535,11 @@ object ScenarioTool {
         // --all_verts policy=StopSign ordering=FIFO
         case "--all_verts" => {
           val params = slurp_params
+          val bad_params = params.keys.toSet.diff(Set("policy", "ordering"))
+          if (!bad_params.isEmpty) {
+            Util.log(s"$bad_params aren't valid params for --all_verts")
+            sys.exit
+          }
 
           params.get("policy") match {
             case Some(name) => {
