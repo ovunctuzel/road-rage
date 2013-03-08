@@ -10,7 +10,6 @@
 - configure system bids in scenarios
   - parameters
   - which are active
-- system bid: penalty if not much capacity
 - system bid: bonus to long-waiting group
 - system bid: far-off people
 - commoncase auctions and system bid

@@ -7,7 +7,7 @@ package utexas.aorta.sim.market
 import utexas.aorta.sim.{Agent, Ticket, WalletType, Policy, IntersectionType,
                          Route_Event, EV_Transition, EV_Reroute, OrderingType}
 import utexas.aorta.map.{Turn, Vertex}
-import utexas.aorta.sim.policies.{Phase, ReservationPolicy}
+import utexas.aorta.sim.policies.{Phase, ReservationPolicy, SignalPolicy}
 
 import utexas.aorta.{Util, cfg}
 
@@ -20,7 +20,7 @@ abstract class Wallet(a: Agent, initial_budget: Double) {
   def spend(amount: Double, ticket: Ticket) = {
     Util.assert_ge(budget, amount)
     budget -= amount
-    ticket.stat = ticket.stat.copy(cost_paid = amount)
+    ticket.stat = ticket.stat.copy(cost_paid = amount + ticket.stat.cost_paid)
   }
 
   // How much is this agent willing to spend on some choice?
@@ -185,17 +185,38 @@ class SystemWallet() extends Wallet(null, 0.0) {
 
 object SystemWallets {
   // Keep these separate just for book-keeping
+
   val thruput = new SystemWallet()
-  // TODO by how much?
   val thruput_bonus = 3.00
 
-  def meta_bid[T](items: List[T], policy: Policy) = policy match {
-    case p: ReservationPolicy => bid_thruput(items, p)
+  val capacity = new SystemWallet()
+  val capacity_threshold = .75
+  val capacity_bonus = 3.00
+
+  def meta_bid[T](items: List[T], policy: Policy): List[Bid[T]] =
+    bid_thruput(items, policy) ++ bid_pointless_impatience(items, policy)
+
+  // Promote bids that don't conflict
+  def bid_thruput[T](items: List[T], policy: Policy) = policy match {
+    case p: ReservationPolicy =>
+      for (ticket <- items if !p.accepted_conflicts(ticket.asInstanceOf[Ticket].turn))
+        yield Bid(thruput, ticket, thruput_bonus, null)
+
     case _ => Nil
   }
 
-  // Promote bids that don't conflict
-  def bid_thruput[T](items: List[T], policy: ReservationPolicy) =
-    for (ticket <- items if !policy.accepted_conflicts(ticket.asInstanceOf[Ticket].turn))
-      yield Bid(thruput, ticket, thruput_bonus, null)
+  // Reward individual tickets that aren't trying to rush into a queue already
+  // filled to some percentage of its capacity
+  def bid_pointless_impatience[T](items: List[T], policy: Policy) = policy match
+  {
+    // TODO maybe look at all target queues for the phase?
+    case _: SignalPolicy => Nil
+    case _ => items.flatMap(ticket => {
+      val target = ticket.asInstanceOf[Ticket].turn.to.queue
+      if (target.avail_slots / target.capacity.toDouble < capacity_threshold)
+        Some(Bid(capacity, ticket, capacity_bonus, null))
+      else
+        None
+    })
+  }
 }

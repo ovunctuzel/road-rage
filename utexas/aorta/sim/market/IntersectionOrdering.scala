@@ -90,6 +90,10 @@ class AuctionOrdering[T <: Ordered[T]]() extends IntersectionOrdering[T]() {
     val sums_by_item: List[(T, Double)] = bids.keys.map(
       t => (t, bids(t).map(_.amount).sum)
     ).toList.sortBy(pair => pair._1)
+    if (sums_by_item.tail.isEmpty) {
+      // Actually, just one choice. Freebie!
+      return sums_by_item.head._1
+    }
     // Now sort by sum. As long as this is a stable sort, fine.
     // (Lotsa type nonsense when I try to do this in one go.)
     val sums = sums_by_item.sortBy(pair => pair._2)
@@ -128,6 +132,7 @@ class AuctionOrdering[T <: Ordered[T]]() extends IntersectionOrdering[T]() {
     // what they bid.
     val total_winners = who.map(_.amount).sum
     val rate = total / total_winners
+    Util.assert_ge(total_winners, total)
     who.foreach(
       bid => bid.who.spend(bid.amount * rate, bid.purpose)
     )

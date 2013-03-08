@@ -104,7 +104,7 @@ class Ticket(val a: Agent, val turn: Turn) extends Ordered[Ticket] {
 
   // Don't initially know: accept_tick, done_tick, cost_paid.
   // TODO keep state, dont shuffle it into this >_<
-  var stat = Turn_Stat(a.id, turn.vert.id, Common.tick, -1.0, -1.0, -1.0)
+  var stat = Turn_Stat(a.id, turn.vert.id, Common.tick, -1.0, -1.0, 0.0)
 
   def approve() = {
     stat = stat.copy(accept_tick = Common.tick)
