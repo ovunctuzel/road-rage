@@ -4,14 +4,13 @@
 
 - get several maps, and tuned params/sizes foreach.
   - manually mark danger areas of each map, diff behavior there?
+  - tune system bids... interruptions in reservation are terrible
 - compatible serialization
 - run_for cutoff time, handling unfinished agents appropriately
 - bug: illegal entry when everythings reservation in BTR
 
 - configure system bids in scenarios
-  - parameters
-  - which are active
-- system bid: bonus to long-waiting group
+  - parameters (and thus which are active)
 - system bid: bonus to reservation if i'll take the same time as somebody else
 - commoncase auctions and system bid
   - reservation with certain system bid for compatible turns

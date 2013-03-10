@@ -155,6 +155,12 @@ class Phase(val turns: Set[Turn], val offset: Double, val duration: Double)
   }
 
   def has(turn: Turn) = turns(turn)
+
+  def all_agents = turns.flatMap(_.from.queue.all_agents)
+  def all_tickets: Set[Ticket] = {
+    val i = turns.head.vert.intersection
+    return all_agents.flatMap(a => a.tickets.get(i))
+  }
 }
 
 object Phase {

@@ -119,7 +119,14 @@ class Ticket(val a: Agent, val turn: Turn) extends Ordered[Ticket] {
   // If we interrupt a reservation successfully, don't let people block us.
   var is_interruption = false
 
-  // TODO remember number of agents in front, etc
+  // When our turn first becomes not blocked while we're stopped, start the
+  // timer.
+  var waiting_since = -1.0
+  def how_long_waiting =
+    if (waiting_since == -1.0)
+      0.0
+    else
+      Common.tick - waiting_since
 
   // To enforce liveness, policies shouldn't accept a turn that can't certainly
   // be finished. Once a turn is accepted, lane-changing and spawning and such
@@ -152,6 +159,9 @@ class Ticket(val a: Agent, val turn: Turn) extends Ordered[Ticket] {
     }
 
     // We're clear!
+    if (waiting_since == 1.0 && a.speed == 0.0) {
+      waiting_since = Common.tick
+    }
     return false
 
     // Perform gridlock detection!

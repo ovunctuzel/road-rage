@@ -199,9 +199,13 @@ object SystemWallets {
   val dependency = new SystemWallet()
   val dependency_rate = 0.50
 
+  val waiting = new SystemWallet()
+  val waiting_rate = 0.01
+
   def meta_bid[T](items: List[T], policy: Policy): List[Bid[T]] =
     (bid_thruput(items, policy) ++ bid_pointless_impatience(items, policy) ++
-     bid_far_away(items, policy) ++ bid_dependency(items, policy))
+     bid_far_away(items, policy) ++ bid_dependency(items, policy) ++
+     bid_waiting(items, policy))
 
   // Promote bids that don't conflict
   def bid_thruput[T](items: List[T], policy: Policy) = policy match {
@@ -261,4 +265,19 @@ object SystemWallets {
     else
       0
   }
+
+  // Help drivers who've been waiting the longest.
+  def bid_waiting[T](items: List[T], policy: Policy) = policy match {
+    case p: SignalPolicy =>
+      for (phase <- items)
+        yield Bid(dependency, phase, waiting_rate * waiting_phase(phase), null)
+    case _ =>
+      for (ticket <- items)
+        yield Bid(
+          dependency, ticket,
+          waiting_rate * ticket.asInstanceOf[Ticket].how_long_waiting, null
+        )
+  }
+  private def waiting_phase(phase: Any) =
+    phase.asInstanceOf[Phase].all_tickets.map(_.how_long_waiting).sum
 }
