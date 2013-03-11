@@ -1,0 +1,29 @@
+#!/bin/bash
+# Must be run from the base AORTA directory, eg,
+# ./tools/auction_experiment big_btr 7500
+
+MAP=$1
+SPAWN_PER_HOUR=$2
+GENERATIONS="3"
+
+if [[ -z $MAP || -z $SPAWN_PER_HOUR ]]; then
+  echo "Usage: ./tools/auction_experiment big_btr 7500"
+  exit
+fi
+
+# Create the base scenario
+BASE="scenarios/experiment/${MAP}"
+mkdir -p scenarios/experiment
+./experiment maps/${MAP}.map --spawn ${SPAWN_PER_HOUR} delay=3600 \
+  generations=${GENERATIONS} lifetime=3600 --out ${BASE}-fifo
+
+# Then make all the derivates
+./experiment ${BASE}-fifo --out ${BASE}-auction-sys --all_verts ordering=Auction
+./experiment ${BASE}-auction-sys --out ${BASE}-auction-no-sys --cfg_wallets \
+  thruput_bonus=0 capacity_threshold=0 capacity_bonus=0 time_rate=0 \
+  dependency_rate=0 waiting_rate=0
+./experiment ${BASE}-auction-no-sys --out ${BASE}-equal --all_agents \
+  wallet=Static budget=1.0
+
+# TODO equal bids plus system
+# TODO all one type of policy
