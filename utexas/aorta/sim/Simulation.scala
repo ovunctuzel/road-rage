@@ -34,9 +34,10 @@ class Simulation(val graph: Graph, scenario: Scenario)
   def vertices = graph.vertices
   def edges = graph.edges
 
-  // TODO if we have a viral event that's making more and more agents, then we
-  // need a time_limit
-  def done = agents.isEmpty && ready_to_spawn.isEmpty && events_done
+  // TODO move time limit to scenarios?
+  def done =
+    (agents.isEmpty && ready_to_spawn.isEmpty && events_done) ||
+    (Common.time_limit != -1.0 && tick > Common.time_limit)
 
   // Added by a queue that does an in-place check and thinks there could be an
   // issue.

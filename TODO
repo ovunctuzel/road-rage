@@ -6,7 +6,6 @@
   - manually mark danger areas of each map, diff behavior there?
   - tune system bids... interruptions in reservation are terrible
 - compatible serialization
-- run_for cutoff time, handling unfinished agents appropriately
 - bug: illegal entry when everythings reservation in BTR
 
 - system bid: bonus to reservation if i'll take the same time as somebody else

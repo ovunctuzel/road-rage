@@ -88,7 +88,7 @@ object Util {
     for ((key, value) <- keys.zip(vals)) {
       key match {
         case "--log" => { Stats.setup_logging(value) }
-        // TODO case "--run_for" => { run_for = value.toDouble }
+        case "--time_limit" => { Common.time_limit = value.toDouble }
         case cfg_prefix(param) => cfg.get_param_method(param) match {
           case Some(method) => {
             val param_type = method.getParameterTypes.head
@@ -266,6 +266,7 @@ object Common {
 
   var sim: utexas.aorta.sim.Simulation = null
   def tick = sim.tick
+  var time_limit = -1.0
 
   def timer(name: String) = new Timer(name)
 

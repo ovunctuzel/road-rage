@@ -11,9 +11,6 @@ import utexas.aorta.ui.{MapCanvas, Viewer, EV_Action}
 import utexas.aorta.{Util, Common, cfg}
 
 object Headless {
-  // cut off some simulations by time
-  var run_for: Double = -1.0
-
   def main(args: Array[String]): Unit = {
     val sim = Util.process_args(args)
 
@@ -56,15 +53,9 @@ object Headless {
       case _ =>
     } })
 
-    // TODO move to sim
-    def done() = if (run_for == -1.0)
-                   sim.done
-                 else
-                   sim.tick >= run_for
-
     Util.log("Starting simulation with time-steps of " + cfg.dt_s + "s")
     val t = Common.timer("headless simulation")
-    while (!done) {
+    while (!sim.done) {
       sim.step(cfg.dt_s)
     }
     t.stop
