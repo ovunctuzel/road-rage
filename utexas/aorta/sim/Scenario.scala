@@ -580,6 +580,28 @@ object ScenarioTool {
             case None =>
           }
         }
+        // --all_agents wallet=Random budget=1.0
+        case "--all_agents" => {
+          val params = slurp_params
+          val bad_params = params.keys.toSet.diff(Set("wallet", "budget"))
+          if (!bad_params.isEmpty) {
+            Util.log(s"$bad_params aren't valid params for --all_agents")
+            sys.exit
+          }
+
+          // TODO support all options. for now, these are the ones I need.
+          Util.log(s"Changing all agents: $params")
+          s = s.copy(agents = s.agents.map(a => a.copy(
+            wallet = a.wallet.copy(
+              policy = WalletType.withName(
+                params.getOrElse("wallet", a.wallet.policy.toString)
+              ),
+              budget = params.getOrElse(
+                "budget", a.wallet.budget.toString
+              ).toDouble
+            )
+          )))
+        }
         case "--cfg_wallets" => {
           val params = slurp_params
           val bad_params = params.keys.toSet.diff(Set(
