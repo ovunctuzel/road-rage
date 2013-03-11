@@ -372,10 +372,10 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
       Color.WHITE
 
   def color_agent(a: Agent): Color = current_obj match {
-    case Some(v: Vertex) => a.tickets.get(v.intersection) match {
-      case Some(ticket) if ticket.is_approved => Color.GREEN
-      case Some(ticket) if !ticket.is_approved => Color.RED
-      case None => Color.GRAY
+    case Some(v: Vertex) => a.all_tickets(v.intersection).toList match {
+      case Nil => Color.GRAY
+      case ls if ls.find(_.is_approved).isDefined => Color.GREEN
+      case _ => Color.RED
     }
     case _ => camera_agent match {
       case Some(agent) if a == agent => Color.WHITE

@@ -259,10 +259,12 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
     step.at match {
       case e: Edge if !route.done(e) && committed_to_lane(step) => {
         val i = e.to.intersection
+        // TODO for multiple tickets at the same intersection... technically
+        // should see if the specific ticket exists yet.
         if (!a.involved_with(i)) {
           val next_turn = route.pick_turn(e)
           val ticket = new Ticket(a, next_turn)
-          a.tickets(i) = ticket
+          a.tickets += ticket
           i.request_turn(ticket)
         }
       }
@@ -293,7 +295,7 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
         false
       }
       // Otherwise, ask the intersection
-      case e: Edge => a.tickets.get(e.to.intersection) match {
+      case e: Edge => a.get_ticket(route.pick_turn(e)) match {
         case Some(ticket) => ticket.is_approved
         case None => false
       }

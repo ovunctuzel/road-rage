@@ -25,10 +25,9 @@ class ReservationPolicy(intersection: Intersection,
   private val queue = new MutableQueue[Ticket]()
 
   private val accepted = new MutableSet[Ticket]()
-  private def accepted_agent(a: Agent) = accepted.find(t => t.a == a).isDefined
   def accepted_conflicts(turn: Turn)
     = accepted.find(t => t.turn.conflicts_with(turn)).isDefined
-  def approveds_to(e: Edge) = accepted.filter(_.turn.to == e).map(_.a)
+  def approveds_to(e: Edge) = accepted.filter(_.turn.to == e)
   // Prevent more from being accepted until this ticket is approved.
   private var interruption: Option[Ticket] = None
 
@@ -80,12 +79,11 @@ class ReservationPolicy(intersection: Intersection,
     }
   }
 
-  def validate_entry(a: Agent, turn: Turn) =
-    accepted.find(t => t.a == a && t.turn == turn).isDefined
+  def validate_entry(ticket: Ticket) = accepted.contains(ticket)
 
-  def handle_exit(a: Agent, t: Turn) = {
-    accepted.retain(t => t.a != a)
-    queue.dequeueFirst((ticket) => ticket.a == a)
+  def handle_exit(ticket: Ticket) = {
+    accepted -= ticket
+    queue.dequeueFirst((t) => t == ticket)
   }
 
   def current_greens = accepted.map(_.turn).toSet

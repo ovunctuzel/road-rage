@@ -55,7 +55,8 @@ class Intersection(val v: Vertex, policy_type: IntersectionType.Value,
     // a transitive relation?
   }
 
-  def enter(a: Agent, t: Turn) = {
+  def enter(ticket: Ticket) = {
+    val t = ticket.turn
     if (!turns.contains(t)) {
       // We don't care until there are at least two... and this only changes when
       // we add a new one...
@@ -68,20 +69,21 @@ class Intersection(val v: Vertex, policy_type: IntersectionType.Value,
       turns(t) = 0
     }
     turns(t) += 1
-    if (!policy.validate_entry(a, t)) {
+    if (!policy.validate_entry(ticket)) {
       // Misleading error message. They may be going 0 speed, but the agent step
       // code hasn't finished moving them.
-      Util.log("!!! %s illegally entered %s, going %f m/s".format(a, this, a.speed))
+      Util.log("!!! %s illegally entered %s, going %f m/s".format(ticket.a, this, ticket.a.speed))
       Util.log("  Illegal entry was near " + t.from + " and " + t + " (vert " + t.from.to.id + ")")
       Util.log("  Origin lane length: " + t.from.length + "; time " + Common.tick)
       Util.log("  Happened at " + Common.tick)
-      a.debug
+      ticket.a.debug
       policy.dump_info
       sys.exit
     }
   }
 
-  def exit(a: Agent, t: Turn) = {
+  def exit(ticket: Ticket) = {
+    val t = ticket.turn
     turns(t) -= 1
     if (turns(t) == 0) {
       turns -= t
@@ -90,7 +92,7 @@ class Intersection(val v: Vertex, policy_type: IntersectionType.Value,
         Common.sim.active_intersections -= this
       }
     }
-    policy.handle_exit(a, t)
+    policy.handle_exit(ticket)
   }
 }
 
@@ -101,6 +103,8 @@ class Ticket(val a: Agent, val turn: Turn) extends Ordered[Ticket] {
   override def compare(other: Ticket) =
     implicitly[Ordering[Tuple2[Agent, Turn]]].compare((a, turn), (other.a, other.turn))
   override def toString = s"Ticket($a, $turn, approved? $is_approved)"
+
+  def intersection = turn.vert.intersection
 
   // Don't initially know: accept_tick, done_tick, cost_paid.
   // TODO keep state, dont shuffle it into this >_<
@@ -184,6 +188,7 @@ class Ticket(val a: Agent, val turn: Turn) extends Ordered[Ticket] {
 
       // Where's the head of that stuck queue trying to go?
       current = current.queue.head match {
+        // TODO tickets has changed
         case Some(a) => a.tickets.get(current.to.intersection) match {
           case Some(ticket) => ticket.turn.to
           case None => null
@@ -213,10 +218,11 @@ abstract class Policy(val intersection: Intersection) {
 
   // The intersection grants leases to waiting_agents
   def react(): Unit
-  // TODO insist the client hands us a ticket for entry, exit?
-  def validate_entry(a: Agent, turn: Turn): Boolean
-  def handle_exit(a: Agent, turn: Turn)
-  def approveds_to(target: Edge): Iterable[Agent]
+  // TODO validate_entry, handle_exit, and waiting_agents -> queue are all
+  // almost common. refactor them?
+  def validate_entry(ticket: Ticket): Boolean
+  def handle_exit(ticket: Ticket)
+  def approveds_to(target: Edge): Iterable[Ticket]
   def current_greens(): Set[Turn]
   def dump_info()
   def policy_type(): IntersectionType.Value
@@ -225,8 +231,8 @@ abstract class Policy(val intersection: Intersection) {
 // Simplest base-line ever.
 class NeverGoPolicy(intersection: Intersection) extends Policy(intersection) {
   def react = {}
-  def validate_entry(a: Agent, turn: Turn) = false
-  def handle_exit(a: Agent, turn: Turn) = {}
+  def validate_entry(ticket: Ticket) = false
+  def handle_exit(ticket: Ticket) = {}
   def approveds_to(target: Edge) = Nil
   def current_greens = Set()
   def dump_info = {

@@ -78,17 +78,16 @@ class CommonCasePolicy(intersection: Intersection,
     }
   }
 
-  def validate_entry(a: Agent, turn: Turn) =
-    (accepted_commoners.find(t => t.a == a && t.turn == turn).isDefined ||
-     accepted_rares.find(t => t.a == a && t.turn == turn).isDefined)
+  def validate_entry(ticket: Ticket) =
+    accepted_commoners.contains(ticket) || accepted_rares.contains(ticket)
 
-  def handle_exit(a: Agent, t: Turn) = {
-    accepted_commoners.retain(t => t.a != a)
-    accepted_rares.retain(t => t.a != a)
+  def handle_exit(ticket: Ticket) = {
+    accepted_commoners -= ticket
+    accepted_rares -= ticket
   }
 
   def approveds_to(e: Edge) =
-    (accepted_commoners ++ accepted_rares).filter(t => t.turn.to == e).map(_.a)
+    (accepted_commoners ++ accepted_rares).filter(t => t.turn.to == e)
 
   def current_greens = (accepted_commoners ++ accepted_rares).map(_.turn).toSet
 

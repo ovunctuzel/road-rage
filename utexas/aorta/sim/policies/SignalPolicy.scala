@@ -28,7 +28,7 @@ class SignalPolicy(intersection: Intersection,
   private var started_at = Common.tick
   // accumulated delay for letting vehicles finish turns
   private var delay = 0.0
-  private val accepted_agents = new MutableSet[(Agent, Turn)]
+  private val accepted_agents = new MutableSet[Ticket]
 
   def react() = {
     // TODO Flush out stalled slowpokes that can definitely stop and aren't
@@ -67,7 +67,7 @@ class SignalPolicy(intersection: Intersection,
         for (ticket <- candidates) {
           if (!ticket.turn_blocked) {
             ticket.approve
-            accepted_agents += ((ticket.a, ticket.turn))
+            accepted_agents += ticket
             waiting_agents -= ticket
             candidates -= ticket
             changed = true
@@ -77,14 +77,14 @@ class SignalPolicy(intersection: Intersection,
     }
   }
 
-  def validate_entry(a: Agent, turn: Turn) = accepted_agents.contains((a, turn))
+  def validate_entry(ticket: Ticket) = accepted_agents.contains(ticket)
 
-  def handle_exit(a: Agent, turn: Turn) = {
-    accepted_agents.retain(pair => pair._1 != a)
+  def handle_exit(ticket: Ticket) = {
+    accepted_agents -= ticket
   }
 
   def approveds_to(e: Edge) =
-    accepted_agents.filter(pair => pair._2.to == e).map(_._1)
+    accepted_agents.filter(ticket => ticket.turn.to == e)
 
   def current_greens =
     if (in_overtime)
@@ -98,6 +98,7 @@ class SignalPolicy(intersection: Intersection,
     if (in_overtime) {
       Util.log("Waiting on: " + accepted_agents)
     }
+    Util.log(s"Accepted: $accepted_agents")
     Util.log(s"Waiting agents: $waiting_agents")
   }
   def policy_type = IntersectionType.Signal
@@ -145,6 +146,7 @@ class Phase(val turns: Set[Turn], val offset: Double, val duration: Double)
 {
   // Can only order phases at one intersection! Offsets must be unique!
   override def compare(other: Phase) = offset.compare(other.offset)
+  override def toString = s"Phase($turns, offset $offset, duration $duration)"
 
   Util.assert_ge(offset, 0)
   Util.assert_gt(duration, 0)
@@ -157,7 +159,7 @@ class Phase(val turns: Set[Turn], val offset: Double, val duration: Double)
   def all_agents = turns.flatMap(_.from.queue.all_agents)
   def all_tickets: Set[Ticket] = {
     val i = turns.head.vert.intersection
-    return all_agents.flatMap(a => a.tickets.get(i))
+    return all_agents.flatMap(a => a.all_tickets(i))
   }
 }
 

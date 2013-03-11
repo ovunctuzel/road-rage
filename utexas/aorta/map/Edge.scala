@@ -109,7 +109,7 @@ class Edge(var id: Int, val road: Road, val dir: Direction.Value)
 
   // If true, somebody's turning into this lane and already has a turn secured.
   def dont_block() = from.intersection.policy.approveds_to(this).find(
-    a => a.wont_block(from.intersection)
+    t => t.a.wont_block(from.intersection)
   ).isDefined
 }
 

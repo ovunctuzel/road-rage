@@ -4,7 +4,7 @@
 
 package utexas.aorta.sim
 
-import scala.collection.mutable.{HashMap => MutableMap}
+import scala.collection.mutable.{HashSet => MutableSet}
 
 import utexas.aorta.map.{Edge, Coordinate, Turn, Traversable, Graph, Position}
 import utexas.aorta.sim.market._
@@ -50,16 +50,18 @@ class Agent(val id: Int, val route: Route, val rng: RNG, wallet_spec: MkWallet) 
                       else
                         Common.tick - idle_since
 
-  val tickets = new MutableMap[Intersection, Ticket]()
-  def involved_with(i: Intersection) = tickets.contains(i)
+  val tickets = new MutableSet[Ticket]()
+  def involved_with(i: Intersection) = all_tickets(i).nonEmpty
+  def get_ticket(turn: Turn) = tickets.find(t => t.turn == turn)
+  def all_tickets(i: Intersection) = tickets.filter(t => t.intersection == i)
   // If true, we will NOT block when trying to proceed past this intersection
-  def wont_block(i: Intersection) = tickets.get(i) match {
-    case Some(ticket) => ticket.is_approved || ticket.is_interruption
-    case None => at.on match {
-      // We won't block any intersection if we're about to vanish
-      case e: Edge if route.done(e) => true
-      case _ => false
-    }
+  // TODO if we have multiple here, complicated.
+  def wont_block(i: Intersection) = at.on match {
+    // We won't block any intersection if we're about to vanish
+    case e: Edge if route.done(e) => true
+    case _ => tickets.find(
+      t => t.intersection == i && (t.is_approved || t.is_interruption)
+    ).isDefined
   }
 
   override def toString = "Agent " + id
@@ -157,13 +159,13 @@ class Agent(val id: Int, val route: Route, val rng: RNG, wallet_spec: MkWallet) 
       (current_on, next) match {
         case (e: Edge, t: Turn) => {
           val i = t.vert.intersection
-          i.enter(this, t)
+          i.enter(get_ticket(t).get)
           e.queue.free_slot
         }
         case (t: Turn, e: Edge) => {
-          val i = t.vert.intersection
-          i.exit(this, t)
-          val ticket = tickets.remove(i).get
+          val ticket = get_ticket(t).get
+          tickets.remove(ticket)
+          ticket.intersection.exit(ticket)
           ticket.stat = ticket.stat.copy(done_tick = Common.tick)
           Stats.record(ticket.stat)
         }
@@ -302,7 +304,10 @@ class Agent(val id: Int, val route: Route, val rng: RNG, wallet_spec: MkWallet) 
           case t: Turn => {
             // Tiny destination edge? TODO dont allow this kinda hack...
             t.to.queue.free_slot
-            t.vert.intersection.exit(this, t)
+
+            val ticket = get_ticket(t).get
+            tickets.remove(ticket)
+            ticket.intersection.exit(ticket)
           }
         }
         //Util.assert_eq(at.on.asInstanceOf[Edge].directed_road, route.goal)

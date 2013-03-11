@@ -39,18 +39,15 @@ class StopSignPolicy(intersection: Intersection,
     }
   }
 
-  def validate_entry(agent: Agent, turn: Turn) = current_owner match {
-    case Some(ticket) => ticket.a == agent && ticket.turn == turn
-    case None => false
-  }
+  def validate_entry(ticket: Ticket) = current_owner.getOrElse(null) == ticket
 
-  def handle_exit(a: Agent, turn: Turn) = {
-    Util.assert_eq(current_owner.get.a, a)
+  def handle_exit(ticket: Ticket) = {
+    Util.assert_eq(current_owner.get, ticket)
     current_owner = None
   }
 
   def approveds_to(e: Edge) = current_owner match {
-    case Some(t) if t.turn.to == e => List(t.a)
+    case Some(t) if t.turn.to == e => List(t)
     case _ => Nil
   }
 
