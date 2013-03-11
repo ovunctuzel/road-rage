@@ -9,7 +9,7 @@ import utexas.aorta.sim.{Agent, Ticket, WalletType, Policy, IntersectionType,
 import utexas.aorta.map.{Turn, Vertex}
 import utexas.aorta.sim.policies.{Phase, ReservationPolicy, SignalPolicy}
 
-import utexas.aorta.{Util, cfg}
+import utexas.aorta.{Util, Common, cfg}
 
 // Express an agent's preferences of trading between time and cost.
 // TODO dont require an agent, ultimately
@@ -187,20 +187,20 @@ object SystemWallets {
   // Keep these separate just for book-keeping
 
   val thruput = new SystemWallet()
-  val thruput_bonus = 5.00
+  lazy val thruput_bonus = Common.scenario.system_wallet.thruput_bonus
 
   val capacity = new SystemWallet()
-  val capacity_threshold = .75
-  val capacity_bonus = 2.00
+  lazy val capacity_threshold = Common.scenario.system_wallet.capacity_threshold
+  lazy val capacity_bonus = Common.scenario.system_wallet.capacity_bonus
 
   val far_away = new SystemWallet()
-  val time_rate = 2.00
+  lazy val time_rate = Common.scenario.system_wallet.time_rate
 
   val dependency = new SystemWallet()
-  val dependency_rate = 0.50
+  lazy val dependency_rate = Common.scenario.system_wallet.dependency_rate
 
   val waiting = new SystemWallet()
-  val waiting_rate = 0.01
+  lazy val waiting_rate = Common.scenario.system_wallet.waiting_rate
 
   def meta_bid[T](items: List[T], policy: Policy): List[Bid[T]] =
     (bid_thruput(items, policy) ++ bid_pointless_impatience(items, policy) ++

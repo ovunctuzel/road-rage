@@ -18,7 +18,8 @@ import utexas.aorta.{Util, RNG, Common, cfg}
 // Array index and agent/intersection ID must correspond. Client's
 // responsibility.
 case class Scenario(map_fn: String, agents: Array[MkAgent],
-                    intersections: Array[MkIntersection])
+                    intersections: Array[MkIntersection],
+                    system_wallet: SystemWalletConfig)
 {
   def make_sim(graph: Graph = Graph.load(map_fn)) = new Simulation(graph, this)
   def save(fn: String) = Util.serialize(this, fn)
@@ -50,6 +51,9 @@ case class Scenario(map_fn: String, agents: Array[MkAgent],
       Util.log("Budget ($): " + basic_stats(agents.map(_.wallet.budget)))
       Util.log_pop
     }
+
+    Util.log("System wallet rates:")
+    Util.log(system_wallet.toString)
   }
 
   // Describe the percentages of each thing
@@ -79,6 +83,8 @@ case class Scenario(map_fn: String, agents: Array[MkAgent],
     if (agents.size != other.agents.size) {
       Util.log(s"Scenarios have different numbers of agents: ${agents.size} and ${other.agents.size}")
     }
+
+    // TODO diff SystemWalletConfig
   }
 }
 
@@ -86,7 +92,10 @@ object Scenario {
   def load(fn: String) = Util.unserialize(fn).asInstanceOf[Scenario]
 
   def load_or_default_sim(fn: String) = Util.unserialize(fn) match {
-    case s: Scenario => s.make_sim()
+    case s: Scenario => {
+      Common.scenario = s
+      s.make_sim()
+    }
     case g: Graph => {
       Graph.set_params(g.width, g.height, g.offX, g.offY, g.scale)
       Common.edges = g.edges
@@ -98,8 +107,10 @@ object Scenario {
     val s = Scenario(
       map_fn,
       AgentDistribution.default(graph),
-      IntersectionDistribution.default(graph)
+      IntersectionDistribution.default(graph),
+      SystemWalletConfig()
     )
+    Common.scenario = s
     // Always save it, so resimulation is easy.
     (new File("./scenarios")).mkdir
     s.save(s"scenarios/default_${graph.name}")
@@ -193,6 +204,16 @@ case class MkIntersection(id: Integer, policy: IntersectionType.Value,
     }
   }
 }
+
+@SerialVersionUID(1)
+case class SystemWalletConfig(
+  thruput_bonus: Double      = 5.00,
+  capacity_threshold: Double = 0.75,
+  capacity_bonus: Double     = 2.00,
+  time_rate: Double          = 2.00,
+  dependency_rate: Double    = 0.50,
+  waiting_rate: Double       = 0.01
+)
 
 object IntersectionDistribution {
   private val rng = new RNG()
@@ -330,7 +351,7 @@ object Factory {
 object ScenarioTool {
   // TODO generate choices for things!
   val usage =
-    ("scenarios/foo --out scenarios/new_foo [--vert ...]* [--agent ...]* [--spawn ...]*\n" +
+    ("scenarios/foo --out scenarios/new_foo [--vert ...]* [--agent ...]* [--spawn ...]* [--cfg_wallets ...]\n" +
      "  --vert 42 policy=StopSign ordering=FIFO\n" +
      "  --agent 3 start=0 end=100 time=16.2 route=Drunken wallet=Random budget=90.0\n" +
      "  --spawn 500 start=0 end=100 time=16.2 generations=1 lifetime=3600 route=Drunken wallet=Random budget=90.0\n" +
@@ -387,7 +408,7 @@ object ScenarioTool {
       case _: Throwable => {
         Util.log(s"Initializing empty scenario on $input...")
         s = Scenario(
-          input, Array(), Array()
+          input, Array(), Array(), SystemWalletConfig()
         )
         s = s.copy(
           intersections = IntersectionDistribution.default(graph)
@@ -558,6 +579,30 @@ object ScenarioTool {
             }
             case None =>
           }
+        }
+        case "--cfg_wallets" => {
+          val params = slurp_params
+          val bad_params = params.keys.toSet.diff(Set(
+            "thruput_bonus", "capacity_threshold", "capacity_bonus",
+            "time_rate", "dependency_rate", "waiting_rate"
+          ))
+          if (!bad_params.isEmpty) {
+            Util.log(s"$bad_params aren't valid params for --cfg_wallets")
+            sys.exit
+          }
+
+          var wallet = s.system_wallet
+          params.foreach(pair => wallet = pair match {
+            case ("thruput_bonus", x) => wallet.copy(thruput_bonus = x.toDouble)
+            case ("capacity_threshold", x) => wallet.copy(capacity_threshold = x.toDouble)
+            case ("capacity_bonus", x) => wallet.copy(capacity_bonus = x.toDouble)
+            case ("time_rate", x) => wallet.copy(time_rate = x.toDouble)
+            case ("dependency_rate", x) => wallet.copy(dependency_rate = x.toDouble)
+            case ("waiting_rate", x) => wallet.copy(waiting_rate = x.toDouble)
+          })
+
+          Util.log(s"Changing system wallet configuration: $wallet")
+          s = s.copy(system_wallet = wallet)
         }
         case _ => dump_usage
       }

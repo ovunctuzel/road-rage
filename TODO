@@ -9,8 +9,6 @@
 - run_for cutoff time, handling unfinished agents appropriately
 - bug: illegal entry when everythings reservation in BTR
 
-- configure system bids in scenarios
-  - parameters (and thus which are active)
 - system bid: bonus to reservation if i'll take the same time as somebody else
 - commoncase auctions and system bid
   - reservation with certain system bid for compatible turns

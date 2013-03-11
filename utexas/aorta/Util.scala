@@ -268,4 +268,6 @@ object Common {
   def tick = sim.tick
 
   def timer(name: String) = new Timer(name)
+
+  var scenario: utexas.aorta.sim.Scenario = null
 }
