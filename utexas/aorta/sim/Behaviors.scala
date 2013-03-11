@@ -118,8 +118,13 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
     }
 
     // Try a fast-path!
-    /*val no_lc = (!a.is_lanechanging)
+    /*val no_lc = (!a.is_lanechanging) && (!target_lane.isDefined)
     val not_near_end = a.at.dist_left >= a.max_lookahead_dist + cfg.end_threshold // TODO +buf?
+    val next_i = a.at.on match {
+      case e: Edge => e.to.intersection
+      case t: Turn => t.to.to.intersection
+    }
+    val already_registered = a.involved_with(next_i)
     val lead = a.our_lead
     val not_tailing = lead match {
       case Some(l) =>
@@ -130,7 +135,7 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
     val at_speed = a.speed == a.at.on.speed_limit
     // TODO more fast paths that dont do full analysis
     // TODO go back and prove these are equivalent to the original semantics
-    if (no_lc && not_near_end) {
+    if (no_lc && not_near_end && already_registered) {
       if (not_tailing && at_speed) {
         return Act_Set_Accel(0)
       } else if (not_tailing) {
@@ -147,8 +152,6 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
       }
     }*/
 
-    // TODO refactor and pull in max_safe_accel here? maybe this function is for
-    // fast-paths.
     return max_safe_accel
   }
 

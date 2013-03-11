@@ -107,7 +107,7 @@ class Simulation(val graph: Graph, scenario: Scenario)
 
       if (reap.nonEmpty) {
         // TODO batch GC.
-        reap.foreach(a => a.terminate)
+        reap.foreach(a => a.terminate())
         agents = agents.filter(a => !reap(a))
       }
       

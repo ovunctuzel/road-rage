@@ -244,9 +244,9 @@ object IntersectionDistribution {
       if (big.isEmpty)
         IntersectionType.StopSign
       else if (small.isEmpty)
-        IntersectionType.Reservation  // TODO or signals?
+        IntersectionType.Signal
       else
-        IntersectionType.CommonCase
+        IntersectionType.Reservation
     MkIntersection(v.id, policy, default_ordering)
   })
 }
@@ -503,7 +503,7 @@ object ScenarioTool {
           val number = shift_args.toInt
           val params = slurp_params
           val bad_params = params.keys.toSet.diff(Set(
-            "start", "end", "time", "generations", "lifetime", "route",
+            "start", "end", "delay", "generations", "lifetime", "route",
             "wallet", "budget"
           ))
           if (!bad_params.isEmpty) {
@@ -519,7 +519,7 @@ object ScenarioTool {
             case Some(e) => Array(graph.edges(e.toInt))
             case None => graph.edges
           }
-          val delay = params.get("time") match {
+          val delay = params.get("delay") match {
             case Some(t) => t.toDouble
             case None => 0.0
           }

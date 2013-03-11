@@ -400,18 +400,21 @@ class Agent(val id: Int, val route: Route, val rng: RNG, wallet_spec: MkWallet) 
     route.steps_to(at.on, i.v).map(_.length).sum - (at.on.length - at.dist_left)
 
   // Caller must remove this agent from the simulation list
-  def terminate() = {
-    exit(at.on)
-    at.on match {
-      case e: Edge => e.queue.free_slot
-      case _ =>
+  def terminate(interrupted: Boolean = false) = {
+    if (!interrupted) {
+      exit(at.on)
+      at.on match {
+        case e: Edge => e.queue.free_slot
+        case _ =>
+      }
+      // don't forget to tell intersections. this is normally just
+      // at.on.vert if at.on is a turn, but it could be more due to lookahead.
+      cancel_intersection_reservations
     }
-    // don't forget to tell intersections. this is normally just
-    // at.on.vert if at.on is a turn, but it could be more due to lookahead.
-    cancel_intersection_reservations
     Stats.record(Agent_Lifetime_Stat(
       id, stat_memory._1, stat_memory._2, route.goal.id, route.route_type,
-      wallet.wallet_type, stat_memory._3, Common.tick, wallet.budget
+      wallet.wallet_type, stat_memory._3, Common.tick, wallet.budget,
+      !interrupted
     ))
   }
 

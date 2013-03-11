@@ -271,4 +271,10 @@ object Common {
   def timer(name: String) = new Timer(name)
 
   var scenario: utexas.aorta.sim.Scenario = null
+
+  sys.ShutdownHookThread({
+    if (sim != null) {
+      sim.agents.foreach(a => a.terminate(interrupted = true))
+    }
+  })
 }

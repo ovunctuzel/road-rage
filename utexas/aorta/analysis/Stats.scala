@@ -70,7 +70,7 @@ case class Scenario_Stat(
 case class Agent_Lifetime_Stat(
   id: Int, start_tick: Double, start: Int, end: Int, route: RouteType.Value,
   wallet: WalletType.Value, start_budget: Double, end_tick: Double,
-  end_budget: Double
+  end_budget: Double, finished: Boolean
 ) extends Measurement
 {
   // ID 1
@@ -92,6 +92,7 @@ case class Agent_Lifetime_Stat(
     stream.writeDouble(start_budget)
     stream.writeDouble(end_tick)
     stream.writeDouble(end_budget)
+    stream.writeBoolean(finished)
   }
 }
 
@@ -178,7 +179,8 @@ object PostProcess {
     case 0 => s.readObject.asInstanceOf[Scenario_Stat]
     case 1 => Agent_Lifetime_Stat(
       s.readInt, s.readDouble, s.readInt, s.readInt, RouteType(s.readInt),
-      WalletType(s.readInt), s.readDouble, s.readDouble, s.readDouble
+      WalletType(s.readInt), s.readDouble, s.readDouble, s.readDouble,
+      s.readBoolean
     )
     case 2 => Turn_Stat(
       s.readInt, s.readInt, s.readDouble, s.readDouble, s.readDouble,
@@ -241,7 +243,7 @@ class TurnTimeAnalysis(dir: String) extends StatAnalysis(dir) {
 
     histogram(
       data = delays_per_policy,
-      title = "Turn delays (from request to acceptance",
+      title = "Turn delays (from request to acceptance)",
       x_axis = "Delay (s)",
       fn = s"$dir/turn_delay_per_policy.png"
     )
@@ -251,6 +253,7 @@ class TurnTimeAnalysis(dir: String) extends StatAnalysis(dir) {
 class TripTimeAnalysis(dir: String) extends StatAnalysis(dir) {
   var unweighted_total = 0.0
   var weighted_total = 0.0
+  var count_unfinished = 0
 
   // TODO show min (and where/who), max, average
   // TODO lots of weighted/unweighted stuff
@@ -262,9 +265,13 @@ class TripTimeAnalysis(dir: String) extends StatAnalysis(dir) {
 
   def process(stat: Measurement) = stat match {
     case s: Agent_Lifetime_Stat => {
-      times_per_route(s.route) += s.trip_time
-      unweighted_total += s.trip_time
-      weighted_total += s.weighted_value
+      if (s.finished) {
+        times_per_route(s.route) += s.trip_time
+        unweighted_total += s.trip_time
+        weighted_total += s.weighted_value
+      } else {
+        count_unfinished += 1
+      }
     }
     case _ =>
   }
@@ -277,8 +284,9 @@ class TripTimeAnalysis(dir: String) extends StatAnalysis(dir) {
       fn = s"$dir/trip_time_per_route.png"
     )
 
-    Util.log("Unweighted total trip time: " + unweighted_total)
-    Util.log("Weighted total trip time: " + weighted_total)
+    Util.log(s"Unweighted total trip time: $unweighted_total")
+    Util.log(s"Weighted total trip time: $weighted_total")
+    Util.log(s"$count_unfinished agents didn't finish their route")
   }
 }
 
@@ -293,7 +301,7 @@ class AgentCountAnalysis(dir: String) extends StatAnalysis(dir) {
       live_count.add(s.tick, s.live_agents)
       active_count.add(s.tick, s.active_agents)
     }
-    case s: Agent_Lifetime_Stat => {
+    case s: Agent_Lifetime_Stat if s.finished => {
       total_done += 1
       done_count.add(s.end_tick, total_done)
     }
