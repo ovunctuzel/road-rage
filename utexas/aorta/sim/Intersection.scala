@@ -135,6 +135,12 @@ class Ticket(val a: Agent, val turn: Turn) extends Ordered[Ticket] {
     val target = turn.to
     val intersection = turn.vert.intersection
 
+    // They might not finish LCing before an agent in the new or old lane
+    // stalls.
+    if (a.is_lanechanging) {
+      return true
+    }
+
     // Lane-changing and spawning respect allocations of capacity too, so this
     // tells us if we can finish the turn.
     if (!target.queue.slot_avail) {
