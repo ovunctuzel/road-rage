@@ -83,10 +83,6 @@ class CommonCasePolicy(intersection: Intersection,
      accepted_rares.find(t => t.a == a && t.turn == turn).isDefined)
 
   def handle_exit(a: Agent, t: Turn) = {
-    unregister_body(a)
-  }
-
-  def unregister_body(a: Agent) = {
     accepted_commoners.retain(t => t.a != a)
     accepted_rares.retain(t => t.a != a)
   }

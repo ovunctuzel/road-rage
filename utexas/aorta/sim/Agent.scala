@@ -313,12 +313,6 @@ class Agent(val id: Int, val route: Route, val rng: RNG, wallet_spec: MkWallet) 
     }
   }
 
-  def cancel_intersection_reservations() = {
-    // TODO is this ever sensible to use?
-    tickets.keys.foreach(i => i.policy.unregister(this))
-    tickets.clear
-  }
-
   // returns distance traveled, updates speed. note unit of the argument.
   def update_kinematics(dt_sec: Double): Double = {
     // Travel at the target constant acceleration for the duration of the
@@ -407,9 +401,7 @@ class Agent(val id: Int, val route: Route, val rng: RNG, wallet_spec: MkWallet) 
         case e: Edge => e.queue.free_slot
         case _ =>
       }
-      // don't forget to tell intersections. this is normally just
-      // at.on.vert if at.on is a turn, but it could be more due to lookahead.
-      cancel_intersection_reservations
+      Util.assert_eq(tickets.isEmpty, true)
     }
     Stats.record(Agent_Lifetime_Stat(
       id, stat_memory._1, stat_memory._2, route.goal.id, route.route_type,

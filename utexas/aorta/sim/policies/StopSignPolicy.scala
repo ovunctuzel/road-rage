@@ -49,13 +49,6 @@ class StopSignPolicy(intersection: Intersection,
     current_owner = None
   }
 
-  def unregister_body(a: Agent) = {
-    queue.dequeueFirst((ticket) => ticket.a == a)
-    if (current_owner.isDefined && current_owner.get.a == a) {
-      current_owner = None
-    }
-  }
-
   def approveds_to(e: Edge) = current_owner match {
     case Some(t) if t.turn.to == e => List(t.a)
     case _ => Nil

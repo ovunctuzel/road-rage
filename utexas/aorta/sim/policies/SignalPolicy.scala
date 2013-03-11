@@ -79,9 +79,7 @@ class SignalPolicy(intersection: Intersection,
 
   def validate_entry(a: Agent, turn: Turn) = accepted_agents.contains((a, turn))
 
-  def handle_exit(a: Agent, turn: Turn) = unregister(a)
-
-  def unregister_body(a: Agent) = {
+  def handle_exit(a: Agent, turn: Turn) = {
     accepted_agents.retain(pair => pair._1 != a)
   }
 

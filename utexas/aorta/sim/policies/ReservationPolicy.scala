@@ -84,10 +84,6 @@ class ReservationPolicy(intersection: Intersection,
     accepted.find(t => t.a == a && t.turn == turn).isDefined
 
   def handle_exit(a: Agent, t: Turn) = {
-    unregister_body(a)
-  }
-
-  def unregister_body(a: Agent) = {
     accepted.retain(t => t.a != a)
     queue.dequeueFirst((ticket) => ticket.a == a)
   }

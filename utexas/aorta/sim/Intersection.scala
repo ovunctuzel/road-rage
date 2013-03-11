@@ -24,8 +24,6 @@ class Intersection(val v: Vertex, policy_type: IntersectionType.Value,
 
   override def toString = "Intersection(" + v + ")"
 
-  // Delegate and log.
-  def unregister(a: Agent) = policy.unregister(a)
   def react = policy.react
   def request_turn(ticket: Ticket) = {
     // Sanity check...
@@ -98,6 +96,8 @@ class Intersection(val v: Vertex, policy_type: IntersectionType.Value,
 
 // TODO when we talk to intersection, dont pass agent, pass this!
 class Ticket(val a: Agent, val turn: Turn) extends Ordered[Ticket] {
+  // TODO if an agent ever loops and requests the same turn before clearing the
+  // prev one, gonna have a bad time!
   override def compare(other: Ticket) =
     implicitly[Ordering[Tuple2[Agent, Turn]]].compare((a, turn), (other.a, other.turn))
   override def toString = s"Ticket($a, $turn, approved? $is_approved)"
@@ -211,19 +211,11 @@ abstract class Policy(val intersection: Intersection) {
     }
   }
 
-  def unregister(a: Agent) = {
-    synchronized {
-      waiting_agents = waiting_agents.filter(ticket => ticket.a != a)
-      unregister_body(a)
-    }
-  }
-
   // The intersection grants leases to waiting_agents
   def react(): Unit
   // TODO insist the client hands us a ticket for entry, exit?
   def validate_entry(a: Agent, turn: Turn): Boolean
   def handle_exit(a: Agent, turn: Turn)
-  def unregister_body(a: Agent)
   def approveds_to(target: Edge): Iterable[Agent]
   def current_greens(): Set[Turn]
   def dump_info()
@@ -235,7 +227,6 @@ class NeverGoPolicy(intersection: Intersection) extends Policy(intersection) {
   def react = {}
   def validate_entry(a: Agent, turn: Turn) = false
   def handle_exit(a: Agent, turn: Turn) = {}
-  def unregister_body(a: Agent) = {}
   def approveds_to(target: Edge) = Nil
   def current_greens = Set()
   def dump_info = {
