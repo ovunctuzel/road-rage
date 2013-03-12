@@ -209,6 +209,20 @@ object Phase {
     })
   }
 
+  // Add turns to every group that don't conflict
+  def maximize_groups(groups: List[Set[Turn]], turns: List[Turn]) =
+    groups.map(g => maximize(g, turns))
+  private def maximize(group: Set[Turn], turns: List[Turn]): Set[Turn] = {
+    val g = new MutableSet[Turn]()
+    g ++= group
+    for (turn <- turns) {
+      if (!g.find(t => t.conflicts_with(turn)).isDefined) {
+        g += turn
+      }
+    }
+    return g.toSet
+  }
+
   // Least number of phases can be modeled as graph coloring, but we're just
   // going to do a simple greedy approach.
   def arbitrary_phases(vert: Vertex): List[Phase] = {
@@ -232,7 +246,7 @@ object Phase {
 
       groups += this_group.toSet
     }
-    return turn_groups_to_phases(groups.toList)
+    return turn_groups_to_phases(maximize_groups(groups.toList, vert.turns))
   }
 
   // TODO all turns from some directed roads, except turns merge into one lane
