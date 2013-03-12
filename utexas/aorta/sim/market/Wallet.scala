@@ -13,7 +13,7 @@ import utexas.aorta.{Util, Common, cfg}
 
 // Express an agent's preferences of trading between time and cost.
 // TODO dont require an agent, ultimately
-abstract class Wallet(a: Agent, initial_budget: Double) {
+abstract class Wallet(val a: Agent, initial_budget: Double) {
   // How much the agent may spend during its one-trip lifetime
   var budget = initial_budget
 
@@ -79,8 +79,10 @@ class RandomWallet(a: Agent, initial_budget: Double)
 }
 
 // Always bid the full budget, but never lose any money.
-class StaticWallet(a: Agent, budget: Double) extends Wallet(a, budget) {
-  override def toString = "STATIC"
+class StaticWallet(a: Agent, initial_budget: Double)
+  extends Wallet(a, initial_budget)
+{
+  override def toString = f"STATIC $budget%.2f"
   def wallet_type = WalletType.Static
 
   private def bid_full[T](choice: Option[T]): Option[(T, Double)] = choice match
@@ -115,8 +117,10 @@ class FreeriderWallet(a: Agent) extends Wallet(a, 0.0) {
 }
 
 // Bid once per intersection some amount proportional to the rest of the trip.
-class FairWallet(a: Agent, budget: Double) extends Wallet(a, budget) {
-  override def toString = "FAIR"
+class FairWallet(a: Agent, initial_budget: Double)
+  extends Wallet(a, initial_budget)
+{
+  override def toString = f"FAIR $budget%.2f"
   def wallet_type = WalletType.Fair
 
   private var total_weight = 0.0
