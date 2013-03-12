@@ -97,6 +97,8 @@ class SignalPolicy(intersection: Intersection,
     Util.log(s"Current phase: $current_phase")
     if (in_overtime) {
       Util.log("Waiting on: " + accepted_agents)
+    } else {
+      Util.log("Time left: " + time_left)
     }
     Util.log(s"Accepted: $accepted_agents")
     Util.log(s"Waiting agents: $waiting_agents")

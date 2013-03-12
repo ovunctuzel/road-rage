@@ -538,8 +538,11 @@ object ScenarioTool {
             WalletType.withName(params.getOrElse("wallet", cfg.wallet))
           )
           val budget = params.get("budget") match {
-            case Some(t) => (t.toDouble, t.toDouble)
-            case None => (100.0, 1000.0)
+            case Some(t) => {
+              val Array(a, b) = t.split("-")
+              (a.toDouble, b.toDouble)
+            }
+            case None => (0.0, 10.0)
           }
 
           // TODO describe more?
@@ -589,6 +592,14 @@ object ScenarioTool {
             sys.exit
           }
 
+          val budget_factory = params.get("budget") match {
+            case Some(t) => {
+              val Array(a, b) = t.split("-")
+              (_: Double) => rng.double(a.toDouble, b.toDouble)
+            }
+            case None => (old: Double) => old
+          }
+
           // TODO support all options. for now, these are the ones I need.
           Util.log(s"Changing all agents: $params")
           s = s.copy(agents = s.agents.map(a => a.copy(
@@ -596,9 +607,7 @@ object ScenarioTool {
               policy = WalletType.withName(
                 params.getOrElse("wallet", a.wallet.policy.toString)
               ),
-              budget = params.getOrElse(
-                "budget", a.wallet.budget.toString
-              ).toDouble
+              budget = budget_factory(a.wallet.budget)
             )
           )))
         }
