@@ -69,10 +69,6 @@ class Agent(val id: Int, val route: Route, val rng: RNG, wallet_spec: MkWallet) 
 
   // Returns true if we move or do anything at all
   def step(dt_s: Double): Boolean = {
-    // Do physics to update current speed and figure out how far we've traveled
-    // in this timestep.
-    val new_dist = update_kinematics(dt_s)
-
     // If they're not already lane-changing, should they start?
     if (!is_lanechanging && behavior.wants_to_lc) {
       val lane = behavior.target_lane.get
@@ -90,6 +86,11 @@ class Agent(val id: Int, val route: Route, val rng: RNG, wallet_spec: MkWallet) 
         lane.queue.allocate_slot
       }
     }
+
+    // Do physics to update current speed and figure out how far we've traveled
+    // in this timestep.
+    // Subtle note: Do this after LCing, else we see the wrong speed
+    val new_dist = update_kinematics(dt_s)
 
     // Currently Lane-changing?
     old_lane match {
@@ -208,8 +209,18 @@ class Agent(val id: Int, val route: Route, val rng: RNG, wallet_spec: MkWallet) 
 
     // Furthermore, we probably have to stop for the intersection, so be sure we
     // have enough room to do that.
-    // TODO not also travel dist?
-    if (at.dist + stopping_distance(max_next_speed) >= min_len) {
+    // This is confusing, but we're called in two places, the most important of
+    // which is step(), right before an acceleration chosen in the previous tick
+    // will be applied. The behavior chose that acceleration assuming we'd be in
+    // the old lane, not the new. TODO redo the reaction here?
+    // So we have to apply what will happen next...
+
+    val initial_speed = speed
+    val final_speed = math.max(0.0, initial_speed + (target_accel * cfg.dt_s))
+    val dist = Util.dist_at_constant_accel(target_accel, cfg.dt_s, initial_speed)
+    val our_max_next_speed = final_speed + (max_next_accel * cfg.dt_s)
+
+    if (at.dist + dist + stopping_distance(our_max_next_speed) >= min_len) {
       return false
     }
     
@@ -391,6 +402,7 @@ class Agent(val id: Int, val route: Route, val rng: RNG, wallet_spec: MkWallet) 
     } else {
       Util.log("Not lane-changing")
     }
+    Util.log(s"Stat memory (of spawning): $stat_memory")
     behavior.dump_info
     Util.log_pop
   }

@@ -3,7 +3,6 @@
 # Auctions #
 
 - compatible serialization
-- bug: illegal entry when everythings reservation in BTR
 - system bid: bonus to reservation if i'll take the same time as somebody else
 - commoncase auctions and system bid
   - reservation with certain system bid for compatible turns
