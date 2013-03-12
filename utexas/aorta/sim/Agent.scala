@@ -240,12 +240,21 @@ class Agent(val id: Int, val route: Route, val rng: RNG, wallet_spec: MkWallet) 
     // We don't want to merge in too closely to the agent ahead of us, nor do we
     // want to make somebody behind us risk running into us. So just make sure
     // there are no agents in that danger range.
+
+    val initial_speed = speed
+    val final_speed = math.max(0.0, initial_speed + (target_accel * cfg.dt_s))
+    val dist = Util.dist_at_constant_accel(target_accel, cfg.dt_s, initial_speed)
+    val our_max_next_speed = final_speed + (max_next_accel * cfg.dt_s)
+
     // TODO expanding the search to twice follow dist is a hack; I'm not sure
     // why agents are winding up about a meter too close sometimes.
-    val ahead_dist = (2.0 * cfg.follow_dist) + stopping_distance(max_next_speed)
+    val ahead_dist = (2.0 * cfg.follow_dist) + stopping_distance(our_max_next_speed)
     // TODO assumes all vehicles the same. not true forever.
     val behind_dist = (2.0 * cfg.follow_dist) + stopping_distance(target.road.speed_limit)
-    val nearby = target.queue.all_in_range(at.dist - behind_dist, at.dist + ahead_dist)
+
+    // TODO +dist for behind as well, but hey, overconservative doesnt hurt for
+    // now...
+    val nearby = target.queue.all_in_range(at.dist - behind_dist, at.dist + dist + ahead_dist)
     return nearby.isEmpty
   }
 
