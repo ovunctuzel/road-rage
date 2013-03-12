@@ -10,7 +10,7 @@ import scala.collection.mutable.{ListBuffer, TreeSet}
 import utexas.aorta.map.{Turn, Vertex, Edge}
 import utexas.aorta.sim.{Intersection, Policy, Agent, EV_Signal_Change,
                          IntersectionType, Ticket}
-import utexas.aorta.sim.market.IntersectionOrdering
+import utexas.aorta.sim.market.{IntersectionOrdering, FIFO_Ordering}
 
 import utexas.aorta.{Util, Common, cfg}
 
@@ -19,10 +19,22 @@ class SignalPolicy(intersection: Intersection,
                    ordering: IntersectionOrdering[Phase])
   extends Policy(intersection)
 {
-  setup_phases.foreach(p => ordering.add(p))
-  private var current_phase: Phase =
-    ordering.shift_next(Nil, this).get
-  ordering.add(current_phase)
+  // phase_order maintains the list of all possible phases, in order of LRU
+  private var phase_order = new ListBuffer[Phase]()
+  phase_order ++= setup_phases
+  private var current_phase = phase_order.head
+  phase_order = phase_order.tail ++ List(current_phase)
+
+  // If we're holding auctions, we risk agents repeatedly bidding for and
+  // winning a phase that doesn't have any agents that can actually go yet.
+  // Avoid that. In the FIFO case, pretend we're not autonomous and pick useless
+  // phases.
+  def candidates = ordering match {
+    case _: FIFO_Ordering[Phase] => phase_order
+    case _ => phase_order.filter(
+      p => p.all_tickets.find(t => !t.turn_blocked).isDefined
+    )
+  }
 
   // Tracks when the current phase began
   private var started_at = Common.tick
@@ -41,16 +53,25 @@ class SignalPolicy(intersection: Intersection,
 
     // Switch to the next phase
     if (Common.tick >= end_at && accepted_agents.isEmpty) {
-      current_phase =
-        ordering.shift_next(waiting_agents, this).get
       // Cycle through the phases
-      ordering.add(current_phase)
-      started_at = Common.tick
-      // TODO could account for delay and try to get back on schedule by
-      // decreasing duration
+      ordering.clear
+      candidates.foreach(p => ordering.add(p))
+      // In auctions, we may not have a viable next phase at all...
+      ordering.shift_next(waiting_agents, this) match {
+        case Some(p) => {
+          current_phase = p
+          phase_order = phase_order.filter(phase => phase != p)
+          phase_order += p
 
-      // callback for UI usually
-      Common.sim.tell_listeners(EV_Signal_Change(current_phase.turns.toSet))
+          started_at = Common.tick
+          // TODO could account for delay and try to get back on schedule by
+          // decreasing duration
+
+          // callback for UI usually
+          Common.sim.tell_listeners(EV_Signal_Change(current_phase.turns.toSet))
+        }
+        case None =>
+      }
     }
 
     // Accept new agents into the current phase
@@ -102,6 +123,7 @@ class SignalPolicy(intersection: Intersection,
     }
     Util.log(s"Accepted: $accepted_agents")
     Util.log(s"Waiting agents: $waiting_agents")
+    Util.log("Viable phases right now: " + candidates)
   }
   def policy_type = IntersectionType.Signal
 
@@ -161,7 +183,7 @@ class Phase(val turns: Set[Turn], val offset: Double, val duration: Double)
   def all_agents = turns.flatMap(_.from.queue.all_agents)
   def all_tickets: Set[Ticket] = {
     val i = turns.head.vert.intersection
-    return all_agents.flatMap(a => a.all_tickets(i))
+    return all_agents.flatMap(a => a.all_tickets(i)).filter(t => has(t.turn))
   }
 }
 
