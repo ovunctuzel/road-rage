@@ -1,0 +1,36 @@
+#!/usr/bin/python2
+
+# TODO elegant shutdown
+
+import multiprocessing
+import subprocess
+
+class Worker(multiprocessing.Process):
+  def __init__(self, queue):
+    multiprocessing.Process.__init__(self)
+    self.queue = queue
+
+  def run(self):
+    while not self.queue.empty():
+      job = self.queue.get()
+      try:
+        print "Running", job
+        subprocess.call(job, shell=True)
+        print job, "is done"
+      except:
+        print "Problem!"
+      queue.task_done()
+
+if __name__ == '__main__':
+  queue = multiprocessing.JoinableQueue()
+  for city in ['atx_big', 'big_btr', 'seattle', 'sf']:
+    for mode in ['auction-no-sys', 'equal', 'fifo']:
+      queue.put('./tools/run ' + city + '-' + mode)
+
+  workers = []
+  for i in xrange(4):
+    worker = Worker(queue)
+    workers.append(worker)
+    worker.start()
+
+  queue.join()
