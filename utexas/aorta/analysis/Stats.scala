@@ -79,7 +79,8 @@ case class Agent_Lifetime_Stat(
   def total_spent = end_budget - start_budget
   // High priority and long trip time is bad; low priority or low trip time is
   // good.
-  def weighted_value = start_budget * trip_time
+  def priority = math.max(0.01, start_budget)
+  def weighted_value = priority * trip_time
 
   def write(stream: ObjectOutputStream) = {
     stream.writeInt(1)
@@ -251,8 +252,9 @@ class TurnTimeAnalysis(dir: String) extends StatAnalysis(dir) {
 }
 
 class TripTimeAnalysis(dir: String) extends StatAnalysis(dir) {
-  var unweighted_total = 0.0
-  var weighted_total = 0.0
+  // TODO range? doubt these... and sci notatn sucks...
+  var unweighted_total = BigDecimal(0.0)
+  var weighted_total = BigDecimal(0.0)
   var count_unfinished = 0
 
   // TODO show min (and where/who), max, average
@@ -284,8 +286,8 @@ class TripTimeAnalysis(dir: String) extends StatAnalysis(dir) {
       fn = s"$dir/trip_time_per_route.png"
     )
 
-    Util.log(s"Unweighted total trip time: $unweighted_total")
-    Util.log(s"Weighted total trip time: $weighted_total")
+    Util.log(s"Unweighted total trip time: $unweighted_total = ${Util.comma_num(unweighted_total.toInt)}")
+    Util.log(s"Weighted total trip time: $weighted_total = ${Util.comma_num(weighted_total.toInt)}")
     Util.log(s"$count_unfinished agents didn't finish their route")
   }
 }
