@@ -313,14 +313,14 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
   }
 
   private def accel_to_follow(follow: Agent, dist_from_them_now: Double): Double = {
-    val us_worst_stop_dist = a.stopping_distance(a.max_next_speed)
+    val us_worst_dist = a.max_next_dist_plus_stopping
     val most_we_could_go = a.max_next_dist
     val least_they_could_go = follow.min_next_dist
 
     // TODO this optimizes for next tick, so we're playing it really
     // conservative here... will that make us fluctuate more?
     val projected_dist_from_them = dist_from_them_now - most_we_could_go + least_they_could_go
-    val desired_dist_btwn = us_worst_stop_dist + cfg.follow_dist
+    val desired_dist_btwn = us_worst_dist + cfg.follow_dist
 
     // Positive = speed up, zero = go their speed, negative = slow down
     val delta_dist = projected_dist_from_them - desired_dist_btwn
