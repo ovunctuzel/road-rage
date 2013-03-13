@@ -70,7 +70,7 @@ case class Scenario_Stat(
 case class Agent_Lifetime_Stat(
   id: Int, start_tick: Double, start: Int, end: Int, route: RouteType.Value,
   wallet: WalletType.Value, start_budget: Double, end_tick: Double,
-  end_budget: Double, finished: Boolean
+  end_budget: Double, priority: Double, finished: Boolean
 ) extends Measurement
 {
   // ID 1
@@ -79,7 +79,6 @@ case class Agent_Lifetime_Stat(
   def total_spent = end_budget - start_budget
   // High priority and long trip time is bad; low priority or low trip time is
   // good.
-  def priority = math.max(0.01, start_budget)
   def weighted_value = priority * trip_time
 
   def write(stream: ObjectOutputStream) = {
@@ -181,7 +180,7 @@ object PostProcess {
     case 1 => Agent_Lifetime_Stat(
       s.readInt, s.readDouble, s.readInt, s.readInt, RouteType(s.readInt),
       WalletType(s.readInt), s.readDouble, s.readDouble, s.readDouble,
-      s.readBoolean
+      s.readDouble, s.readBoolean
     )
     case 2 => Turn_Stat(
       s.readInt, s.readInt, s.readDouble, s.readDouble, s.readDouble,

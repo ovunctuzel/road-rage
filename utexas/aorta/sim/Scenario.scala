@@ -49,6 +49,7 @@ case class Scenario(map_fn: String, agents: Array[MkAgent],
       Util.log("Wallets:")
       percentages(agents.map(_.wallet.policy))
       Util.log("Budget ($): " + basic_stats(agents.map(_.wallet.budget)))
+      Util.log("Priority: " + basic_stats(agents.map(_.wallet.priority)))
       Util.log_pop
     }
 
@@ -148,7 +149,8 @@ case class MkAgent(id: Int, birth_tick: Double, seed: Long,
       Util.diff(route.goal, other.route.goal, "end"),
       Util.diff(route.strategy, other.route.strategy, "route"),
       Util.diff(wallet.policy, other.wallet.policy, "wallet"),
-      Util.diff(wallet.budget, other.wallet.budget, "budget")
+      Util.diff(wallet.budget, other.wallet.budget, "budget"),
+      Util.diff(wallet.priority, other.wallet.priority, "priority")
     ).flatten.mkString(", ")
     if (d.nonEmpty) {
       Util.log(s"Agent $id different: $d")
@@ -183,8 +185,8 @@ case class MkRoute(strategy: RouteType.Value, goal: Integer, seed: Long) {
 }
 
 @SerialVersionUID(1)
-case class MkWallet(policy: WalletType.Value, budget: Double) {
-  def make(a: Agent) = Factory.make_wallet(a, policy, budget)
+case class MkWallet(policy: WalletType.Value, budget: Double, priority: Double) {
+  def make(a: Agent) = Factory.make_wallet(a, policy, budget, priority)
 }
 
 @SerialVersionUID(1)
@@ -265,18 +267,21 @@ object AgentDistribution {
 
   // TODO specify "80% x, 20% y" for stuff...
   def uniform(ids: Range, starts: Array[Edge], ends: Array[Edge],
-              times: (Double, Double), routes: Array[RouteType.Value], 
+              times: (Double, Double), routes: Array[RouteType.Value],
               wallets: Array[WalletType.Value],
               budgets: (Double, Double)): Array[MkAgent] =
   {
     val actual_starts = filter_candidates(starts)
     return ids.map(id => {
       val start = rng.choose(actual_starts)
+      val budget = rng.double(budgets._1, budgets._2)
       MkAgent(
         id, rng.double(times._1, times._2), rng.new_seed, start.id,
         start.safe_spawn_dist(rng),
         MkRoute(rng.choose(routes), rng.choose(ends).id, rng.new_seed),
-        MkWallet(rng.choose(wallets), rng.double(budgets._1, budgets._2))
+        // For now, force the same budget and priority here, and clean it up
+        // later.
+        MkWallet(rng.choose(wallets), budget, budget)
       )
     }).toArray
   }
@@ -307,12 +312,12 @@ object OrderingType extends Enumeration {
 object WalletType extends Enumeration {
   type WalletType = Value
   val Random, Static, Freerider, Fair, System = Value
-}                                                                         
+}
 
 object Factory {
   def make_policy(i: Intersection, policy: IntersectionType.Value,
                   ordering: OrderingType.Value) = policy match
-  { 
+  {
     case IntersectionType.NeverGo =>
       new NeverGoPolicy(i)
     case IntersectionType.StopSign =>
@@ -324,7 +329,7 @@ object Factory {
     case IntersectionType.CommonCase =>
       new CommonCasePolicy(i, make_intersection_ordering[Ticket](ordering))
   }
-  
+
   def make_route(enum: RouteType.Value, goal: DirectedRoad, rng: RNG) = enum match {
     case RouteType.Dijkstra => new DijkstraRoute(goal, rng)
     case RouteType.Path => new PathRoute(goal, rng)
@@ -332,18 +337,18 @@ object Factory {
     case RouteType.DirectionalDrunk => new DirectionalDrunkRoute(goal, rng)
     case RouteType.DrunkenExplorer => new DrunkenExplorerRoute(goal, rng)
   }
-  
+
   def make_intersection_ordering[T <: Ordered[T]](enum: OrderingType.Value) = enum match
-  { 
-    case OrderingType.FIFO => new FIFO_Ordering[T]()            
-    case OrderingType.Auction => new AuctionOrdering[T]()       
+  {
+    case OrderingType.FIFO => new FIFO_Ordering[T]()
+    case OrderingType.Auction => new AuctionOrdering[T]()
   }
 
-  def make_wallet(a: Agent, enum: WalletType.Value, budget: Double) = enum match {
-    case WalletType.Random => new RandomWallet(a, budget)    
-    case WalletType.Static => new StaticWallet(a, budget)    
-    case WalletType.Freerider => new FreeriderWallet(a)
-    case WalletType.Fair => new FairWallet(a, budget)
+  def make_wallet(a: Agent, enum: WalletType.Value, budget: Double, priority: Double) = enum match {
+    case WalletType.Random => new RandomWallet(a, budget, priority)
+    case WalletType.Static => new StaticWallet(a, budget, priority)
+    case WalletType.Freerider => new FreeriderWallet(a, priority)
+    case WalletType.Fair => new FairWallet(a, budget, priority)
   }
 }
 
@@ -444,7 +449,7 @@ object ScenarioTool {
               params.getOrElse("ordering", old_v.ordering.toString)
             )
           )
-          
+
           old_v.diff(new_v)
           s.intersections(id) = new_v
         }
@@ -493,7 +498,7 @@ object ScenarioTool {
               ).toDouble
             )
           )
-          
+
           old_a.diff(new_a)
           s.agents(id) = new_a
         }
@@ -587,6 +592,7 @@ object ScenarioTool {
         case "--all_agents" => {
           val params = slurp_params
           val bad_params = params.keys.toSet.diff(Set("wallet", "budget"))
+          // TODO priority controls in all these tools!
           if (!bad_params.isEmpty) {
             Util.log(s"$bad_params aren't valid params for --all_agents")
             sys.exit

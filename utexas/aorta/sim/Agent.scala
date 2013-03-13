@@ -432,7 +432,7 @@ class Agent(val id: Int, val route: Route, val rng: RNG, wallet_spec: MkWallet) 
     Stats.record(Agent_Lifetime_Stat(
       id, stat_memory._1, stat_memory._2, route.goal.id, route.route_type,
       wallet.wallet_type, stat_memory._3, Common.tick, wallet.budget,
-      !interrupted
+      wallet.priority, !interrupted
     ))
   }
 
