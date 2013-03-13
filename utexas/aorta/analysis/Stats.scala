@@ -92,6 +92,7 @@ case class Agent_Lifetime_Stat(
     stream.writeDouble(start_budget)
     stream.writeDouble(end_tick)
     stream.writeDouble(end_budget)
+    stream.writeDouble(priority)
     stream.writeBoolean(finished)
   }
 }
