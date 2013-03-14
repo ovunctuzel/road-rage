@@ -11,7 +11,7 @@ maps/*
 scenarios/*
 logs/*
 plots/*
-final/*
+final*/*
 
 # tex stuff
 *.aux

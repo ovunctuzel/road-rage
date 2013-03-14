@@ -52,7 +52,10 @@ class Queue(t: Traversable) {
 
   // Round down. How many drivers max could squish together here? Minimum 1,
   // short edges just support 1.
-  def capacity = math.max(1, math.floor(t.length / cfg.follow_dist).toInt)
+  // TODO subtracting 1 due to some agents not squeezing in tight enough. they
+  // stay a bit farther back than cfg.follow_dist due to accel_to_follow. for
+  // now, quick hackfix.
+  def capacity = math.max(1, math.floor(t.length / cfg.follow_dist).toInt - 1)
 
   def head = wrap_option(agents.firstEntry)
   def last = wrap_option(agents.lastEntry)

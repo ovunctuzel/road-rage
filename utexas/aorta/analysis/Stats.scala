@@ -79,7 +79,9 @@ case class Agent_Lifetime_Stat(
   def total_spent = end_budget - start_budget
   // High priority and long trip time is bad; low priority or low trip time is
   // good.
-  def weighted_value = priority * trip_time
+  // Don't neglect freeriders, ever.
+  def weight = math.max(0.01, priority)
+  def weighted_value = weight * trip_time
 
   def write(stream: ObjectOutputStream) = {
     stream.writeInt(1)

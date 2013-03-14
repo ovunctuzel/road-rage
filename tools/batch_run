@@ -26,6 +26,7 @@ if __name__ == '__main__':
   for city in ['atx_big', 'big_btr', 'seattle', 'sf']:
     for mode in ['auction-no-sys', 'equal', 'fifo']:
       queue.put('./tools/run ' + city + '-' + mode)
+      #queue.put('./tools/finalize ' + city + '-' + mode)
 
   workers = []
   for i in xrange(4):

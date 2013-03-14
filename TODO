@@ -2,6 +2,22 @@
 
 # Auctions #
 
+- seattle bugs
+  - turn from e25193 to e22143
+  - hellish group of signals near v6091
+  - v7931 has redundant verts... roundabout
+
+- br bugs
+  - r3320 is perfect example of short roads needing merging
+  - or 3905
+
+- discretionary lanechanging
+- better phase groupings
+- fix gridlock
+- tune system bids
+- new experiment: simple priority
+- new experiment: all reservations
+
 - compatible serialization
 - system bid: bonus to reservation if i'll take the same time as somebody else
 - commoncase auctions and system bid
@@ -34,7 +50,7 @@
 - keep orig GPS coords and only scale around for UI
   - then obselete set_params
 - xml output too for non-aorta clients
-- clean up roads with just 2 roads
+- clean up verts with just 2 roads
   - pass3, since doomed pruning makes new problems
   - but keep pass 2 version? seems to prevent some stuff from getting doomed!
 - short roads into longer turns
