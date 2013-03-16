@@ -9,6 +9,8 @@ import scala.collection.mutable.{Set => MutableSet}
 
 import utexas.aorta.map.Coordinate
 
+import utexas.aorta.Util
+
 class Pass2(old_graph: PreGraph1) {
   val graph = new PreGraph2(old_graph)
 
@@ -17,7 +19,17 @@ class Pass2(old_graph: PreGraph1) {
     // to run here too. maybe keep for now!
     //return graph
 
-    // Find vertices with exactly two roads involved. They're redundant.
+    merge_short_roads()
+
+    // Do this second
+    fix_degenerate_verts()
+
+    return graph
+  }
+
+  // Find vertices with exactly two roads involved. They're redundant.
+  private def fix_degenerate_verts() = {
+    Util.log("Collapsing degenerate vertices...")
     val verts = new HashMap[Coordinate, MutableSet[PreEdge2]] with MultiMap[Coordinate, PreEdge2]
     for (e <- graph.edges) {
       verts.addBinding(e.from, e)
@@ -46,12 +58,10 @@ class Pass2(old_graph: PreGraph1) {
         case None => changed = false
       }
     }
-
-    return graph
   }
 
   // What's the internal vertex? Destroy it.
-  def merge_roads(r1: PreEdge2, r2: PreEdge2): PreEdge2 =
+  private def merge_roads(r1: PreEdge2, r2: PreEdge2): PreEdge2 =
     if (r1.from == r2.from)
       new PreEdge2(
         r1.to, r2.to, r1.points.reverse ++ r2.points.tail,
@@ -74,4 +84,39 @@ class Pass2(old_graph: PreGraph1) {
       )
     else
       throw new Exception(s"$r1 and $r2 not mergable!")
+
+  private def merge_short_roads() = {
+    Util.log("Merging short roads...")
+    val min_len = 50.0  // TODO cfg
+    // TODo Probably don't need to make this a fixpoint, since length isn't
+    // affected
+    var changed = true
+    while (changed) {
+      graph.edges.find(r => r.length < min_len && !r.is_culdesac) match {
+        case Some(shorty) => {
+          // Remove this short road
+          graph.edges = graph.edges.filter(e => e != shorty)
+          // TODO throw away the metadata on it. :(
+
+          // A weird approach that seems to work: delete the road, but magically
+          // make other roads connected to shorty.from instead connect to
+          // shorty.to. aka, delete the vertex shorty.from.
+          Util.assert_ne(shorty.from, shorty.to)
+          val nuke_vert = shorty.from
+          val replace_vert = shorty.to
+          for (e <- graph.edges) {
+            if (e.from == nuke_vert) {
+              e.from = replace_vert
+            }
+            if (e.to == nuke_vert) {
+              e.to = replace_vert
+            }
+          }
+        }
+        case None => {
+          changed = false
+        }
+      }
+    }
+  }
 }

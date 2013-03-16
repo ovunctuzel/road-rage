@@ -8,7 +8,7 @@ import scala.collection.mutable.ListBuffer
 import scala.collection.mutable.HashMap
 import scala.collection.mutable.MutableList
 
-import utexas.aorta.map.Coordinate
+import utexas.aorta.map.{Coordinate, Road}
 
 import utexas.aorta.Util
 
@@ -77,7 +77,7 @@ class PreGraph2(old_graph: PreGraph1) {
   }
 }
 
-class PreEdge2(val from: Coordinate, val to: Coordinate,
+class PreEdge2(var from: Coordinate, var to: Coordinate,
                val points: MutableList[Coordinate], val dat: PreEdge1) {
   def merge_dat(other: PreEdge2) = new PreEdge1(
     (if (dat.name == other.dat.name)
@@ -92,4 +92,7 @@ class PreEdge2(val from: Coordinate, val to: Coordinate,
   )
 
   override def toString = s"Road ${dat.name} btwn $from and $to"
+
+  def length = Road.road_len(points)
+  def is_culdesac = from == to
 }

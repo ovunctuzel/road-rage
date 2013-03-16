@@ -100,19 +100,6 @@ class Pass3(old_graph: PreGraph2) {
     }
     Util.log_pop
 
-    Util.log("Collapsing degenerate vertices with 2 roads...")
-    collapse_degenerate()
-
-    Util.log("Transforming small roads into longer turns")
-    Util.log_push
-    // TODO when to run?
-    // TODO order of merging these matters, could be weird
-    val road_min_len = 50.0  // TODO cfg
-    for (r <- graph.roads if r.length < road_min_len) {
-      merge_short_road(r)
-    }
-    Util.log_pop
-
     Util.log("Tidying up geometry...")
     graph.vertices.foreach(v => adjust_lines(v))
 
@@ -304,35 +291,6 @@ class Pass3(old_graph: PreGraph2) {
     return true
   }
 
-  private def collapse_degenerate(): Unit = {
-    // TODO nowhere near ready yet
-    return
-
-    // Degenerate vertices have exactly 2 roads, with matching numbers of lanes
-    // and with one straight turn connecting each.
-    def compatible_vert(v: Vertex) = v.roads.toList match {
-      case r1 :: r2 :: Nil =>
-        ((r1.pos_lanes.size == r2.pos_lanes.size) &&
-         (r1.neg_lanes.size == r2.neg_lanes.size) &&
-         (!r1.all_lanes.find(e => e.next_turns.size != 1).isDefined) &&
-         (!r2.all_lanes.find(e => e.next_turns.size != 1).isDefined)
-        )
-      case _ => false
-    }
-
-    var changed = true
-    while (changed) {
-      graph.vertices.find(compatible_vert) match {
-        case Some(v) => {
-          val Array(r1, r2) = v.roads.toArray
-          // Arbitrarily decide to keep and extend r1, and nix r2.
-          
-        }
-        case None => changed = false
-      }
-    }
-  }
-
   private def adjust_lines(v: Vertex) = {
     val shortest_line = new HashMap[Edge, Line]
     for (in <- v.in_edges) {
@@ -454,39 +412,5 @@ class Pass3(old_graph: PreGraph2) {
         }
       }
     }
-  }
-
-  def merge_short_road(r: Road): Unit = {
-    // TODO needs more tuning
-    return
-
-    // TODO this spot is hokey.
-    if (r.name == "Bernwood Drive") {
-      return
-    }
-
-    /*Util.log(s"$r is short, removing...")
-    // Find all turns leading to each edge of this bad road
-    for (e <- r.all_lanes) {
-      Util.log("  gonna end up doing " + (e.prev_turns.size * e.next_turns.size) +
-               " new turns for " + e)
-      for (orig_turn <- e.prev_turns) {
-        // Extend that turn to cover this road
-        e.from.turns = e.from.turns.filter(t => t != orig_turn)
-        for (tail_turn <- e.next_turns) {
-          // TODO turn ids dont seem to need to be contiguous.
-          e.from.turns = Turn(
-            next_id, orig_turn.from, tail_turn.to,
-            // TODO i dont even think this is appropriate anymore
-            orig_turn.length + tail_turn.length
-          ) :: e.from.turns
-        }
-      }
-    }
-    // Remove the road and the edges.
-    // TODO ever nix the vertices?
-    graph.roads = graph.roads.filter(road => road != r)
-    graph.edges = graph.edges.filter(e => e.road != r)
-    graph.fix_ids*/
   }
 }

@@ -36,7 +36,7 @@ class PreGraph3(old_graph: PreGraph2) {
     val r = new Road(
       road_id_cnt, Road.road_len(old_edge.points),
       old_edge.dat.name, old_edge.dat.road_type, old_edge.dat.orig_id,
-      get_vert(old_edge.points.head), get_vert(old_edge.points.last)
+      get_vert(old_edge.from), get_vert(old_edge.to)
     )
     r.set_points(old_edge.points.toArray)
     road_id_cnt += 1

@@ -24,9 +24,9 @@ class Road(
   def set_points(pts: Array[Coordinate]) = {
     points = pts
 
-    // check invariants
-    Util.assert_eq(v1.location, points.head)
-    Util.assert_eq(v2.location, points.last)
+    // check invariants -- oops, not true anymore since we merge short roads
+    //Util.assert_eq(v1.location, points.head)
+    //Util.assert_eq(v2.location, points.last)
   }
 
   var pos_group: Option[DirectedRoad] = Some(new DirectedRoad(

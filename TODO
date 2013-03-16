@@ -2,14 +2,23 @@
 
 # Auctions #
 
+- map fixes
+  - fix new small issues..
+    - floating vertices due to nuking all roads that lead up to it, and choosing
+      the vert to keep poorly
+    - not seeing any geometry is a bit disconcerting... gov st
+  - num of lanes bounded by num of times could LC
+  - make sure directed roads are well-connected when making turns, should solve
+    many problems and make faster pathfinding
+  - handle cul de sacs once and for all... bernwood is example in BR. remove if
+    only one other link?
+  - dont tie map filename to the serialized thing
+  - custom serialization for them too
+
 - seattle bugs
   - turn from e25193 to e22143
   - hellish group of signals near v6091
   - v7931 has redundant verts... roundabout
-
-- br bugs
-  - r3320 is perfect example of short roads needing merging
-  - or 3905
 
 - discretionary lanechanging
 - better phase groupings
