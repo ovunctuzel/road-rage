@@ -228,7 +228,7 @@ object SystemWallets {
     case _: SignalPolicy => Nil
     case _ => items.flatMap(ticket => {
       val target = ticket.asInstanceOf[Ticket].turn.to.queue
-      if (target.avail_slots / target.capacity.toDouble < capacity_threshold)
+      if (target.percent_avail < capacity_threshold)
         Some(Bid(capacity, ticket, capacity_bonus, null))
       else
         None

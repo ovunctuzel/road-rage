@@ -21,6 +21,7 @@
   - v7931 has redundant verts... roundabout
 
 - discretionary lanechanging
+- changing turn preference as congestion changes...
 - better phase groupings
 - fix gridlock
 - tune system bids

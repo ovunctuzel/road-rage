@@ -72,10 +72,12 @@ class PathRoute(goal: DirectedRoad, rng: RNG) extends Route(goal, rng) {
   // Head is the current step. If that step isn't immediately reachable, we have
   // to re-route.
   var path: List[DirectedRoad] = null
+  val chosen_turns = new MutableMap[Edge, Turn]()
 
   def transition(from: Traversable, to: Traversable) = {
     (from, to) match {
       case (e: Edge, _: Turn) => {
+        chosen_turns -= e
         if (e.directed_road == path.head) {
           path = path.tail
         } else {
@@ -84,13 +86,30 @@ class PathRoute(goal: DirectedRoad, rng: RNG) extends Route(goal, rng) {
           )
         }
       }
+      case (e: Edge, _: Edge) => {
+        chosen_turns -= e
+      }
       case _ =>
     }
     tell_listeners(EV_Transition(from, to))
   }
 
-  private def best_turn(e: Edge, dest: DirectedRoad) =
-    e.next_turns.find(t => t.to.directed_road == dest)
+  // Prefer the one that's emptiest now
+  private def best_turn(e: Edge, dest: DirectedRoad): Option[Turn] = {
+    if (chosen_turns.contains(e)) {
+      Util.assert_eq(chosen_turns(e).to.directed_road, dest)
+      return Some(chosen_turns(e))
+    } else {
+      return e.next_turns.filter(t => t.to.directed_road == dest) match {
+        case Nil => None
+        case ls => {
+          val best = ls.maxBy(t => t.to.queue.percent_avail)
+          chosen_turns(e) = best
+          Some(best)
+        }
+      }
+    }
+  }
 
   def pick_turn(e: Edge): Turn = {
     // Lookahead could be calling us from anywhere. Figure out where we are in
@@ -108,11 +127,12 @@ class PathRoute(goal: DirectedRoad, rng: RNG) extends Route(goal, rng) {
       case None => {
         // Re-route, but start from a source we can definitely reach without
         // lane-changing. Namely, pick a turn randomly and start pathing from
-        // that road. (Not quite randomly, one that'll definitely get picked
-        // again when we call this method again.)
+        // that road.
         // TODO heuristic instead of arbitrary?
         val choice = e.next_turns.head
+        chosen_turns(e) = choice
         val source = choice.to.directed_road
+        // TODO Erase all turn choices AFTER source, if we've made any?
         // Stitch together the new path into the full thing
         val new_path = slice.head :: source :: Common.sim.graph.router.path(source, goal)
         path = before ++ new_path

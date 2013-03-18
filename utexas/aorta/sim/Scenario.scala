@@ -210,7 +210,7 @@ case class MkIntersection(id: Integer, policy: IntersectionType.Value,
 @SerialVersionUID(1)
 case class SystemWalletConfig(
   thruput_bonus: Double      = 5.00,
-  capacity_threshold: Double = 0.75,
+  capacity_threshold: Double = 75.0,
   capacity_bonus: Double     = 2.00,
   time_rate: Double          = 2.00,
   dependency_rate: Double    = 0.50,

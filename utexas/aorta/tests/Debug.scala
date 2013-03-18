@@ -5,6 +5,7 @@
 package utexas.aorta.tests
 
 import utexas.aorta.sim.Simulation
+import utexas.aorta.sim.policies.SignalPolicy
 
 import utexas.aorta.{Util, Common}
 
@@ -14,11 +15,25 @@ object Debug {
   def main(args: Array[String]) = {
     val sim = Util.process_args(args)
 
+    find_crazy_signals(sim)
     calc_capacity(sim)
     degenerate_verts(sim)
     doomed_stuff(sim)
     disconnected_directed_roads(sim)
     stress_test_pathfind(sim)
+  }
+
+  private def find_crazy_signals(sim: Simulation) = {
+    for (v <- sim.graph.vertices) {
+      v.intersection.policy match {
+        case p: SignalPolicy => {
+          if (p.phase_order.size > 4) {
+            Util.log(s"$v has ${p.phase_order.size} phases!")
+          }
+        }
+        case _ =>
+      }
+    }
   }
 
   private def calc_capacity(sim: Simulation) = {

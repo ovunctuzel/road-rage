@@ -20,7 +20,7 @@ class SignalPolicy(intersection: Intersection,
   extends Policy(intersection)
 {
   // phase_order maintains the list of all possible phases, in order of LRU
-  private var phase_order = new ListBuffer[Phase]()
+  var phase_order = new ListBuffer[Phase]()
   phase_order ++= setup_phases
   private var current_phase = phase_order.head
   phase_order = phase_order.tail ++ List(current_phase)

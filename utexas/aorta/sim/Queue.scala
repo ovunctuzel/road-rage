@@ -49,6 +49,7 @@ class Queue(t: Traversable) {
   }
 
   def slot_avail = avail_slots > 0
+  def percent_avail = avail_slots.toDouble / capacity.toDouble * 100.0
 
   // Round down. How many drivers max could squish together here? Minimum 1,
   // short edges just support 1.
