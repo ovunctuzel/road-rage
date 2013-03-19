@@ -30,6 +30,13 @@ class Intersection(val v: Vertex, policy_type: IntersectionType.Value,
     Util.assert_eq(ticket.turn.vert, v)
     policy.request_turn(ticket)
   }
+  def change_turn(old: Ticket, ticket: Ticket) = {
+    Util.assert_eq(old.turn.vert, v)
+    Util.assert_eq(ticket.turn.vert, v)
+    Util.assert_eq(old.is_approved, false)
+    Util.assert_eq(old.is_interruption, false)
+    policy.change_turn(old, ticket)
+  }
 
   // Multiple agents can be on the same turn; the corresponding queue will
   // handle collisions. So in fact, we want to track which turns are active...
@@ -181,21 +188,23 @@ class Ticket(val a: Agent, val turn: Turn) extends Ordered[Ticket] {
     while (current != null && !current.queue.slot_avail) {
       // A cycle!
       if (seen(current)) {
-        Util.log(s"Gridlock detected by $ticket. Seen: $seen")
+        Util.log(s"Gridlock detected by $this. Seen: $seen")
         return true
       }
       seen += current
 
       // Where's the head of that stuck queue trying to go?
       current = current.queue.head match {
-        // TODO tickets has changed
-        case Some(a) => a.tickets.get(current.to.intersection) match {
-          case Some(ticket) => ticket.turn.to
-          case None => null
+        case Some(a) => a.all_tickets(current.to.intersection).toList match {
+          case Nil => null
+          // TODO which ticket? the approved one?
+          case ls => ls.head.turn.to
         }
         case None => null
       }
-    }*/
+    }
+
+    return false*/
   }
 
   // An under-estimate; the earliest possible time.
@@ -215,6 +224,13 @@ abstract class Policy(val intersection: Intersection) {
       // TODO do extra book-keeping to verify agents aren't double requesting?
     }
   }
+  def change_turn(old: Ticket, ticket: Ticket) = {
+    synchronized {
+      waiting_agents -= old
+      waiting_agents += ticket
+      cancel_turn(old)
+    }
+  }
 
   // The intersection grants leases to waiting_agents
   def react(): Unit
@@ -222,6 +238,8 @@ abstract class Policy(val intersection: Intersection) {
   // almost common. refactor them?
   def validate_entry(ticket: Ticket): Boolean
   def handle_exit(ticket: Ticket)
+  // Happens when an agent is requesting a different turn
+  def cancel_turn(ticket: Ticket)
   def approveds_to(target: Edge): Iterable[Ticket]
   def current_greens(): Set[Turn]
   def dump_info()
@@ -233,6 +251,7 @@ class NeverGoPolicy(intersection: Intersection) extends Policy(intersection) {
   def react = {}
   def validate_entry(ticket: Ticket) = false
   def handle_exit(ticket: Ticket) = {}
+  def cancel_turn(ticket: Ticket) = {}
   def approveds_to(target: Edge) = Nil
   def current_greens = Set()
   def dump_info = {

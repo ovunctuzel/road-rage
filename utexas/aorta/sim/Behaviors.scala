@@ -296,7 +296,14 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
       }
       // Otherwise, ask the intersection
       case e: Edge => a.get_ticket(route.pick_turn(e)) match {
-        case Some(ticket) => ticket.is_approved
+        case Some(ticket) => {
+          if (ticket.is_approved) {
+            true
+          } else {
+            impatient_turn(ticket, e)
+            false
+          }
+        }
         case None => false
       }
     }
@@ -350,6 +357,25 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
     } else {
       // Special case for distance of 0: avoid a NaN, just stop.
       return a.accel_to_stop
+    }
+  }
+
+  // Don't wait for a filled queue, maybe.
+  private def impatient_turn(old: Ticket, e: Edge) = {
+    // Consider being impatient if we're the head of our queue, we've been
+    // idling for a little while, and it's because our target is filled.
+    val idle_time = 30.0  // TODO cfg
+    if (a.how_long_idle > idle_time && a.at.on == e && !a.our_lead.isDefined &&
+        !old.turn.to.queue.slot_avail)
+    {
+      val turn = route.pick_turn(e, avoid = old.turn)
+      if (turn != old.turn) {
+        Util.log(s"$a impatiently switching from ${old.turn} to $turn")
+        val ticket = new Ticket(a, turn)
+        a.tickets += ticket
+        a.tickets -= old
+        e.to.intersection.change_turn(old, ticket)
+      }
     }
   }
 }
