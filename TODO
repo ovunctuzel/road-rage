@@ -2,6 +2,9 @@
 
 # Auctions #
 
+- careful fixes at one intersection
+  - tune system bids
+
 - map fixes
   - fix new small issues..
     - floating vertices due to nuking all roads that lead up to it, and choosing
@@ -21,10 +24,8 @@
   - v7931 has redundant verts... roundabout
 
 - discretionary lanechanging
-- changing turn preference as congestion changes...
 - better phase groupings
 - fix gridlock
-- tune system bids
 - new experiment: simple priority
 - new experiment: all reservations
 

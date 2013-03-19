@@ -26,7 +26,7 @@ abstract class Route(val goal: DirectedRoad, rng: RNG)
   def transition(from: Traversable, to: Traversable)
   // The client is being forced to pick a turn. If they ask us repeatedly, we
   // have to always return the same answer.
-  def pick_turn(e: Edge): Turn
+  def pick_turn(e: Edge, avoid: Turn = null): Turn
   // The client may try to lane-change somewhere
   def pick_lane(e: Edge): Edge
   // Debug
@@ -47,7 +47,8 @@ class DijkstraRoute(goal: DirectedRoad, rng: RNG) extends Route(goal, rng) {
   // We don't care.
   def transition(from: Traversable, to: Traversable) = {}
 
-  def pick_turn(e: Edge) = e.next_turns.minBy(t => costs(t.to.directed_road.id))
+  // TODO use avoid
+  def pick_turn(e: Edge, avoid: Turn) = e.next_turns.minBy(t => costs(t.to.directed_road.id))
   def pick_lane(from: Edge): Edge = {
     // Break ties for the best lane overall by picking the lane closest to the
     // current.
@@ -95,11 +96,33 @@ class PathRoute(goal: DirectedRoad, rng: RNG) extends Route(goal, rng) {
   }
 
   // Prefer the one that's emptiest now
-  private def best_turn(e: Edge, dest: DirectedRoad): Option[Turn] = {
+  private def best_turn(e: Edge, dest: DirectedRoad, avoid: Turn): Option[Turn] =
+  {
     if (chosen_turns.contains(e)) {
       Util.assert_eq(chosen_turns(e).to.directed_road, dest)
-      return Some(chosen_turns(e))
+      if (chosen_turns(e) != avoid) {
+        return Some(chosen_turns(e))
+      } else {
+        // Try to pick again.
+        chosen_turns -= e
+
+        def rank(t: Turn) =
+          if (t == avoid)
+            -1
+          else if (t.to.directed_road == dest)
+            1
+          else
+            0
+        val best = e.next_turns.maxBy(
+          t => (rank(t), t.to.queue.percent_avail)
+        )
+        chosen_turns(e) = best
+        return Some(best)
+      }
     } else {
+      // If we're picking for the first time, avoid should be null. We'll
+      // already avoid filled up things.
+      Util.assert_eq(avoid, null)
       return e.next_turns.filter(t => t.to.directed_road == dest) match {
         case Nil => None
         case ls => {
@@ -111,7 +134,7 @@ class PathRoute(goal: DirectedRoad, rng: RNG) extends Route(goal, rng) {
     }
   }
 
-  def pick_turn(e: Edge): Turn = {
+  def pick_turn(e: Edge, avoid: Turn): Turn = {
     // Lookahead could be calling us from anywhere. Figure out where we are in
     // the path.
     val pair = path.span(r => r != e.directed_road)
@@ -120,8 +143,18 @@ class PathRoute(goal: DirectedRoad, rng: RNG) extends Route(goal, rng) {
     Util.assert_eq(slice.nonEmpty, true)
 
     // Is the next step reachable?
-    best_turn(e, slice.tail.head) match {
+    best_turn(e, slice.tail.head, avoid) match {
       case Some(t) => {
+        if (avoid != null && t != avoid) {
+          // We changed our turn, so re-route.
+          // TODO refactor this code
+          val source = t.to.directed_road
+          // TODO Erase all turn choices AFTER source, if we've made any?
+          // Stitch together the new path into the full thing
+          val new_path = slice.head :: source :: Common.sim.graph.router.path(source, goal)
+          path = before ++ new_path
+          tell_listeners(EV_Reroute(path))
+        }
         return t
       }
       case None => {
@@ -212,7 +245,8 @@ class DrunkenRoute(goal: DirectedRoad, rng: RNG) extends Route(goal, rng) {
   // With the right amount of alcohol, a drunk can choose uniformly at random
   def choose_turn(e: Edge) = rng.choose(e.next_turns)
 
-  def pick_turn(e: Edge) =
+  // TODO use avoid
+  def pick_turn(e: Edge, avoid: Turn) =
     chosen_turns.getOrElseUpdate(e, choose_turn(e))
 
   def pick_lane(e: Edge): Edge = {
