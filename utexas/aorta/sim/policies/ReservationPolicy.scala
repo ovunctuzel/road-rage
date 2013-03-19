@@ -86,10 +86,6 @@ class ReservationPolicy(intersection: Intersection,
     queue.dequeueFirst((t) => t == ticket)
   }
 
-  def cancel_turn(ticket: Ticket) = {
-    queue.dequeueFirst((t) => t == ticket)
-  }
-
   def current_greens = accepted.map(_.turn).toSet
 
   def dump_info() = {
