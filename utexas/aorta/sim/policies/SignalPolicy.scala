@@ -9,7 +9,7 @@ import scala.collection.mutable.{ListBuffer, TreeSet}
 
 import utexas.aorta.map.{Turn, Vertex, Edge}
 import utexas.aorta.sim.{Intersection, Policy, Agent, EV_Signal_Change,
-                         IntersectionType, Ticket}
+                         IntersectionType, Ticket, OrderingType}
 import utexas.aorta.sim.market.{IntersectionOrdering, FIFO_Ordering}
 
 import utexas.aorta.{Util, Common, cfg}
@@ -29,12 +29,11 @@ class SignalPolicy(intersection: Intersection,
   // winning a phase that doesn't have any agents that can actually go yet.
   // Avoid that. In the FIFO case, pretend we're not autonomous and pick useless
   // phases.
-  def candidates = ordering match {
-    case _: FIFO_Ordering[Phase] => phase_order
-    case _ => phase_order.filter(
-      p => p.all_tickets.find(t => !t.turn_blocked).isDefined
-    )
-  }
+  def candidates =
+    if (ordering.ordering_type == OrderingType.FIFO)
+      phase_order
+    else
+      phase_order.filter(p => p.all_tickets.find(t => !t.turn_blocked).isDefined)
 
   // Tracks when the current phase began
   private var started_at = Common.tick

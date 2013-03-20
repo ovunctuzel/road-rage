@@ -368,9 +368,10 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
     if (a.how_long_idle > idle_time && a.at.on == e && !a.our_lead.isDefined &&
         !old.turn.to.queue.slot_avail)
     {
+      Util.assert_eq(old.is_interruption, false)
       val turn = route.pick_turn(e, avoid = old.turn)
       if (turn != old.turn) {
-        Util.log(s"$a impatiently switching from ${old.turn} to $turn")
+        //Util.log(s"$a impatiently switching from ${old.turn} to $turn")
         // TODO hackish, but reset this so we don't keep switching
         // TODO really, how long have we been denied because we're blocked?
         a.idle_since = -1.0

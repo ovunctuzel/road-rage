@@ -122,7 +122,10 @@ class Ticket(val a: Agent, val turn: Turn) extends Ordered[Ticket] {
     // Allocate a spot for them. This must be called when the turn isn't
     // blocked.
     // TODO this messes up parallelism again...
-    turn.to.queue.allocate_slot
+    if (!is_interruption) {
+      // When we became the interrupting ticket, we grabbed the slot.
+      turn.to.queue.allocate_slot
+    }
   }
 
   def is_approved = stat.accept_tick != -1.0

@@ -3,7 +3,13 @@
 # Auctions #
 
 - careful fixes at one intersection
-  - tune system bids
+  - stop signs:
+  - signals:
+  - reservations:
+  - common case (rename yield):
+  - tune system bids for all policies
+- tweak impatience
+  - try to force radically different routes?
 
 - map fixes
   - fix new small issues..

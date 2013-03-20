@@ -68,6 +68,8 @@ class ReservationPolicy(intersection: Intersection,
           if (accepted_conflicts(ticket.turn)) {
             interruption = Some(ticket)
             ticket.is_interruption = true
+            // Furthermore, grab a spot for them and keep it!
+            ticket.turn.to.queue.allocate_slot
             return
           } else {
             ticket.approve

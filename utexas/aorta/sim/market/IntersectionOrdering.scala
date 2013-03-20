@@ -4,7 +4,7 @@
 
 package utexas.aorta.sim.market
 
-import utexas.aorta.sim.{Agent, Ticket, Policy, IntersectionType}
+import utexas.aorta.sim.{Agent, Ticket, Policy, IntersectionType, OrderingType}
 
 import scala.collection.mutable.{HashMap, MultiMap}
 import scala.collection.mutable.{Set => MutableSet}
@@ -24,9 +24,12 @@ abstract class IntersectionOrdering[T <: Ordered[T]]() {
   def clear() = {
     queue = Nil
   }
+
+  def ordering_type(): OrderingType.Value
 }
 
 class FIFO_Ordering[T <: Ordered[T]]() extends IntersectionOrdering[T]() {
+  def ordering_type = OrderingType.FIFO
   def shift_next(waiting_participants: Iterable[Ticket], client: Policy): Option[T] = {
     if (queue.nonEmpty) {
       val next = queue.head
@@ -48,6 +51,7 @@ case class Bid[T](who: Wallet, item: T, amount: Double, purpose: Ticket)
 }
 
 class AuctionOrdering[T <: Ordered[T]]() extends IntersectionOrdering[T]() {
+  def ordering_type = OrderingType.Auction
   def shift_next(voters: Iterable[Ticket], client: Policy): Option[T] = {
     // Handle degenerate cases where we don't hold auctions.
     if (queue.isEmpty) {
