@@ -375,6 +375,7 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
     case Some(v: Vertex) => a.all_tickets(v.intersection).toList match {
       case Nil => Color.GRAY
       case ls if ls.find(_.is_approved).isDefined => Color.GREEN
+      case ls if ls.find(_.is_interruption).isDefined => Color.YELLOW
       case _ => Color.RED
     }
     case _ => camera_agent match {
@@ -382,8 +383,10 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
       case _ => {
         // try to avoid flashing red, this feature is used to visually spot true
         // clumps
-        if (a.how_long_idle >= 5.0) {
+        if (a.how_long_idle >= 30.0) {
           Color.RED
+        } else if (!zoomed_in) {
+          Color.GRAY
         } else {
           if (!agent_colors.contains(a)) {
             agent_colors(a) = GeomFactory.rand_color

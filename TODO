@@ -5,7 +5,7 @@
 - careful fixes at one intersection
   - stop signs:
   - signals:
-  - reservations:
+  - reservations: dont hand the lease to somebody far away
   - common case (rename yield):
   - tune system bids for all policies
 - tweak impatience
