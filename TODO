@@ -5,7 +5,7 @@
 - careful fixes at one intersection
   - stop signs:
   - signals:
-  - reservations: dont hand the lease to somebody far away
+  - reservations: dont hand the lease to somebody far away (sysbids)
   - common case (rename yield):
   - tune system bids for all policies
 - tweak impatience
@@ -23,11 +23,6 @@
     only one other link?
   - dont tie map filename to the serialized thing
   - custom serialization for them too
-
-- seattle bugs
-  - turn from e25193 to e22143
-  - hellish group of signals near v6091
-  - v7931 has redundant verts... roundabout
 
 - discretionary lanechanging
 - better phase groupings

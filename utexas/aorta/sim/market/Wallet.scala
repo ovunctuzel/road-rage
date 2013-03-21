@@ -194,7 +194,7 @@ object SystemWallets {
   lazy val thruput_bonus = Common.scenario.system_wallet.thruput_bonus
 
   val capacity = new SystemWallet()
-  lazy val capacity_threshold = Common.scenario.system_wallet.capacity_threshold
+  lazy val avail_capacity_threshold = Common.scenario.system_wallet.avail_capacity_threshold
   lazy val capacity_bonus = Common.scenario.system_wallet.capacity_bonus
 
   val far_away = new SystemWallet()
@@ -228,7 +228,7 @@ object SystemWallets {
     case _: SignalPolicy => Nil
     case _ => items.flatMap(ticket => {
       val target = ticket.asInstanceOf[Ticket].turn.to.queue
-      if (target.percent_avail < capacity_threshold)
+      if (target.percent_avail >= avail_capacity_threshold)
         Some(Bid(capacity, ticket, capacity_bonus, null))
       else
         None
@@ -255,20 +255,22 @@ object SystemWallets {
       for (phase <- items)
         yield Bid(dependency, phase, dependency_rate * num_phase(phase), null)
     case _ =>
-      // Just bid for the head of the queue, aka, for multi-auction
-      // reservations, just start things right.
       for (ticket <- items)
         yield Bid(dependency, ticket, dependency_rate * num_ticket(ticket), null)
   }
   private def num_phase(phase: Any) =
     phase.asInstanceOf[Phase].turns.map(_.from.queue.agents.size).sum
-  private def num_ticket(ticket: Any): Int = {
+  private def num_ticket(ticket: Any) =
+    ticket.asInstanceOf[Ticket].a.cur_queue.agents.size
+  // TODO Just bid for the head of the queue, aka, for multi-auction
+  // reservations, just start things right?
+  /*private def num_ticket(ticket: Any): Int = {
     val t = ticket.asInstanceOf[Ticket]
     return if (t.a.cur_queue.head.get == t.a)
       t.turn.from.queue.all_in_range(0.0, t.a.at.dist).size
     else
       0
-  }
+  }*/
 
   // Help drivers who've been waiting the longest.
   def bid_waiting[T](items: List[T], policy: Policy) = policy match {

@@ -209,12 +209,12 @@ case class MkIntersection(id: Integer, policy: IntersectionType.Value,
 
 @SerialVersionUID(1)
 case class SystemWalletConfig(
-  thruput_bonus: Double      = 5.00,
-  capacity_threshold: Double = 75.0,
-  capacity_bonus: Double     = 2.00,
-  time_rate: Double          = 2.00,
-  dependency_rate: Double    = 0.50,
-  waiting_rate: Double       = 0.01
+  thruput_bonus: Double            = 5.00,
+  avail_capacity_threshold: Double = 25.0,
+  capacity_bonus: Double           = 2.00,
+  time_rate: Double                = 2.00,
+  dependency_rate: Double          = 0.50,
+  waiting_rate: Double             = 0.01
 )
 
 object IntersectionDistribution {
@@ -620,7 +620,7 @@ object ScenarioTool {
         case "--cfg_wallets" => {
           val params = slurp_params
           val bad_params = params.keys.toSet.diff(Set(
-            "thruput_bonus", "capacity_threshold", "capacity_bonus",
+            "thruput_bonus", "avail_capacity_threshold", "capacity_bonus",
             "time_rate", "dependency_rate", "waiting_rate"
           ))
           if (!bad_params.isEmpty) {
@@ -631,7 +631,7 @@ object ScenarioTool {
           var wallet = s.system_wallet
           params.foreach(pair => wallet = pair match {
             case ("thruput_bonus", x) => wallet.copy(thruput_bonus = x.toDouble)
-            case ("capacity_threshold", x) => wallet.copy(capacity_threshold = x.toDouble)
+            case ("avail_capacity_threshold", x) => wallet.copy(avail_capacity_threshold = x.toDouble)
             case ("capacity_bonus", x) => wallet.copy(capacity_bonus = x.toDouble)
             case ("time_rate", x) => wallet.copy(time_rate = x.toDouble)
             case ("dependency_rate", x) => wallet.copy(dependency_rate = x.toDouble)
