@@ -365,10 +365,9 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
     // Consider being impatient if we're the head of our queue, we've been
     // idling for a little while, and it's because our target is filled.
     val idle_time = 90.0  // TODO cfg
-    if (a.how_long_idle > idle_time && a.at.on == e && !a.our_lead.isDefined &&
-        !old.turn.to.queue.slot_avail)
+    if (!old.is_interruption && a.how_long_idle > idle_time && a.at.on == e &&
+        !a.our_lead.isDefined && !old.turn.to.queue.slot_avail)
     {
-      Util.assert_eq(old.is_interruption, false)
       val turn = route.pick_turn(e, avoid = old.turn)
       if (turn != old.turn) {
         //Util.log(s"$a impatiently switching from ${old.turn} to $turn")
