@@ -206,10 +206,14 @@ object SystemWallets {
   val waiting = new SystemWallet()
   lazy val waiting_rate = Common.scenario.system_wallet.waiting_rate
 
+  val ready = new SystemWallet()
+  lazy val ready_bonus = Common.scenario.system_wallet.ready_bonus
+
+  // far_away is disabled in favor of ready
   def meta_bid[T](items: List[T], policy: Policy): List[Bid[T]] =
     (bid_thruput(items, policy) ++ bid_pointless_impatience(items, policy) ++
-     bid_far_away(items, policy) ++ bid_dependency(items, policy) ++
-     bid_waiting(items, policy))
+     /*bid_far_away(items, policy) ++*/ bid_dependency(items, policy) ++
+     bid_waiting(items, policy) ++ bid_ready(items, policy))
 
   // Promote bids that don't conflict
   def bid_thruput[T](items: List[T], policy: Policy) = policy match {
@@ -286,4 +290,13 @@ object SystemWallets {
   }
   private def waiting_phase(phase: Any) =
     phase.asInstanceOf[Phase].all_tickets.map(_.how_long_waiting).sum
+
+  // Promote bids of agents close enough to usefully start the turn immediately
+  def bid_ready[T](items: List[T], policy: Policy) = policy match {
+    case p: ReservationPolicy =>
+      for (ticket <- items if ticket.asInstanceOf[Ticket].close_to_start)
+        yield Bid(ready, ticket, ready_bonus, null)
+
+    case _ => Nil
+  }
 }

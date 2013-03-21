@@ -209,12 +209,15 @@ case class MkIntersection(id: Integer, policy: IntersectionType.Value,
 
 @SerialVersionUID(1)
 case class SystemWalletConfig(
-  thruput_bonus: Double            = 5.00,
+  // TODO some of these are off while I tune and don't feel like specifying 0
+  // rates on the command line
+  thruput_bonus: Double            = 4.00,
   avail_capacity_threshold: Double = 25.0,
-  capacity_bonus: Double           = 2.00,
-  time_rate: Double                = 2.00,
-  dependency_rate: Double          = 0.50,
-  waiting_rate: Double             = 0.01
+  capacity_bonus: Double           = 0.00,
+  time_rate: Double                = 0.00,  // disabled currently
+  dependency_rate: Double          = 0.00,
+  waiting_rate: Double             = 0.00,
+  ready_bonus: Double              = 5.00
 )
 
 object IntersectionDistribution {
@@ -621,7 +624,7 @@ object ScenarioTool {
           val params = slurp_params
           val bad_params = params.keys.toSet.diff(Set(
             "thruput_bonus", "avail_capacity_threshold", "capacity_bonus",
-            "time_rate", "dependency_rate", "waiting_rate"
+            "time_rate", "dependency_rate", "waiting_rate", "ready_bonus"
           ))
           if (!bad_params.isEmpty) {
             Util.log(s"$bad_params aren't valid params for --cfg_wallets")
@@ -636,6 +639,7 @@ object ScenarioTool {
             case ("time_rate", x) => wallet.copy(time_rate = x.toDouble)
             case ("dependency_rate", x) => wallet.copy(dependency_rate = x.toDouble)
             case ("waiting_rate", x) => wallet.copy(waiting_rate = x.toDouble)
+            case ("ready_bonus", x) => wallet.copy(ready_bonus = x.toDouble)
           })
 
           Util.log(s"Changing system wallet configuration: $wallet")

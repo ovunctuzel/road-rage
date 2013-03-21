@@ -213,6 +213,21 @@ class Ticket(val a: Agent, val turn: Turn) extends Ordered[Ticket] {
   // An under-estimate; the earliest possible time.
   def time_till_arrival() =
     a.how_far_away(turn.vert.intersection) / a.at.on.speed_limit
+
+  def close_to_start =
+    if (a.at.on == turn.from) {
+      a.our_lead match {
+        // Are we following reasonably closely?
+        // TODO better math to account for following at speed
+        case Some(other) => other.at.dist - a.at.dist <= cfg.follow_dist * 10.0
+        // If we're the head, just be close to starting
+        case None => time_till_arrival <= 5.0
+      }
+    } else {
+      // When we register early or lookahead over small steps, just demand we'll
+      // arrive at the turn soon
+      time_till_arrival <= 10.0
+    }
 }
 
 abstract class Policy(val intersection: Intersection) {

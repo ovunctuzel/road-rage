@@ -3,11 +3,11 @@
 # Auctions #
 
 - careful fixes at one intersection
+  (tune system bids for all policies)
   - stop signs:
   - signals:
-  - reservations: dont hand the lease to somebody far away (sysbids)
+  - reservations: 
   - common case (rename yield):
-  - tune system bids for all policies
 - tweak impatience
   - try to force radically different routes?
 
