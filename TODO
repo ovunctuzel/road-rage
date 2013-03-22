@@ -2,6 +2,7 @@
 
 # Auctions #
 
+- manually investigate longtail for trip time
 - careful fixes at one intersection
   (tune system bids for all policies)
   - stop signs:

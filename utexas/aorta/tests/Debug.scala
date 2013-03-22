@@ -15,12 +15,30 @@ object Debug {
   def main(args: Array[String]) = {
     val sim = Util.process_args(args)
 
+    find_disconnected_verts(sim)
     find_crazy_signals(sim)
     calc_capacity(sim)
     degenerate_verts(sim)
     doomed_stuff(sim)
     disconnected_directed_roads(sim)
     stress_test_pathfind(sim)
+  }
+
+  private def find_disconnected_verts(sim: Simulation) = {
+    for (v <- sim.graph.vertices) {
+      // Make sure every road is reachable from every other, except one-ways
+      var missing = false
+      for (r1 <- v.roads if (!r1.is_oneway || r1.v2 == v)) {
+        for (r2 <- v.roads if r1 != r2 && (!r2.is_oneway || r2.v1 == v)) {
+          if (!missing) {
+            if (!v.turns.find(t => t.from.road == r1 && t.to.road == r2).isDefined) {
+              Util.log(s"Roads at $v aren't fully connected... $r1 -> $r2 not there!")
+              missing = true
+            }
+          }
+        }
+      }
+    }
   }
 
   private def find_crazy_signals(sim: Simulation) = {
