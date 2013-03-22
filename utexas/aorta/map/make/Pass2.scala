@@ -4,8 +4,8 @@
 
 package utexas.aorta.map.make
 
-import scala.collection.mutable.{HashMap, MultiMap}
-import scala.collection.mutable.{Set => MutableSet}
+import scala.collection.immutable.TreeMap
+import scala.collection.mutable.{TreeSet => MutableSet}
 
 import utexas.aorta.map.Coordinate
 
@@ -30,10 +30,25 @@ class Pass2(old_graph: PreGraph1) {
   // Find vertices with exactly two roads involved. They're redundant.
   private def fix_degenerate_verts() = {
     Util.log("Collapsing degenerate vertices...")
-    val verts = new HashMap[Coordinate, MutableSet[PreEdge2]] with MultiMap[Coordinate, PreEdge2]
+    var verts = TreeMap.empty[Coordinate, MutableSet[PreEdge2]]
+    def addBinding(pt: Coordinate, e: PreEdge2) = {
+      if (!verts.contains(pt)) {
+        verts += ((pt, new MutableSet[PreEdge2]()))
+      }
+      verts(pt) += e
+    }
+    def removeBinding(pt: Coordinate, e: PreEdge2) = {
+      if (verts.contains(pt)) {
+        verts(pt) -= e
+        if (verts(pt).isEmpty) {
+          verts -= pt
+        }
+      }
+    }
+
     for (e <- graph.edges) {
-      verts.addBinding(e.from, e)
-      verts.addBinding(e.to, e)
+      addBinding(e.from, e)
+      addBinding(e.to, e)
     }
 
     var changed = true
@@ -42,18 +57,17 @@ class Pass2(old_graph: PreGraph1) {
         case Some((_, roads)) => {
           val r1 = roads.head
           val r2 = roads.tail.head
+          removeBinding(r1.from, r1)
+          removeBinding(r1.to, r1)
+          removeBinding(r2.from, r2)
+          removeBinding(r2.to, r2)
+          graph.edges = graph.edges.filter(e => e != r1 && e != r2)
+
           // TODO if type, lanes, or oneway doesnt match, bail out
           val replace = merge_roads(r1, r2)
-
-          graph.edges = graph.edges.filter(e => e != r1 && e != r2)
           graph.edges += replace
-
-          verts.removeBinding(r1.from, r1)
-          verts.removeBinding(r1.to, r1)
-          verts.removeBinding(r2.from, r2)
-          verts.removeBinding(r2.to, r2)
-          verts.addBinding(replace.from, replace)
-          verts.addBinding(replace.to, replace)
+          addBinding(replace.from, replace)
+          addBinding(replace.to, replace)
         }
         case None => changed = false
       }

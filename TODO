@@ -13,6 +13,7 @@
   - try to force radically different routes?
 
 - map fixes
+  - deterministic output
   - fix new small issues..
     - floating vertices due to nuking all roads that lead up to it, and choosing
       the vert to keep poorly

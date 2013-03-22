@@ -78,7 +78,9 @@ class PreGraph2(old_graph: PreGraph1) {
 }
 
 class PreEdge2(var from: Coordinate, var to: Coordinate,
-               val points: MutableList[Coordinate], val dat: PreEdge1) {
+               val points: MutableList[Coordinate], val dat: PreEdge1)
+  extends Ordered[PreEdge2]
+{
   def merge_dat(other: PreEdge2) = new PreEdge1(
     (if (dat.name == other.dat.name)
       dat.name
@@ -91,8 +93,15 @@ class PreEdge2(var from: Coordinate, var to: Coordinate,
     dat.lanes         // TODO diff num of lanes?
   )
 
+  val id = PreEdge2.next_id
+  PreEdge2.next_id += 1
+  override def compare(other: PreEdge2) = id.compare(other.id)
   override def toString = s"Road ${dat.name} btwn $from and $to"
 
   def length = Road.road_len(points)
   def is_culdesac = from == to
+}
+
+object PreEdge2 {
+  var next_id = 0
 }

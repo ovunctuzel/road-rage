@@ -133,8 +133,8 @@ class Pass3(old_graph: PreGraph2) {
 
     // To account for one-ways, we actually want to reason about roads that are
     // incoming to or outgoing from this vert.
-    val incoming_roads = roads filter (_.incoming_lanes(v).length != 0)
-    val outgoing_roads = roads filter (_.outgoing_lanes(v).length != 0)
+    val incoming_roads = roads.filter(_.incoming_lanes(v).nonEmpty)
+    val outgoing_roads = roads.filter(_.outgoing_lanes(v).nonEmpty)
 
     def make_turn(pair: (Edge, Edge)) = new Turn(next_id, pair._1.id, pair._2.id)
 
