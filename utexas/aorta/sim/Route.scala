@@ -95,43 +95,58 @@ class PathRoute(goal: DirectedRoad, rng: RNG) extends Route(goal, rng) {
     tell_listeners(EV_Transition(from, to))
   }
 
-  // Prefer the one that's emptiest now
-  private def best_turn(e: Edge, dest: DirectedRoad, avoid: Turn): Option[Turn] =
+  // Prefer the one that's emptiest now and try to get close to a lane that
+  // we'll want to LC to anyway
+  private def best_turn(e: Edge, dest: DirectedRoad, next_dest: DirectedRoad, avoid: Turn): Option[Turn] =
   {
     if (chosen_turns.contains(e)) {
       Util.assert_eq(chosen_turns(e).to.directed_road, dest)
       if (chosen_turns(e) != avoid) {
+        // This one's still fine.
         return Some(chosen_turns(e))
       } else {
         // Try to pick again.
         chosen_turns -= e
-
-        def rank(t: Turn) =
-          if (t == avoid)
-            -1
-          else if (t.to.directed_road == dest)
-            1
-          else
-            0
-        val best = e.next_turns.maxBy(
-          t => (rank(t), t.to.queue.percent_avail)
-        )
-        chosen_turns(e) = best
-        return Some(best)
       }
     } else {
-      // If we're picking for the first time, avoid should be null. We'll
-      // already avoid filled up things.
       Util.assert_eq(avoid, null)
-      return e.next_turns.filter(t => t.to.directed_road == dest) match {
-        case Nil => None
-        case ls => {
-          val best = ls.maxBy(t => t.to.queue.percent_avail)
-          chosen_turns(e) = best
-          Some(best)
-        }
+
+      // If we're being forced to reroute, give up now.
+      if (e.next_turns.filter(t => t.to.directed_road == dest).isEmpty) {
+        return None
       }
     }
+
+    def first_pri(t: Turn) =
+      if (t == avoid)
+        -1
+      else if (t.to.directed_road == dest)
+        1
+      else
+        0
+
+    val ideal_lanes =
+      if (next_dest != null)
+        candidate_lanes(dest.edges.head, next_dest)
+      else
+        dest.edges.toList
+    def ideal_dist(e: Edge) =
+      ideal_lanes.map(ideal => math.abs(e.lane_num - ideal.lane_num)).min
+    val total = dest.edges.size
+    def second_pri(t: Turn) =
+      if (t.to.directed_road != dest)
+        -1
+      else
+        // How far is this lane from an ideal lane?
+        (total - ideal_dist(t.to)).toDouble / total.toDouble
+
+    // Prefer things close to where we'll need to go next, and things with more
+    // room.
+    val best = e.next_turns.maxBy(
+      t => (first_pri(t), second_pri(t), t.to.queue.percent_avail)
+    )
+    chosen_turns(e) = best
+    return Some(best)
   }
 
   def pick_turn(e: Edge, avoid: Turn): Turn = {
@@ -143,7 +158,7 @@ class PathRoute(goal: DirectedRoad, rng: RNG) extends Route(goal, rng) {
     Util.assert_eq(slice.nonEmpty, true)
 
     // Is the next step reachable?
-    best_turn(e, slice.tail.head, avoid) match {
+    best_turn(e, slice.tail.head, slice.tail.tail.headOption.getOrElse(null), avoid) match {
       case Some(t) => {
         if (avoid != null && t != avoid) {
           // We changed our turn, so re-route.
