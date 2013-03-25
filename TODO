@@ -29,8 +29,6 @@
 - discretionary lanechanging
 - better phase groupings
 - fix gridlock
-- new experiment: simple priority
-- new experiment: all reservations
 
 - compatible serialization
 - system bid: bonus to reservation if i'll take the same time as somebody else

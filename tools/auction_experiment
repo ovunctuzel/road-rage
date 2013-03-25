@@ -1,31 +1,78 @@
 #!/bin/bash
 # Must be run from the base AORTA directory, eg,
-# ./tools/auction_experiment big_btr 7500
+# ./tools/auction_experiment all big_btr 7500
 
-MAP=$1
-SPAWN_PER_HOUR=$2
+COMMAND=$1
+MAP=$2
+SPAWN_PER_HOUR=$3
 GENERATIONS="3"
 MAX_BUDGET="3.0"
+NO_SYS="--cfg_wallets thruput_bonus=0 avail_capacity_threshold=0 capacity_bonus=0 time_rate=0 dependency_rate=0 waiting_rate=0"
 
-if [[ -z $MAP || -z $SPAWN_PER_HOUR ]]; then
-  echo "Usage: ./tools/auction_experiment big_btr 7500"
+if [[ -z $COMMAND || -z $MAP ]]; then
+  echo "Usage: ./tools/auction_experiment fifo big_btr 7500"
   exit
 fi
 
-# Create the base scenario
 BASE="scenarios/${MAP}"
-./experiment maps/${MAP}.map --spawn ${SPAWN_PER_HOUR} delay=3600 \
-  generations=${GENERATIONS} lifetime=3600 budget=0.0-${MAX_BUDGET} \
-  --out ${BASE}-fifo
 
-# Then make all the derivates
-./experiment ${BASE}-fifo --out ${BASE}-auction-sys --all_verts ordering=Auction
-./experiment ${BASE}-auction-sys --out ${BASE}-auction-no-sys --cfg_wallets \
-  thruput_bonus=0 avail_capacity_threshold=0 capacity_bonus=0 time_rate=0 \
-  dependency_rate=0 waiting_rate=0
-./experiment ${BASE}-auction-no-sys --out ${BASE}-equal --all_agents \
-  wallet=Static budget=1.0-1.0
+if [[ $COMMAND != "fifo" && $COMMAND != "all" && ! -f ${BASE}-fifo ]]; then
+  echo "First need to make ${BASE}-fifo"
+  echo "Try: ./tools/auction_experiment fifo $MAP 7500"
+  exit
+fi
 
-# TODO equal bids plus system
 # TODO all one type of policy
-# TODO auction with just sys, freeriders
+
+case $COMMAND in
+  # The base-line... FCFS ordering
+  "fifo")
+    ./experiment maps/${MAP}.map --spawn ${SPAWN_PER_HOUR} delay=3600 \
+      generations=${GENERATIONS} lifetime=3600 budget=0.0-${MAX_BUDGET} \
+      --out ${BASE}-fifo
+    ;;
+
+  # Regular auctions
+  "auction-sys")
+    ./experiment ${BASE}-fifo --out ${BASE}-auction-sys --all_verts \
+      ordering=Auction
+    ;;
+  "auction-no-sys")
+    ./experiment ${BASE}-fifo --out ${BASE}-auction-no-sys ${NO_SYS} \
+      --all_verts ordering=Auction
+    ;;
+
+  # Every agent is weighted equally
+  "equal-sys")
+    ./experiment ${BASE}-fifo --out ${BASE}-equal-sys --all_agents \
+      wallet=Static budget=1.0-1.0 --all_verts ordering=Auction
+    ;;
+  "equal-no-sys")
+    ./experiment ${BASE}-fifo --out ${BASE}-equal-no-sys --all_agents \
+      wallet=Static budget=1.0-1.0 ${NO_SYS} --all_verts ordering=Auction
+    ;;
+
+  # Every agent always bids their priority without losing money
+  "fixed-sys")
+    ./experiment ${BASE}-fifo --out ${BASE}-fixed-sys --all_agents \
+      wallet=Static --all_verts ordering=Auction
+    ;;
+  "fixed-no-sys")
+    ./experiment ${BASE}-fifo --out ${BASE}-fixed-no-sys --all_agents \
+      wallet=Static ${NO_SYS} --all_verts ordering=Auction
+    ;;
+
+  "all")
+    ./tools/auction_experiment fifo           ${MAP} ${SPAWN_PER_HOUR}
+    ./tools/auction_experiment auction-sys    ${MAP} ${SPAWN_PER_HOUR}
+    ./tools/auction_experiment auction-no-sys ${MAP} ${SPAWN_PER_HOUR}
+    ./tools/auction_experiment equal-sys      ${MAP} ${SPAWN_PER_HOUR}
+    ./tools/auction_experiment equal-no-sys   ${MAP} ${SPAWN_PER_HOUR}
+    ./tools/auction_experiment fixed-sys      ${MAP} ${SPAWN_PER_HOUR}
+    ./tools/auction_experiment fixed-no-sys   ${MAP} ${SPAWN_PER_HOUR}
+    ;;
+
+  *)
+    echo "Invalid command ${COMMAND}"
+    ;;
+esac

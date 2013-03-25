@@ -23,13 +23,18 @@ class Worker(multiprocessing.Process):
 
 if __name__ == '__main__':
   queue = multiprocessing.JoinableQueue()
-  for city in ['atx_big', 'big_btr', 'seattle', 'sf']:
-    for mode in ['auction-no-sys', 'equal', 'fifo']:
-      queue.put('./tools/run ' + city + '-' + mode)
+  per_hour = '25000'
+  for city in ['austin', 'baton_rouge', 'seattle', 'sf']:
+    queue.put('./tools/auction_experiment all ' + city + ' ' + per_hour)
+    for mode in ['fifo', 'auction-sys', 'auction-no-sys', 'equal-sys',
+                 'equal-no-sys', 'fixed-sys', 'fixed-no-sys']:
+      pass
+      #queue.put('./tools/run ' + city + '-' + mode)
       #queue.put('./tools/finalize ' + city + '-' + mode)
 
   workers = []
-  for i in xrange(4):
+  threads = 4
+  for i in xrange(threads):
     worker = Worker(queue)
     workers.append(worker)
     worker.start()
