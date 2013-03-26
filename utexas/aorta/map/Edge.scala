@@ -90,6 +90,7 @@ class Edge(var id: Int, val road: Road, val dir: Direction.Value)
     Util.log("Succs: " + next_turns)
     Util.log("Preds: " + prev_turns)
     Util.log(s"Slots available: ${queue.avail_slots} / ${queue.capacity}")
+    Util.log(s"  (queue thinks separation dist = ${queue.separation_dist})")
   }
 
   // For debug only

@@ -10,7 +10,7 @@ import scala.collection.JavaConversions.collectionAsScalaIterable
 
 import utexas.aorta.map.{Edge, Traversable, Position}
 
-import utexas.aorta.{Util, Common, cfg}
+import utexas.aorta.{Util, Common, cfg, Physics}
 
 // TODO introduce a notion of dimension
 // TODO logs -> asserts once things work right
@@ -51,9 +51,11 @@ class Queue(t: Traversable) {
   def slot_avail = avail_slots > 0
   def percent_avail = avail_slots.toDouble / capacity.toDouble * 100.0
 
-  // TODO this is way over-conservative. based on accel_to_follow. max next
-  // dist, plus stopping, from speed 0.
-  def separation_dist = cfg.follow_dist
+  // TODO this is way over-conservative. based on accel_to_follow, every
+  // negative term in delta_dist, from speed 0.
+  def separation_dist =
+    cfg.follow_dist + Physics.max_next_dist_plus_stopping(0.0, t.speed_limit) +
+    Physics.max_next_dist(0.0, t.speed_limit)
   // Round down. How many drivers max could squish together here? Minimum 1,
   // short edges just support 1.
   def capacity = math.max(1, math.floor(t.length / separation_dist).toInt)
