@@ -65,17 +65,23 @@ class AuctionOrdering[T <: Ordered[T]]() extends IntersectionOrdering[T]() {
 
     // Collect bids, remembering what each agent bids, and group by choice.
     val bids = new HashMap[T, MutableSet[Bid[T]]] with MultiMap[T, Bid[T]]
+    val multipliers = new HashMap[T, Int]()
+    queue.foreach(item => multipliers(item) = 1)
     voters.foreach(who => {
       who.a.wallet.bid(queue, who, client) match {
-        case Some((ticket, amount)) if amount > 0.0 => {
+        case Some((ticket, amount)) if amount > 0 => {
           bids.addBinding(ticket, Bid(who.a.wallet, ticket, amount, who))
         }
         case _ =>
       }
     })
-    // Ask the System, too
-    for (bid <- SystemWallets.meta_bid(queue, client) if bid.amount > 0.0) {
-      bids.addBinding(bid.item, bid)
+    // Ask the System, too, interpreting responses as multipliers to existing
+    // bids
+    for (bid <- SystemWallets.meta_bid(queue, client) if bid.amount > 0) {
+      multipliers(bid.item) *= bid.amount
+      // and implicitly add 1 unit of currency to the user bid, so the system
+      // can help freeriders.
+      bids.addBinding(bid.item, Bid(bid.who, bid.item, 1, null))
     }
 
     return if (bids.isEmpty) {
@@ -84,15 +90,15 @@ class AuctionOrdering[T <: Ordered[T]]() extends IntersectionOrdering[T]() {
       queue = queue.tail
       Some(next)
     } else {
-      Some(process_auction(bids, client))
+      Some(process_auction(bids, multipliers, client))
     }
   }
 
-  private def process_auction(bids: MultiMap[T, Bid[T]], client: Policy): T =
+  private def process_auction(bids: MultiMap[T, Bid[T]], multipliers: HashMap[T, Int], client: Policy): T =
   {
     // Break ties arbitrarily but deterministically.
     val sums_by_item: List[(T, Int)] = bids.keys.map(
-      t => (t, bids(t).map(_.amount).sum)
+      t => (t, bids(t).map(_.amount).sum * multipliers(t))
     ).toList.sortBy(pair => pair._1)
     if (sums_by_item.tail.isEmpty) {
       // Actually, just one choice. Freebie!
@@ -113,14 +119,14 @@ class AuctionOrdering[T <: Ordered[T]]() extends IntersectionOrdering[T]() {
           pair => pair.asInstanceOf[(Ticket, Int)]._1.turn.conflicts_with(winner_ticket.turn)
         ) match {
           case Some(group) => {
-            pay(bids(winner), group._2)
+            pay(bids(winner), multipliers(winner), group._2)
           }
           // If nobody's turn conflicts, then don't pay at all!
           case None =>
         }
       }
       case _ => {
-        pay(bids(winner), sums.tail.head._2)
+        pay(bids(winner), multipliers(winner), sums.tail.head._2)
       }
     }
 
@@ -128,17 +134,17 @@ class AuctionOrdering[T <: Ordered[T]]() extends IntersectionOrdering[T]() {
   }
 
   // A group splits some cost somehow.
-  private def pay(who: Iterable[Bid[T]], total_runnerup: Int) = {
+  private def pay(who: Iterable[Bid[T]], multiplier: Int, total_runnerup: Int) = {
     // Direct payment... all the winners pay their full bid.
     //who.foreach(bid => bid.who.spend(bid.amount, bid.purpose))
 
     // Proportional payment... Each member of the winner pays proportional to
     // what they bid.
-    val total_winners = who.map(_.amount).sum
+    val total_winners = who.map(_.amount).sum * multiplier
     Util.assert_ge(total_winners, total_runnerup)
-    val rate = total_runnerup / total_winners
+    val rate = (total_runnerup.toDouble / multiplier.toDouble) / total_winners.toDouble
     who.foreach(
-      bid => bid.who.spend(bid.amount * rate, bid.purpose)
+      bid => bid.who.spend((bid.amount * rate).toInt, bid.purpose)
     )
   }
 }
