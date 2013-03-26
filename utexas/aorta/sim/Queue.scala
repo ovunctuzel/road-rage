@@ -51,12 +51,12 @@ class Queue(t: Traversable) {
   def slot_avail = avail_slots > 0
   def percent_avail = avail_slots.toDouble / capacity.toDouble * 100.0
 
+  // TODO this is way over-conservative. based on accel_to_follow. max next
+  // dist, plus stopping, from speed 0.
+  def separation_dist = cfg.follow_dist
   // Round down. How many drivers max could squish together here? Minimum 1,
   // short edges just support 1.
-  // TODO subtracting 1 due to some agents not squeezing in tight enough. they
-  // stay a bit farther back than cfg.follow_dist due to accel_to_follow. for
-  // now, quick hackfix.
-  def capacity = math.max(1, math.floor(t.length / cfg.follow_dist).toInt - 1)
+  def capacity = math.max(1, math.floor(t.length / separation_dist).toInt)
 
   def head = wrap_option(agents.firstEntry)
   def last = wrap_option(agents.lastEntry)

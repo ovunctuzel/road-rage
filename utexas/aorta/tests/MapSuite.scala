@@ -58,10 +58,10 @@ object MapSuite {
     // This is a weak check that just looks at individual edges, not connected
     // components of the whole graph.
     for (e <- g.edges) {
-      if (e.next_turns.size == 0) {
+      if (e.next_turns.isEmpty) {
         throw new Exception(s"$e leads nowhere")
       }
-      if (e.prev_turns.size == 0) {
+      if (e.prev_turns.isEmpty) {
         throw new Exception(s"Nothing leads to $e")
       }
     }

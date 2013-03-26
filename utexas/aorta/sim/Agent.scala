@@ -110,16 +110,16 @@ class Agent(val id: Int, val route: Route, val rng: RNG, wallet_spec: MkWallet) 
       case None =>
     }
 
-    // To confirm determinism, enable and diff the logs. (Grep out
-    // timing/profiling stuff)
-    /*Util.log(
-      f"At ${Common.tick}%.1f, $this is at $at with speed ${speed}%.1f and accel ${target_accel}%.1f"
-    )*/
-
-    if (speed == 0.0 && target_accel == 0.0) {
+    if (speed == 0.0 && target_accel <= 0.0) {
       if (idle_since == -1.0) {
         idle_since = Common.tick
       }
+      // We shouldn't ever stall during a turn!
+      at.on match {
+        case t: Turn => Util.log(s"$this stalled during $t!")
+        case _ =>
+      }
+
       // short-circuit... we're not going anywhere.
       return false
     }
