@@ -9,7 +9,7 @@ import scala.collection.mutable.MutableList
 
 import utexas.aorta.map.{Coordinate, Vertex, Road, Edge, Direction, Turn}
 
-import utexas.aorta.{Util, cfg}
+import utexas.aorta.{Util, cfg, Physics}
 
 // TODO we should really subclass the real Graph, but not sure yet.
 
@@ -68,7 +68,7 @@ class PreGraph3(old_graph: PreGraph2) {
     // A driver should be able to enter at the speed limit and still have room
     // to finish the lane-change before the end.
     val min_len =
-      cfg.lanechange_dist + cfg.end_threshold + Util.worst_entry_dist(r.speed_limit)
+      cfg.lanechange_dist + cfg.end_threshold + Physics.worst_entry_dist(r.speed_limit)
     // TODO this length gets trimmed later when we clean up geometry. cant
     // really get that this early, so just conservatively over-estimate. it's
     // always safe to reduce things to 1 lane.

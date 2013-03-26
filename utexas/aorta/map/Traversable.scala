@@ -11,7 +11,7 @@ import utexas.aorta.ui.Renderable
 
 import java.io.Serializable
 
-import utexas.aorta.{cfg, Util}
+import utexas.aorta.{cfg, Util, Physics}
 
 // Something with a sequence of lines forming a path and a way to get to more
 // somethings
@@ -68,7 +68,7 @@ abstract class Traversable() extends Serializable {
   def start_pt = lines.head.start
   def end_pt  = lines.last.end
 
-  def worst_entry_dist = Util.worst_entry_dist(speed_limit)
+  def worst_entry_dist = Physics.worst_entry_dist(speed_limit)
 }
 
 // TODO noooo not var >_<

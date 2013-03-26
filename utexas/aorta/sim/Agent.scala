@@ -11,7 +11,7 @@ import utexas.aorta.sim.market._
 import utexas.aorta.ui.Renderable
 import utexas.aorta.analysis.{Stats, Agent_Lifetime_Stat}
 
-import utexas.aorta.{Util, RNG, Common, cfg}
+import utexas.aorta.{Util, RNG, Common, cfg, Physics}
 
 // TODO come up with a notion of dimension and movement capability. at first,
 // just use radius bounded by lane widths?
@@ -217,10 +217,10 @@ class Agent(val id: Int, val route: Route, val rng: RNG, wallet_spec: MkWallet) 
 
     val initial_speed = speed
     val final_speed = math.max(0.0, initial_speed + (target_accel * cfg.dt_s))
-    val dist = Util.dist_at_constant_accel(target_accel, cfg.dt_s, initial_speed)
-    val our_max_next_speed = final_speed + (max_next_accel(final_speed) * cfg.dt_s)
+    val dist = Physics.dist_at_constant_accel(target_accel, cfg.dt_s, initial_speed)
+    val our_max_next_speed = final_speed + (Physics.max_next_accel(final_speed, at.on.speed_limit) * cfg.dt_s)
 
-    if (at.dist + dist + stopping_distance(our_max_next_speed) >= min_len) {
+    if (at.dist + dist + Physics.stopping_distance(our_max_next_speed) >= min_len) {
       return false
     }
     
@@ -243,14 +243,14 @@ class Agent(val id: Int, val route: Route, val rng: RNG, wallet_spec: MkWallet) 
 
     val initial_speed = speed
     val final_speed = math.max(0.0, initial_speed + (target_accel * cfg.dt_s))
-    val dist = Util.dist_at_constant_accel(target_accel, cfg.dt_s, initial_speed)
-    val our_max_next_speed = final_speed + (max_next_accel(final_speed) * cfg.dt_s)
+    val dist = Physics.dist_at_constant_accel(target_accel, cfg.dt_s, initial_speed)
+    val our_max_next_speed = final_speed + (Physics.max_next_accel(final_speed, at.on.speed_limit) * cfg.dt_s)
 
     // TODO expanding the search to twice follow dist is a hack; I'm not sure
     // why agents are winding up about a meter too close sometimes.
-    val ahead_dist = (2.0 * cfg.follow_dist) + stopping_distance(our_max_next_speed)
+    val ahead_dist = (2.0 * cfg.follow_dist) + Physics.stopping_distance(our_max_next_speed)
     // TODO assumes all vehicles the same. not true forever.
-    val behind_dist = (2.0 * cfg.follow_dist) + stopping_distance(target.road.speed_limit)
+    val behind_dist = (2.0 * cfg.follow_dist) + Physics.stopping_distance(target.road.speed_limit)
 
     // TODO +dist for behind as well, but hey, overconservative doesnt hurt for
     // now...
@@ -344,7 +344,7 @@ class Agent(val id: Int, val route: Route, val rng: RNG, wallet_spec: MkWallet) 
     // timestep, capping off when speed hits zero.
     val initial_speed = speed
     speed = math.max(0.0, initial_speed + (target_accel * dt_sec))
-    val dist = Util.dist_at_constant_accel(target_accel, dt_sec, initial_speed)
+    val dist = Physics.dist_at_constant_accel(target_accel, dt_sec, initial_speed)
     Util.assert_ge(dist, 0.0)
     return dist
   }
@@ -366,35 +366,6 @@ class Agent(val id: Int, val route: Route, val rng: RNG, wallet_spec: MkWallet) 
   def our_lead = at.on.queue.ahead_of(this)
   def our_tail = at.on.queue.behind(this)
 
-  // math queries for lookahead and such
-
-  // stopping time comes from v_f = v_0 + a*t
-  // negative accel because we're slowing down.
-  def stopping_distance(s: Double = speed) = Util.dist_at_constant_accel(
-    -max_accel, s / max_accel, s
-  )
-  // We'll be constrained by the current edge's speed limit and maybe other
-  // stuff, but at least this speed lim.
-  def max_next_accel(s: Double = speed) = math.min(max_accel, (at.on.speed_limit - s) / cfg.dt_s)
-
-  def max_next_speed = speed + (max_next_accel() * cfg.dt_s)
-  def max_next_dist = Util.dist_at_constant_accel(max_next_accel(), cfg.dt_s, speed)
-  def min_next_dist = Util.dist_at_constant_accel(-max_accel, cfg.dt_s, speed)
-  def min_next_speed = math.max(0.0, speed + (cfg.dt_s * -max_accel))
-  def min_next_dist_plus_stopping =
-    min_next_dist + stopping_distance(min_next_speed)
-  def max_next_dist_plus_stopping =
-    max_next_dist + stopping_distance(max_next_speed)
-  def max_lookahead_dist = max_next_dist_plus_stopping
-
-  def accel_to_achieve(target_speed: Double) = (target_speed - speed) / cfg.dt_s
-  // d = (v_i)(t) + (1/2)(a)(t^2), solved for a
-  def accel_to_cover(dist: Double) = (2 * (dist - (speed * cfg.dt_s)) /
-                                      (cfg.dt_s * cfg.dt_s))
-
-  // To stop in one time-step, that is. From v_f = v_i + at
-  def accel_to_stop = (-1 * speed) / cfg.dt_s
-
   def debug = {
     Util.log("" + this)
     Util.log_push
@@ -402,7 +373,7 @@ class Agent(val id: Int, val route: Route, val rng: RNG, wallet_spec: MkWallet) 
     Util.log("Speed: " + speed)
     Util.log("How long idle? " + how_long_idle)
     Util.log("Max next speed: " + max_next_speed)
-    Util.log("Stopping distance next: " + stopping_distance(max_next_speed))
+    Util.log("Stopping distance next: " + Physics.stopping_distance(max_next_speed))
     Util.log("Lookahead dist: " + max_lookahead_dist)
     Util.log("Dist left here: " + at.dist_left)
     Util.log("Tickets: " + tickets)
@@ -436,29 +407,15 @@ class Agent(val id: Int, val route: Route, val rng: RNG, wallet_spec: MkWallet) 
     ))
   }
 
-  // find the time to cover dist by accelerating first, then cruising at
-  // constant speed
-  def two_phase_time(speed_i: Double = 0, speed_f: Double = 0, dist: Double = 0,
-                     accel: Double = 0): Double =
-  {
-    // v_f = v_i + a*t
-    val time_to_cruise = (speed_f - speed_i) / accel
-    val dist_during_accel = Util.dist_at_constant_accel(
-      accel, time_to_cruise, speed_i
-    )
-
-    return if (dist_during_accel < dist) {
-      // so then the remainder happens at constant cruisin speed
-      return time_to_cruise + ((dist - dist_during_accel) / speed_f)
-    } else {
-      // We spent the whole time accelerating
-      // solve dist = a(t^2) + (v_i)t
-      val discrim = math.sqrt((speed_i * speed_i) + (4 * accel * dist))
-      val time = (-speed_i + discrim) / (2 * accel) // this is the positive root
-      Util.assert_ge(time, 0)   // make sure we have the right solution to this
-      time
-    }
-  }
+  // Math shortcuts
+  def max_lookahead_dist = Physics.max_lookahead_dist(speed, at.on.speed_limit)
+  def accel_to_achieve(target: Double) =
+    Physics.accel_to_achieve(target, speed)
+  def max_next_dist_plus_stopping =
+    Physics.max_next_dist_plus_stopping(speed, at.on.speed_limit)
+  def max_next_dist = Physics.max_next_dist(speed, at.on.speed_limit)
+  def min_next_dist = Physics.min_next_dist(speed)
+  def max_next_speed = Physics.max_next_speed(speed, at.on.speed_limit)
 }
 
 class SpawnAgent(val a: Agent, val e: Edge, val dist: Double) {}

@@ -9,7 +9,7 @@ import scala.collection.mutable.ListBuffer
 import utexas.aorta.map.{Edge, Turn, Traversable, DirectedRoad}
 import utexas.aorta.analysis.Stats
 
-import utexas.aorta.{Util, Common, cfg}
+import utexas.aorta.{Util, Common, cfg, Physics}
 
 abstract class Behavior(a: Agent) {
   // asked every tick after everybody has moved
@@ -333,7 +333,7 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
     val delta_dist = projected_dist_from_them - desired_dist_btwn
 
     // Try to cover whatever the distance is
-    return a.accel_to_cover(delta_dist)
+    return Physics.accel_to_cover(delta_dist, a.speed)
   }
 
   // Find an accel to travel want_dist and wind up with speed 0.
@@ -356,7 +356,7 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
       }
     } else {
       // Special case for distance of 0: avoid a NaN, just stop.
-      return a.accel_to_stop
+      return Physics.accel_to_stop(a.speed)
     }
   }
 

@@ -95,7 +95,6 @@
 - give lanes/roads/etc the ability to be closed
 
 # Code Cleanup
-- pull some math in one place
 - split the passes
   - pass1 = read osm + normalize
   - pass2 = pass2
