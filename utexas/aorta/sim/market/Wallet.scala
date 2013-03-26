@@ -13,35 +13,35 @@ import utexas.aorta.{Util, Common, cfg}
 
 // Express an agent's preferences of trading between time and cost.
 // TODO dont require an agent, ultimately
-abstract class Wallet(val a: Agent, initial_budget: Double, val priority: Double) {
+abstract class Wallet(val a: Agent, initial_budget: Int, val priority: Int) {
   // How much the agent may spend during its one-trip lifetime
   var budget = initial_budget
 
-  def spend(amount: Double, ticket: Ticket) = {
+  def spend(amount: Int, ticket: Ticket) = {
     Util.assert_ge(budget, amount)
     budget -= amount
     ticket.stat = ticket.stat.copy(cost_paid = amount + ticket.stat.cost_paid)
   }
 
   // How much is this agent willing to spend on some choice?
-  def bid[T](choices: Iterable[T], ours: Ticket, policy: Policy): Option[(T, Double)] = policy.policy_type match {
+  def bid[T](choices: Iterable[T], ours: Ticket, policy: Policy): Option[(T, Int)] = policy.policy_type match {
     case IntersectionType.StopSign =>
       bid_stop_sign(
         choices.asInstanceOf[Iterable[Ticket]], ours
-      ).asInstanceOf[Option[(T, Double)]]
+      ).asInstanceOf[Option[(T, Int)]]
     case IntersectionType.Signal =>
       bid_signal(
         choices.asInstanceOf[Iterable[Phase]], ours
-      ).asInstanceOf[Option[(T, Double)]]
+      ).asInstanceOf[Option[(T, Int)]]
     case IntersectionType.Reservation =>
       bid_reservation(
         choices.asInstanceOf[Iterable[Ticket]], ours
-      ).asInstanceOf[Option[(T, Double)]]
+      ).asInstanceOf[Option[(T, Int)]]
     case _ => throw new Exception(s"Dunno how to bid on $policy")
   }
-  def bid_stop_sign(tickets: Iterable[Ticket], ours: Ticket): Option[(Ticket, Double)]
-  def bid_signal(phases: Iterable[Phase], ours: Ticket): Option[(Phase, Double)]
-  def bid_reservation(tickets: Iterable[Ticket], ours: Ticket): Option[(Ticket, Double)]
+  def bid_stop_sign(tickets: Iterable[Ticket], ours: Ticket): Option[(Ticket, Int)]
+  def bid_signal(phases: Iterable[Phase], ours: Ticket): Option[(Phase, Int)]
+  def bid_reservation(tickets: Iterable[Ticket], ours: Ticket): Option[(Ticket, Int)]
 
   def my_ticket(tickets: Iterable[Ticket], ours: Ticket) =
     tickets.find(t => t.a == ours.a)
@@ -54,17 +54,17 @@ abstract class Wallet(val a: Agent, initial_budget: Double, val priority: Double
 }
 
 // Bids a random amount on our turn.
-class RandomWallet(a: Agent, initial_budget: Double, p: Double)
+class RandomWallet(a: Agent, initial_budget: Int, p: Int)
   extends Wallet(a, initial_budget, p)
 {
-  override def toString = f"RND $budget%.2f"
+  override def toString = s"RND $budget"
   def wallet_type = WalletType.Random
 
   def rng = a.rng
 
-  private def bid_rnd[T](choice: Option[T]): Option[(T, Double)] = choice match
+  private def bid_rnd[T](choice: Option[T]): Option[(T, Int)] = choice match
   {
-    case Some(thing) => Some((thing, rng.double(0.0, budget)))
+    case Some(thing) => Some((thing, rng.int(0, budget)))
     case None => None
   }
 
@@ -79,13 +79,13 @@ class RandomWallet(a: Agent, initial_budget: Double, p: Double)
 }
 
 // Always bid the full budget, but never lose any money.
-class StaticWallet(a: Agent, initial_budget: Double, p: Double)
+class StaticWallet(a: Agent, initial_budget: Int, p: Int)
   extends Wallet(a, initial_budget, p)
 {
-  override def toString = f"STATIC $budget%.2f"
+  override def toString = s"STATIC $budget"
   def wallet_type = WalletType.Static
 
-  private def bid_full[T](choice: Option[T]): Option[(T, Double)] = choice match
+  private def bid_full[T](choice: Option[T]): Option[(T, Int)] = choice match
   {
     case Some(thing) => Some((thing, budget))
     case None => None
@@ -100,14 +100,14 @@ class StaticWallet(a: Agent, initial_budget: Double, p: Double)
   def bid_reservation(tickets: Iterable[Ticket], ours: Ticket) =
     bid_full(my_ticket(tickets, ours))
 
-  override def spend(amount: Double, ticket: Ticket) = {
+  override def spend(amount: Int, ticket: Ticket) = {
     Util.assert_ge(budget, amount)
     ticket.stat = ticket.stat.copy(cost_paid = amount)
   }
 }
 
 // Never participate.
-class FreeriderWallet(a: Agent, p: Double) extends Wallet(a, 0.0, p) {
+class FreeriderWallet(a: Agent, p: Int) extends Wallet(a, 0, p) {
   override def toString = "FR"
   def wallet_type = WalletType.Freerider
 
@@ -117,10 +117,10 @@ class FreeriderWallet(a: Agent, p: Double) extends Wallet(a, 0.0, p) {
 }
 
 // Bid once per intersection some amount proportional to the rest of the trip.
-class FairWallet(a: Agent, initial_budget: Double, p: Double)
+class FairWallet(a: Agent, initial_budget: Int, p: Int)
   extends Wallet(a, initial_budget, p)
 {
-  override def toString = f"FAIR $budget%.2f"
+  override def toString = s"FAIR $budget"
   def wallet_type = WalletType.Fair
 
   private var total_weight = 0.0
@@ -137,9 +137,11 @@ class FairWallet(a: Agent, initial_budget: Double, p: Double)
     }
   } })
 
-  private def bid_fair[T](choice: Option[T], v: Vertex): Option[(T, Double)] = choice match
+  private def bid_fair[T](choice: Option[T], v: Vertex): Option[(T, Int)] = choice match
   {
-    case Some(thing) => Some((thing, budget * (weight(v) / total_weight)))
+    case Some(thing) => Some(
+      (thing, math.floor(budget * (weight(v) / total_weight)).toInt)
+    )
     case None => None
   }
 
@@ -175,7 +177,7 @@ class FairWallet(a: Agent, initial_budget: Double, p: Double)
 }
 
 // Bids to maintain "fairness."
-class SystemWallet() extends Wallet(null, 0.0, 0.0) {
+class SystemWallet() extends Wallet(null, 0, 0) {
   override def toString = "SYS"
   def wallet_type = WalletType.System
 
@@ -184,7 +186,7 @@ class SystemWallet() extends Wallet(null, 0.0, 0.0) {
   def bid_reservation(tickets: Iterable[Ticket], ours: Ticket) = None
 
   // Infinite budget.
-  override def spend(amount: Double, ticket: Ticket) = {}
+  override def spend(amount: Int, ticket: Ticket) = {}
 }
 
 object SystemWallets {
@@ -197,8 +199,8 @@ object SystemWallets {
   lazy val avail_capacity_threshold = Common.scenario.system_wallet.avail_capacity_threshold
   lazy val capacity_bonus = Common.scenario.system_wallet.capacity_bonus
 
-  val far_away = new SystemWallet()
-  lazy val time_rate = Common.scenario.system_wallet.time_rate
+  /*val far_away = new SystemWallet()
+  lazy val time_rate = Common.scenario.system_wallet.time_rate*/
 
   val dependency = new SystemWallet()
   lazy val dependency_rate = Common.scenario.system_wallet.dependency_rate
@@ -241,7 +243,7 @@ object SystemWallets {
 
   // Stop signs and signals already take this into account. Help reservations by
   // penalizing people the farther away they are from doing their turn.
-  def bid_far_away[T](items: List[T], policy: Policy) = policy match {
+  /*def bid_far_away[T](items: List[T], policy: Policy) = policy match {
     case _: ReservationPolicy =>
       for (ticket <- items)
         yield Bid(
@@ -250,7 +252,7 @@ object SystemWallets {
         )
 
     case _ => Nil
-  }
+  }*/
 
   // Reward the lane with the most people.
   // TODO for full queues, recursing to find ALL dependency would be cool.
@@ -280,12 +282,12 @@ object SystemWallets {
   def bid_waiting[T](items: List[T], policy: Policy) = policy match {
     case p: SignalPolicy =>
       for (phase <- items)
-        yield Bid(dependency, phase, waiting_rate * waiting_phase(phase), null)
+        yield Bid(dependency, phase, (waiting_rate * waiting_phase(phase)).toInt, null)
     case _ =>
       for (ticket <- items)
         yield Bid(
           dependency, ticket,
-          waiting_rate * ticket.asInstanceOf[Ticket].how_long_waiting, null
+          (waiting_rate * ticket.asInstanceOf[Ticket].how_long_waiting).toInt, null
         )
   }
   private def waiting_phase(phase: Any) =

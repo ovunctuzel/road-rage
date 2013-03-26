@@ -48,8 +48,8 @@ case class Scenario(map_fn: String, agents: Array[MkAgent],
       percentages(agents.map(_.route.strategy))
       Util.log("Wallets:")
       percentages(agents.map(_.wallet.policy))
-      Util.log("Budget ($): " + basic_stats(agents.map(_.wallet.budget)))
-      Util.log("Priority: " + basic_stats(agents.map(_.wallet.priority)))
+      Util.log("Budget ($): " + basic_stats_int(agents.map(_.wallet.budget)))
+      Util.log("Priority: " + basic_stats_int(agents.map(_.wallet.priority)))
       Util.log_pop
     }
 
@@ -73,6 +73,8 @@ case class Scenario(map_fn: String, agents: Array[MkAgent],
   // Min, max, average
   private def basic_stats(nums: Iterable[Double]) =
     f"${nums.min}%.2f - ${nums.max}%.2f (average ${nums.sum / nums.size}%.2f)"
+  private def basic_stats_int(nums: Iterable[Int]) =
+    f"${nums.min} - ${nums.max} (average ${nums.sum / nums.size}%.2f)"
 
   def diff(other: Scenario): Unit = {
     if (map_fn != other.map_fn) {
@@ -185,7 +187,7 @@ case class MkRoute(strategy: RouteType.Value, goal: Integer, seed: Long) {
 }
 
 @SerialVersionUID(1)
-case class MkWallet(policy: WalletType.Value, budget: Double, priority: Double) {
+case class MkWallet(policy: WalletType.Value, budget: Int, priority: Int) {
   def make(a: Agent) = Factory.make_wallet(a, policy, budget, priority)
 }
 
@@ -211,13 +213,13 @@ case class MkIntersection(id: Integer, policy: IntersectionType.Value,
 case class SystemWalletConfig(
   // TODO some of these are off while I tune and don't feel like specifying 0
   // rates on the command line
-  thruput_bonus: Double            = 4.00,
-  avail_capacity_threshold: Double = 25.0,
-  capacity_bonus: Double           = 0.00,
-  time_rate: Double                = 0.00,  // disabled currently
-  dependency_rate: Double          = 0.00,
-  waiting_rate: Double             = 0.00,
-  ready_bonus: Double              = 5.00
+  thruput_bonus: Int            = 4,
+  avail_capacity_threshold: Int = 25,
+  capacity_bonus: Int           = 0,
+  time_rate: Int                = 0,  // disabled currently
+  dependency_rate: Int          = 0,
+  waiting_rate: Int             = 0,
+  ready_bonus: Int              = 5
 )
 
 object IntersectionDistribution {
@@ -272,12 +274,12 @@ object AgentDistribution {
   def uniform(ids: Range, starts: Array[Edge], ends: Array[Edge],
               times: (Double, Double), routes: Array[RouteType.Value],
               wallets: Array[WalletType.Value],
-              budgets: (Double, Double)): Array[MkAgent] =
+              budgets: (Int, Int)): Array[MkAgent] =
   {
     val actual_starts = filter_candidates(starts)
     return ids.map(id => {
       val start = rng.choose(actual_starts)
-      val budget = rng.double(budgets._1, budgets._2)
+      val budget = rng.int(budgets._1, budgets._2)
       MkAgent(
         id, rng.double(times._1, times._2), rng.new_seed, start.id,
         start.safe_spawn_dist(rng),
@@ -291,7 +293,7 @@ object AgentDistribution {
 
   def default(graph: Graph) = uniform(
     Range(0, cfg.army_size), graph.edges, graph.edges, (0.0, 60.0),
-    Array(default_route), Array(default_wallet), (100.0, 1000.0)
+    Array(default_route), Array(default_wallet), (100, 200)
   )
 }
 
@@ -347,7 +349,7 @@ object Factory {
     case OrderingType.Auction => new AuctionOrdering[T]()
   }
 
-  def make_wallet(a: Agent, enum: WalletType.Value, budget: Double, priority: Double) = enum match {
+  def make_wallet(a: Agent, enum: WalletType.Value, budget: Int, priority: Int) = enum match {
     case WalletType.Random => new RandomWallet(a, budget, priority)
     case WalletType.Static => new StaticWallet(a, budget, priority)
     case WalletType.Freerider => new FreeriderWallet(a, priority)
@@ -361,8 +363,8 @@ object ScenarioTool {
   val usage =
     ("scenarios/foo --out scenarios/new_foo [--vert ...]* [--agent ...]* [--spawn ...]* [--cfg_wallets ...]\n" +
      "  --vert 42 policy=StopSign ordering=FIFO\n" +
-     "  --agent 3 start=0 end=100 time=16.2 route=Drunken wallet=Random budget=90.0\n" +
-     "  --spawn 500 start=0 end=100 time=16.2 generations=1 lifetime=3600 route=Drunken wallet=Random budget=90.0\n" +
+     "  --agent 3 start=0 end=100 time=16.2 route=Drunken wallet=Random budget=90\n" +
+     "  --spawn 500 start=0 end=100 time=16.2 generations=1 lifetime=3600 route=Drunken wallet=Random budget=90\n" +
      "  --all_verts policy=StopSign ordering=FIFO\n" +
      "\n" +
      "Or pass two scenarios to get a diff")
@@ -456,7 +458,7 @@ object ScenarioTool {
           old_v.diff(new_v)
           s.intersections(id) = new_v
         }
-        // --agent 3 start=0 end=100 time=16.2 route=Drunken wallet=Random budget=90.0
+        // --agent 3 start=0 end=100 time=16.2 route=Drunken wallet=Random budget=90
         case "--agent" => {
           val id = shift_args.toInt
           val old_a = s.agents(id)
@@ -498,7 +500,7 @@ object ScenarioTool {
               ),
               budget = params.getOrElse(
                 "budget", old_a.wallet.budget.toString
-              ).toDouble
+              ).toInt
             )
           )
 
@@ -506,7 +508,7 @@ object ScenarioTool {
           s.agents(id) = new_a
         }
         // TODO specifying ranges or choices for stuff.
-        // --spawn 500 start=0 end=100 time=16.2 generations=1 lifetime=3600 route=Drunken wallet=Random budget=90.0
+        // --spawn 500 start=0 end=100 time=16.2 generations=1 lifetime=3600 route=Drunken wallet=Random budget=90
         case "--spawn" => {
           val number = shift_args.toInt
           val params = slurp_params
@@ -548,9 +550,9 @@ object ScenarioTool {
           val budget = params.get("budget") match {
             case Some(t) => {
               val Array(a, b) = t.split("-")
-              (a.toDouble, b.toDouble)
+              (a.toInt, b.toInt)
             }
-            case None => (0.0, 10.0)
+            case None => (0, 10)
           }
 
           // TODO describe more?
@@ -591,7 +593,7 @@ object ScenarioTool {
             case None =>
           }
         }
-        // --all_agents wallet=Random budget=1.0
+        // --all_agents wallet=Random budget=1
         case "--all_agents" => {
           val params = slurp_params
           val bad_params = params.keys.toSet.diff(Set("wallet", "budget"))
@@ -604,9 +606,9 @@ object ScenarioTool {
           val budget_factory = params.get("budget") match {
             case Some(t) => {
               val Array(a, b) = t.split("-")
-              (_: Double) => rng.double(a.toDouble, b.toDouble)
+              (_: Int) => rng.int(a.toInt, b.toInt)
             }
-            case None => (old: Double) => old
+            case None => (old: Int) => old
           }
 
           // TODO support all options. for now, these are the ones I need.
@@ -633,13 +635,13 @@ object ScenarioTool {
 
           var wallet = s.system_wallet
           params.foreach(pair => wallet = pair match {
-            case ("thruput_bonus", x) => wallet.copy(thruput_bonus = x.toDouble)
-            case ("avail_capacity_threshold", x) => wallet.copy(avail_capacity_threshold = x.toDouble)
-            case ("capacity_bonus", x) => wallet.copy(capacity_bonus = x.toDouble)
-            case ("time_rate", x) => wallet.copy(time_rate = x.toDouble)
-            case ("dependency_rate", x) => wallet.copy(dependency_rate = x.toDouble)
-            case ("waiting_rate", x) => wallet.copy(waiting_rate = x.toDouble)
-            case ("ready_bonus", x) => wallet.copy(ready_bonus = x.toDouble)
+            case ("thruput_bonus", x) => wallet.copy(thruput_bonus = x.toInt)
+            case ("avail_capacity_threshold", x) => wallet.copy(avail_capacity_threshold = x.toInt)
+            case ("capacity_bonus", x) => wallet.copy(capacity_bonus = x.toInt)
+            case ("time_rate", x) => wallet.copy(time_rate = x.toInt)
+            case ("dependency_rate", x) => wallet.copy(dependency_rate = x.toInt)
+            case ("waiting_rate", x) => wallet.copy(waiting_rate = x.toInt)
+            case ("ready_bonus", x) => wallet.copy(ready_bonus = x.toInt)
           })
 
           Util.log(s"Changing system wallet configuration: $wallet")

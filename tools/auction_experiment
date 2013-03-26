@@ -6,7 +6,7 @@ COMMAND=$1
 MAP=$2
 SPAWN_PER_HOUR=$3
 GENERATIONS="3"
-MAX_BUDGET="3.0"
+MAX_BUDGET="3"
 NO_SYS="--cfg_wallets thruput_bonus=0 avail_capacity_threshold=0 capacity_bonus=0 time_rate=0 dependency_rate=0 waiting_rate=0"
 
 if [[ -z $COMMAND || -z $MAP ]]; then
@@ -28,7 +28,7 @@ case $COMMAND in
   # The base-line... FCFS ordering
   "fifo")
     ./experiment maps/${MAP}.map --spawn ${SPAWN_PER_HOUR} delay=3600 \
-      generations=${GENERATIONS} lifetime=3600 budget=0.0-${MAX_BUDGET} \
+      generations=${GENERATIONS} lifetime=3600 budget=0-${MAX_BUDGET} \
       --out ${BASE}-fifo
     ;;
 
@@ -45,11 +45,11 @@ case $COMMAND in
   # Every agent is weighted equally
   "equal-sys")
     ./experiment ${BASE}-fifo --out ${BASE}-equal-sys --all_agents \
-      wallet=Static budget=1.0-1.0 --all_verts ordering=Auction
+      wallet=Static budget=1-1 --all_verts ordering=Auction
     ;;
   "equal-no-sys")
     ./experiment ${BASE}-fifo --out ${BASE}-equal-no-sys --all_agents \
-      wallet=Static budget=1.0-1.0 ${NO_SYS} --all_verts ordering=Auction
+      wallet=Static budget=1-1 ${NO_SYS} --all_verts ordering=Auction
     ;;
 
   # Every agent always bids their priority without losing money

@@ -43,7 +43,7 @@ class FIFO_Ordering[T <: Ordered[T]]() extends IntersectionOrdering[T]() {
 
 // Who's willing to pay how much for what underlying purpose. Purpose will be
 // null for system bids.
-case class Bid[T](who: Wallet, item: T, amount: Double, purpose: Ticket)
+case class Bid[T](who: Wallet, item: T, amount: Int, purpose: Ticket)
 {
   Util.assert_ge(amount, 0.0)
 
@@ -91,7 +91,7 @@ class AuctionOrdering[T <: Ordered[T]]() extends IntersectionOrdering[T]() {
   private def process_auction(bids: MultiMap[T, Bid[T]], client: Policy): T =
   {
     // Break ties arbitrarily but deterministically.
-    val sums_by_item: List[(T, Double)] = bids.keys.map(
+    val sums_by_item: List[(T, Int)] = bids.keys.map(
       t => (t, bids(t).map(_.amount).sum)
     ).toList.sortBy(pair => pair._1)
     if (sums_by_item.tail.isEmpty) {
@@ -110,7 +110,7 @@ class AuctionOrdering[T <: Ordered[T]]() extends IntersectionOrdering[T]() {
         // The one winning group pays the bid of the highest losing group who
         // had a conflicting turn.
         sums.tail.find(
-          pair => pair.asInstanceOf[(Ticket, Double)]._1.turn.conflicts_with(winner_ticket.turn)
+          pair => pair.asInstanceOf[(Ticket, Int)]._1.turn.conflicts_with(winner_ticket.turn)
         ) match {
           case Some(group) => {
             pay(bids(winner), group._2)
@@ -128,7 +128,7 @@ class AuctionOrdering[T <: Ordered[T]]() extends IntersectionOrdering[T]() {
   }
 
   // A group splits some cost somehow.
-  private def pay(who: Iterable[Bid[T]], total_runnerup: Double) = {
+  private def pay(who: Iterable[Bid[T]], total_runnerup: Int) = {
     // Direct payment... all the winners pay their full bid.
     //who.foreach(bid => bid.who.spend(bid.amount, bid.purpose))
 
