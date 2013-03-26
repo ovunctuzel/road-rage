@@ -218,7 +218,7 @@ class Agent(val id: Int, val route: Route, val rng: RNG, wallet_spec: MkWallet) 
     val initial_speed = speed
     val final_speed = math.max(0.0, initial_speed + (target_accel * cfg.dt_s))
     val dist = Util.dist_at_constant_accel(target_accel, cfg.dt_s, initial_speed)
-    val our_max_next_speed = final_speed + (max_next_accel * cfg.dt_s)
+    val our_max_next_speed = final_speed + (max_next_accel(final_speed) * cfg.dt_s)
 
     if (at.dist + dist + stopping_distance(our_max_next_speed) >= min_len) {
       return false
@@ -244,7 +244,7 @@ class Agent(val id: Int, val route: Route, val rng: RNG, wallet_spec: MkWallet) 
     val initial_speed = speed
     val final_speed = math.max(0.0, initial_speed + (target_accel * cfg.dt_s))
     val dist = Util.dist_at_constant_accel(target_accel, cfg.dt_s, initial_speed)
-    val our_max_next_speed = final_speed + (max_next_accel * cfg.dt_s)
+    val our_max_next_speed = final_speed + (max_next_accel(final_speed) * cfg.dt_s)
 
     // TODO expanding the search to twice follow dist is a hack; I'm not sure
     // why agents are winding up about a meter too close sometimes.
@@ -375,10 +375,10 @@ class Agent(val id: Int, val route: Route, val rng: RNG, wallet_spec: MkWallet) 
   )
   // We'll be constrained by the current edge's speed limit and maybe other
   // stuff, but at least this speed lim.
-  def max_next_accel = math.min(max_accel, (at.on.speed_limit - speed) / cfg.dt_s)
+  def max_next_accel(s: Double = speed) = math.min(max_accel, (at.on.speed_limit - s) / cfg.dt_s)
 
-  def max_next_speed = speed + (max_next_accel * cfg.dt_s)
-  def max_next_dist = Util.dist_at_constant_accel(max_next_accel, cfg.dt_s, speed)
+  def max_next_speed = speed + (max_next_accel() * cfg.dt_s)
+  def max_next_dist = Util.dist_at_constant_accel(max_next_accel(), cfg.dt_s, speed)
   def min_next_dist = Util.dist_at_constant_accel(-max_accel, cfg.dt_s, speed)
   def min_next_speed = math.max(0.0, speed + (cfg.dt_s * -max_accel))
   def min_next_dist_plus_stopping =

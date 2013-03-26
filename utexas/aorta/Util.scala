@@ -163,7 +163,7 @@ object cfg {
     ("lane_width",      0.5, "Width of a lane in meters", 0.01, 0.1),
     ("zoom_threshold",  5.0, "How close to zoom in before drawing details",    1.0, 15.0),
     ("epsilon",       1E-10, "What do we take as zero due to FP imprecision?", 0.0,  1.0),
-    ("dt_s",            0.1, "The only dt in seconds an agent can experience", 0.1,  3.0),
+    ("dt_s",            1.0, "The only dt in seconds an agent can experience", 0.1,  3.0),
     // account for crosswalks, vehicle length...
     ("end_threshold",   5.0, "The end of a traversable is its length - this",  0.1,  3.0),
     // this kind of gives dimension to cars, actually
