@@ -177,6 +177,10 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
     // far enough behind an agent. Once we have to stop somewhere, don't worry
     // about agents beyond that point.
     while (step != null && !accel_for_stop.isDefined) {
+      if (a.id == 5488) {
+        println(s"considering $step")
+      }
+
       if (!accel_for_agent.isDefined) {
         accel_for_agent = constraint_agent(step)
       }
@@ -195,6 +199,9 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
         case Some(s) => s
         case None => null
       }
+    }
+    if (a.id == 5488) {
+      println(s"---- (above was lkahd dist ${a.max_lookahead_dist}) -----")
     }
 
     // We can't get any closer to our actual destination. Terminate.
@@ -264,9 +271,19 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
         if (!a.involved_with(i)) {
           val next_turn = route.pick_turn(e)
           val ticket = new Ticket(a, next_turn)
+          if (a.id == 5488) {
+            println(s"just requested $ticket")
+          }
           a.tickets += ticket
           i.request_turn(ticket)
+        } else {
+          if (a.id == 5488) {
+            println(s"not grabbing ticket since already $i")
+          }
         }
+      }
+      case e: Edge if a.id == 5488 => {
+        println(s"  ah, dont grab ticket for $step, not committed yet!")
       }
       case _ =>
     }
@@ -275,6 +292,9 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
     // preferably right at that left border.
 
     if (step.predict_dist < step.this_dist - cfg.end_threshold) {
+      if (a.id == 5488) {
+        println(s"  dont worry about $step yet")
+      }
       return Left(None)
     }
 
@@ -316,6 +336,11 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
     // because the edge is short), then try to cover enough distance to get us
     // to the start of the edge.
     val want_dist = math.max(step.dist_ahead, dist_from_agent_to_end - cfg.end_threshold)
+    if (a.id == 5488) {
+      println(s"  to stop for $step, want dist $want_dist")
+      println(s"    = max(${step.dist_ahead}, $dist_from_agent_to_end - ${cfg.end_threshold})")
+      println(s"  do accel ${accel_to_end(want_dist)} starting from ${a.speed}")
+    }
     return Left(Some(accel_to_end(want_dist)))
   }
 
@@ -352,7 +377,14 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
         // that we can't stop. Want (1/2)(a_1)(dt)^2 + [(a_1)(dt)](dt) -
         // (1/2)(a_max)(dt)^2 = want_dist, algebra gives the answer below.
         val coefficient = (2.0 / 3.0) / (cfg.dt_s * cfg.dt_s)
-        return (coefficient * want_dist) + (a.max_accel / 3.0)
+        //return (coefficient * want_dist) + (a.max_accel / 3.0)
+        // TODO bug... stopping dist is too neg if it assumes it can use whole
+        // dt to deaccelerate and go negative!
+        val proposal = (2.0 / 3.0) / (cfg.dt_s * cfg.dt_s)
+        if (Physics.dist_at_constant_accel(proposal, cfg.dt_s, a.speed) > want_dist) {
+          Util.log(s"!!! oops, $a creeping up wouldnt work...")
+        }
+        return proposal
       }
     } else {
       // Special case for distance of 0: avoid a NaN, just stop.
@@ -402,7 +434,7 @@ class LookaheadStep(
   // this_dist = how much distance from 'at' we'll consider. it would just be
   // length, except for the very first step of a lookahead, since the agent
   // doesnt start at the beginning of the step.
-  override def toString = "Lookahead to %s with %.2f m left".format(at, predict_dist)
+  override def toString = "Lookahead to %s with %f so far and %.2f m left".format(at, dist_ahead, predict_dist)
 
   // TODO iterator syntax
 

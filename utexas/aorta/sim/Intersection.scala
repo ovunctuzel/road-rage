@@ -118,6 +118,9 @@ class Ticket(val a: Agent, val turn: Turn) extends Ordered[Ticket] {
   var stat = Turn_Stat(a.id, turn.vert.id, Common.tick, -1.0, -1.0, 0.0)
 
   def approve() = {
+    if (a.id == 5488) {
+      println(s"$this approved!")
+    }
     stat = stat.copy(accept_tick = Common.tick)
     // Allocate a spot for them. This must be called when the turn isn't
     // blocked.

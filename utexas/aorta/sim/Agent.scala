@@ -118,7 +118,7 @@ class Agent(val id: Int, val route: Route, val rng: RNG, wallet_spec: MkWallet) 
       // since the agents in front might not be packed together yet...
       if (how_long_idle >= cfg.dt_s * 10) {
         at.on match {
-          case t: Turn => Util.log(s"$this stalled during $t!")
+          case t: Turn => Util.log(s"  $this stalled during $t!")
           case _ =>
         }
       }
@@ -163,12 +163,23 @@ class Agent(val id: Int, val route: Route, val rng: RNG, wallet_spec: MkWallet) 
       (current_on, next) match {
         case (e: Edge, t: Turn) => {
           val i = t.vert.intersection
-          i.enter(get_ticket(t).get)
+          // TODO bug
+          try {
+            i.enter(get_ticket(t).get)
+          } catch {
+            case _ => {
+              println(s"$this has no ticket for $t at ${Common.tick}")
+              sys.exit
+            }
+          }
           e.queue.free_slot
         }
         case (t: Turn, e: Edge) => {
           val ticket = get_ticket(t).get
           tickets.remove(ticket)
+          if (id == 5488) {
+            println(s"nix $ticket since we're at $e now")
+          }
           ticket.intersection.exit(ticket)
           ticket.stat = ticket.stat.copy(done_tick = Common.tick)
           Stats.record(ticket.stat)
@@ -330,6 +341,9 @@ class Agent(val id: Int, val route: Route, val rng: RNG, wallet_spec: MkWallet) 
 
             val ticket = get_ticket(t).get
             tickets.remove(ticket)
+            if (id == 5488) {
+              println(s"nix $ticket since we're done")
+            }
             ticket.intersection.exit(ticket)
           }
         }
