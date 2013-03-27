@@ -118,7 +118,7 @@ class Agent(val id: Int, val route: Route, val rng: RNG, wallet_spec: MkWallet) 
       // since the agents in front might not be packed together yet...
       if (how_long_idle >= cfg.dt_s * 10) {
         at.on match {
-          case t: Turn => Util.log(s"$this stalled during $t!")
+          case t: Turn => Util.log(s"  $this stalled during $t!")
           case _ =>
         }
       }
