@@ -155,6 +155,21 @@ class Simulation(val graph: Graph, scenario: Scenario)
     } else {
       false
     }
+
+  // Do some temporary debugging type thing from the UI
+  def ui_debug() = {
+    // TODO This'll infinite loop if there's gridlock (recursive dependency)
+    def demand(e: Edge): Int =
+      if (e.queue.is_full)
+        e.queue.capacity + e.preds.map(demand).sum
+      else
+        e.queue.capacity - e.queue.avail_slots
+
+    // Find queues with the most demand
+    for (e <- graph.edges.sortBy(e => -demand(e)).take(10)) {
+      Util.log(s"$e has total demand ${demand(e)}")
+    }
+  }
 }
 
 trait ListenerPattern[T] {

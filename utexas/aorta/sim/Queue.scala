@@ -49,6 +49,7 @@ class Queue(t: Traversable) {
   }
 
   def slot_avail = avail_slots > 0
+  def is_full = !slot_avail
   def percent_avail = avail_slots.toDouble / capacity.toDouble * 100.0
 
   // TODO this is way over-conservative. based on accel_to_follow, every
@@ -168,7 +169,7 @@ class Queue(t: Traversable) {
   // The real-time spawning magic is really quite simple if worst_entry_dist and
   // lookahead work.
   def can_spawn_now(dist: Double): Boolean = {
-    if (!slot_avail) {
+    if (is_full) {
       return false
     }
 

@@ -757,6 +757,10 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
     case Key.G => {
       show_green = !show_green
     }
+    case Key.Q => {
+      // Run some sort of debuggy thing
+      sim.ui_debug
+    }
     case _ => // Ignore the rest
   }
 
