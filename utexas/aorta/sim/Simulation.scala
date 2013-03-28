@@ -158,12 +158,16 @@ class Simulation(val graph: Graph, scenario: Scenario)
 
   // Do some temporary debugging type thing from the UI
   def ui_debug() = {
-    // TODO This'll infinite loop if there's gridlock (recursive dependency)
-    def demand(e: Edge): Int =
+    // Detect gridlock super hackishly.
+    def demand(e: Edge): Int = try {
       if (e.queue.is_full)
         e.queue.capacity + e.preds.map(demand).sum
       else
         e.queue.capacity - e.queue.avail_slots
+    } catch {
+      // Mark appropriately :P
+      case err: java.lang.StackOverflowError => Int.MaxValue
+    }
 
     // Find queues with the most demand
     for (e <- graph.edges.sortBy(e => -demand(e)).take(10)) {

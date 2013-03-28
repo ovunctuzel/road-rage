@@ -5,6 +5,11 @@
 import multiprocessing
 import subprocess
 
+PER_HOUR = '25000'
+CITIES = ['austin', 'baton_rouge', 'seattle', 'sf']
+MODES = ['fifo', 'auction-sys', 'auction-no-sys', 'equal-sys', 'equal-no-sys',
+         'fixed-sys', 'fixed-no-sys']
+
 class Worker(multiprocessing.Process):
   def __init__(self, queue):
     multiprocessing.Process.__init__(self)
@@ -23,12 +28,10 @@ class Worker(multiprocessing.Process):
 
 if __name__ == '__main__':
   queue = multiprocessing.JoinableQueue()
-  per_hour = '25000'
-  for city in ['austin', 'baton_rouge', 'seattle', 'sf']:
+  for city in CITIES:
     # Keep only one set of put()s active ever
-    queue.put('./tools/auction_experiment all ' + city + ' ' + per_hour)
-    for mode in ['fifo', 'auction-sys', 'auction-no-sys', 'equal-sys',
-                 'equal-no-sys', 'fixed-sys', 'fixed-no-sys']:
+    queue.put('./tools/auction_experiment all ' + city + ' ' + PER_HOUR)
+    for mode in MODES:
       #queue.put('./tools/run ' + city + '-' + mode)
       #queue.put('./tools/finalize ' + city + '-' + mode)
       pass
