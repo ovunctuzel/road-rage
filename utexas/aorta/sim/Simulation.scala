@@ -166,12 +166,12 @@ class Simulation(val graph: Graph, scenario: Scenario)
         e.queue.capacity - e.queue.avail_slots
     } catch {
       // Mark appropriately :P
-      case err: java.lang.StackOverflowError => Int.MaxValue
+      case err: java.lang.StackOverflowError => 999999999
     }
 
     // Find queues with the most demand
-    for (e <- graph.edges.sortBy(e => -demand(e)).take(10)) {
-      Util.log(s"$e has total demand ${demand(e)}")
+    for (e <- graph.edges.map(e => (-demand(e), e)).sorted.take(10)) {
+      Util.log(s"${e._2} has total demand ${-e._1}")
     }
   }
 }
