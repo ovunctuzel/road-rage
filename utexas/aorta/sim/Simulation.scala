@@ -158,6 +158,8 @@ class Simulation(val graph: Graph, scenario: Scenario)
 
   // Do some temporary debugging type thing from the UI
   def ui_debug() = {
+    // TODO memoize.
+
     // Detect gridlock super hackishly.
     def demand(e: Edge): Int = try {
       if (e.queue.is_full)

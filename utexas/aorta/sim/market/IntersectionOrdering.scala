@@ -90,11 +90,12 @@ class AuctionOrdering[T <: Ordered[T]]() extends IntersectionOrdering[T]() {
       queue = queue.tail
       Some(next)
     } else {
-      Some(process_auction(bids, multipliers, client))
+      val debug = client.intersection.v.id == -1
+      Some(process_auction(debug, bids, multipliers, client))
     }
   }
 
-  private def process_auction(bids: MultiMap[T, Bid[T]], multipliers: HashMap[T, Int], client: Policy): T =
+  private def process_auction(debug: Boolean, bids: MultiMap[T, Bid[T]], multipliers: HashMap[T, Int], client: Policy): T =
   {
     // Break ties arbitrarily but deterministically.
     val sums_by_item: List[(T, Int)] = bids.keys.map(
@@ -104,6 +105,14 @@ class AuctionOrdering[T <: Ordered[T]]() extends IntersectionOrdering[T]() {
       // Actually, just one choice. Freebie!
       return sums_by_item.head._1
     }
+
+    if (debug) {
+      for (i <- sums_by_item) {
+        println(s"- ${i._2} (multiplier ${multipliers(i._1)}) for ${i._1}")
+      }
+      println("")
+    }
+
     // Now sort by sum. As long as this is a stable sort, fine.
     // (Lotsa type nonsense when I try to do this in one go.)
     val sums = sums_by_item.sortBy(pair => pair._2).reverse

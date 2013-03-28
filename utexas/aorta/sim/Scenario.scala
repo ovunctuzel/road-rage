@@ -220,7 +220,10 @@ case class SystemWalletConfig(
   dependency_rate: Int          = 0,
   waiting_rate: Int             = 0,
   ready_bonus: Int              = 5
-)
+) {
+  override def toString =
+    s"SystemWalletConfig(thruput_bonus = $thruput_bonus, avail_capacity_threshold = $avail_capacity_threshold, capacity_bonus = $capacity_bonus, time_rate = $time_rate, dependency_rate = $dependency_rate, waiting_rate = $waiting_rate, ready_bonus = $ready_bonus)"
+}
 
 object IntersectionDistribution {
   private val rng = new RNG()

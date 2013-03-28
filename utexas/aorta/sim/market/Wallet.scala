@@ -43,9 +43,12 @@ abstract class Wallet(val a: Agent, initial_budget: Int, val priority: Int) {
   def bid_signal(phases: Iterable[Phase], ours: Ticket): Option[(Phase, Int)]
   def bid_reservation(tickets: Iterable[Ticket], ours: Ticket): Option[(Ticket, Int)]
 
+  // This is for just our ticket.
   def my_ticket(tickets: Iterable[Ticket], ours: Ticket) =
     tickets.find(t => t.a == ours.a)
-
+  // Pay for people ahead of us.
+  def greedy_my_ticket(tickets: Iterable[Ticket], ours: Ticket) =
+    tickets.find(t => t.turn.from == ours.turn.from)
   // TODO if there are multiple... then what?
   def my_phase(phases: Iterable[Phase], ours: Ticket) =
     phases.find(p => p.has(ours.turn))
@@ -91,14 +94,15 @@ class StaticWallet(a: Agent, initial_budget: Int, p: Int)
     case None => None
   }
 
+  // Be greedier. We have infinite budget, so contribute to our queue.
   def bid_stop_sign(tickets: Iterable[Ticket], ours: Ticket) =
-    bid_full(my_ticket(tickets, ours))
+    bid_full(greedy_my_ticket(tickets, ours))
 
   def bid_signal(phases: Iterable[Phase], ours: Ticket) =
     bid_full(my_phase(phases, ours))
 
   def bid_reservation(tickets: Iterable[Ticket], ours: Ticket) =
-    bid_full(my_ticket(tickets, ours))
+    bid_full(greedy_my_ticket(tickets, ours))
 
   override def spend(amount: Int, ticket: Ticket) = {
     Util.assert_ge(budget, amount)

@@ -103,7 +103,6 @@ class Intersection(val v: Vertex, policy_type: IntersectionType.Value,
   }
 }
 
-// TODO when we talk to intersection, dont pass agent, pass this!
 class Ticket(val a: Agent, val turn: Turn) extends Ordered[Ticket] {
   // TODO if an agent ever loops and requests the same turn before clearing the
   // prev one, gonna have a bad time!
