@@ -79,7 +79,7 @@ class Intersection(val v: Vertex, policy_type: IntersectionType.Value,
     if (!policy.validate_entry(ticket)) {
       // Misleading error message. They may be going 0 speed, but the agent step
       // code hasn't finished moving them.
-      Util.log("!!! %s illegally entered %s, going %f m/s".format(ticket.a, this, ticket.a.speed))
+      Util.log(s"!!! ${ticket.a} illegally entered $this, going ${ticket.a.speed} m/s")
       Util.log("  Illegal entry was near " + t.from + " and " + t + " (vert " + t.from.to.id + ")")
       Util.log("  Origin lane length: " + t.from.length + "; time " + Common.tick)
       Util.log("  Happened at " + Common.tick)

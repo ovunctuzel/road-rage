@@ -31,6 +31,12 @@ abstract class Traversable() extends Serializable {
   def set_lines(ls: Array[Line]) = {
     lines = ls
     length = lines.foldLeft(0.0)((a, b) => a + b.length)
+    this match {
+      case e: Edge if length <= cfg.epsilon => {
+        Util.log(s"$e now has length $length!")
+      }
+      case _ =>
+    }
   }
 
   // if dist is > length or < 0, then this query makes no sense

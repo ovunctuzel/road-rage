@@ -9,6 +9,7 @@ PER_HOUR = '25000'
 CITIES = ['austin', 'baton_rouge', 'seattle', 'sf']
 MODES = ['fifo', 'auction-sys', 'auction-no-sys', 'equal-sys', 'equal-no-sys',
          'fixed-sys', 'fixed-no-sys']
+THREADS = 2
 
 class Worker(multiprocessing.Process):
   def __init__(self, queue):
@@ -37,8 +38,7 @@ if __name__ == '__main__':
       pass
 
   workers = []
-  threads = 4
-  for i in xrange(threads):
+  for i in xrange(THREADS):
     worker = Worker(queue)
     workers.append(worker)
     worker.start()

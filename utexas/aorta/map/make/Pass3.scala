@@ -335,10 +335,14 @@ class Pass3(old_graph: PreGraph2) {
               else
                 e.lines.last
       val use = best_line.perp_shift(-0.5)
-      l.x1 = use.x1
-      l.y1 = use.y1
-      l.x2 = use.x2
-      l.y2 = use.y2
+      if (use.length <= cfg.epsilon && l.length > cfg.epsilon) {
+        Util.log(s"Don't shorten line of $e to 0!")
+      } else {
+        l.x1 = use.x1
+        l.y1 = use.y1
+        l.x2 = use.x2
+        l.y2 = use.y2
+      }
     }
   }
 

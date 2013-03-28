@@ -158,6 +158,10 @@ class Simulation(val graph: Graph, scenario: Scenario)
 
   // Do some temporary debugging type thing from the UI
   def ui_debug() = {
+    for (e <- graph.edges if e.length < cfg.epsilon) {
+      println(s"$e is short... ${e.length}")
+    }
+
     // TODO memoize.
 
     // Detect gridlock super hackishly.
