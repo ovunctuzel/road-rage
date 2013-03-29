@@ -2,16 +2,6 @@
 
 # Auctions #
 
-- manually investigate longtail for trip time
-- careful fixes at one intersection
-  (tune system bids for all policies)
-  - stop signs:
-  - signals:
-  - reservations: 
-  - common case (rename yield):
-- tweak impatience
-  - try to force radically different routes?
-
 - map fixes
   - deterministic output
   - fix new small issues..

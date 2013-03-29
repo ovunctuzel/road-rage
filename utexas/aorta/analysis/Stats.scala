@@ -17,7 +17,8 @@ import org.jfree.data.xy.{XYSeries, XYSeriesCollection}
 import java.io.File
 import javax.imageio.ImageIO
 
-import utexas.aorta.sim.{MkIntersection, RouteType, WalletType, IntersectionType}
+import utexas.aorta.sim.{MkIntersection, RouteType, WalletType,
+                         IntersectionType, OrderingType}
 
 import utexas.aorta.Util
 
@@ -53,16 +54,13 @@ case class Scenario_Stat(
 
   def write(stream: ObjectOutputStream) = {
     stream.writeInt(0)
-    // TODO being lazy, reconstructing an array is hard :|
-    stream.writeObject(this)
-    /*stream.writeString(map_fn)
+    stream.writeUTF(map_fn)
     stream.writeInt(intersections.size)
     for (i <- intersections) {
-      // TODO dont need to write the ID, really
-      stream.write(i.id)
-      stream.write(i.policy.id)
-      stream.write(i.ordering.id)
-    }*/
+      // The ID is implicit
+      stream.writeInt(i.policy.id)
+      stream.writeInt(i.ordering.id)
+    }
   }
 }
 
@@ -179,7 +177,7 @@ object PostProcess {
   }
 
   def read_stat(s: ObjectInputStream): Measurement = s.readInt match {
-    case 0 => s.readObject.asInstanceOf[Scenario_Stat]
+    case 0 => Scenario_Stat(s.readUTF, read_intersections(s))
     case 1 => Agent_Lifetime_Stat(
       s.readInt, s.readDouble, s.readInt, s.readInt, RouteType(s.readInt),
       WalletType(s.readInt), s.readDouble, s.readDouble, s.readDouble,
@@ -192,6 +190,17 @@ object PostProcess {
     case 3 => Heartbeat_Stat(
       s.readInt, s.readInt, s.readInt, s.readDouble, s.readInt
     )
+  }
+
+  private def read_intersections(s: ObjectInputStream): Array[MkIntersection] =
+  {
+    val ls = new Array[MkIntersection](s.readInt)
+    for (id <- Range(0, ls.size)) {
+      ls(id) = MkIntersection(
+        id, IntersectionType(s.readInt), OrderingType(s.readInt)
+      )
+    }
+    return ls
   }
 }
 
