@@ -211,18 +211,16 @@ case class MkIntersection(id: Integer, policy: IntersectionType.Value,
 
 @SerialVersionUID(1)
 case class SystemWalletConfig(
-  // TODO some of these are off while I tune and don't feel like specifying 0
-  // rates on the command line
-  thruput_bonus: Int            = 4,
+  thruput_bonus: Int            = 7,
   avail_capacity_threshold: Int = 25,
-  capacity_bonus: Int           = 0,
-  time_rate: Int                = 0,  // disabled currently
-  dependency_rate: Int          = 0,
-  waiting_rate: Int             = 0,
+  capacity_bonus: Int           = 5,
+  // This one easily dominates decisions
+  dependency_rate: Int          = 2,
+  waiting_rate: Int             = 1,
   ready_bonus: Int              = 5
 ) {
   override def toString =
-    s"SystemWalletConfig(thruput_bonus = $thruput_bonus, avail_capacity_threshold = $avail_capacity_threshold, capacity_bonus = $capacity_bonus, time_rate = $time_rate, dependency_rate = $dependency_rate, waiting_rate = $waiting_rate, ready_bonus = $ready_bonus)"
+    s"SystemWalletConfig(thruput_bonus = $thruput_bonus, avail_capacity_threshold = $avail_capacity_threshold, capacity_bonus = $capacity_bonus, dependency_rate = $dependency_rate, waiting_rate = $waiting_rate, ready_bonus = $ready_bonus)"
 }
 
 object IntersectionDistribution {
@@ -629,7 +627,7 @@ object ScenarioTool {
           val params = slurp_params
           val bad_params = params.keys.toSet.diff(Set(
             "thruput_bonus", "avail_capacity_threshold", "capacity_bonus",
-            "time_rate", "dependency_rate", "waiting_rate", "ready_bonus"
+            "dependency_rate", "waiting_rate", "ready_bonus"
           ))
           if (!bad_params.isEmpty) {
             Util.log(s"$bad_params aren't valid params for --cfg_wallets")
@@ -641,7 +639,6 @@ object ScenarioTool {
             case ("thruput_bonus", x) => wallet.copy(thruput_bonus = x.toInt)
             case ("avail_capacity_threshold", x) => wallet.copy(avail_capacity_threshold = x.toInt)
             case ("capacity_bonus", x) => wallet.copy(capacity_bonus = x.toInt)
-            case ("time_rate", x) => wallet.copy(time_rate = x.toInt)
             case ("dependency_rate", x) => wallet.copy(dependency_rate = x.toInt)
             case ("waiting_rate", x) => wallet.copy(waiting_rate = x.toInt)
             case ("ready_bonus", x) => wallet.copy(ready_bonus = x.toInt)

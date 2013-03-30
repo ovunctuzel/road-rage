@@ -204,7 +204,7 @@ trait EventQueue {
     // TODO ties? determinism matters
   }
 
-  private val events = new PriorityQueue[Callback]()
+  val events = new PriorityQueue[Callback]()
 
   def fire_events(tick: Double) = {
     while (events.nonEmpty && tick >= events.head.at) {
