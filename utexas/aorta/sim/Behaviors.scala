@@ -197,7 +197,6 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
       }
     }
 
-    // We can't get any closer to our actual destination. Terminate.
     // TODO consider moving this first case to choose_action and not doing
     // lookahead when these premises hold true.
     return if (done_with_route) {
@@ -285,15 +284,7 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
       // Don't stop at the end of a turn
       case t: Turn => true
       // Stop if we're arriving at destination
-      case e: Edge if route.done(e) => {
-        // Are we completely done?
-        // TODO epsilon here more fair?
-        if (dist_from_agent_to_end <= cfg.end_threshold && a.speed == 0.0) {
-          // TODO dont return from deep inside here
-          return Right(true)
-        }
-        false
-      }
+      case e: Edge if route.done(e) => false
       // Otherwise, ask the intersection
       case e: Edge => a.get_ticket(route.pick_turn(e)) match {
         case Some(ticket) => {
@@ -311,12 +302,23 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
       return Left(None)
     }
 
-    // We want to go the distance that puts us at length - end_threshold. If
-    // we're already past that point (due to floating point imprecision, or just
-    // because the edge is short), then try to cover enough distance to get us
-    // to the start of the edge.
-    val want_dist = math.max(step.dist_ahead, dist_from_agent_to_end - cfg.end_threshold)
-    return Left(Some(accel_to_end(want_dist)))
+    // Are we completely done?
+    val maybe_done = dist_from_agent_to_end <= cfg.end_threshold && a.speed == 0.0
+    return a.at.on match {
+      case e: Edge if route.done(e) && maybe_done => {
+        Right(true)
+      }
+      case _ => {
+        // We want to go the distance that puts us at length - end_threshold. If
+        // we're already past that point (due to floating point imprecision, or
+        // just because the edge is short), then try to cover enough distance to
+        // get us to the start of the edge.
+        val want_dist = math.max(
+          step.dist_ahead, dist_from_agent_to_end - cfg.end_threshold
+        )
+        Left(Some(accel_to_end(want_dist)))
+      }
+    }
   }
 
   private def accel_to_follow(follow: Agent, dist_from_them_now: Double): Double = {
