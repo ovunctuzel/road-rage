@@ -16,6 +16,7 @@
   - dont tie map filename to the serialized thing
   - custom serialization for them too
 
+- clever impatience by avoiding waiting on same queue again
 - discretionary lanechanging
 - better phase groupings
 - fix gridlock
