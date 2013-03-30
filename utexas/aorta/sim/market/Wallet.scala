@@ -253,17 +253,17 @@ object SystemWallets {
   }
   private def num_phase(phase: Any) =
     phase.asInstanceOf[Phase].turns.map(_.from.queue.agents.size).sum
-  private def num_ticket(ticket: Any) =
-    ticket.asInstanceOf[Ticket].a.cur_queue.agents.size
-  // TODO Just bid for the head of the queue, aka, for multi-auction
-  // reservations, just start things right?
-  /*private def num_ticket(ticket: Any): Int = {
+  /*private def num_ticket(ticket: Any) =
+    ticket.asInstanceOf[Ticket].a.cur_queue.agents.size*/
+  // Just bid for the head of the queue, aka, for multi-auction
+  // reservations, just start things right.
+  private def num_ticket(ticket: Any): Int = {
     val t = ticket.asInstanceOf[Ticket]
     return if (t.a.cur_queue.head.get == t.a)
-      t.turn.from.queue.all_in_range(0.0, t.a.at.dist).size
+      t.turn.from.queue.agents.size
     else
       0
-  }*/
+  }
 
   // Help drivers who've been waiting the longest.
   def bid_waiting[T](items: List[T], policy: Policy) = policy match {
