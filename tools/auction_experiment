@@ -7,7 +7,7 @@ MAP=$2
 SPAWN_PER_HOUR=$3
 GENERATIONS="3"
 MAX_BUDGET="300"
-NO_SYS="--cfg_wallets thruput_bonus=0 avail_capacity_threshold=0 capacity_bonus=0 time_rate=0 dependency_rate=0 waiting_rate=0"
+NO_SYS="--cfg_wallets thruput_bonus=0 avail_capacity_threshold=0 capacity_bonus=0 dependency_rate=0 waiting_rate=0 ready_rate=0"
 
 if [[ -z $COMMAND || -z $MAP ]]; then
   echo "Usage: ./tools/auction_experiment fifo big_btr 7500"
