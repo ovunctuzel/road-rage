@@ -297,8 +297,8 @@ class TripTimeAnalysis(dir: String) extends StatAnalysis(dir) {
       fn = s"$dir/trip_time_per_route.png"
     )
 
-    Util.log(s"Unweighted total trip time: $unweighted_total = ${Util.comma_num(unweighted_total.toInt)}")
-    Util.log(s"Weighted total trip time: $weighted_total = ${Util.comma_num(weighted_total.toInt)}")
+    Util.log(s"Unweighted total trip time: $unweighted_total = ${Util.comma_num_big(unweighted_total.toBigInt)}")
+    Util.log(s"Weighted total trip time: $weighted_total = ${Util.comma_num_big(weighted_total.toBigInt)}")
     Util.log(s"$count_unfinished agents didn't finish their route")
   }
 }

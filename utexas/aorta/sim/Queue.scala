@@ -104,6 +104,8 @@ class Queue(t: Traversable) {
     // Make sure nobody's crowding anybody else.
     for ((a1, a2) <- alist.zip(alist.tail)) {
       if (a1.at.dist < a2.at.dist + cfg.follow_dist) {
+        Util.log(s"It's ${Common.tick}")
+        Util.log(s"LCing? ${a1.is_lanechanging}, ${a2.is_lanechanging}")
         throw new Exception(
           s"$a2 too close to $a1 on $t (" + (a1.at.dist - a2.at.dist) + ")"
         )
