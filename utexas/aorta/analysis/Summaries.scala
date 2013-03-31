@@ -64,16 +64,16 @@ object Summaries {
       val dataset1 = new DefaultCategoryDataset()
       val dataset2 = new DefaultCategoryDataset()
       for (mode <- modes) {
-        dataset1.addValue(num(data(city)(mode)(0)), "unweighted", mode)
+        dataset1.addValue(num(data(city)(mode)(0)) / 1000000, "unweighted", mode)
         dataset1.addValue(null, "Dummy 1", mode)
 
         dataset2.addValue(null, "Dummy 2", mode)
-        dataset2.addValue(num(data(city)(mode)(1)), "weighted", mode)
+        dataset2.addValue(num(data(city)(mode)(1)) / 1000000000, "weighted", mode)
       }
 
       val plot = new CategoryPlot(
         dataset1, new CategoryAxis("Ordering"),
-        new NumberAxis("Unweighted time (s)"), new BarRenderer()
+        new NumberAxis("Unweighted time (10^6 s)"), new BarRenderer()
       ) {
         override def getLegendItems(): LegendItemCollection = {
           val ls = new LegendItemCollection()
@@ -87,7 +87,7 @@ object Summaries {
       )
       plot.setDataset(1, dataset2)
       plot.mapDatasetToRangeAxis(1, 1)
-      plot.setRangeAxis(1, new NumberAxis("Weighted time (s)"))
+      plot.setRangeAxis(1, new NumberAxis("Weighted time (10^9 s)"))
       plot.setRenderer(1, new BarRenderer())
 
       val img = chart.createBufferedImage(800, 600)
