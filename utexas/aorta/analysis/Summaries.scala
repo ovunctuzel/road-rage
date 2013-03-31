@@ -7,10 +7,11 @@ package utexas.aorta.analysis
 import scala.io.Source
 import scala.collection.mutable.{HashMap => MutableMap}
 
-import org.jfree.chart.ChartFactory
-import org.jfree.chart.plot.PlotOrientation
-import org.jfree.data.statistics.HistogramDataset
-import org.jfree.data.xy.{XYSeries, XYSeriesCollection}
+import org.jfree.data.category.DefaultCategoryDataset
+import org.jfree.chart.plot.CategoryPlot
+import org.jfree.chart.{JFreeChart, LegendItemCollection}
+import org.jfree.chart.axis.{NumberAxis, CategoryAxis}
+import org.jfree.chart.renderer.category.BarRenderer
 import java.io.File
 import javax.imageio.ImageIO
 
@@ -35,6 +36,8 @@ object Summaries {
     throw new Exception(s"Summary $fn didn't have TABLE: line!")
   }
 
+  private def num(n: String) = BigInt(n.replace(",", ""))
+
   def main(args: Array[String]) = {
     val data = cities.map(city => city -> new MutableMap[String, Array[String]]()).toMap
 
@@ -55,14 +58,40 @@ object Summaries {
       println("  \\hline\n")
     }
 
-    // Make a bar chart!
+    // Make bar charts for each city!
+    for (city <- cities) {
+      // Two datasets... weighted and unweighted
+      val dataset1 = new DefaultCategoryDataset()
+      val dataset2 = new DefaultCategoryDataset()
+      for (mode <- modes) {
+        dataset1.addValue(num(data(city)(mode)(0)), "unweighted", mode)
+        dataset1.addValue(null, "Dummy 1", mode)
+
+        dataset2.addValue(null, "Dummy 2", mode)
+        dataset2.addValue(num(data(city)(mode)(1)), "weighted", mode)
+      }
+
+      val plot = new CategoryPlot(
+        dataset1, new CategoryAxis("Ordering"),
+        new NumberAxis("Unweighted time (s)"), new BarRenderer()
+      ) {
+        override def getLegendItems(): LegendItemCollection = {
+          val ls = new LegendItemCollection()
+          ls.add(getRenderer(0).getLegendItem(0, 0))
+          ls.add(getRenderer(1).getLegendItem(1, 1))
+          return ls
+        }
+      }
+      val chart = new JFreeChart(
+        s"Comparison of orderings in ${names(city)}", plot
+      )
+      plot.setDataset(1, dataset2)
+      plot.mapDatasetToRangeAxis(1, 1)
+      plot.setRangeAxis(1, new NumberAxis("Weighted time (s)"))
+      plot.setRenderer(1, new BarRenderer())
+
+      val img = chart.createBufferedImage(800, 600)
+      ImageIO.write(img, "png", new File(s"final/barchart_${city}.png"))
+    }
   }
 }
-
-    /*val chart = ChartFactory.createHistogram(
-      title, x_axis, "Frequency", dataset, PlotOrientation.VERTICAL, true,
-      false, false
-    )
-    val img = chart.createBufferedImage(800, 600)
-    ImageIO.write(img, "png", new File(fn))
-    */
