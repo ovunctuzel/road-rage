@@ -297,9 +297,14 @@ class TripTimeAnalysis(dir: String) extends StatAnalysis(dir) {
       fn = s"$dir/trip_time_per_route.png"
     )
 
-    Util.log(s"Unweighted total trip time: $unweighted_total = ${Util.comma_num_big(unweighted_total.toBigInt)}")
-    Util.log(s"Weighted total trip time: $weighted_total = ${Util.comma_num_big(weighted_total.toBigInt)}")
-    Util.log(s"$count_unfinished agents didn't finish their route")
+    val unweighted = Util.comma_num_big(unweighted_total.toBigInt)
+    val weighted = Util.comma_num_big(weighted_total.toBigInt)
+    val strays = Util.comma_num(count_unfinished)
+    Util.log(s"Unweighted total trip time: $unweighted")
+    Util.log(s"Weighted total trip time: $weighted")
+    Util.log(s"$strays agents didn't finish their route")
+    // For automatic scraping
+    Util.log(s"TABLE:${unweighted}:${weighted}:${strays}")
   }
 }
 

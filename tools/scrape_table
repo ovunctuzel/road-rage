@@ -1,0 +1,37 @@
+#!/usr/bin/python2
+
+from collections import defaultdict
+
+CITIES = ['austin', 'baton_rouge', 'seattle', 'sf']
+MODES = ['fifo', 'equal-no-sys', 'auction-no-sys', 'fixed-no-sys',
+         'equal-sys', 'auction-sys', 'fixed-sys']
+NAMES = {
+  'austin': 'Austin',
+  'baton_rouge': 'Baton Rouge',
+  'seattle': 'Seattle',
+  'sf': 'San Francisco'
+}
+
+def get_tuple(fn):
+  for line in open(fn):
+    if line.startswith('TABLE:'):
+      return tuple(line.strip().split('TABLE:')[1].split(':'))
+
+if __name__ == '__main__':
+  for city in CITIES:
+    print '  \\textbf{' + NAMES[city] + '} &&&&&&& \\\\'
+    # Hash of hash of tuples
+    data = defaultdict(dict)
+    for mode in MODES:
+      data[city][mode] = get_tuple('final/' + city + '-' + mode + '/summary')
+    
+    i = 0
+    for metric in ['unweighted    ', 'weighted      ', 'stray agents  ']:
+      line = '  ' + metric
+      for mode in MODES:
+        line += '& ' + data[city][mode][i] + ' '
+      line += '\\\\'
+      print line
+      i += 1
+    print '  \\hline'
+    print ''
