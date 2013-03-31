@@ -278,7 +278,7 @@ object Physics {
   }
 
   // TODO this gets a bit more conservative when cars have different
-  // accelerations.  This is hinged on the fact that lookahead works. Agents
+  // accelerations. This is hinged on the fact that lookahead works. Agents
   // can't enter e faster than its speed limit, so we have to reason about how
   // far they could possibly go.
   def worst_entry_dist(lim: Double): Double = {

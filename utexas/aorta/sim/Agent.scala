@@ -78,7 +78,6 @@ class Agent(val id: Int, val route: Route, val rng: RNG, wallet_spec: MkWallet) 
         // instantaneous at higher speeds.
         lanechange_dist_left = cfg.lanechange_dist
         old_lane = Some(at.on.asInstanceOf[Edge])
-        target_accel = 0
 
         // Immediately enter the target lane
         behavior.transition(at.on, lane)
