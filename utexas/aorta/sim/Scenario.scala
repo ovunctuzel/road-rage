@@ -627,7 +627,7 @@ object ScenarioTool {
           val params = slurp_params
           val bad_params = params.keys.toSet.diff(Set(
             "thruput_bonus", "avail_capacity_threshold", "capacity_bonus",
-            "dependency_rate", "waiting_rate", "ready_bonus"
+            "dependency_rate", "waiting_rate", "ready_rate"
           ))
           if (!bad_params.isEmpty) {
             Util.log(s"$bad_params aren't valid params for --cfg_wallets")
@@ -641,7 +641,7 @@ object ScenarioTool {
             case ("capacity_bonus", x) => wallet.copy(capacity_bonus = x.toInt)
             case ("dependency_rate", x) => wallet.copy(dependency_rate = x.toInt)
             case ("waiting_rate", x) => wallet.copy(waiting_rate = x.toInt)
-            case ("ready_bonus", x) => wallet.copy(ready_bonus = x.toInt)
+            case ("ready_rate", x) => wallet.copy(ready_bonus = x.toInt)
           })
 
           Util.log(s"Changing system wallet configuration: $wallet")
