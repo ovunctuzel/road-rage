@@ -238,25 +238,30 @@ class Agent(val id: Int, val route: Route, val rng: RNG, wallet_spec: MkWallet) 
     ).isDefined && !target.dont_block
   }
 
-  def can_lc_without_hitting_head(target: Edge): Boolean = {
+  def can_lc_without_crashing(target: Edge): Boolean = {
     // We don't want to merge in too closely to the agent ahead of us, nor do we
     // want to make somebody behind us risk running into us. So just make sure
     // there are no agents in that danger range.
+    // TODO assumes all vehicles the same. not true forever.
 
     val initial_speed = speed
     val final_speed = math.max(0.0, initial_speed + (target_accel * cfg.dt_s))
-    val dist = Physics.dist_at_constant_accel(target_accel, cfg.dt_s, initial_speed)
-    val our_max_next_speed = final_speed + (Physics.max_next_accel(final_speed, at.on.speed_limit) * cfg.dt_s)
+    val this_dist = Physics.dist_at_constant_accel(target_accel, cfg.dt_s, initial_speed)
 
-    // TODO expanding the search to twice follow dist is a hack; I'm not sure
-    // why agents are winding up about a meter too close sometimes.
-    val ahead_dist = (2.0 * cfg.follow_dist) + Physics.stopping_distance(our_max_next_speed)
-    // TODO assumes all vehicles the same. not true forever.
-    val behind_dist = (2.0 * cfg.follow_dist) + Physics.stopping_distance(target.road.speed_limit)
+    // TODO this is overconservative too. we wont pick max next dist if we see
+    // somebody in front of us!
+    val ahead_dist = cfg.follow_dist + Physics.max_next_dist_plus_stopping(final_speed, target.speed_limit)
+    // For behind, assume somebody behind us is going full speed. Give them time
+    // to stop fully and not hit where we are now (TODO technically should
+    // account for the dist we'll travel, but hey, doesnt hurt to be safe...
+    // Don't forget they haven't applied their step this turn either!
+    val behind_dist = (target.speed_limit * cfg.dt_s) + cfg.follow_dist + Physics.max_next_dist_plus_stopping(target.speed_limit, target.speed_limit)
 
     // TODO +dist for behind as well, but hey, overconservative doesnt hurt for
     // now...
-    val nearby = target.queue.all_in_range(at.dist - behind_dist, at.dist + dist + ahead_dist)
+    val nearby = target.queue.all_in_range(
+      at.dist - behind_dist, at.dist + this_dist + ahead_dist
+    )
     return nearby.isEmpty
   }
 
@@ -301,7 +306,7 @@ class Agent(val id: Int, val route: Route, val rng: RNG, wallet_spec: MkWallet) 
       }
     }
 
-    if (!can_lc_without_hitting_head(target)) {
+    if (!can_lc_without_crashing(target)) {
       return false
     }
 

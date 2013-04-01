@@ -110,7 +110,7 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
         // Somebody in the way? If we're stalled and somebody's in the way,
         // we're probably waiting in a queue. Don't waste time hoping, grab a
         // turn now.
-        if (!a.room_to_lc(target) || (a.speed == 0.0 && !a.can_lc_without_hitting_head(target))) {
+        if (!a.room_to_lc(target) || (a.speed == 0.0 && !a.can_lc_without_crashing(target))) {
           target_lane = None
         }
       }
