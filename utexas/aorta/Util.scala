@@ -154,8 +154,7 @@ object cfg {
     ("end_threshold",   5.0, "The end of a traversable is its length - this",  0.1,  3.0),
     // this kind of gives dimension to cars, actually
     ("follow_dist",     5.0, "Even if stopped, don't get closer than this", 0.1, 1.0),
-    ("max_accel",       2.7, "A car's physical capability",                  0.5, 5.0),
-    ("pause_at_stop",   0.1, "Wait this long at a stop sign before going",   0.5, 5.0)
+    ("max_accel",       2.7, "A car's physical capability",                  0.5, 5.0)
   ).map({c => c._1 -> new Double_Cfgable(c._2, c._3, c._4, c._5)}).toMap
 
   val ints = List(
@@ -190,7 +189,6 @@ object cfg {
   var end_threshold = 0.0
   var follow_dist = 0.0
   var max_accel = 0.0
-  var pause_at_stop = 0.0
   var dt_s = 0.0
 
   var max_lanes = 0

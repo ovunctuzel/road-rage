@@ -118,6 +118,7 @@ class SignalPolicy(intersection: Intersection,
   def dump_info() = {
     Util.log(s"Signal policy for $intersection")
     Util.log(s"Current phase: $current_phase")
+    Util.log(s"${phase_order.size} phases total")
     if (in_overtime) {
       Util.log("Waiting on: " + accepted_agents)
     } else {
@@ -170,9 +171,13 @@ class SignalPolicy(intersection: Intersection,
 class Phase(val turns: Set[Turn], val offset: Double, val duration: Double)
   extends Ordered[Phase]
 {
+  val id = Phase.id
+  Phase.id += 1
+
   // Can only order phases at one intersection! Offsets must be unique!
   override def compare(other: Phase) = offset.compare(other.offset)
-  override def toString = s"Phase($turns, offset $offset, duration $duration)"
+  //override def toString = s"Phase($id, $turns, offset $offset, duration $duration)"
+  override def toString = s"Phase $id"
 
   Util.assert_ge(offset, 0)
   Util.assert_gt(duration, 0)
@@ -190,6 +195,8 @@ class Phase(val turns: Set[Turn], val offset: Double, val duration: Double)
 }
 
 object Phase {
+  var id = 0
+
   // SignalPolicy asks us, so we can do some one-time work and dole out the
   // results or lazily compute
   def phases_for(i: Intersection): List[Phase] = {

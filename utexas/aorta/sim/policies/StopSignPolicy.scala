@@ -24,9 +24,10 @@ class StopSignPolicy(intersection: Intersection,
   // Agents must pause a moment, be the head of their queue, and be close enough
   // to us (in case they looked ahead over small edges).
   private def is_waiting(a: Agent)
-    = (a.how_long_idle >= cfg.pause_at_stop &&
+    = (a.speed == 0.0 &&
        a.cur_queue.head.get == a &&
-       a.how_far_away(intersection) <= cfg.end_threshold)
+       // TODO * 1.5 is a tmp hack
+       a.how_far_away(intersection) <= 1.5 * cfg.end_threshold)
 
   // Add agent to the queue if they satisfy our requirements.
   def react() = {
