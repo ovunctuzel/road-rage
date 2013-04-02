@@ -210,6 +210,7 @@ class Ticket(val a: Agent, val turn: Turn) extends Ordered[Ticket] {
   }
 
   // An under-estimate; the earliest possible time.
+  // TODO or at current speed, if nonzero?
   def time_till_arrival() =
     a.how_far_away(turn.vert.intersection) / a.at.on.speed_limit
 
