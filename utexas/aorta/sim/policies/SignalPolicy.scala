@@ -118,6 +118,7 @@ class SignalPolicy(intersection: Intersection,
   def dump_info() = {
     Util.log(s"Signal policy for $intersection")
     Util.log(s"Current phase: $current_phase")
+    Util.log(s"${phase_order.size} phases total")
     if (in_overtime) {
       Util.log("Waiting on: " + accepted_agents)
     } else {

@@ -68,11 +68,8 @@ class AuctionOrdering[T <: Ordered[T]]() extends IntersectionOrdering[T]() {
     val multipliers = new HashMap[T, Int]()
     queue.foreach(item => multipliers(item) = 1)
     voters.foreach(who => {
-      who.a.wallet.bid(queue, who, client) match {
-        case Some((ticket, amount)) if amount > 0 => {
-          bids.addBinding(ticket, Bid(who.a.wallet, ticket, amount, who))
-        }
-        case _ =>
+      for ((ticket, amount) <- who.a.wallet.bid(queue, who, client)) {
+        bids.addBinding(ticket, Bid(who.a.wallet, ticket, amount, who))
       }
     })
     // Ask the System, too, interpreting responses as multipliers to existing
