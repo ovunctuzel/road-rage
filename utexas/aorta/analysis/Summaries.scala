@@ -43,7 +43,7 @@ object Summaries {
 
     // Gather the data and print a LaTeX table...
     for (city <- cities) {
-      println(s"  \\\\textbf{${names(city)}} &&&&&&& \\\\")
+      println(s"  \\textbf{${names(city)}} &&&&&&& \\\\")
       for (mode <- modes) {
         data(city)(mode) = get_tuple(s"final/${city}-${mode}/summary")
       }

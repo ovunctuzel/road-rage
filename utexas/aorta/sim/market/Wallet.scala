@@ -154,11 +154,14 @@ class FairWallet(a: Agent, initial_budget: Int, p: Int)
   private def weight(v: Vertex): Double = {
     // Grant me the serenity to accept the things I can't change...
     v.intersection.ordering_type match {
-      case OrderingType.FIFO => return 0
+      case OrderingType.FIFO => return 0.0
       case _ =>
     }
 
-    val (big, small) = v.roads.partition(_.is_major)
+    // TODO this is untuned, so make it unweighted
+    return 1.0
+
+    /*val (big, small) = v.roads.partition(_.is_major)
     // Yes, these are arbitrary numbers.
     val policy_weight = v.intersection.policy.policy_type match {
       case IntersectionType.StopSign => 1.0
@@ -166,7 +169,7 @@ class FairWallet(a: Agent, initial_budget: Int, p: Int)
       case IntersectionType.Reservation => 1.5
       case IntersectionType.CommonCase => 0.0
     }
-    return (1.0 * big.size) + (0.5 * small.size) + (1.0 * policy_weight)
+    return (1.0 * big.size) + (0.5 * small.size) + (1.0 * policy_weight)*/
   }
 }
 

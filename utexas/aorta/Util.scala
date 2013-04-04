@@ -25,14 +25,14 @@ object Util {
 
   // due to internationalization, printf doesn't have a way of adding commas
   // after every 3 orders of mag
-  def comma_num(n: Int, pad: Boolean = true): String =
+  def comma_num(n: Int, pad: Boolean = false): String =
     if (n < 1000 && pad)
       "%03d".format(n)
     else if (n < 1000)
       "" + n
     else
       comma_num(n / 1000, pad = false) + "," + comma_num(n % 1000)
-  def comma_num_big(n: BigInt, pad: Boolean = true): String =
+  def comma_num_big(n: BigInt, pad: Boolean = false): String =
     if (n < 1000 && pad)
       "%03d".format(n)
     else if (n < 1000)

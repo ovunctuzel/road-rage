@@ -24,7 +24,7 @@ object Headless {
       case EV_Heartbeat(info) => {
         Util.log("At t=%s (%.1fs later): %s {%s moves/sec}".format(
           Util.time_num(info.tick), info.tick - last_tick, info.describe,
-          Util.comma_num(info.agent_steps)
+          Util.comma_num(info.agent_steps, pad = true)
         ))
         last_tick = info.tick
 
