@@ -3,7 +3,7 @@
 # ./tools/run big_btr-equal
 
 NAME=$1
-SECONDS=`expr 5 \* 3600`
+SECONDS=`expr 48 \* 3600`
 LIMIT="--time_limit ${SECONDS}"
 
 if [[ -z $NAME ]]; then

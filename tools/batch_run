@@ -31,14 +31,19 @@ class Worker(multiprocessing.Process):
 
 if __name__ == '__main__':
   queue = multiprocessing.JoinableQueue()
+  command = sys.argv[1]
   for city in CITIES:
-    for trial in xrange(1, TRIALS + 1):
-      # Keep only one set of put()s active ever
-      #queue.put('./tools/auction_experiment all ' + city + ' ' + PER_HOUR + ' ' + TRIALS)
+    for trial_num in xrange(1, TRIALS + 1):
+      trial = str(trial_num)
+      if command == 'generate':
+        queue.put(
+          './tools/auction_experiment all ' + city + ' ' + PER_HOUR + ' ' + trial
+        )
       for mode in MODES:
-        queue.put('./tools/run ' + city + '-' + trial + '-' + mode)
-        #queue.put('./tools/finalize ' + city + '-' + trial + '-' + mode)
-        pass
+        if command == 'run':
+          queue.put('./tools/run ' + city + '-' + trial + '-' + mode)
+        if command == 'finalize':
+          queue.put('./tools/finalize ' + city + '-' + trial + '-' + mode)
 
   for i in xrange(THREADS):
     worker = Worker(queue)
