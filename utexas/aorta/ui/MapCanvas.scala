@@ -89,6 +89,7 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
   private var camera_agent: Option[Agent] = None
   private val green_turns = new HashMap[Turn, Shape]()
   private var show_green = false
+  private var show_tooltips = true
   private val policy_colors = Map(
     IntersectionType.StopSign -> Color.RED,
     IntersectionType.Signal -> Color.YELLOW,
@@ -267,7 +268,7 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
       // work
       if (agent_bubble(a).intersects(window)) {
         draw_agent(g2d, a)
-        if (zoomed_in) {
+        if (zoomed_in && show_tooltips) {
           tooltips += Tooltip(
             a.at.location.x, a.at.location.y,
             List(a.wallet.toString)
@@ -770,6 +771,9 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
     }
     case Key.G => {
       show_green = !show_green
+    }
+    case Key.T => {
+      show_tooltips = !show_tooltips
     }
     case Key.Q => {
       // Run some sort of debuggy thing
