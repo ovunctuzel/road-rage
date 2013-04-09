@@ -1,8 +1,6 @@
 #!/usr/bin/python2
 
-# TODO elegant shutdown
-
-import multiprocessing
+import Queue
 import subprocess
 import sys
 
@@ -13,40 +11,38 @@ MODES = ['fifo', 'auction-sys', 'auction-no-sys', 'equal-sys', 'equal-no-sys',
 TRIALS = 5
 THREADS = 4
 
-class Worker(multiprocessing.Process):
-  def __init__(self, queue):
-    multiprocessing.Process.__init__(self)
-    self.queue = queue
-
-  def run(self):
-    while not self.queue.empty():
-      job = self.queue.get()
-      try:
-        print >> sys.stderr, "Running", job
-        subprocess.call(job, shell=True)
-        print >> sys.stderr, job, "is done"
-      except:
-        print sys.stderr, job, "Problem!"
-      queue.task_done()
+def launch(argv):
+  print 'Running:', ' '.join(argv)
+  return subprocess.Popen(argv)
 
 if __name__ == '__main__':
-  queue = multiprocessing.JoinableQueue()
+  queue = Queue.Queue()
   command = sys.argv[1]
   for city in CITIES:
     for trial_num in xrange(1, TRIALS + 1):
       trial = str(trial_num)
       if command == 'generate':
         queue.put(
-          './tools/auction_experiment all ' + city + ' ' + PER_HOUR + ' ' + trial
+          ['./tools/auction_experiment', 'all', city, PER_HOUR, trial]
         )
       for mode in MODES:
         if command == 'run':
-          queue.put('./tools/run ' + city + '-' + trial + '-' + mode)
+          queue.put(['./tools/run', '-'.join([city, trial, mode])])
         if command == 'finalize':
-          queue.put('./tools/finalize ' + city + '-' + trial + '-' + mode)
+          queue.put(['./tools/finalize', '-'.join([city, trial, mode])])
 
+  processes = set()
   for i in xrange(THREADS):
-    worker = Worker(queue)
-    worker.start()
+    if not queue.empty():
+      processes.add(launch(queue.get()))
 
-  queue.join()
+  try:
+    while len(processes) > 0:
+      reap = set([p for p in processes if p.poll() is not None])
+      processes -= reap
+      # Replace with new processes
+      for i in xrange(len(reap)):
+        if not queue.empty():
+          processes.add(launch(queue.get()))
+  except KeyboardInterrupt:
+    sys.exit
