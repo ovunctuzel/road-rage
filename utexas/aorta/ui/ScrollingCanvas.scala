@@ -19,6 +19,9 @@ import utexas.aorta.Util
 // TODO for now, we'll implement the free-hand drawing here, but eventually it
 // makes more sense as some kind of nifty mixin thing.
 
+// x, y are in map-space, not screen-space
+case class Tooltip(x: Double, y: Double, lines: List[String])
+
 // SuperMixin lets us get tab back
 abstract class ScrollingCanvas extends Component {
   // TODO percentages, ideally!
@@ -45,8 +48,8 @@ abstract class ScrollingCanvas extends Component {
   // define (x_off, y_off) to be the top-left corner of the screen
   def screen_to_map_x(x: Double) = (x + x_off) / zoom
   def screen_to_map_y(y: Double) = (y + y_off) / zoom
-  def map_to_screen_x(x: Double) = (x - x_off) * zoom
-  def map_to_screen_y(y: Double) = (y - y_off) * zoom
+  def map_to_screen_x(x: Double) = (x * zoom) - x_off
+  def map_to_screen_y(y: Double) = (y * zoom) - y_off
 
   // react to mouse events, tracking various parameters
   protected var mouse_at_x, mouse_at_y = 0.0
@@ -250,10 +253,10 @@ abstract class ScrollingCanvas extends Component {
     g2d.setRenderingHints(antialiasing)
 
     // provide a tool-tip rendering service to the client.
-    val lines = render_canvas(g2d, viewing_window)
-    if (lines.nonEmpty) {
-      g2d.setTransform(orig_transform)
-      draw_tooltip(g2d, lines)
+    val tooltips = render_canvas(g2d, viewing_window)
+    g2d.setTransform(orig_transform)
+    for (tooltip <- tooltips) {
+      draw_tooltip(g2d, tooltip)
     }
   }
 
@@ -292,17 +295,17 @@ abstract class ScrollingCanvas extends Component {
     case _ => None
   }
 
-  def draw_tooltip(g2d: Graphics2D, lines: List[String]) = {
-    val longest = lines.maxBy(_.length)
+  def draw_tooltip(g2d: Graphics2D, tooltip: Tooltip) = {
+    val longest = tooltip.lines.maxBy(_.length)
     val width = g2d.getFontMetrics.getStringBounds(longest, g2d).getWidth
     // assume the height of each line is the same
     val height = g2d.getFontMetrics.getStringBounds(longest, g2d).getHeight
-    val total_height = height * lines.length
+    val total_height = height * tooltip.lines.length
     // center the text
-    val x = mouse_at_x - (width / 2.0)
+    val x = map_to_screen_x(tooltip.x) - (width / 2.0)
     // don't draw right on top of the cursor
     // TODO fancy: when drawing above cursor would occlude, draw below
-    val top = mouse_at_y - total_height - 10.0
+    val top = map_to_screen_y(tooltip.y) - total_height - 10.0
 
     // draw a nice backdrop
     g2d.setColor(Color.WHITE)
@@ -318,11 +321,12 @@ abstract class ScrollingCanvas extends Component {
       }
       case Nil =>
     }
-    draw_line(lines, top + height)
+    draw_line(tooltip.lines, top + height)
   }
 
-  // implement these. render_canvas returns tooltip text desired
-  def render_canvas(g2d: Graphics2D, window: Rectangle2D.Double): List[String]
+  // implement these. render_canvas returns tooltip text desired around each
+  // point
+  def render_canvas(g2d: Graphics2D, window: Rectangle2D.Double): List[Tooltip]
   def canvas_width: Int
   def canvas_height: Int
   def handle_ev(ev: UI_Event)

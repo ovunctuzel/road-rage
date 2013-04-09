@@ -196,9 +196,11 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
 
   // TODO colors for everything belong in cfg.
 
-  def render_canvas(g2d: Graphics2D, window: Rectangle2D.Double): List[String] = {
+  def render_canvas(g2d: Graphics2D, window: Rectangle2D.Double): List[Tooltip] = {
     // remember these so we can draw center lines more efficiently
     val roads_seen = new ListBuffer[RoadLine]
+
+    val tooltips = new ListBuffer[Tooltip]()
 
     // Draw the first layer (roads) - either all or just major ones
     for (l <- bg_lines if l.line.intersects(window)) {
@@ -265,6 +267,12 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
       // work
       if (agent_bubble(a).intersects(window)) {
         draw_agent(g2d, a)
+        if (zoomed_in) {
+          tooltips += Tooltip(
+            a.at.location.x, a.at.location.y,
+            List(a.wallet.toString)
+          )
+        }
       }
     })
 
@@ -273,11 +281,17 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
     g2d.setStroke(drawing_stroke)
     g2d.draw(polygon)
 
-    // What tooltip do we want?
-    return current_obj match {
-      case Some(thing) => thing.tooltip
-      case None => Nil
+    // What tooltips do we want?
+    current_obj match {
+      case Some(thing) => {
+        tooltips += Tooltip(
+          screen_to_map_x(mouse_at_x), screen_to_map_y(mouse_at_y),
+          thing.tooltip
+        )
+      }
+      case None =>
     }
+    return tooltips.toList
   }
 
   def draw_road(g2d: Graphics2D, l: RoadLine) = {
