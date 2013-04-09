@@ -39,6 +39,7 @@ object Summaries {
   private def num(n: String) = BigInt(n.replace(",", ""))
 
   def main(args: Array[String]) = {
+    // TODO update this to handle multiple trials, now.
     val data = cities.map(city => city -> new MutableMap[String, Array[String]]()).toMap
 
     // Gather the data and print a LaTeX table...

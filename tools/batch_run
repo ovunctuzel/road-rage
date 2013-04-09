@@ -10,6 +10,7 @@ PER_HOUR = '20000'
 CITIES = ['austin', 'baton_rouge', 'seattle', 'sf']
 MODES = ['fifo', 'auction-sys', 'auction-no-sys', 'equal-sys', 'equal-no-sys',
          'fixed-sys', 'fixed-no-sys']
+TRIALS = 5
 THREADS = 4
 
 class Worker(multiprocessing.Process):
@@ -31,12 +32,13 @@ class Worker(multiprocessing.Process):
 if __name__ == '__main__':
   queue = multiprocessing.JoinableQueue()
   for city in CITIES:
-    # Keep only one set of put()s active ever
-    #queue.put('./tools/auction_experiment all ' + city + ' ' + PER_HOUR)
-    for mode in MODES:
-      queue.put('./tools/run ' + city + '-' + mode)
-      #queue.put('./tools/finalize ' + city + '-' + mode)
-      pass
+    for trial in xrange(1, TRIALS + 1):
+      # Keep only one set of put()s active ever
+      #queue.put('./tools/auction_experiment all ' + city + ' ' + PER_HOUR + ' ' + TRIALS)
+      for mode in MODES:
+        queue.put('./tools/run ' + city + '-' + trial + '-' + mode)
+        #queue.put('./tools/finalize ' + city + '-' + trial + '-' + mode)
+        pass
 
   for i in xrange(THREADS):
     worker = Worker(queue)

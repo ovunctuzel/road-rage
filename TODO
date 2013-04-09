@@ -2,6 +2,16 @@
 
 # Auctions #
 
+- cleanup
+  - freeze results, instructions
+  - agent lifetime stats... ints, not doubles
+  - sys wallet can punish by dividing.. also, doubles
+  - multiple bids for same item.. handle that
+  - a test with all reservations?
+  - define losers generally in code too
+  - agents not stopping at exactly the right dist the first time, makes stop signs slow.
+  - in reserv, let compat people go if their eta is <= that of an accepted guy
+
 - map fixes
   - deterministic output
   - fix new small issues..

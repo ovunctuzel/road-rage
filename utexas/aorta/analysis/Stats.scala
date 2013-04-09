@@ -7,7 +7,6 @@ package utexas.aorta.analysis
 import java.io.{ObjectOutputStream, FileOutputStream, ObjectInputStream,
                 FileInputStream, EOFException}
 import scala.annotation.elidable
-import scala.collection.mutable.{HashMap => MutableMap}
 import scala.collection.mutable.{ListBuffer, ArrayBuffer}
 
 import org.jfree.chart.ChartFactory
