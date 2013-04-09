@@ -270,8 +270,8 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
         draw_agent(g2d, a)
         if (zoomed_in && show_tooltips) {
           tooltips += Tooltip(
-            a.at.location.x, a.at.location.y,
-            List(a.wallet.toString)
+            a.at.location.x, a.at.location.y, a.wallet.tooltip,
+            a.wallet.dark_tooltip
           )
         }
       }
@@ -287,7 +287,7 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
       case Some(thing) => {
         tooltips += Tooltip(
           screen_to_map_x(mouse_at_x), screen_to_map_y(mouse_at_y),
-          thing.tooltip
+          thing.tooltip, false
         )
       }
       case None =>

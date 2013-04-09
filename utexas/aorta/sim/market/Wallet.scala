@@ -24,20 +24,34 @@ abstract class Wallet(val a: Agent, initial_budget: Int, val priority: Int) {
   }
 
   // How much is this agent willing to spend on some choice?
-  def bid[T](choices: Iterable[T], ours: Ticket, policy: Policy): Iterable[(T, Int)] = policy.policy_type match {
-    case IntersectionType.StopSign =>
-      bid_stop_sign(
-        choices.asInstanceOf[Iterable[Ticket]], ours
-      ).asInstanceOf[Iterable[(T, Int)]]
-    case IntersectionType.Signal =>
-      bid_signal(
-        choices.asInstanceOf[Iterable[Phase]], ours
-      ).asInstanceOf[Iterable[(T, Int)]]
-    case IntersectionType.Reservation =>
-      bid_reservation(
-        choices.asInstanceOf[Iterable[Ticket]], ours
-      ).asInstanceOf[Iterable[(T, Int)]]
-    case _ => throw new Exception(s"Dunno how to bid on $policy")
+  var tooltip: List[String] = Nil
+  // Dark indicates they won and paid.
+  var dark_tooltip = false
+  def reset_tooltip() = {
+    tooltip = Nil
+    dark_tooltip = false
+  }
+  def bid[T](choices: Iterable[T], ours: Ticket, policy: Policy): Iterable[(T, Int)] = {
+    val result = policy.policy_type match {
+      case IntersectionType.StopSign =>
+        bid_stop_sign(
+          choices.asInstanceOf[Iterable[Ticket]], ours
+        ).asInstanceOf[Iterable[(T, Int)]]
+      case IntersectionType.Signal =>
+        bid_signal(
+          choices.asInstanceOf[Iterable[Phase]], ours
+        ).asInstanceOf[Iterable[(T, Int)]]
+      case IntersectionType.Reservation =>
+        bid_reservation(
+          choices.asInstanceOf[Iterable[Ticket]], ours
+        ).asInstanceOf[Iterable[(T, Int)]]
+      case _ => throw new Exception(s"Dunno how to bid on $policy")
+    }
+    // TODO ideally not the latest bid, but the one for the prev turn or
+    // something. also, hard to represent what we're bidding for each thing...
+    // If we bid for multiple items, just show the different prices.
+    tooltip = result.map(_._2.toString).toSet.toList
+    return result
   }
   def bid_stop_sign(tickets: Iterable[Ticket], ours: Ticket): Iterable[(Ticket, Int)]
   def bid_signal(phases: Iterable[Phase], ours: Ticket): Iterable[(Phase, Int)]

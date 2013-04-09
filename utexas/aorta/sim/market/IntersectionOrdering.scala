@@ -31,6 +31,8 @@ abstract class IntersectionOrdering[T <: Ordered[T]]() {
 class FIFO_Ordering[T <: Ordered[T]]() extends IntersectionOrdering[T]() {
   def ordering_type = OrderingType.FIFO
   def shift_next(waiting_participants: Iterable[Ticket], client: Policy): Option[T] = {
+    // Reset tooltips for GUI...
+    waiting_participants.foreach(t => t.a.wallet.reset_tooltip)
     if (queue.nonEmpty) {
       val next = queue.head
       queue = queue.tail
@@ -53,6 +55,8 @@ case class Bid[T](who: Wallet, item: T, amount: Int, purpose: Ticket)
 class AuctionOrdering[T <: Ordered[T]]() extends IntersectionOrdering[T]() {
   def ordering_type = OrderingType.Auction
   def shift_next(voters: Iterable[Ticket], client: Policy): Option[T] = {
+    // Reset tooltips for GUI...
+    voters.foreach(t => t.a.wallet.reset_tooltip)
     // Handle degenerate cases where we don't hold auctions.
     if (queue.isEmpty) {
       return None
@@ -148,8 +152,14 @@ class AuctionOrdering[T <: Ordered[T]]() extends IntersectionOrdering[T]() {
     val total_winners = who.map(_.amount).sum * multiplier
     Util.assert_ge(total_winners, total_runnerup)
     val rate = (total_runnerup.toDouble / multiplier.toDouble) / total_winners.toDouble
-    who.foreach(
-      bid => bid.who.spend((bid.amount * rate).toInt, bid.purpose)
-    )
+    who.foreach(bid => {
+      val price = (bid.amount * rate).toInt
+      //println(s"$price = (${bid.amount} * $rate).toInt")
+      bid.who.spend(price, bid.purpose)
+      // Since wallets may override spend, it's easier to just stick this
+      // here...
+      bid.who.tooltip = List(price + " of " + bid.who.tooltip.mkString(", "))
+      bid.who.dark_tooltip = true
+    })
   }
 }

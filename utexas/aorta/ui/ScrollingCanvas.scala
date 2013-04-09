@@ -20,7 +20,7 @@ import utexas.aorta.Util
 // makes more sense as some kind of nifty mixin thing.
 
 // x, y are in map-space, not screen-space
-case class Tooltip(x: Double, y: Double, lines: List[String])
+case class Tooltip(x: Double, y: Double, lines: List[String], dark: Boolean)
 
 // SuperMixin lets us get tab back
 abstract class ScrollingCanvas extends Component {
@@ -255,7 +255,7 @@ abstract class ScrollingCanvas extends Component {
     // provide a tool-tip rendering service to the client.
     val tooltips = render_canvas(g2d, viewing_window)
     g2d.setTransform(orig_transform)
-    for (tooltip <- tooltips) {
+    for (tooltip <- tooltips if tooltip.lines.nonEmpty) {
       draw_tooltip(g2d, tooltip)
     }
   }
@@ -308,7 +308,11 @@ abstract class ScrollingCanvas extends Component {
     val top = map_to_screen_y(tooltip.y) - total_height - 10.0
 
     // draw a nice backdrop
-    g2d.setColor(Color.WHITE)
+    if (tooltip.dark) {
+      g2d.setColor(Color.GRAY)
+    } else {
+      g2d.setColor(Color.WHITE)
+    }
     g2d.fill(new RoundRectangle2D.Double(
       x - 2.0, top - 2.0, width + 4.0, total_height + 6.0, 1.0, 1.0
     ))
