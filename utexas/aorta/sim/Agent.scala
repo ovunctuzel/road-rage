@@ -65,7 +65,7 @@ class Agent(val id: Int, val route: Route, val rng: RNG, wallet_spec: MkWallet) 
   }
 
   override def toString = "Agent " + id
-  override def tooltip = List(toString, wallet.toString)
+  override def tooltip = List(toString, wallet.toString) ++ wallet.tooltip
 
   // Returns true if we move or do anything at all
   def step(dt_s: Double): Boolean = {
