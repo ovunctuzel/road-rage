@@ -151,10 +151,14 @@ class AuctionOrdering[T <: Ordered[T]]() extends IntersectionOrdering[T]() {
     // what they bid.
     val total_winners = who.map(_.amount).sum * multiplier
     Util.assert_ge(total_winners, total_runnerup)
-    val rate = (total_runnerup.toDouble / multiplier.toDouble) / total_winners.toDouble
+    // Pay what the runner up totalled, but let the same system rate that
+    // boosted our total divide theirs.
+    val total_cost = total_runnerup.toDouble / multiplier.toDouble
+    val our_orig_total = total_winners.toDouble / multiplier.toDouble
+    val rate = total_cost / our_orig_total
     who.foreach(bid => {
       val price = (bid.amount * rate).toInt
-      //println(s"$price = (${bid.amount} * $rate).toInt")
+      assert(price <= bid.amount)
       bid.who.spend(price, bid.purpose)
       // Since wallets may override spend, it's easier to just stick this
       // here...
