@@ -112,6 +112,8 @@ object Viewer extends SimpleSwingApplication {
   override def main(args: Array[String]) = {
     val sim = Util.process_args(args)
     canvas_2d = new MapCanvas(sim)
+    // TODO doesnt start drawn correctly!
+    canvas_2d.repaint
     super.main(args)
   }
 

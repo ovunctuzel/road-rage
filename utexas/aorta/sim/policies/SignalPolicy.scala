@@ -161,7 +161,7 @@ class SignalPolicy(intersection: Intersection,
     //return true
 
     // Simple heuristic: can we make it in time at the speed limit?
-    return ticket.time_till_arrival < time_left
+    return ticket.eta_at_cur_speed < time_left
 
     // if our worst-case speeding-up distance still lets us back out and stop,
     // then fine, allow it. <-- the old policy

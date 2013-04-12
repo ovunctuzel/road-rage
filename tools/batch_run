@@ -4,11 +4,11 @@ import Queue
 import subprocess
 import sys
 
-PER_HOUR = '20000'
+PER_HOUR = '10000'
 CITIES = ['austin', 'baton_rouge', 'seattle', 'sf']
 MODES = ['fifo', 'auction-sys', 'auction-no-sys', 'equal-sys', 'equal-no-sys',
          'fixed-sys', 'fixed-no-sys']
-TRIALS = 5
+TRIALS = 3
 THREADS = 4
 
 def launch(argv):
@@ -27,8 +27,10 @@ if __name__ == '__main__':
         )
       for mode in MODES:
         if command == 'run':
+          # TODO do it for each thing in scenarios/
           queue.put(['./tools/run', '-'.join([city, trial, mode])])
         if command == 'finalize':
+          # TODO do it for each thing in logs/.
           queue.put(['./tools/finalize', '-'.join([city, trial, mode])])
 
   processes = set()

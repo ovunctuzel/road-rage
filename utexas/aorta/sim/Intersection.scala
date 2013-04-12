@@ -209,10 +209,13 @@ class Ticket(val a: Agent, val turn: Turn) extends Ordered[Ticket] {
     return false*/
   }
 
-  // An under-estimate; the earliest possible time.
-  // TODO or at current speed, if nonzero?
-  def time_till_arrival() =
+  def eta_earliest() =
     a.how_far_away(turn.vert.intersection) / a.at.on.speed_limit
+
+  // This isn't really optimistic or pessimistic; we could be going the speed
+  // limit or not
+  def eta_at_cur_speed() =
+    a.how_far_away(turn.vert.intersection) / math.max(a.speed, cfg.epsilon)
 
   def close_to_start =
     if (a.at.on == turn.from) {
@@ -221,12 +224,12 @@ class Ticket(val a: Agent, val turn: Turn) extends Ordered[Ticket] {
         // TODO better math to account for following at speed
         case Some(other) => other.at.dist - a.at.dist <= cfg.follow_dist * 10.0
         // If we're the head, just be close to starting
-        case None => time_till_arrival <= 5.0
+        case None => eta_earliest <= 5.0
       }
     } else {
       // When we register early or lookahead over small steps, just demand we'll
       // arrive at the turn soon
-      time_till_arrival <= 10.0
+      eta_earliest <= 10.0
     }
 }
 

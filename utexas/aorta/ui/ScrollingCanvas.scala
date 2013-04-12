@@ -36,7 +36,7 @@ abstract class ScrollingCanvas extends Component {
   // reset_window will clobber them.
   protected var zoom = 1.0
   protected var x_off, y_off = 0.0
-  reset_window
+  protected reset_window()
 
   // this defines controls
   // TODO cfg
@@ -194,7 +194,7 @@ abstract class ScrollingCanvas extends Component {
   }
 
   // begin in the center
-  private def reset_window() = {
+  def reset_window() = {
     x_off = canvas_width / 2
     y_off = canvas_height / 2
     zoom = 1.0
