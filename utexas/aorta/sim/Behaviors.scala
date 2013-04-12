@@ -303,7 +303,8 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
     }
 
     // Are we completely done?
-    val maybe_done = dist_from_agent_to_end <= cfg.end_threshold && a.speed == 0.0
+    // TODO should be totally within end_threshold, but math problems. :(
+    val maybe_done = dist_from_agent_to_end <= (1.5 * cfg.end_threshold) && a.speed == 0.0
     return a.at.on match {
       case e: Edge if route.done(e) && maybe_done => {
         Right(true)
