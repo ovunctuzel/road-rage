@@ -322,7 +322,7 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
     if (zoomed_in) {
       // TODO cfg. just tweak these by sight.
       val vehicle_length = 0.2  // along the edge
-      val vehicle_width = 0.25  // perpendicular
+      val vehicle_width = 0.15  // perpendicular
 
       var (line, front_dist) = a.at.on.current_pos(a.at.dist)
       a.old_lane match {
