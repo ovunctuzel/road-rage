@@ -1,6 +1,8 @@
 #!/usr/bin/python2
 
+import glob
 import Queue
+from os.path import basename
 import subprocess
 import sys
 
@@ -18,18 +20,19 @@ def launch(argv):
 if __name__ == '__main__':
   queue = Queue.Queue()
   command = sys.argv[1]
-  for city in CITIES:
-    for trial_num in xrange(1, TRIALS + 1):
-      trial = str(trial_num)
-      if command == 'generate':
+
+  if command == 'generate':
+    for city in CITIES:
+      for trial in xrange(1, TRIALS + 1):
         queue.put(
-          ['./tools/auction_experiment', 'all', city, PER_HOUR, trial]
+          ['./tools/auction_experiment', 'all', city, PER_HOUR, str(trial)]
         )
-      for mode in MODES:
-        if command == 'run':
-          queue.put(['./tools/run', '-'.join([city, trial, mode])])
-        if command == 'finalize':
-          queue.put(['./tools/finalize', '-'.join([city, trial, mode])])
+  elif command == 'run':
+    for scenario in glob.glob("scenarios/*"):
+      queue.put(['./tools/run', basename(scenario)])
+  elif command == 'finalize':
+    for scenario in glob.glob("logs/*"):
+      queue.put(['./tools/finalize', basename(scenario)])
 
   processes = set()
   for i in xrange(THREADS):
