@@ -6,11 +6,11 @@ from os.path import basename
 import subprocess
 import sys
 
-PER_HOUR = '20000'
+PER_HOUR = '10000'
 CITIES = ['austin', 'baton_rouge', 'seattle', 'sf']
 MODES = ['fifo', 'auction-sys', 'auction-no-sys', 'equal-sys', 'equal-no-sys',
          'fixed-sys', 'fixed-no-sys']
-TRIALS = 5
+TRIALS = 3
 THREADS = 4
 
 def launch(argv):
