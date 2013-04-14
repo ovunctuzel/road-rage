@@ -104,7 +104,7 @@ object Summaries {
       val dataset1 = new DefaultStatisticalCategoryDataset()
       val dataset2 = new DefaultStatisticalCategoryDataset()
       val cat1 = metrics(3)
-      val cat2 = metrics(3)
+      val cat2 = metrics(4)
       for (mode <- modes) {
         dataset1.add(
           data(city)(mode).mean(cat1), data(city)(mode).std_dev(cat1),
@@ -121,7 +121,7 @@ object Summaries {
 
       val plot = new CategoryPlot(
         dataset1, new CategoryAxis("Ordering"),
-        new NumberAxis("Normalized unweighted time (s/agent)"),
+        new NumberAxis("Normalized unweighted time (seconds / agent)"),
         new StatisticalBarRenderer()
       ) {
         override def getLegendItems(): LegendItemCollection = {
@@ -136,7 +136,7 @@ object Summaries {
       )
       plot.setDataset(1, dataset2)
       plot.mapDatasetToRangeAxis(1, 1)
-      plot.setRangeAxis(1, new NumberAxis("Normalized weighted time (s/agent)"))
+      plot.setRangeAxis(1, new NumberAxis("Normalized weighted time (seconds / agent)"))
       plot.setRenderer(1, new StatisticalBarRenderer())
 
       val img = chart.createBufferedImage(800, 600)
