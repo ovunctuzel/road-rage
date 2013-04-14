@@ -299,11 +299,19 @@ class TripTimeAnalysis(dir: String) extends StatAnalysis(dir) {
     val unweighted = Util.comma_num_big(unweighted_total.toBigInt)
     val weighted = Util.comma_num_big(weighted_total.toBigInt)
     val strays = Util.comma_num(count_unfinished)
-    Util.log(s"Unweighted total trip time: $unweighted")
-    Util.log(s"Weighted total trip time: $weighted")
+    // Since we can't count trip time for unfinished agents, normalize by the
+    // number that did finish.
+    val unweighted_normed = Util.comma_num_big(
+      (unweighted_total / count_unfinished).toBigInt
+    )
+    val weighted_normed = Util.comma_num_big(
+      (weighted_total / count_unfinished).toBigInt
+    )
+    Util.log(s"Unweighted total trip time: $unweighted ($unweighted_normed normalized)")
+    Util.log(s"Weighted total trip time: $weighted ($weighted_normed normalized)")
     Util.log(s"$strays agents didn't finish their route")
     // For automatic scraping
-    Util.log(s"TABLE:${unweighted}:${weighted}:${strays}")
+    Util.log(s"TABLE:${unweighted}:${weighted}:${strays}:${unweighted_normed}:${weighted_normed}")
   }
 }
 

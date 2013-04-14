@@ -25,7 +25,10 @@ object Summaries {
     "austin" -> "Austin", "baton_rouge" -> "Baton Rouge",
     "seattle" -> "Seattle", "sf" -> "San Francisco"
   )
-  val metrics = List("unweighted    ", "weighted      ", "stray agents  ")
+  val metrics = List(
+    "unweighted    ", "weighted      ", "stray agents  ",
+    "unweighted (normalized)", "weighted (normalized)"
+  )
 
   private def get_tuple(fn: String): Array[String] = {
     for (line <- Source.fromFile(fn).getLines()) {
