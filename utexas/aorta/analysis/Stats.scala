@@ -265,6 +265,7 @@ class TripTimeAnalysis(dir: String) extends StatAnalysis(dir) {
   // TODO range? doubt these... and sci notatn sucks...
   var unweighted_total = BigDecimal(0.0)
   var weighted_total = BigDecimal(0.0)
+  var count_finished = 0
   var count_unfinished = 0
 
   // TODO show min (and where/who), max, average
@@ -281,6 +282,7 @@ class TripTimeAnalysis(dir: String) extends StatAnalysis(dir) {
         times_per_route(s.route) += s.trip_time
         unweighted_total += s.trip_time
         weighted_total += s.weighted_value
+        count_finished += 1
       } else {
         count_unfinished += 1
       }
@@ -302,10 +304,10 @@ class TripTimeAnalysis(dir: String) extends StatAnalysis(dir) {
     // Since we can't count trip time for unfinished agents, normalize by the
     // number that did finish.
     val unweighted_normed = Util.comma_num_big(
-      (unweighted_total / count_unfinished).toBigInt
+      (unweighted_total / count_finished).toBigInt
     )
     val weighted_normed = Util.comma_num_big(
-      (weighted_total / count_unfinished).toBigInt
+      (weighted_total / count_finished).toBigInt
     )
     Util.log(s"Unweighted total trip time: $unweighted ($unweighted_normed normalized)")
     Util.log(s"Weighted total trip time: $weighted ($weighted_normed normalized)")
