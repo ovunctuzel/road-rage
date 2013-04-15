@@ -32,19 +32,27 @@ class RunSummary() {
 
   private def n = BigDecimal(data(metrics.head).size)
 
-  def mean(metric: String) = data(metric).sum / n
+  def mean(metric: String, rescale: Double = 1.0) =
+    (rescale * data(metric).sum) / n
 
-  def std_dev(metric: String): BigDecimal = {
-    val avg = mean(metric)
-    val square_diffs = data(metric).map(datum => (datum - avg).pow(2))
+  def std_dev(metric: String, rescale: Double = 1.0): BigDecimal = {
+    val avg = mean(metric, rescale = rescale)
+    val square_diffs = data(metric).map(datum => ((datum * rescale) - avg).pow(2))
     val sigma_squared = square_diffs.sum / n
     // We shouldn't overflow if the metric is normalized
     return BigDecimal(math.sqrt(sigma_squared.toDouble))
   }
 
+  private def scale(metric: String) =
+    if (metric == Summaries.metrics(1) || metric == Summaries.metrics(4))
+      1.0 / Summaries.avg_priority
+    else
+      1.0
+
   def table(metric: String) =
-    Util.comma_num_big(mean(metric).toBigInt) + "$\\pm$" +
-    Util.comma_num_big(std_dev(metric).toBigInt)
+    Util.comma_num_big(mean(metric, rescale = scale(metric)).toBigInt) +
+    " $\\pm$ " +
+    Util.comma_num_big(std_dev(metric, rescale = scale(metric)).toBigInt)
 }
 
 object Summaries {
@@ -52,6 +60,7 @@ object Summaries {
   val modes = List("fifo", "equal-no-sys", "auction-no-sys", "fixed-no-sys",
                    "equal-sys", "auction-sys", "fixed-sys")
   val trials = 1 to 3
+  val avg_priority = 0.5 * 500.0
   val names = Map(
     "austin" -> "Austin", "baton_rouge" -> "BR",
     "seattle" -> "Seattle", "sf" -> "SF"
@@ -114,7 +123,8 @@ object Summaries {
 
         dataset2.add(null, null, "Dummy 2", mode)
         dataset2.add(
-          data(city)(mode).mean(cat2), data(city)(mode).std_dev(cat2),
+          data(city)(mode).mean(cat2, rescale = 1.0 / avg_priority),
+          data(city)(mode).std_dev(cat2, rescale = 1.0 / avg_priority),
           "weighted", mode
         )
       }
@@ -136,7 +146,7 @@ object Summaries {
       )
       plot.setDataset(1, dataset2)
       plot.mapDatasetToRangeAxis(1, 1)
-      plot.setRangeAxis(1, new NumberAxis("Normalized weighted time (seconds / agent)"))
+      plot.setRangeAxis(1, new NumberAxis("Normalized weighted time (seconds / agent) scaled to match unweighted times"))
       plot.setRenderer(1, new StatisticalBarRenderer())
 
       val img = chart.createBufferedImage(800, 600)
