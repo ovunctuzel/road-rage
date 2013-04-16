@@ -24,7 +24,7 @@ class Agent(val id: Int, val route: Route, val rng: RNG, wallet_spec: MkWallet) 
   var at: Position = null
 
   // Just for stats. Not hard to maintain. (tick, where we spawned, budget)
-  var stat_memory: (Double, Int, Double) = null
+  var stat_memory: (Double, Int, Int) = null
 
   override def compare(other: Agent) = id.compare(other.id)
 

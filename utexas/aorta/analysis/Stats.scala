@@ -66,8 +66,8 @@ case class Scenario_Stat(
 // Summarizes an agent's lifetime
 case class Agent_Lifetime_Stat(
   id: Int, start_tick: Double, start: Int, end: Int, route: RouteType.Value,
-  wallet: WalletType.Value, start_budget: Double, end_tick: Double,
-  end_budget: Double, priority: Double, finished: Boolean
+  wallet: WalletType.Value, start_budget: Int, end_tick: Double,
+  end_budget: Int, priority: Int, finished: Boolean
 ) extends Measurement
 {
   // ID 1
@@ -88,10 +88,10 @@ case class Agent_Lifetime_Stat(
     stream.writeInt(end)
     stream.writeInt(route.id)
     stream.writeInt(wallet.id)
-    stream.writeDouble(start_budget)
+    stream.writeInt(start_budget)
     stream.writeDouble(end_tick)
-    stream.writeDouble(end_budget)
-    stream.writeDouble(priority)
+    stream.writeInt(end_budget)
+    stream.writeInt(priority)
     stream.writeBoolean(finished)
   }
 }
@@ -179,8 +179,8 @@ object PostProcess {
     case 0 => Scenario_Stat(s.readUTF, read_intersections(s))
     case 1 => Agent_Lifetime_Stat(
       s.readInt, s.readDouble, s.readInt, s.readInt, RouteType(s.readInt),
-      WalletType(s.readInt), s.readDouble, s.readDouble, s.readDouble,
-      s.readDouble, s.readBoolean
+      WalletType(s.readInt), s.readInt, s.readDouble, s.readInt,
+      s.readInt, s.readBoolean
     )
     case 2 => Turn_Stat(
       s.readInt, s.readInt, s.readDouble, s.readDouble, s.readDouble,

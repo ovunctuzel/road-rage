@@ -3,35 +3,11 @@
 # Auctions #
 
 - cleanup
-  - freeze results, instructions
-  - agent lifetime stats... ints, not doubles
   - sys wallet can punish by dividing.. also, doubles
   - multiple bids for same item.. handle that
-  - a test with all reservations?
   - define losers generally in code too
   - agents not stopping at exactly the right dist the first time, makes stop signs slow.
-  - in reserv, let compat people go if their eta is <= that of an accepted guy
 
-- map fixes
-  - deterministic output
-  - fix new small issues..
-    - floating vertices due to nuking all roads that lead up to it, and choosing
-      the vert to keep poorly
-    - not seeing any geometry is a bit disconcerting... gov st
-  - num of lanes bounded by num of times could LC
-  - make sure directed roads are well-connected when making turns, should solve
-    many problems and make faster pathfinding
-  - handle cul de sacs once and for all... bernwood is example in BR. remove if
-    only one other link?
-  - dont tie map filename to the serialized thing
-  - custom serialization for them too
-
-- clever impatience by avoiding waiting on same queue again
-- discretionary lanechanging
-- better phase groupings
-- fix gridlock
-
-- compatible serialization
 - system bid: bonus to reservation if i'll take the same time as somebody else
 - commoncase auctions and system bid
   - reservation with certain system bid for compatible turns
@@ -57,6 +33,14 @@
 - agents and intersections could wake each other up now
 
 # Map Construction
+- fix new small issues..
+  - floating vertices due to nuking all roads that lead up to it, and choosing
+    the vert to keep poorly
+  - not seeing any geometry is a bit disconcerting... gov st
+- num of lanes bounded by num of times could LC
+- handle cul de sacs once and for all... bernwood is example in BR. remove if
+  only one other link?
+- dont tie map filename to the serialized thing
 - var lines are so confusing and bug-prone
   when we mod part of a line, line's length AND traversables length gets screwed
   get rid of set_lines
@@ -67,7 +51,6 @@
   - pass3, since doomed pruning makes new problems
   - but keep pass 2 version? seems to prevent some stuff from getting doomed!
 - short roads into longer turns
-  * get rid of the hack that adds length to short roads upon creation
   - 50 meters?
   - dont nix roads connected to vertices with only one road!
   - bernwood drive and other places where the number blows up
@@ -84,7 +67,6 @@
 - cul-de-sac handling in p2... needed?
   - Claus Circle in BR... has no outgoing turns.
 - connectivity fixpoint algorithm shouldnt be necessary?
-- make xml as complete as plaintext?
 - lots of things break if we have a vertex with a self-loop
 
 # Simulation Realism
@@ -96,6 +78,7 @@
 - give lanes/roads/etc the ability to be closed
 
 # Code Cleanup
+- compatible serialization
 - split the passes
   - pass1 = read osm + normalize
   - pass2 = pass2
@@ -152,13 +135,13 @@
   - breakdown other categories when describing
 - make scenarios from UI
 - poisson for introducing vehicles
-- comparing experiments (pairwise, and average over many trials)
 - piecewise resimulation (savestating)
 - verify determinism retained... ordering events queue
 - things to test
   - wacky cases of 2 side-by-side agents wanting to swap places?
 
 # UI
+- merge headless/gui clients
 - label agents with their number in the GUI
 - javafx?
 - 3D
