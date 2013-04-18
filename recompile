@@ -6,7 +6,7 @@ SRCS=`find utexas/ -name '*.scala' -print | xargs`
 BUILD_OPTS="-d .build -Sdeprecation -Sunchecked -Sfeature -cp $FULL_CP"
 FAST=""
 COMPILER="scalac"
-COMPILER="/home/dabreegster/zinc/bin/zinc -scala-home /usr/share/scala"
+COMPILER="/home/dabreegster/zinc/bin/zinc -scala-home /usr/share/scala -nailed"
 #FAST="-Xelide-below 3000"   # disables asserts, timers, and stats
 
 echo Compiling...

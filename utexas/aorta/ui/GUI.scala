@@ -8,10 +8,10 @@ import javafx.application.Application
 import javafx.scene.Scene
 import javafx.scene.paint.Color
 import javafx.stage.Stage
-import javafx.event.EventHandler
+import javafx.event.{EventHandler, ActionEvent}
 import javafx.scene.input.{MouseEvent, ScrollEvent, MouseButton}
 import javafx.util.Duration
-import javafx.animation.ScaleTransition
+import javafx.animation.{Timeline, KeyFrame, ScaleTransition, Animation}
 
 import utexas.aorta.Util
 
@@ -111,6 +111,18 @@ class GUI() extends Application {
         root.setScaleY(zoom)
       }
     })
+
+    // Make the simulation run
+    // TODO this still sleeps and doesnt let ya control speed
+    val run_sim = new Timeline(
+      new KeyFrame(Duration.millis(1000), new EventHandler[ActionEvent]() {
+        def handle(event: ActionEvent) = {
+          Content.content.step()
+        }
+      })
+    )
+    run_sim.setCycleCount(Animation.INDEFINITE)
+    run_sim.play()
 
     stage.setTitle("AORTA GUI")
     stage.setScene(scene)

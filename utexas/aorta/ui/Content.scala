@@ -9,14 +9,18 @@ import javafx.scene.paint.Color
 import javafx.scene.layout.StackPane
 import javafx.scene.shape.{Rectangle, Line}
 import javafx.scene.text.{Text, Font}
+import javafx.scene.transform.Rotate
 
 import scala.collection.JavaConversions.asJavaCollection
+import scala.collection.mutable
 
 import utexas.aorta.map.Road
-import utexas.aorta.sim.Simulation
+import utexas.aorta.sim.{Simulation, Agent, Sim_Event, EV_Agent_Start,
+                         EV_Agent_Stop}
+import utexas.aorta.cfg
 
-// TODO gotta listen to simulation... when new agent or when one disappears,
-// mess with it.
+// TODO possibly have callbacks for everything! when agent moves, asap translate
+// it?
 
 // TODO this is really config, but...
 object Params {
@@ -26,13 +30,13 @@ object Params {
   val lane_line_width = 0.05
 
   // Perpendicular to where the car is going
-  val vehicle_width = 0.2
-  val vehicle_length = 0.15
+  val vehicle_width = 0.15
+  val vehicle_length = 0.2
   val font_size = 4
 }
 
 object Content {
-  private var content: Content = null
+  var content: Content = null
 
   def setup(sim: Simulation) = {
     println("Rendering scene...")
@@ -43,13 +47,37 @@ object Content {
   def geometry_root = content.root
 }
 
-class Content(sim: Simulation) {
+class Content(val sim: Simulation) {
   val root = new Group()
 
   // TODO keep around mappings in some useful way
   val roads = sim.graph.roads.map(r => new DrawRoad(r))
   roads.foreach(r => root.getChildren.addAll(r.render))
   roads.foreach(r => r.set_zorder)
+
+  val agents = new mutable.HashMap[Agent, DrawDriver]()
+
+  sim.listen("gui", (ev: Sim_Event) => { ev match {
+    case EV_Agent_Start(a) => {
+      agents(a) = new DrawDriver(a)
+      root.getChildren.add(agents(a).render)
+    }
+    case EV_Agent_Stop(a) => {
+      // TODO more efficiently by batching and/or making a group just for
+      // agents?
+      root.getChildren.remove(agents(a).render)
+      agents -= a
+    }
+    case _ =>
+  }})
+
+  def step() = {
+    println(s"at ${sim.tick}")
+    sim.step()
+
+    // Process updated things
+    sim.agents.foreach(a => agents(a).redraw())
+  }
 }
 
 class DrawRoad(road: Road) {
@@ -89,17 +117,44 @@ class DrawRoad(road: Road) {
   }
 }
 
-class DrawDriver() {
+class DrawDriver(a: Agent) {
   val pane = new StackPane()
+  val rotate = new Rotate()
+  pane.getTransforms.add(rotate)
 
-  val car = new Rectangle(0, 0, Params.vehicle_width, Params.vehicle_length)
-  car.setFill(Color.BLUE)
+  val car = new Rectangle(0, 0, Params.vehicle_length, Params.vehicle_width)
+  car.setFill(Color.BLUE) // TODO remember random color
 
-  val label = new Text("A42\n$.50")
+  val label = new Text(s"A${a.id}")
   label.setFont(Font.font(Font.getDefault.getFamily, Params.font_size))
-  pane.getChildren.addAll(car, label)
+  pane.getChildren.addAll(car)//, label)
 
-  def render = List(pane)
+  def render = pane
+
+  def redraw() = {
+    label.setText(s"A${a.id}\n${a.wallet.budget}")
+
+    var (line, front_dist) = a.at.on.current_pos(a.at.dist)
+    a.old_lane match {
+      case Some(l) => {
+        val (line2, more_dist) = l.current_pos(a.at.dist)
+        // TODO I'd think 1 - progress should work, but by visual inspection,
+        // apparently not.
+        val progress = (a.lanechange_dist_left / cfg.lanechange_dist)
+        line = line.add_scaled(line2, progress)
+      }
+      case None =>
+    }
+    val front_pt = line.point_on(front_dist)
+
+    // the front center of the vehicle is where the location is. ascii
+    // diagrams are hard, but line up width-wise
+    pane.setTranslateX(front_pt.x - Params.vehicle_length)
+    pane.setTranslateY(front_pt.y - (Params.vehicle_width / 2.0))
+    rotate.setAngle(-line.angle)
+    rotate.setPivotX(front_pt.x)
+    rotate.setPivotY(front_pt.y)
+  }
 }
 
 // TODO where's this belong?
