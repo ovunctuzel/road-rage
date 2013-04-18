@@ -15,10 +15,14 @@ import scala.collection.JavaConversions.asJavaCollection
 import utexas.aorta.map.Road
 import utexas.aorta.sim.Simulation
 
+// TODO gotta listen to simulation... when new agent or when one disappears,
+// mess with it.
+
 // TODO this is really config, but...
 object Params {
   val road_width_per_lane = 0.6
   val center_line_width = 0.1
+  val center_line_dash = 3.0
   val lane_line_width = 0.05
 
   // Perpendicular to where the car is going
@@ -65,6 +69,7 @@ class DrawRoad(road: Road) {
     line.setStrokeWidth(Params.center_line_width)
     line.setStroke(Color.YELLOW)
     line.setSmooth(false)
+    //line.getStrokeDashArray.add(Params.center_line_dash)
   }
 
   val fg_lines = road.all_lanes.flatMap(e => e.lines.map(_.perp_shift(0.5)).map(
@@ -95,4 +100,12 @@ class DrawDriver() {
   pane.getChildren.addAll(car, label)
 
   def render = List(pane)
+}
+
+// TODO where's this belong?
+trait Renderable {
+  def debug(): Unit
+  def tooltip(): List[String] = List(toString)
+
+  // TODO someday, right-click context menus!
 }

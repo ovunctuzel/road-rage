@@ -20,6 +20,7 @@ import utexas.aorta.Util
 
 
 // TODO
+// - zooming that goes in the right place
 // - decent rotation
 // - smooth zooming and panning
 
