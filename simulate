@@ -2,4 +2,4 @@
 
 . common
 
-scala -cp $CLASSPATH:$SWING:$JCHART $JVM_OPTS utexas.aorta.ui.Viewer $@
+scala -cp $CLASSPATH:$JAVAFX:$JCHART $JVM_OPTS utexas.aorta.ui.GUI $@

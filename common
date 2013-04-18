@@ -1,7 +1,7 @@
 #!/bin/bash
 
 GRAPHHOPPER="3rd_party/graphhopper-0.1.jar"
-SWING="/usr/share/java/scala-swing.jar"
+JAVAFX="3rd_party/jfxrt.jar"
 JCHART="3rd_party/jchart2d-3.2.2.jar"
 JFREECHART="3rd_party/jfreechart-1.0.14.jar:3rd_party/jcommon-1.0.17.jar"
 
@@ -9,4 +9,4 @@ CLASSPATH=".build:$GRAPHHOPPER"
 #TEST_MEM="-J-verbosegc"
 TEST_MEM=""
 JVM_OPTS="-J-Xmx1536m $TEST_MEM"
-FULL_CP="$GRAPHHOPPER:$SWING:$JCHART:$JFREECHART"
+FULL_CP="$GRAPHHOPPER:$JAVAFX:$JCHART:$JFREECHART"

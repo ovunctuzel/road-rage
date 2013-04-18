@@ -5,12 +5,12 @@
 SRCS=`find utexas/ -name '*.scala' -print | xargs`
 BUILD_OPTS="-d .build -deprecation -unchecked -feature -cp $FULL_CP"
 FAST=""
+COMPILER="scalac"
 #FAST="-Xelide-below 3000"   # disables asserts, timers, and stats
 
 echo Compiling...
 mkdir -p .build
-scalac $BUILD_OPTS $FAST $SRCS
-#fsc $BUILD_OPTS $FAST $SRCS
+$COMPILER $BUILD_OPTS $FAST $SRCS
 
 # How did the compile go?
 if [[ $? != "0" ]]; then
