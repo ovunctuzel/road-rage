@@ -1,8 +1,24 @@
 # TODO #
 
+# Roadmap #
+
+1) cleanup
+  - clever routing
+  - good default sys bids
+  - bugs
+    - agents not stopping at exactly the right dist the first time
+2) big bro
+3) marginal effects
+
+# Clever routing #
+
+- possibly remove impatient rerouting
+- full A* when needed
+
 # Auctions #
 
 - cleanup
+  - tune sysbids properly...
   - sys wallet can punish by dividing.. also, doubles
   - multiple bids for same item.. handle that
   - define losers generally in code too
@@ -101,6 +117,8 @@
 # Contraction Hierarchies
 - smaller problem possibly if verts=Vertex, edges=Roads (oneway or not).
   - but cant get from every incoming road to every outgoing road... can we?
+  - even if we could, does it know which side of the road we're starting on?
+    or can we always u-turn?
 
 # Intersection Policies
 - backpressure light optimization

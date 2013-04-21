@@ -39,6 +39,8 @@ abstract class Traversable() extends Serializable {
     }
   }
 
+  def cost = length / speed_limit
+
   // if dist is > length or < 0, then this query makes no sense
   def location(dist: Double) = current_pos(dist) match {
     case (l: Line, dist_along: Double) => l.point_on(dist_along)

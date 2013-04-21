@@ -21,7 +21,7 @@ abstract class Router(graph: Graph) {
 // edges/roads/others.
 abstract class AbstractEdge {
   var id: Int // TODO var because fix_ids
-  def length: Double
+  def cost: Double
   // List and not Set means there could be multiple transitions, with possibly
   // different weights.
   def succs: Seq[(AbstractEdge, Double)]
@@ -49,7 +49,7 @@ class DijkstraRouter(graph: Graph) extends Router(graph) {
       def compare(other: Step) = other.cost.compare(cost)
     }
 
-    // Edges in the open set don't have their final distance yet
+    // Edges in the open set don't have their final cost yet
     val open = new PriorityQueue[Step]()
     val done = new HashSet[AbstractEdge]()
 
@@ -63,11 +63,11 @@ class DijkstraRouter(graph: Graph) extends Router(graph) {
       if (!done.contains(step.edge)) {
         done += step.edge
 
-        for ((next, transition_length) <- next(step.edge) if !done.contains(next)) {
-          val dist = step.cost + transition_length + next.length
-          if (dist < costs(next.id)) {
+        for ((next, transition_cost) <- next(step.edge) if !done.contains(next)) {
+          val cost = step.cost + transition_cost + next.cost
+          if (cost < costs(next.id)) {
             // Relax!
-            costs(next.id) = dist
+            costs(next.id) = cost
             // TODO ideally, decrease-key
             // 1) get a PQ that uses a fibonacci heap
             // 2) remove, re-insert again

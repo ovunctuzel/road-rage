@@ -17,17 +17,18 @@ object Preroute {
     val map = Graph.load(args.head)
 
     // Build the graph. Vertices are directed roads and edges are turns, but we
-    // can mangle the total cost for a turn as its incoming edge's length + its
-    // length.
+    // can mangle the total cost for a turn as its incoming edge's time to cross
+    // + its time to cross.
     println("Building GraphHopper graph...")
     val graph = new LevelGraphStorage(
       new RAMDirectory(s"maps/route_${map.name}", true)
     )
     graph.createNew(map.directed_roads.size)
     for (r1 <- map.directed_roads) {
-      for ((r2, turn_length) <- r1.succs) {
-        // TODO incoming edge length, or road length?
-        graph.edge(r1.id, r2.id, r1.length + turn_length, false)
+      for ((r2, turn_time) <- r1.succs) {
+        // TODO use incoming edge length, or road length? they wont be much
+        // different
+        graph.edge(r1.id, r2.id, r1.cost + turn_time, false)
       }
     }
 
