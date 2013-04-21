@@ -51,6 +51,11 @@ class Queue(t: Traversable) {
   def slot_avail = avail_slots > 0
   def is_full = !slot_avail
   def percent_avail = avail_slots.toDouble / capacity.toDouble * 100.0
+  def percent_full = 100.0 - percent_avail
+
+  // This should be tuned carefully. A queue with only 3 spots isn't really
+  // congested if they're all filled.
+  def is_congested = capacity > 5 && percent_full >= 80.0
 
   // TODO this is way over-conservative. based on accel_to_follow, every
   // negative term in delta_dist, from speed 0.

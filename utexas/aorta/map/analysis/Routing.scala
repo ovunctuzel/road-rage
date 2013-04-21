@@ -4,7 +4,7 @@
 
 package utexas.aorta.map.analysis
 
-import scala.collection.mutable.{PriorityQueue, HashSet, ListBuffer}
+import scala.collection.mutable.{PriorityQueue, HashSet, ListBuffer, HashMap}
 import com.graphhopper.storage.{LevelGraphStorage, RAMDirectory}
 import com.graphhopper.routing.ch.PrepareContractionHierarchies
 
@@ -116,5 +116,91 @@ class CHRouter(graph: Graph) extends Router(graph) {
       result += graph.directed_roads(iter.next)
     }
     return result.tail.toList
+  }
+}
+
+// Run sparingly -- it's A* that penalizes going through roads that're congested
+// right now
+class CongestionRouter(graph: Graph) extends Router(graph) {
+  // TODO clean this up >_<
+  def path(from: DirectedRoad, to: DirectedRoad): List[DirectedRoad] = {
+    if (from == to) {
+      return Nil
+    }
+
+    val goal_pt = to.end_pt
+    def calc_heuristic(state: DirectedRoad) =
+      (0.0, state.end_pt.dist_to(goal_pt))
+
+    def add_cost(a: (Double, Double), b: (Double, Double)) =
+      (a._1 + b._1, a._2 + b._2)
+
+    // Stitch together our path
+    val backrefs = new HashMap[DirectedRoad, DirectedRoad]()
+    // We're finished with these
+    val visited = new HashSet[DirectedRoad]()
+    // Best cost so far
+    val costs = new HashMap[DirectedRoad, (Double, Double)]()
+
+    case class Step(state: DirectedRoad) {
+      lazy val heuristic = calc_heuristic(state)
+      def cost = add_cost(costs(state), heuristic)
+    }
+    val ordering = Ordering[(Double, Double)].on((step: Step) => step.cost).reverse
+    val ordering_tuple = Ordering[(Double, Double)].on((pair: (Double, Double)) => pair)
+
+    // Priority queue grabs highest priority first, so reverse to get lowest
+    // cost first.
+    val open = new PriorityQueue[Step]()(ordering)
+    // Used to see if we've already added a road to the queue
+    val open_members = new HashSet[DirectedRoad]()
+
+    costs(from) = (0, 0)
+    open.enqueue(Step(from))
+    open_members += from
+    backrefs(from) = null
+
+    while (open.nonEmpty) {
+      val current = open.dequeue()
+      visited += current.state
+      open_members -= current.state
+
+      if (current.state == to) {
+        // Reconstruct the path
+        var path: List[DirectedRoad] = Nil
+        var pointer: Option[DirectedRoad] = Some(current.state)
+        while (pointer.isDefined && pointer.get != null) {
+          path = pointer.get :: path
+          // Clean as we go to break loops
+          pointer = backrefs.remove(pointer.get)
+        }
+        // Exclude 'from'
+        return path.tail
+      } else {
+        for ((next_state_raw, transition_cost) <- current.state.succs) {
+          val next_state = next_state_raw.asInstanceOf[DirectedRoad]
+          val next_time_cost = transition_cost + next_state.cost
+          val next_congestion_cost =
+            if (next_state.is_congested)
+              1.0
+            else
+              0.0
+          val tentative_cost = add_cost(
+            costs(current.state), (next_congestion_cost, next_time_cost)
+          )
+          if (!visited.contains(next_state) && (!open_members.contains(next_state) || ordering_tuple.lt(tentative_cost, costs(next_state)))) {
+            backrefs(next_state) = current.state
+            costs(next_state) = tentative_cost
+            // TODO if they're in open_members, modify weight in the queue? or
+            // new step will clobber it. fine.
+            open.enqueue(Step(next_state))
+            open_members += next_state
+          }
+        }
+      }
+    }
+
+    // We didn't find the way?! The graph is connected!
+    throw new Exception("Couldn't A* from " + from + " to " + to)
   }
 }

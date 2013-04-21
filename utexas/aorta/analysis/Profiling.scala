@@ -17,7 +17,7 @@ class Timer(val msg: String = "") {
 
   def so_far = (System.nanoTime - start) / 1000000000.0
 
-  def stop = {
+  def stop(): Unit = {
     Util.log("\"" + msg + "\": " + so_far + "s")
   }
 }

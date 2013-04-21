@@ -153,4 +153,7 @@ class DirectedRoad(val road: Road, var id: Int, val dir: Direction.Value)
   def preds = edges.flatMap(e => e.prev_turns.map(t => (t.from.directed_road, t.cost)))
 
   def next_roads = edges.flatMap(e => e.next_roads).toSet
+
+  // We're congested if any of our lanes are.
+  def is_congested = edges.find(e => e.queue.is_congested).isDefined
 }

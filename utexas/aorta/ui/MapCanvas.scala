@@ -16,12 +16,13 @@ import swing.Dialog
 import scala.language.implicitConversions
 
 import utexas.aorta.map._  // TODO yeah getting lazy.
+import utexas.aorta.map.analysis.CongestionRouter
 import utexas.aorta.sim.{Simulation, Agent, Sim_Event, EV_Signal_Change,
                          IntersectionType, RouteType, Route_Event,
                          EV_Transition, EV_Reroute, EV_Heartbeat}
 import utexas.aorta.sim.PathRoute
 
-import utexas.aorta.{Util, RNG, cfg}
+import utexas.aorta.{Util, RNG, Common, cfg}
 
 object Mode extends Enumeration {
   type Mode = Value
@@ -836,6 +837,10 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
     val to = chosen_edge2.get.directed_road
 
     val route = sim.graph.router.path(from, to)
+    /*val timer = Common.timer("A*")
+    val route = (new CongestionRouter(sim.graph)).path(from, to)
+    route.foreach(step => println("  - " + step))
+    timer.stop()*/
 
     // Filter and just remember the edges; the UI doesn't want to highlight
     // turns.
