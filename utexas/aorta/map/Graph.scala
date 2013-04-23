@@ -27,12 +27,12 @@ class Graph(
 
   @transient lazy val router: Router = choose_router
   @transient lazy val dijkstra_router = new DijkstraRouter(this)
+  @transient lazy val ch_router = new CHRouter(this)
 
   // Prefer CH if this map has been prerouted.
   private def choose_router(): Router = {
-    val ch = new CHRouter(this)
-    if (ch.usable) {
-      return ch
+    if (ch_router.usable) {
+      return ch_router
     } else {
       return dijkstra_router
     }

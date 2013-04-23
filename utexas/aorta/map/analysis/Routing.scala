@@ -117,6 +117,20 @@ class CHRouter(graph: Graph) extends Router(graph) {
     }
     return result.tail.toList
   }
+
+  // Other analyses can use this as a pretty quick oracle to answer distance
+  // queries. Useful for heuristics.
+  def dist(from: DirectedRoad, to: DirectedRoad): Double = {
+    if (from == to) {
+      return 0
+    }
+
+    Util.assert_eq(usable, true)
+    val path = algo.calcPath(from.id, to.id)
+    algo.clear
+    Util.assert_eq(path.found, true)
+    return path.distance
+  }
 }
 
 // Run sparingly -- it's A* that penalizes going through roads that're congested
@@ -131,6 +145,13 @@ class CongestionRouter(graph: Graph) extends Router(graph) {
     val goal_pt = to.end_pt
     def calc_heuristic(state: DirectedRoad) =
       (0.0, state.end_pt.dist_to(goal_pt))
+    // Alternate heuristics explore MUCH less states, but the oracles are too
+    // pricy.
+    /*def calc_heuristic(state: DirectedRoad) =
+      (0.0, graph.ch_router.dist(state, to))*/
+    /*val table = graph.dijkstra_router.costs_to(to)
+    def calc_heuristic(state: DirectedRoad) =
+      (0.0, table(state.id))*/
 
     def add_cost(a: (Double, Double), b: (Double, Double)) =
       (a._1 + b._1, a._2 + b._2)

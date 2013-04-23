@@ -836,11 +836,11 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
     val from = chosen_edge1.get.directed_road
     val to = chosen_edge2.get.directed_road
 
-    val route = sim.graph.router.path(from, to)
-    /*val timer = Common.timer("A*")
+    //val route = sim.graph.router.path(from, to)
+    val timer = Common.timer("A*")
     val route = (new CongestionRouter(sim.graph)).path(from, to)
     route.foreach(step => println("  - " + step))
-    timer.stop()*/
+    timer.stop()
 
     // Filter and just remember the edges; the UI doesn't want to highlight
     // turns.
