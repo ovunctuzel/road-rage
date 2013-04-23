@@ -14,6 +14,7 @@ import java.awt.geom._
 import swing.event.Key
 import swing.Dialog
 import scala.language.implicitConversions
+import java.io.File
 
 import utexas.aorta.map._  // TODO yeah getting lazy.
 import utexas.aorta.map.analysis.CongestionRouter
@@ -536,6 +537,20 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
           // TODO make a new scenario...
           /*val builder = Simulation.policy_builder(IntersectionType.withName(name.toString))
           intersections.foreach(i => i.policy = builder(i))*/
+        }
+        case None =>
+      }
+    }
+    case EV_Select_Polygon_For_Serialization() => {
+      val dir = s"maps/area_${sim.graph.name}"
+      (new File(dir)).mkdir
+      Dialog.showInput(message = "Name this area", initial = "") match {
+        case Some(name) => {
+          val edges = sim.vertices.filter(
+            v => polygon.contains(v.location.x, v.location.y)).flatMap(v => v.edges
+          ).map(_.id).toArray
+          Util.serialize(edges, s"${dir}/${name}")
+          Util.log(s"Area saved to ${dir}/${name}")
         }
         case None =>
       }

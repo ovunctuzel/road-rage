@@ -509,12 +509,12 @@ object ScenarioTool {
           s.agents(id) = new_a
         }
         // TODO specifying ranges or choices for stuff.
-        // --spawn 500 start=0 end=100 time=16.2 generations=1 lifetime=3600 route=Drunken wallet=Random budget=90
+        // --spawn 500 start=area_file end=area_file time=16.2 generations=1 lifetime=3600 route=Drunken wallet=Random budget=90
         case "--spawn" => {
           val number = shift_args.toInt
           val params = slurp_params
           val bad_params = params.keys.toSet.diff(Set(
-            "start", "end", "delay", "generations", "lifetime", "route",
+            "starts", "ends", "delay", "generations", "lifetime", "route",
             "wallet", "budget"
           ))
           if (!bad_params.isEmpty) {
@@ -522,12 +522,16 @@ object ScenarioTool {
             sys.exit
           }
 
-          val starts = params.get("start") match {
-            case Some(e) => Array(graph.edges(e.toInt))
+          val starts = params.get("starts") match {
+            case Some(fn) => Util.unserialize(fn).asInstanceOf[Array[Int]].map(
+              id => graph.edges(id)
+            )
             case None => graph.edges
           }
-          val ends = params.get("end") match {
-            case Some(e) => Array(graph.edges(e.toInt))
+          val ends = params.get("ends") match {
+            case Some(fn) => Util.unserialize(fn).asInstanceOf[Array[Int]].map(
+              id => graph.edges(id)
+            )
             case None => graph.edges
           }
           val delay = params.get("delay") match {

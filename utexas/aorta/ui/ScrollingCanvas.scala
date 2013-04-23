@@ -111,6 +111,17 @@ abstract class ScrollingCanvas extends Component {
       polygon = new Polygon()
       repaint
     }
+    case KeyPressed(_, Key.R, _, _) if drawing_mode => {
+      // finish it off
+      if (polygon.npoints < 3) {
+        Util.log("A polygon needs more than one line")
+      } else {
+        handle_ev(EV_Select_Polygon_For_Serialization())
+      }
+      drawing_mode = false
+      polygon = new Polygon()
+      repaint
+    }
 
     // TODO fast_mode
     case e: MouseMoved => {
@@ -349,6 +360,7 @@ final case class EV_Key_Press(key: Any) extends UI_Event {}
 final case class EV_Action(key: String) extends UI_Event {}
 final case class EV_Select_Polygon_For_Army() extends UI_Event {}
 final case class EV_Select_Polygon_For_Policy() extends UI_Event {}
+final case class EV_Select_Polygon_For_Serialization() extends UI_Event {}
 
 trait Renderable {
   def debug(): Unit
