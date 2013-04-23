@@ -7,7 +7,7 @@ package utexas.aorta.tests
 import utexas.aorta.sim.Simulation
 import utexas.aorta.sim.policies.SignalPolicy
 
-import utexas.aorta.{Util, Common}
+import utexas.aorta.{Util, Common, cfg}
 
 // Misc, temporary stuff
 // TODO slowly it's stealing from tests.MapSuite! :P
@@ -15,6 +15,7 @@ object Debug {
   def main(args: Array[String]) = {
     val sim = Util.process_args(args)
 
+    find_short_edges(sim)
     find_disconnected_verts(sim)
     find_crazy_signals(sim)
     calc_capacity(sim)
@@ -22,6 +23,14 @@ object Debug {
     doomed_stuff(sim)
     disconnected_directed_roads(sim)
     stress_test_pathfind(sim)
+  }
+
+  private def find_short_edges(sim: Simulation) = {
+    for (e <- sim.graph.edges) {
+      if (e.length <= 1.0 || e.length.isNaN) {
+        Util.log(s"$e has length ${e.length}. road ${e.road.length}")
+      }
+    }
   }
 
   private def find_disconnected_verts(sim: Simulation) = {

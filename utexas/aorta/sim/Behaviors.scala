@@ -74,6 +74,7 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
     case t: Turn => throw new Exception(s"Requesting a turn from a turn $step?!")
   }
   
+  // TODO Or lookup in tickets now?
   def choose_turn(e: Edge) = route.pick_turn(e)
   
   def transition(from: Traversable, to: Traversable) = {
@@ -110,7 +111,7 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
         // Somebody in the way? If we're stalled and somebody's in the way,
         // we're probably waiting in a queue. Don't waste time hoping, grab a
         // turn now.
-        if (!a.room_to_lc(target) || (a.speed == 0.0 && !a.can_lc_without_crashing(target))) {
+        if (!a.room_to_lc(target) || (a.is_stopped && !a.can_lc_without_crashing(target))) {
           target_lane = None
         }
       }
@@ -297,7 +298,7 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
 
     // Are we completely done?
     // TODO should be totally within end_threshold, but math problems. :(
-    val maybe_done = dist_from_agent_to_end <= (1.5 * cfg.end_threshold) && a.speed == 0.0
+    val maybe_done = dist_from_agent_to_end <= (1.5 * cfg.end_threshold) && a.is_stopped
     return a.at.on match {
       case e: Edge if route.done(e) && maybe_done => {
         Right(true)

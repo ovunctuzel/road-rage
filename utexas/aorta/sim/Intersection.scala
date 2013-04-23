@@ -171,7 +171,7 @@ class Ticket(val a: Agent, val turn: Turn) extends Ordered[Ticket] {
     }
 
     // We're clear!
-    if (waiting_since == -1.0 && a.speed == 0.0) {
+    if (waiting_since == -1.0 && a.is_stopped) {
       waiting_since = Common.tick
     }
     return false

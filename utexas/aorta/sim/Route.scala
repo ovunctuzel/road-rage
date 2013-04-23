@@ -68,6 +68,7 @@ class DijkstraRoute(goal: DirectedRoad, rng: RNG) extends Route(goal, rng) {
 
 // Compute and follow a specific path to the goal. When we're forced to deviate
 // from the path, recalculate.
+// TODO clean up design and make repathing more clear 
 class PathRoute(goal: DirectedRoad, rng: RNG) extends Route(goal, rng) {
   // Head is the current step. If that step isn't immediately reachable, we have
   // to re-route.

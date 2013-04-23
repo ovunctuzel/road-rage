@@ -101,7 +101,8 @@ class Pass3(old_graph: PreGraph2) {
     Util.log_pop
 
     Util.log("Tidying up geometry...")
-    graph.vertices.foreach(v => adjust_lines(v))
+    // TODO don't! it results in terribly short places.
+    //graph.vertices.foreach(v => adjust_lines(v))
 
     // Recalculate length. TODO temporary approach. set_lines redoes the length.
     graph.traversables.foreach(t => {

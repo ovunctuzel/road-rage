@@ -11,6 +11,7 @@ import java.io.File
 
 import utexas.aorta.map.make.Builder
 import utexas.aorta.map.{Graph, Traversable}
+import utexas.aorta.cfg
 
 // TODO Use ScalaTests or another framework.
 
@@ -115,7 +116,7 @@ object MapSuite {
     }
 
     for (e <- g.edges) {
-      if (e.length == 0.0 || e.length.isNaN) {
+      if (e.length <= cfg.epsilon || e.length.isNaN) {
         throw new Exception(s"$e has length ${e.length}")
       }
     }

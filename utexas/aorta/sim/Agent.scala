@@ -109,7 +109,7 @@ class Agent(val id: Int, val route: Route, val rng: RNG, wallet_spec: MkWallet) 
       case None =>
     }
 
-    if (speed == 0.0 && target_accel <= 0.0) {
+    if (is_stopped && target_accel <= 0.0) {
       if (idle_since == -1.0) {
         idle_since = Common.tick
       }
@@ -129,9 +129,9 @@ class Agent(val id: Int, val route: Route, val rng: RNG, wallet_spec: MkWallet) 
     val start_on = at.on
     val old_dist = at.dist
 
-    idle_since = if (speed == 0.0 && idle_since == -1.0)
+    idle_since = if (is_stopped && idle_since == -1.0)
                    Common.tick   // we've started idling
-                 else if (speed == 0.0)
+                 else if (is_stopped)
                    idle_since   // keep same
                  else
                    -1.0   // we're not idling
@@ -312,6 +312,8 @@ class Agent(val id: Int, val route: Route, val rng: RNG, wallet_spec: MkWallet) 
 
     return true
   }
+
+  def is_stopped = speed <= cfg.epsilon
 
   // Returns true if we're done
   def react(): Boolean = {

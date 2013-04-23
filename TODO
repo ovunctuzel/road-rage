@@ -6,7 +6,12 @@
   - clever routing
   - good default sys bids
   - fix up maps, dont remove stuff
+    - small roads remain bc visually pleasing cleanup breaks florida blvd
   - common case policy in places like claycut rd
+  - turn blocked invariant, really maintain it for efficiency!
+  - count CH paths, A* per second too
+  - trip time should include waiting to enter time
+  - gridlock is still a stigma
   - bugs
     - agents not stopping at exactly the right dist the first time
 2) big bro
@@ -17,6 +22,7 @@
 - reroute when necessary
   - before we hit a jam
   - semi-constantly (D*Lite ?)
+- worry about liveness?
 - tradeoff between congested routes and distance
 - spectrum of congestedness
 
