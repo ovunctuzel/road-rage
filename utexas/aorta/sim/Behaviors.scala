@@ -287,14 +287,7 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
       case e: Edge if route.done(e) => false
       // Otherwise, ask the intersection
       case e: Edge => a.get_ticket(route.pick_turn(e)) match {
-        case Some(ticket) => {
-          if (ticket.is_approved) {
-            true
-          } else {
-            impatient_turn(ticket, e)
-            false
-          }
-        }
+        case Some(ticket) => ticket.is_approved
         case None => false
       }
     }
@@ -360,28 +353,6 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
     } else {
       // Special case for distance of 0: avoid a NaN, just stop.
       return Physics.accel_to_stop(a.speed)
-    }
-  }
-
-  // Don't wait for a filled queue, maybe.
-  private def impatient_turn(old: Ticket, e: Edge) = {
-    // Consider being impatient if we're the head of our queue, we've been
-    // idling for a little while, and it's because our target is filled.
-    val idle_time = 90.0  // TODO cfg
-    if (!old.is_interruption && a.how_long_idle > idle_time && a.at.on == e &&
-        !a.our_lead.isDefined && !old.turn.to.queue.slot_avail)
-    {
-      val turn = route.pick_turn(e, avoid = old.turn)
-      if (turn != old.turn) {
-        //Util.log(s"$a impatiently switching from ${old.turn} to $turn")
-        // TODO hackish, but reset this so we don't keep switching
-        // TODO really, how long have we been denied because we're blocked?
-        a.idle_since = -1.0
-        val ticket = new Ticket(a, turn)
-        a.tickets += ticket
-        a.tickets -= old
-        e.to.intersection.change_turn(old, ticket)
-      }
     }
   }
 }

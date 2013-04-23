@@ -86,9 +86,6 @@ class CommonCasePolicy(intersection: Intersection,
     accepted_rares -= ticket
   }
 
-  // Only need to remove from waiting_agents
-  def cancel_turn(ticket: Ticket) = {}
-
   def approveds_to(e: Edge) =
     (accepted_commoners ++ accepted_rares).filter(t => t.turn.to == e)
 

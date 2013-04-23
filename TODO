@@ -5,6 +5,8 @@
 1) cleanup
   - clever routing
   - good default sys bids
+  - fix up maps, dont remove stuff
+  - common case policy in places like claycut rd
   - bugs
     - agents not stopping at exactly the right dist the first time
 2) big bro
@@ -12,8 +14,11 @@
 
 # Clever routing #
 
-- possibly remove impatient rerouting
-- full A* when needed
+- reroute when necessary
+  - before we hit a jam
+  - semi-constantly (D*Lite ?)
+- tradeoff between congested routes and distance
+- spectrum of congestedness
 
 # Auctions #
 
@@ -79,7 +84,7 @@
 
 - use http://wiki.openstreetmap.org/wiki/Relation:restriction
 - our pruning of pedestrian ways seems to be a bit too enthusiastic (see Guadalupe St)
-- deterministic construction is still wonky, with ward IDs and lines (due to meeting up)
+- deterministic construction is still wonky, with lines meeting up
 - cul-de-sac handling in p2... needed?
   - Claus Circle in BR... has no outgoing turns.
 - connectivity fixpoint algorithm shouldnt be necessary?

@@ -47,10 +47,6 @@ class StopSignPolicy(intersection: Intersection,
     current_owner = None
   }
 
-  def cancel_turn(ticket: Ticket) = {
-    queue.dequeueFirst((t) => t == ticket)
-  }
-
   def approveds_to(e: Edge) = current_owner match {
     case Some(t) if t.turn.to == e => List(t)
     case _ => Nil

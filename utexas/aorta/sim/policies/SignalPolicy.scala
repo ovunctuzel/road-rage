@@ -103,9 +103,6 @@ class SignalPolicy(intersection: Intersection,
     accepted_agents -= ticket
   }
 
-  // Only need to remove from waiting_agents
-  def cancel_turn(ticket: Ticket) = {}
-
   def approveds_to(e: Edge) =
     accepted_agents.filter(ticket => ticket.turn.to == e)
 
