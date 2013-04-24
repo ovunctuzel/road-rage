@@ -97,19 +97,8 @@ class PathRoute(goal: DirectedRoad, rng: RNG) extends Route(goal, rng) {
 
   // Prefer the one that's emptiest now and try to get close to a lane that
   // we'll want to LC to anyway. Only call when we haven't chosen something yet.
-  private def best_turn(e: Edge, dest: DirectedRoad, next_dest: DirectedRoad): Option[Turn] =
+  private def best_turn(e: Edge, dest: DirectedRoad, next_dest: DirectedRoad): Turn =
   {
-    // If we're being forced to reroute, give up now.
-    if (e.next_turns.filter(t => t.to.directed_road == dest).isEmpty) {
-      return None
-    }
-
-    def first_pri(t: Turn) =
-      if (t.to.directed_road == dest)
-        1
-      else
-        0
-
     val ideal_lanes =
       if (next_dest != null)
         candidate_lanes(dest.edges.head, next_dest)
@@ -118,7 +107,7 @@ class PathRoute(goal: DirectedRoad, rng: RNG) extends Route(goal, rng) {
     def ideal_dist(e: Edge) =
       ideal_lanes.map(ideal => math.abs(e.lane_num - ideal.lane_num)).min
     val total = dest.edges.size
-    def second_pri(t: Turn) =
+    def ranking(t: Turn) =
       if (t.to.directed_road != dest)
         -1
       else
@@ -127,11 +116,9 @@ class PathRoute(goal: DirectedRoad, rng: RNG) extends Route(goal, rng) {
 
     // Prefer things close to where we'll need to go next, and things with more
     // room.
-    val best = e.next_turns.maxBy(
-      t => (first_pri(t), second_pri(t), t.to.queue.percent_avail)
+    return e.next_turns.maxBy(
+      t => (ranking(t), t.to.queue.percent_avail)
     )
-    chosen_turns(e) = best
-    return Some(best)
   }
 
   def pick_turn(e: Edge): Turn = {
@@ -147,28 +134,30 @@ class PathRoute(goal: DirectedRoad, rng: RNG) extends Route(goal, rng) {
     val before = pair._1
     val slice = pair._2
     Util.assert_eq(slice.nonEmpty, true)
+    val dest = slice.tail.head
 
     // Is the next step reachable?
-    return best_turn(e, slice.tail.head, slice.tail.tail.headOption.getOrElse(null)) match {
-      case Some(t) => {
-        t
-      }
-      case None => {
-        // Re-route, but start from a source we can definitely reach without
-        // lane-changing. Namely, pick a turn randomly and start pathing from
-        // that road.
-        // TODO heuristic instead of arbitrary?
-        val choice = e.next_turns.head
-        chosen_turns(e) = choice
-        val source = choice.to.directed_road
-        // TODO Erase all turn choices AFTER source, if we've made any?
-        // Stitch together the new path into the full thing
-        val new_path = slice.head :: source :: Common.sim.graph.router.path(source, goal)
-        path = before ++ new_path
-        tell_listeners(EV_Reroute(path))
-        choice
-      }
+    val must_reroute =
+      e.next_turns.filter(t => t.to.directed_road == dest).isEmpty
+
+    val best = if (must_reroute) {
+      // Re-route, but start from a source we can definitely reach without
+      // lane-changing. Namely, pick a turn randomly and start pathing from
+      // that road.
+      // TODO heuristic instead of arbitrary?
+      val choice = e.next_turns.head
+      val source = choice.to.directed_road
+      // TODO Erase all turn choices AFTER source, if we've made any?
+      // Stitch together the new path into the full thing
+      val new_path = slice.head :: source :: Common.sim.graph.router.path(source, goal)
+      path = before ++ new_path
+      tell_listeners(EV_Reroute(path))
+      choice
+    } else {
+      best_turn(e, dest, slice.tail.tail.headOption.getOrElse(null))
     }
+    chosen_turns(e) = best
+    return best
   }
 
   private def candidate_lanes(from: Edge, dest: DirectedRoad) =
