@@ -8,6 +8,7 @@ import scala.annotation.tailrec
 import scala.collection.immutable.{SortedSet, TreeSet}
 import scala.collection.mutable.{MutableList, PriorityQueue, ListBuffer}
 import scala.collection.mutable.{HashSet => MutableSet}
+import scala.collection.mutable.{HashMap => MutableMap}
 import java.io.FileWriter
 import scala.io.Source
 
@@ -163,25 +164,36 @@ class Simulation(val graph: Graph, scenario: Scenario)
 
   // Do some temporary debugging type thing from the UI
   def ui_debug() = {
-    for (e <- graph.edges if e.length < cfg.epsilon) {
-      println(s"$e is short... ${e.length}")
-    }
+    // Memoize!
+    val demands = new MutableMap[Edge, Int]()
 
-    // TODO memoize.
+    def demand(e: Edge, seen: Set[Edge]): Int =
+      if (demands.contains(e)) {
+        demands(e)
+      } else if (e.queue.is_full) {
+        val total = e.queue.capacity + e.preds.map(
+          pred => if (pred.queue.depends_on.getOrElse(null) != e) {
+                    0
+                  } else if (seen.contains(pred)) {
+                    99999999  // <-- marker for gridlock :P
+                  } else {
+                    demand(pred, seen + pred)
+                  }
+        ).sum
+        demands(e) = total
+        total
+      } else {
+        val total = e.queue.capacity - e.queue.avail_slots
+        demands(e) = total
+        total
+      }
 
-    // Detect gridlock super hackishly.
-    def demand(e: Edge): Int = try {
-      if (e.queue.is_full)
-        e.queue.capacity + e.preds.map(demand).sum
-      else
-        e.queue.capacity - e.queue.avail_slots
-    } catch {
-      // Mark appropriately :P
-      case err: java.lang.StackOverflowError => 999999999
+    for (e <- graph.edges) {
+      demand(e, Set(e))
     }
 
     // Find queues with the most demand
-    for (e <- graph.edges.map(e => (-demand(e), e)).sorted.take(10)) {
+    for (e <- graph.edges.map(e => (-demands(e), e)).sorted.take(10)) {
       Util.log(s"${e._2} has total demand ${-e._1}")
     }
   }

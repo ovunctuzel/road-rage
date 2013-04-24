@@ -206,4 +206,14 @@ class Queue(t: Traversable) {
     })
     return safe
   }
+
+  // What edge is the agent at the front of our queue depending on?
+  def depends_on(): Option[Edge] = head match {
+    case Some(a) => a.all_tickets(t.asInstanceOf[Edge].to.intersection).toList match {
+      case Nil => None
+      // TODO which ticket? the approved one?
+      case ls => Some(ls.head.turn.to)
+    }
+    case None => None
+  }
 }
