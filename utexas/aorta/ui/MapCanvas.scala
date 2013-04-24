@@ -17,7 +17,6 @@ import scala.language.implicitConversions
 import java.io.File
 
 import utexas.aorta.map._  // TODO yeah getting lazy.
-import utexas.aorta.map.analysis.CongestionRouter
 import utexas.aorta.sim.{Simulation, Agent, Sim_Event, EV_Signal_Change,
                          IntersectionType, RouteType, Route_Event,
                          EV_Transition, EV_Reroute, EV_Heartbeat}
@@ -851,9 +850,9 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
     val from = chosen_edge1.get.directed_road
     val to = chosen_edge2.get.directed_road
 
-    //val route = sim.graph.router.path(from, to)
-    val timer = Common.timer("A*")
-    val route = (new CongestionRouter(sim.graph)).path(from, to)
+    val timer = Common.timer("Pathfinding")
+    // Can choose a specific router...
+    val route = sim.graph.congestion_router.path(from, to)
     route.foreach(step => println("  - " + step))
     timer.stop()
 

@@ -7,7 +7,8 @@ package utexas.aorta.map
 import scala.collection.mutable.{HashMap, PriorityQueue, HashSet}
 import java.io.Serializable
 
-import utexas.aorta.map.analysis.{Router, DijkstraRouter, CHRouter}
+import utexas.aorta.map.analysis.{Router, DijkstraRouter, CHRouter,
+                                  CongestionRouter}
 
 import utexas.aorta.{Util, Common}
 
@@ -28,6 +29,7 @@ class Graph(
   @transient lazy val router: Router = choose_router
   @transient lazy val dijkstra_router = new DijkstraRouter(this)
   @transient lazy val ch_router = new CHRouter(this)
+  @transient lazy val congestion_router = new CongestionRouter(this)
 
   // Prefer CH if this map has been prerouted.
   private def choose_router(): Router = {

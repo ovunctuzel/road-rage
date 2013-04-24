@@ -139,17 +139,22 @@ class PathRoute(goal: DirectedRoad, rng: RNG) extends Route(goal, rng) {
     // Is the next step reachable?
     val must_reroute =
       e.next_turns.filter(t => t.to.directed_road == dest).isEmpty
+    // TODO a more refined policy, please!
+    val should_reroute = dest.is_congested
 
-    val best = if (must_reroute) {
+    val best = if (must_reroute || should_reroute) {
       // Re-route, but start from a source we can definitely reach without
-      // lane-changing. Namely, pick a turn randomly and start pathing from
-      // that road.
-      // TODO heuristic instead of arbitrary?
-      val choice = e.next_turns.head
+      // lane-changing.
+
+      val choice = e.next_turns.maxBy(t => t.to.queue.percent_avail)
       val source = choice.to.directed_road
+
       // TODO Erase all turn choices AFTER source, if we've made any?
-      // Stitch together the new path into the full thing
-      val new_path = slice.head :: source :: Common.sim.graph.router.path(source, goal)
+
+      // Stitch together the new path into the full thing. Avoid congestion
+      // during  this reroute.
+      val new_path = slice.head :: source ::
+                     Common.sim.graph.congestion_router.path(source, goal)
       path = before ++ new_path
       tell_listeners(EV_Reroute(path))
       choice

@@ -194,7 +194,7 @@ class CongestionRouter(graph: Graph) extends Router(graph) {
 
       if (current.state == to) {
         // Reconstruct the path
-        println(s"Cost of path: ${costs(current.state)}") // TODO debug
+        //println(s"Cost of path: ${costs(current.state)}") // TODO debug
         var path: List[DirectedRoad] = Nil
         var pointer: Option[DirectedRoad] = Some(current.state)
         while (pointer.isDefined && pointer.get != null) {

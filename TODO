@@ -9,6 +9,7 @@
     - small roads remain bc visually pleasing cleanup breaks florida blvd
   - common case policy in places like claycut rd
   - turn blocked invariant, really maintain it for efficiency!
+  - color roads thatre planned for use
   - trip time should include waiting to enter time
   - gridlock is still a stigma
   - bugs
@@ -19,7 +20,7 @@
 # Clever routing #
 
 - reroute when necessary
-  - before we hit a jam
+  - before we hit a jam (k-lookahead...)
   - semi-constantly (D*Lite ?)
 - worry about liveness?
 - tradeoff between congested routes and distance
