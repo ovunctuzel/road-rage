@@ -119,12 +119,13 @@ case class Turn_Stat(
   }
 }
 
-// Logged every 1.0 real-time seconds. Number of agent_steps is since the last
-// heartbeat; this is one of the few things tracked online. Active agents is the
-// number that moved the specific tick that this heartbeat was taken.
+// Logged every 1.0 real-time seconds. Number of agent_steps and paths found are
+// since the last heartbeat; this is one of the few things tracked online.
+// Active agents is the number that moved the specific tick that this heartbeat
+// was taken.
 case class Heartbeat_Stat(
   active_agents: Int, live_agents: Int, spawning_agents: Int, tick: Double,
-  agent_steps: Int
+  agent_steps: Int, ch_paths: Int, astar_paths: Int
 ) extends Measurement {
   // ID 3
 
@@ -135,6 +136,8 @@ case class Heartbeat_Stat(
     stream.writeInt(spawning_agents)
     stream.writeDouble(tick)
     stream.writeInt(agent_steps)
+    stream.writeInt(ch_paths)
+    stream.writeInt(astar_paths)
   }
 
   def describe = s"$active_agents moved / $live_agents live / $spawning_agents ready"
@@ -187,7 +190,8 @@ object PostProcess {
       s.readDouble
     )
     case 3 => Heartbeat_Stat(
-      s.readInt, s.readInt, s.readInt, s.readDouble, s.readInt
+      s.readInt, s.readInt, s.readInt, s.readDouble, s.readInt, s.readInt,
+      s.readInt
     )
   }
 

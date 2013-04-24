@@ -9,7 +9,6 @@
     - small roads remain bc visually pleasing cleanup breaks florida blvd
   - common case policy in places like claycut rd
   - turn blocked invariant, really maintain it for efficiency!
-  - count CH paths, A* per second too
   - trip time should include waiting to enter time
   - gridlock is still a stigma
   - bugs

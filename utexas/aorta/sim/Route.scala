@@ -96,17 +96,12 @@ class PathRoute(goal: DirectedRoad, rng: RNG) extends Route(goal, rng) {
   }
 
   // Prefer the one that's emptiest now and try to get close to a lane that
-  // we'll want to LC to anyway
+  // we'll want to LC to anyway. Only call when we haven't chosen something yet.
   private def best_turn(e: Edge, dest: DirectedRoad, next_dest: DirectedRoad): Option[Turn] =
   {
-    if (chosen_turns.contains(e)) {
-      Util.assert_eq(chosen_turns(e).to.directed_road, dest)
-      return Some(chosen_turns(e))
-    } else {
-      // If we're being forced to reroute, give up now.
-      if (e.next_turns.filter(t => t.to.directed_road == dest).isEmpty) {
-        return None
-      }
+    // If we're being forced to reroute, give up now.
+    if (e.next_turns.filter(t => t.to.directed_road == dest).isEmpty) {
+      return None
     }
 
     def first_pri(t: Turn) =
@@ -140,6 +135,12 @@ class PathRoute(goal: DirectedRoad, rng: RNG) extends Route(goal, rng) {
   }
 
   def pick_turn(e: Edge): Turn = {
+    // Just lookup if we've already committed to something.
+    // TODO ultimately, our clients should ask us less and look at tickets.
+    if (chosen_turns.contains(e)) {
+      return chosen_turns(e)
+    }
+
     // Lookahead could be calling us from anywhere. Figure out where we are in
     // the path.
     val pair = path.span(r => r != e.directed_road)

@@ -10,7 +10,7 @@ import com.graphhopper.routing.ch.PrepareContractionHierarchies
 
 import utexas.aorta.map.{Graph, DirectedRoad}
 
-import utexas.aorta.Util
+import utexas.aorta.{Util, Common}
 
 abstract class Router(graph: Graph) {
   // Doesn't include 'from' as the first step
@@ -105,6 +105,8 @@ class CHRouter(graph: Graph) extends Router(graph) {
       return Nil
     }
 
+    Common.sim.ch_since_last_time += 1
+
     Util.assert_eq(usable, true)
     val path = algo.calcPath(from.id, to.id)
     algo.clear
@@ -125,6 +127,8 @@ class CHRouter(graph: Graph) extends Router(graph) {
       return 0
     }
 
+    Common.sim.ch_since_last_time += 1
+
     Util.assert_eq(usable, true)
     val path = algo.calcPath(from.id, to.id)
     algo.clear
@@ -141,6 +145,8 @@ class CongestionRouter(graph: Graph) extends Router(graph) {
     if (from == to) {
       return Nil
     }
+
+    Common.sim.astar_since_last_time += 1
 
     val goal_pt = to.end_pt
     def calc_heuristic(state: DirectedRoad) =

@@ -22,9 +22,10 @@ object Headless {
     var last_tick = sim.tick
     sim.listen("headless", (ev: Sim_Event) => { ev match {
       case EV_Heartbeat(info) => {
-        Util.log("At t=%s (%.1fs later): %s {%s moves/sec}".format(
+        Util.log("At t=%s (%.1fx): %s {%s moves, %s CH, %s A*}".format(
           Util.time_num(info.tick), info.tick - last_tick, info.describe,
-          Util.comma_num(info.agent_steps, pad = true)
+          Util.comma_num(info.agent_steps, pad = true),
+          Util.comma_num(info.ch_paths), Util.comma_num(info.astar_paths)
         ))
         last_tick = info.tick
 

@@ -55,6 +55,9 @@ class Simulation(val graph: Graph, scenario: Scenario)
   // Track this for stats.
   private var last_real_time = 0.0
   private var steps_since_last_time = 0
+  // Not private because these get incremented elsewhere.
+  var ch_since_last_time = 0
+  var astar_since_last_time = 0
 
   def step(dt_s: Double) = {
     // This value is dt in simulation time, not real time
@@ -119,12 +122,14 @@ class Simulation(val graph: Graph, scenario: Scenario)
       if (now - last_real_time >= 1000.0) {
         val measurement = Heartbeat_Stat(
           active_cnt, agents.size, ready_to_spawn.size, tick,
-          steps_since_last_time
+          steps_since_last_time, ch_since_last_time, astar_since_last_time
         )
         Stats.record(measurement)
         tell_listeners(EV_Heartbeat(measurement))
         last_real_time = now
         steps_since_last_time = 0
+        ch_since_last_time = 0
+        astar_since_last_time = 0
       }
     }
   }
