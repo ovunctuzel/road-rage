@@ -3,18 +3,26 @@
 # Roadmap #
 
 1) cleanup
+  - instructions on site
   - clever routing
-  - good default sys bids
-  - fix up maps, dont remove stuff
-    - small roads remain bc visually pleasing cleanup breaks florida blvd
-  - common case policy in places like claycut rd
-  - turn blocked invariant, really maintain it for efficiency!
-  - color roads thatre planned for use
-  - trip time should include waiting to enter time
+  - good enough default sys bids, to get new default over FIFO
+  - fix up maps once and for allish
+  - common case policy, in places like claycut rd
+  - speed
+    - turn blocked invariant, really maintain it for efficiency!
+  - ui
+    - total rewrite in something
+    - viz: color roads thatre planned for use
   - gridlock is still a stigma
   - bugs
     - agents not stopping at exactly the right dist the first time
+    - trip time should include waiting to enter time
 2) big bro
+  - savestating
+    - use as opportunity to clean up the state everything keeps
+    - pattern to manage state? a trait... more privates..
+      - each needs the other... just physically separate state, pure methods,
+        side effect mehtods.
 3) marginal effects
 
 # Clever routing #
@@ -22,9 +30,9 @@
 - reroute when necessary
   - before we hit a jam (k-lookahead...)
   - semi-constantly (D*Lite ?)
-- worry about liveness?
 - tradeoff between congested routes and distance
 - spectrum of congestedness
+- worry about liveness?
 
 # Auctions #
 

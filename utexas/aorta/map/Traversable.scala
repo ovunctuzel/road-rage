@@ -11,7 +11,7 @@ import utexas.aorta.ui.Renderable
 
 import java.io.Serializable
 
-import utexas.aorta.{cfg, Util, Physics}
+import utexas.aorta.{cfg, Util, Physics, StateWriter, StateReader}
 
 // Something with a sequence of lines forming a path and a way to get to more
 // somethings
@@ -185,7 +185,7 @@ class Line(var x1: Double, var y1: Double, var x2: Double, var y2: Double)
   def shift_back(mag: Double = 1.5) = shift_pt(x2, y2, angle + math.Pi, mag)
 }
 
-case class Position(val on: Traversable, val dist: Double) extends Renderable {
+case class Position(on: Traversable, dist: Double) extends Renderable {
   Util.assert_ge(dist, 0)
   Util.assert_le(dist, on.length)
 
@@ -200,5 +200,19 @@ case class Position(val on: Traversable, val dist: Double) extends Renderable {
       case e: Edge => e.debug
       case _ =>
     }
+  }
+
+  def serialize(w: StateWriter) {
+    on match {
+      case e: Edge => {
+        w.bool(true)
+        w.int(e.id)
+      }
+      case t: Turn => {
+        w.bool(false)
+        w.int(t.id)
+      }
+    }
+    w.double(dist)
   }
 }

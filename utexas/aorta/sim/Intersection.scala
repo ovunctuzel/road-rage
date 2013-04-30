@@ -12,7 +12,7 @@ import utexas.aorta.sim.policies._
 import utexas.aorta.map.{Vertex, Turn, Edge}
 import utexas.aorta.analysis.Turn_Stat
 
-import utexas.aorta.{Util, Common, cfg}
+import utexas.aorta.{Util, Common, cfg, StateWriter, StateReader}
 
 // Common stuff goes here, particular implementations are in utexas.aorta.sim.policies
 
@@ -97,17 +97,36 @@ class Intersection(val v: Vertex, policy_type: IntersectionType.Value,
 }
 
 class Ticket(val a: Agent, val turn: Turn) extends Ordered[Ticket] {
-  // TODO if an agent ever loops and requests the same turn before clearing the
-  // prev one, gonna have a bad time!
-  override def compare(other: Ticket) =
-    implicitly[Ordering[Tuple2[Agent, Turn]]].compare((a, turn), (other.a, other.turn))
-  override def toString = s"Ticket($a, $turn, approved? $is_approved)"
-
-  def intersection = turn.vert.intersection
-
+  //////////////////////////////////////////////////////////////////////////////
+  // State
+  
   // Don't initially know: accept_tick, done_tick, cost_paid.
-  // TODO keep state, dont shuffle it into this >_<
+  // TODO keep state properly, dont shuffle it into this >_<
   var stat = Turn_Stat(a.id, turn.vert.id, Common.tick, -1.0, -1.0, 0.0)
+
+  // If we interrupt a reservation successfully, don't let people block us.
+  var is_interruption = false
+
+  // When our turn first becomes not blocked while we're stopped, start the
+  // timer.
+  private var waiting_since = -1.0
+
+  //////////////////////////////////////////////////////////////////////////////
+  // Meta
+
+  def serialize(w: StateWriter) {
+    // Agent is implied, since we belong to them
+    w.int(turn.id)
+    w.double(stat._3)
+    w.double(stat._4)
+    w.double(stat._5)
+    w.double(stat._6)
+    w.bool(is_interruption)
+    w.double(waiting_since)
+  }
+
+  //////////////////////////////////////////////////////////////////////////////
+  // Actions
 
   def approve() = {
     stat = stat.copy(accept_tick = Common.tick)
@@ -120,23 +139,10 @@ class Ticket(val a: Agent, val turn: Turn) extends Ordered[Ticket] {
     }
   }
 
-  def is_approved = stat.accept_tick != -1.0
-
-  // If we interrupt a reservation successfully, don't let people block us.
-  var is_interruption = false
-
-  // When our turn first becomes not blocked while we're stopped, start the
-  // timer.
-  var waiting_since = -1.0
-  def how_long_waiting =
-    if (waiting_since == -1.0)
-      0.0
-    else
-      Common.tick - waiting_since
-
   // To enforce liveness, policies shouldn't accept a turn that can't certainly
   // be finished. Once a turn is accepted, lane-changing and spawning and such
   // have to maintain the stability of this property.
+  // This is an action because it touches the waiting_since state.
   def turn_blocked(): Boolean = {
     val target = turn.to
     val intersection = turn.vert.intersection
@@ -201,6 +207,26 @@ class Ticket(val a: Agent, val turn: Turn) extends Ordered[Ticket] {
 
     return false*/
   }
+
+  //////////////////////////////////////////////////////////////////////////////
+  // Queries
+
+  override def toString = s"Ticket($a, $turn, approved? $is_approved)"
+
+  // TODO if an agent ever loops and requests the same turn before clearing the
+  // prev one, gonna have a bad time!
+  override def compare(other: Ticket) =
+    implicitly[Ordering[Tuple2[Agent, Turn]]].compare((a, turn), (other.a, other.turn))
+
+  def intersection = turn.vert.intersection
+
+  def is_approved = stat.accept_tick != -1.0
+
+  def how_long_waiting =
+    if (waiting_since == -1.0)
+      0.0
+    else
+      Common.tick - waiting_since
 
   def eta_earliest() =
     a.how_far_away(turn.vert.intersection) / a.at.on.speed_limit

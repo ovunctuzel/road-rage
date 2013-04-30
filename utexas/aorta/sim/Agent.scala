@@ -68,7 +68,7 @@ class Agent(val id: Int, val route: Route, val rng: RNG, val wallet: Wallet) ext
     wallet.serialize(w)
 
     // Then the rest of our state
-    //pos.serialize(w)
+    at.serialize(w)
     w.double(stat_memory._1)
     w.int(stat_memory._2)
     w.int(stat_memory._3)
@@ -82,7 +82,7 @@ class Agent(val id: Int, val route: Route, val rng: RNG, val wallet: Wallet) ext
     w.double(lanechange_dist_left)
     w.double(idle_since)
     w.int(tickets.size)
-    //tickets.foreach(ticket => ticket.serialize(w))
+    tickets.foreach(ticket => ticket.serialize(w))
   }
 
   //////////////////////////////////////////////////////////////////////////////
