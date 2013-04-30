@@ -8,13 +8,23 @@ import scala.collection.mutable.{HashMap => MutableMap}
 
 import utexas.aorta.map.{Edge, DirectedRoad, Traversable, Turn, Vertex}
 
-import utexas.aorta.{Util, RNG, Common, cfg}
+import utexas.aorta.{Util, RNG, Common, cfg, StateWriter, StateReader}
 
 // Get a client to their goal by any means possible.
 abstract class Route(val goal: DirectedRoad, rng: RNG)
   extends ListenerPattern[Route_Event]
 {
-  def done(at: Edge) = at.directed_road == goal
+  //////////////////////////////////////////////////////////////////////////////
+  // Meta
+
+  def serialize(w: StateWriter) {
+    w.int(route_type.id)
+    w.int(goal.id)
+  }
+
+  //////////////////////////////////////////////////////////////////////////////
+  // Actions
+
   // For lookahead clients. No lane-changing.
   def steps_to(at: Traversable, v: Vertex): List[Traversable] = at match {
     case e: Edge if e.to == v => at :: Nil
@@ -29,9 +39,18 @@ abstract class Route(val goal: DirectedRoad, rng: RNG)
   def pick_turn(e: Edge): Turn
   // The client may try to lane-change somewhere
   def pick_lane(e: Edge): Edge
-  // Debug
-  def dump_info
+
+  //////////////////////////////////////////////////////////////////////////////
+  // Queries
+
   def route_type(): RouteType.Value
+  def done(at: Edge) = at.directed_road == goal
+  def dump_info
+}
+
+object Route {
+  // TODO this
+  def unserialize(r: StateReader): Route = null
 }
 
 abstract class Route_Event
@@ -41,8 +60,13 @@ final case class EV_Reroute(path: List[DirectedRoad]) extends Route_Event
 // Compute the cost of the path from every source to our single goal, then
 // hillclimb each step.
 class DijkstraRoute(goal: DirectedRoad, rng: RNG) extends Route(goal, rng) {
-  // TODO We used to assign a cost to every edge, now we go by directed road.
-  val costs = Common.sim.graph.dijkstra_router.costs_to(goal)
+  //////////////////////////////////////////////////////////////////////////////
+  // State
+
+  private val costs = Common.sim.graph.dijkstra_router.costs_to(goal)
+
+  //////////////////////////////////////////////////////////////////////////////
+  // Actions
 
   // We don't care.
   def transition(from: Traversable, to: Traversable) = {}
@@ -60,20 +84,45 @@ class DijkstraRoute(goal: DirectedRoad, rng: RNG) extends Route(goal, rng) {
     )
   }
 
+  //////////////////////////////////////////////////////////////////////////////
+  // Queries
+
+  def route_type = RouteType.Dijkstra
   def dump_info() = {
     Util.log(s"Static route to $goal")
   }
-  def route_type = RouteType.Dijkstra
 }
 
 // Compute and follow a specific path to the goal. When we're forced to deviate
 // from the path, recalculate.
 // TODO clean up design and make repathing more clear 
 class PathRoute(goal: DirectedRoad, rng: RNG) extends Route(goal, rng) {
+  //////////////////////////////////////////////////////////////////////////////
+  // State
+
   // Head is the current step. If that step isn't immediately reachable, we have
   // to re-route.
-  var path: List[DirectedRoad] = null
-  val chosen_turns = new MutableMap[Edge, Turn]()
+  private var path: List[DirectedRoad] = null
+  private val chosen_turns = new MutableMap[Edge, Turn]()
+
+  //////////////////////////////////////////////////////////////////////////////
+  // Meta
+
+  override def serialize(w: StateWriter) {
+    super.serialize(w)
+    // We can't tell when we last rerouted given less state; store the full
+    // path.
+    w.int(path.size)
+    path.foreach(step => w.int(step.id))
+    w.int(chosen_turns.size)
+    chosen_turns.foreach(pair => {
+      w.int(pair._1.id)
+      w.int(pair._2.id)
+    })
+  }
+
+  //////////////////////////////////////////////////////////////////////////////
+  // Actions
 
   def transition(from: Traversable, to: Traversable) = {
     (from, to) match {
@@ -93,32 +142,6 @@ class PathRoute(goal: DirectedRoad, rng: RNG) extends Route(goal, rng) {
       case _ =>
     }
     tell_listeners(EV_Transition(from, to))
-  }
-
-  // Prefer the one that's emptiest now and try to get close to a lane that
-  // we'll want to LC to anyway. Only call when we haven't chosen something yet.
-  private def best_turn(e: Edge, dest: DirectedRoad, next_dest: DirectedRoad): Turn =
-  {
-    val ideal_lanes =
-      if (next_dest != null)
-        candidate_lanes(dest.edges.head, next_dest)
-      else
-        dest.edges.toList
-    def ideal_dist(e: Edge) =
-      ideal_lanes.map(ideal => math.abs(e.lane_num - ideal.lane_num)).min
-    val total = dest.edges.size
-    def ranking(t: Turn) =
-      if (t.to.directed_road != dest)
-        -1
-      else
-        // How far is this lane from an ideal lane?
-        (total - ideal_dist(t.to)).toDouble / total.toDouble
-
-    // Prefer things close to where we'll need to go next, and things with more
-    // room.
-    return e.next_turns.maxBy(
-      t => (ranking(t), t.to.queue.percent_avail)
-    )
   }
 
   def pick_turn(e: Edge): Turn = {
@@ -165,11 +188,6 @@ class PathRoute(goal: DirectedRoad, rng: RNG) extends Route(goal, rng) {
     return best
   }
 
-  private def candidate_lanes(from: Edge, dest: DirectedRoad) =
-    from.other_lanes.filter(
-      f => f.succs.find(t => t.directed_road == dest).isDefined
-    ).toList
-
   def pick_lane(from: Edge): Edge = {
     if (path == null) {
       path = from.directed_road :: Common.sim.graph.router.path(from.directed_road, goal)
@@ -207,17 +225,74 @@ class PathRoute(goal: DirectedRoad, rng: RNG) extends Route(goal, rng) {
     )
   }
 
+  //////////////////////////////////////////////////////////////////////////////
+  // Queries
+
+  def route_type = RouteType.Path
   def dump_info() = {
     Util.log(s"Static route to $goal using $path")
   }
-  def route_type = RouteType.Path
+
+  def roads = path.map(_.road).toSet
+
+  // Prefer the one that's emptiest now and try to get close to a lane that
+  // we'll want to LC to anyway. Only call when we haven't chosen something yet.
+  private def best_turn(e: Edge, dest: DirectedRoad, next_dest: DirectedRoad): Turn =
+  {
+    val ideal_lanes =
+      if (next_dest != null)
+        candidate_lanes(dest.edges.head, next_dest)
+      else
+        dest.edges.toList
+    def ideal_dist(e: Edge) =
+      ideal_lanes.map(ideal => math.abs(e.lane_num - ideal.lane_num)).min
+    val total = dest.edges.size
+    def ranking(t: Turn) =
+      if (t.to.directed_road != dest)
+        -1
+      else
+        // How far is this lane from an ideal lane?
+        (total - ideal_dist(t.to)).toDouble / total.toDouble
+
+    // Prefer things close to where we'll need to go next, and things with more
+    // room.
+    return e.next_turns.maxBy(
+      t => (ranking(t), t.to.queue.percent_avail)
+    )
+  }
+
+  private def candidate_lanes(from: Edge, dest: DirectedRoad) =
+    from.other_lanes.filter(
+      f => f.succs.find(t => t.directed_road == dest).isDefined
+    ).toList
 }
 
 // DOOMED TO WALK FOREVER (until we happen to reach our goal)
 class DrunkenRoute(goal: DirectedRoad, rng: RNG) extends Route(goal, rng) {
+  //////////////////////////////////////////////////////////////////////////////
+  // State
+
   // Remember answers we've given for the sake of consistency
-  var desired_lane: Option[Edge] = None
-  val chosen_turns = new MutableMap[Edge, Turn]()
+  private var desired_lane: Option[Edge] = None
+  private val chosen_turns = new MutableMap[Edge, Turn]()
+
+  //////////////////////////////////////////////////////////////////////////////
+  // Meta
+
+  override def serialize(w: StateWriter) {
+    super.serialize(w)
+    desired_lane match {
+      case Some(e) => w.int(e.id)
+      case None => w.int(-1)
+    }
+    chosen_turns.foreach(pair => {
+      w.int(pair._1.id)
+      w.int(pair._2.id)
+    })
+  }
+
+  //////////////////////////////////////////////////////////////////////////////
+  // Actions
 
   // Forget what we've remembered
   def transition(from: Traversable, to: Traversable) = {
@@ -232,9 +307,6 @@ class DrunkenRoute(goal: DirectedRoad, rng: RNG) extends Route(goal, rng) {
     }
   }
 
-  // With the right amount of alcohol, a drunk can choose uniformly at random
-  def choose_turn(e: Edge) = rng.choose(e.next_turns)
-
   def pick_turn(e: Edge) = chosen_turns.getOrElseUpdate(e, choose_turn(e))
 
   def pick_lane(e: Edge): Edge = {
@@ -248,19 +320,26 @@ class DrunkenRoute(goal: DirectedRoad, rng: RNG) extends Route(goal, rng) {
     return e.best_adj_lane(desired_lane.get)
   }
 
+  //////////////////////////////////////////////////////////////////////////////
+  // Queries
+
+  def route_type = RouteType.Drunken
   def dump_info() = {
     Util.log(s"Drunken route to $goal")
     Util.log(s"  Desired lane: $desired_lane")
     Util.log(s"  Chosen turns: $chosen_turns")
   }
-  def route_type = RouteType.Drunken
+
+  // With the right amount of alcohol, a drunk can choose uniformly at random
+  protected def choose_turn(e: Edge) = rng.choose(e.next_turns)
 }
 
 // Wanders around slightly less aimlessly by picking directions
 class DirectionalDrunkRoute(goal: DirectedRoad, rng: RNG)
   extends DrunkenRoute(goal, rng)
 {
-  def heuristic(t: Turn) = t.to.to.location.dist_to(goal.start_pt)
+  //////////////////////////////////////////////////////////////////////////////
+  // Actions
 
   // pick the most direct path 75% of the time
   override def choose_turn(e: Edge) =
@@ -269,14 +348,36 @@ class DirectionalDrunkRoute(goal: DirectedRoad, rng: RNG)
     else
       super.choose_turn(e)
 
+  //////////////////////////////////////////////////////////////////////////////
+  // Queries
+
   override def route_type = RouteType.DirectionalDrunk
+
+  protected def heuristic(t: Turn) = t.to.to.location.dist_to(goal.start_pt)
 }
 
 // Don't keep making the same choices for roads
 class DrunkenExplorerRoute(goal: DirectedRoad, rng: RNG)
   extends DirectionalDrunkRoute(goal, rng)
 {
-  val past = new MutableMap[DirectedRoad, Int]()
+  //////////////////////////////////////////////////////////////////////////////
+  // State
+
+  private val past = new MutableMap[DirectedRoad, Int]()
+
+  //////////////////////////////////////////////////////////////////////////////
+  // Meta
+
+  override def serialize(w: StateWriter) {
+    super.serialize(w)
+    past.foreach(pair => {
+      w.int(pair._1.id)
+      w.int(pair._2)
+    })
+  }
+
+  //////////////////////////////////////////////////////////////////////////////
+  // Actions
 
   override def choose_turn(e: Edge): Turn = {
     // break ties by the heuristic of distance to goal
@@ -288,6 +389,9 @@ class DrunkenExplorerRoute(goal: DirectedRoad, rng: RNG)
     past(road) = past.getOrElse(road, 0) + 1
     return choice
   }
+
+  //////////////////////////////////////////////////////////////////////////////
+  // Queries
 
   override def route_type = RouteType.DrunkenExplorer
 }

@@ -753,7 +753,7 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
       camera_agent match {
         case Some(a) => a.route match {
           case r: PathRoute => {
-            route_members = r.path.map(_.road).toSet
+            route_members = r.roads
             r.listen("UI", (ev: Route_Event) => { ev match {
               case EV_Reroute(path) => {
                 route_members = path.map(_.road).toSet

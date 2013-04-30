@@ -55,11 +55,33 @@ class Agent(val id: Int, val route: Route, val rng: RNG, val wallet: Wallet) ext
     spawn.queue.allocate_slot
     Common.sim.insert_agent(this)
     stat_memory = (Common.tick, spawn.id, wallet.budget)
-    // TODO put ourselves on our queue, register our tickets, etc.
+    // TODO register our tickets, etc.
   }
 
   def serialize(w: StateWriter) {
-    // TODO write me.
+    // TODO uncomment once each is implemented
+    // First do parameters
+    w.int(id)
+    route.serialize(w)
+    //rng.serialize(w)
+    //wallet.serialize(w)
+
+    // Then the rest of our state
+    //pos.serialize(w)
+    w.double(stat_memory._1)
+    w.int(stat_memory._2)
+    w.int(stat_memory._3)
+    w.double(speed)
+    w.double(target_accel)
+    // Behavior is stateless
+    old_lane match {
+      case Some(e) => w.int(e.id)
+      case None => w.int(-1)
+    }
+    w.double(lanechange_dist_left)
+    w.double(idle_since)
+    w.int(tickets.size)
+    //tickets.foreach(ticket => ticket.serialize(w))
   }
 
   //////////////////////////////////////////////////////////////////////////////

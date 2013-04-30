@@ -323,14 +323,15 @@ object Physics {
 }
 
 class StateWriter() {
-  /*def int(x: Int) {
+  // TODO implement
+  def int(x: Int) {
   }
 
   def double(x: Double) {
   }
 
   def string(x: String) {
-  }*/
+  }
 }
 
 class StateReader() {
