@@ -22,6 +22,8 @@ abstract class Route(val goal: DirectedRoad, rng: RNG)
     w.int(goal.id)
   }
 
+  // TODO setup needed to unserialize...
+
   //////////////////////////////////////////////////////////////////////////////
   // Actions
 

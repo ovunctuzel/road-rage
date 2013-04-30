@@ -332,6 +332,9 @@ class StateWriter() {
 
   def string(x: String) {
   }
+
+  def bool(x: Boolean) {
+  }
 }
 
 class StateReader() {
@@ -342,5 +345,8 @@ class StateReader() {
   }
 
   def string(): String = {
+  }
+  
+  def bool(): Boolean = {
   }*/
 }

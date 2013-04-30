@@ -49,6 +49,7 @@ class Agent(val id: Int, val route: Route, val rng: RNG, val wallet: Wallet) ext
   //////////////////////////////////////////////////////////////////////////////
   // Meta
 
+  // TODO this has to restore all the state :P
   def setup(spawn: Edge, dist: Double) {
     wallet.setup(this)
     at = enter(spawn, dist)
@@ -64,7 +65,7 @@ class Agent(val id: Int, val route: Route, val rng: RNG, val wallet: Wallet) ext
     w.int(id)
     route.serialize(w)
     //rng.serialize(w)
-    //wallet.serialize(w)
+    wallet.serialize(w)
 
     // Then the rest of our state
     //pos.serialize(w)
