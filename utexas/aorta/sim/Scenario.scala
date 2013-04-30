@@ -137,7 +137,7 @@ case class MkAgent(id: Int, birth_tick: Double, seed: Long,
 
   private def make_agent(): Unit = {
     val sim = Common.sim
-    val a = new Agent(id, route.make(sim), new RNG(seed), wallet)
+    val a = new Agent(id, route.make(sim), new RNG(seed), wallet.make())
     sim.ready_to_spawn += new SpawnAgent(a, sim.edges(start_edge), start_dist)
   }
 
@@ -188,7 +188,7 @@ case class MkRoute(strategy: RouteType.Value, goal: Integer, seed: Long) {
 
 @SerialVersionUID(1)
 case class MkWallet(policy: WalletType.Value, budget: Int, priority: Int) {
-  def make(a: Agent) = Factory.make_wallet(a, policy, budget, priority)
+  def make() = Factory.make_wallet(policy, budget, priority)
 }
 
 @SerialVersionUID(1)
@@ -350,11 +350,11 @@ object Factory {
     case OrderingType.Auction => new AuctionOrdering[T]()
   }
 
-  def make_wallet(a: Agent, enum: WalletType.Value, budget: Int, priority: Int) = enum match {
-    case WalletType.Random => new RandomWallet(a, budget, priority)
-    case WalletType.Static => new StaticWallet(a, budget, priority)
-    case WalletType.Freerider => new FreeriderWallet(a, priority)
-    case WalletType.Fair => new FairWallet(a, budget, priority)
+  def make_wallet(enum: WalletType.Value, budget: Int, priority: Int) = enum match {
+    case WalletType.Random => new RandomWallet(budget, priority)
+    case WalletType.Static => new StaticWallet(budget, priority)
+    case WalletType.Freerider => new FreeriderWallet(priority)
+    case WalletType.Fair => new FairWallet(budget, priority)
   }
 }
 

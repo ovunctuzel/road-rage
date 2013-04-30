@@ -16,9 +16,9 @@ import utexas.aorta.{Util, RNG, Common, cfg, Physics}
 // TODO come up with a notion of dimension and movement capability. at first,
 // just use radius bounded by lane widths?
 
-class Agent(val id: Int, val route: Route, val rng: RNG, wallet_spec: MkWallet) extends Ordered[Agent] with Renderable
+class Agent(val id: Int, val route: Route, val rng: RNG, val wallet: Wallet) extends Ordered[Agent] with Renderable
 {
-  val wallet = wallet_spec.make(this)
+  wallet.a = this
 
   // null just until they're introduced!
   var at: Position = null

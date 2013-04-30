@@ -13,7 +13,8 @@ import utexas.aorta.{Util, Common, cfg}
 
 // Express an agent's preferences of trading between time and cost.
 // TODO dont require an agent, ultimately
-abstract class Wallet(val a: Agent, initial_budget: Int, val priority: Int) {
+abstract class Wallet(initial_budget: Int, val priority: Int) {
+  var a: Agent = null
   // How much the agent may spend during its one-trip lifetime
   var budget = initial_budget
 
@@ -71,8 +72,8 @@ abstract class Wallet(val a: Agent, initial_budget: Int, val priority: Int) {
 }
 
 // Bids a random amount on our turn.
-class RandomWallet(a: Agent, initial_budget: Int, p: Int)
-  extends Wallet(a, initial_budget, p)
+class RandomWallet(initial_budget: Int, p: Int)
+  extends Wallet(initial_budget, p)
 {
   override def toString = s"RND $budget"
   def wallet_type = WalletType.Random
@@ -93,8 +94,8 @@ class RandomWallet(a: Agent, initial_budget: Int, p: Int)
 }
 
 // Always bid the full budget, but never lose any money.
-class StaticWallet(a: Agent, initial_budget: Int, p: Int)
-  extends Wallet(a, initial_budget, p)
+class StaticWallet(initial_budget: Int, p: Int)
+  extends Wallet(initial_budget, p)
 {
   override def toString = s"STATIC $budget"
   def wallet_type = WalletType.Static
@@ -119,7 +120,7 @@ class StaticWallet(a: Agent, initial_budget: Int, p: Int)
 }
 
 // Never participate.
-class FreeriderWallet(a: Agent, p: Int) extends Wallet(a, 0, p) {
+class FreeriderWallet(p: Int) extends Wallet(0, p) {
   override def toString = "FR"
   def wallet_type = WalletType.Freerider
 
@@ -129,8 +130,8 @@ class FreeriderWallet(a: Agent, p: Int) extends Wallet(a, 0, p) {
 }
 
 // Bid once per intersection some amount proportional to the rest of the trip.
-class FairWallet(a: Agent, initial_budget: Int, p: Int)
-  extends Wallet(a, initial_budget, p)
+class FairWallet(initial_budget: Int, p: Int)
+  extends Wallet(initial_budget, p)
 {
   override def toString = s"FAIR $budget"
   def wallet_type = WalletType.Fair
@@ -188,7 +189,7 @@ class FairWallet(a: Agent, initial_budget: Int, p: Int)
 }
 
 // Bids to maintain "fairness."
-class SystemWallet() extends Wallet(null, 0, 0) {
+class SystemWallet() extends Wallet(0, 0) {
   override def toString = "SYS"
   def wallet_type = WalletType.System
 
