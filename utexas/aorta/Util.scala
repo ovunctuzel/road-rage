@@ -321,3 +321,25 @@ object Physics {
   // To stop in one time-step, that is. From v_f = v_i + at
   def accel_to_stop(speed: Double) = (-1 * speed) / cfg.dt_s
 }
+
+class StateWriter() {
+  /*def int(x: Int) {
+  }
+
+  def double(x: Double) {
+  }
+
+  def string(x: String) {
+  }*/
+}
+
+class StateReader() {
+  /*def int(): Int = {
+  }
+
+  def double(): Double = {
+  }
+
+  def string(): String = {
+  }*/
+}

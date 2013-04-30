@@ -11,61 +11,59 @@ import utexas.aorta.sim.market._
 import utexas.aorta.ui.Renderable
 import utexas.aorta.analysis.{Stats, Agent_Lifetime_Stat}
 
-import utexas.aorta.{Util, RNG, Common, cfg, Physics}
+import utexas.aorta.{Util, RNG, Common, cfg, Physics, StateWriter, StateReader}
 
 // TODO come up with a notion of dimension and movement capability. at first,
 // just use radius bounded by lane widths?
 
 class Agent(val id: Int, val route: Route, val rng: RNG, val wallet: Wallet) extends Ordered[Agent] with Renderable
 {
-  wallet.a = this
+  //////////////////////////////////////////////////////////////////////////////
+  // State
 
   // null just until they're introduced!
   var at: Position = null
 
   // Just for stats. Not hard to maintain. (tick, where we spawned, budget)
-  var stat_memory: (Double, Int, Int) = null
-
-  override def compare(other: Agent) = id.compare(other.id)
+  private var stat_memory: (Double, Int, Int) = null
 
   // We can only set a target acceleration, which we travel at for the entire
   // duration of timesteps.
   val max_accel = cfg.max_accel   // TODO based on vehicle type
   // TODO max_deaccel too
   var speed: Double = 0.0   // meters/sec, I believe
-  var target_accel: Double = 0  // m/s^2
+  private var target_accel: Double = 0  // m/s^2
   // TODO who chooses this?
-  val behavior = new LookaheadBehavior(this, route)
+  private val behavior = new LookaheadBehavior(this, route)
 
   // old_lane is where we're shifting from. we immediately warp into the target
   // lane.
   var old_lane: Option[Edge] = None
   var lanechange_dist_left: Double = 0
-  def is_lanechanging = old_lane.isDefined
 
   // how long has our speed been 0?
-  var idle_since = -1.0
-  def how_long_idle = if (idle_since == -1.0)
-                        0
-                      else
-                        Common.tick - idle_since
+  private var idle_since = -1.0
 
   val tickets = new MutableSet[Ticket]()
-  def involved_with(i: Intersection) = all_tickets(i).nonEmpty
-  def get_ticket(turn: Turn) = tickets.find(t => t.turn == turn)
-  def all_tickets(i: Intersection) = tickets.filter(t => t.intersection == i)
-  // If true, we will NOT block when trying to proceed past this intersection
-  // TODO if we have multiple here, complicated.
-  def wont_block(i: Intersection) = at.on match {
-    // We won't block any intersection if we're about to vanish
-    case e: Edge if route.done(e) => true
-    case _ => tickets.find(
-      t => t.intersection == i && (t.is_approved || t.is_interruption)
-    ).isDefined
+
+  //////////////////////////////////////////////////////////////////////////////
+  // Meta
+
+  def setup(spawn: Edge, dist: Double) {
+    wallet.setup(this)
+    at = enter(spawn, dist)
+    spawn.queue.allocate_slot
+    Common.sim.insert_agent(this)
+    stat_memory = (Common.tick, spawn.id, wallet.budget)
+    // TODO put ourselves on our queue, register our tickets, etc.
   }
 
-  override def toString = "Agent " + id
-  override def tooltip = List(toString, wallet.toString) ++ wallet.tooltip
+  def serialize(w: StateWriter) {
+    // TODO write me.
+  }
+
+  //////////////////////////////////////////////////////////////////////////////
+  // Actions
 
   // Returns true if we move or do anything at all
   def step(dt_s: Double): Boolean = {
@@ -197,6 +195,120 @@ class Agent(val id: Int, val route: Route, val rng: RNG, val wallet: Wallet) ext
     return new_dist > 0.0
   }
 
+  // Returns true if we're done
+  def react(): Boolean = {
+    val was_lanechanging = is_lanechanging
+
+    return behavior.choose_action match {
+      case Act_Set_Accel(new_accel) => {
+        // we have physical limits
+        Util.assert_le(new_accel.abs, max_accel)
+        target_accel = new_accel
+        false
+      }
+      case Act_Done_With_Route() => {
+        // TODO untrue when our dest is tiny and we stop right before it!
+        at.on match {
+          case e: Edge => // normal
+          case t: Turn => {
+            // Tiny destination edge? TODO dont allow this kinda hack...
+            t.to.queue.free_slot
+
+            val ticket = get_ticket(t).get
+            tickets.remove(ticket)
+            ticket.intersection.exit(ticket)
+          }
+        }
+        //Util.assert_eq(at.on.asInstanceOf[Edge].directed_road, route.goal)
+        // Trust behavior, don't abuse this.
+        Util.assert_eq(speed, 0.0)
+        true
+      }
+    }
+  }
+
+  // returns distance traveled, updates speed. note unit of the argument.
+  private def update_kinematics(dt_sec: Double): Double = {
+    // Travel at the target constant acceleration for the duration of the
+    // timestep, capping off when speed hits zero.
+    val initial_speed = speed
+    speed = math.max(0.0, initial_speed + (target_accel * dt_sec))
+    val dist = Physics.dist_at_constant_accel(target_accel, dt_sec, initial_speed)
+    Util.assert_ge(dist, 0.0)
+    return dist
+  }
+
+  // Delegate to the queues and intersections that simulation manages
+  private def enter(t: Traversable, dist: Double) = t.queue.enter(this, dist)
+  private def exit(t: Traversable) = t.queue.exit(this, at.dist)
+  private def move(t: Traversable, new_dist: Double, old_dist: Double) =
+    t.queue.move(this, new_dist, old_dist)
+
+  // Caller must remove this agent from the simulation list
+  def terminate(interrupted: Boolean = false) = {
+    if (!interrupted) {
+      exit(at.on)
+      at.on match {
+        case e: Edge => e.queue.free_slot
+        case _ =>
+      }
+      Util.assert_eq(tickets.isEmpty, true)
+    }
+    Stats.record(Agent_Lifetime_Stat(
+      id, stat_memory._1, stat_memory._2, route.goal.id, route.route_type,
+      wallet.wallet_type, stat_memory._3, Common.tick, wallet.budget,
+      wallet.priority, !interrupted
+    ))
+  }
+
+  //////////////////////////////////////////////////////////////////////////////
+  // Queries
+
+  override def toString = "Agent " + id
+  override def compare(other: Agent) = id.compare(other.id)
+  override def tooltip = List(toString, wallet.toString) ++ wallet.tooltip
+  def debug = {
+    Util.log("" + this)
+    Util.log_push
+    Util.log("At: " + at)
+    Util.log("Speed: " + speed)
+    Util.log("How long idle? " + how_long_idle)
+    Util.log("Max next speed: " + max_next_speed)
+    Util.log("Stopping distance next: " + Physics.stopping_distance(max_next_speed))
+    Util.log("Lookahead dist: " + max_lookahead_dist)
+    Util.log("Dist left here: " + at.dist_left)
+    Util.log("Tickets: " + tickets)
+    if (is_lanechanging) {
+      Util.log(s"Lane-changing from ${old_lane.get}. $lanechange_dist_left to go!")
+    } else {
+      Util.log("Not lane-changing")
+    }
+    Util.log(s"Stat memory (of spawning): $stat_memory")
+    behavior.dump_info
+    Util.log_pop
+  }
+
+  def how_long_idle = if (idle_since == -1.0)
+                        0
+                      else
+                        Common.tick - idle_since
+  def is_stopped = speed <= cfg.epsilon
+
+  def involved_with(i: Intersection) = all_tickets(i).nonEmpty
+  def get_ticket(turn: Turn) = tickets.find(t => t.turn == turn)
+  def all_tickets(i: Intersection) = tickets.filter(t => t.intersection == i)
+  // If true, we will NOT block when trying to proceed past this intersection
+  // TODO if we have multiple here, complicated.
+  def wont_block(i: Intersection) = at.on match {
+    // We won't block any intersection if we're about to vanish
+    case e: Edge if route.done(e) => true
+    case _ => tickets.find(
+      t => t.intersection == i && (t.is_approved || t.is_interruption)
+    ).isDefined
+  }
+
+  def is_lanechanging = old_lane.isDefined
+
   // Just see if we have enough static space to pull off a lane-change.
   def room_to_lc(target: Edge): Boolean = {
     // One lane could be shorter than the other. When we want to avoid the end
@@ -313,108 +425,16 @@ class Agent(val id: Int, val route: Route, val rng: RNG, val wallet: Wallet) ext
     return true
   }
 
-  def is_stopped = speed <= cfg.epsilon
-
-  // Returns true if we're done
-  def react(): Boolean = {
-    val was_lanechanging = is_lanechanging
-
-    return behavior.choose_action match {
-      case Act_Set_Accel(new_accel) => {
-        // we have physical limits
-        Util.assert_le(new_accel.abs, max_accel)
-        target_accel = new_accel
-        false
-      }
-      case Act_Done_With_Route() => {
-        // TODO untrue when our dest is tiny and we stop right before it!
-        at.on match {
-          case e: Edge => // normal
-          case t: Turn => {
-            // Tiny destination edge? TODO dont allow this kinda hack...
-            t.to.queue.free_slot
-
-            val ticket = get_ticket(t).get
-            tickets.remove(ticket)
-            ticket.intersection.exit(ticket)
-          }
-        }
-        //Util.assert_eq(at.on.asInstanceOf[Edge].directed_road, route.goal)
-        // Trust behavior, don't abuse this.
-        Util.assert_eq(speed, 0.0)
-        true
-      }
-    }
-  }
-
-  // returns distance traveled, updates speed. note unit of the argument.
-  def update_kinematics(dt_sec: Double): Double = {
-    // Travel at the target constant acceleration for the duration of the
-    // timestep, capping off when speed hits zero.
-    val initial_speed = speed
-    speed = math.max(0.0, initial_speed + (target_accel * dt_sec))
-    val dist = Physics.dist_at_constant_accel(target_accel, dt_sec, initial_speed)
-    Util.assert_ge(dist, 0.0)
-    return dist
-  }
-
-  // Delegate to the queues and intersections that simulation manages
-  def enter(t: Traversable, dist: Double) = t.queue.enter(this, dist)
-  def exit(t: Traversable) = t.queue.exit(this, at.dist)
-  def move(t: Traversable, new_dist: Double, old_dist: Double) =
-    t.queue.move(this, new_dist, old_dist)
-
   def cur_queue = at.on.queue
-
   def on(t: Traversable) = (at.on, old_lane) match {
     case (ours, _) if ours == t => true
     case (_, Some(l)) if l == t => true
     case _ => false
   }
-
   def our_lead = at.on.queue.ahead_of(this)
   def our_tail = at.on.queue.behind(this)
-
-  def debug = {
-    Util.log("" + this)
-    Util.log_push
-    Util.log("At: " + at)
-    Util.log("Speed: " + speed)
-    Util.log("How long idle? " + how_long_idle)
-    Util.log("Max next speed: " + max_next_speed)
-    Util.log("Stopping distance next: " + Physics.stopping_distance(max_next_speed))
-    Util.log("Lookahead dist: " + max_lookahead_dist)
-    Util.log("Dist left here: " + at.dist_left)
-    Util.log("Tickets: " + tickets)
-    if (is_lanechanging) {
-      Util.log(s"Lane-changing from ${old_lane.get}. $lanechange_dist_left to go!")
-    } else {
-      Util.log("Not lane-changing")
-    }
-    Util.log(s"Stat memory (of spawning): $stat_memory")
-    behavior.dump_info
-    Util.log_pop
-  }
-
   def how_far_away(i: Intersection) =
     route.steps_to(at.on, i.v).map(_.length).sum - (at.on.length - at.dist_left)
-
-  // Caller must remove this agent from the simulation list
-  def terminate(interrupted: Boolean = false) = {
-    if (!interrupted) {
-      exit(at.on)
-      at.on match {
-        case e: Edge => e.queue.free_slot
-        case _ =>
-      }
-      Util.assert_eq(tickets.isEmpty, true)
-    }
-    Stats.record(Agent_Lifetime_Stat(
-      id, stat_memory._1, stat_memory._2, route.goal.id, route.route_type,
-      wallet.wallet_type, stat_memory._3, Common.tick, wallet.budget,
-      wallet.priority, !interrupted
-    ))
-  }
 
   // Math shortcuts
   def max_lookahead_dist = Physics.max_lookahead_dist(speed, at.on.speed_limit)
@@ -427,4 +447,8 @@ class Agent(val id: Int, val route: Route, val rng: RNG, val wallet: Wallet) ext
   def max_next_speed = Physics.max_next_speed(speed, at.on.speed_limit)
 }
 
-class SpawnAgent(val a: Agent, val e: Edge, val dist: Double) {}
+object Agent {
+  def unserialize(r: StateReader): Agent = null  // TODO
+}
+
+class SpawnAgent(val a: Agent, val e: Edge, val dist: Double)

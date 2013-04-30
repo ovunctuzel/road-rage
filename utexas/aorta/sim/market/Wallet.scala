@@ -14,9 +14,13 @@ import utexas.aorta.{Util, Common, cfg}
 // Express an agent's preferences of trading between time and cost.
 // TODO dont require an agent, ultimately
 abstract class Wallet(initial_budget: Int, val priority: Int) {
-  var a: Agent = null
+  protected var a: Agent = null
   // How much the agent may spend during its one-trip lifetime
   var budget = initial_budget
+
+  def setup(agent: Agent) {
+    a = agent
+  }
 
   def spend(amount: Int, ticket: Ticket) = {
     Util.assert_ge(budget, amount)
@@ -138,17 +142,20 @@ class FairWallet(initial_budget: Int, p: Int)
 
   private var total_weight = 0.0
 
-  a.route.listen("fair_wallet", (ev: Route_Event) => { ev match {
-    case EV_Reroute(path) => {
-      total_weight = path.map(r => weight(r.to)).sum
-    }
-    case EV_Transition(from, to) => to match {
-      case t: Turn => {
-        total_weight -= weight(t.vert)
+  override def setup(agent: Agent) {
+    super.setup(agent)
+    a.route.listen("fair_wallet", (ev: Route_Event) => { ev match {
+      case EV_Reroute(path) => {
+        total_weight = path.map(r => weight(r.to)).sum
       }
-      case _ =>
-    }
-  } })
+      case EV_Transition(from, to) => to match {
+        case t: Turn => {
+          total_weight -= weight(t.vert)
+        }
+        case _ =>
+      }
+    } })
+  }
 
   private def bid_fair[T](choice: Iterable[T], v: Vertex) = choice.map(
     thing => (thing, math.floor(budget * (weight(v) / total_weight)).toInt)
