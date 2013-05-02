@@ -19,7 +19,6 @@
     - trip time should include waiting to enter time
 2) big bro
   - savestating
-    - spawnagents shouldnt construct the agent, aka, pos shouldnt be null
     - get rid of dt_accumulated, and other speed related UI nonsense
 3) marginal effects
 

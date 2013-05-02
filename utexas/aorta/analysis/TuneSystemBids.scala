@@ -89,7 +89,8 @@ object TuneSystemBids {
         }
 
         // The more agents that completed, the better.
-        finished = mod.agents.size - sim.agents.size - sim.ready_to_spawn.size - sim.events.size
+        // TODO count this in the sim
+        finished = mod.agents.size - sim.agents.size - sim.ready_to_spawn.size - sim.future_spawn.size
       } catch {
         case e: Throwable => {
           println(s"  !!! Simulation of $state broke... $e")

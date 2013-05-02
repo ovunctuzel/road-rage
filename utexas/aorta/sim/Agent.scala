@@ -16,16 +16,18 @@ import utexas.aorta.{Util, RNG, Common, cfg, Physics, StateWriter, StateReader}
 // TODO come up with a notion of dimension and movement capability. at first,
 // just use radius bounded by lane widths?
 
-class Agent(val id: Int, val route: Route, val rng: RNG, val wallet: Wallet) extends Ordered[Agent] with Renderable
+class Agent(
+  val id: Int, val route: Route, val rng: RNG, val wallet: Wallet,
+  start_edge: Int
+) extends Ordered[Agent] with Renderable
 {
   //////////////////////////////////////////////////////////////////////////////
   // State
 
-  // null just until they're introduced!
   var at: Position = null
 
   // Just for stats. Not hard to maintain. (tick, where we spawned, budget)
-  private var stat_memory: (Double, Int, Int) = null
+  private val stat_memory = (Common.tick, start_edge, wallet.budget)
 
   // We can only set a target acceleration, which we travel at for the entire
   // duration of timesteps.
@@ -55,7 +57,6 @@ class Agent(val id: Int, val route: Route, val rng: RNG, val wallet: Wallet) ext
     at = enter(spawn, dist)
     spawn.queue.allocate_slot
     Common.sim.insert_agent(this)
-    stat_memory = (Common.tick, spawn.id, wallet.budget)
     // TODO register our tickets, etc.
   }
 
@@ -66,25 +67,13 @@ class Agent(val id: Int, val route: Route, val rng: RNG, val wallet: Wallet) ext
     route.serialize(w)
     //rng.serialize(w)
     wallet.serialize(w)
+    w.int(start_edge)
 
     // Then the rest of our state
-    // TODO this is messy, rethink how spawnagents work!
-    if (at == null) {
-      w.bool(false)
-      w.double(-1)
-    } else {
-      at.serialize(w)
-    }
-    // TODO argh, this is dumb
-    if (stat_memory == null) {
-      w.double(-1)
-      w.int(-1)
-      w.int(-1)
-    } else {
-      w.double(stat_memory._1)
-      w.int(stat_memory._2)
-      w.int(stat_memory._3)
-    }
+    at.serialize(w)
+    w.double(stat_memory._1)
+    w.int(stat_memory._2)
+    w.int(stat_memory._3)
     w.double(speed)
     w.double(target_accel)
     // Behavior is stateless
@@ -485,12 +474,4 @@ class Agent(val id: Int, val route: Route, val rng: RNG, val wallet: Wallet) ext
 
 object Agent {
   def unserialize(r: StateReader): Agent = null  // TODO
-}
-
-class SpawnAgent(val a: Agent, val e: Edge, val dist: Double) {
-  def serialize(w: StateWriter) {
-    a.serialize(w)
-    w.int(e.id)
-    w.double(dist)
-  }
 }

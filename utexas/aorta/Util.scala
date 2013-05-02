@@ -342,6 +342,11 @@ class StateWriter(fn: String) {
     out.writeBoolean(x)
   }
 
+  // TODO dont use this.
+  def obj(x: Any) {
+    out.writeObject(x)
+  }
+
   def done() {
     out.close()
   }

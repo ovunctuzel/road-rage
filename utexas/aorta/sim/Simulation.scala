@@ -19,8 +19,7 @@ import utexas.aorta.analysis.{Stats, Heartbeat_Stat, Scenario_Stat}
 
 // TODO take just a scenario, or graph and scenario?
 class Simulation(val graph: Graph, scenario: Scenario)
-  extends ListenerPattern[Sim_Event] with EventQueue with AgentManager
-  with VirtualTiming
+  extends ListenerPattern[Sim_Event] with AgentManager with VirtualTiming
 {
   //////////////////////////////////////////////////////////////////////////////
   // State
@@ -50,7 +49,7 @@ class Simulation(val graph: Graph, scenario: Scenario)
     graph.vertices.foreach(v => v.intersection = scenario.make_intersection(v))
 
     // First time...
-    scenario.make_agents()
+    future_spawn ++= scenario.agents
     Stats.record(Scenario_Stat(scenario.map_fn, scenario.intersections))
   }
 
@@ -60,8 +59,6 @@ class Simulation(val graph: Graph, scenario: Scenario)
   def serialize(w: StateWriter) {
     // All of the important state is in each of our traits. ListenerPattern
     // state doesn't matter, though -- just UI/headless stuff now.
-
-    // TODO event queue stuff -- how?
 
     // Agent manager stuff
     w.int(agents.size)
@@ -78,11 +75,6 @@ class Simulation(val graph: Graph, scenario: Scenario)
   //////////////////////////////////////////////////////////////////////////////
   // Actions
 
-  private def pre_step() = {
-    fire_events(tick)
-    ready_to_spawn = ready_to_spawn.filter(a => !try_spawn(a))
-  }
-
   def step(dt_s: Double) = {
     // This value is dt in simulation time, not real time
     dt_accumulated += dt_s * desired_sim_speed
@@ -93,7 +85,8 @@ class Simulation(val graph: Graph, scenario: Scenario)
       dt_accumulated -= cfg.dt_s
       tick += cfg.dt_s
 
-      pre_step
+      spawn_agents(tick)
+      ready_to_spawn = ready_to_spawn.filter(a => !try_spawn(a))
 
       // If you wanted crazy speedup, disable all but agent stepping and
       // reacting. But that involves trusting that no simulation violations
@@ -160,26 +153,29 @@ class Simulation(val graph: Graph, scenario: Scenario)
 
   // True if we've correctly promoted into real agents. Does the work of
   // spawning as well.
-  private def try_spawn(spawn: SpawnAgent): Boolean =
-    if (spawn.e.queue.can_spawn_now(spawn.dist)) {
+  private def try_spawn(spawn: MkAgent): Boolean = {
+    val e = graph.edges(spawn.start_edge)
+    if (e.queue.can_spawn_now(spawn.start_dist)) {
       // Will we block anybody that's ready?
-      val intersection = spawn.e.to.intersection
+      val intersection = e.to.intersection
       val will_block =
-        if (!spawn.a.route.done(spawn.e))
-          spawn.e.queue.all_agents.find(
-            agent => agent.at.dist < spawn.dist && agent.wont_block(intersection)
-          ).isDefined || spawn.e.dont_block
+        if (spawn.route.goal != e.directed_road.id)
+          e.queue.all_agents.find(
+            a => a.at.dist < spawn.start_dist && a.wont_block(intersection)
+          ).isDefined || e.dont_block
         else
           false
       if (will_block) {
-        false
+        return false
       } else {
-        spawn.a.setup(spawn.e, spawn.dist)
-        true
+        val a = spawn.make(this)
+        a.setup(graph.edges(spawn.start_edge), spawn.start_dist)
+        return true
       }
     } else {
-      false
+      return false
     }
+  }
 
   //////////////////////////////////////////////////////////////////////////////
   // Queries
@@ -191,7 +187,7 @@ class Simulation(val graph: Graph, scenario: Scenario)
 
   // TODO move time limit to scenarios?
   def done =
-    (agents.isEmpty && ready_to_spawn.isEmpty && events_done) ||
+    (agents.isEmpty && ready_to_spawn.isEmpty && future_spawn.isEmpty) ||
     (Common.time_limit != -1.0 && tick > Common.time_limit)
 
   // Do some temporary debugging type thing from the UI
@@ -260,52 +256,24 @@ abstract class Sim_Event
 final case class EV_Signal_Change(greens: Set[Turn]) extends Sim_Event
 final case class EV_Heartbeat(heartbeat: Heartbeat_Stat) extends Sim_Event
 
-trait EventQueue {
-  //////////////////////////////////////////////////////////////////////////////
-  // State
-
-  // TODO this is only used for spawning agents right now. so that we can
-  // serialize, either make them implement some simpler interface, or take in
-  // the same scenario and figure out how to find out where we left off.
-
-  class Callback(val at: Double, val cb: () => Unit) extends Ordered[Callback] {
-    // small weights first
-    def compare(other: Callback) = other.at.compare(at)
-    // TODO ties? determinism matters
-  }
-
-  val events = new PriorityQueue[Callback]()
-
-  //////////////////////////////////////////////////////////////////////////////
-  // Actions
-
-  def fire_events(tick: Double) = {
-    while (events.nonEmpty && tick >= events.head.at) {
-      val ev = events.dequeue
-      ev.cb()
-    }
-  }
-
-  def schedule(at: Double, callback: () => Unit) {
-    events.enqueue(new Callback(at, callback))
-  }
-
-  //////////////////////////////////////////////////////////////////////////////
-  // Queries
-
-  def events_done = events.isEmpty
-}
-
 trait AgentManager {
   //////////////////////////////////////////////////////////////////////////////
   // State
 
   var agents: SortedSet[Agent] = TreeSet.empty[Agent]
-  var ready_to_spawn = new ListBuffer[SpawnAgent]()
+  var ready_to_spawn = new ListBuffer[MkAgent]()
   protected var max_agent_id = -1
+  // TODO handle unserializing by figuring out where we left off.
+  val future_spawn = new PriorityQueue[MkAgent]()
 
   //////////////////////////////////////////////////////////////////////////////
   // Actions
+
+  def spawn_agents(tick: Double) = {
+    while (future_spawn.nonEmpty && tick >= future_spawn.head.birth_tick) {
+      ready_to_spawn += future_spawn.dequeue
+    }
+  }
 
   def insert_agent(a: Agent) = {
     // TODO assume this isn't a duplicate

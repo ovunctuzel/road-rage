@@ -12,7 +12,7 @@ import java.io.File
 import scala.collection.mutable.ArrayBuffer
 import scala.collection.mutable.{HashMap => MutableMap}
 
-import utexas.aorta.{Util, RNG, Common, cfg}
+import utexas.aorta.{Util, RNG, Common, cfg, StateWriter}
 
 @SerialVersionUID(1)
 // Array index and agent/intersection ID must correspond. Client's
@@ -25,7 +25,6 @@ case class Scenario(map_fn: String, agents: Array[MkAgent],
   def save(fn: String) = Util.serialize(this, fn)
 
   def make_intersection(v: Vertex) = intersections(v.id).make(v)
-  def make_agents() = agents.foreach(a => a.make)
 
   // Although the massive numbers of agents were probably created with a
   // distribution function originally, we just see the individual list in the
@@ -128,17 +127,18 @@ object Scenario {
 @SerialVersionUID(1)
 case class MkAgent(id: Int, birth_tick: Double, seed: Long,
                    start_edge: Int, start_dist: Double, route: MkRoute,
-                   wallet: MkWallet)
+                   wallet: MkWallet) extends Ordered[MkAgent]
 {
-  def make() = {
-    // TODO worry about order...
-    Common.sim.schedule(birth_tick, make_agent)
-  }
+  // TODO break ties by ID!
+  def compare(other: MkAgent) = other.birth_tick.compare(birth_tick)
 
-  private def make_agent(): Unit = {
-    val sim = Common.sim
-    val a = new Agent(id, route.make(sim), new RNG(seed), wallet.make())
-    sim.ready_to_spawn += new SpawnAgent(a, sim.edges(start_edge), start_dist)
+  def make(sim: Simulation) = new Agent(
+    id, route.make(sim), new RNG(seed), wallet.make, start_edge
+  )
+
+  def serialize(w: StateWriter) {
+    // TODO this is cheating, is bad...
+    w.obj(this)
   }
 
   def diff(other: MkAgent) = {
