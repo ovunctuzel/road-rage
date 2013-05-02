@@ -68,10 +68,23 @@ class Agent(val id: Int, val route: Route, val rng: RNG, val wallet: Wallet) ext
     wallet.serialize(w)
 
     // Then the rest of our state
-    at.serialize(w)
-    w.double(stat_memory._1)
-    w.int(stat_memory._2)
-    w.int(stat_memory._3)
+    // TODO this is messy, rethink how spawnagents work!
+    if (at == null) {
+      w.bool(false)
+      w.double(-1)
+    } else {
+      at.serialize(w)
+    }
+    // TODO argh, this is dumb
+    if (stat_memory == null) {
+      w.double(-1)
+      w.int(-1)
+      w.int(-1)
+    } else {
+      w.double(stat_memory._1)
+      w.int(stat_memory._2)
+      w.int(stat_memory._3)
+    }
     w.double(speed)
     w.double(target_accel)
     // Behavior is stateless
@@ -474,4 +487,10 @@ object Agent {
   def unserialize(r: StateReader): Agent = null  // TODO
 }
 
-class SpawnAgent(val a: Agent, val e: Edge, val dist: Double)
+class SpawnAgent(val a: Agent, val e: Edge, val dist: Double) {
+  def serialize(w: StateWriter) {
+    a.serialize(w)
+    w.int(e.id)
+    w.double(dist)
+  }
+}

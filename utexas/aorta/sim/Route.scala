@@ -114,8 +114,12 @@ class PathRoute(goal: DirectedRoad, rng: RNG) extends Route(goal, rng) {
     super.serialize(w)
     // We can't tell when we last rerouted given less state; store the full
     // path.
-    w.int(path.size)
-    path.foreach(step => w.int(step.id))
+    if (path == null) {
+      w.int(0)
+    } else {
+      w.int(path.size)
+      path.foreach(step => w.int(step.id))
+    }
     w.int(chosen_turns.size)
     chosen_turns.foreach(pair => {
       w.int(pair._1.id)

@@ -322,18 +322,28 @@ object Physics {
   def accel_to_stop(speed: Double) = (-1 * speed) / cfg.dt_s
 }
 
-class StateWriter() {
-  // TODO implement
+// TODO make stats, maps, scenarios -- everything -- use these.
+class StateWriter(fn: String) {
+  private val out = new ObjectOutputStream(new FileOutputStream(fn))
+
   def int(x: Int) {
+    out.writeInt(x)
   }
 
   def double(x: Double) {
+    out.writeDouble(x)
   }
 
   def string(x: String) {
+    out.writeUTF(x)
   }
 
   def bool(x: Boolean) {
+    out.writeBoolean(x)
+  }
+
+  def done() {
+    out.close()
   }
 }
 

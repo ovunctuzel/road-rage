@@ -19,10 +19,8 @@
     - trip time should include waiting to enter time
 2) big bro
   - savestating
-    - use as opportunity to clean up the state everything keeps
-    - pattern to manage state? a trait... more privates..
-      - each needs the other... just physically separate state, pure methods,
-        side effect mehtods.
+    - spawnagents shouldnt construct the agent, aka, pos shouldnt be null
+    - get rid of dt_accumulated, and other speed related UI nonsense
 3) marginal effects
 
 # Clever routing #
@@ -113,6 +111,7 @@
 - give lanes/roads/etc the ability to be closed
 
 # Code Cleanup
+- distance/time types
 - compatible serialization
 - split the passes
   - pass1 = read osm + normalize

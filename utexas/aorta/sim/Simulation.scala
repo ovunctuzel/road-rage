@@ -14,7 +14,7 @@ import scala.io.Source
 
 import utexas.aorta.map.{Graph, Road, Edge, Vertex, Turn, DirectedRoad}
 
-import utexas.aorta.{Util, Common, cfg}
+import utexas.aorta.{Util, Common, cfg, StateWriter, StateReader}
 import utexas.aorta.analysis.{Stats, Heartbeat_Stat, Scenario_Stat}
 
 // TODO take just a scenario, or graph and scenario?
@@ -22,23 +22,9 @@ class Simulation(val graph: Graph, scenario: Scenario)
   extends ListenerPattern[Sim_Event] with EventQueue with AgentManager
   with VirtualTiming
 {
-  Common.sim = this
-
-  // TODO always do this, and forget this map/sim separation?
-  graph.traversables.foreach(t => t.queue = new Queue(t))
-  graph.vertices.foreach(v => v.intersection = scenario.make_intersection(v))
-  scenario.make_agents
-  Stats.record(Scenario_Stat(scenario.map_fn, scenario.intersections))
-
-  // Provide convenient shortcut to graph stuff
-  def roads = graph.roads
-  def vertices = graph.vertices
-  def edges = graph.edges
-
-  // TODO move time limit to scenarios?
-  def done =
-    (agents.isEmpty && ready_to_spawn.isEmpty && events_done) ||
-    (Common.time_limit != -1.0 && tick > Common.time_limit)
+  //////////////////////////////////////////////////////////////////////////////
+  // State
+  // (All transient, important state is in our constituent traits)
 
   // Added by a queue that does an in-place check and thinks there could be an
   // issue.
@@ -46,19 +32,56 @@ class Simulation(val graph: Graph, scenario: Scenario)
   // All intersections with agents in them.
   val active_intersections = new MutableSet[Intersection]
 
-  def pre_step() = {
-    fire_events(tick)
-
-    // Finally, introduce any new agents that are ready to spawn into the system
-    ready_to_spawn = ready_to_spawn.filter(a => !try_spawn(a))
-  }
-
   // Track this for stats.
   private var last_real_time = 0.0
   private var steps_since_last_time = 0
   // Not private because these get incremented elsewhere.
   var ch_since_last_time = 0
   var astar_since_last_time = 0
+
+  //////////////////////////////////////////////////////////////////////////////
+  // Meta
+
+  def setup() {
+    Common.sim = this
+
+    // TODO always do this, and forget this map/sim separation?
+    graph.traversables.foreach(t => t.queue = new Queue(t))
+    graph.vertices.foreach(v => v.intersection = scenario.make_intersection(v))
+
+    // First time...
+    scenario.make_agents()
+    Stats.record(Scenario_Stat(scenario.map_fn, scenario.intersections))
+  }
+
+  // TODO make our creator call this...
+  setup()
+
+  def serialize(w: StateWriter) {
+    // All of the important state is in each of our traits. ListenerPattern
+    // state doesn't matter, though -- just UI/headless stuff now.
+
+    // TODO event queue stuff -- how?
+
+    // Agent manager stuff
+    w.int(agents.size)
+    agents.foreach(a => a.serialize(w))
+    w.int(ready_to_spawn.size)
+    ready_to_spawn.foreach(a => a.serialize(w))
+    w.int(max_agent_id)
+
+    // Timing stuff
+    w.double(tick)
+    w.double(dt_accumulated)  // TODO remove this
+  }
+
+  //////////////////////////////////////////////////////////////////////////////
+  // Actions
+
+  private def pre_step() = {
+    fire_events(tick)
+    ready_to_spawn = ready_to_spawn.filter(a => !try_spawn(a))
+  }
 
   def step(dt_s: Double) = {
     // This value is dt in simulation time, not real time
@@ -137,7 +160,7 @@ class Simulation(val graph: Graph, scenario: Scenario)
 
   // True if we've correctly promoted into real agents. Does the work of
   // spawning as well.
-  def try_spawn(spawn: SpawnAgent): Boolean =
+  private def try_spawn(spawn: SpawnAgent): Boolean =
     if (spawn.e.queue.can_spawn_now(spawn.dist)) {
       // Will we block anybody that's ready?
       val intersection = spawn.e.to.intersection
@@ -157,6 +180,19 @@ class Simulation(val graph: Graph, scenario: Scenario)
     } else {
       false
     }
+
+  //////////////////////////////////////////////////////////////////////////////
+  // Queries
+
+  // Provide convenient shortcut to graph stuff
+  def roads = graph.roads
+  def vertices = graph.vertices
+  def edges = graph.edges
+
+  // TODO move time limit to scenarios?
+  def done =
+    (agents.isEmpty && ready_to_spawn.isEmpty && events_done) ||
+    (Common.time_limit != -1.0 && tick > Common.time_limit)
 
   // Do some temporary debugging type thing from the UI
   def ui_debug() = {
@@ -192,11 +228,25 @@ class Simulation(val graph: Graph, scenario: Scenario)
     for (e <- graph.edges.map(e => (-demands(e), e)).sorted.take(10)) {
       Util.log(s"${e._2} has total demand ${-e._1}")
     }
+
+    // TODO just to test.
+    val t = Common.timer("serialization")
+    val w = new StateWriter("test_state")
+    serialize(w)
+    w.done()
+    t.stop()
   }
 }
 
 trait ListenerPattern[T] {
+  //////////////////////////////////////////////////////////////////////////////
+  // State
+
   private var listeners: List[(String, T => Any)] = Nil
+
+  //////////////////////////////////////////////////////////////////////////////
+  // Actions
+
   def tell_listeners(ev: T) = listeners.foreach(l => l._2(ev))
   def listen(tag: String, subscriber: T => Any) = {
     listeners :+= (tag, subscriber)
@@ -211,6 +261,13 @@ final case class EV_Signal_Change(greens: Set[Turn]) extends Sim_Event
 final case class EV_Heartbeat(heartbeat: Heartbeat_Stat) extends Sim_Event
 
 trait EventQueue {
+  //////////////////////////////////////////////////////////////////////////////
+  // State
+
+  // TODO this is only used for spawning agents right now. so that we can
+  // serialize, either make them implement some simpler interface, or take in
+  // the same scenario and figure out how to find out where we left off.
+
   class Callback(val at: Double, val cb: () => Unit) extends Ordered[Callback] {
     // small weights first
     def compare(other: Callback) = other.at.compare(at)
@@ -218,6 +275,9 @@ trait EventQueue {
   }
 
   val events = new PriorityQueue[Callback]()
+
+  //////////////////////////////////////////////////////////////////////////////
+  // Actions
 
   def fire_events(tick: Double) = {
     while (events.nonEmpty && tick >= events.head.at) {
@@ -230,13 +290,22 @@ trait EventQueue {
     events.enqueue(new Callback(at, callback))
   }
 
+  //////////////////////////////////////////////////////////////////////////////
+  // Queries
+
   def events_done = events.isEmpty
 }
 
 trait AgentManager {
+  //////////////////////////////////////////////////////////////////////////////
+  // State
+
   var agents: SortedSet[Agent] = TreeSet.empty[Agent]
   var ready_to_spawn = new ListBuffer[SpawnAgent]()
-  private var max_agent_id = -1
+  protected var max_agent_id = -1
+
+  //////////////////////////////////////////////////////////////////////////////
+  // Actions
 
   def insert_agent(a: Agent) = {
     // TODO assume this isn't a duplicate
@@ -249,21 +318,31 @@ trait AgentManager {
     return max_agent_id
   }
 
+  //////////////////////////////////////////////////////////////////////////////
+  // Queries
+
   // Only used by the UI, so is O(n) rather than a binary search.
   def get_agent(id: Int) = agents.find(a => a.id == id)
   def has_agent(a: Agent) = agents.contains(a)
 }
 
 trait VirtualTiming {
+  //////////////////////////////////////////////////////////////////////////////
+  // State
+
   // this represents total "real seconds"
   var tick: Double = 0
   // we only ever step with dt = cfg.dt_s, so we may have leftover.
-  var dt_accumulated: Double = 0
+  var dt_accumulated: Double = 0  // TODO remove.
   // The UI can tell us to make every one step count as multiple.
   var desired_sim_speed = 1.0
   var actual_sim_speed = 0.0
 
+  //////////////////////////////////////////////////////////////////////////////
+  // Actions
+
   // TODO cfg
+  // TODO actually, remove, probably.
   def slow_down(amount: Double = 0.5) = {
     desired_sim_speed = math.max(0.5, desired_sim_speed - amount)
   }
