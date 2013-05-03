@@ -4,7 +4,7 @@
 
 package utexas.aorta
 
-import scala.util.Random
+import java.util.Random // TODO use scala one when its serializable in 2.11
 import java.io.FileWriter
 import scala.annotation.elidable
 import scala.annotation.elidable.ASSERTION
@@ -119,6 +119,10 @@ object Util {
 
 class RNG(seed: Long = System.currentTimeMillis) {
   private val rng = new Random(seed)
+
+  def serialize(w: StateWriter) {
+    w.obj(rng)
+  }
 
   def double(min: Double, max: Double): Double =
     if (min > max)

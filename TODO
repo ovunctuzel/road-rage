@@ -8,7 +8,7 @@
   - good enough default sys bids, to get new default over FIFO
   - fix up maps once and for allish
   - common case policy, in places like claycut rd
-  - speed
+  - sim speed
     - turn blocked invariant, really maintain it for efficiency!
   - ui
     - total rewrite in something
@@ -17,9 +17,11 @@
   - bugs
     - agents not stopping at exactly the right dist the first time
     - trip time should include waiting to enter time
-2) big bro
   - savestating
     - get rid of dt_accumulated, and other speed related UI nonsense
+    - successfully load stuff back in again
+    - auto serialize
+2) big breaux
 3) marginal effects
 
 # Clever routing #

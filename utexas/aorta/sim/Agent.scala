@@ -65,7 +65,7 @@ class Agent(
     // First do parameters
     w.int(id)
     route.serialize(w)
-    //rng.serialize(w)
+    rng.serialize(w)
     wallet.serialize(w)
     w.int(start_edge)
 
