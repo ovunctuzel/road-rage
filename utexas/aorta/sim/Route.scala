@@ -290,8 +290,7 @@ object PathRoute {
     val path_size = r.int
     // Leave null otherwise
     if (path_size > 0) {
-      val path = Range(0, path_size).map(_ => graph.directed_roads(r.int))
-      route.path = path.toList
+      route.path = Range(0, path_size).map(_ => graph.directed_roads(r.int)).toList
     }
     val chosen_size = r.int
     for (i <- Range(0, chosen_size)) {

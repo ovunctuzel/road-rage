@@ -32,12 +32,13 @@ abstract class Wallet(initial_budget: Int, val priority: Int) {
   // Meta
 
   def serialize(w: StateWriter) {
+    w.int(wallet_type.id)
+    // TODO initial budget vs current... will it matter?
     w.int(budget)
     w.int(priority)
     w.int(tooltip.size)
     tooltip.foreach(line => w.string(line))
     w.bool(dark_tooltip)
-    w.int(wallet_type.id)
   }
 
   def setup(agent: Agent) {
@@ -103,18 +104,11 @@ abstract class Wallet(initial_budget: Int, val priority: Int) {
 
 object Wallet {
   def unserialize(r: StateReader): Wallet = {
-    val budget = r.int
-    val pri = r.int
+    val wallet = Factory.make_wallet(WalletType(r.int), r.int, r.int)
     val num_tooltips = r.int
-    val lines = Range(0, num_tooltips).map(_ => r.string).toList
-    val dark = r.bool
-    val wtype = WalletType(r.int)
-    
-    // TODO serialize in an order conducive to unserializing better
-    val wallet = Factory.make_wallet(wtype, budget, pri)
-    wallet.tooltip = lines
-    wallet.dark_tooltip = dark
-    return wtype match {
+    wallet.tooltip = Range(0, num_tooltips).map(_ => r.string).toList
+    wallet.dark_tooltip = r.bool
+    return wallet.wallet_type match {
       case WalletType.Fair => FairWallet.unserialize(wallet, r)
       case _ => wallet
     }

@@ -254,10 +254,7 @@ class Ticket(val a: Agent, val turn: Turn) extends Ordered[Ticket] {
 
 object Ticket {
   def unserialize(r: StateReader, a: Agent, graph: Graph): Ticket = {
-    // TODO efficiency!
-    val id = r.int
-    val turn = graph.turns.find(_.id == id).get
-    val ticket = new Ticket(a, turn)
+    val ticket = new Ticket(a, graph.turns(r.int))
     ticket.stat = ticket.stat.copy(
       req_tick = r.double, accept_tick = r.double, done_tick = r.double,
       cost_paid = r.double

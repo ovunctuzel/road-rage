@@ -473,15 +473,11 @@ class Agent(
 
 object Agent {
   def unserialize(r: StateReader, graph: Graph): Agent = {
-    // Get all the things
-    val id = r.int
-    val route = Route.unserialize(r, graph)
-    val rng = r.obj.asInstanceOf[RNG]
-    val wallet = Wallet.unserialize(r)
-    val start_edge = r.int
-
-    val a = new Agent(id, route, rng, wallet, start_edge)
-
+    val a = new Agent(
+      r.int, Route.unserialize(r, graph), r.obj.asInstanceOf[RNG],
+      Wallet.unserialize(r), r.int
+    )
+    // TODO do things with these...
     val at = Position.unserialize(r, graph)
     val stat_memory = (r.double, r.int, r.int)
     val speed = r.double

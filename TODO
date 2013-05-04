@@ -20,7 +20,6 @@
   - savestating
     - successfully load stuff back in again
       = reasonable way to find turns by id
-      = serialize in an order conducive to loading back in tersely
       - crazy setup(): agent, simulation
       - macro to serialize very tersely
     - get rid of dt_accumulated, and other speed related UI nonsense

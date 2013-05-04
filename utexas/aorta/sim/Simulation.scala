@@ -239,6 +239,7 @@ object Simulation {
   def unserialize(r: StateReader): Simulation = {
     val sim = Scenario.load(r.string).make_sim()
 
+    // TODO do stuff this all this
     val num_agents = r.int
     val agents = Range(0, num_agents).map(_ => Agent.unserialize(r, sim.graph))
     val num_ready = r.int
@@ -248,7 +249,6 @@ object Simulation {
     val tick = r.double
     val dt_accumulated = r.double
 
-    // TODO set all this state up!
     return sim
   }
 }
