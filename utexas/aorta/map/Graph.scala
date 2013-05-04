@@ -26,6 +26,10 @@ class Graph(
     })
   })
 
+  @transient lazy val turns = vertices.foldLeft(List[Turn]())(
+    (l, v) => v.turns.toList ++ l
+  ).map(t => t.id -> t).toMap
+
   @transient lazy val router: Router = choose_router
   @transient lazy val dijkstra_router = new DijkstraRouter(this)
   @transient lazy val ch_router = new CHRouter(this)
@@ -40,8 +44,7 @@ class Graph(
     }
   }
 
-  def turns = vertices.foldLeft(List[Turn]())((l, v) => v.turns.toList ++ l)
-  def traversables() = edges ++ turns
+  def traversables() = edges ++ turns.values
 }
 
 // It's a bit funky, but the actual graph instance doesn't have this; we do.

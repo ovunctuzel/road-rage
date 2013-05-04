@@ -111,7 +111,7 @@ object MapSuite {
   def check_geometry(g: Graph) = {
     // Long turns causes agents to "float" over the map as they chase a distant edge
     val max_turn_length = 50.0  // TODO cfg
-    for (t <- g.turns if t.length > max_turn_length) {
+    for (t <- g.turns.values if t.length > max_turn_length) {
       //throw new Exception(s"$t is excessively long")
     }
 

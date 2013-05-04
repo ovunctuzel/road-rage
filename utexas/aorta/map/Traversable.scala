@@ -222,11 +222,8 @@ object Position {
     val on: Traversable =
       if (r.bool)
         graph.edges(r.int)
-      else {
-        val id = r.int
-        // TODO whoa, efficiency, please?
-        graph.turns.find(_.id == id).get
-      }
+      else
+        graph.turns(r.int)
     return Position(on, r.double)
   }
 }

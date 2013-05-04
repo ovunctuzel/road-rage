@@ -25,8 +25,7 @@ class PreGraph3(old_graph: PreGraph2) {
   var edges = new MutableList[Edge]           // a directed lane
   var roads = old_graph.edges.map(add_road)   // collections of edges
 
-  // magic borrowed from Graph to support Tarjan's. Each of these expensive
-  // things should only be called once.
+  // support Tarjan's. Each of these expensive things should only be called once
   def turns() = vertices.foldLeft(List[Turn]())((l, v) => v.turns ++ l)
   def traversables() = edges ++ turns
 
