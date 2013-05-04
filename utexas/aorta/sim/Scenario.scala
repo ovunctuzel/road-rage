@@ -12,17 +12,17 @@ import java.io.File
 import scala.collection.mutable.ArrayBuffer
 import scala.collection.mutable.{HashMap => MutableMap}
 
-import utexas.aorta.{Util, RNG, Common, cfg, StateWriter}
+import utexas.aorta.{Util, RNG, Common, cfg, StateWriter, StateReader}
 
 @SerialVersionUID(1)
 // Array index and agent/intersection ID must correspond. Client's
 // responsibility.
-case class Scenario(map_fn: String, agents: Array[MkAgent],
+case class Scenario(name: String, map_fn: String, agents: Array[MkAgent],
                     intersections: Array[MkIntersection],
                     system_wallet: SystemWalletConfig)
 {
   def make_sim(graph: Graph = Graph.load(map_fn)) = new Simulation(graph, this)
-  def save(fn: String) = Util.serialize(this, fn)
+  def save() = Util.serialize(this, name)
 
   def make_intersection(v: Vertex) = intersections(v.id).make(v)
 
@@ -107,6 +107,7 @@ object Scenario {
 
   def default(map_fn: String, graph: Graph): Scenario = {
     val s = Scenario(
+      s"scenarios/default_${graph.name}",
       map_fn,
       AgentDistribution.default(graph),
       IntersectionDistribution.default(graph),
@@ -115,7 +116,7 @@ object Scenario {
     Common.scenario = s
     // Always save it, so resimulation is easy.
     (new File("./scenarios")).mkdir
-    s.save(s"scenarios/default_${graph.name}")
+    s.save()
     return s
   }
 }
@@ -158,6 +159,11 @@ case class MkAgent(id: Int, birth_tick: Double, seed: Long,
       Util.log(s"Agent $id different: $d")
     }
   }
+}
+
+object MkAgent {
+  // TODO cheating
+  def unserialize(r: StateReader) = r.obj.asInstanceOf[MkAgent]
 }
 
 // Spawns some distribution of agents every frequency seconds.
@@ -419,7 +425,8 @@ object ScenarioTool {
       case _: Throwable => {
         Util.log(s"Initializing empty scenario on $input...")
         s = Scenario(
-          input, Array(), Array(), SystemWalletConfig()
+          s"scenarios/empty_${input}", input, Array(), Array(),
+          SystemWalletConfig()
         )
         s = s.copy(
           intersections = IntersectionDistribution.default(graph)
@@ -427,13 +434,14 @@ object ScenarioTool {
       }
     }
 
-    var output = ""
     val rng = new RNG()
+    var changed_output = false
 
     while (args.nonEmpty) {
       shift_args match {
         case "--out" => {
-          output = shift_args
+          s = s.copy(name = shift_args)
+          changed_output = true
         }
         // --vert 42 policy=StopSign ordering=FIFO
         case "--vert" => {
@@ -658,9 +666,9 @@ object ScenarioTool {
 
     s.summarize
 
-    if (output.nonEmpty) {
-      s.save(output)
-      Util.log(s"\nSaved scenario to $output")
+    if (changed_output) {
+      s.save()
+      Util.log(s"\nSaved scenario to ${s.name}")
       // TODO warn if overwriting? prompt?
     }
   }

@@ -121,7 +121,7 @@ class RNG(seed: Long = System.currentTimeMillis) {
   private val rng = new Random(seed)
 
   def serialize(w: StateWriter) {
-    w.obj(rng)
+    w.obj(this)
   }
 
   def double(min: Double, max: Double): Double =
@@ -356,16 +356,17 @@ class StateWriter(fn: String) {
   }
 }
 
-class StateReader() {
-  /*def int(): Int = {
-  }
+class StateReader(fn: String) {
+  private val in = new ObjectInputStream(new FileInputStream(fn))
 
-  def double(): Double = {
-  }
+  def int = in.readInt
 
-  def string(): String = {
-  }
-  
-  def bool(): Boolean = {
-  }*/
+  def double = in.readDouble
+
+  def string = in.readUTF
+
+  def bool = in.readBoolean
+
+  // TODO dont use this.
+  def obj = in.readObject
 }

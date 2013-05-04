@@ -9,7 +9,7 @@ import scala.collection.mutable.{HashSet => MutableSet}
 import scala.collection.mutable.TreeSet
 
 import utexas.aorta.sim.policies._
-import utexas.aorta.map.{Vertex, Turn, Edge}
+import utexas.aorta.map.{Vertex, Turn, Edge, Graph}
 import utexas.aorta.analysis.Turn_Stat
 
 import utexas.aorta.{Util, Common, cfg, StateWriter, StateReader}
@@ -250,6 +250,22 @@ class Ticket(val a: Agent, val turn: Turn) extends Ordered[Ticket] {
       // arrive at the turn soon
       eta_earliest <= 10.0
     }
+}
+
+object Ticket {
+  def unserialize(r: StateReader, a: Agent, graph: Graph): Ticket = {
+    // TODO efficiency!
+    val id = r.int
+    val turn = graph.turns.find(_.id == id).get
+    val ticket = new Ticket(a, turn)
+    ticket.stat = ticket.stat.copy(
+      req_tick = r.double, accept_tick = r.double, done_tick = r.double,
+      cost_paid = r.double
+    )
+    ticket.is_interruption = r.bool
+    ticket.waiting_since = r.double
+    return ticket
+  }
 }
 
 abstract class Policy(val intersection: Intersection) {

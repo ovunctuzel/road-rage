@@ -61,11 +61,10 @@ class Agent(
   }
 
   def serialize(w: StateWriter) {
-    // TODO uncomment once each is implemented
     // First do parameters
     w.int(id)
     route.serialize(w)
-    rng.serialize(w)
+    w.obj(rng)
     wallet.serialize(w)
     w.int(start_edge)
 
@@ -473,5 +472,30 @@ class Agent(
 }
 
 object Agent {
-  def unserialize(r: StateReader): Agent = null  // TODO
+  def unserialize(r: StateReader, graph: Graph): Agent = {
+    // Get all the things
+    val id = r.int
+    val route = Route.unserialize(r)
+    val rng = r.obj.asInstanceOf[RNG]
+    val wallet = Wallet.unserialize(r)
+    val start_edge = r.int
+
+    val a = new Agent(id, route, rng, wallet, start_edge)
+
+    val at = Position.unserialize(r, graph)
+    val stat_memory = (r.double, r.int, r.int)
+    val speed = r.double
+    val target_accel = r.double
+    val old_lane = r.int match {
+      case -1 => None
+      case x => Some(x)
+    }
+    val lc_dist_left = r.double
+    val idle_since = r.double
+    val num_tickets = r.int
+    val tickets = Range(0, num_tickets).map(_ => Ticket.unserialize(r, a, graph))
+
+    // TODO setup state
+    return a
+  }
 }

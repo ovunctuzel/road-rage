@@ -59,6 +59,7 @@ class Simulation(val graph: Graph, scenario: Scenario)
   def serialize(w: StateWriter) {
     // All of the important state is in each of our traits. ListenerPattern
     // state doesn't matter, though -- just UI/headless stuff now.
+    w.string(scenario.name)
 
     // Agent manager stuff
     w.int(agents.size)
@@ -231,6 +232,24 @@ class Simulation(val graph: Graph, scenario: Scenario)
     serialize(w)
     w.done()
     t.stop()
+  }
+}
+
+object Simulation {
+  def unserialize(r: StateReader): Simulation = {
+    val sim = Scenario.load(r.string).make_sim()
+
+    val num_agents = r.int
+    val agents = Range(0, num_agents).map(_ => Agent.unserialize(r, sim.graph))
+    val num_ready = r.int
+    val ready = Range(0, num_ready).map(_ => MkAgent.unserialize(r))
+
+    val max_id = r.int
+    val tick = r.double
+    val dt_accumulated = r.double
+
+    // TODO set all this state up!
+    return sim
   }
 }
 

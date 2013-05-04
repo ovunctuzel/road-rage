@@ -18,8 +18,10 @@
     - agents not stopping at exactly the right dist the first time
     - trip time should include waiting to enter time
   - savestating
-    - get rid of dt_accumulated, and other speed related UI nonsense
     - successfully load stuff back in again
+      - crazy setup(): agent, simulation
+      - reasonable way to find turns by id
+    - get rid of dt_accumulated, and other speed related UI nonsense
     - auto serialize
 2) big breaux
 3) marginal effects
