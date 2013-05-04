@@ -5,7 +5,8 @@
 package utexas.aorta.sim.market
 
 import utexas.aorta.sim.{Agent, Ticket, WalletType, Policy, IntersectionType,
-                         Route_Event, EV_Transition, EV_Reroute, OrderingType}
+                         Route_Event, EV_Transition, EV_Reroute, OrderingType,
+                         Factory}
 import utexas.aorta.map.{Turn, Vertex}
 import utexas.aorta.sim.policies.{Phase, ReservationPolicy, SignalPolicy}
 
@@ -36,6 +37,7 @@ abstract class Wallet(initial_budget: Int, val priority: Int) {
     w.int(tooltip.size)
     tooltip.foreach(line => w.string(line))
     w.bool(dark_tooltip)
+    w.int(wallet_type.id)
   }
 
   def setup(agent: Agent) {
@@ -100,8 +102,23 @@ abstract class Wallet(initial_budget: Int, val priority: Int) {
 }
 
 object Wallet {
-  // TODO this.
-  def unserialize(r: StateReader): Wallet = null
+  def unserialize(r: StateReader): Wallet = {
+    val budget = r.int
+    val pri = r.int
+    val num_tooltips = r.int
+    val lines = Range(0, num_tooltips).map(_ => r.string).toList
+    val dark = r.bool
+    val wtype = WalletType(r.int)
+    
+    // TODO serialize in an order conducive to unserializing better
+    val wallet = Factory.make_wallet(wtype, budget, pri)
+    wallet.tooltip = lines
+    wallet.dark_tooltip = dark
+    return wtype match {
+      case WalletType.Fair => FairWallet.unserialize(wallet, r)
+      case _ => wallet
+    }
+  }
 }
 
 // Bids a random amount on our turn.
@@ -247,6 +264,14 @@ class FairWallet(initial_budget: Int, p: Int)
       case IntersectionType.CommonCase => 0.0
     }
     return (1.0 * big.size) + (0.5 * small.size) + (1.0 * policy_weight)*/
+  }
+}
+
+object FairWallet {
+  def unserialize(wallet_raw: Wallet, r: StateReader): FairWallet = {
+    val wallet = wallet_raw.asInstanceOf[FairWallet]
+    wallet.total_weight = r.double
+    return wallet
   }
 }
 

@@ -475,7 +475,7 @@ object Agent {
   def unserialize(r: StateReader, graph: Graph): Agent = {
     // Get all the things
     val id = r.int
-    val route = Route.unserialize(r)
+    val route = Route.unserialize(r, graph)
     val rng = r.obj.asInstanceOf[RNG]
     val wallet = Wallet.unserialize(r)
     val start_edge = r.int
