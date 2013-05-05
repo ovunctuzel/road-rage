@@ -43,18 +43,18 @@ class Simulation(val graph: Graph, scenario: Scenario)
 
   def setup() {
     Common.sim = this
+    Common.scenario = scenario
 
     // TODO always do this, and forget this map/sim separation?
     graph.traversables.foreach(t => t.queue = new Queue(t))
     graph.vertices.foreach(v => v.intersection = scenario.make_intersection(v))
 
-    // First time...
-    future_spawn ++= scenario.agents
-    Stats.record(Scenario_Stat(scenario.map_fn, scenario.intersections))
+    // Are we starting for the first time?
+    if (tick == 0.0) {
+      Stats.record(Scenario_Stat(scenario.map_fn, scenario.intersections))
+    }
+    future_spawn ++= scenario.agents.dropWhile(_.birth_tick < tick)
   }
-
-  // TODO make our creator call this...
-  setup()
 
   def serialize(w: StateWriter) {
     // All of the important state is in each of our traits. ListenerPattern
@@ -64,9 +64,6 @@ class Simulation(val graph: Graph, scenario: Scenario)
     // Agent manager stuff
     w.int(agents.size)
     agents.foreach(a => a.serialize(w))
-    // TODO get this implicitly from scenario and tick.
-    //w.int(ready_to_spawn.size)
-    //ready_to_spawn.foreach(a => a.serialize(w))
     w.int(max_agent_id)
 
     // Timing stuff
@@ -230,6 +227,7 @@ class Simulation(val graph: Graph, scenario: Scenario)
 }
 
 object Simulation {
+  // Caller must still call setup.
   def unserialize(r: StateReader): Simulation = {
     val sim = Scenario.load(r.string).make_sim()
     val num_agents = r.int

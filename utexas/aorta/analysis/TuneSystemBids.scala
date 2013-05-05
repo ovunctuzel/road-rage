@@ -71,8 +71,7 @@ object TuneSystemBids {
         ready_bonus = state._5
       ))
       val sim = mod.make_sim(graph)
-      Common.scenario = mod
-      Common.sim = sim
+      sim.setup()
 
       // Run the simulation until its cut-off and rank it.
       var finished = 0

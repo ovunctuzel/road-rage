@@ -94,7 +94,9 @@ object Util {
       }
     }
 
-    return Scenario.load_or_default_sim(load)
+    val sim = Scenario.load_or_default_sim(load)
+    sim.setup()
+    return sim
   }
 
   def serialize(obj: Any, fn: String) = {

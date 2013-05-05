@@ -94,10 +94,7 @@ object Scenario {
   def load(fn: String) = Util.unserialize(fn).asInstanceOf[Scenario]
 
   def load_or_default_sim(fn: String) = Util.unserialize(fn) match {
-    case s: Scenario => {
-      Common.scenario = s
-      s.make_sim()
-    }
+    case s: Scenario => s.make_sim()
     case g: Graph => {
       Graph.set_params(g.width, g.height, g.offX, g.offY, g.scale)
       Common.edges = g.edges
@@ -113,7 +110,6 @@ object Scenario {
       IntersectionDistribution.default(graph),
       SystemWalletConfig()
     )
-    Common.scenario = s
     // Always save it, so resimulation is easy.
     (new File("./scenarios")).mkdir
     s.save()
