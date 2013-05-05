@@ -10,7 +10,7 @@ import scala.annotation.elidable
 import scala.annotation.elidable.ASSERTION
 
 import java.io.{ObjectOutputStream, FileOutputStream, ObjectInputStream,
-                FileInputStream}
+                FileInputStream, PrintWriter, BufferedReader, FileReader}
 
 import utexas.aorta.map.Graph
 import utexas.aorta.sim.{Simulation, Scenario}
@@ -327,46 +327,88 @@ object Physics {
 }
 
 // TODO make stats, maps, scenarios -- everything -- use these.
-class StateWriter(fn: String) {
+abstract class StateWriter(fn: String) {
+  def done()
+  def int(x: Int)
+  def double(x: Double)
+  def string(x: String)
+  def bool(x: Boolean)
+  def obj(x: Any)   // TODO remove.
+}
+
+class BinaryStateWriter(fn: String) extends StateWriter(fn) {
   private val out = new ObjectOutputStream(new FileOutputStream(fn))
+  def done() {
+    out.close()
+  }
 
   def int(x: Int) {
     out.writeInt(x)
   }
-
   def double(x: Double) {
     out.writeDouble(x)
   }
-
   def string(x: String) {
     out.writeUTF(x)
   }
-
   def bool(x: Boolean) {
     out.writeBoolean(x)
   }
-
-  // TODO dont use this.
   def obj(x: Any) {
+    // TODO dont use this.
     out.writeObject(x)
-  }
-
-  def done() {
-    out.close()
   }
 }
 
-class StateReader(fn: String) {
+class StringStateWriter(fn: String) extends StateWriter(fn) {
+  private val out = new PrintWriter(fn)
+  def done() {
+    out.close()
+  }
+
+  def int(x: Int) {
+    out.println(x)
+  }
+  def double(x: Double) {
+    out.println(x)
+  }
+  def string(x: String) {
+    out.println(x)
+  }
+  def bool(x: Boolean) {
+    out.println(x)
+  }
+  def obj(x: Any) {
+    // TODO dont use this.
+    out.println(x)
+  }
+}
+
+abstract class StateReader(fn: String) {
+  def int: Int
+  def double: Double
+  def string: String
+  def bool: Boolean
+  def obj: Any    // TODO remove
+}
+
+class BinaryStateReader(fn: String) extends StateReader(fn) {
   private val in = new ObjectInputStream(new FileInputStream(fn))
-
   def int = in.readInt
-
   def double = in.readDouble
-
   def string = in.readUTF
-
   def bool = in.readBoolean
+  def obj = in.readObject   // TODO dont use this.
+}
 
-  // TODO dont use this.
-  def obj = in.readObject
+class StringStateReader(fn: String) extends StateReader(fn) {
+  private val in = new BufferedReader(new FileReader(fn))
+  def int = in.readLine.toInt
+  def double = in.readLine.toDouble
+  def string = in.readLine
+  def bool = in.readLine.toBoolean
+  def obj: Any = {
+    in.readLine
+    return null   // TODO dont use this.
+  }
 }

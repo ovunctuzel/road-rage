@@ -15,14 +15,38 @@ object Debug {
   def main(args: Array[String]) = {
     val sim = Util.process_args(args)
 
-    find_short_edges(sim)
+    serialize_sanity(sim)
+    /*find_short_edges(sim)
     find_disconnected_verts(sim)
     find_crazy_signals(sim)
     calc_capacity(sim)
     degenerate_verts(sim)
     doomed_stuff(sim)
     disconnected_directed_roads(sim)
-    stress_test_pathfind(sim)
+    stress_test_pathfind(sim)*/
+  }
+
+  private def serialize_sanity(sim: Simulation) = {
+    // 1) Run for some time
+    Util.log("Running for 60 seconds...")
+    sim.step(60.0)
+    // 2) Serialize as string
+    val t1 = Common.timer("save 1")
+    val w1 = new utexas.aorta.StringStateWriter("snapshot1")
+    sim.serialize(w1)
+    w1.done
+    t1.stop
+    // 3) Kill the old sim. Load the sim.
+    val t2 = Common.timer("load 1")
+    val new_sim = Simulation.unserialize(new utexas.aorta.StringStateReader("snapshot1"))
+    t2.stop
+    // 4) Serialize the new sim.
+    val t3 = Common.timer("save 2")
+    val w2 = new utexas.aorta.StringStateWriter("snapshot2")
+    new_sim.serialize(w2)
+    w2.done
+    t3.stop
+    // 5) Compare. Serialization should be idempotent.
   }
 
   private def find_short_edges(sim: Simulation) = {

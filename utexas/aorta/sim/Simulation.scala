@@ -225,13 +225,6 @@ class Simulation(val graph: Graph, scenario: Scenario)
     for (e <- graph.edges.map(e => (-demands(e), e)).sorted.take(10)) {
       Util.log(s"${e._2} has total demand ${-e._1}")
     }
-
-    // TODO just to test.
-    val t = Common.timer("serialization")
-    val w = new StateWriter("test_state")
-    serialize(w)
-    w.done()
-    t.stop()
   }
 }
 
