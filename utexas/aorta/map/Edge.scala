@@ -124,9 +124,10 @@ object Direction extends Enumeration {
 @SerialVersionUID(1)
 // TODO var id because things get chopped up
 class DirectedRoad(val road: Road, var id: Int, val dir: Direction.Value)
-  extends AbstractEdge with Serializable
+  extends AbstractEdge with Serializable with Ordered[DirectedRoad]
 {
   override def toString = "%s's %s lanes".format(road, dir)
+  override def compare(other: DirectedRoad) = id.compare(other.id)
 
   def edges = if (dir == Direction.POS)
                 road.pos_lanes

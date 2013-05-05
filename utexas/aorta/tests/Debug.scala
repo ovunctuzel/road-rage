@@ -32,21 +32,23 @@ object Debug {
     sim.step(60.0)
     // 2) Serialize as string
     val t1 = Common.timer("save 1")
-    val w1 = new utexas.aorta.StringStateWriter("snapshot1")
+    val w1 = new utexas.aorta.BinaryStateWriter("snapshot1")
     sim.serialize(w1)
     w1.done
     t1.stop
     // 3) Kill the old sim. Load the sim.
     val t2 = Common.timer("load 1")
-    val new_sim = Simulation.unserialize(new utexas.aorta.StringStateReader("snapshot1"))
+    val new_sim = Simulation.unserialize(new utexas.aorta.BinaryStateReader("snapshot1"))
     t2.stop
     // 4) Serialize the new sim.
     val t3 = Common.timer("save 2")
-    val w2 = new utexas.aorta.StringStateWriter("snapshot2")
+    val w2 = new utexas.aorta.BinaryStateWriter("snapshot2")
     new_sim.serialize(w2)
     w2.done
     t3.stop
     // 5) Compare. Serialization should be idempotent.
+
+  // todo sim both a few seconds, srlize, comp
   }
 
   private def find_short_edges(sim: Simulation) = {

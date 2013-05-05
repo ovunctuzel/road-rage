@@ -163,7 +163,7 @@ case class MkAgent(id: Int, birth_tick: Double, seed: Long,
 
 object MkAgent {
   // TODO cheating
-  def unserialize(r: StateReader) = r.obj.asInstanceOf[MkAgent]
+  def unserialize(r: StateReader): MkAgent = r.obj.asInstanceOf[MkAgent]
 }
 
 // Spawns some distribution of agents every frequency seconds.

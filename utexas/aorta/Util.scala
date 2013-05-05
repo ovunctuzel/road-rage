@@ -5,7 +5,7 @@
 package utexas.aorta
 
 import java.util.Random // TODO use scala one when its serializable in 2.11
-import java.io.FileWriter
+import java.io.{FileWriter, Serializable}
 import scala.annotation.elidable
 import scala.annotation.elidable.ASSERTION
 
@@ -117,10 +117,11 @@ object Util {
       Some(s"$header ($a -> $b)")
 }
 
-class RNG(seed: Long = System.currentTimeMillis) {
+class RNG(seed: Long = System.currentTimeMillis) extends Serializable {
   private val rng = new Random(seed)
 
   def serialize(w: StateWriter) {
+    // TODO cant debug with string state RWs...
     w.obj(this)
   }
 
@@ -137,6 +138,10 @@ class RNG(seed: Long = System.currentTimeMillis) {
   def percent(p: Double) = double(0.0, 1.0) < p
   // for making a new RNG
   def new_seed = rng.nextLong
+}
+
+object RNG {
+  def unserialize(r: StateReader): RNG = r.obj.asInstanceOf[RNG]
 }
 
 object cfg {

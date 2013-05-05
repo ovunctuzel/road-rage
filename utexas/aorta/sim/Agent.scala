@@ -4,7 +4,7 @@
 
 package utexas.aorta.sim
 
-import scala.collection.mutable.{HashSet => MutableSet}
+import scala.collection.mutable.{TreeSet => MutableSet}
 
 import utexas.aorta.map.{Edge, Coordinate, Turn, Traversable, Graph, Position}
 import utexas.aorta.sim.market._
@@ -27,7 +27,8 @@ class Agent(
   var at: Position = null
 
   // Just for stats. Not hard to maintain. (tick, where we spawned, budget)
-  private val stat_memory = (Common.tick, start_edge, wallet.budget)
+  // (var for serialization...)
+  private var stat_memory = (Common.tick, start_edge, wallet.budget)
 
   // We can only set a target acceleration, which we travel at for the entire
   // duration of timesteps.
@@ -64,7 +65,7 @@ class Agent(
     // First do parameters
     w.int(id)
     route.serialize(w)
-    w.obj(rng)
+    rng.serialize(w)
     wallet.serialize(w)
     w.int(start_edge)
 
@@ -474,24 +475,21 @@ class Agent(
 object Agent {
   def unserialize(r: StateReader, graph: Graph): Agent = {
     val a = new Agent(
-      r.int, Route.unserialize(r, graph), r.obj.asInstanceOf[RNG],
+      r.int, Route.unserialize(r, graph), RNG.unserialize(r),
       Wallet.unserialize(r), r.int
     )
-    // TODO do things with these...
-    val at = Position.unserialize(r, graph)
-    val stat_memory = (r.double, r.int, r.int)
-    val speed = r.double
-    val target_accel = r.double
-    val old_lane = r.int match {
+    a.at = Position.unserialize(r, graph)
+    a.stat_memory = (r.double, r.int, r.int)
+    a.speed = r.double
+    a.target_accel = r.double
+    a.old_lane = r.int match {
       case -1 => None
-      case x => Some(x)
+      case x => Some(graph.edges(x))
     }
-    val lc_dist_left = r.double
-    val idle_since = r.double
+    a.lanechange_dist_left = r.double
+    a.idle_since = r.double
     val num_tickets = r.int
-    val tickets = Range(0, num_tickets).map(_ => Ticket.unserialize(r, a, graph))
-
-    // TODO setup state
+    a.tickets ++= Range(0, num_tickets).map(_ => Ticket.unserialize(r, a, graph))
     return a
   }
 }

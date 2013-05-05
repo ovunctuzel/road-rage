@@ -4,7 +4,8 @@
 
 package utexas.aorta.sim
 
-import scala.collection.mutable.{HashMap => MutableMap}
+import scala.collection.immutable.TreeMap
+import scala.collection.mutable.ImmutableMapAdaptor
 
 import utexas.aorta.map.{Edge, DirectedRoad, Traversable, Turn, Vertex, Graph}
 
@@ -20,7 +21,7 @@ abstract class Route(val goal: DirectedRoad, rng: RNG)
   def serialize(w: StateWriter) {
     w.int(route_type.id)
     w.int(goal.id)
-    w.obj(rng)
+    rng.serialize(w)
   }
 
   // TODO setup needed to unserialize...
@@ -54,7 +55,7 @@ abstract class Route(val goal: DirectedRoad, rng: RNG)
 object Route {
   def unserialize(r: StateReader, graph: Graph): Route = {
     val route = Factory.make_route(
-      RouteType(r.int), graph.directed_roads(r.int), r.obj.asInstanceOf[RNG]
+      RouteType(r.int), graph.directed_roads(r.int), RNG.unserialize(r)
     )
     // TODO dispatch more automagically?
     return route.route_type match {
@@ -116,7 +117,7 @@ class PathRoute(goal: DirectedRoad, rng: RNG) extends Route(goal, rng) {
   // Head is the current step. If that step isn't immediately reachable, we have
   // to re-route.
   private var path: List[DirectedRoad] = null
-  private val chosen_turns = new MutableMap[Edge, Turn]()
+  private val chosen_turns = new ImmutableMapAdaptor(new TreeMap[Edge, Turn]())
 
   //////////////////////////////////////////////////////////////////////////////
   // Meta
@@ -307,7 +308,7 @@ class DrunkenRoute(goal: DirectedRoad, rng: RNG) extends Route(goal, rng) {
 
   // Remember answers we've given for the sake of consistency
   private var desired_lane: Option[Edge] = None
-  private val chosen_turns = new MutableMap[Edge, Turn]()
+  private val chosen_turns = new ImmutableMapAdaptor(new TreeMap[Edge, Turn]())
 
   //////////////////////////////////////////////////////////////////////////////
   // Meta
@@ -412,7 +413,7 @@ class DrunkenExplorerRoute(goal: DirectedRoad, rng: RNG)
   //////////////////////////////////////////////////////////////////////////////
   // State
 
-  private val past = new MutableMap[DirectedRoad, Int]()
+  private val past = new ImmutableMapAdaptor(new TreeMap[DirectedRoad, Int]())
 
   //////////////////////////////////////////////////////////////////////////////
   // Meta

@@ -64,8 +64,9 @@ class Simulation(val graph: Graph, scenario: Scenario)
     // Agent manager stuff
     w.int(agents.size)
     agents.foreach(a => a.serialize(w))
-    w.int(ready_to_spawn.size)
-    ready_to_spawn.foreach(a => a.serialize(w))
+    // TODO get this implicitly from scenario and tick.
+    //w.int(ready_to_spawn.size)
+    //ready_to_spawn.foreach(a => a.serialize(w))
     w.int(max_agent_id)
 
     // Timing stuff
@@ -231,17 +232,17 @@ class Simulation(val graph: Graph, scenario: Scenario)
 object Simulation {
   def unserialize(r: StateReader): Simulation = {
     val sim = Scenario.load(r.string).make_sim()
-
-    // TODO do stuff this all this
     val num_agents = r.int
-    val agents = Range(0, num_agents).map(_ => Agent.unserialize(r, sim.graph))
-    val num_ready = r.int
-    val ready = Range(0, num_ready).map(_ => MkAgent.unserialize(r))
-
-    val max_id = r.int
-    val tick = r.double
-    val dt_accumulated = r.double
-
+    for (i <- Range(0, num_agents)) {
+      sim.insert_agent(Agent.unserialize(r, sim.graph))
+    }
+    /*val num_ready = r.int
+    for (i <- Range(0, num_ready)) {
+      sim.ready_to_spawn += MkAgent.unserialize(r)
+    }*/
+    sim.max_agent_id = r.int
+    sim.tick = r.double
+    sim.dt_accumulated = r.double
     return sim
   }
 }
