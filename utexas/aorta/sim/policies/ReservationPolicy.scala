@@ -4,9 +4,6 @@
 
 package utexas.aorta.sim.policies
 
-import scala.collection.mutable.{HashSet => MutableSet}
-import scala.collection.mutable.{Queue => MutableQueue}
-
 import utexas.aorta.map.{Turn, Edge}
 import utexas.aorta.sim.{Intersection, Policy, Ticket, Agent, IntersectionType}
 import utexas.aorta.sim.market.IntersectionOrdering
@@ -20,27 +17,17 @@ class ReservationPolicy(intersection: Intersection,
                         ordering: IntersectionOrdering[Ticket])
   extends Policy(intersection)
 {
-  // Remember the order of request
-  // TODO refactor?
-  private val queue = new MutableQueue[Ticket]()
-
-  private val accepted = new MutableSet[Ticket]()
-  def accepted_conflicts(turn: Turn)
-    = accepted.find(t => t.turn.conflicts_with(turn)).isDefined
-  def approveds_to(e: Edge) = accepted.filter(_.turn.to == e)
   // Prevent more from being accepted until this ticket is approved.
   private var interruption: Option[Ticket] = None
 
+  def accepted_conflicts(turn: Turn)
+    = accepted.find(t => t.turn.conflicts_with(turn)).isDefined
+
   // TODO and are reasonably close? otherwise somebody who looks ahead a tick
   // earlier than another gets an advantage, even if theyre really far away
-  private def candidates = queue.filter(ticket => !ticket.turn_blocked)
+  private def candidates = request_queue.filter(ticket => !ticket.turn_blocked)
 
   def react(): Unit = {
-    for (ticket <- waiting_agents) {
-      queue += ticket
-    }
-    waiting_agents.clear
-
     interruption match {
       case Some(ticket) => {
         // Can we admit them now?
@@ -49,7 +36,7 @@ class ReservationPolicy(intersection: Intersection,
           return
         } else {
           // Yes! Resume admitting others now, too.
-          ticket.approve
+          ticket.approve()
           accepted += ticket
           interruption = None
         }
@@ -61,19 +48,18 @@ class ReservationPolicy(intersection: Intersection,
     while (!interruption.isDefined) {
       ordering.clear
       candidates.foreach(o => ordering.add(o))
-      ordering.shift_next(queue, this) match {
+      ordering.shift_next(request_queue, this) match {
         case Some(ticket) => {
-          queue.dequeueFirst((t) => t == ticket)
           // Admit them immediately and continue, or reserve an interruption?
           if (accepted_conflicts(ticket.turn)) {
             interruption = Some(ticket)
             ticket.is_interruption = true
+            unqueue(ticket)
             // Furthermore, grab a spot for them and keep it!
             ticket.turn.to.queue.allocate_slot
             return
           } else {
-            ticket.approve
-            accepted += ticket
+            accept(ticket)
           }
         }
         case None => return
@@ -81,21 +67,9 @@ class ReservationPolicy(intersection: Intersection,
     }
   }
 
-  def validate_entry(ticket: Ticket) = accepted.contains(ticket)
-
-  def handle_exit(ticket: Ticket) = {
-    accepted -= ticket
-    queue.dequeueFirst((t) => t == ticket)
-  }
-
-  def current_greens = accepted.map(_.turn).toSet
-
-  def dump_info() = {
-    Util.log(s"Reservation policy for $intersection")
-    Util.log(s"Currently accepted (${accepted.size}): $accepted")
+  override def dump_info() = {
+    super.dump_info()
     Util.log(s"Interruption by $interruption")
-    Util.log(s"Waiting agents (${waiting_agents.size}): $waiting_agents")
-    Util.log(s"Queue (${queue.size}): $queue")
   }
   def policy_type = IntersectionType.Reservation
 }

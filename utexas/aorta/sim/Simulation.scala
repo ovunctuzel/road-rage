@@ -113,7 +113,7 @@ class Simulation(val graph: Graph, scenario: Scenario)
 
       // Let intersections react to the new world.
       vertices.foreach(v => {
-        v.intersection.react
+        v.intersection.policy.react_tick
       })
 
       // Let agents react to the new world.

@@ -4,11 +4,8 @@
 
 package utexas.aorta.sim.policies
 
-import utexas.aorta.map.{Turn, Edge}
 import utexas.aorta.sim.{Intersection, Policy, Agent, Ticket, IntersectionType}
 import utexas.aorta.sim.market.IntersectionOrdering
-
-import scala.collection.mutable.{Queue => MutableQueue}
 
 import utexas.aorta.{Util, cfg}
 
@@ -17,10 +14,6 @@ class StopSignPolicy(intersection: Intersection,
                      ordering: IntersectionOrdering[Ticket])
   extends Policy(intersection)
 {
-  private var current_owner: Option[Ticket] = None
-  // Remember the order of request
-  private val queue = new MutableQueue[Ticket]()
-
   // Agents must pause a moment, be the head of their queue, and be close enough
   // to us (in case they looked ahead over small edges).
   private def is_waiting(a: Agent)
@@ -31,48 +24,20 @@ class StopSignPolicy(intersection: Intersection,
 
   // Add agent to the queue if they satisfy our requirements.
   def react() = {
-    for (ticket <- waiting_agents) {
-      queue += ticket
-    }
-    waiting_agents.clear
-    if (!current_owner.isDefined) {
-      approve_next
+    if (accepted.isEmpty) {
+      approve_next()
     }
   }
 
-  def validate_entry(ticket: Ticket) = current_owner.getOrElse(null) == ticket
-
-  def handle_exit(ticket: Ticket) = {
-    Util.assert_eq(current_owner.get, ticket)
-    current_owner = None
-  }
-
-  def approveds_to(e: Edge) = current_owner match {
-    case Some(t) if t.turn.to == e => List(t)
-    case _ => Nil
-  }
-
-  def current_greens = intersection.turns.keys.toSet
-
-  def dump_info() = {
-    Util.log(s"Stop sign policy for $intersection")
-    Util.log("Current owner: " + current_owner)
-    Util.log(s"Queue: $queue")
-    Util.log(s"Waiting agents: $waiting_agents")
-  }
   def policy_type = IntersectionType.StopSign
 
-  private def approve_next = {
+  private def approve_next() {
     ordering.clear
-    for (ticket <- queue if is_waiting(ticket.a) && !ticket.turn_blocked) {
+    for (ticket <- request_queue if is_waiting(ticket.a) && !ticket.turn_blocked) {
       ordering.add(ticket)
     }
-    current_owner = ordering.shift_next(queue, this)
-    current_owner match {
-      case Some(ticket) => {
-        ticket.approve
-        queue.dequeueFirst((t) => t == ticket)
-      }
+    ordering.shift_next(request_queue, this) match {
+      case Some(ticket) => accept(ticket)
       case None =>
     }
   }

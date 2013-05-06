@@ -39,24 +39,20 @@ class SignalPolicy(intersection: Intersection,
   private var started_at = Common.tick
   // accumulated delay for letting vehicles finish turns
   private var delay = 0.0
-  private val accepted_agents = new MutableSet[Ticket]
 
   def react() = {
-    // TODO Flush out stalled slowpokes that can definitely stop and aren't
-    // already in their turn? Helps prevent gridlock, that's all.
-
     // Track delay if overtime is ending
-    if (in_overtime && accepted_agents.isEmpty) {
+    if (in_overtime && accepted.isEmpty) {
       delay += Common.tick - end_at
     }
 
     // Switch to the next phase
-    if (Common.tick >= end_at && accepted_agents.isEmpty) {
+    if (Common.tick >= end_at && accepted.isEmpty) {
       // Cycle through the phases
       ordering.clear
       candidates.foreach(p => ordering.add(p))
       // In auctions, we may not have a viable next phase at all...
-      ordering.shift_next(waiting_agents, this) match {
+      ordering.shift_next(request_queue, this) match {
         case Some(p) => {
           current_phase = p
           phase_order = phase_order.filter(phase => phase != p)
@@ -77,19 +73,17 @@ class SignalPolicy(intersection: Intersection,
     if (!in_overtime) {
       // Because we have to maintain turn invariants as we accept, do a fixpoint
       // approach and accept till there's nobody left that we can.
-      val candidates = new TreeSet[Ticket]()
-      candidates ++= waiting_agents.filter(
+      val candidates_now = new TreeSet[Ticket]()
+      candidates_now ++= request_queue.filter(
         ticket => current_phase.has(ticket.turn) && could_make_light(ticket)
       )
       var changed = true
-      while (changed && candidates.nonEmpty) {
+      while (changed && candidates_now.nonEmpty) {
         changed = false
-        for (ticket <- candidates) {
+        for (ticket <- candidates_now) {
           if (!ticket.turn_blocked) {
-            ticket.approve
-            accepted_agents += ticket
-            waiting_agents -= ticket
-            candidates -= ticket
+            accept(ticket)
+            candidates_now -= ticket
             changed = true
           }
         }
@@ -97,32 +91,17 @@ class SignalPolicy(intersection: Intersection,
     }
   }
 
-  def validate_entry(ticket: Ticket) = accepted_agents.contains(ticket)
-
-  def handle_exit(ticket: Ticket) = {
-    accepted_agents -= ticket
-  }
-
-  def approveds_to(e: Edge) =
-    accepted_agents.filter(ticket => ticket.turn.to == e)
-
-  def current_greens =
+  override def current_greens =
     if (in_overtime)
       Set() // nobody should go right now
     else
       current_phase.turns.toSet
 
-  def dump_info() = {
-    Util.log(s"Signal policy for $intersection")
+  override def dump_info() = {
+    super.dump_info()
     Util.log(s"Current phase: $current_phase")
     Util.log(s"${phase_order.size} phases total")
-    if (in_overtime) {
-      Util.log("Waiting on: " + accepted_agents)
-    } else {
-      Util.log("Time left: " + time_left)
-    }
-    Util.log(s"Accepted: $accepted_agents")
-    Util.log(s"Waiting agents: $waiting_agents")
+    Util.log("Time left: " + time_left)
     Util.log("Viable phases right now: " + candidates)
   }
   def policy_type = IntersectionType.Signal

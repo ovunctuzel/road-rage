@@ -19,10 +19,13 @@ class CommonCasePolicy(intersection: Intersection,
                        ordering: IntersectionOrdering[Ticket])
   extends Policy(intersection)
 {
-  val common_turns = compute_common_turns
+  private val common_turns = compute_common_turns
 
-  private val accepted_commoners = new MutableSet[Ticket]()
-  private val accepted_rares = new MutableSet[Ticket]()
+  private def accepted_commoners() =
+    accepted.filter(t => common_turns.contains(t.turn))
+  private def accepted_rares() =
+    accepted.filter(t => !common_turns.contains(t.turn))
+
   private def commoner_blocks(turn: Turn) =
     accepted_commoners.find(t => t.turn.conflicts_with(turn)).isDefined
   private def rare_blocks(turn: Turn) =
@@ -42,7 +45,7 @@ class CommonCasePolicy(intersection: Intersection,
     // approach and accept till there's nobody left that we can.
     // TODO ^ refactor this by making an abstract 'candidates' routine
     val candidates = new TreeSet[Ticket]()
-    candidates ++= waiting_agents.filter(
+    candidates ++= request_queue.filter(
       ticket => common_turns.contains(ticket.turn) && !rare_blocks(ticket.turn)
     )
     var changed = true
@@ -50,9 +53,7 @@ class CommonCasePolicy(intersection: Intersection,
       changed = false
       for (ticket <- candidates) {
         if (!ticket.turn_blocked) {
-          ticket.approve
-          accepted_commoners += ticket
-          waiting_agents -= ticket
+          accept(ticket)
           candidates -= ticket
           changed = true
         }
@@ -65,36 +66,20 @@ class CommonCasePolicy(intersection: Intersection,
     // commoner. We don't need to do a fixpoint here, since is_ready demands
     // they be the head of their queue. We're really not nice to rare turns;
     // they've got to act like a stop sign.
-    for (ticket <- waiting_agents) {
+    for (ticket <- request_queue) {
       if (!common_turns.contains(ticket.turn) && is_ready(ticket.a) &&
           !commoner_blocks(ticket.turn) && !rare_blocks(ticket.turn))
       {
         if (!ticket.turn_blocked) {
-          ticket.approve
-          accepted_rares += ticket
-          waiting_agents -= ticket
+          accept(ticket)
         }
       }
     }
   }
 
-  def validate_entry(ticket: Ticket) =
-    accepted_commoners.contains(ticket) || accepted_rares.contains(ticket)
-
-  def handle_exit(ticket: Ticket) = {
-    accepted_commoners -= ticket
-    accepted_rares -= ticket
-  }
-
-  def approveds_to(e: Edge) =
-    (accepted_commoners ++ accepted_rares).filter(t => t.turn.to == e)
-
-  def current_greens = (accepted_commoners ++ accepted_rares).map(_.turn).toSet
-
-  def dump_info() = {
-    Util.log(s"Common Case policy for $intersection")
+  override def dump_info() {
+    super.dump_info()
     Util.log(s"Common turns: $common_turns")
-    Util.log(s"Waiting agents: $waiting_agents")
   }
   def policy_type = IntersectionType.CommonCase
 

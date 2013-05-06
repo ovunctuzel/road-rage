@@ -6,7 +6,7 @@ package utexas.aorta.sim
 
 import scala.collection.mutable.{HashMap => MutableMap}
 import scala.collection.mutable.{HashSet => MutableSet}
-import scala.collection.mutable.TreeSet
+import scala.collection.mutable.{TreeSet, ListBuffer}
 
 import utexas.aorta.sim.policies._
 import utexas.aorta.map.{Vertex, Turn, Edge, Graph}
@@ -22,20 +22,19 @@ class Intersection(val v: Vertex, policy_type: IntersectionType.Value,
 {
   val policy = Factory.make_policy(this, policy_type, ordering_type)
 
-  override def toString = "Intersection(" + v + ")"
-
-  def react = policy.react
-  def request_turn(ticket: Ticket) = {
-    // Sanity check...
-    Util.assert_eq(ticket.turn.vert, v)
-    policy.request_turn(ticket)
-  }
-
   // Multiple agents can be on the same turn; the corresponding queue will
   // handle collisions. So in fact, we want to track which turns are active...
   // but we have to know how many are on the turn to know when nobody's
   // attempting it.
   val turns = MutableMap[Turn, Int]()
+
+  override def toString = "Intersection(" + v + ")"
+
+  def request_turn(ticket: Ticket) = {
+    // Sanity check...
+    Util.assert_eq(ticket.turn.vert, v)
+    policy.request_turn(ticket)
+  }
 
   // Check for collisions
   def end_step(): Unit = {
@@ -266,39 +265,71 @@ object Ticket {
 }
 
 abstract class Policy(val intersection: Intersection) {
-  // When intersections pull agents off this list, the order is arbitrary but
-  // deterministic.
-  protected var waiting_agents = new TreeSet[Ticket]()
+  //////////////////////////////////////////////////////////////////////////////
+  // State
+
+  // This will have a deterministic order.
+  protected var request_queue: List[Ticket] = Nil
+  protected val accepted = new TreeSet[Ticket]()
+
+  // Agents could be added to this in any order, but they'll wind up in
+  // request_queue in a deterministic order. This is transient state.
+  private var new_requests = new TreeSet[Ticket]()
+
+  //////////////////////////////////////////////////////////////////////////////
+  // Actions
+
   // Agents inform intersections of their intention ONCE and receive a lease
   // eventually.
   def request_turn(ticket: Ticket) = {
     synchronized {
-      waiting_agents += ticket
+      new_requests += ticket
       // TODO do extra book-keeping to verify agents aren't double requesting?
     }
   }
 
-  // The intersection grants leases to waiting_agents
+  def react_tick() {
+    request_queue ++= new_requests
+    new_requests.clear()
+    react()
+  }
+
+  protected def accept(ticket: Ticket) {
+    ticket.approve()
+    accepted += ticket
+    unqueue(ticket)
+  }
+
+  protected def unqueue(ticket: Ticket) {
+    request_queue = request_queue.filter(_ != ticket)
+  }
+
   def react(): Unit
-  // TODO validate_entry, handle_exit, and waiting_agents -> queue are all
-  // almost common. refactor them?
-  def validate_entry(ticket: Ticket): Boolean
-  def handle_exit(ticket: Ticket)
-  def approveds_to(target: Edge): Iterable[Ticket]
-  def current_greens(): Set[Turn]
-  def dump_info()
+
+  // This could be called for several reasons, so assume they could be queued or
+  // accepted.
+  def handle_exit(ticket: Ticket) {
+    accepted -= ticket
+    unqueue(ticket)
+  }
+
+  //////////////////////////////////////////////////////////////////////////////
+  // Queries
+
   def policy_type(): IntersectionType.Value
+
+  def dump_info() {
+    Util.log(s"$intersection is a $policy_type")
+    Util.log(s"Accepted: $accepted")
+    Util.log(s"Queued: $request_queue")
+  }
+  def approveds_to(target: Edge) = accepted.filter(_.turn.to == target)
+  def validate_entry(ticket: Ticket) = accepted.contains(ticket)
+  def current_greens() = accepted.map(_.turn).toSet
 }
 
 // Simplest base-line ever.
 class NeverGoPolicy(intersection: Intersection) extends Policy(intersection) {
-  def react = {}
-  def validate_entry(ticket: Ticket) = false
-  def handle_exit(ticket: Ticket) = {}
-  def approveds_to(target: Edge) = Nil
-  def current_greens = Set()
-  def dump_info = {
-    Util.log(s"Never go policy for $intersection")
-  }
+  def react() {}
   def policy_type = IntersectionType.NeverGo
 }
