@@ -48,11 +48,8 @@ class SignalPolicy(intersection: Intersection,
 
     // Switch to the next phase
     if (Common.tick >= end_at && accepted.isEmpty) {
-      // Cycle through the phases
-      ordering.clear
-      candidates.foreach(p => ordering.add(p))
       // In auctions, we may not have a viable next phase at all...
-      ordering.shift_next(request_queue, this) match {
+      ordering.choose(candidates, request_queue, this) match {
         case Some(p) => {
           current_phase = p
           phase_order = phase_order.filter(phase => phase != p)

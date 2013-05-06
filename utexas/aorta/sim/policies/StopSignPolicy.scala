@@ -14,15 +14,6 @@ class StopSignPolicy(intersection: Intersection,
                      ordering: IntersectionOrdering[Ticket])
   extends Policy(intersection)
 {
-  // Agents must pause a moment, be the head of their queue, and be close enough
-  // to us (in case they looked ahead over small edges).
-  private def is_waiting(a: Agent)
-    = (a.is_stopped &&
-       a.cur_queue.head.get == a &&
-       // TODO * 1.5 is a tmp hack
-       a.how_far_away(intersection) <= 1.5 * cfg.end_threshold)
-
-  // Add agent to the queue if they satisfy our requirements.
   def react() = {
     if (accepted.isEmpty) {
       approve_next()
@@ -31,12 +22,19 @@ class StopSignPolicy(intersection: Intersection,
 
   def policy_type = IntersectionType.StopSign
 
+  // Agents must pause a moment, be the head of their queue, and be close enough
+  // to us (in case they looked ahead over small edges).
+  private def candidates =
+    request_queue.filter(ticket =>
+      (ticket.a.is_stopped &&
+       ticket.a.cur_queue.head.get == ticket.a &&
+       // TODO * 1.5 is a tmp hack
+       ticket.a.how_far_away(intersection) <= 1.5 * cfg.end_threshold &&
+       !ticket.turn_blocked)
+    )
+
   private def approve_next() {
-    ordering.clear
-    for (ticket <- request_queue if is_waiting(ticket.a) && !ticket.turn_blocked) {
-      ordering.add(ticket)
-    }
-    ordering.shift_next(request_queue, this) match {
+    ordering.choose(candidates, request_queue, this) match {
       case Some(ticket) => accept(ticket)
       case None =>
     }

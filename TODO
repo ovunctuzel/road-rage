@@ -20,7 +20,6 @@
   - get rid of dt_accumulated, and other speed related UI nonsense
   - savestating
     - intersection state?
-      - refactor how orderings work too
       - intersection current_turns can be implied.
       - traffic light setup.
     - cleanup style. use setup?

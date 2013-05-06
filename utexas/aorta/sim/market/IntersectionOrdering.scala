@@ -12,34 +12,16 @@ import scala.collection.mutable.{Set => MutableSet}
 import utexas.aorta.{Util, cfg}
 
 abstract class IntersectionOrdering[T <: Ordered[T]]() {
-  // The client can muck with this directly if they, say, want to filter it out.
-  var queue = List[T]()
-
-  def shift_next(waiting_participants: Iterable[Ticket], client: Policy): Option[T]
-
-  def add(item: T) = {
-    queue :+= item
-  }
-
-  def clear() = {
-    queue = Nil
-  }
-
+  def choose(choices: Iterable[T], participants: Iterable[Ticket], client: Policy): Option[T]
   def ordering_type(): OrderingType.Value
 }
 
 class FIFO_Ordering[T <: Ordered[T]]() extends IntersectionOrdering[T]() {
   def ordering_type = OrderingType.FIFO
-  def shift_next(waiting_participants: Iterable[Ticket], client: Policy): Option[T] = {
+  def choose(choices: Iterable[T], participants: Iterable[Ticket], client: Policy): Option[T] = {
     // Reset tooltips for GUI...
-    waiting_participants.foreach(t => t.a.wallet.reset_tooltip)
-    if (queue.nonEmpty) {
-      val next = queue.head
-      queue = queue.tail
-      return Some(next)
-    } else {
-      return None
-    }
+    participants.foreach(t => t.a.wallet.reset_tooltip)
+    return choices.headOption
   }
 }
 
@@ -48,37 +30,35 @@ class FIFO_Ordering[T <: Ordered[T]]() extends IntersectionOrdering[T]() {
 case class Bid[T](who: Wallet, item: T, amount: Int, purpose: Ticket)
 {
   Util.assert_ge(amount, 0.0)
-
   override def toString = s"Bid($amount for $item)"
 }
 
 class AuctionOrdering[T <: Ordered[T]]() extends IntersectionOrdering[T]() {
   def ordering_type = OrderingType.Auction
-  def shift_next(voters: Iterable[Ticket], client: Policy): Option[T] = {
+  def choose(choices: Iterable[T], participants: Iterable[Ticket], client: Policy): Option[T] = {
     // Reset tooltips for GUI...
-    voters.foreach(t => t.a.wallet.reset_tooltip)
+    participants.foreach(t => t.a.wallet.reset_tooltip)
+
     // Handle degenerate cases where we don't hold auctions.
-    if (queue.isEmpty) {
+    if (choices.isEmpty) {
       return None
     }
-    if (queue.size == 1) {
-      val next = queue.head
-      queue = queue.tail
-      return Some(next)
+    if (choices.size == 1) {
+      return Some(choices.head)
     }
 
     // Collect bids, remembering what each agent bids, and group by choice.
     val bids = new HashMap[T, MutableSet[Bid[T]]] with MultiMap[T, Bid[T]]
     val multipliers = new HashMap[T, Int]()
-    queue.foreach(item => multipliers(item) = 1)
-    voters.foreach(who => {
-      for ((ticket, amount) <- who.a.wallet.bid(queue, who, client)) {
+    choices.foreach(item => multipliers(item) = 1)
+    participants.foreach(who => {
+      for ((ticket, amount) <- who.a.wallet.bid(choices, who, client)) {
         bids.addBinding(ticket, Bid(who.a.wallet, ticket, amount, who))
       }
     })
     // Ask the System, too, interpreting responses as multipliers to existing
     // bids
-    for (bid <- SystemWallets.meta_bid(queue, client) if bid.amount > 0) {
+    for (bid <- SystemWallets.meta_bid(choices.toList, client) if bid.amount > 0) {
       multipliers(bid.item) *= bid.amount
       // and implicitly add 1 unit of currency to the user bid, so the system
       // can help freeriders.
@@ -87,9 +67,7 @@ class AuctionOrdering[T <: Ordered[T]]() extends IntersectionOrdering[T]() {
 
     return if (bids.isEmpty) {
       // They're all apathetic, so just do FIFO.
-      val next = queue.head
-      queue = queue.tail
-      Some(next)
+      return choices.headOption
     } else {
       val debug = client.intersection.v.id == -1
       Some(process_auction(debug, bids, multipliers, client))

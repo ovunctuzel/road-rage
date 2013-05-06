@@ -46,9 +46,7 @@ class ReservationPolicy(intersection: Intersection,
 
     // Approve candidates as long as there are candidates.
     while (!interruption.isDefined) {
-      ordering.clear
-      candidates.foreach(o => ordering.add(o))
-      ordering.shift_next(request_queue, this) match {
+      ordering.choose(candidates, request_queue, this) match {
         case Some(ticket) => {
           // Admit them immediately and continue, or reserve an interruption?
           if (accepted_conflicts(ticket.turn)) {
