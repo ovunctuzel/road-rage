@@ -7,33 +7,42 @@ package utexas.aorta.sim
 // I'd love to use scala's treemap, but it doesnt support higher/lowerkey.
 import java.util.TreeMap
 import scala.collection.JavaConversions.collectionAsScalaIterable
+import scala.collection.mutable.{TreeSet => MutableSet}
 
 import utexas.aorta.map.{Edge, Traversable, Position}
 
-import utexas.aorta.{Util, Common, cfg, Physics}
-
-// TODO introduce a notion of dimension
-// TODO logs -> asserts once things work right
+import utexas.aorta.{Util, Common, cfg, Physics, StateWriter, StateReader}
 
 // Reason about collisions on edges and within individual turns.
 class Queue(t: Traversable) {
-  private def wrap_option(entry: java.util.Map.Entry[Double, Agent]) =
-    if (entry != null)
-      Some(entry.getValue)
-    else
-      None
+  //////////////////////////////////////////////////////////////////////////////
+  // State
 
   // Descending by distance: the front of traversable has the greatest distance.
   val agents = new java.util.TreeMap[Double, Agent]()
-  var last_tick = -1.0              // last observed
+  private var last_tick = -1.0              // last observed
   // to verify no collisions occurred in a step
-  var prev_agents: Set[Agent] = Set()
+  private val prev_agents = new MutableSet[Agent]()
 
   // Maintain this to determine if it's safe to LC or turn to a lane. If we
   // over-subscribe, agents may block the intersection. For edges only, not
   // turns.
-  // TODO methods to mod this, that check bounds
-  var avail_slots = capacity
+  private var avail_slots = capacity
+
+  //////////////////////////////////////////////////////////////////////////////
+  // Meta
+  
+  def serialize(w: StateWriter) {
+    // Agents will add themselves back to us.
+    w.int(avail_slots)
+    // TODO some of these feel transient, but eh.
+    w.double(last_tick)
+    w.int(prev_agents.size)
+    prev_agents.foreach(a => w.int(a.id))
+  }
+
+  //////////////////////////////////////////////////////////////////////////////
+  // Actions
 
   def allocate_slot() = {
     Util.assert_gt(avail_slots, 0)
@@ -48,37 +57,15 @@ class Queue(t: Traversable) {
     avail_slots += 1
   }
 
-  def slot_avail = avail_slots > 0
-  def is_full = !slot_avail
-  def percent_avail = avail_slots.toDouble / capacity.toDouble * 100.0
-  def percent_full = 100.0 - percent_avail
-
-  // This should be tuned carefully. A queue with only 3 spots isn't really
-  // congested if they're all filled.
-  def is_congested = capacity > 5 && percent_full >= 80.0
-
-  // TODO this is way over-conservative. based on accel_to_follow, every
-  // negative term in delta_dist, from speed 0.
-  def separation_dist =
-    cfg.follow_dist + Physics.max_next_dist_plus_stopping(0.0, t.speed_limit) +
-    Physics.max_next_dist(0.0, t.speed_limit)
-  // Round down. How many drivers max could squish together here? Minimum 1,
-  // short edges just support 1.
-  def capacity = math.max(1, math.floor(t.length / separation_dist).toInt)
-
-  def head = wrap_option(agents.firstEntry)
-  def last = wrap_option(agents.lastEntry)
-
   // Called lazily.
   def start_step() = {
     if (last_tick != Common.tick) {
-      prev_agents = all_agents
+      prev_agents.clear
+      prev_agents ++= all_agents
       last_tick = Common.tick
     }
   }
 
-  def all_agents = agents.values.toSet
-  
   // Check for collisions by detecting abnormal changes in ordering.
   def end_step(): Unit = {
     // TODO this is inefficient.
@@ -151,6 +138,9 @@ class Queue(t: Traversable) {
   def exit(a: Agent, old_dist: Double) = {
     start_step  // lazily, if needed
 
+    // Makes serialization nicer if we load a state with an agent who terminates
+    prev_agents -= a
+
     // We should leave from the front of the queue generally, unless
     // lane-changing
     if (agents.firstEntry.getValue != a) {
@@ -165,6 +155,39 @@ class Queue(t: Traversable) {
     exit(a, old_dist)
     return enter(a, new_dist)
   }
+
+  //////////////////////////////////////////////////////////////////////////////
+  // Queries
+
+  private def wrap_option(entry: java.util.Map.Entry[Double, Agent]) =
+    if (entry != null)
+      Some(entry.getValue)
+    else
+      None
+
+  def slot_avail = avail_slots > 0
+  def is_full = !slot_avail
+  def percent_avail = avail_slots.toDouble / capacity.toDouble * 100.0
+  def percent_full = 100.0 - percent_avail
+  def slots_filled = capacity - avail_slots
+
+  // This should be tuned carefully. A queue with only 3 spots isn't really
+  // congested if they're all filled.
+  def is_congested = capacity > 5 && percent_full >= 80.0
+
+  // TODO this is way over-conservative. based on accel_to_follow, every
+  // negative term in delta_dist, from speed 0.
+  def separation_dist =
+    cfg.follow_dist + Physics.max_next_dist_plus_stopping(0.0, t.speed_limit) +
+    Physics.max_next_dist(0.0, t.speed_limit)
+  // Round down. How many drivers max could squish together here? Minimum 1,
+  // short edges just support 1.
+  def capacity = math.max(1, math.floor(t.length / separation_dist).toInt)
+
+  def head = wrap_option(agents.firstEntry)
+  def last = wrap_option(agents.lastEntry)
+
+  def all_agents = agents.values.toSet
 
   // TODO all_ahead_of(dist)
   def ahead_of(a: Agent) = closest_ahead(a.at.dist)
@@ -215,5 +238,14 @@ class Queue(t: Traversable) {
       case ls => Some(ls.head.turn.to)
     }
     case None => None
+  }
+}
+
+object Queue {
+  def unserialize(queue: Queue, r: StateReader, sim: Simulation) {
+    queue.avail_slots = r.int
+    queue.last_tick = r.double
+    val prev_agents_size = r.int
+    queue.prev_agents ++= Range(0, prev_agents_size).map(_ => sim.get_agent(r.int).get)
   }
 }

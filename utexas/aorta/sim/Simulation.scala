@@ -69,6 +69,9 @@ class Simulation(val graph: Graph, scenario: Scenario)
     // Timing stuff
     w.double(tick)
     w.double(dt_accumulated)  // TODO remove this
+
+    // Other
+    graph.traversables.foreach(t => t.queue.serialize(w))
   }
 
   //////////////////////////////////////////////////////////////////////////////
@@ -210,7 +213,7 @@ class Simulation(val graph: Graph, scenario: Scenario)
         demands(e) = total
         total
       } else {
-        val total = e.queue.capacity - e.queue.avail_slots
+        val total = e.queue.slots_filled
         demands(e) = total
         total
       }
@@ -227,20 +230,21 @@ class Simulation(val graph: Graph, scenario: Scenario)
 }
 
 object Simulation {
-  // Caller must still call setup.
+  // Calls sim.setup()!
   def unserialize(r: StateReader): Simulation = {
     val sim = Scenario.load(r.string).make_sim()
+    // Need so queues/intersections are set up.
+    sim.setup()
     val num_agents = r.int
     for (i <- Range(0, num_agents)) {
       sim.insert_agent(Agent.unserialize(r, sim.graph))
     }
-    /*val num_ready = r.int
-    for (i <- Range(0, num_ready)) {
-      sim.ready_to_spawn += MkAgent.unserialize(r)
-    }*/
     sim.max_agent_id = r.int
     sim.tick = r.double
     sim.dt_accumulated = r.double
+    for (t <- sim.graph.traversables) {
+      Queue.unserialize(t.queue, r, sim)
+    }
     return sim
   }
 }

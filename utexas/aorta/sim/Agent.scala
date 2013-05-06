@@ -490,6 +490,8 @@ object Agent {
     a.idle_since = r.double
     val num_tickets = r.int
     a.tickets ++= Range(0, num_tickets).map(_ => Ticket.unserialize(r, a, graph))
+    // Add ourselves back to a queue
+    a.at.on.queue.enter(a, a.at.dist)
     return a
   }
 }

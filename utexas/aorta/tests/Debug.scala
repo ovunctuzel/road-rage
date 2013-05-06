@@ -40,8 +40,7 @@ object Debug {
     // 4) Load the serialized one and continue it for a bit
     // TODO make sure common.sim fine!
     Util.log("Loading original, continuing that...")
-    val new_sim = Simulation.unserialize(new utexas.aorta.BinaryStateReader("snapshot1"))
-    new_sim.setup()
+    val new_sim = Simulation.unserialize(new utexas.aorta.BinaryStateReader("orig_snapshot"))
     new_sim.step(30.0)
     // 5) Serialize both again, then compare.
     val w2 = new utexas.aorta.BinaryStateWriter("snapshot1")
