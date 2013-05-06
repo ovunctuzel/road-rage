@@ -5,10 +5,11 @@
 package utexas.aorta.sim.policies
 
 import utexas.aorta.map.{Turn, Edge}
-import utexas.aorta.sim.{Intersection, Policy, Ticket, Agent, IntersectionType}
+import utexas.aorta.sim.{Intersection, Policy, Ticket, Agent, IntersectionType,
+                         Simulation}
 import utexas.aorta.sim.market.IntersectionOrdering
 
-import utexas.aorta.{Util, Common, cfg}
+import utexas.aorta.{Util, Common, cfg, StateWriter, StateReader}
 
 // Accept as many compatible turns as possible, until an interruption occurs.
 // (To get the old greedy behavior, add the constraint back to candidates, or
@@ -19,6 +20,20 @@ class ReservationPolicy(intersection: Intersection,
 {
   // Prevent more from being accepted until this ticket is approved.
   private var interruption: Option[Ticket] = None
+
+  override def serialize(w: StateWriter) {
+    super.serialize(w)
+    interruption match {
+      case Some(ticket) => {
+        w.int(ticket.a.id)
+        w.int(ticket.turn.id)
+      }
+      case None => {
+        w.int(-1)
+        w.int(-1)
+      }
+    }
+  }
 
   def accepted_conflicts(turn: Turn)
     = accepted.find(t => t.turn.conflicts_with(turn)).isDefined
@@ -70,4 +85,14 @@ class ReservationPolicy(intersection: Intersection,
     Util.log(s"Interruption by $interruption")
   }
   def policy_type = IntersectionType.Reservation
+}
+
+object ReservationPolicy {
+  def unserialize(policy: ReservationPolicy, r: StateReader, sim: Simulation) {
+    val agent_id = r.int
+    val turn_id = r.int
+    if (agent_id != -1) {
+      policy.interruption = Some(Policy.find_ticket(sim, agent_id, turn_id))
+    }
+  }
 }

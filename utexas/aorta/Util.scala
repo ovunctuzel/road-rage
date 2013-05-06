@@ -258,14 +258,12 @@ class String_Cfgable(default: String) {
 object Common {
   // Because turns don't directly reference edges to break a serialization cycle
   var edges: Array[utexas.aorta.map.Edge] = null
-
   var sim: utexas.aorta.sim.Simulation = null
-  def tick = sim.tick
+  var scenario: utexas.aorta.sim.Scenario = null
   var time_limit = -1.0
 
+  def tick = sim.tick
   def timer(name: String) = new Timer(name)
-
-  var scenario: utexas.aorta.sim.Scenario = null
 
   sys.ShutdownHookThread({
     if (sim != null) {

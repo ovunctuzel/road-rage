@@ -12,6 +12,13 @@ import utexas.aorta.analysis.Stats
 import utexas.aorta.{Util, Common, cfg, Physics}
 
 abstract class Behavior(a: Agent) {
+  // As an optimization and to keep some stats on how successful lane-changing
+  // is, remember the adjacent lane we'd like to switch into.
+  // Start null to trigger the initial case of resetting it. Have to do it at
+  // "sim time" when agent's actually first moving, otherwise the route might
+  // not be ready to answer us.
+  var target_lane: Option[Edge] = null
+
   // asked every tick after everybody has moved
   def choose_action(): Action
   // only queried when the agent reaches a vertex
@@ -21,13 +28,6 @@ abstract class Behavior(a: Agent) {
   // just for debugging
   def dump_info()
   def wants_to_lc(): Boolean = target_lane != null && target_lane.isDefined
-
-  // As an optimization and to keep some stats on how successful lane-changing
-  // is, remember the adjacent lane we'd like to switch into.
-  // Start null to trigger the initial case of resetting it. Have to do it at
-  // "sim time" when agent's actually first moving, otherwise the route might
-  // not be ready to answer us.
-  var target_lane: Option[Edge] = null
 }
 
 // Never speeds up from rest, so effectively never does anything

@@ -13,6 +13,7 @@ import java.io.FileWriter
 import scala.io.Source
 
 import utexas.aorta.map.{Graph, Road, Edge, Vertex, Turn, DirectedRoad}
+import utexas.aorta.sim.policies.Phase
 
 import utexas.aorta.{Util, Common, cfg, StateWriter, StateReader}
 import utexas.aorta.analysis.{Stats, Heartbeat_Stat, Scenario_Stat}
@@ -44,6 +45,7 @@ class Simulation(val graph: Graph, scenario: Scenario)
   def setup() {
     Common.sim = this
     Common.scenario = scenario
+    Phase.id = 0
 
     // TODO always do this, and forget this map/sim separation?
     graph.traversables.foreach(t => t.queue = new Queue(t))
@@ -72,6 +74,7 @@ class Simulation(val graph: Graph, scenario: Scenario)
 
     // Other
     graph.traversables.foreach(t => t.queue.serialize(w))
+    graph.vertices.foreach(v => v.intersection.policy.serialize(w))
   }
 
   //////////////////////////////////////////////////////////////////////////////
@@ -244,6 +247,9 @@ object Simulation {
     sim.dt_accumulated = r.double
     for (t <- sim.graph.traversables) {
       Queue.unserialize(t.queue, r, sim)
+    }
+    for (v <- sim.graph.vertices) {
+      Policy.unserialize(v.intersection.policy, r, sim)
     }
     return sim
   }

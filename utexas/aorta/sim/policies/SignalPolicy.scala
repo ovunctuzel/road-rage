@@ -12,40 +12,38 @@ import utexas.aorta.sim.{Intersection, Policy, Agent, EV_Signal_Change,
                          IntersectionType, Ticket, OrderingType}
 import utexas.aorta.sim.market.{IntersectionOrdering, FIFO_Ordering}
 
-import utexas.aorta.{Util, Common, cfg}
+import utexas.aorta.{Util, Common, cfg, StateWriter, StateReader}
 
 // A phase-based light.
 class SignalPolicy(intersection: Intersection,
                    ordering: IntersectionOrdering[Phase])
   extends Policy(intersection)
 {
+  //////////////////////////////////////////////////////////////////////////////
+  // State
+
   // phase_order maintains the list of all possible phases, in order of LRU
   var phase_order = new ListBuffer[Phase]()
   phase_order ++= setup_phases
   private var current_phase = phase_order.head
   phase_order = phase_order.tail ++ List(current_phase)
 
-  // If we're holding auctions, we risk agents repeatedly bidding for and
-  // winning a phase that doesn't have any agents that can actually go yet.
-  // Avoid that. In the FIFO case, pretend we're not autonomous and pick useless
-  // phases.
-  def candidates =
-    if (ordering.ordering_type == OrderingType.FIFO)
-      phase_order
-    else
-      phase_order.filter(p => p.all_tickets.find(t => !t.turn_blocked).isDefined)
-
   // Tracks when the current phase began
   private var started_at = Common.tick
-  // accumulated delay for letting vehicles finish turns
-  private var delay = 0.0
+
+  //////////////////////////////////////////////////////////////////////////////
+  // Meta
+
+  override def serialize(w: StateWriter) {
+    super.serialize(w)
+    w.double(started_at)
+    phase_order.foreach(p => w.int(p.id))
+  }
+
+  //////////////////////////////////////////////////////////////////////////////
+  // Actions
 
   def react() = {
-    // Track delay if overtime is ending
-    if (in_overtime && accepted.isEmpty) {
-      delay += Common.tick - end_at
-    }
-
     // Switch to the next phase
     if (Common.tick >= end_at && accepted.isEmpty) {
       // In auctions, we may not have a viable next phase at all...
@@ -56,8 +54,6 @@ class SignalPolicy(intersection: Intersection,
           phase_order += p
 
           started_at = Common.tick
-          // TODO could account for delay and try to get back on schedule by
-          // decreasing duration
 
           // callback for UI usually
           Common.sim.tell_listeners(EV_Signal_Change(current_phase.turns.toSet))
@@ -88,12 +84,10 @@ class SignalPolicy(intersection: Intersection,
     }
   }
 
-  override def current_greens =
-    if (in_overtime)
-      Set() // nobody should go right now
-    else
-      current_phase.turns.toSet
+  //////////////////////////////////////////////////////////////////////////////
+  // Queries
 
+  def policy_type = IntersectionType.Signal
   override def dump_info() = {
     super.dump_info()
     Util.log(s"Current phase: $current_phase")
@@ -101,7 +95,22 @@ class SignalPolicy(intersection: Intersection,
     Util.log("Time left: " + time_left)
     Util.log("Viable phases right now: " + candidates)
   }
-  def policy_type = IntersectionType.Signal
+
+  // If we're holding auctions, we risk agents repeatedly bidding for and
+  // winning a phase that doesn't have any agents that can actually go yet.
+  // Avoid that. In the FIFO case, pretend we're not autonomous and pick useless
+  // phases.
+  def candidates =
+    if (ordering.ordering_type == OrderingType.FIFO)
+      phase_order
+    else
+      phase_order.filter(p => p.all_tickets.find(t => !t.turn_blocked).isDefined)
+
+  override def current_greens =
+    if (in_overtime)
+      Set() // nobody should go right now
+    else
+      current_phase.turns.toSet
 
   // Ideally, ignoring overtime for slow agents.
   private def end_at = started_at + current_phase.duration
@@ -138,6 +147,19 @@ class SignalPolicy(intersection: Intersection,
 
     // if our worst-case speeding-up distance still lets us back out and stop,
     // then fine, allow it. <-- the old policy
+  }
+}
+
+object SignalPolicy {
+  def unserialize(policy: SignalPolicy, r: StateReader) {
+    policy.started_at = r.double
+    // Learn our phases
+    val phases = policy.phase_order.map(
+      p => p.id -> p
+    ).toMap
+    policy.phase_order.clear()
+    policy.phase_order ++= Range(0, phases.size).map(_ => phases(r.int))
+    policy.current_phase = policy.phase_order.last
   }
 }
 

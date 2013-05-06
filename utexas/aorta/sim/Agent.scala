@@ -76,7 +76,10 @@ class Agent(
     w.int(stat_memory._3)
     w.double(speed)
     w.double(target_accel)
-    // Behavior is stateless
+    behavior.target_lane match {
+      case Some(e) => w.int(e.id)
+      case None => w.int(-1)
+    }
     old_lane match {
       case Some(e) => w.int(e.id)
       case None => w.int(-1)
@@ -482,6 +485,10 @@ object Agent {
     a.stat_memory = (r.double, r.int, r.int)
     a.speed = r.double
     a.target_accel = r.double
+    a.behavior.target_lane = r.int match {
+      case -1 => None
+      case x => Some(graph.edges(x))
+    }
     a.old_lane = r.int match {
       case -1 => None
       case x => Some(graph.edges(x))
@@ -492,6 +499,14 @@ object Agent {
     a.tickets ++= Range(0, num_tickets).map(_ => Ticket.unserialize(r, a, graph))
     // Add ourselves back to a queue
     a.at.on.queue.enter(a, a.at.dist)
+    // Add ourselves back to intersections
+    for (ticket <- a.tickets if ticket.is_approved) {
+      ticket.intersection.policy.unserialize_accepted(ticket)
+    }
+    a.at.on match {
+      case t: Turn => t.vert.intersection.enter(a.get_ticket(t).get)
+      case _ =>
+    }
     return a
   }
 }

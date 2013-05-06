@@ -277,6 +277,17 @@ abstract class Policy(val intersection: Intersection) {
   private var new_requests = new TreeSet[Ticket]()
 
   //////////////////////////////////////////////////////////////////////////////
+  // State
+
+  def serialize(w: StateWriter) {
+    w.int(request_queue.size)
+    for (ticket <- request_queue) {
+      w.int(ticket.a.id)
+      w.int(ticket.turn.id)
+    }
+  }
+
+  //////////////////////////////////////////////////////////////////////////////
   // Actions
 
   // Agents inform intersections of their intention ONCE and receive a lease
@@ -313,6 +324,10 @@ abstract class Policy(val intersection: Intersection) {
     unqueue(ticket)
   }
 
+  def unserialize_accepted(ticket: Ticket) {
+    accepted += ticket
+  }
+
   //////////////////////////////////////////////////////////////////////////////
   // Queries
 
@@ -326,6 +341,27 @@ abstract class Policy(val intersection: Intersection) {
   def approveds_to(target: Edge) = accepted.filter(_.turn.to == target)
   def validate_entry(ticket: Ticket) = accepted.contains(ticket)
   def current_greens() = accepted.map(_.turn).toSet
+}
+
+object Policy {
+  def unserialize(policy: Policy, r: StateReader, sim: Simulation) {
+    val num_requests = r.int
+    for (i <- Range(0, num_requests)) {
+      policy.request_queue :+= find_ticket(r, sim)
+    }
+    policy.policy_type match {
+      case IntersectionType.Reservation =>
+        ReservationPolicy.unserialize(policy.asInstanceOf[ReservationPolicy], r, sim)
+      case IntersectionType.Signal =>
+        SignalPolicy.unserialize(policy.asInstanceOf[SignalPolicy], r)
+      case _ =>
+    }
+  }
+
+  def find_ticket(r: StateReader, sim: Simulation): Ticket =
+    find_ticket(sim, r.int, r.int)
+  def find_ticket(sim: Simulation, agent_id: Int, turn_id: Int): Ticket =
+    sim.get_agent(agent_id).get.get_ticket(sim.graph.turns(turn_id)).get
 }
 
 // Simplest base-line ever.

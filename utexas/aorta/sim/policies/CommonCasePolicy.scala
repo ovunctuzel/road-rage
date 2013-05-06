@@ -19,23 +19,13 @@ class CommonCasePolicy(intersection: Intersection,
                        ordering: IntersectionOrdering[Ticket])
   extends Policy(intersection)
 {
+  //////////////////////////////////////////////////////////////////////////////
+  // State
+
   private val common_turns = compute_common_turns
 
-  private def accepted_commoners() =
-    accepted.filter(t => common_turns.contains(t.turn))
-  private def accepted_rares() =
-    accepted.filter(t => !common_turns.contains(t.turn))
-
-  private def commoner_blocks(turn: Turn) =
-    accepted_commoners.find(t => t.turn.conflicts_with(turn)).isDefined
-  private def rare_blocks(turn: Turn) =
-    accepted_rares.find(t => t.turn.conflicts_with(turn)).isDefined
-
-  // Rare agents must be the head of their queue and be close enough to us (in
-  // case they looked ahead over small edges).
-  private def is_ready(a: Agent) =
-    (a.cur_queue.head.get == a &&
-     a.how_far_away(intersection) <= cfg.end_threshold)
+  //////////////////////////////////////////////////////////////////////////////
+  // Actions
 
   def react() = {
     // First admit everybody trying to do a common turn, unless somebody rare
@@ -77,11 +67,30 @@ class CommonCasePolicy(intersection: Intersection,
     }
   }
 
+  //////////////////////////////////////////////////////////////////////////////
+  // Queries
+
+  def policy_type = IntersectionType.CommonCase
   override def dump_info() {
     super.dump_info()
     Util.log(s"Common turns: $common_turns")
   }
-  def policy_type = IntersectionType.CommonCase
+
+  private def accepted_commoners() =
+    accepted.filter(t => common_turns.contains(t.turn))
+  private def accepted_rares() =
+    accepted.filter(t => !common_turns.contains(t.turn))
+
+  private def commoner_blocks(turn: Turn) =
+    accepted_commoners.find(t => t.turn.conflicts_with(turn)).isDefined
+  private def rare_blocks(turn: Turn) =
+    accepted_rares.find(t => t.turn.conflicts_with(turn)).isDefined
+
+  // Rare agents must be the head of their queue and be close enough to us (in
+  // case they looked ahead over small edges).
+  private def is_ready(a: Agent) =
+    (a.cur_queue.head.get == a &&
+     a.how_far_away(intersection) <= cfg.end_threshold)
 
   private def compute_common_turns(): Set[Turn] = {
     // Heuristic...
