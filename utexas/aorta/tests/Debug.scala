@@ -27,33 +27,25 @@ object Debug {
   }
 
   private def serialize_sanity(orig_sim: Simulation) = {
-    // 1) Run for some time
+    // 1) Run for some time, save original
     Util.log("Running for 60 seconds...")
     orig_sim.step(60.0)
-    // 2) Serialize, continue the orig for a bit
-    Util.log("Serializing original, continuing it...")
     val w1 = new utexas.aorta.BinaryStateWriter("orig_snapshot")
     orig_sim.serialize(w1)
     w1.done
+
+    // 2) Continue the original track
+    Util.log("Continuing original sim...")
     orig_sim.step(30.0)
-
-    // 2.5) Load, serialize again -- make sure idempotent
-    Util.log("Verifying idempotency...")
-    val tmp_sim = Simulation.unserialize(new utexas.aorta.BinaryStateReader("orig_snapshot"))
-    val w5 = new utexas.aorta.BinaryStateWriter("orig_snapshot_again")
-    tmp_sim.serialize(w5)
-    w5.done
-
-    // 4) Load the serialized one and continue it for a bit
-    // TODO make sure common.sim fine!
-    Util.log("Loading original, continuing that...")
-    val new_sim = Simulation.unserialize(new utexas.aorta.BinaryStateReader("orig_snapshot"))
-    new_sim.step(30.0)
-    // 5) Serialize both again, then compare.
-    val w2 = new utexas.aorta.BinaryStateWriter("snapshot1")
+    val w2 = new utexas.aorta.StringStateWriter("snapshot1")
     orig_sim.serialize(w2)
     w2.done
-    val w3 = new utexas.aorta.BinaryStateWriter("snapshot2")
+
+    // 4) Load the serialized one and continue it for a bit
+    Util.log("Loading serialized original, continuing that...")
+    val new_sim = Simulation.unserialize(new utexas.aorta.BinaryStateReader("orig_snapshot"))
+    new_sim.step(30.0)
+    val w3 = new utexas.aorta.StringStateWriter("snapshot2")
     new_sim.serialize(w3)
     w3.done
   }
