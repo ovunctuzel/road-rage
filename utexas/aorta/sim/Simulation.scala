@@ -55,24 +55,17 @@ class Simulation(val graph: Graph, scenario: Scenario)
     if (tick == 0.0) {
       Stats.record(Scenario_Stat(scenario.map_fn, scenario.intersections))
     }
-    future_spawn ++= scenario.agents.dropWhile(_.birth_tick < tick)
+    // TODO >= ? will this get rid of people spawning at 0?
+    future_spawn ++= scenario.agents.filter(_.birth_tick > tick)
   }
 
   def serialize(w: StateWriter) {
-    // All of the important state is in each of our traits. ListenerPattern
-    // state doesn't matter, though -- just UI/headless stuff now.
     w.string(scenario.name)
-
-    // Agent manager stuff
-    w.int(agents.size)
-    agents.foreach(a => a.serialize(w))
     w.int(max_agent_id)
-
-    // Timing stuff
     w.double(tick)
     w.double(dt_accumulated)  // TODO remove this
-
-    // Other
+    w.int(agents.size)
+    agents.foreach(a => a.serialize(w))
     graph.traversables.foreach(t => t.queue.serialize(w))
     graph.vertices.foreach(v => v.intersection.policy.serialize(w))
   }
@@ -236,15 +229,16 @@ object Simulation {
   // Calls sim.setup()!
   def unserialize(r: StateReader): Simulation = {
     val sim = Scenario.load(r.string).make_sim()
+    // Do this before setup so we don't add the wrong spawners
+    sim.max_agent_id = r.int
+    sim.tick = r.double
+    sim.dt_accumulated = r.double
     // Need so queues/intersections are set up.
     sim.setup()
     val num_agents = r.int
     for (i <- Range(0, num_agents)) {
       sim.insert_agent(Agent.unserialize(r, sim.graph))
     }
-    sim.max_agent_id = r.int
-    sim.tick = r.double
-    sim.dt_accumulated = r.double
     for (t <- sim.graph.traversables) {
       Queue.unserialize(t.queue, r, sim)
     }
@@ -284,7 +278,6 @@ trait AgentManager {
   var agents: SortedSet[Agent] = TreeSet.empty[Agent]
   var ready_to_spawn = new ListBuffer[MkAgent]()
   protected var max_agent_id = -1
-  // TODO handle unserializing by figuring out where we left off.
   val future_spawn = new PriorityQueue[MkAgent]()
 
   //////////////////////////////////////////////////////////////////////////////
@@ -297,7 +290,7 @@ trait AgentManager {
   }
 
   def insert_agent(a: Agent) = {
-    // TODO assume this isn't a duplicate
+    Util.assert_eq(agents.contains(a), false)
     agents += a
     max_agent_id = math.max(max_agent_id, a.id)
   }

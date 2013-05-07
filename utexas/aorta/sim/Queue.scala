@@ -123,6 +123,8 @@ class Queue(t: Traversable) {
 
     start_step  // lazily, if needed
 
+    Util.assert_eq(agents.get(-dist), null)
+
     // Use -dist to make highest dist first and avoid comparator junk.
     agents.put(-dist, a)
 
@@ -138,6 +140,8 @@ class Queue(t: Traversable) {
   def exit(a: Agent, old_dist: Double) = {
     start_step  // lazily, if needed
 
+    Util.assert_eq(agents.get(-old_dist), a)
+
     // Makes serialization nicer if we load a state with an agent who terminates
     prev_agents -= a
 
@@ -151,6 +155,7 @@ class Queue(t: Traversable) {
   }
 
   def move(a: Agent, new_dist: Double, old_dist: Double): Position = {
+    Util.assert_ge(new_dist, old_dist)
     // TODO more efficiently?
     exit(a, old_dist)
     return enter(a, new_dist)

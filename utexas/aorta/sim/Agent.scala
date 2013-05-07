@@ -499,6 +499,10 @@ object Agent {
     a.tickets ++= Range(0, num_tickets).map(_ => Ticket.unserialize(r, a, graph))
     // Add ourselves back to a queue
     a.at.on.queue.enter(a, a.at.dist)
+    a.old_lane match {
+      case Some(e) => e.queue.enter(a, a.at.dist)
+      case None =>
+    }
     // Add ourselves back to intersections
     for (ticket <- a.tickets if ticket.is_approved) {
       ticket.intersection.policy.unserialize_accepted(ticket)
