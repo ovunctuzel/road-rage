@@ -25,6 +25,7 @@ object MapSuite {
       val graph = Graph.load(output)
       println(s"Checking $output...")
       check_map(graph)
+      println("--------------------------------------------------")
     }
   }
 

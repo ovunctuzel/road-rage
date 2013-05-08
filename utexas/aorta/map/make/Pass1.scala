@@ -7,8 +7,7 @@ package utexas.aorta.map.make
 import scala.io.Source
 import scala.xml.MetaData
 import scala.xml.pull._
-import scala.collection.mutable.HashMap
-import scala.collection.mutable.MutableList
+import scala.collection.mutable.{HashMap, MutableList, HashSet}
 
 import utexas.aorta.map.Coordinate
 
@@ -16,11 +15,9 @@ import utexas.aorta.Util
 
 class Pass1(fn: String) {
   // OSM's id to (longitude, latitude)
-  val id_to_node = new HashMap[String, Coordinate]
-
+  val id_to_node = new HashMap[String, Coordinate]()
   // How many OSM roads reference a point?
-  val id_to_uses = new HashMap[String, Int]
-
+  val id_to_uses = new HashMap[String, Int]()
   val graph = new PreGraph1()
 
   // if an osm node mentions these, it's not an edge we care about.
@@ -52,11 +49,8 @@ class Pass1(fn: String) {
 
   def run(): PreGraph1 = {
     // fill out graph with roads and collect all info
-    match_events( new XMLEventReader(Source.fromFile(fn, "UTF-8")))
-
-    Util.log("Normalizing graph coordinates")
+    match_events(new XMLEventReader(Source.fromFile(fn, "UTF-8")))
     graph.normalize()
-
     return graph
   }
 
@@ -76,9 +70,8 @@ class Pass1(fn: String) {
 
     var ev_count = 0
 
-    // TODO probably a better way to unpack than casting to string
-    def get_attrib(attribs: MetaData, key: String): String = attribs.get(key).head.text
-    def get_attrib_default(attribs: MetaData, key: String, default: String): String =
+    def get(attribs: MetaData, key: String): String = attribs.get(key).head.text
+    def get_default(attribs: MetaData, key: String, default: String): String =
       attribs.get(key) match {
         case Some(ls) => ls.head.text
         case None => default
@@ -93,28 +86,27 @@ class Pass1(fn: String) {
 
       ev match {
         case EvElemStart(_, "node", attribs, _) =>
-          (get_attrib_default(attribs, "visible", "true"), get_attrib_default(attribs, "action", "modify")) match {
+          (get_default(attribs, "visible", "true"), get_default(attribs, "action", "modify")) match {
             case ("true", "modify") => {
               // record the node
-              val id = get_attrib(attribs, "id")
-              val x = get_attrib(attribs, "lon").toDouble
-              val y = get_attrib(attribs, "lat").toDouble
-
-              id_to_node(id) = new Coordinate(x, y)
+              val id = get(attribs, "id")
+              id_to_node(id) = new Coordinate(
+                get(attribs, "lon").toDouble, get(attribs, "lat").toDouble
+              )
               id_to_uses(id) = 0  // no edges reference it yet
             }
             case _ =>
           }
 
         case EvElemStart(_, "way", attribs, _) =>
-          (get_attrib_default(attribs, "visible", "true"), get_attrib_default(attribs, "action", "modify")) match {
+          (get_default(attribs, "visible", "true"), get_default(attribs, "action", "modify")) match {
             case ("true", "modify") => {
-              id = get_attrib(attribs, "id")
+              id = get(attribs, "id")
               name = ""
               road_type = ""
               oneway = false
               skip_way = false
-              refs = new MutableList[String]
+              refs = new MutableList[String]()
               lanes = None
             }
             case _ =>
@@ -130,15 +122,15 @@ class Pass1(fn: String) {
           if (!skip_way) {
             // still handle missing names
             // TODO write a String.||= maybe?
-            name = if (name == "") "NO-NAME (ID %s)".format(id) else name
-            road_type = if (road_type == "") "null" else road_type
+            name = if (name.isEmpty) "NO-NAME (ID %s)".format(id) else name
+            road_type = if (road_type.isEmpty) "null" else road_type
 
             if (forced_oneways(road_type)) {
               oneway = true
             }
 
             // what points does this edge touch?
-            var points = new MutableList[Coordinate]
+            var points = new MutableList[Coordinate]()
             for (ref <- refs) {
               points += id_to_node(ref)
               id_to_uses(ref) += 1
@@ -149,7 +141,7 @@ class Pass1(fn: String) {
               }
             }
 
-            graph.add_edge(name, road_type, oneway, id, points, lanes)
+            graph.edges += PreEdge1(name, road_type, oneway, id, points, lanes)
 
             // The tip and tail of this way's points are always vertices
             graph.add_vertex(points.head)
@@ -161,8 +153,8 @@ class Pass1(fn: String) {
 
         case EvElemStart(_, "tag", attribs, _) if id != -1 => {
           if (!skip_way) {
-            val key = get_attrib(attribs, "k")
-            val value = get_attrib(attribs, "v")
+            val key = get(attribs, "k")
+            val value = get(attribs, "v")
             if ((ignore_me(key) && value != "no") || (key == "highway" && ignore_me(value))) {
               skip_way = true
             } else {
@@ -178,7 +170,7 @@ class Pass1(fn: String) {
                     case _: NumberFormatException =>
                   }
                 }
-                case _         => {}
+                case _ => {}
               }
             }
           }
@@ -186,7 +178,7 @@ class Pass1(fn: String) {
 
         case EvElemStart(_, "nd", attribs, _) => {
           if (!skip_way) {
-            val ref = get_attrib(attribs, "ref")
+            val ref = get(attribs, "ref")
             if (id_to_node.contains(ref)) {
               refs :+= ref
             } else {
@@ -204,16 +196,16 @@ class Pass1(fn: String) {
 
         // The version for relations, not ways
         case EvElemStart(_, "tag", attribs, _) if id == -1 => {
-          val key = get_attrib(attribs, "k")
-          val value = get_attrib(attribs, "v")
+          val key = get(attribs, "k")
+          val value = get(attribs, "v")
           if (ignore_me(key) || ((key == "highway" || key == "type") && ignore_me(value))) {
             skip_relation = true
           }
         }
 
         case EvElemStart(_, "member", attribs, _) => {
-          if (get_attrib(attribs, "type") == "way") {
-            relation_members += get_attrib(attribs, "ref")
+          if (get(attribs, "type") == "way") {
+            relation_members += get(attribs, "ref")
           }
         }
 
@@ -232,3 +224,64 @@ class Pass1(fn: String) {
     Util.log("")
   }
 }
+
+class PreGraph1() {
+  var edges = new MutableList[PreEdge1]
+  private val vert_lookup = new HashSet[Coordinate]()
+  // TODO they're vals, but i don't want to set them yet!
+  var width: Double = 0
+  var height: Double = 0
+  var offX: Double = 0
+  var offY: Double = 0
+  var scale: Double = 5000    // TODO in the future, dont scale.
+
+  // Further evidence in the OSM source suggests these edges are bogus
+  def remove_edges(ids: Set[String]) {
+    edges = edges.filter(e => !ids.contains(e.orig_id))
+  }
+  def add_vertex(where: Coordinate) {
+    vert_lookup += where
+  }
+  def is_vert(pt: Coordinate) = vert_lookup.contains(pt)
+
+  // Longitude, Latitude origin is bottom-left; we draw from top-left
+  // Hence height - y
+  // This is the ONLY place we handle y inversion. Don't make things
+  // confusing after this!
+  private def fix(pt: Coordinate) = 
+    new Coordinate((pt.x + offX) * scale, height - ((pt.y + offY) * scale))
+
+  def normalize() = {
+    var minX = Double.MaxValue
+    var minY = Double.MaxValue
+    var maxX = Double.MinValue
+    var maxY = Double.MinValue
+    for (e <- edges; pt <- e.points) {
+      minX = math.min(minX, pt.x)
+      minY = math.min(minY, pt.y)
+      maxX = math.max(maxX, pt.x)
+      maxY = math.max(maxY, pt.y)
+    }
+    Util.log("Bounds: %f .. %f, %f .. %f".format(minX, maxX, minY, maxY))
+
+    // so to make (minX, minY) the new origin...
+    offX = 0 - minX
+    offY = 0 - minY
+
+    // Scale everything up by some fixed ratio...
+    width = (maxX + offX) * scale
+    height = (maxY + offY) * scale
+
+    val new_pts = vert_lookup.map(fix)
+    vert_lookup.clear()
+    vert_lookup ++= new_pts
+    for (e <- edges) {
+      e.points = e.points.map(fix)
+    }
+  }
+}
+
+case class PreEdge1(
+  name: String, road_type: String, oneway: Boolean, orig_id: String,
+  var points: MutableList[Coordinate], lanes: Option[Int]
+)
