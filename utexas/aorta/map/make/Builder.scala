@@ -4,9 +4,7 @@
 
 package utexas.aorta.map.make
 
-import java.io.{File, FileWriter}
-
-import utexas.aorta.map.{Graph, Direction}
+import utexas.aorta.map.Graph
 
 import utexas.aorta.Util
 
@@ -39,7 +37,7 @@ object Builder {
       s"Dumping map with ${graph3.roads.length} roads, ${graph3.edges.length}" +
       s" edges, and ${graph3.vertices.length} vertices"
     )
-    (new File("./maps")).mkdir
+    Util.mkdir("maps")
     Util.serialize(graph, output)
 
     return output

@@ -12,7 +12,7 @@ import scala.io.Source
 import java.awt.Color
 
 import java.io.{ObjectOutputStream, FileOutputStream, ObjectInputStream,
-                FileInputStream, PrintWriter, BufferedReader, FileReader}
+                FileInputStream, PrintWriter, BufferedReader, FileReader, File}
 
 import utexas.aorta.map.Graph
 import utexas.aorta.sim.{Simulation, Scenario}
@@ -58,7 +58,7 @@ object Util {
   @elidable(ASSERTION) def assert_le(a: Double, b: Double) = assert(a <= b, a + " > " + b)
 
   def process_args(raw_args: Array[String]): Simulation = {
-    // First argument must be the map/scenario
+    // First argument must be the map/scenario/savestate
     val load = raw_args.head
     val args = raw_args.tail
 
@@ -80,9 +80,13 @@ object Util {
       }
     }
 
-    val sim = Scenario.load_or_default_sim(load)
-    sim.setup()
-    return sim
+    if (load.startsWith("scenarios/savestate_")) {
+      return Simulation.unserialize(new BinaryStateReader(load))
+    } else {
+      val sim = Scenario.load_or_default_sim(load)
+      sim.setup()
+      return sim
+    }
   }
 
   def serialize(obj: Any, fn: String) = {
@@ -103,6 +107,10 @@ object Util {
       None
     else
       Some(s"$header ($a -> $b)")
+
+  def mkdir(path: String) {
+    (new File(path)).mkdir()
+  }
 }
 
 class RNG(seed: Long = System.currentTimeMillis) extends Serializable {
@@ -135,7 +143,7 @@ object RNG {
 // TODO override with cmdline too
 // TODO grab alt cfg file from cmdline
 object cfg {
-  private val cfg_fn = "default.cfg"
+  private val cfg_fn = "aorta.cfg"
   private val color = Map(
     "RED" -> Color.RED,
     "GREEN" -> Color.GREEN,
@@ -167,6 +175,7 @@ object cfg {
 
   val antialias = bool(params("antialias"))
   val army_size = params("army_size").toInt
+  val autosave_every = params("autosave_every").toDouble
   val chosen_road_color = color(params("chosen_road_color"))
   val commoncase_color = color(params("commoncase_color"))
   val dash_center = bool(params("dash_center"))
@@ -177,7 +186,6 @@ object cfg {
   val end_threshold = params("end_threshold").toDouble
   val epsilon = params("epsilon").toDouble
   val follow_dist = params("follow_dist").toDouble
-  val lanechange_dist = lane_width * params("lanechange_dist_rate").toDouble
   val lane_color = color(params("lane_color"))
   val lane_width = params("lane_width").toDouble
   val max_accel = params("max_accel").toDouble
@@ -196,6 +204,10 @@ object cfg {
   val turn_color = color(params("turn_color"))
   val wallet = params("wallet")
   val zoom_threshold = params("zoom_threshold").toDouble
+
+  val lanechange_dist = lane_width * params("lanechange_dist_rate").toDouble
+  // Make sure autosave_every is a multiple of dt_s.
+  Util.assert_eq((autosave_every / dt_s).isValidInt, true)
 }
 
 // Plumbing some stuff everywhere is hard, so share here sometimes. Plus,

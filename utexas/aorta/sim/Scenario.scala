@@ -8,7 +8,6 @@ import utexas.aorta.map.{Graph, Edge, Vertex, DirectedRoad}
 import utexas.aorta.sim.policies._
 import utexas.aorta.sim.market._
 
-import java.io.File
 import scala.collection.mutable.ArrayBuffer
 import scala.collection.mutable.{HashMap => MutableMap}
 
@@ -111,7 +110,7 @@ object Scenario {
       SystemWalletConfig()
     )
     // Always save it, so resimulation is easy.
-    (new File("./scenarios")).mkdir
+    Util.mkdir("scenarios")
     s.save()
     return s
   }

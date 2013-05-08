@@ -149,7 +149,7 @@ object PostProcess {
     val fn = args.head
     Util.log(s"Analyzing $fn...")
     val dir = "plots/" + fn.replace("logs/", "")
-    (new File(dir)).mkdirs
+    Util.mkdir(dir)
     val log = new ObjectInputStream(new FileInputStream(fn))
 
     val analyses = List(

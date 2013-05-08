@@ -19,7 +19,6 @@
     - trip time should include waiting to enter time
   - get rid of dt_accumulated, and other speed related UI nonsense
   - savestating
-    - auto serialize
     - resuming logging
     - multiple sims existing per process better. stats object.
 2) big breaux
