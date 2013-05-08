@@ -19,7 +19,7 @@ import utexas.aorta.{Util, Common, cfg, StateWriter, StateReader}
 import utexas.aorta.analysis.{Stats, Heartbeat_Stat, Scenario_Stat}
 
 // TODO take just a scenario, or graph and scenario?
-class Simulation(val graph: Graph, scenario: Scenario)
+class Simulation(val graph: Graph, val scenario: Scenario)
   extends ListenerPattern[Sim_Event] with AgentManager with VirtualTiming
 {
   //////////////////////////////////////////////////////////////////////////////
@@ -54,9 +54,10 @@ class Simulation(val graph: Graph, scenario: Scenario)
     // Are we starting for the first time?
     if (tick == 0.0) {
       Stats.record(Scenario_Stat(scenario.map_fn, scenario.intersections))
+      future_spawn ++= scenario.agents
+    } else {
+      future_spawn ++= scenario.agents.filter(_.birth_tick > tick)
     }
-    // TODO >= ? will this get rid of people spawning at 0?
-    future_spawn ++= scenario.agents.filter(_.birth_tick > tick)
   }
 
   def serialize(w: StateWriter) {
@@ -66,6 +67,8 @@ class Simulation(val graph: Graph, scenario: Scenario)
     w.double(dt_accumulated)  // TODO remove this
     w.int(agents.size)
     agents.foreach(a => a.serialize(w))
+    w.int(ready_to_spawn.size)
+    ready_to_spawn.foreach(a => w.int(a.id))
     graph.traversables.foreach(t => t.queue.serialize(w))
     graph.vertices.foreach(v => v.intersection.policy.serialize(w))
   }
@@ -100,17 +103,14 @@ class Simulation(val graph: Graph, scenario: Scenario)
           active_cnt += 1
         }
         steps_since_last_time += 1
+        //println(s"$tick: $a @ ${a.at} doing ${a.speed} due to ${a.target_accel}. ${a.old_lane} and ${a.lanechange_dist_left}, ${a.behavior.target_lane} LC")
+        //println(s"  tickets: ${a.tickets}")
       })
 
       // Just check the ones we need to.
       active_queues.foreach(q => q.end_step)
 
       active_intersections.foreach(i => i.end_step)
-
-      // Let intersections react to the new world.
-      vertices.foreach(v => {
-        v.intersection.policy.react_tick
-      })
 
       // Let agents react to the new world.
 
@@ -128,6 +128,12 @@ class Simulation(val graph: Graph, scenario: Scenario)
         reap.foreach(a => a.terminate())
         agents = agents.filter(a => !reap(a))
       }
+
+      // Let intersections react to the new world. By doing this after agent
+      // steps, we ensure the intersections' temporary state becomes firm.
+      vertices.foreach(v => {
+        v.intersection.policy.react_tick
+      })
       
       // reset queues that need to be checked
       active_queues.clear
@@ -239,6 +245,10 @@ object Simulation {
     for (i <- Range(0, num_agents)) {
       sim.insert_agent(Agent.unserialize(r, sim.graph))
     }
+    val num_ready = r.int
+    val ready_ids = Range(0, num_ready).map(_ => r.int).toSet
+    sim.ready_to_spawn ++=
+      sim.scenario.agents.filter(a => ready_ids.contains(a.id)).sortBy(_.birth_tick)
     for (t <- sim.graph.traversables) {
       Queue.unserialize(t.queue, r, sim)
     }

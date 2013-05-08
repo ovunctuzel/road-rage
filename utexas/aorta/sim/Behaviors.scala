@@ -198,6 +198,8 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
       }
     }
 
+    //println(s"${Common.tick}: $a has $accel_for_stop, $accel_for_agent, $accel_for_lc_agent, $min_speed_limit")
+
     // TODO consider moving this first case to choose_action and not doing
     // lookahead when these premises hold true.
     return if (done_with_route) {

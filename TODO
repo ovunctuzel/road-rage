@@ -19,12 +19,12 @@
     - trip time should include waiting to enter time
   - get rid of dt_accumulated, and other speed related UI nonsense
   - savestating
-    - make it work...
     - dont match on type and unserialize... make it a method of the object, man.
     - cleanup style. use setup?
     - macro to serialize very tersely
       - or explicit tuple thing using generics?
     - auto serialize
+    - resuming logging
     - multiple sims existing per process better. stats object.
 2) big breaux
 3) marginal effects

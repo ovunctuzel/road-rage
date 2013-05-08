@@ -36,7 +36,6 @@ class Agent(
   // TODO max_deaccel too
   var speed: Double = 0.0   // meters/sec, I believe
   private var target_accel: Double = 0  // m/s^2
-  // TODO who chooses this?
   private val behavior = new LookaheadBehavior(this, route)
 
   // old_lane is where we're shifting from. we immediately warp into the target

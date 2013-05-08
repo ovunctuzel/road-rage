@@ -210,7 +210,7 @@ class Ticket(val a: Agent, val turn: Turn) extends Ordered[Ticket] {
   //////////////////////////////////////////////////////////////////////////////
   // Queries
 
-  override def toString = s"Ticket($a, $turn, approved? $is_approved)"
+  override def toString = s"Ticket($a, $turn, approved? $is_approved. interrupt? $is_interruption)"
 
   // TODO if an agent ever loops and requests the same turn before clearing the
   // prev one, gonna have a bad time!
@@ -280,6 +280,7 @@ abstract class Policy(val intersection: Intersection) {
   // State
 
   def serialize(w: StateWriter) {
+    Util.assert_eq(new_requests.isEmpty, true)
     w.int(request_queue.size)
     for (ticket <- request_queue) {
       w.int(ticket.a.id)
