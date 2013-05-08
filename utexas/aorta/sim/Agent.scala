@@ -51,13 +51,11 @@ class Agent(
   //////////////////////////////////////////////////////////////////////////////
   // Meta
 
-  // TODO this has to restore all the state :P
   def setup(spawn: Edge, dist: Double) {
     wallet.setup(this)
     at = enter(spawn, dist)
     spawn.queue.allocate_slot
     Common.sim.insert_agent(this)
-    // TODO register our tickets, etc.
   }
 
   def serialize(w: StateWriter) {

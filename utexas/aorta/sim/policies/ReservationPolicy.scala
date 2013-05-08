@@ -35,6 +35,14 @@ class ReservationPolicy(intersection: Intersection,
     }
   }
 
+  override protected def unserialize(r: StateReader, sim: Simulation) {
+    val agent_id = r.int
+    val turn_id = r.int
+    if (agent_id != -1) {
+      interruption = Some(Policy.find_ticket(sim, agent_id, turn_id))
+    }
+  }
+
   def accepted_conflicts(turn: Turn)
     = accepted.find(t => t.turn.conflicts_with(turn)).isDefined
 
@@ -85,14 +93,4 @@ class ReservationPolicy(intersection: Intersection,
     Util.log(s"Interruption by $interruption")
   }
   def policy_type = IntersectionType.Reservation
-}
-
-object ReservationPolicy {
-  def unserialize(policy: ReservationPolicy, r: StateReader, sim: Simulation) {
-    val agent_id = r.int
-    val turn_id = r.int
-    if (agent_id != -1) {
-      policy.interruption = Some(Policy.find_ticket(sim, agent_id, turn_id))
-    }
-  }
 }

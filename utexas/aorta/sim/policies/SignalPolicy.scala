@@ -9,7 +9,7 @@ import scala.collection.mutable.{ListBuffer, TreeSet}
 
 import utexas.aorta.map.{Turn, Vertex, Edge}
 import utexas.aorta.sim.{Intersection, Policy, Agent, EV_Signal_Change,
-                         IntersectionType, Ticket, OrderingType}
+                         IntersectionType, Ticket, OrderingType, Simulation}
 import utexas.aorta.sim.market.{IntersectionOrdering, FIFO_Ordering}
 
 import utexas.aorta.{Util, Common, cfg, StateWriter, StateReader}
@@ -38,6 +38,15 @@ class SignalPolicy(intersection: Intersection,
     super.serialize(w)
     w.double(started_at)
     phase_order.foreach(p => w.int(p.id))
+  }
+
+  override protected def unserialize(r: StateReader, sim: Simulation) {
+    started_at = r.double
+    // Learn our phases
+    val phases = phase_order.map(p => p.id -> p).toMap
+    phase_order.clear()
+    phase_order ++= Range(0, phases.size).map(_ => phases(r.int))
+    current_phase = phase_order.last
   }
 
   //////////////////////////////////////////////////////////////////////////////
@@ -147,19 +156,6 @@ class SignalPolicy(intersection: Intersection,
 
     // if our worst-case speeding-up distance still lets us back out and stop,
     // then fine, allow it. <-- the old policy
-  }
-}
-
-object SignalPolicy {
-  def unserialize(policy: SignalPolicy, r: StateReader) {
-    policy.started_at = r.double
-    // Learn our phases
-    val phases = policy.phase_order.map(
-      p => p.id -> p
-    ).toMap
-    policy.phase_order.clear()
-    policy.phase_order ++= Range(0, phases.size).map(_ => phases(r.int))
-    policy.current_phase = policy.phase_order.last
   }
 }
 

@@ -24,7 +24,7 @@ abstract class Route(val goal: DirectedRoad, rng: RNG)
     rng.serialize(w)
   }
 
-  // TODO setup needed to unserialize...
+  protected def unserialize(r: StateReader, graph: Graph) {}
 
   //////////////////////////////////////////////////////////////////////////////
   // Actions
@@ -57,13 +57,8 @@ object Route {
     val route = Factory.make_route(
       RouteType(r.int), graph.directed_roads(r.int), RNG.unserialize(r)
     )
-    // TODO dispatch more automagically?
-    return route.route_type match {
-      case RouteType.Path => PathRoute.unserialize(route, r, graph)
-      case RouteType.Drunken => DrunkenRoute.unserialize(route, r, graph)
-      case RouteType.DrunkenExplorer => DrunkenExplorerRoute.unserialize(route, r, graph)
-      case _ => route
-    }
+    route.unserialize(r, graph)
+    return route
   }
 }
 
@@ -137,6 +132,18 @@ class PathRoute(goal: DirectedRoad, rng: RNG) extends Route(goal, rng) {
       w.int(pair._1.id)
       w.int(pair._2.id)
     })
+  }
+
+  override protected def unserialize(r: StateReader, graph: Graph) {
+    val path_size = r.int
+    // Leave null otherwise
+    if (path_size > 0) {
+      path = Range(0, path_size).map(_ => graph.directed_roads(r.int)).toList
+    }
+    val chosen_size = r.int
+    for (i <- Range(0, chosen_size)) {
+      chosen_turns(graph.edges(r.int)) = graph.turns(r.int)
+    }
   }
 
   //////////////////////////////////////////////////////////////////////////////
@@ -285,22 +292,6 @@ class PathRoute(goal: DirectedRoad, rng: RNG) extends Route(goal, rng) {
     ).toList
 }
 
-object PathRoute {
-  def unserialize(route_raw: Route, r: StateReader, graph: Graph): PathRoute = {
-    val route = route_raw.asInstanceOf[PathRoute]
-    val path_size = r.int
-    // Leave null otherwise
-    if (path_size > 0) {
-      route.path = Range(0, path_size).map(_ => graph.directed_roads(r.int)).toList
-    }
-    val chosen_size = r.int
-    for (i <- Range(0, chosen_size)) {
-      route.chosen_turns(graph.edges(r.int)) = graph.turns(r.int)
-    }
-    return route
-  }
-}
-
 // DOOMED TO WALK FOREVER (until we happen to reach our goal)
 class DrunkenRoute(goal: DirectedRoad, rng: RNG) extends Route(goal, rng) {
   //////////////////////////////////////////////////////////////////////////////
@@ -323,6 +314,17 @@ class DrunkenRoute(goal: DirectedRoad, rng: RNG) extends Route(goal, rng) {
       w.int(pair._1.id)
       w.int(pair._2.id)
     })
+  }
+
+  override protected def unserialize(r: StateReader, graph: Graph) {
+    r.int match {
+      case x if x != -1 => desired_lane = Some(graph.edges(x))
+      case _ =>
+    }
+    val chosen_size = r.int
+    for (i <- Range(0, chosen_size)) {
+      chosen_turns(graph.edges(r.int)) = graph.turns(r.int)
+    }
   }
 
   //////////////////////////////////////////////////////////////////////////////
@@ -368,22 +370,6 @@ class DrunkenRoute(goal: DirectedRoad, rng: RNG) extends Route(goal, rng) {
   protected def choose_turn(e: Edge) = rng.choose(e.next_turns)
 }
 
-object DrunkenRoute {
-  def unserialize(route_raw: Route, r: StateReader, graph: Graph): DrunkenRoute =
-  {
-    val route = route_raw.asInstanceOf[DrunkenRoute]
-    r.int match {
-      case x if x != -1 => route.desired_lane = Some(graph.edges(x))
-      case _ =>
-    }
-    val chosen_size = r.int
-    for (i <- Range(0, chosen_size)) {
-      route.chosen_turns(graph.edges(r.int)) = graph.turns(r.int)
-    }
-    return route
-  }
-}
-
 // Wanders around slightly less aimlessly by picking directions
 class DirectionalDrunkRoute(goal: DirectedRoad, rng: RNG)
   extends DrunkenRoute(goal, rng)
@@ -426,6 +412,13 @@ class DrunkenExplorerRoute(goal: DirectedRoad, rng: RNG)
     })
   }
 
+  override protected def unserialize(r: StateReader, graph: Graph) {
+    val past_size = r.int
+    for (i <- Range(0, past_size)) {
+      past(graph.directed_roads(r.int)) = r.int
+    }
+  }
+
   //////////////////////////////////////////////////////////////////////////////
   // Actions
 
@@ -444,16 +437,4 @@ class DrunkenExplorerRoute(goal: DirectedRoad, rng: RNG)
   // Queries
 
   override def route_type = RouteType.DrunkenExplorer
-}
-
-object DrunkenExplorerRoute {
-  def unserialize(route_raw: Route, r: StateReader, graph: Graph): DrunkenExplorerRoute =
-  {
-    val route = route_raw.asInstanceOf[DrunkenExplorerRoute]
-    val past_size = r.int
-    for (i <- Range(0, past_size)) {
-      route.past(graph.directed_roads(r.int)) = r.int
-    }
-    return route
-  }
 }

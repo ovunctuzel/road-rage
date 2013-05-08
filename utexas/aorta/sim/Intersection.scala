@@ -288,6 +288,8 @@ abstract class Policy(val intersection: Intersection) {
     }
   }
 
+  protected def unserialize(r: StateReader, sim: Simulation) {}
+
   //////////////////////////////////////////////////////////////////////////////
   // Actions
 
@@ -350,13 +352,7 @@ object Policy {
     for (i <- Range(0, num_requests)) {
       policy.request_queue :+= find_ticket(r, sim)
     }
-    policy.policy_type match {
-      case IntersectionType.Reservation =>
-        ReservationPolicy.unserialize(policy.asInstanceOf[ReservationPolicy], r, sim)
-      case IntersectionType.Signal =>
-        SignalPolicy.unserialize(policy.asInstanceOf[SignalPolicy], r)
-      case _ =>
-    }
+    policy.unserialize(r, sim)
   }
 
   def find_ticket(r: StateReader, sim: Simulation): Ticket =

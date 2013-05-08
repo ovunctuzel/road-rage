@@ -43,8 +43,9 @@ abstract class Wallet(initial_budget: Int, val priority: Int) {
 
   def setup(agent: Agent) {
     a = agent
-    // TODO the budget, too...
   }
+
+  protected def unserialize(r: StateReader) {}
   
   //////////////////////////////////////////////////////////////////////////////
   // Actions
@@ -108,10 +109,8 @@ object Wallet {
     val num_tooltips = r.int
     wallet.tooltip = Range(0, num_tooltips).map(_ => r.string).toList
     wallet.dark_tooltip = r.bool
-    return wallet.wallet_type match {
-      case WalletType.Fair => FairWallet.unserialize(wallet, r)
-      case _ => wallet
-    }
+    wallet.unserialize(r)
+    return wallet
   }
 }
 
@@ -202,6 +201,10 @@ class FairWallet(initial_budget: Int, p: Int)
     w.double(total_weight)
   }
 
+  override protected def unserialize(r: StateReader) {
+    total_weight = r.double
+  }
+
   override def setup(agent: Agent) {
     super.setup(agent)
     a.route.listen("fair_wallet", (ev: Route_Event) => { ev match {
@@ -258,14 +261,6 @@ class FairWallet(initial_budget: Int, p: Int)
       case IntersectionType.CommonCase => 0.0
     }
     return (1.0 * big.size) + (0.5 * small.size) + (1.0 * policy_weight)*/
-  }
-}
-
-object FairWallet {
-  def unserialize(wallet_raw: Wallet, r: StateReader): FairWallet = {
-    val wallet = wallet_raw.asInstanceOf[FairWallet]
-    wallet.total_weight = r.double
-    return wallet
   }
 }
 
