@@ -3,6 +3,8 @@
 # Roadmap #
 
 1) cleanup
+  - move all configable things to Util
+    incl new auto serialize stuff.
   - instructions on site
   - clever routing
   - good enough default sys bids, to get new default over FIFO
@@ -19,8 +21,6 @@
     - trip time should include waiting to enter time
   - get rid of dt_accumulated, and other speed related UI nonsense
   - savestating
-    - macro to serialize very tersely
-      - or explicit tuple thing using generics?
     - auto serialize
     - resuming logging
     - multiple sims existing per process better. stats object.
@@ -110,8 +110,6 @@
 - slow down for turns (a speed limit)
 - diversity... different vehicle lengths, parameters
 - calibration issues... distances totally off
-- have a notion of "I'm done with the turn, but I'm protruding into the intersection"
-  by requiring not only we're done with a turn but also some dist along the new edge.
 - give lanes/roads/etc the ability to be closed
 
 # Code Cleanup
@@ -128,7 +126,6 @@
   - package for awt stuff to avoid importing
 - sorted sets everywhere for determinism
 - more privates, make abstract members more explicit, delegates
-- move all configable things to Util
 - make more immutable things / reduce more vars to vals
 - make everything possible immutable, but then have to figure out how to build
   inter-referential things
@@ -136,15 +133,8 @@
   - have more ids and methods that access based on those. that'll break it.
   - immutable construction is easy... have parent entity create child.
 
-# Contraction Hierarchies
-- smaller problem possibly if verts=Vertex, edges=Roads (oneway or not).
-  - but cant get from every incoming road to every outgoing road... can we?
-  - even if we could, does it know which side of the road we're starting on?
-    or can we always u-turn?
-
 # Intersection Policies
 - backpressure light optimization
-- fix fastpaths, not hard
 - do it faster with invariants, look at just the next guy
   - BUT we can be route-done, but have somebody blocking in front of us
     initially. so in that case, search forward?
@@ -153,8 +143,6 @@
 - make new stuff faster, mark when first elgiible or something with very
   powerful FPs
   - aka candidate list can be greatly narrowed, or ordered
-- move queue query stuff elsewhere
-- refactor candidates/waiting_agents->queue/accepted_agents stuff.
 
 # Scaling
 - tighten memory usage, although 1GB supports 1 million agents
@@ -175,25 +163,22 @@
   - breakdown other categories when describing
 - make scenarios from UI
 - poisson for introducing vehicles
-- piecewise resimulation (savestating)
-- verify determinism retained... ordering events queue
 - things to test
   - wacky cases of 2 side-by-side agents wanting to swap places?
 
 # UI
 - merge headless/gui clients
+  - ui speed controls.. step one tick, display a certain fps, sleep to match what?
 - label agents with their number in the GUI
 - javafx?
 - 3D
 - visualize red/green lights better
 - cmdline switch to follow stuff or zoom in somewhere
-- ui speed controls.. step one tick, display a certain fps, sleep to match what?
 - visualize lookahead
 - turn off generators
 - color agents from diff generators a certain way
 - right click context menus
 - show 'fps' in viewer
-- config
 
 # Lane-changing
 - roads arent shortened enough when conservative lookahead picks too high a speed, then caps itself... two brief passes, to get the right amount of lookahead? :P
@@ -204,34 +189,22 @@
 - road lengthening means we dont have to reduce numbers of lanes for LCing
 - removal approach doesnt handle having to LC many times on one road
 
-# Micro-optimizations
-- sleep less in UI
-- truncate lengths, other doubles or more compactly write
-- why are traversable lines given not as point sequence?
-
-# Distributed Parallelization
-- meseoscopic in between regions? lockstep necessary?
-- dynamic load balancing? any need to split up by region?
-- actors / akka?
-
 # Applications
 - follow dist variable based on speed, so when a light goes green,
   everyone starts simultaneously
 - contraflow
 - dynamic replanning + hierarchial planning (wards)
-- rewindable simulation
 
 # Theoretical
 - is there a way to analytically say "an agent will own this chunk" at some time, and
   then solve for collisions?
-- can we make timesteps equivalent? (probably not)
-- varying dt mid-simulation
 
 # Administrative
 - website
   - build instructions (with scala and such)
   - wiki docs
   - scaladoc
+  - domain name?
 - osm scraper script
   https://github.com/migurski/Extractotron/
 - rename lanes/intersections/junctions in code too? policy -> controller?

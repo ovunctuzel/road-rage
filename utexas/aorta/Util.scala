@@ -8,6 +8,7 @@ import java.util.Random // TODO use scala one when its serializable in 2.11
 import java.io.{FileWriter, Serializable}
 import scala.annotation.elidable
 import scala.annotation.elidable.ASSERTION
+import scala.io.Source
 
 import java.io.{ObjectOutputStream, FileOutputStream, ObjectInputStream,
                 FileInputStream, PrintWriter, BufferedReader, FileReader}
@@ -70,26 +71,10 @@ object Util {
     val keys = args.zipWithIndex.filter(p => p._2 % 2 == 0).map(p => p._1)
     val vals = args.zipWithIndex.filter(p => p._2 % 2 == 1).map(p => p._1)
 
-    val cfg_prefix = """--cfg_(\w+)""".r
     for ((key, value) <- keys.zip(vals)) {
       key match {
         case "--log" => { Stats.setup_logging(value) }
         case "--time_limit" => { Common.time_limit = value.toDouble }
-        case cfg_prefix(param) => cfg.get_param_method(param) match {
-          case Some(method) => {
-            val param_type = method.getParameterTypes.head
-            if (param_type == classOf[Int]) {
-              method.invoke(cfg, value.toInt: java.lang.Integer)
-            } else if (param_type == classOf[Double]) {
-              method.invoke(cfg, value.toDouble: java.lang.Double)
-            } else if (param_type == classOf[Boolean]) {
-              method.invoke(cfg, (value == "1"): java.lang.Boolean)
-            } else {
-              method.invoke(cfg, value: java.lang.String)
-            }
-          }
-          case None => { Util.log(s"No config param $param"); sys.exit }
-        }
         case _ => { Util.log("Unknown argument: " + key); sys.exit }
       }
     }
@@ -146,111 +131,54 @@ object RNG {
   def unserialize(r: StateReader): RNG = r.obj.asInstanceOf[RNG]
 }
 
+// TODO override with cmdline too
+// TODO grab alt cfg file from cmdline
 object cfg {
-  // TODO marking things as configurable or not from the UI.
-  val bools = List(
-    ("antialias",       true,  "Draw nicer lines more slowly?"),
-    ("draw_cursor",     false, "Draw the epsilon bubble around the cursor?"),
-    ("draw_lane_arrow", true,  "Draw arrows to show lane orientation?"),
-    ("dash_center",     true,  "Dash the center yellow line?")
-  ).map({c => c._1 -> new Bool_Cfgable(c._2, c._3)}).toMap
+  private val cfg_fn = "default.cfg"
+  private val params = load_config()
 
-  // all distances should be in meters
-  val doubles = List(
-    ("lane_width",      0.5, "Width of a lane in meters", 0.01, 0.1),
-    ("zoom_threshold",  5.0, "How close to zoom in before drawing details",    1.0, 15.0),
-    ("epsilon",       1E-10, "What do we take as zero due to FP imprecision?", 0.0,  1.0),
-    ("dt_s",            1.0, "The only dt in seconds an agent can experience", 0.1,  3.0),
-    // account for crosswalks, vehicle length...
-    ("end_threshold",   5.0, "The end of a traversable is its length - this",  0.1,  3.0),
-    // this kind of gives dimension to cars, actually
-    ("follow_dist",     5.0, "Even if stopped, don't get closer than this", 0.1, 1.0),
-    ("max_accel",       2.7, "A car's physical capability",                  0.5, 5.0)
-  ).map({c => c._1 -> new Double_Cfgable(c._2, c._3, c._4, c._5)}).toMap
+  def load_config(): Map[String, String] =
+    Source.fromFile(cfg_fn).getLines().flatMap(line => kv(line)).toMap
 
-  val ints = List(
-    ("max_lanes",  50,  "The max total lanes a road could have", 1, 30),
-    ("army_size",  5000, "How many agents to spawn by default", 1, 10000),
-    ("signal_duration",  60, "How long for a traffic signal to go through all of its cycles", 4, 1200)
-  ).map({c => c._1 -> new Int_Cfgable(c._2, c._3, c._4, c._5)}).toMap
-
-  val strings = List(
-    ("policy", "StopSign"),
-    ("ordering", "FIFO"),
-    ("route", "Path"),
-    ("wallet", "Fair")
-  ).map({c => c._1 -> new String_Cfgable(c._2)}).toMap
-
-  // TODO val colors = ... (I'm not kidding)
-  // TODO and of course, a way to save the settings.
-
-  // TODO i wanted to use reflection to generate methods, but that won't work...
-  // jvm limitations.
-  // TODO these shortcuts take a bit extra memory, but avoid lots of hash
-  // lookups. real solution is to not have methods and then also objects...
-
-  var antialias = false
-  var draw_cursor = false
-  var draw_lane_arrow = false
-  var dash_center = false
-
-  var lane_width = 0.0
-  var zoom_threshold = 0.0
-  var epsilon = 0.0
-  var end_threshold = 0.0
-  var follow_dist = 0.0
-  var max_accel = 0.0
-  var dt_s = 0.0
-
-  var max_lanes = 0
-  var army_size = 0
-  var signal_duration = 0
-
-  var policy = ""
-  var ordering = ""
-  var route = ""
-  var wallet = ""
-
-  // Do this early.
-  init_params
-
-  def lanechange_dist = lane_width * 5.0
-
-  def get_param_method(name: String) =
-    cfg.getClass.getDeclaredMethods.find(_.getName == name + "_$eq")
-
-  // Set all the config stuff from the hashes.
-  def init_params() = {
-    for ((key, value) <- bools) {
-      get_param_method(key).get.invoke(cfg, value.value: java.lang.Boolean)
-    }
-    for ((key, value) <- doubles) {
-      get_param_method(key).get.invoke(cfg, value.value: java.lang.Double)
-    }
-    for ((key, value) <- ints) {
-      get_param_method(key).get.invoke(cfg, value.value: java.lang.Integer)
-    }
-    for ((key, value) <- strings) {
-      get_param_method(key).get.invoke(cfg, value.value: java.lang.String)
+  private def kv(line: String): Option[(String, String)] = {
+    val cleaned = line.split("#").head.trim.replaceAll("""\s+""", " ")
+    if (cleaned.isEmpty) {
+      return None
+    } else {
+      val Array(key, value) = cleaned.split("=")
+      return Some((key.trim, value.trim))
     }
   }
-}
 
-// couldn't quite the OO work out to bundle these
-class Bool_Cfgable(default: Boolean, descr: String) {
-  var value = default
-}
+  private def bool(x: String) =
+    if (x == "true")
+      true
+    else if (x == "false")
+      false
+    else
+      throw new Exception(s"Bad boolean in config: $x")
 
-class Double_Cfgable(default: Double, descr: String, min: Double, max: Double) {
-  var value = default
-}
+  val dt_s = params("dt_s").toDouble
+  val epsilon = params("epsilon").toDouble
+  val end_threshold = params("end_threshold").toDouble
+  val follow_dist = params("follow_dist").toDouble
+  val max_accel = params("max_accel").toDouble
+  val signal_duration = params("signal_duration").toInt
+  val lane_width = params("lane_width").toDouble
+  val lanechange_dist = lane_width * params("lanechange_dist_rate").toDouble
+  
+  val army_size = params("army_size").toInt
+  val policy = params("policy")
+  val ordering = params("ordering")
+  val route = params("route")
+  val wallet = params("wallet")
 
-class Int_Cfgable(default: Int, descr: String, min: Int, max: Int) {
-  var value = default
-}
-
-class String_Cfgable(default: String) {
-  var value = default
+  val antialias = bool(params("antialias"))
+  val draw_cursor = bool(params("draw_cursor"))
+  val draw_lane_arrow = bool(params("draw_lane_arrow"))
+  val dash_center = bool(params("dash_center"))
+  val zoom_threshold = params("zoom_threshold").toDouble
+  val max_lanes = params("max_lanes").toInt
 }
 
 // Plumbing some stuff everywhere is hard, so share here sometimes. Plus,
@@ -339,6 +267,8 @@ abstract class StateWriter(fn: String) {
   def string(x: String)
   def bool(x: Boolean)
   def obj(x: Any)   // TODO remove.
+
+  // TODO a macro to do lots of these in one line?
 }
 
 class BinaryStateWriter(fn: String) extends StateWriter(fn) {
