@@ -200,11 +200,10 @@ object Phase {
   def turn_groups_to_phases(groups: List[Set[Turn]]): List[Phase] = {
     // TODO duration has to let agents have time to cross the intersection at a
     // reasonable speed
-    val duration = 30  // TODO cfg
     var offset = 0
     return groups.map(group => {
-      val phase = new Phase(group, offset, duration)
-      offset += duration
+      val phase = new Phase(group, offset, cfg.signal_duration)
+      offset += cfg.signal_duration
       phase
     })
   }

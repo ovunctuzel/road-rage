@@ -3,8 +3,6 @@
 # Roadmap #
 
 1) cleanup
-  - move all configable things to Util
-    incl new auto serialize stuff.
   - instructions on site
   - clever routing
   - good enough default sys bids, to get new default over FIFO

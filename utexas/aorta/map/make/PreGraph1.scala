@@ -23,7 +23,7 @@ class PreGraph1() {
   var height: Double = 0
   var offX: Double = 0
   var offY: Double = 0
-  // TODO Util.cfg.mapmake-scale
+  // TODO Util.cfg.mapmake-scale. actually, dont do this.
   var scale: Double = 5000
 
   def add_edge(name: String, road_type: String, oneway: Boolean,

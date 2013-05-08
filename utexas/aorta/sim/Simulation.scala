@@ -333,7 +333,6 @@ trait VirtualTiming {
   //////////////////////////////////////////////////////////////////////////////
   // Actions
 
-  // TODO cfg
   // TODO actually, remove, probably.
   def slow_down(amount: Double = 0.5) = {
     desired_sim_speed = math.max(0.5, desired_sim_speed - amount)

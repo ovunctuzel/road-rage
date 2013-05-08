@@ -25,7 +25,6 @@ object Status_Bar {
   }
 
   val panel = new GridBagPanel {
-    // TODO config for all the sizings...
     maximumSize = new Dimension(Int.MaxValue, 10)
     border = Swing.MatteBorder(5, 5, 5, 5, Color.BLACK)
 

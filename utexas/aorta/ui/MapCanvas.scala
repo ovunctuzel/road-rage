@@ -92,10 +92,10 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
   private var show_green = false
   private var show_tooltips = true
   private val policy_colors = Map(
-    IntersectionType.StopSign -> Color.RED,
-    IntersectionType.Signal -> Color.YELLOW,
-    IntersectionType.Reservation -> Color.GREEN,
-    IntersectionType.CommonCase -> Color.BLUE
+    IntersectionType.StopSign -> cfg.stopsign_color,
+    IntersectionType.Signal -> cfg.signal_color,
+    IntersectionType.Reservation -> cfg.reservation_color,
+    IntersectionType.CommonCase -> cfg.commoncase_color
   )
 
   implicit def line2awt(l: Line): Line2D.Double = new Line2D.Double(l.x1, l.y1, l.x2, l.y2)
@@ -196,8 +196,6 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
     }
   }
 
-  // TODO colors for everything belong in cfg.
-
   def render_canvas(g2d: Graphics2D, window: Rectangle2D.Double): List[Tooltip] = {
     // remember these so we can draw center lines more efficiently
     val roads_seen = new ListBuffer[RoadLine]
@@ -233,7 +231,7 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
         case Some(pos: Position) => draw_intersection(g2d, pos.on.asInstanceOf[Edge])
         case Some(v: Vertex) => {
           for (t <- v.intersection.policy.current_greens) {
-            draw_turn(g2d, t, Color.GREEN)
+            draw_turn(g2d, t, cfg.turn_color)
           }
         }
         case _ =>
@@ -279,7 +277,7 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
     })
 
     // Finally, if the user is free-handing a region, show their work.
-    g2d.setColor(Color.RED)
+    g2d.setColor(cfg.polygon_color)
     g2d.setStroke(drawing_stroke)
     g2d.draw(polygon)
 
@@ -310,7 +308,7 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
     g2d.setStroke(lane_stroke)
     g2d.setColor(color_edge(l.edge))
     g2d.draw(l.line)
-    g2d.setColor(Color.BLUE)
+    g2d.setColor(cfg.lane_color)
     g2d.fill(l.arrow)
 
     // (draw all agents)
@@ -359,13 +357,13 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
 
   def color_road(r: Road): Color =
     if (chosen_road.isDefined && chosen_road.get == r)
-      Color.RED
+      cfg.chosen_road_color
     else if (route_members(r))
-      Color.GREEN
+      cfg.route_member_color
     else if (polygon_roads1(r))
-      Color.RED
+      cfg.src_polygon_color
     else if (polygon_roads2(r))
-      Color.GREEN
+      cfg.dst_polygon_color
     else if (r.doomed)
       Color.RED
     else
@@ -382,7 +380,6 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
     else if (chosen_edge2.isDefined && chosen_edge2.get == e)
       Color.RED
     else if (e.doomed)
-      // TODO configurable.
       Color.RED
     else
       Color.WHITE

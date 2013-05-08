@@ -9,6 +9,7 @@ import java.io.{FileWriter, Serializable}
 import scala.annotation.elidable
 import scala.annotation.elidable.ASSERTION
 import scala.io.Source
+import java.awt.Color
 
 import java.io.{ObjectOutputStream, FileOutputStream, ObjectInputStream,
                 FileInputStream, PrintWriter, BufferedReader, FileReader}
@@ -135,6 +136,12 @@ object RNG {
 // TODO grab alt cfg file from cmdline
 object cfg {
   private val cfg_fn = "default.cfg"
+  private val color = Map(
+    "RED" -> Color.RED,
+    "GREEN" -> Color.GREEN,
+    "BLUE" -> Color.BLUE,
+    "YELLOW" -> Color.YELLOW
+  )
   private val params = load_config()
 
   def load_config(): Map[String, String] =
@@ -158,27 +165,37 @@ object cfg {
     else
       throw new Exception(s"Bad boolean in config: $x")
 
-  val dt_s = params("dt_s").toDouble
-  val epsilon = params("epsilon").toDouble
-  val end_threshold = params("end_threshold").toDouble
-  val follow_dist = params("follow_dist").toDouble
-  val max_accel = params("max_accel").toDouble
-  val signal_duration = params("signal_duration").toInt
-  val lane_width = params("lane_width").toDouble
-  val lanechange_dist = lane_width * params("lanechange_dist_rate").toDouble
-  
-  val army_size = params("army_size").toInt
-  val policy = params("policy")
-  val ordering = params("ordering")
-  val route = params("route")
-  val wallet = params("wallet")
-
   val antialias = bool(params("antialias"))
+  val army_size = params("army_size").toInt
+  val chosen_road_color = color(params("chosen_road_color"))
+  val commoncase_color = color(params("commoncase_color"))
+  val dash_center = bool(params("dash_center"))
   val draw_cursor = bool(params("draw_cursor"))
   val draw_lane_arrow = bool(params("draw_lane_arrow"))
-  val dash_center = bool(params("dash_center"))
-  val zoom_threshold = params("zoom_threshold").toDouble
+  val dst_polygon_color = color(params("dst_polygon_color"))
+  val dt_s = params("dt_s").toDouble
+  val end_threshold = params("end_threshold").toDouble
+  val epsilon = params("epsilon").toDouble
+  val follow_dist = params("follow_dist").toDouble
+  val lanechange_dist = lane_width * params("lanechange_dist_rate").toDouble
+  val lane_color = color(params("lane_color"))
+  val lane_width = params("lane_width").toDouble
+  val max_accel = params("max_accel").toDouble
   val max_lanes = params("max_lanes").toInt
+  val min_road_len = params("min_road_len").toDouble
+  val ordering = params("ordering")
+  val policy = params("policy")
+  val polygon_color = color(params("polygon_color"))
+  val reservation_color = color(params("reservation_color"))
+  val route = params("route")
+  val route_member_color = color(params("route_member_color"))
+  val signal_color = color(params("signal_color"))
+  val signal_duration = params("signal_duration").toInt
+  val src_polygon_color = color(params("src_polygon_color"))
+  val stopsign_color = color(params("stopsign_color"))
+  val turn_color = color(params("turn_color"))
+  val wallet = params("wallet")
+  val zoom_threshold = params("zoom_threshold").toDouble
 }
 
 // Plumbing some stuff everywhere is hard, so share here sometimes. Plus,

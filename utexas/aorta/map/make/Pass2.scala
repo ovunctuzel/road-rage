@@ -9,7 +9,7 @@ import scala.collection.mutable.{TreeSet => MutableSet}
 
 import utexas.aorta.map.Coordinate
 
-import utexas.aorta.Util
+import utexas.aorta.{Util, cfg}
 
 class Pass2(old_graph: PreGraph1) {
   val graph = new PreGraph2(old_graph)
@@ -97,12 +97,11 @@ class Pass2(old_graph: PreGraph1) {
 
   private def merge_short_roads() = {
     Util.log("Merging short roads...")
-    val min_len = 50.0  // TODO cfg
     // TODo Probably don't need to make this a fixpoint, since length isn't
     // affected
     var changed = true
     while (changed) {
-      graph.edges.find(r => r.length < min_len && !r.is_culdesac) match {
+      graph.edges.find(r => r.length < cfg.min_road_len && !r.is_culdesac) match {
         case Some(shorty) => {
           // Remove this short road
           graph.edges = graph.edges.filter(e => e != shorty)
