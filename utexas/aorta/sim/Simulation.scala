@@ -47,7 +47,6 @@ class Simulation(val graph: Graph, val scenario: Scenario)
 
   def setup() {
     Common.sim = this
-    Common.scenario = scenario
     Phase.id = 0
 
     // TODO always do this, and forget this map/sim separation?

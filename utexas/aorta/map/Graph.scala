@@ -19,21 +19,17 @@ class Graph(
   val scale: Double, val name: String
 ) extends Serializable
 {
-  val directed_roads = Array.fill[DirectedRoad](Road.num_directed_roads)(null)
-  roads.foreach(r => {
-    List(r.pos_group, r.neg_group).flatten.foreach(dr => {
-      directed_roads(dr.id) = dr
-    })
-  })
-
+  @transient lazy val directed_roads =
+    roads.flatMap(r => List(r.pos_group, r.neg_group).flatten).toArray
+  // TODO if we squish down IDs, it can be an array too!
   @transient lazy val turns = vertices.foldLeft(List[Turn]())(
     (l, v) => v.turns.toList ++ l
   ).map(t => t.id -> t).toMap
 
-  @transient lazy val router: Router = choose_router
   @transient lazy val dijkstra_router = new DijkstraRouter(this)
   @transient lazy val ch_router = new CHRouter(this)
   @transient lazy val congestion_router = new CongestionRouter(this)
+  @transient lazy val router: Router = choose_router
 
   // Prefer CH if this map has been prerouted.
   private def choose_router(): Router = {

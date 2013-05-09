@@ -215,10 +215,11 @@ object cfg {
 object Common {
   // Because turns don't directly reference edges to break a serialization cycle
   var edges: Array[utexas.aorta.map.Edge] = null
+  // TODO make it easier to set the current active sim.
   var sim: utexas.aorta.sim.Simulation = null
-  var scenario: utexas.aorta.sim.Scenario = null
   var time_limit = -1.0
 
+  def scenario = sim.scenario
   def tick = sim.tick
   def timer(name: String) = new Timer(name)
 
