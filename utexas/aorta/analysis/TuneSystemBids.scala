@@ -79,7 +79,7 @@ object TuneSystemBids {
         println(s"  Testing $state")
         var last_time = System.currentTimeMillis
         while (sim.done == false && sim.tick < run_for) {
-          sim.step(cfg.dt_s)
+          sim.step()
           val now = System.currentTimeMillis
           if (now - last_time > 1000 * 15) {
             println(s"    Currently it's ${Util.time_num(sim.tick)}")

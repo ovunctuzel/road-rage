@@ -57,7 +57,7 @@ object Headless {
     Util.log("Starting simulation with time-steps of " + cfg.dt_s + "s")
     val t = Common.timer("headless simulation")
     while (!sim.done) {
-      sim.step(cfg.dt_s)
+      sim.step()
     }
     t.stop
     sys.exit

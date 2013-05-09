@@ -18,10 +18,9 @@ object Status_Bar {
   val time       = new Label("0.0 [Paused]")
   val sim_speed = new Label("1.0x / 1.0x")
 
+  // TODO headless should be doing this.
   def update_speed(sim: Simulation) = {
-    sim_speed.text = "%.1fx / %.1fx".format(
-      sim.actual_sim_speed, sim.desired_sim_speed
-    )
+    sim_speed.text = "%.1fx / %.1fx".format(1.0, 1.0)
   }
 
   val panel = new GridBagPanel {

@@ -21,7 +21,7 @@ import utexas.aorta.analysis.{Stats, Heartbeat_Stat, Scenario_Stat}
 
 // TODO take just a scenario, or graph and scenario?
 class Simulation(val graph: Graph, val scenario: Scenario)
-  extends ListenerPattern[Sim_Event] with AgentManager with VirtualTiming
+  extends ListenerPattern[Sim_Event] with AgentManager
 {
   //////////////////////////////////////////////////////////////////////////////
   // State
@@ -32,6 +32,8 @@ class Simulation(val graph: Graph, val scenario: Scenario)
   val active_queues = new MutableSet[Queue]   // TODO list?
   // All intersections with agents in them.
   val active_intersections = new MutableSet[Intersection]
+  // this represents total "real seconds"
+  var tick: Double = 0
 
   // Track this for stats.
   private var last_real_time = 0.0
@@ -65,7 +67,6 @@ class Simulation(val graph: Graph, val scenario: Scenario)
     w.string(scenario.name)
     w.int(max_agent_id)
     w.double(tick)
-    w.double(dt_accumulated)  // TODO remove this
     w.int(agents.size)
     agents.foreach(a => a.serialize(w))
     w.int(ready_to_spawn.size)
@@ -77,86 +78,86 @@ class Simulation(val graph: Graph, val scenario: Scenario)
   //////////////////////////////////////////////////////////////////////////////
   // Actions
 
-  def step(dt_s: Double) = {
-    // This value is dt in simulation time, not real time
-    dt_accumulated += dt_s * desired_sim_speed
+  def step() {
+    tick += cfg.dt_s
 
-    // Agents can't react properly in the presence of huge time-steps. So chop
-    // up this time-step into exactly consistent/equal pieces, if needed.
-    while (dt_accumulated >= cfg.dt_s) {
-      dt_accumulated -= cfg.dt_s
-      tick += cfg.dt_s
+    spawn_agents(tick)
+    ready_to_spawn = ready_to_spawn.filter(a => !try_spawn(a))
 
-      spawn_agents(tick)
-      ready_to_spawn = ready_to_spawn.filter(a => !try_spawn(a))
+    // If you wanted crazy speedup, disable all but agent stepping and
+    // reacting. But that involves trusting that no simulation violations
+    // could occur. ;)
 
-      // If you wanted crazy speedup, disable all but agent stepping and
-      // reacting. But that involves trusting that no simulation violations
-      // could occur. ;)
+    // Queues will lazily start_step, remembering their current state, when
+    // they need to.
 
-      // Queues will lazily start_step, remembering their current state, when
-      // they need to.
-
-      // Move agents.
-      var active_cnt = 0
-      agents.foreach(a => {
-        if (a.step(cfg.dt_s)) {
-          active_cnt += 1
-        }
-        steps_since_last_time += 1
-        //println(s"$tick: $a @ ${a.at} doing ${a.speed} due to ${a.target_accel}. ${a.old_lane} and ${a.lanechange_dist_left}, ${a.behavior.target_lane} LC")
-        //println(s"  tickets: ${a.tickets}")
-      })
-
-      // Just check the ones we need to.
-      active_queues.foreach(q => q.end_step)
-
-      active_intersections.foreach(i => i.end_step)
-
-      // Let agents react to the new world.
-
-      // Sequential or parallel?
-      val reap = agents.filter(a => a.react).toSet
-      /*val sz = 100  // TODO how to tune this?
-      val max_idx = (agents.size.toDouble / sz).ceil.toInt
-      val reap = Range(0, max_idx).par.flatMap(
-        // TODO off by one?
-        idx => agents.view(sz * idx, sz * (idx + 1)).filter(a => a.react)
-      ).toSet*/
-
-      if (reap.nonEmpty) {
-        // TODO batch GC.
-        reap.foreach(a => a.terminate())
-        agents = agents.filter(a => !reap(a))
+    // Move agents.
+    var active_cnt = 0
+    agents.foreach(a => {
+      if (a.step) {
+        active_cnt += 1
       }
+      steps_since_last_time += 1
+      //println(s"$tick: $a @ ${a.at} doing ${a.speed} due to ${a.target_accel}. ${a.old_lane} and ${a.lanechange_dist_left}, ${a.behavior.target_lane} LC")
+      //println(s"  tickets: ${a.tickets}")
+    })
 
-      // Let intersections react to the new world. By doing this after agent
-      // steps, we ensure the intersections' temporary state becomes firm.
-      vertices.foreach(v => {
-        v.intersection.policy.react_tick
-      })
-      
-      // reset queues that need to be checked
-      active_queues.clear
+    // Just check the ones we need to.
+    active_queues.foreach(q => q.end_step)
 
-      // Record a heartbeat every 1.0s
-      val now = System.currentTimeMillis
-      if (now - last_real_time >= 1000.0) {
-        val measurement = Heartbeat_Stat(
-          active_cnt, agents.size, ready_to_spawn.size, tick,
-          steps_since_last_time, ch_since_last_time, astar_since_last_time
-        )
-        Stats.record(measurement)
-        tell_listeners(EV_Heartbeat(measurement))
-        last_real_time = now
-        steps_since_last_time = 0
-        ch_since_last_time = 0
-        astar_since_last_time = 0
-      }
+    active_intersections.foreach(i => i.end_step)
 
-      if ((tick / cfg.autosave_every).isValidInt && tick > 0.0) {
-        savestate()
-      }
+    // Let agents react to the new world.
+
+    // Sequential or parallel?
+    val reap = agents.filter(a => a.react).toSet
+    /*val sz = 100  // TODO how to tune this?
+    val max_idx = (agents.size.toDouble / sz).ceil.toInt
+    val reap = Range(0, max_idx).par.flatMap(
+      // TODO off by one?
+      idx => agents.view(sz * idx, sz * (idx + 1)).filter(a => a.react)
+    ).toSet*/
+
+    if (reap.nonEmpty) {
+      // TODO batch GC.
+      reap.foreach(a => a.terminate())
+      agents = agents.filter(a => !reap(a))
+    }
+
+    // Let intersections react to the new world. By doing this after agent
+    // steps, we ensure the intersections' temporary state becomes firm.
+    vertices.foreach(v => {
+      v.intersection.policy.react_tick
+    })
+    
+    // reset queues that need to be checked
+    active_queues.clear
+
+    // Record a heartbeat every 1.0s
+    val now = System.currentTimeMillis
+    if (now - last_real_time >= 1000.0) {
+      val measurement = Heartbeat_Stat(
+        active_cnt, agents.size, ready_to_spawn.size, tick,
+        steps_since_last_time, ch_since_last_time, astar_since_last_time
+      )
+      Stats.record(measurement)
+      tell_listeners(EV_Heartbeat(measurement))
+      last_real_time = now
+      steps_since_last_time = 0
+      ch_since_last_time = 0
+      astar_since_last_time = 0
+    }
+
+    if ((tick / cfg.autosave_every).isValidInt && tick > 0.0) {
+      savestate()
+    }
+  }
+
+  def multi_step(total_dt: Double) {
+    val ticks = total_dt / cfg.dt_s
+    Util.assert_eq(ticks.isValidInt, true)
+    for (i <- Range(0, ticks.toInt)) {
+      step()
     }
   }
 
@@ -258,7 +259,6 @@ object Simulation {
     // Do this before setup so we don't add the wrong spawners
     sim.max_agent_id = r.int
     sim.tick = r.double
-    sim.dt_accumulated = r.double
     // Need so queues/intersections are set up.
     sim.setup()
     val num_agents = r.int
@@ -336,28 +336,4 @@ trait AgentManager {
   // Only used by the UI, so is O(n) rather than a binary search.
   def get_agent(id: Int) = agents.find(a => a.id == id)
   def has_agent(a: Agent) = agents.contains(a)
-}
-
-trait VirtualTiming {
-  //////////////////////////////////////////////////////////////////////////////
-  // State
-
-  // this represents total "real seconds"
-  var tick: Double = 0
-  // we only ever step with dt = cfg.dt_s, so we may have leftover.
-  var dt_accumulated: Double = 0  // TODO remove.
-  // The UI can tell us to make every one step count as multiple.
-  var desired_sim_speed = 1.0
-  var actual_sim_speed = 0.0
-
-  //////////////////////////////////////////////////////////////////////////////
-  // Actions
-
-  // TODO actually, remove, probably.
-  def slow_down(amount: Double = 0.5) = {
-    desired_sim_speed = math.max(0.5, desired_sim_speed - amount)
-  }
-  def speed_up(amount: Double = 0.5) = {
-    desired_sim_speed += amount
-  }
 }

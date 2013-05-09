@@ -168,7 +168,7 @@
   - ui speed controls.. step one tick, display a certain fps, sleep to match what?
 - label agents with their number in the GUI
 - javafx?
-- 3D
+- 3D. ardor? jme?
 - visualize red/green lights better
 - cmdline switch to follow stuff or zoom in somewhere
 - visualize lookahead

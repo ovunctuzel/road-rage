@@ -42,7 +42,8 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
           // related to desired_sim_speed and cfg.dt_s   TODO
           Thread.sleep(10)
           if (running) {
-            sim.step((System.currentTimeMillis - start).toDouble / 1000.0)
+            //sim.step((System.currentTimeMillis - start).toDouble / 1000.0)
+            sim.step()
             camera_agent match {
               case Some(a) => {
                 if (sim.has_agent(a)) {
@@ -719,19 +720,20 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
       }
     }
     case Key.OpenBracket => {
-      sim.slow_down()
+      //sim.slow_down()
       status.update_speed(sim)
     }
     case Key.CloseBracket => {
-      sim.speed_up()
+      //sim.speed_up()
       status.update_speed(sim)
     }
     case Key.Minus => {
-      sim.slow_down(5)
+      //sim.slow_down(5)
       status.update_speed(sim)
     }
     case Key.Equals => {
-      sim.speed_up(5)
+      // TODO WE do the rate-limiting, actually!
+      //sim.speed_up(5)
       status.update_speed(sim)
     }
     case Key.D => current_obj match {

@@ -91,7 +91,7 @@ class Agent(
   // Actions
 
   // Returns true if we move or do anything at all
-  def step(dt_s: Double): Boolean = {
+  def step(): Boolean = {
     // If they're not already lane-changing, should they start?
     if (!is_lanechanging && behavior.wants_to_lc) {
       val lane = behavior.target_lane.get
@@ -112,7 +112,7 @@ class Agent(
     // Do physics to update current speed and figure out how far we've traveled
     // in this timestep.
     // Subtle note: Do this after LCing, else we see the wrong speed
-    val new_dist = update_kinematics(dt_s)
+    val new_dist = update_kinematics(cfg.dt_s)
 
     // Currently Lane-changing?
     old_lane match {
