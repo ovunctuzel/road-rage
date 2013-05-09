@@ -69,7 +69,7 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
     case EV_Heartbeat(info) => {
       status.agents.text = info.describe
       status.time.text = Util.time_num(info.tick)
-      status.sim_speed.text = "%dx / %dx".format(info.tick - last_tick, 1)
+      status.sim_speed.text = "%dx / %dx".format((info.tick - last_tick).toInt, 1)
       last_tick = info.tick
     }
     case _ =>

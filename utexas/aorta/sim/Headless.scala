@@ -6,7 +6,7 @@ package utexas.aorta.sim
 
 import java.io.File
 
-import utexas.aorta.ui.{MapCanvas, Viewer, EV_Action}
+import utexas.aorta.ui.{MapCanvas, GUI, EV_Action}
 
 import utexas.aorta.{Util, Common, cfg}
 
@@ -33,21 +33,21 @@ object Headless {
           gui_signal.delete
           gui match {
             case Some(ui) => {
-              if (Viewer.closed) {
+              if (GUI.closed) {
                 println("Resuming the GUI...")
-                Viewer.top.open
-                Viewer.closed = false
+                GUI.top.open
+                GUI.closed = false
               }
             }
             case None => {
               println("Launching the GUI...")
               gui = Some(new MapCanvas(sim, headless = true))
-              Viewer.launch_from_headless(gui.get)
+              GUI.launch_from_headless(gui.get)
             }
           }
         }
         gui match {
-          case Some(ui) if !Viewer.closed => ui.handle_ev(EV_Action("step"))
+          case Some(ui) if !GUI.closed => ui.handle_ev(EV_Action("step"))
           case _ =>
         }
       }

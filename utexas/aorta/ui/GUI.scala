@@ -55,7 +55,7 @@ object Status_Bar {
 }
 
 // TODO SwingApplication has a startup, quit, shutdown...
-object Viewer extends SimpleSwingApplication {
+object GUI extends SimpleSwingApplication {
   val road_types = List(
     "null", "residential", "unclassified", "secondary",
     "motorway_link", "motorway", "trunk_link", "secondary_link", "primary_link",
