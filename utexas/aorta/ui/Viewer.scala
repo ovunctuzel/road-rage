@@ -16,12 +16,7 @@ object Status_Bar {
   val zoom       = new Label("1.0") // TODO from cfg
   val agents     = new Label("0 moved / 0 live / 0 ready")
   val time       = new Label("0.0 [Paused]")
-  val sim_speed = new Label("1.0x / 1.0x")
-
-  // TODO headless should be doing this.
-  def update_speed(sim: Simulation) = {
-    sim_speed.text = "%.1fx / %.1fx".format(1.0, 1.0)
-  }
+  val sim_speed = new Label("0x / 1x")
 
   val panel = new GridBagPanel {
     maximumSize = new Dimension(Int.MaxValue, 10)

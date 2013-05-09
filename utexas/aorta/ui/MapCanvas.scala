@@ -64,10 +64,13 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
     }.start
   }
 
+  private var last_tick = 0.0
   sim.listen("statusbar", (ev: Sim_Event) => { ev match {
     case EV_Heartbeat(info) => {
       status.agents.text = info.describe
       status.time.text = Util.time_num(info.tick)
+      status.sim_speed.text = "%dx / %dx".format(info.tick - last_tick, 1)
+      last_tick = info.tick
     }
     case _ =>
   }})
@@ -563,7 +566,6 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
                    ""
                  else
                    " [Paused]"
-      status.update_speed(sim)
       repaint
     }
     case "toggle-running" => {
@@ -721,20 +723,16 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
     }
     case Key.OpenBracket => {
       //sim.slow_down()
-      status.update_speed(sim)
     }
     case Key.CloseBracket => {
       //sim.speed_up()
-      status.update_speed(sim)
     }
     case Key.Minus => {
       //sim.slow_down(5)
-      status.update_speed(sim)
     }
     case Key.Equals => {
       // TODO WE do the rate-limiting, actually!
       //sim.speed_up(5)
-      status.update_speed(sim)
     }
     case Key.D => current_obj match {
       case Some(thing) => thing.debug
