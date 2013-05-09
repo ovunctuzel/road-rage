@@ -28,7 +28,7 @@ abstract class ScrollingCanvas extends Component {
   preferredSize = new Dimension(600, Int.MaxValue)
 
   // It's nice to have access to this.
-  protected var status = Status_Bar
+  protected val status = Status_Bar
 
   override def focusable = true   // for keys to work
 

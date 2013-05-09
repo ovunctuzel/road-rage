@@ -15,8 +15,8 @@ import utexas.aorta.{Util, cfg}
 object Status_Bar {
   val zoom       = new Label("1.0") // TODO from cfg
   val agents     = new Label("0 moved / 0 live / 0 ready")
-  val time       = new Label("0.0 [Paused]")
-  val sim_speed = new Label("0x / 1x")
+  val time       = new Label("0.0")
+  val sim_speed = new Label("Paused / 1x")
 
   val panel = new GridBagPanel {
     maximumSize = new Dimension(Int.MaxValue, 10)
@@ -37,7 +37,7 @@ object Status_Bar {
     c.gridx = 2
     layout(new Label("Time")) = c
     c.gridx = 3
-    layout(new Label("Sim Speed (Actual/Desired)")) = c
+    layout(new Label("Sim Speed (Actual/Cap)")) = c
 
     // row 2: columns
     c.weightx = 0.0

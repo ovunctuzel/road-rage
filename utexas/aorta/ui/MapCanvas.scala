@@ -31,49 +31,84 @@ object Mode extends Enumeration {
 }
 
 class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCanvas {
+  // A rate of realtime. 1x is realtime.
+  var speed_cap: Int = 1
+
+  private var last_render: Long = 0
+  private var tick_last_render = 0.0
+  private def step_sim() {
+    sim.step()
+    camera_agent match {
+      case Some(a) => {
+        if (sim.has_agent(a)) {
+          center_on(a.at.location)
+        } else {
+          Util.log(a + " is done; the camera won't stalk them anymore")
+          camera_agent = None
+          route_members = Set[Road]()
+        }
+      }
+      case None =>
+    }
+
+    // Only render every 0.2 seconds
+    val now = System.currentTimeMillis
+    // TODO cfg
+    if (now - last_render > 200 && sim.tick != tick_last_render ) {
+      handle_ev(EV_Action("step"))
+      last_render = now
+      tick_last_render = sim.tick
+    }
+  }
+
   // Headless mode might be controlling us...
   if (!headless) {
     // fire steps every now and then
     new Thread {
       override def run(): Unit = {
         while (true) {
-          val start = System.currentTimeMillis
-          // we should fire about 10x/second. optimal/useful rate is going to be
-          // related to desired_sim_speed and cfg.dt_s   TODO
-          Thread.sleep(10)
-          if (running) {
-            //sim.step((System.currentTimeMillis - start).toDouble / 1000.0)
-            sim.step()
-            camera_agent match {
-              case Some(a) => {
-                if (sim.has_agent(a)) {
-                  center_on(a.at.location)
-                } else {
-                  Util.log(a + " is done; the camera won't stalk them anymore")
-                  camera_agent = None
-                  route_members = Set[Road]()
-                }
-              }
-              case None =>
+          if (running && speed_cap > 0) {
+            val start_time = System.currentTimeMillis
+            step_sim()
+
+            // Rate-limit, if need be.
+            // In order to make speed_cap ticks per second, each tick needs to
+            // last 1000 / speed_cap milliseconds.
+            val goal = 
+              if (speed_cap > 0)
+                (1000 / speed_cap).toInt
+              else
+                0
+            val dt_ms = System.currentTimeMillis - start_time
+            if (dt_ms < goal) {
+              // Ahead of schedule. Sleep.
+              Thread.sleep(goal - dt_ms)
             }
-            // always render
-            handle_ev(EV_Action("step"))
+          } else {
+            // Just avoid thrashing the CPU.
+            Thread.sleep(100)
           }
         }
       }
     }.start
   }
 
+  // TODO eventually, GUI should listen to this and manage the gui, not
+  // mapcanvas.
   private var last_tick = 0.0
   sim.listen("statusbar", (ev: Sim_Event) => { ev match {
     case EV_Heartbeat(info) => {
+      update_status()
       status.agents.text = info.describe
       status.time.text = Util.time_num(info.tick)
-      status.sim_speed.text = "%dx / %dx".format((info.tick - last_tick).toInt, 1)
       last_tick = info.tick
     }
     case _ =>
   }})
+
+  def update_status() {
+    status.sim_speed.text = "%dx / %dx".format((sim.tick - last_tick).toInt, speed_cap)
+  }
 
   // but we can also pause
   var running = false
@@ -571,6 +606,7 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
     case "toggle-running" => {
       if (running) {
         running = false
+        status.sim_speed.text = s"Paused / $speed_cap"
       } else {
         running = true
       }
@@ -722,17 +758,12 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
       }
     }
     case Key.OpenBracket => {
-      //sim.slow_down()
+      speed_cap = math.max(0, speed_cap - 1)
+      update_status()
     }
     case Key.CloseBracket => {
-      //sim.speed_up()
-    }
-    case Key.Minus => {
-      //sim.slow_down(5)
-    }
-    case Key.Equals => {
-      // TODO WE do the rate-limiting, actually!
-      //sim.speed_up(5)
+      speed_cap += 1
+      update_status()
     }
     case Key.D => current_obj match {
       case Some(thing) => thing.debug

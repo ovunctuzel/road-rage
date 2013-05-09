@@ -165,7 +165,7 @@
 
 # UI
 - merge headless/gui clients
-  - ui speed controls.. step one tick, display a certain fps, sleep to match what?
+- step one tick
 - label agents with their number in the GUI
 - javafx?
 - 3D. ardor? jme?
