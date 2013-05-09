@@ -5,31 +5,53 @@
 package utexas.aorta.map
 
 import scala.collection.mutable.{HashMap, PriorityQueue, HashSet}
-import java.io.Serializable
 
 import utexas.aorta.map.analysis.{Router, DijkstraRouter, CHRouter,
                                   CongestionRouter}
 
-import utexas.aorta.{Util, Common}
+import utexas.aorta.{Util, Common, StateWriter, StateReader}
 
-@SerialVersionUID(1)
 class Graph(
   val roads: Array[Road], val edges: Array[Edge], val vertices: Array[Vertex],
   val width: Double, val height: Double, val offX: Double, val offY: Double,
   val scale: Double, val name: String
-) extends Serializable
+) extends GraphLike
 {
-  @transient lazy val directed_roads =
+  //////////////////////////////////////////////////////////////////////////////
+  // Deterministic state
+
+  val directed_roads =
     roads.flatMap(r => List(r.pos_group, r.neg_group).flatten).toArray
   // TODO if we squish down IDs, it can be an array too!
-  @transient lazy val turns = vertices.foldLeft(List[Turn]())(
+  val turns = vertices.foldLeft(List[Turn]())(
     (l, v) => v.turns.toList ++ l
   ).map(t => t.id -> t).toMap
 
-  @transient lazy val dijkstra_router = new DijkstraRouter(this)
-  @transient lazy val ch_router = new CHRouter(this)
-  @transient lazy val congestion_router = new CongestionRouter(this)
-  @transient lazy val router: Router = choose_router
+  val dijkstra_router = new DijkstraRouter(this)
+  val ch_router = new CHRouter(this)
+  val congestion_router = new CongestionRouter(this)
+  val router: Router = choose_router
+
+  //////////////////////////////////////////////////////////////////////////////
+  // Meta
+
+  def serialize(w: StateWriter) {
+    w.int(roads.size)
+    roads.foreach(r => r.serialize(w))
+    w.int(edges.size)
+    edges.foreach(e => e.serialize(w))
+    w.int(vertices.size)
+    vertices.foreach(v => v.serialize(w))
+    w.double(width)
+    w.double(height)
+    w.double(offX)
+    w.double(offY)
+    w.double(scale)
+    w.string(name)
+  }
+
+  //////////////////////////////////////////////////////////////////////////////
+  // Queries
 
   // Prefer CH if this map has been prerouted.
   private def choose_router(): Router = {
@@ -41,6 +63,10 @@ class Graph(
   }
 
   def traversables() = edges ++ turns.values
+
+  def get_r(id: Int) = roads(id)
+  def get_v(id: Int) = vertices(id)
+  def get_e(id: Int) = edges(id)
 }
 
 // It's a bit funky, but the actual graph instance doesn't have this; we do.
@@ -68,9 +94,30 @@ object Graph {
 
   def load(fn: String): Graph = {
     Util.log(s"Loading $fn...")
-    val g = Util.unserialize(fn).asInstanceOf[Graph]
+    return unserialize(Util.reader(fn))
+  }
+
+  def unserialize(r: StateReader): Graph = {
+    val g = new Graph(
+      Range(0, r.int).map(_ => Road.unserialize(r)).toArray,
+      Range(0, r.int).map(_ => Edge.unserialize(r)).toArray,
+      Range(0, r.int).map(_ => Vertex.unserialize(r)).toArray,
+      r.double, r.double, r.double, r.double, r.double, r.string
+    )
     set_params(g.width, g.height, g.offX, g.offY, g.scale)
-    Common.edges = g.edges
+    g.edges.foreach(e => e.setup(g))
+    for (v <- g.vertices; t <- v.turns) {
+      t.setup(g)
+    }
+    // Do roads last; they depend on edges.
+    g.roads.foreach(r => r.setup(g))
     return g
   }
+}
+
+// This is only so setup routines can reference Graph or PreGraph3.
+abstract class GraphLike {
+  def get_r(id: Int): Road
+  def get_v(id: Int): Vertex
+  def get_e(id: Int): Edge
 }

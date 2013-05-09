@@ -38,7 +38,9 @@ object Builder {
       s" edges, and ${graph3.vertices.length} vertices"
     )
     Util.mkdir("maps")
-    Util.serialize(graph, output)
+    val w = Util.writer(output)
+    graph.serialize(w)
+    w.done()
 
     return output
   }

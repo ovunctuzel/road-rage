@@ -3,6 +3,11 @@
 # Roadmap #
 
 1) cleanup
+  - map serialization
+    - goal: determinsistic map building
+    - fast!
+  - scenario serialization
+    - so, totally rip out old way.
   - instructions on site
   - clever routing
   - good enough default sys bids, to get new default over FIFO
@@ -109,6 +114,7 @@
 - give lanes/roads/etc the ability to be closed
 
 # Code Cleanup
+- using new ID stuff, make copies of stuff instead of var?
 - distance/time types
 - compatible serialization
 - split the passes

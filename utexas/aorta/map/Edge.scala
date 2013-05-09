@@ -4,23 +4,46 @@
 
 package utexas.aorta.map
 
-import java.io.Serializable
-
 import utexas.aorta.map.analysis.AbstractEdge
 import utexas.aorta.ui.Renderable
 
-import utexas.aorta.{cfg, RNG, Util}
+import utexas.aorta.{cfg, RNG, Util, StateWriter, StateReader}
 
 // TODO subclass Edge for pos/neg.. seems easier for lots of things
 
-// TODO var id due to tarjan
-@SerialVersionUID(1)
-class Edge(var id: Int, val road: Road, val dir: Direction.Value)
-  extends Traversable with Renderable with Ordered[Edge] with Serializable
+// TODO var id due to tarjan, var lane num due to fixing IDs. maybe not
+// necessary...
+class Edge(
+  var id: Int, road_id: Int, val dir: Direction.Value, var lane_num: Int
+) extends Traversable with Renderable with Ordered[Edge]
 {
-  var lane_num: Int = -1  // TODO needs to be initialized to be defined.. bleh.
+  //////////////////////////////////////////////////////////////////////////////
+  // State
+
+  var road: Road = null
+
+  //////////////////////////////////////////////////////////////////////////////
+  // Meta
+
+  override def serialize(w: StateWriter) {
+    w.int(id)
+    w.int(road.id)
+    w.int(dir.id)
+    w.int(lane_num)
+    super.serialize(w)
+  }
+
+  def setup(g: GraphLike) {
+    road = g.get_r(road_id)
+    other_lanes += this
+  }
+
+  //////////////////////////////////////////////////////////////////////////////
+  // Queries
 
   override def compare(other: Edge) = id.compare(other.id)
+  override def toString = "Lane %s%d of %s (%d)".format(dir, lane_num, road.name, id)
+  //override def toString = "Lane %d".format(id)
 
   // no lane-changing
   //def leads_to = next_turns
@@ -59,9 +82,6 @@ class Edge(var id: Int, val road: Road, val dir: Direction.Value)
 
   // not for one-ways right now. but TODO it'd be cool to put that here.
   def lane_offset = other_lanes.length - lane_num
-
-  override def toString = "Lane %s%d of %s (%d)".format(dir, lane_num, road.name, id)
-  //override def toString = "Lane %d".format(id)
 
   def from: Vertex = if (dir == Direction.POS) road.v1 else road.v2
   def to: Vertex   = if (dir == Direction.POS) road.v2 else road.v1
@@ -112,6 +132,14 @@ class Edge(var id: Int, val road: Road, val dir: Direction.Value)
   ).isDefined
 }
 
+object Edge {
+  def unserialize(r: StateReader): Edge = {
+    val e = new Edge(r.int, r.int, Direction(r.int), r.int)
+    e.unserialize(r)
+    return e
+  }
+}
+
 object Direction extends Enumeration {
   type Direction = Value
   val POS = Value("+")  // v1 -> v2
@@ -119,10 +147,9 @@ object Direction extends Enumeration {
 }
 
 // Represent a group of directed edges on one road
-@SerialVersionUID(1)
 // TODO var id because things get chopped up
 class DirectedRoad(val road: Road, var id: Int, val dir: Direction.Value)
-  extends AbstractEdge with Serializable with Ordered[DirectedRoad]
+  extends AbstractEdge with Ordered[DirectedRoad]
 {
   override def toString = "%s's %s lanes".format(road, dir)
   override def compare(other: DirectedRoad) = id.compare(other.id)

@@ -5,30 +5,25 @@
 package utexas.aorta.map
 
 import scala.collection.mutable.MutableList
-import java.io.Serializable
 
 import utexas.aorta.ui.Renderable
 
-import utexas.aorta.Util
+import utexas.aorta.{Util, StateWriter, StateReader}
 
 // TODO enum for type. also, it's var because of tarjan's...
 // TODO var id due to tarjan
-@SerialVersionUID(1)
 class Road(
   var id: Int, val length: Double, val name: String, var road_type: String,
-  val osm_id: String, val v1: Vertex, val v2: Vertex
-) extends Renderable with Serializable
+  val osm_id: String, v1_id: Int, v2_id: Int, var points: Array[Coordinate]
+) extends Renderable
 {
-  var points: Array[Coordinate] = null
+  //////////////////////////////////////////////////////////////////////////////
+  // Deterministic state
 
-  def set_points(pts: Array[Coordinate]) = {
-    points = pts
+  var v1: Vertex = null
+  var v2: Vertex = null
 
-    // check invariants -- oops, not true anymore since we merge short roads
-    //Util.assert_eq(v1.location, points.head)
-    //Util.assert_eq(v2.location, points.last)
-  }
-
+  // TODO move the lanes to be part of the D.R.
   var pos_group: Option[DirectedRoad] = Some(new DirectedRoad(
     this, Road.next_directed_id, Direction.POS
   ))
@@ -40,24 +35,8 @@ class Road(
   val pos_lanes = new MutableList[Edge]
   val neg_lanes = new MutableList[Edge]
 
-  def all_lanes() = pos_lanes ++ neg_lanes
-  def other_vert(v: Vertex) = if (v == v1) v2 else v1
-
-  def is_oneway = pos_lanes.length == 0 || neg_lanes.length == 0
-  // TODO assert is_oneway, maybe. or maybe even case class...
-  def oneway_lanes = if (pos_lanes.length == 0) neg_lanes else pos_lanes
-
-  def num_lanes = pos_lanes.length + neg_lanes.length
-
-  override def toString = name + " [R" + id + "]"
-  
-  // TODO don't ask for vertex that isn't either v1 or v2.
-  def incoming_lanes(v: Vertex) = if (v == v1) neg_lanes else pos_lanes
-  def outgoing_lanes(v: Vertex) = if (v == v1) pos_lanes else neg_lanes
-
-  def pairs_of_points = points zip points.tail
-
-  @transient lazy val speed_limit = mph_to_si(road_type match {
+  // TODO move this table
+  val speed_limit = mph_to_si(road_type match {
     case "residential"    => 30
     case "motorway"       => 80
     // Actually these don't have a speed limit legally...  35 is suggested, but NOBODY does that
@@ -85,10 +64,66 @@ class Road(
     
     case _                => 35 // Generally a safe speed, right?
   })
+
+  //////////////////////////////////////////////////////////////////////////////
+  // Meta
+
+  def serialize(w: StateWriter) {
+    w.int(id)
+    w.double(length)
+    w.string(name)
+    w.string(road_type)
+    w.string(osm_id)
+    w.int(v1.id)
+    w.int(v2.id)
+    w.int(points.size)
+    for (pt <- points) {
+      w.double(pt.x)
+      w.double(pt.y)
+    }
+  }
+
+  def setup(g: GraphLike) {
+    v1 = g.get_v(v1_id)
+    v2 = g.get_v(v2_id)
+
+    if (pos_lanes.isEmpty) {
+      pos_group = None
+    }
+    if (neg_lanes.isEmpty) {
+      neg_group = None
+    }
+
+    // check invariants of points -- oops, not true anymore since we merge short
+    // roads
+    //Util.assert_eq(v1.location, points.head)
+    //Util.assert_eq(v2.location, points.last)
+  }
+
+  //////////////////////////////////////////////////////////////////////////////
+  // Queries
+
+  def all_lanes() = pos_lanes ++ neg_lanes
+  def other_vert(v: Vertex) = if (v == v1) v2 else v1
+
+  def is_oneway = pos_lanes.length == 0 || neg_lanes.length == 0
+  // TODO assert is_oneway, maybe. or maybe even case class...
+  def oneway_lanes = if (pos_lanes.length == 0) neg_lanes else pos_lanes
+
+  def num_lanes = pos_lanes.length + neg_lanes.length
+
+  override def toString = name + " [R" + id + "]"
+  
+  // TODO don't ask for vertex that isn't either v1 or v2.
+  def incoming_lanes(v: Vertex) = if (v == v1) neg_lanes else pos_lanes
+  def outgoing_lanes(v: Vertex) = if (v == v1) pos_lanes else neg_lanes
+
+  def pairs_of_points = points zip points.tail
+
   // to meters/sec
   def mph_to_si(r: Double) = r * 0.44704
 
-  def debug = {
+  def debug() {
     Util.log(this + " is a " + road_type + " of length " + length + " meters")
   }
 
@@ -101,6 +136,11 @@ class Road(
 }
 
 object Road {
+  def unserialize(r: StateReader) = new Road(
+    r.int, r.double, r.string, r.string, r.string, r.int, r.int,
+    Range(0, r.int).map(_ => new Coordinate(r.double, r.double)).toArray
+  )
+
   def road_len(pts: Iterable[Coordinate]) =
     pts.zip(pts.tail).map(p => new Line(p._1, p._2)).foldLeft(0.0)(
       (a, b) => a + b.length

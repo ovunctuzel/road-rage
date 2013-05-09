@@ -5,27 +5,43 @@
 package utexas.aorta.map
 
 import scala.collection.mutable.MutableList
-import java.io.Serializable
 
 import utexas.aorta.ui.Renderable
 
-import utexas.aorta.Util
+import utexas.aorta.{Util, StateWriter, StateReader}
 
 // TODO I don't want this dependency, but at the moment, it leads to a great
 // perf boost due to dropping a pricy hash lookup
 import utexas.aorta.sim.Intersection
 
 // TODO var id due to tarjan
-@SerialVersionUID(1)
 class Vertex(val location: Coordinate, var id: Int) extends Renderable
-  with Serializable
 {
-  // TODO this is a temporary solution
-  @transient var intersection: Intersection = null
+  //////////////////////////////////////////////////////////////////////////////
+  // State
 
-  // TODO we could keep a map for faster lookup, sure, but determinism's cool
-  // too.
+  // TODO we could keep a map for faster lookup
   var turns: List[Turn] = Nil
+
+  //////////////////////////////////////////////////////////////////////////////
+  // Deterministic state
+
+  // TODO messy to have this dependency here.
+  var intersection: Intersection = null
+
+  //////////////////////////////////////////////////////////////////////////////
+  // Meta
+
+  def serialize(w: StateWriter) {
+    w.double(location.x)
+    w.double(location.y)
+    w.int(id)
+    w.int(turns.length)
+    turns.foreach(t => t.serialize(w))
+  }
+
+  //////////////////////////////////////////////////////////////////////////////
+  // Queries
 
   def turns_from(from: Edge): List[Turn] = turns.filter(_.from == from)
   def turns_to(to: Edge): List[Turn] = turns.filter(_.to == to)
@@ -72,5 +88,13 @@ class Vertex(val location: Coordinate, var id: Int) extends Renderable
 
     // anything else
     i.policy.dump_info
+  }
+}
+
+object Vertex {
+  def unserialize(r: StateReader): Vertex = {
+    val v = new Vertex(new Coordinate(r.double, r.double), r.int)
+    v.turns ++= Range(0, r.int).map(_ => Turn.unserialize(r))
+    return v
   }
 }

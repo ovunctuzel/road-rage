@@ -35,8 +35,6 @@ class Pass3(old_graph: PreGraph2) {
   var dfs = 0   // counter numbering
 
   def run(): PreGraph3 = {
-    Common.edges = graph.edges.toArray
-
     for (r <- graph.roads) {
       roads_per_vert.addBinding(r.v1, r)
       roads_per_vert.addBinding(r.v2, r)
@@ -123,12 +121,18 @@ class Pass3(old_graph: PreGraph2) {
     // TODO cfg
     val cross_thresshold = math.Pi / 10 // allow 18 degrees
 
+    def make_turn(pair: (Edge, Edge)): Turn = {
+      val t = new Turn(next_id, pair._1.id, pair._2.id)
+      t.setup(graph)
+      return t
+    }
+
     // if all edges belong to the same road, this is a dead-end
     if (roads.size == 1) {
       // link corresponding lane numbers
       val r = roads.head
       for ((from, to) <- r.incoming_lanes(v) zip r.outgoing_lanes(v)) {
-        v.turns = new Turn(next_id, from.id, to.id) :: v.turns
+        v.turns = make_turn((from, to)) :: v.turns
       }
     }
 
@@ -136,8 +140,6 @@ class Pass3(old_graph: PreGraph2) {
     // incoming to or outgoing from this vert.
     val incoming_roads = roads.filter(_.incoming_lanes(v).nonEmpty)
     val outgoing_roads = roads.filter(_.outgoing_lanes(v).nonEmpty)
-
-    def make_turn(pair: (Edge, Edge)) = new Turn(next_id, pair._1.id, pair._2.id)
 
     // this is a Cartesian product.
     for (r1 <- incoming_roads; r2 <- outgoing_roads if r1 != r2) {

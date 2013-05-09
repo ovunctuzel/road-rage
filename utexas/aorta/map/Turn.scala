@@ -4,22 +4,51 @@
 
 package utexas.aorta.map
 
-import java.io.Serializable
 import scala.collection.mutable.HashSet
 
-import utexas.aorta.Common
+import utexas.aorta.{Common, StateWriter, StateReader}
 
 // This constructor eschews geometry, taking a length and two points for
 // conflicts.
 // TODO from and to ID are var because we fiddle with IDs during Pass 3
 // construction.
-@SerialVersionUID(1)
 class Turn(val id: Int, var from_id: Int, var to_id: Int)
-  extends Traversable with Ordered[Turn] with Serializable
+  extends Traversable with Ordered[Turn]
 {
+  //////////////////////////////////////////////////////////////////////////////
+  // State
+
   // TODO var because points change
-  var conflict_line = new Line(from.end_pt, to.start_pt)
-  set_lines(Array(conflict_line))
+  var conflict_line: Line = null
+
+  //////////////////////////////////////////////////////////////////////////////
+  // Deterministic state
+
+  var from: Edge = null
+  var to: Edge = null
+
+  //////////////////////////////////////////////////////////////////////////////
+  // Meta
+
+  override def serialize(w: StateWriter) {
+    w.int(id)
+    w.int(from_id)
+    w.int(to_id)
+    // Don't serialize our conflict line, since it follows from our state.
+    // TODO if we ever trim it up, then watch out.
+  }
+
+  def setup(g: GraphLike) {
+    from = g.get_e(from_id)
+    to = g.get_e(to_id)
+    // When this is called during unserializing, this should've already
+    // happened.
+    conflict_line = new Line(from.end_pt, to.start_pt)
+    set_lines(Array(conflict_line))
+  }
+
+  //////////////////////////////////////////////////////////////////////////////
+  // Actions
 
   override def set_lines(l: Array[Line]) = {
     // Ignore the input and just recompute our conflict line.
@@ -27,10 +56,8 @@ class Turn(val id: Int, var from_id: Int, var to_id: Int)
     super.set_lines(Array(conflict_line))
   }
 
-  // The serialization dependency cycle has to be broken somewhere, or the order
-  // causes stack overflow. Break it here.
-  @transient lazy val from = Common.edges(from_id)
-  @transient lazy val to = Common.edges(to_id)
+  //////////////////////////////////////////////////////////////////////////////
+  // Queries
 
   override def compare(other: Turn) = id.compare(other.id)
 
@@ -51,4 +78,8 @@ class Turn(val id: Int, var from_id: Int, var to_id: Int)
 
   // TODO more efficiently?
   def conflicts = vert.turns.filter(conflicts_with).toSet
+}
+
+object Turn {
+  def unserialize(r: StateReader) = new Turn(r.int, r.int, r.int)
 }

@@ -15,8 +15,7 @@ import scala.io.Source
 import utexas.aorta.map.{Graph, Road, Edge, Vertex, Turn, DirectedRoad}
 import utexas.aorta.sim.policies.Phase
 
-import utexas.aorta.{Util, Common, cfg, StateWriter, StateReader,
-                     BinaryStateWriter}
+import utexas.aorta.{Util, Common, cfg, StateWriter, StateReader}
 import utexas.aorta.analysis.{Stats, Heartbeat_Stat, Scenario_Stat}
 
 // TODO take just a scenario, or graph and scenario?
@@ -237,7 +236,7 @@ class Simulation(val graph: Graph, val scenario: Scenario)
 
   def savestate(fn: String) {
     val t = Common.timer("savestating")
-    val w = new BinaryStateWriter(fn)
+    val w = Util.writer(fn)
     serialize(w)
     w.done()
     Util.log(s"Savestated to $fn. It took ${t.so_far}s.")

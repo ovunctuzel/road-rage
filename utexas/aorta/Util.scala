@@ -81,11 +81,16 @@ object Util {
     }
 
     if (load.startsWith("scenarios/savestate_")) {
-      return Simulation.unserialize(new BinaryStateReader(load))
-    } else {
-      val sim = Scenario.load_or_default_sim(load)
+      return Simulation.unserialize(reader(load))
+    } else if (load.startsWith("scenarios/")) {
+      return Scenario.load(load).make_sim()
+    } else if (load.startsWith("maps/")) {
+      val g = Graph.load(load)
+      val sim = Scenario.default(load, g).make_sim(g)
       sim.setup()
       return sim
+    } else {
+      throw new Exception(s"First parameter must be a savestate, scenario, or map.")
     }
   }
 
@@ -111,6 +116,9 @@ object Util {
   def mkdir(path: String) {
     (new File(path)).mkdir()
   }
+
+  def writer(fn: String) = new BinaryStateWriter(fn)
+  def reader(fn: String) = new BinaryStateReader(fn)
 }
 
 class RNG(seed: Long = System.currentTimeMillis) extends Serializable {
@@ -213,8 +221,6 @@ object cfg {
 // Plumbing some stuff everywhere is hard, so share here sometimes. Plus,
 // convenience methods.
 object Common {
-  // Because turns don't directly reference edges to break a serialization cycle
-  var edges: Array[utexas.aorta.map.Edge] = null
   // TODO make it easier to set the current active sim.
   var sim: utexas.aorta.sim.Simulation = null
   var time_limit = -1.0

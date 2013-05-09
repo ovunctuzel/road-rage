@@ -7,13 +7,14 @@ package utexas.aorta.map.make
 import scala.collection.mutable.HashMap
 import scala.collection.mutable.MutableList
 
-import utexas.aorta.map.{Coordinate, Vertex, Road, Edge, Direction, Turn}
+import utexas.aorta.map.{Coordinate, Vertex, Road, Edge, Direction, Turn,
+                         GraphLike}
 
 import utexas.aorta.{Util, cfg, Physics}
 
 // TODO we should really subclass the real Graph, but not sure yet.
 
-class PreGraph3(old_graph: PreGraph2) {
+class PreGraph3(old_graph: PreGraph2) extends GraphLike {
   var vertices = new MutableList[Vertex]
 
   // create vertices lazily!
@@ -23,21 +24,31 @@ class PreGraph3(old_graph: PreGraph2) {
   var road_id_cnt = 0
 
   var edges = new MutableList[Edge]           // a directed lane
-  var roads = old_graph.edges.map(add_road)   // collections of edges
+  var roads: List[Road] = Nil
+
+  for (old <- old_graph.edges) {
+    add_road(old)
+  }
+
+  // TODO binary search or direct lookup possible?
+  def get_r(id: Int) = roads.find(_.id == id).get
+  def get_v(id: Int) = vertices.find(_.id == id).get
+  def get_e(id: Int) = edges.find(_.id == id).get
 
   // support Tarjan's. Each of these expensive things should only be called once
   def turns() = vertices.foldLeft(List[Turn]())((l, v) => v.turns ++ l)
   def traversables() = edges ++ turns
 
-  def add_road(old_edge: PreEdge2): Road = {
+  def add_road(old_edge: PreEdge2) {
     // do addEdges too, once we decide how many lanes to do
-    // TODO shit, decide roads.size while we're assigning to it?
     val r = new Road(
       road_id_cnt, Road.road_len(old_edge.points),
       old_edge.dat.name, old_edge.dat.road_type, old_edge.dat.orig_id,
-      get_vert(old_edge.from), get_vert(old_edge.to)
+      get_vert(old_edge.from).id, get_vert(old_edge.to).id,
+      old_edge.points.toArray
     )
-    r.set_points(old_edge.points.toArray)
+    r.setup(this)
+    roads :+= r
     road_id_cnt += 1
 
     // now make the directed edges too
@@ -48,19 +59,17 @@ class PreGraph3(old_graph: PreGraph2) {
         1
 
     // v1 -> v2 lanes
-    for (l <- 1 to lanes) {
-      add_edge(r, Direction.POS)
+    for (l <- 0 until lanes) {
+      add_edge(r, Direction.POS, l)
     }
 
     // v2 -> v1 lanes unless we're oneway, in which case we keep the original
     // osm order
     if (!old_edge.dat.oneway) {
-      for (l <- 1 to lanes) {
-        add_edge(r, Direction.NEG)
+      for (l <- 0 until lanes) {
+        add_edge(r, Direction.NEG, l)
       }
     }
-
-    return r
   }
 
   private def ok_to_lc_multi_lanes(r: Road): Boolean = {
@@ -84,14 +93,10 @@ class PreGraph3(old_graph: PreGraph2) {
       v
     }
 
-  private def add_edge(r: Road, dir: Direction.Value) = {
-    // TODO ahh counting constantly is so slow!
-    val e = new Edge(edges.length, r, dir)
+  private def add_edge(r: Road, dir: Direction.Value, lane_num: Int) = {
+    val e = new Edge(edges.length, r.id, dir, lane_num)
+    e.setup(this)
     edges += e
-    // first in a list of lanes is defined as the rightmost
-    var lanes = e.other_lanes
-    e.lane_num = lanes.length
-    lanes += e
   }
 
   // osm types are inconsistent and wacky, but do our best

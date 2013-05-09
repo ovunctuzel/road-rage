@@ -4,8 +4,6 @@
 
 package utexas.aorta.map
 
-import java.io.Serializable
-
 /*
  * A vital note about coordinate systems:
  * - (longitude, latitude) corresponds to (x, y) where y increases upwards
@@ -14,10 +12,8 @@ import java.io.Serializable
  *   the "y inversion" handling from everywhere else.
  */
 
-@SerialVersionUID(1)
-class Coordinate(val x: Double, val y: Double) extends Ordered[Coordinate]
-  with Serializable
-{
+// TODO case class
+class Coordinate(val x: Double, val y: Double) extends Ordered[Coordinate] {
   override def hashCode = (x, y).hashCode
   // TODO override this notion of equals and hashCode automatically.
   override def equals(other: Any) = other match {

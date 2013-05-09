@@ -9,23 +9,42 @@ package utexas.aorta.map
 import utexas.aorta.sim.Queue
 import utexas.aorta.ui.Renderable
 
-import java.io.Serializable
-
 import utexas.aorta.{cfg, Util, Physics, StateWriter, StateReader}
 
 // Something with a sequence of lines forming a path and a way to get to more
 // somethings
-@SerialVersionUID(1)
-abstract class Traversable() extends Serializable {
-  // TODO temporary perf fix
-  @transient var queue: Queue = null
+abstract class Traversable() {
+  //////////////////////////////////////////////////////////////////////////////
+  // State
 
   var lines: Array[Line] = null // till set_lines happens.
-  def leads_to: List[Traversable]
-  def speed_limit: Double
-
   // Store; it's not free to compute it constantly
   var length: Double = -1.0
+
+  //////////////////////////////////////////////////////////////////////////////
+  // Deterministic state
+
+  // TODO temporary perf fix
+  var queue: Queue = null
+
+  //////////////////////////////////////////////////////////////////////////////
+  // Meta
+
+  def serialize(w: StateWriter) {
+    w.int(lines.length)
+    lines.foreach(l => l.serialize(w))
+    w.double(length)
+  }
+
+  def unserialize(r: StateReader) {
+    set_lines(Range(0, r.int).map(_ => Line.unserialize(r)).toArray)
+    // set_lines calculates the wrong distance, because we haven't done
+    // set_params yet for graph :(
+    length = r.double
+  }
+
+  //////////////////////////////////////////////////////////////////////////////
+  // Actions
 
   // TODO dont think this has to stick around that much longer.
   def set_lines(ls: Array[Line]) = {
@@ -38,6 +57,12 @@ abstract class Traversable() extends Serializable {
       case _ =>
     }
   }
+
+  //////////////////////////////////////////////////////////////////////////////
+  // Queries
+
+  def leads_to: List[Traversable]
+  def speed_limit: Double
 
   def cost = length / speed_limit
 
@@ -80,17 +105,27 @@ abstract class Traversable() extends Serializable {
 }
 
 // TODO noooo not var >_<
-@SerialVersionUID(1)
-class Line(var x1: Double, var y1: Double, var x2: Double, var y2: Double)
-  extends Serializable
-{
+class Line(var x1: Double, var y1: Double, var x2: Double, var y2: Double) {
+  //////////////////////////////////////////////////////////////////////////////
+  // Meta
+
+  def serialize(w: StateWriter) {
+    w.double(x1)
+    w.double(y1)
+    w.double(x2)
+    w.double(y2)
+  }
+
+  def this(pt1: Coordinate, pt2: Coordinate) = this(pt1.x, pt1.y, pt2.x, pt2.y)
+  def this(v1: Vertex, v2: Vertex) = this(v1.location, v2.location)
+
+  //////////////////////////////////////////////////////////////////////////////
+  // Queries
+
   // TODO Compute and store it once, since the math isn't free?
   def length = Coordinate.gps_dist_in_meters(
     Graph.world_to_gps(x1, y1), Graph.world_to_gps(x2, y2)
   )
-
-  def this(pt1: Coordinate, pt2: Coordinate) = this(pt1.x, pt1.y, pt2.x, pt2.y)
-  def this(v1: Vertex, v2: Vertex) = this(v1.location, v2.location)
 
   // return [0, 2pi) like a reasonable bloody...
   // also, this is a place where we have to recall the coordinate system has y
@@ -183,6 +218,11 @@ class Line(var x1: Double, var y1: Double, var x2: Double, var y2: Double)
   // TODO cfg for shift_mag
   def shift_fwd(mag: Double = 1.5) = shift_pt(x1, y1, angle, mag)
   def shift_back(mag: Double = 1.5) = shift_pt(x2, y2, angle + math.Pi, mag)
+}
+
+object Line {
+  def unserialize(r: StateReader) =
+    new Line(r.double, r.double, r.double, r.double)
 }
 
 case class Position(on: Traversable, dist: Double) extends Renderable {
