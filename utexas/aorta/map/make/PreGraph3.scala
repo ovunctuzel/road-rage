@@ -31,9 +31,21 @@ class PreGraph3(old_graph: PreGraph2) extends GraphLike {
   }
 
   // TODO binary search or direct lookup possible?
-  def get_r(id: Int) = roads.find(_.id == id).get
-  def get_v(id: Int) = vertices.find(_.id == id).get
-  def get_e(id: Int) = edges.find(_.id == id).get
+  def get_r(id: Int): Road = {
+    val r = roads(id)
+    Util.assert_eq(r.id, id)
+    return r
+  }
+  def get_v(id: Int): Vertex = {
+    val v = vertices(id)
+    Util.assert_eq(v.id, id)
+    return v
+  }
+  def get_e(id: Int): Edge = {
+    val e = edges(id)
+    Util.assert_eq(e.id, id)
+    return e
+  }
 
   // support Tarjan's. Each of these expensive things should only be called once
   def turns() = vertices.foldLeft(List[Turn]())((l, v) => v.turns ++ l)
