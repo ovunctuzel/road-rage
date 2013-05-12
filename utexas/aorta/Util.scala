@@ -83,7 +83,9 @@ object Util {
     if (load.startsWith("scenarios/savestate_")) {
       return Simulation.unserialize(reader(load))
     } else if (load.startsWith("scenarios/")) {
-      return Scenario.load(load).make_sim()
+      val sim = Scenario.load(load).make_sim()
+      sim.setup()
+      return sim
     } else if (load.startsWith("maps/")) {
       val g = Graph.load(load)
       val sim = Scenario.default(load, g).make_sim(g)
