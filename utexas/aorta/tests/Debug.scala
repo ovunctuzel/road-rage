@@ -135,7 +135,7 @@ object Debug {
       val from = rng.choose(sim.graph.directed_roads)
       val to = rng.choose(sim.graph.directed_roads)
       try {
-        router.path(from, to)
+        router.path(from, to, 0.0)
       } catch {
         case e: Throwable => {
           println(s"Problem on round $i going $from -> $to: $e")

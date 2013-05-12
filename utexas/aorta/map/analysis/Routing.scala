@@ -14,14 +14,14 @@ import utexas.aorta.{Util, Common}
 
 abstract class Router(graph: Graph) {
   // Doesn't include 'from' as the first step
-  def path(from: DirectedRoad, to: DirectedRoad): List[DirectedRoad]
+  def path(from: DirectedRoad, to: DirectedRoad, time: Double): List[DirectedRoad]
 }
 
 // A convenient abstraction if we ever switch to pathfinding on
 // edges/roads/others.
 abstract class AbstractEdge {
   var id: Int // TODO var because fix_ids
-  def cost: Double
+  def cost(time: Double): Double
   // List and not Set means there could be multiple transitions, with possibly
   // different weights.
   def succs: Seq[(AbstractEdge, Double)]
@@ -29,16 +29,17 @@ abstract class AbstractEdge {
 }
 
 class DijkstraRouter(graph: Graph) extends Router(graph) {
-  def costs_to(r: DirectedRoad) = dijkstras(
-    graph.directed_roads.size, r, (e: AbstractEdge) => e.preds
+  def costs_to(r: DirectedRoad, time: Double) = dijkstras(
+    graph.directed_roads.size, r, (e: AbstractEdge) => e.preds, time
   )
 
-  def path(from: DirectedRoad, to: DirectedRoad) =
-    hillclimb(costs_to(to), from).tail.asInstanceOf[List[DirectedRoad]]
+  def path(from: DirectedRoad, to: DirectedRoad, time: Double) =
+    hillclimb(costs_to(to, time), from).tail.asInstanceOf[List[DirectedRoad]]
 
   // Precomputes a table of the cost from source to everything.
   def dijkstras(size: Int, source: AbstractEdge,
-                next: AbstractEdge => Seq[(AbstractEdge, Double)]): Array[Double] =
+                next: AbstractEdge => Seq[(AbstractEdge, Double)],
+                time: Double): Array[Double] =
   {
     val costs = Array.fill[Double](size)(Double.PositiveInfinity)
 
@@ -64,7 +65,7 @@ class DijkstraRouter(graph: Graph) extends Router(graph) {
         done += step.edge
 
         for ((next, transition_cost) <- next(step.edge) if !done.contains(next)) {
-          val cost = step.cost + transition_cost + next.cost
+          val cost = step.cost + transition_cost + next.cost(time)
           if (cost < costs(next.id)) {
             // Relax!
             costs(next.id) = cost
@@ -98,7 +99,7 @@ class CHRouter(graph: Graph) extends Router(graph) {
   var usable = gh.loadExisting
   private val algo = new PrepareContractionHierarchies().graph(gh).createAlgo
 
-  def path(from: DirectedRoad, to: DirectedRoad): List[DirectedRoad] = {
+  def path(from: DirectedRoad, to: DirectedRoad, path: Double): List[DirectedRoad] = {
     // GraphHopper can't handle loops. For now, empty path; freebie.
     // TODO force a loop by starting on a road directly after 'from'
     if (from == to) {
@@ -141,7 +142,7 @@ class CHRouter(graph: Graph) extends Router(graph) {
 // right now
 class CongestionRouter(graph: Graph) extends Router(graph) {
   // TODO clean this up >_<
-  def path(from: DirectedRoad, to: DirectedRoad): List[DirectedRoad] = {
+  def path(from: DirectedRoad, to: DirectedRoad, time: Double): List[DirectedRoad] = {
     if (from == to) {
       return Nil
     }
@@ -207,7 +208,7 @@ class CongestionRouter(graph: Graph) extends Router(graph) {
       } else {
         for ((next_state_raw, transition_cost) <- current.state.succs) {
           val next_state = next_state_raw.asInstanceOf[DirectedRoad]
-          val next_time_cost = transition_cost + next_state.cost
+          val next_time_cost = transition_cost + next_state.cost(time)
           val next_congestion_cost =
             if (next_state.is_congested)
               1.0

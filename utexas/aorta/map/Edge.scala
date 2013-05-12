@@ -173,7 +173,7 @@ class DirectedRoad(val road: Road, var id: Int, val dir: Direction.Value)
                              else
                                from.succs.map(_.directed_road).toSet
 
-  def cost = road.length / road.speed_limit
+  def cost(time: Double) = road.length / road.speed_limit
 
   def succs = edges.flatMap(e => e.next_turns.map(t => (t.to.directed_road, t.cost)))
   def preds = edges.flatMap(e => e.prev_turns.map(t => (t.from.directed_road, t.cost)))

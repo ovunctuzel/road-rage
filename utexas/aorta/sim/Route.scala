@@ -72,7 +72,9 @@ class DijkstraRoute(goal: DirectedRoad, rng: RNG) extends Route(goal, rng) {
   //////////////////////////////////////////////////////////////////////////////
   // State
 
-  private val costs = Common.sim.graph.dijkstra_router.costs_to(goal)
+  private val costs = Common.sim.graph.dijkstra_router.costs_to(
+    goal, Common.tick
+  )
 
   //////////////////////////////////////////////////////////////////////////////
   // Actions
@@ -201,8 +203,9 @@ class PathRoute(goal: DirectedRoad, rng: RNG) extends Route(goal, rng) {
 
       // Stitch together the new path into the full thing. Avoid congestion
       // during  this reroute.
-      val new_path = slice.head :: source ::
-                     Common.sim.graph.congestion_router.path(source, goal)
+      val new_path =
+        slice.head :: source ::
+        Common.sim.graph.congestion_router.path(source, goal, Common.tick)
       path = before ++ new_path
       tell_listeners(EV_Reroute(path))
       choice
@@ -215,7 +218,9 @@ class PathRoute(goal: DirectedRoad, rng: RNG) extends Route(goal, rng) {
 
   def pick_lane(from: Edge): Edge = {
     if (path == null) {
-      path = from.directed_road :: Common.sim.graph.router.path(from.directed_road, goal)
+      path =
+        from.directed_road ::
+        Common.sim.graph.router.path(from.directed_road, goal, Common.tick)
       tell_listeners(EV_Reroute(path))
     }
 

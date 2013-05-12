@@ -879,7 +879,7 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
 
     val timer = Common.timer("Pathfinding")
     // Can choose a specific router...
-    val route = sim.graph.congestion_router.path(from, to)
+    val route = sim.graph.congestion_router.path(from, to, sim.tick)
     route.foreach(step => println("  - " + step))
     timer.stop()
 
