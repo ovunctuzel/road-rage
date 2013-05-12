@@ -438,3 +438,30 @@ class DrunkenExplorerRoute(goal: DirectedRoad, rng: RNG)
 
   override def route_type = RouteType.DrunkenExplorer
 }
+
+class SpecificPathRoute(path: List[DirectedRoad], rng: RNG)
+  extends Route(path.last, rng)
+{
+  //////////////////////////////////////////////////////////////////////////////
+  // Meta
+
+  // TODO serialize, unserialize
+
+  //////////////////////////////////////////////////////////////////////////////
+  // Actions
+
+  def transition(from: Traversable, to: Traversable) {
+    // TODO make sure we're following the path?
+  }
+
+  def pick_turn(e: Edge): Turn = null // TODO
+  def pick_lane(e: Edge) = e  // TODO
+
+  //////////////////////////////////////////////////////////////////////////////
+  // Queries
+
+  def route_type = RouteType.SpecificPath
+  def dump_info() = {
+    Util.log(s"Specific route to $goal using $path")
+  }
+}

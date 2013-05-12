@@ -172,10 +172,20 @@ case class MkAgentSpawner(frequency: Double, expires: Double, seed: Long)
   }
 }*/
 
+// goal is the ID of an edge in the desired directed road
 @SerialVersionUID(1)
 case class MkRoute(strategy: RouteType.Value, goal: Integer, seed: Long) {
   def make(sim: Simulation) =
     Factory.make_route(strategy, sim.edges(goal).directed_road, new RNG(seed))
+}
+
+// path is a list of directed road IDs
+class MkSpecificPathRoute(path: List[Int], seed: Long)
+  extends MkRoute(RouteType.SpecificPath, path.last, seed)
+{
+  override def make(sim: Simulation) = new SpecificPathRoute(
+    path.map(id => sim.graph.directed_roads(id)), new RNG(seed)
+  )
 }
 
 @SerialVersionUID(1)
@@ -299,7 +309,7 @@ object IntersectionType extends Enumeration {
 
 object RouteType extends Enumeration {
   type RouteType = Value
-  val Dijkstra, Path, Drunken, DirectionalDrunk, DrunkenExplorer = Value
+  val Dijkstra, Path, Drunken, DirectionalDrunk, DrunkenExplorer, SpecificPath = Value
 }
 
 object OrderingType extends Enumeration {
