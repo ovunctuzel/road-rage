@@ -8,10 +8,8 @@ import scala.collection.mutable.HashMap
 import scala.collection.mutable.HashSet
 import scala.collection.mutable.Stack
 import scala.collection.mutable.{Set => MutableSet}
-import scala.collection.mutable.{HashSet => MutableHashSet}
 import scala.collection.mutable.MultiMap
 import scala.collection.mutable.ListBuffer
-import scala.collection.mutable.MutableList
 
 import utexas.aorta.map.{Road, Edge, Vertex, Turn, Line, Coordinate,
                          Traversable, DirectedRoad}
@@ -138,8 +136,9 @@ class Pass3(old_graph: PreGraph2) {
 
     // To account for one-ways, we actually want to reason about roads that are
     // incoming to or outgoing from this vert.
-    val incoming_roads = roads.filter(_.incoming_lanes(v).nonEmpty)
-    val outgoing_roads = roads.filter(_.outgoing_lanes(v).nonEmpty)
+    // Sorting is for determinism.
+    val incoming_roads = roads.filter(_.incoming_lanes(v).nonEmpty).toList.sortBy(_.id)
+    val outgoing_roads = roads.filter(_.outgoing_lanes(v).nonEmpty).toList.sortBy(_.id)
 
     // this is a Cartesian product.
     for (r1 <- incoming_roads; r2 <- outgoing_roads if r1 != r2) {
