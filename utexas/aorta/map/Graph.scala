@@ -20,12 +20,11 @@ class Graph(
   //////////////////////////////////////////////////////////////////////////////
   // Deterministic state
 
-  val directed_roads =
-    roads.flatMap(r => List(r.pos_group, r.neg_group).flatten).toArray
   // TODO if we squish down IDs, it can be an array too!
   val turns = vertices.foldLeft(List[Turn]())(
     (l, v) => v.turns.toList ++ l
   ).map(t => t.id -> t).toMap
+  var directed_roads: Array[DirectedRoad] = Array()
 
   val dijkstra_router = new DijkstraRouter(this)
   val ch_router = new CHRouter(this)
@@ -48,6 +47,11 @@ class Graph(
     w.double(offY)
     w.double(scale)
     w.string(name)
+  }
+
+  def setup() {
+    directed_roads =
+      roads.flatMap(r => List(r.pos_group, r.neg_group).flatten).toArray
   }
 
   //////////////////////////////////////////////////////////////////////////////
@@ -111,6 +115,7 @@ object Graph {
     }
     // Do roads last; they depend on edges.
     g.roads.foreach(r => r.setup(g))
+    g.setup()
     return g
   }
 }
