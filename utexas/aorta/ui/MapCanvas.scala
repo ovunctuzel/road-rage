@@ -583,7 +583,10 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
           val edges = sim.vertices.filter(
             v => polygon.contains(v.location.x, v.location.y)).flatMap(v => v.edges
           ).map(_.id).toArray
-          Util.serialize(edges, s"${dir}/${name}")
+          val w = Util.writer(s"${dir}/${name}")
+          w.int(edges.size)
+          edges.foreach(id => w.int(id))
+          w.done()
           Util.log(s"Area saved to ${dir}/${name}")
         }
         case None =>

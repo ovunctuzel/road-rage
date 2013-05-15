@@ -26,7 +26,7 @@ object TuneSystemBids {
 
   // Feed it the scenario to use as a metric
   def main(args: Array[String]): Unit = {
-    base = Util.unserialize(args.head).asInstanceOf[Scenario]
+    base = Scenario.load(args.head)
     graph = Graph.load(base.map_fn)
 
     // The parameters of the SystemWalletConfig

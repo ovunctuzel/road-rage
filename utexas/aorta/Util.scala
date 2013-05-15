@@ -96,19 +96,6 @@ object Util {
     }
   }
 
-  def serialize(obj: Any, fn: String) = {
-    val out = new ObjectOutputStream(new FileOutputStream(fn))
-    out.writeObject(obj)
-    out.close
-  }
-
-  def unserialize(fn: String): Any = {
-    val in = new ObjectInputStream(new FileInputStream(fn))
-    val obj = in.readObject
-    in.close
-    return obj
-  }
-
   def diff[T](a: T, b: T, header: String = ""): Option[String] =
     if (a == b)
       None
@@ -304,6 +291,7 @@ abstract class StateWriter(fn: String) {
   def double(x: Double)
   def string(x: String)
   def bool(x: Boolean)
+  def long(x: Long)
   def obj(x: Any)   // TODO remove.
 
   // TODO a macro to do lots of these in one line?
@@ -326,6 +314,9 @@ class BinaryStateWriter(fn: String) extends StateWriter(fn) {
   }
   def bool(x: Boolean) {
     out.writeBoolean(x)
+  }
+  def long(x: Long) {
+    out.writeLong(x)
   }
   def obj(x: Any) {
     // TODO dont use this.
@@ -351,6 +342,9 @@ class StringStateWriter(fn: String) extends StateWriter(fn) {
   def bool(x: Boolean) {
     out.println(x)
   }
+  def long(x: Long) {
+    out.println(x)
+  }
   def obj(x: Any) {
     // TODO dont use this.
     out.println(x)
@@ -362,6 +356,7 @@ abstract class StateReader(fn: String) {
   def double: Double
   def string: String
   def bool: Boolean
+  def long: Long
   def obj: Any    // TODO remove
 }
 
@@ -371,6 +366,7 @@ class BinaryStateReader(fn: String) extends StateReader(fn) {
   def double = in.readDouble
   def string = in.readUTF
   def bool = in.readBoolean
+  def long = in.readLong
   def obj = in.readObject   // TODO dont use this.
 }
 
@@ -380,6 +376,7 @@ class StringStateReader(fn: String) extends StateReader(fn) {
   def double = in.readLine.toDouble
   def string = in.readLine
   def bool = in.readLine.toBoolean
+  def long = in.readLine.toLong
   def obj: Any = {
     in.readLine
     return null   // TODO dont use this.

@@ -13,7 +13,6 @@ import scala.collection.mutable.{HashMap => MutableMap}
 
 import utexas.aorta.{Util, RNG, Common, cfg, StateWriter, StateReader}
 
-@SerialVersionUID(1)
 // Array index and agent/intersection ID must correspond. Client's
 // responsibility.
 case class Scenario(name: String, map_fn: String, agents: Array[MkAgent],
@@ -21,7 +20,11 @@ case class Scenario(name: String, map_fn: String, agents: Array[MkAgent],
                     system_wallet: SystemWalletConfig)
 {
   def make_sim(graph: Graph = Graph.load(map_fn)) = new Simulation(graph, this)
-  def save() = Util.serialize(this, name)
+  def save() {
+    val w = Util.writer(name)
+    serialize(w)
+    w.done()
+  }
 
   def make_intersection(v: Vertex) = intersections(v.id).make(v)
 
@@ -87,10 +90,27 @@ case class Scenario(name: String, map_fn: String, agents: Array[MkAgent],
 
     // TODO diff SystemWalletConfig
   }
+
+  def serialize(w: StateWriter) {
+    w.string(name)
+    w.string(map_fn)
+    w.int(agents.size)
+    agents.foreach(a => a.serialize(w))
+    w.int(intersections.size)
+    intersections.foreach(i => i.serialize(w))
+    system_wallet.serialize(w)
+  }
 }
 
 object Scenario {
-  def load(fn: String) = Util.unserialize(fn).asInstanceOf[Scenario]
+  def unserialize(r: StateReader) = Scenario(
+    r.string, r.string,
+    Range(0, r.int).map(_ => MkAgent.unserialize(r)).toArray,
+    Range(0, r.int).map(_ => MkIntersection.unserialize(r)).toArray,
+    SystemWalletConfig.unserialize(r)
+  )
+
+  def load(fn: String) = unserialize(Util.reader(fn))
 
   def default(map_fn: String, graph: Graph): Scenario = {
     val s = Scenario(
@@ -111,7 +131,6 @@ object Scenario {
 // agents/intersections/etc.
 // TODO associate directly with their corresponding class?
 
-@SerialVersionUID(1)
 case class MkAgent(id: Int, birth_tick: Double, seed: Long,
                    start_edge: Int, start_dist: Double, route: MkRoute,
                    wallet: MkWallet) extends Ordered[MkAgent]
@@ -124,8 +143,13 @@ case class MkAgent(id: Int, birth_tick: Double, seed: Long,
   )
 
   def serialize(w: StateWriter) {
-    // TODO this is cheating, is bad...
-    w.obj(this)
+    w.int(id)
+    w.double(birth_tick)
+    w.long(seed)
+    w.int(start_edge)
+    w.double(start_dist)
+    route.serialize(w)
+    wallet.serialize(w)
   }
 
   def diff(other: MkAgent) = {
@@ -148,8 +172,10 @@ case class MkAgent(id: Int, birth_tick: Double, seed: Long,
 }
 
 object MkAgent {
-  // TODO cheating
-  def unserialize(r: StateReader): MkAgent = r.obj.asInstanceOf[MkAgent]
+  def unserialize(r: StateReader) = MkAgent(
+    r.int, r.double, r.long, r.int, r.double, MkRoute.unserialize(r),
+    MkWallet.unserialize(r)
+  )
 }
 
 // Spawns some distribution of agents every frequency seconds.
@@ -173,10 +199,31 @@ case class MkAgentSpawner(frequency: Double, expires: Double, seed: Long)
 }*/
 
 // goal is the ID of an edge in the desired directed road
-@SerialVersionUID(1)
 case class MkRoute(strategy: RouteType.Value, goal: Integer, seed: Long) {
   def make(sim: Simulation) =
     Factory.make_route(strategy, sim.edges(goal).directed_road, new RNG(seed))
+
+  def serialize(w: StateWriter) {
+    w.int(strategy.id)
+    w.int(goal)
+    w.long(seed)
+  }
+
+  def unserialize(r: StateReader) {}
+}
+
+object MkRoute {
+  def unserialize(r: StateReader): MkRoute = {
+    val rtype = RouteType(r.int)
+    val goal = r.int
+    val seed = r.long
+    return rtype match {
+      case RouteType.SpecificPath =>
+        new MkSpecificPathRoute(Range(0, r.int).map(_ => r.int).toList, seed)
+      case _ =>
+        MkRoute(rtype, goal, seed)
+    }
+  }
 }
 
 // path is a list of directed road IDs
@@ -186,14 +233,28 @@ class MkSpecificPathRoute(path: List[Int], seed: Long)
   override def make(sim: Simulation) = new SpecificPathRoute(
     path.map(id => sim.graph.directed_roads(id)), new RNG(seed)
   )
+
+  override def serialize(w: StateWriter) {
+    super.serialize(w)
+    w.int(path.size)
+    path.foreach(id => w.int(id))
+  }
 }
 
-@SerialVersionUID(1)
 case class MkWallet(policy: WalletType.Value, budget: Int, priority: Int) {
   def make() = Factory.make_wallet(policy, budget, priority)
+
+  def serialize(w: StateWriter) {
+    w.int(policy.id)
+    w.int(budget)
+    w.int(priority)
+  }
 }
 
-@SerialVersionUID(1)
+object MkWallet {
+  def unserialize(r: StateReader) = MkWallet(WalletType(r.int), r.int, r.int)
+}
+
 case class MkIntersection(id: Integer, policy: IntersectionType.Value,
                           ordering: OrderingType.Value)
 {
@@ -209,9 +270,20 @@ case class MkIntersection(id: Integer, policy: IntersectionType.Value,
       Util.log(s"Intersection $id different: $d")
     }
   }
+
+  def serialize(w: StateWriter) {
+    w.int(id)
+    w.int(policy.id)
+    w.int(ordering.id)
+  }
 }
 
-@SerialVersionUID(1)
+object MkIntersection {
+  def unserialize(r: StateReader) = MkIntersection(
+    r.int, IntersectionType(r.int), OrderingType(r.int)
+  )
+}
+
 case class SystemWalletConfig(
   thruput_bonus: Int            = 7,
   avail_capacity_threshold: Int = 25,
@@ -223,6 +295,21 @@ case class SystemWalletConfig(
 ) {
   override def toString =
     s"SystemWalletConfig(thruput_bonus = $thruput_bonus, avail_capacity_threshold = $avail_capacity_threshold, capacity_bonus = $capacity_bonus, dependency_rate = $dependency_rate, waiting_rate = $waiting_rate, ready_bonus = $ready_bonus)"
+
+  def serialize(w: StateWriter) {
+    w.int(thruput_bonus)
+    w.int(avail_capacity_threshold)
+    w.int(capacity_bonus)
+    w.int(dependency_rate)
+    w.int(waiting_rate)
+    w.int(ready_bonus)
+  }
+}
+
+object SystemWalletConfig {
+  def unserialize(r: StateReader) = SystemWalletConfig(
+    r.int, r.int, r.int, r.int, r.int, r.int
+  )
 }
 
 object IntersectionDistribution {
@@ -527,15 +614,17 @@ object ScenarioTool {
           }
 
           val starts = params.get("starts") match {
-            case Some(fn) => Util.unserialize(fn).asInstanceOf[Array[Int]].map(
-              id => graph.edges(id)
-            )
+            case Some(fn) => {
+              val r = Util.reader(fn)
+              Range(0, r.int).map(_ => graph.edges(r.int)).toArray
+            }
             case None => graph.edges
           }
           val ends = params.get("ends") match {
-            case Some(fn) => Util.unserialize(fn).asInstanceOf[Array[Int]].map(
-              id => graph.edges(id)
-            )
+            case Some(fn) => {
+              val r = Util.reader(fn)
+              Range(0, r.int).map(_ => graph.edges(r.int)).toArray
+            }
             case None => graph.edges
           }
           val delay = params.get("delay") match {
