@@ -3,8 +3,6 @@
 # Roadmap #
 
 1) cleanup
-  - scenario serialization
-    - so, totally rip out old way.
   - instructions on site
   - clever routing
   - good enough default sys bids, to get new default over FIFO

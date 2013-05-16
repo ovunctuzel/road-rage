@@ -52,6 +52,9 @@ class Graph(
   def setup() {
     directed_roads =
       roads.flatMap(r => List(r.pos_group, r.neg_group).flatten).toArray
+    for ((dr, id) <- directed_roads.zipWithIndex) {
+      dr.id = id
+    }
   }
 
   //////////////////////////////////////////////////////////////////////////////
