@@ -116,6 +116,12 @@ class PathRoute(goal: DirectedRoad, rng: RNG) extends Route(goal, rng) {
   private var path: List[DirectedRoad] = null
   private val chosen_turns = new ImmutableMapAdaptor(new TreeMap[Edge, Turn]())
 
+  def this(road_list: List[DirectedRoad], rng: RNG) = 
+  {
+    this(road_list.last, rng);
+      
+    path = road_list
+  }
   //////////////////////////////////////////////////////////////////////////////
   // Meta
 
@@ -240,9 +246,16 @@ class PathRoute(goal: DirectedRoad, rng: RNG) extends Route(goal, rng) {
     // Find all lanes going to the next step.
     val candidates = candidate_lanes(from, slice.tail.head) match {
       case Nil => {
+        /*
         throw new Exception(
           s"Other lanes around $from don't lead to ${slice.tail.head}!"
         )
+        */
+       
+        path =
+          from.directed_road ::
+          Common.sim.graph.router.path(from.directed_road, goal, Common.tick)
+        return pick_lane(from);
       }
       case lanes => lanes
     }
@@ -282,7 +295,7 @@ class PathRoute(goal: DirectedRoad, rng: RNG) extends Route(goal, rng) {
         -1
       else
         // How far is this lane from an ideal lane?
-        (total - ideal_dist(t.to)).toDouble / total.toDouble
+        (total - ideal_dist(t.to)).toDouble / total.toDouble    
 
     // Prefer things close to where we'll need to go next, and things with more
     // room.
@@ -445,7 +458,7 @@ class DrunkenExplorerRoute(goal: DirectedRoad, rng: RNG)
 }
 
 class SpecificPathRoute(path: List[DirectedRoad], rng: RNG)
-  extends Route(path.last, rng)
+  extends PathRoute(path, rng)
 {
   //////////////////////////////////////////////////////////////////////////////
   // Meta
@@ -454,19 +467,21 @@ class SpecificPathRoute(path: List[DirectedRoad], rng: RNG)
 
   //////////////////////////////////////////////////////////////////////////////
   // Actions
-
+  
+  /*
   def transition(from: Traversable, to: Traversable) {
     // TODO make sure we're following the path?
   }
 
   def pick_turn(e: Edge): Turn = null // TODO
   def pick_lane(e: Edge) = e  // TODO
-
+  */
   //////////////////////////////////////////////////////////////////////////////
   // Queries
 
-  def route_type = RouteType.SpecificPath
-  def dump_info() = {
+  override def route_type = RouteType.SpecificPath
+  override def dump_info() = {
     Util.log(s"Specific route to $goal using $path")
   }
+
 }

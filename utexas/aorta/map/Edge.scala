@@ -173,8 +173,6 @@ class DirectedRoad(val road: Road, var id: Int, val dir: Direction.Value)
                              else
                                from.succs.map(_.directed_road).toSet
 
-  def cost(time: Double) = road.length / road.speed_limit
-
   def succs = edges.flatMap(e => e.next_turns.map(t => (t.to.directed_road, t.cost)))
   def preds = edges.flatMap(e => e.prev_turns.map(t => (t.from.directed_road, t.cost)))
 
@@ -182,4 +180,37 @@ class DirectedRoad(val road: Road, var id: Int, val dir: Direction.Value)
 
   // We're congested if any of our lanes are.
   def is_congested = edges.find(e => e.queue.is_congested).isDefined
+  
+    var td_costs : Array[Double] = null
+  var interval = 0
+  
+  def cost(time: Double) : Double = 
+  {
+    val freeflowtt = road.length / road.speed_limit
+    if(td_costs == null)
+    {
+      return freeflowtt
+    }
+    else
+    {
+      var idx : Int = math.round(time/interval).toInt
+      
+      if(idx >= td_costs.length || td_costs.apply(idx) < freeflowtt)
+      {
+        return freeflowtt
+      }
+      else
+      {
+        return td_costs.apply(idx)
+      }
+    }
+  }
+  
+  
+  def updateCosts(td_costs_ : Array[Double], interval_ : Int) =
+  {
+    td_costs = td_costs_
+    interval = interval_
+  }
+
 }

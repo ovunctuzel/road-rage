@@ -231,9 +231,9 @@ class MkSpecificPathRoute(path: List[Int], seed: Long)
   extends MkRoute(RouteType.SpecificPath, path.last, seed)
 {
   override def make(sim: Simulation) = new SpecificPathRoute(
-    path.map(id => sim.graph.directed_roads(id)), new RNG(seed)
+    path.map(id => sim.graph.directed_roads.apply(id)), new RNG(seed)
   )
-
+  
   override def serialize(w: StateWriter) {
     super.serialize(w)
     w.int(path.size)
