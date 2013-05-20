@@ -9,7 +9,7 @@ import scala.collection.mutable.{TreeSet => MutableSet}
 import utexas.aorta.map.{Edge, Coordinate, Turn, Traversable, Graph, Position}
 import utexas.aorta.sim.market._
 import utexas.aorta.ui.Renderable
-import utexas.aorta.analysis.{Stats, Agent_Lifetime_Stat}
+import utexas.aorta.analysis.Agent_Lifetime_Stat
 
 import utexas.aorta.{Util, RNG, Common, cfg, Physics, StateWriter, StateReader}
 
@@ -193,7 +193,7 @@ class Agent(
           tickets.remove(ticket)
           ticket.intersection.exit(ticket)
           ticket.stat = ticket.stat.copy(done_tick = Common.tick)
-          Stats.record(ticket.stat)
+          Common.record(ticket.stat)
         }
       }
 
@@ -279,7 +279,7 @@ class Agent(
       }
       Util.assert_eq(tickets.isEmpty, true)
     }
-    Stats.record(Agent_Lifetime_Stat(
+    Common.record(Agent_Lifetime_Stat(
       id, stat_memory._1, stat_memory._2, route.goal.id, route.route_type,
       wallet.wallet_type, stat_memory._3, Common.tick, wallet.budget,
       wallet.priority, !interrupted

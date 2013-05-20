@@ -16,7 +16,7 @@ import java.io.{ObjectOutputStream, FileOutputStream, ObjectInputStream,
 
 import utexas.aorta.map.Graph
 import utexas.aorta.sim.{Simulation, Scenario}
-import utexas.aorta.analysis.{Stats, Timer}
+import utexas.aorta.analysis.{Timer, StatsRecorder, Measurement}
 
 object Util {
   private var indent_log = 0
@@ -74,7 +74,7 @@ object Util {
 
     for ((key, value) <- keys.zip(vals)) {
       key match {
-        case "--log" => { Stats.setup_logging(value) }
+        case "--log" => { Common.stats_log = new StatsRecorder(value) }
         case "--time_limit" => { Common.time_limit = value.toDouble }
         case _ => { Util.log("Unknown argument: " + key); sys.exit }
       }
@@ -213,10 +213,12 @@ object Common {
   // TODO make it easier to set the current active sim.
   var sim: utexas.aorta.sim.Simulation = null
   var time_limit = -1.0
+  var stats_log: StatsRecorder = null
 
   def scenario = sim.scenario
   def tick = sim.tick
   def timer(name: String) = new Timer(name)
+  def record(item: Measurement) = stats_log.record(item)
 
   sys.ShutdownHookThread({
     if (sim != null) {

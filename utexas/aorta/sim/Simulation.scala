@@ -16,7 +16,7 @@ import utexas.aorta.map.{Graph, Road, Edge, Vertex, Turn, DirectedRoad}
 import utexas.aorta.sim.policies.Phase
 
 import utexas.aorta.{Util, Common, cfg, StateWriter, StateReader}
-import utexas.aorta.analysis.{Stats, Heartbeat_Stat, Scenario_Stat}
+import utexas.aorta.analysis.{Heartbeat_Stat, Scenario_Stat}
 
 // TODO take just a scenario, or graph and scenario?
 class Simulation(val graph: Graph, val scenario: Scenario)
@@ -54,7 +54,7 @@ class Simulation(val graph: Graph, val scenario: Scenario)
 
     // Are we starting for the first time?
     if (tick == 0.0) {
-      Stats.record(Scenario_Stat(scenario.map_fn, scenario.intersections))
+      Common.record(Scenario_Stat(scenario.map_fn, scenario.intersections))
       future_spawn ++= scenario.agents
     } else {
       future_spawn ++= scenario.agents.filter(_.birth_tick > tick)
@@ -138,7 +138,7 @@ class Simulation(val graph: Graph, val scenario: Scenario)
         active_cnt, agents.size, ready_to_spawn.size, tick,
         steps_since_last_time, ch_since_last_time, astar_since_last_time
       )
-      Stats.record(measurement)
+      Common.record(measurement)
       tell_listeners(EV_Heartbeat(measurement))
       last_real_time = now
       steps_since_last_time = 0

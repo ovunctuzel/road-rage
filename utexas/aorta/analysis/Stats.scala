@@ -29,12 +29,9 @@ abstract class Measurement {
   def write(stream: ObjectOutputStream)
 }
 
-object Stats {
-  var log: ObjectOutputStream = null
-
-  def setup_logging(fn: String) = {
-    log = new ObjectOutputStream(new FileOutputStream(fn))
-  }
+// Appends to logfile
+class StatsRecorder(fn: String) {
+  val log = new ObjectOutputStream(new FileOutputStream(fn, true))
 
   @elidable(elidable.ASSERTION) def record(item: Measurement) = {
     if (log != null) {

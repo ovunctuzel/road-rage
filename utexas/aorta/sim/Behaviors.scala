@@ -7,7 +7,6 @@ package utexas.aorta.sim
 import scala.collection.mutable.ListBuffer
 
 import utexas.aorta.map.{Edge, Turn, Traversable, DirectedRoad}
-import utexas.aorta.analysis.Stats
 
 import utexas.aorta.{Util, Common, cfg, Physics}
 

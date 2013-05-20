@@ -18,8 +18,9 @@
     - agents not stopping at exactly the right dist the first time
     - trip time should include waiting to enter time
   - savestating
-    - resuming logging
-    - multiple sims existing per process better. stats object.
+    - multiple sims existing per process better
+      DR ids ugly... sys wallets are a hack. phase IDs?
+      (minimize objects with state)
 2) big breaux
 3) marginal effects
 

@@ -202,7 +202,7 @@ class PathRoute(goal: DirectedRoad, rng: RNG) extends Route(goal, rng) {
       // TODO Erase all turn choices AFTER source, if we've made any?
 
       // Stitch together the new path into the full thing. Avoid congestion
-      // during  this reroute.
+      // during this reroute.
       val new_path =
         slice.head :: source ::
         Common.sim.graph.congestion_router.path(source, goal, Common.tick)
