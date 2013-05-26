@@ -62,14 +62,14 @@ case class Scenario_Stat(
 
 // Summarizes an agent's lifetime
 case class Agent_Lifetime_Stat(
-  id: Int, start_tick: Double, start: Int, end: Int, route: RouteType.Value,
-  wallet: WalletType.Value, start_budget: Int, end_tick: Double,
-  end_budget: Int, priority: Int, finished: Boolean
+  id: Int, spawn_tick: Double, start_tick: Double, start: Int, end: Int,
+  route: RouteType.Value, wallet: WalletType.Value, start_budget: Int,
+  end_tick: Double, end_budget: Int, priority: Int, finished: Boolean
 ) extends Measurement
 {
   // ID 1
 
-  def trip_time = end_tick - start_tick
+  def trip_time = end_tick - spawn_tick
   def total_spent = end_budget - start_budget
   // High priority and long trip time is bad; low priority or low trip time is
   // good.
@@ -80,6 +80,7 @@ case class Agent_Lifetime_Stat(
   def write(stream: ObjectOutputStream) = {
     stream.writeInt(1)
     stream.writeInt(id)
+    stream.writeDouble(spawn_tick)
     stream.writeDouble(start_tick)
     stream.writeInt(start)
     stream.writeInt(end)
@@ -178,9 +179,9 @@ object PostProcess {
   def read_stat(s: ObjectInputStream): Measurement = s.readInt match {
     case 0 => Scenario_Stat(s.readUTF, read_intersections(s))
     case 1 => Agent_Lifetime_Stat(
-      s.readInt, s.readDouble, s.readInt, s.readInt, RouteType(s.readInt),
-      WalletType(s.readInt), s.readInt, s.readDouble, s.readInt,
-      s.readInt, s.readBoolean
+      s.readInt, s.readDouble, s.readDouble, s.readInt, s.readInt,
+      RouteType(s.readInt), WalletType(s.readInt), s.readInt, s.readDouble,
+      s.readInt, s.readInt, s.readBoolean
     )
     case 2 => Turn_Stat(
       s.readInt, s.readInt, s.readDouble, s.readDouble, s.readDouble,

@@ -139,7 +139,7 @@ case class MkAgent(id: Int, birth_tick: Double, seed: Long,
   def compare(other: MkAgent) = other.birth_tick.compare(birth_tick)
 
   def make(sim: Simulation) = new Agent(
-    id, route.make(sim), new RNG(seed), wallet.make, start_edge
+    id, route.make(sim), new RNG(seed), wallet.make, birth_tick, start_edge
   )
 
   def serialize(w: StateWriter) {

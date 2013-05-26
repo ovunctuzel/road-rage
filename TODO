@@ -3,8 +3,6 @@
 # Roadmap #
 
 1) cleanup
-  - instructions on site
-  - clever routing
   - good enough default sys bids, to get new default over FIFO
   - fix up maps once and for allish
   - common case policy, in places like claycut rd
@@ -16,7 +14,6 @@
   - gridlock is still a stigma
   - bugs
     - agents not stopping at exactly the right dist the first time
-    - trip time should include waiting to enter time
   - savestating
     - multiple sims existing per process better
       DR ids ugly... sys wallets are a hack. phase IDs?
@@ -112,7 +109,6 @@
 # Code Cleanup
 - using new ID stuff, make copies of stuff instead of var?
 - distance/time types
-- compatible serialization
 - split the passes
   - pass1 = read osm + normalize
   - pass2 = pass2
