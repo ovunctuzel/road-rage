@@ -4,11 +4,7 @@
 
 package utexas.aorta.ui
 
-import scala.collection.mutable.MultiMap
-import scala.collection.mutable.ListBuffer
-import scala.collection.mutable.HashMap
-import scala.collection.mutable.{Set => MutableSet}
-import scala.collection.mutable.{HashSet => MutableHashSet}
+import scala.collection.mutable
 import java.awt.{Graphics2D, Shape, BasicStroke, Color, Polygon}
 import java.awt.geom._
 import swing.event.Key
@@ -18,7 +14,8 @@ import scala.language.implicitConversions
 import utexas.aorta.map._  // TODO yeah getting lazy.
 import utexas.aorta.sim.{Simulation, Agent, Sim_Event, EV_Signal_Change,
                          IntersectionType, RouteType, Route_Event,
-                         EV_Transition, EV_Reroute, EV_Heartbeat}
+                         EV_Transition, EV_Reroute, EV_Heartbeat,
+                         EV_Agent_Created, EV_Agent_Destroyed}
 import utexas.aorta.sim.PathRoute
 
 import utexas.aorta.{Util, RNG, Common, cfg}
@@ -30,7 +27,78 @@ object Mode extends Enumeration {
   val PICK_2nd = Value("Pick 2nd edge")
 }
 
+// Cleanly separates GUI state from users of it
+class GuiState(val canvas: MapCanvas) {
+  // TODO ******** lots of stuff in mapcanvas that just sets/gets us... move it
+  // here!
+
+  // Per-render state
+  var g2d: Graphics2D = null
+  var window: Rectangle2D.Double = null
+  val tooltips = new mutable.ListBuffer[Tooltip]()
+
+  // Permanent state
+  var show_tooltips = true
+  var current_obj: Option[Renderable] = None
+  var camera_agent: Option[Agent] = None
+
+  // Actions
+  def reset(g: Graphics2D, w: Rectangle2D.Double) {
+    g2d = g
+    window = w
+    tooltips.clear()
+  }
+
+  // Queries
+  def current_edge: Option[Edge] = current_obj match {
+    case Some(pos: Position) => Some(pos.on.asInstanceOf[Edge])
+    case _ => None
+  }
+  def current_agent: Option[Agent] = current_obj match {
+    case Some(a: Agent) => Some(a)
+    case _ => None
+  }
+
+  // the radius of a small epsilon circle for the cursor
+  def eps = 5.0 / canvas.zoom
+  def bubble(pt: Coordinate) = new Ellipse2D.Double(
+    pt.x - eps, pt.y - eps, eps * 2, eps * 2
+  )
+}
+
 class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCanvas {
+  ///////////////////////
+  // TODO organize better. new magic here.
+
+  private val state = new GuiState(this)
+
+  private val driver_renderers = new mutable.HashMap[Agent, DrawDriver]()
+
+  // TODO eventually, GUI should listen to this and manage the gui, not
+  // mapcanvas.
+  private var last_tick = 0.0
+  sim.listen("statusbar", (ev: Sim_Event) => { ev match {
+    case EV_Heartbeat(info) => {
+      update_status()
+      status.agents.text = info.describe
+      status.time.text = Util.time_num(info.tick)
+      last_tick = info.tick
+    }
+    case EV_Agent_Created(a) => {
+      driver_renderers(a) = new DrawDriver(a, state)
+    }
+    case EV_Agent_Destroyed(a) => {
+      driver_renderers -= a
+    }
+    case _ =>
+  }})
+
+
+
+  ///////////////////////
+
+  def zoomed_in = zoom > cfg.zoom_threshold
+
   // A rate of realtime. 1x is realtime.
   var speed_cap: Int = 1
 
@@ -38,13 +106,13 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
   private var tick_last_render = 0.0
   private def step_sim() {
     sim.step()
-    camera_agent match {
+    state.camera_agent match {
       case Some(a) => {
         if (sim.has_agent(a)) {
           center_on(a.at.location)
         } else {
           Util.log(a + " is done; the camera won't stalk them anymore")
-          camera_agent = None
+          state.camera_agent = None
           route_members = Set[Road]()
         }
       }
@@ -93,19 +161,6 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
     }.start
   }
 
-  // TODO eventually, GUI should listen to this and manage the gui, not
-  // mapcanvas.
-  private var last_tick = 0.0
-  sim.listen("statusbar", (ev: Sim_Event) => { ev match {
-    case EV_Heartbeat(info) => {
-      update_status()
-      status.agents.text = info.describe
-      status.time.text = Util.time_num(info.tick)
-      last_tick = info.tick
-    }
-    case _ =>
-  }})
-
   def update_status() {
     status.sim_speed.text = "%dx / %dx".format((sim.tick - last_tick).toInt, speed_cap)
   }
@@ -114,7 +169,6 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
   var running = false
 
   // state
-  private var current_obj: Option[Renderable] = None
   private var highlight_type: Option[String] = None
   private var current_turn = -1  // for cycling through turns from an edge
   private var mode = Mode.EXPLORE
@@ -125,10 +179,8 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
   private var route_members = Set[Road]()
   private var polygon_roads1: Set[Road] = Set()
   private var polygon_roads2: Set[Road] = Set()
-  private var camera_agent: Option[Agent] = None
-  private val green_turns = new HashMap[Turn, Shape]()
+  private val green_turns = new mutable.HashMap[Turn, Shape]()
   private var show_green = false
-  private var show_tooltips = true
   private val policy_colors = Map(
     IntersectionType.StopSign -> cfg.stopsign_color,
     IntersectionType.Signal -> cfg.signal_color,
@@ -138,17 +190,6 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
 
   implicit def line2awt(l: Line): Line2D.Double = new Line2D.Double(l.x1, l.y1, l.x2, l.y2)
 
-  def current_edge: Option[Edge] = current_obj match {
-    case Some(pos: Position) => Some(pos.on.asInstanceOf[Edge])
-    case _ => None
-  }
-  def current_agent: Option[Agent] = current_obj match {
-    case Some(a: Agent) => Some(a)
-    case _ => None
-  }
-
-  private val agent_colors = HashMap[Agent, Color]()
-
   def canvas_width = sim.graph.width.toInt
   def canvas_height = sim.graph.height.toInt
 
@@ -157,13 +198,13 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
   // which is supposed to be O(1) append and conversion to list.
   Util.log("Pre-rendering road geometry...")
 
-  val road2lines = new HashMap[Road, MutableSet[RoadLine]]
-    with MultiMap[Road, RoadLine]
+  val road2lines = new mutable.HashMap[Road, mutable.Set[RoadLine]]
+    with mutable.MultiMap[Road, RoadLine]
   val bg_lines = build_bg_lines
 
   // this is only used for finer granularity searching...
-  val edge2lines = new HashMap[Edge, MutableSet[EdgeLine]]
-    with MultiMap[Edge, EdgeLine]
+  val edge2lines = new mutable.HashMap[Edge, mutable.Set[EdgeLine]]
+    with mutable.MultiMap[Edge, EdgeLine]
   // pre-render lanes
   val fg_lines = build_fg_lines
 
@@ -171,7 +212,7 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
   // Note ListBuffer takes O(n) to access the last element, so only write to it,
   // don't read from it.
   private def build_bg_lines(): List[RoadLine] = {
-    val list = new ListBuffer[RoadLine]()
+    val list = new mutable.ListBuffer[RoadLine]()
     for (r <- sim.roads; (from, to) <- r.pairs_of_points) {
       val line = new RoadLine(from, to, r)
       road2lines.addBinding(r, line)
@@ -180,7 +221,7 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
     return list.toList
   }
   private def build_fg_lines(): List[EdgeLine] = {
-    val list = new ListBuffer[EdgeLine]()
+    val list = new mutable.ListBuffer[EdgeLine]()
     for (e <- sim.edges; l <- e.lines) {
       // draw the lines on the borders of lanes, not in the middle
       val line = new EdgeLine(l.perp_shift(0.5), e)
@@ -212,8 +253,6 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
     n => new BasicStroke(lane_line_width * n.toFloat)
   )
 
-  def zoomed_in = zoom > cfg.zoom_threshold
-
   // Register to hear events
   sim.listen("UI", (ev: Sim_Event) => { ev match {
     case EV_Signal_Change(greens) => {
@@ -235,10 +274,10 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
   }
 
   def render_canvas(g2d: Graphics2D, window: Rectangle2D.Double): List[Tooltip] = {
-    // remember these so we can draw center lines more efficiently
-    val roads_seen = new ListBuffer[RoadLine]
+    state.reset(g2d, window)
 
-    val tooltips = new ListBuffer[Tooltip]()
+    // remember these so we can draw center lines more efficiently
+    val roads_seen = new mutable.ListBuffer[RoadLine]
 
     // Draw the first layer (roads) - either all or just major ones
     for (l <- bg_lines if l.line.intersects(window)) {
@@ -265,7 +304,7 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
         g2d.draw(l.line)
       }
 
-      current_obj match {
+      state.current_obj match {
         case Some(pos: Position) => draw_intersection(g2d, pos.on.asInstanceOf[Edge])
         case Some(v: Vertex) => {
           for (t <- v.intersection.policy.current_greens) {
@@ -289,7 +328,7 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
 
       // Illustrate the intersection policies
       for (v <- sim.vertices) {
-        val bub = bubble(v.location)
+        val bub = state.bubble(v.location)
         if (bub.intersects(window)) {
           g2d.setColor(policy_colors(v.intersection.policy.policy_type))
           g2d.draw(bub)
@@ -297,22 +336,9 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
       }
     }
 
-    // When an agent is doing a turn, it's not any edge's agent queue. Because
-    // of that and because they're seemingly so cheap to draw anyway, just
-    // always...
-    sim.agents.foreach(a => {
-      // Do a cheap intersection test before potentially expensive rendering
-      // work
-      if (agent_bubble(a).intersects(window)) {
-        draw_agent(g2d, a)
-        if (zoomed_in && show_tooltips) {
-          tooltips += Tooltip(
-            a.at.location.x, a.at.location.y, a.wallet.tooltip,
-            a.wallet.dark_tooltip
-          )
-        }
-      }
-    })
+    for (driver <- driver_renderers.values) {
+      driver.render()
+    }
 
     // Finally, if the user is free-handing a region, show their work.
     g2d.setColor(cfg.polygon_color)
@@ -320,16 +346,16 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
     g2d.draw(polygon)
 
     // What tooltips do we want?
-    current_obj match {
+    state.current_obj match {
       case Some(thing) => {
-        tooltips += Tooltip(
+        state.tooltips += Tooltip(
           screen_to_map_x(mouse_at_x), screen_to_map_y(mouse_at_y),
           thing.tooltip, false
         )
       }
       case None =>
     }
-    return tooltips.toList
+    return state.tooltips.toList
   }
 
   def draw_road(g2d: Graphics2D, l: RoadLine) = {
@@ -348,49 +374,6 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
     g2d.draw(l.line)
     g2d.setColor(cfg.lane_color)
     g2d.fill(l.arrow)
-
-    // (draw all agents)
-    //// and any agents
-    //sim.queues(l.edge).agents.foreach(a => draw_agent(g2d, a))
-  }
-
-  def draw_agent(g2d: Graphics2D, a: Agent) = {
-    g2d.setColor(color_agent(a))
-    if (zoomed_in) {
-      // TODO cfg. just tweak these by sight.
-      val vehicle_length = 0.2  // along the edge
-      val vehicle_width = 0.15  // perpendicular
-
-      var (line, front_dist) = a.at.on.current_pos(a.at.dist)
-      a.old_lane match {
-        case Some(l) => {
-          val (line2, more_dist) = l.current_pos(a.at.dist)
-          // TODO I'd think 1 - progress should work, but by visual inspection,
-          // apparently not.
-          val progress = (a.lanechange_dist_left / cfg.lanechange_dist)
-          line = line.add_scaled(line2, progress)
-        }
-        case None =>
-      }
-      val front_pt = line.point_on(front_dist)
-
-      // the front center of the vehicle is where the location is. ascii
-      // diagrams are hard, but line up width-wise
-      val rect = new Rectangle2D.Double(
-        front_pt.x - vehicle_length, front_pt.y - (vehicle_width / 2),
-        vehicle_length, vehicle_width
-      )
-      // play rotation tricks
-      // TODO val g2d_rot = g2d.create
-      // rotate about the front center point, aka, keep that point fixed/pivot
-      g2d.rotate(-line.angle, front_pt.x, front_pt.y)
-      g2d.fill(rect)
-      // TODO undoing it this way is dangerous... try to make a new g2d context
-      // and dispose of it
-      g2d.rotate(line.angle, front_pt.x, front_pt.y)
-    } else {
-      g2d.fill(agent_bubble(a))
-    }
   }
 
   def color_road(r: Road): Color =
@@ -422,32 +405,6 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
     else
       Color.WHITE
 
-  def color_agent(a: Agent): Color = current_obj match {
-    case Some(v: Vertex) => a.all_tickets(v.intersection).toList match {
-      case Nil => Color.GRAY
-      case ls if ls.find(_.is_approved).isDefined => Color.GREEN
-      case ls if ls.find(_.is_interruption).isDefined => Color.YELLOW
-      case _ => Color.RED
-    }
-    case _ => camera_agent match {
-      case Some(agent) if a == agent => Color.WHITE
-      case _ => {
-        // try to avoid flashing red, this feature is used to visually spot true
-        // clumps
-        if (a.how_long_idle >= 30.0) {
-          Color.RED
-        } else if (!zoomed_in) {
-          Color.GRAY
-        } else {
-          if (!agent_colors.contains(a)) {
-            agent_colors(a) = GeomFactory.rand_color
-          }
-          agent_colors(a)
-        }
-      }
-    }
-  }
-
   def draw_turn(g2d: Graphics2D, turn: Turn, color: Color) = {
     val line = GeomFactory.turn_geom(turn)
     g2d.setColor(color)
@@ -473,7 +430,7 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
   }
 
   def redo_mouseover(x: Double, y: Double): Unit = {
-    current_obj = None
+    state.current_obj = None
     current_turn = -1
 
     if (!zoomed_in) {
@@ -482,7 +439,9 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
 
     // TODO determine if a low-granularity search to narrow down results helps.
 
-    val cursor = new Rectangle2D.Double(x - eps, y - eps, eps * 2, eps * 2)
+    val cursor = new Rectangle2D.Double(
+      x - state.eps, y - state.eps, state.eps * 2, state.eps * 2
+    )
 
     def hit(shape: Shape) = shape.intersects(cursor)
 
@@ -490,8 +449,8 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
     // TODO ideally, center agent bubble where the vehicle center is drawn.
 
     // TODO this is _kind_ of ugly.
-    current_obj = sim.agents.find(a => hit(agent_bubble(a))) match {
-      case None => sim.vertices.find(v => hit(bubble(v.location))) match {
+    state.current_obj = driver_renderers.values.find(a => hit(a.agent_bubble)) match {
+      case None => sim.vertices.find(v => hit(state.bubble(v.location))) match {
         case None => fg_lines.find(l => hit(l.line)) match {
           case None => bg_lines.find(l => hit(l.line)) match {
             case None => None
@@ -501,16 +460,9 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
         }
         case Some(v) => Some(v)
       }
-      case Some(a) => Some(a)
+      case Some(render) => Some(render.a)
     }
   }
-
-  // the radius of a small epsilon circle for the cursor
-  def eps = 5.0 / zoom
-  def bubble(pt: Coordinate) = new Ellipse2D.Double(
-    pt.x - eps, pt.y - eps, eps * 2, eps * 2
-  )
-  def agent_bubble(a: Agent) = bubble(a.at.location)
 
   def handle_ev(ev: UI_Event): Unit = ev match {
     case EV_Action(action) => handle_ev_action(action)
@@ -674,7 +626,7 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
             sim.get_agent(id.toInt) match {
               case Some(a) => {
                 Util.log("Here's " + a)
-                current_obj = Some(a)
+                state.current_obj = Some(a)
                 handle_ev_keypress(Key.F)
                 repaint
               }
@@ -697,7 +649,7 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
             center_on(v.location)
             repaint
           } catch {
-            case _: NumberFormatException => Util.log("Bad agent ID " + id)
+            case _: NumberFormatException => Util.log("Bad vertex ID " + id)
           }
         }
         case _ =>
@@ -710,7 +662,7 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
     // TODO this'll be tab someday, i vow!
     case Key.Control => {
       // cycle through turns
-      current_edge match {
+      state.current_edge match {
         case Some(e) => {
           current_turn += 1
           if (current_turn >= e.next_turns.size) {
@@ -724,15 +676,15 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
     case Key.P => {
       handle_ev(EV_Action("toggle-running"))
     }
-    case Key.C if current_edge.isDefined => {
+    case Key.C if state.current_edge.isDefined => {
       mode match {
         case Mode.PICK_1st => {
-          chosen_edge1 = current_edge
+          chosen_edge1 = state.current_edge
           switch_mode(Mode.PICK_2nd)
           repaint
         }
         case Mode.PICK_2nd => {
-          chosen_edge2 = current_edge
+          chosen_edge2 = state.current_edge
           // TODO later, let this inform any client
           show_pathfinding
           switch_mode(Mode.EXPLORE)
@@ -740,16 +692,16 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
         case _ =>
       }
     }
-    case Key.M if current_edge.isDefined => {
+    case Key.M if state.current_edge.isDefined => {
       mode match {
         case Mode.EXPLORE => {
-          chosen_edge1 = current_edge
-          chosen_pos = current_obj.asInstanceOf[Option[Position]]
+          chosen_edge1 = state.current_edge
+          chosen_pos = state.current_obj.asInstanceOf[Option[Position]]
           switch_mode(Mode.PICK_2nd)
           repaint
         }
         case Mode.PICK_2nd => {
-          chosen_edge2 = current_edge
+          chosen_edge2 = state.current_edge
           // TODO make one agent from chosen_pos to current_edge
           chosen_edge1 = None
           chosen_edge2 = None
@@ -768,19 +720,19 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
       speed_cap += 1
       update_status()
     }
-    case Key.D => current_obj match {
+    case Key.D => state.current_obj match {
       case Some(thing) => thing.debug
       case None =>
     }
     case Key.F => {
       // Unregister old listener
-      camera_agent match {
+      state.camera_agent match {
         case Some(a) => a.route.unlisten("UI")
         case None =>
       }
 
-      camera_agent = current_agent
-      camera_agent match {
+      state.camera_agent = state.current_agent
+      state.camera_agent match {
         case Some(a) => a.route match {
           case r: PathRoute => {
             route_members = r.roads
@@ -803,12 +755,12 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
         }
       }
     }
-    case Key.X if current_agent.isDefined => {
+    case Key.X if state.current_agent.isDefined => {
       if (running) {
         Util.log("Cannot nuke agents while simulation is running!")
       } else {
-        val a = current_agent.get
-        current_obj = None
+        val a = state.current_agent.get
+        state.current_obj = None
         Util.log("WARNING: Nuking " + a)
         //a.terminate
         // TODO remove the agent from the list
@@ -818,7 +770,7 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
       show_green = !show_green
     }
     case Key.T => {
-      show_tooltips = !show_tooltips
+      state.show_tooltips = !state.show_tooltips
     }
     case Key.Q => {
       // Run some sort of debuggy thing

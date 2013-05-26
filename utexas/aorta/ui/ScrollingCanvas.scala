@@ -34,7 +34,7 @@ abstract class ScrollingCanvas extends Component {
 
   // this defines the current viewing window. these values are arbitrary;
   // reset_window will clobber them.
-  protected var zoom = 1.0
+  var zoom = 1.0
   protected var x_off, y_off = 0.0
   reset_window()
 
@@ -361,10 +361,3 @@ final case class EV_Action(key: String) extends UI_Event {}
 final case class EV_Select_Polygon_For_Army() extends UI_Event {}
 final case class EV_Select_Polygon_For_Policy() extends UI_Event {}
 final case class EV_Select_Polygon_For_Serialization() extends UI_Event {}
-
-trait Renderable {
-  def debug(): Unit
-  def tooltip(): List[String] = List(toString)
-
-  // TODO someday, right-click context menus!
-}

@@ -294,10 +294,12 @@ trait ListenerPattern[T] {
     listeners = listeners.filter(l => l._1 != tag)
   }
 }
+
 abstract class Sim_Event
-// TODO maybe have this not here, since a client could make these up?
 final case class EV_Signal_Change(greens: Set[Turn]) extends Sim_Event
 final case class EV_Heartbeat(heartbeat: Heartbeat_Stat) extends Sim_Event
+final case class EV_Agent_Created(a: Agent) extends Sim_Event
+final case class EV_Agent_Destroyed(a: Agent) extends Sim_Event
 
 trait AgentManager {
   //////////////////////////////////////////////////////////////////////////////
