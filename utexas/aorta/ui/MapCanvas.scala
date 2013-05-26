@@ -34,18 +34,21 @@ class GuiState(val canvas: MapCanvas) {
 
   // Per-render state
   var g2d: Graphics2D = null
-  var window: Rectangle2D.Double = null
   val tooltips = new mutable.ListBuffer[Tooltip]()
 
   // Permanent state
   var show_tooltips = true
   var current_obj: Option[Renderable] = None
   var camera_agent: Option[Agent] = None
+  var route_members = Set[Road]()
+  var chosen_road: Option[Road] = None
+  var highlight_type: Option[String] = None
+  var polygon_roads1: Set[Road] = Set()
+  var polygon_roads2: Set[Road] = Set()
 
   // Actions
-  def reset(g: Graphics2D, w: Rectangle2D.Double) {
+  def reset(g: Graphics2D) {
     g2d = g
-    window = w
     tooltips.clear()
   }
 
@@ -72,7 +75,16 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
 
   private val state = new GuiState(this)
 
+  // TODO this could just be a nice sorted list instead. only have to do lookup
+  // when agents are destroyed. could batch those TODO...
   private val driver_renderers = new mutable.HashMap[Agent, DrawDriver]()
+
+  private val road_renderers = sim.graph.roads.map(r =>
+    if (!r.is_oneway)
+      new DrawRoad(r, state)
+    else
+      new DrawOneWayRoad(r, state)
+  )
 
   // TODO eventually, GUI should listen to this and manage the gui, not
   // mapcanvas.
@@ -113,7 +125,7 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
         } else {
           Util.log(a + " is done; the camera won't stalk them anymore")
           state.camera_agent = None
-          route_members = Set[Road]()
+          state.route_members = Set[Road]()
         }
       }
       case None =>
@@ -169,16 +181,11 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
   var running = false
 
   // state
-  private var highlight_type: Option[String] = None
   private var current_turn = -1  // for cycling through turns from an edge
   private var mode = Mode.EXPLORE
   private var chosen_edge1: Option[Edge] = None
   private var chosen_edge2: Option[Edge] = None
-  private var chosen_road: Option[Road] = None
   private var chosen_pos: Option[Position] = None
-  private var route_members = Set[Road]()
-  private var polygon_roads1: Set[Road] = Set()
-  private var polygon_roads2: Set[Road] = Set()
   private val green_turns = new mutable.HashMap[Turn, Shape]()
   private var show_green = false
   private val policy_colors = Map(
@@ -193,33 +200,12 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
   def canvas_width = sim.graph.width.toInt
   def canvas_height = sim.graph.height.toInt
 
-  // pre-render base roads.
-  // TODO this was too ridiculous a sequence comprehension, so use a ListBuffer,
-  // which is supposed to be O(1) append and conversion to list.
-  Util.log("Pre-rendering road geometry...")
-
-  val road2lines = new mutable.HashMap[Road, mutable.Set[RoadLine]]
-    with mutable.MultiMap[Road, RoadLine]
-  val bg_lines = build_bg_lines
-
   // this is only used for finer granularity searching...
   val edge2lines = new mutable.HashMap[Edge, mutable.Set[EdgeLine]]
     with mutable.MultiMap[Edge, EdgeLine]
   // pre-render lanes
   val fg_lines = build_fg_lines
 
-  // just used during construction.
-  // Note ListBuffer takes O(n) to access the last element, so only write to it,
-  // don't read from it.
-  private def build_bg_lines(): List[RoadLine] = {
-    val list = new mutable.ListBuffer[RoadLine]()
-    for (r <- sim.roads; (from, to) <- r.pairs_of_points) {
-      val line = new RoadLine(from, to, r)
-      road2lines.addBinding(r, line)
-      list += line
-    }
-    return list.toList
-  }
   private def build_fg_lines(): List[EdgeLine] = {
     val list = new mutable.ListBuffer[EdgeLine]()
     for (e <- sim.edges; l <- e.lines) {
@@ -247,12 +233,6 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
     5.0f, BasicStroke.CAP_BUTT, BasicStroke.JOIN_MITER, 1.0f, Array(1.0f), 0.0f
   )
 
-  // pre-compute; we don't have more than max_lanes
-  private val lane_line_width = 0.6f  // TODO cfg
-  private val strokes = (0 until cfg.max_lanes).map(
-    n => new BasicStroke(lane_line_width * n.toFloat)
-  )
-
   // Register to hear events
   sim.listen("UI", (ev: Sim_Event) => { ev match {
     case EV_Signal_Change(greens) => {
@@ -274,34 +254,31 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
   }
 
   def render_canvas(g2d: Graphics2D, window: Rectangle2D.Double): List[Tooltip] = {
-    state.reset(g2d, window)
+    state.reset(g2d)
 
-    // remember these so we can draw center lines more efficiently
-    val roads_seen = new mutable.ListBuffer[RoadLine]
-
-    // Draw the first layer (roads) - either all or just major ones
-    for (l <- bg_lines if l.line.intersects(window)) {
-      draw_road(g2d, l)
-      roads_seen += l
-    }
+    val roads_seen = road_renderers.filter(r => {
+      val hit = r.collision_line.intersects(window)
+      if (hit) {
+        r.render()
+      }
+      hit
+    })
 
     // don't show tiny details when it doesn't matter (and when it's expensive
     // to render them all)
     if (zoomed_in) {
-      // then the second layer (lanes)
-      // TODO this is ugly and maybe inefficient?
-      //for (l <- fg_lines if l.line.intersects(window))
-      for (r <- roads_seen; l <- r.road.all_lanes.flatMap(edge2lines(_))
-           if l.line.intersects(window))
-      {
-        draw_edge(g2d, l)
-      }
+      for (r <- roads_seen) {
+        // center yellow lines
+        // TODO its fast to do this here
+        g2d.setColor(Color.YELLOW)
+        g2d.setStroke(center_stroke)
+        r.render_center_line()
 
-      // and the third layer (dashed center lines)
-      g2d.setColor(Color.YELLOW)
-      g2d.setStroke(center_stroke)
-      for (l <- roads_seen) {
-        g2d.draw(l.line)
+        for (l <- r.road.all_lanes.flatMap(edge2lines(_))) {
+          if (l.line.intersects(window)) {
+            draw_edge(g2d, l)
+          }
+        }
       }
 
       state.current_obj match {
@@ -337,7 +314,9 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
     }
 
     for (driver <- driver_renderers.values) {
-      driver.render()
+      if (driver.agent_bubble.intersects(window)) {
+        driver.render()
+      }
     }
 
     // Finally, if the user is free-handing a region, show their work.
@@ -358,16 +337,6 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
     return state.tooltips.toList
   }
 
-  def draw_road(g2d: Graphics2D, l: RoadLine) = {
-    g2d.setColor(color_road(l.road))
-    if (route_members(l.road) && !zoomed_in) {
-      g2d.setStroke(strokes(l.road.num_lanes * 2))
-    } else {
-      g2d.setStroke(strokes(l.road.num_lanes))
-    }
-    g2d.draw(l.bg_line)
-  }
-
   def draw_edge(g2d: Graphics2D, l: EdgeLine) = {
     g2d.setStroke(lane_stroke)
     g2d.setColor(color_edge(l.edge))
@@ -375,24 +344,6 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
     g2d.setColor(cfg.lane_color)
     g2d.fill(l.arrow)
   }
-
-  def color_road(r: Road): Color =
-    if (chosen_road.isDefined && chosen_road.get == r)
-      cfg.chosen_road_color
-    else if (route_members(r))
-      cfg.route_member_color
-    else if (polygon_roads1(r))
-      cfg.src_polygon_color
-    else if (polygon_roads2(r))
-      cfg.dst_polygon_color
-    else if (r.doomed)
-      Color.RED
-    else
-      // The normal handling
-      highlight_type match {
-        case (Some(x)) if x == r.road_type => Color.GREEN
-        case _                             => Color.BLACK
-      }
 
   def color_edge(e: Edge): Color =
     // TODO cfg
@@ -452,15 +403,15 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
     state.current_obj = driver_renderers.values.find(a => hit(a.agent_bubble)) match {
       case None => sim.vertices.find(v => hit(state.bubble(v.location))) match {
         case None => fg_lines.find(l => hit(l.line)) match {
-          case None => bg_lines.find(l => hit(l.line)) match {
+          case None => road_renderers.find(r => hit(r.collision_line)) match {
             case None => None
-            case Some(l) => Some(l.road)
+            case Some(r) => Some(r.road)
           }
           case Some(l) => Some(Position(l.edge, l.edge.approx_dist(new Coordinate(x, y), 1.0)))
         }
         case Some(v) => Some(v)
       }
-      case Some(render) => Some(render.a)
+      case Some(a) => Some(a.agent)
     }
   }
 
@@ -472,7 +423,7 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
       repaint
     }
     case EV_Param_Set("highlight", value) => {
-      highlight_type = value
+      state.highlight_type = value
       repaint
     }
     case EV_Select_Polygon_For_Army() => {
@@ -489,22 +440,22 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
       if (rds.isEmpty) {
         Util.log("Try that again.")
       } else {
-        if (polygon_roads1.isEmpty) {
-          polygon_roads1 = rds
+        if (state.polygon_roads1.isEmpty) {
+          state.polygon_roads1 = rds
           Util.log("Now select a second set of roads")
         } else {
-          polygon_roads2 = rds
+          state.polygon_roads2 = rds
 
           prompt_generator(
-            polygon_roads1.toList.flatMap(_.all_lanes),
-            polygon_roads2.toList.flatMap(_.all_lanes)
+            state.polygon_roads1.toList.flatMap(_.all_lanes),
+            state.polygon_roads2.toList.flatMap(_.all_lanes)
           )
 
           // Make the keyboard work again
           grab_focus
 
-          polygon_roads1 = Set()
-          polygon_roads2 = Set()
+          state.polygon_roads1 = Set()
+          state.polygon_roads2 = Set()
         }
       }
     }
@@ -570,14 +521,14 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
       switch_mode(Mode.PICK_1st)
       chosen_edge1 = None
       chosen_edge2 = None
-      route_members = Set[Road]()
+      state.route_members = Set[Road]()
       repaint
     }
     case "clear-route" => {
       switch_mode(Mode.EXPLORE)
       chosen_edge1 = None
       chosen_edge2 = None
-      route_members = Set[Road]()
+      state.route_members = Set[Road]()
       repaint
     }
     // TODO refactor the 4 teleports?
@@ -609,7 +560,7 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
             // just vaguely moving that way
             Util.log("Here's " + r)
             center_on(r.all_lanes.head.lines.head.start)
-            chosen_road = Some(r)
+            state.chosen_road = Some(r)
             repaint
           } catch {
             case _: NumberFormatException => Util.log("Bad edge ID " + id)
@@ -735,14 +686,14 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
       state.camera_agent match {
         case Some(a) => a.route match {
           case r: PathRoute => {
-            route_members = r.roads
+            state.route_members = r.roads
             r.listen("UI", (ev: Route_Event) => { ev match {
               case EV_Reroute(path) => {
-                route_members = path.map(_.road).toSet
+                state.route_members = path.map(_.road).toSet
               }
               case EV_Transition(from, to) => from match {
                 case e: Edge => {
-                  route_members -= e.road
+                  state.route_members -= e.road
                 }
                 case _ =>
               }
@@ -751,7 +702,7 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
           case _ =>
         }
         case None => {
-          route_members = Set[Road]()
+          state.route_members = Set[Road]()
         }
       }
     }
@@ -842,26 +793,13 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
     // turns.
     // TODO pathfinding is by directed road now, not edge. just pick some edge
     // in each group.
-    route_members = route.map(_.road).toSet
+    state.route_members = route.map(_.road).toSet
     repaint
   }
 }
 
 sealed trait ScreenLine {
   val line: Line2D.Double
-}
-final case class RoadLine(a: Coordinate, b: Coordinate, road: Road)
-  extends ScreenLine
-{
-  // center
-  val line = new Line2D.Double(a.x, a.y, b.x, b.y)
-  // special for one-ways
-  val bg_line = if (road.is_oneway) {
-                      val l = new Line(a, b).perp_shift(road.num_lanes / 2.0)
-                      new Line2D.Double(l.x1, l.y1, l.x2, l.y2)
-                    } else {
-                      line
-                    }
 }
 final case class EdgeLine(l: Line, edge: Edge) extends ScreenLine {
   val line = new Line2D.Double(l.x1, l.y1, l.x2, l.y2)
@@ -871,6 +809,12 @@ final case class EdgeLine(l: Line, edge: Edge) extends ScreenLine {
 // TODO what else belongs?
 object GeomFactory {
   private val rng = new RNG()
+
+  // pre-compute; we don't have more than max_lanes
+  private val lane_line_width = 0.6f  // TODO cfg
+  val strokes = (0 until cfg.max_lanes).map(
+    n => new BasicStroke(lane_line_width * n.toFloat)
+  )
 
   def draw_arrow(line: Line, base: Coordinate, size: Int): Shape = {
     // TODO enum for size

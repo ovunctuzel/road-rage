@@ -5,9 +5,9 @@
 package utexas.aorta.ui
 
 import java.awt.Color
-import java.awt.geom.Rectangle2D
+import java.awt.geom.{Line2D, Rectangle2D}
 
-import utexas.aorta.map.Vertex
+import utexas.aorta.map.{Coordinate, Line, Road, Vertex}
 import utexas.aorta.sim.Agent
 
 import utexas.aorta.cfg
@@ -19,31 +19,25 @@ trait Renderable {
   // TODO someday, right-click context menus!
 }
 
-class DrawDriver(val a: Agent, state: GuiState) {
+class DrawDriver(val agent: Agent, state: GuiState) {
   // When we don't want to mark this agent in a special way, display a random
   // but fixed color
   private val personal_color = GeomFactory.rand_color
 
   def render() {
-    // Do a cheap intersection test before potentially expensive rendering
-    // work
-    if (!agent_bubble.intersects(state.window)) {
-      return
-    }
-
     state.g2d.setColor(color)
     if (state.canvas.zoomed_in) {
       // TODO cfg. just tweak these by sight.
       val vehicle_length = 0.2  // along the edge
       val vehicle_width = 0.15  // perpendicular
 
-      var (line, front_dist) = a.at.on.current_pos(a.at.dist)
-      a.old_lane match {
+      var (line, front_dist) = agent.at.on.current_pos(agent.at.dist)
+      agent.old_lane match {
         case Some(l) => {
-          val (line2, more_dist) = l.current_pos(a.at.dist)
+          val (line2, more_dist) = l.current_pos(agent.at.dist)
           // TODO I'd think 1 - progress should work, but by visual inspection,
           // apparently not.
-          val progress = (a.lanechange_dist_left / cfg.lanechange_dist)
+          val progress = (agent.lanechange_dist_left / cfg.lanechange_dist)
           line = line.add_scaled(line2, progress)
         }
         case None =>
@@ -67,8 +61,8 @@ class DrawDriver(val a: Agent, state: GuiState) {
 
       if (state.show_tooltips) {
         state.tooltips += Tooltip(
-          a.at.location.x, a.at.location.y, a.wallet.tooltip,
-          a.wallet.dark_tooltip
+          agent.at.location.x, agent.at.location.y, agent.wallet.tooltip,
+          agent.wallet.dark_tooltip
         )
       }
     } else {
@@ -77,18 +71,18 @@ class DrawDriver(val a: Agent, state: GuiState) {
   }
 
   def color(): Color = state.current_obj match {
-    case Some(v: Vertex) => a.all_tickets(v.intersection).toList match {
+    case Some(v: Vertex) => agent.all_tickets(v.intersection).toList match {
       case Nil => Color.GRAY
       case ls if ls.find(_.is_approved).isDefined => Color.GREEN
       case ls if ls.find(_.is_interruption).isDefined => Color.YELLOW
       case _ => Color.RED
     }
     case _ => state.camera_agent match {
-      case Some(agent) if a == agent => Color.WHITE
+      case Some(a) if agent == a => Color.WHITE
       case _ =>
         // try to avoid flashing red, this feature is used to visually spot true
         // clumps
-        if (a.how_long_idle >= 30.0)
+        if (agent.how_long_idle >= 30.0)
           Color.RED
         else if (!state.canvas.zoomed_in)
           Color.GRAY
@@ -97,5 +91,68 @@ class DrawDriver(val a: Agent, state: GuiState) {
     }
   }
 
-  def agent_bubble = state.bubble(a.at.location)
+  def agent_bubble = state.bubble(agent.at.location)
+}
+
+class DrawRoad(val road: Road, state: GuiState) {
+  private val center_lines = road.pairs_of_points.map(pair => new Line2D.Double(
+    pair._1.x, pair._1.y, pair._2.x, pair._2.y
+  ))
+
+  // A heuristic used for quick collision checks. Will have false negatives.
+  // TODO breaks mousing over roads with weird shapes.
+  val collision_line = new Line2D.Double(
+    road.points.head.x, road.points.head.y,
+    road.points.last.x, road.points.last.y
+  )
+
+  def render() {
+    state.g2d.setColor(color)
+    if (state.route_members(road) && !state.canvas.zoomed_in) {
+      state.g2d.setStroke(GeomFactory.strokes(road.num_lanes * 2))
+    } else {
+      state.g2d.setStroke(GeomFactory.strokes(road.num_lanes))
+    }
+
+    render_bg_line()
+  }
+
+  def render_bg_line() {
+    center_lines.foreach(l => state.g2d.draw(l))
+  }
+
+  // Assume the stroke and color have been set by our caller, for efficiency.
+  def render_center_line() {
+    center_lines.foreach(l => state.g2d.draw(l))
+  }
+
+  def color(): Color =
+    if (state.chosen_road.getOrElse(null) == road)
+      cfg.chosen_road_color
+    else if (state.route_members(road))
+      cfg.route_member_color
+    else if (state.polygon_roads1(road))
+      cfg.src_polygon_color
+    else if (state.polygon_roads2(road))
+      cfg.dst_polygon_color
+    else if (road.doomed)
+      Color.RED
+    else
+      state.highlight_type match {
+        case (Some(x)) if x == road.road_type => Color.GREEN
+        case _                             => Color.BLACK
+      }
+}
+
+class DrawOneWayRoad(r: Road, state: GuiState) extends DrawRoad(r, state) {
+  val bg_lines = road.pairs_of_points.map(shift_line)
+
+  override def render_bg_line() {
+    bg_lines.foreach(l => state.g2d.draw(l))
+  }
+
+  private def shift_line(pair: (Coordinate, Coordinate)): Line2D.Double = {
+    val l = new Line(pair._1, pair._2).perp_shift(road.num_lanes / 2.0)
+    return new Line2D.Double(l.x1, l.y1, l.x2, l.y2)
+  }
 }

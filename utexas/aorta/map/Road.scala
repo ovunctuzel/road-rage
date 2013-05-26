@@ -118,7 +118,7 @@ class Road(
   def incoming_lanes(v: Vertex) = if (v == v1) neg_lanes else pos_lanes
   def outgoing_lanes(v: Vertex) = if (v == v1) pos_lanes else neg_lanes
 
-  def pairs_of_points = points zip points.tail
+  def pairs_of_points = points.zip(points.tail)
 
   // to meters/sec
   def mph_to_si(r: Double) = r * 0.44704
