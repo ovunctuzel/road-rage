@@ -103,7 +103,7 @@ case class Scenario(name: String, map_fn: String, agents: Array[MkAgent],
   // Spawn each agent in an empty simulation, then figure out how long it takes
   // each to complete their trip with nobody else around. Returns a map from
   // agent ID to that time.
-  def compute_optimal_times(): Map[Int, Double] = {
+  def compute_optimal_times_by_simulation(): Map[Int, Double] = {
     val empty_scenario = this.copy(agents = Array())
     val graph = Graph.load(map_fn)
     val times = new mutable.HashMap[Int, Double]()
@@ -119,6 +119,32 @@ case class Scenario(name: String, map_fn: String, agents: Array[MkAgent],
         sim.step()
       }
       times(a.id) = sim.tick - a.birth_tick
+    }
+    return times.toMap
+  }
+
+  // Return a map from agent ID to trip time if that agent was moving through an
+  // otherwise empty world. Compute the time analytically, so lower than the
+  // true optimal time.
+  def compute_optimal_times_analytically(): Map[Int, Double] = {
+    // Hokey assumptions:
+    // - don't stop for intersections; immediately blaze through
+    // - instantly reach speed limit of each road
+    // - (minor) travel entire distance of first edge, rather than just part of
+    // it
+    // TODO (major) use CH router always
+    val graph = Graph.load(map_fn)
+    val times = new mutable.HashMap[Int, Double]()
+    var cnt = 0
+    for (a <- agents) {
+      cnt += 1
+      // TODO every 1000 or so, refactor that from mapmaking
+      //Util.log(s"Computing ~optimal time for agent $cnt/${agents.size}")
+      val path = graph.ch_router.path(
+        graph.edges(a.start_edge).directed_road,
+        graph.edges(a.route.goal).directed_road, a.birth_tick
+      )
+      times(a.id) = path.map(step => step.road.length / step.road.speed_limit).sum
     }
     return times.toMap
   }
