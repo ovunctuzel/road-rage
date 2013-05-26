@@ -8,8 +8,7 @@ import utexas.aorta.map.{Graph, Edge, Vertex, DirectedRoad}
 import utexas.aorta.sim.policies._
 import utexas.aorta.sim.market._
 
-import scala.collection.mutable.ArrayBuffer
-import scala.collection.mutable.{HashMap => MutableMap}
+import scala.collection.mutable
 
 import utexas.aorta.{Util, RNG, Common, cfg, StateWriter, StateReader}
 
@@ -60,7 +59,7 @@ case class Scenario(name: String, map_fn: String, agents: Array[MkAgent],
 
   // Describe the percentages of each thing
   private def percentages[T](things: Iterable[T]) = {
-    val count = new MutableMap[T, Int]().withDefaultValue(0)
+    val count = new mutable.HashMap[T, Int]().withDefaultValue(0)
     things.foreach(t => count(t) += 1)
     val total = things.size
     Util.log_push
@@ -99,6 +98,29 @@ case class Scenario(name: String, map_fn: String, agents: Array[MkAgent],
     w.int(intersections.size)
     intersections.foreach(i => i.serialize(w))
     system_wallet.serialize(w)
+  }
+
+  // Spawn each agent in an empty simulation, then figure out how long it takes
+  // each to complete their trip with nobody else around. Returns a map from
+  // agent ID to that time.
+  def compute_optimal_times(): Map[Int, Double] = {
+    val empty_scenario = this.copy(agents = Array())
+    val graph = Graph.load(map_fn)
+    val times = new mutable.HashMap[Int, Double]()
+    var cnt = 0
+    for (a <- agents) {
+      cnt += 1
+      Util.log(s"Computing optimal time for agent $cnt/${agents.size}")
+      val solo_scenario = this.copy(agents = Array(a))
+      val sim = solo_scenario.make_sim(graph)
+      // TODO by simulation is way too slow. do it analytically.
+      sim.setup()
+      while (!sim.done) {
+        sim.step()
+      }
+      times(a.id) = sim.tick - a.birth_tick
+    }
+    return times.toMap
   }
 }
 

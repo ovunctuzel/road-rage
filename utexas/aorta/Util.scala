@@ -218,7 +218,11 @@ object Common {
   def scenario = sim.scenario
   def tick = sim.tick
   def timer(name: String) = new Timer(name)
-  def record(item: Measurement) = stats_log.record(item)
+  def record(item: Measurement) {
+    if (stats_log != null) {
+      stats_log.record(item)
+    }
+  }
 
   sys.ShutdownHookThread({
     if (sim != null) {
