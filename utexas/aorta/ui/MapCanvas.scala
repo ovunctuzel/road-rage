@@ -45,6 +45,8 @@ class GuiState(val canvas: MapCanvas) {
   var highlight_type: Option[String] = None
   var polygon_roads1: Set[Road] = Set()
   var polygon_roads2: Set[Road] = Set()
+  var chosen_edge1: Option[Edge] = None
+  var chosen_edge2: Option[Edge] = None
 
   // Actions
   def reset(g: Graphics2D) {
@@ -183,8 +185,6 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
   // state
   private var current_turn = -1  // for cycling through turns from an edge
   private var mode = Mode.EXPLORE
-  private var chosen_edge1: Option[Edge] = None
-  private var chosen_edge2: Option[Edge] = None
   private var chosen_pos: Option[Position] = None
   private val green_turns = new mutable.HashMap[Turn, Shape]()
   private var show_green = false
@@ -200,34 +200,10 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
   def canvas_width = sim.graph.width.toInt
   def canvas_height = sim.graph.height.toInt
 
-  // this is only used for finer granularity searching...
-  val edge2lines = new mutable.HashMap[Edge, mutable.Set[EdgeLine]]
-    with mutable.MultiMap[Edge, EdgeLine]
-  // pre-render lanes
-  val fg_lines = build_fg_lines
-
-  private def build_fg_lines(): List[EdgeLine] = {
-    val list = new mutable.ListBuffer[EdgeLine]()
-    for (e <- sim.edges; l <- e.lines) {
-      // draw the lines on the borders of lanes, not in the middle
-      val line = new EdgeLine(l.perp_shift(0.5), e)
-      edge2lines.addBinding(e, line)
-      list += line
-    }
-    return list.toList
-  }
-
   // begin in the center
   x_off = canvas_width / 2
   y_off = canvas_height / 2
 
-  // TODO cfg
-  /*private val center_stroke = new BasicStroke(
-    0.1f, BasicStroke.CAP_BUTT, BasicStroke.JOIN_MITER, 1.0f, Array(1.0f), 0.0f
-  )*/
-  private val center_stroke     = new BasicStroke(0.1f)
-  private val route_lane_stroke = new BasicStroke(0.45f)
-  private val lane_stroke       = new BasicStroke(0.05f)
   // TODO make this look cooler.
   private val drawing_stroke = new BasicStroke(
     5.0f, BasicStroke.CAP_BUTT, BasicStroke.JOIN_MITER, 1.0f, Array(1.0f), 0.0f
@@ -257,9 +233,9 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
     state.reset(g2d)
 
     val roads_seen = road_renderers.filter(r => {
-      val hit = r.collision_line.intersects(window)
+      val hit = r.hits(window)
       if (hit) {
-        r.render()
+        r.render_road()
       }
       hit
     })
@@ -268,17 +244,8 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
     // to render them all)
     if (zoomed_in) {
       for (r <- roads_seen) {
-        // center yellow lines
-        // TODO its fast to do this here
-        g2d.setColor(Color.YELLOW)
-        g2d.setStroke(center_stroke)
         r.render_center_line()
-
-        for (l <- r.road.all_lanes.flatMap(edge2lines(_))) {
-          if (l.line.intersects(window)) {
-            draw_edge(g2d, l)
-          }
-        }
+        r.render_edges()
       }
 
       state.current_obj match {
@@ -293,7 +260,7 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
 
       // Show traffic signal stuff
       if (show_green) {
-        g2d.setStroke(center_stroke)
+        g2d.setStroke(GeomFactory.center_stroke)
         g2d.setColor(Color.GREEN)
         /*green_turns.values.foreach(
           t => if (t.intersects(window)) { g2d.draw(t) }
@@ -314,7 +281,7 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
     }
 
     for (driver <- driver_renderers.values) {
-      if (driver.agent_bubble.intersects(window)) {
+      if (driver.hits(window)) {
         driver.render()
       }
     }
@@ -336,25 +303,6 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
     }
     return state.tooltips.toList
   }
-
-  def draw_edge(g2d: Graphics2D, l: EdgeLine) = {
-    g2d.setStroke(lane_stroke)
-    g2d.setColor(color_edge(l.edge))
-    g2d.draw(l.line)
-    g2d.setColor(cfg.lane_color)
-    g2d.fill(l.arrow)
-  }
-
-  def color_edge(e: Edge): Color =
-    // TODO cfg
-    if (chosen_edge1.isDefined && chosen_edge1.get == e)
-      Color.BLUE
-    else if (chosen_edge2.isDefined && chosen_edge2.get == e)
-      Color.RED
-    else if (e.doomed)
-      Color.RED
-    else
-      Color.WHITE
 
   def draw_turn(g2d: Graphics2D, turn: Turn, color: Color) = {
     val line = GeomFactory.turn_geom(turn)
@@ -394,20 +342,18 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
       x - state.eps, y - state.eps, state.eps * 2, state.eps * 2
     )
 
-    def hit(shape: Shape) = shape.intersects(cursor)
-
     // Order of search: agents, vertices, edges, roads
     // TODO ideally, center agent bubble where the vehicle center is drawn.
 
     // TODO this is _kind_ of ugly.
-    state.current_obj = driver_renderers.values.find(a => hit(a.agent_bubble)) match {
-      case None => sim.vertices.find(v => hit(state.bubble(v.location))) match {
-        case None => fg_lines.find(l => hit(l.line)) match {
-          case None => road_renderers.find(r => hit(r.collision_line)) match {
+    state.current_obj = driver_renderers.values.find(a => a.hits(cursor)) match {
+      case None => sim.vertices.find(v => state.bubble(v.location).intersects(cursor)) match {
+        case None => road_renderers.flatMap(r => r.edges).find(e => e.hits(cursor)) match {
+          case None => road_renderers.find(r => r.hits(cursor)) match {
             case None => None
             case Some(r) => Some(r.road)
           }
-          case Some(l) => Some(Position(l.edge, l.edge.approx_dist(new Coordinate(x, y), 1.0)))
+          case Some(e) => Some(Position(e.edge, e.edge.approx_dist(new Coordinate(x, y), 1.0)))
         }
         case Some(v) => Some(v)
       }
@@ -519,15 +465,15 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
     }
     case "pathfind" => {
       switch_mode(Mode.PICK_1st)
-      chosen_edge1 = None
-      chosen_edge2 = None
+      state.chosen_edge1 = None
+      state.chosen_edge2 = None
       state.route_members = Set[Road]()
       repaint
     }
     case "clear-route" => {
       switch_mode(Mode.EXPLORE)
-      chosen_edge1 = None
-      chosen_edge2 = None
+      state.chosen_edge1 = None
+      state.chosen_edge2 = None
       state.route_members = Set[Road]()
       repaint
     }
@@ -541,7 +487,7 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
             // just vaguely moving that way
             Util.log("Here's " + e)
             center_on(e.lines.head.start)
-            chosen_edge2 = Some(e)  // just kind of use this to highlight it
+            state.chosen_edge2 = Some(e)  // just kind of use this to highlight it
             repaint
           } catch {
             case _: NumberFormatException => Util.log("Bad edge ID " + id)
@@ -630,12 +576,12 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
     case Key.C if state.current_edge.isDefined => {
       mode match {
         case Mode.PICK_1st => {
-          chosen_edge1 = state.current_edge
+          state.chosen_edge1 = state.current_edge
           switch_mode(Mode.PICK_2nd)
           repaint
         }
         case Mode.PICK_2nd => {
-          chosen_edge2 = state.current_edge
+          state.chosen_edge2 = state.current_edge
           // TODO later, let this inform any client
           show_pathfinding
           switch_mode(Mode.EXPLORE)
@@ -646,16 +592,16 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
     case Key.M if state.current_edge.isDefined => {
       mode match {
         case Mode.EXPLORE => {
-          chosen_edge1 = state.current_edge
+          state.chosen_edge1 = state.current_edge
           chosen_pos = state.current_obj.asInstanceOf[Option[Position]]
           switch_mode(Mode.PICK_2nd)
           repaint
         }
         case Mode.PICK_2nd => {
-          chosen_edge2 = state.current_edge
+          state.chosen_edge2 = state.current_edge
           // TODO make one agent from chosen_pos to current_edge
-          chosen_edge1 = None
-          chosen_edge2 = None
+          state.chosen_edge1 = None
+          state.chosen_edge2 = None
           chosen_pos = None
           switch_mode(Mode.EXPLORE)
           repaint
@@ -780,8 +726,8 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
 
   def show_pathfinding() = {
     // contract: must be called when current_edge1 and 2 are set
-    val from = chosen_edge1.get.directed_road
-    val to = chosen_edge2.get.directed_road
+    val from = state.chosen_edge1.get.directed_road
+    val to = state.chosen_edge2.get.directed_road
 
     val timer = Common.timer("Pathfinding")
     // Can choose a specific router...
@@ -798,14 +744,6 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
   }
 }
 
-sealed trait ScreenLine {
-  val line: Line2D.Double
-}
-final case class EdgeLine(l: Line, edge: Edge) extends ScreenLine {
-  val line = new Line2D.Double(l.x1, l.y1, l.x2, l.y2)
-  val arrow = GeomFactory.draw_arrow(l, l.midpt, 1)  // TODO cfg
-}
-
 // TODO what else belongs?
 object GeomFactory {
   private val rng = new RNG()
@@ -815,6 +753,13 @@ object GeomFactory {
   val strokes = (0 until cfg.max_lanes).map(
     n => new BasicStroke(lane_line_width * n.toFloat)
   )
+
+  // TODO cfg
+  /*private val center_stroke = new BasicStroke(
+    0.1f, BasicStroke.CAP_BUTT, BasicStroke.JOIN_MITER, 1.0f, Array(1.0f), 0.0f
+  )*/
+  val center_stroke     = new BasicStroke(0.1f)
+  val lane_stroke       = new BasicStroke(0.05f)
 
   def draw_arrow(line: Line, base: Coordinate, size: Int): Shape = {
     // TODO enum for size

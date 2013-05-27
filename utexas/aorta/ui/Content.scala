@@ -7,7 +7,7 @@ package utexas.aorta.ui
 import java.awt.Color
 import java.awt.geom.{Line2D, Rectangle2D}
 
-import utexas.aorta.map.{Coordinate, Line, Road, Vertex}
+import utexas.aorta.map.{Coordinate, Edge, Line, Road, Vertex}
 import utexas.aorta.sim.Agent
 
 import utexas.aorta.cfg
@@ -23,6 +23,8 @@ class DrawDriver(val agent: Agent, state: GuiState) {
   // When we don't want to mark this agent in a special way, display a random
   // but fixed color
   private val personal_color = GeomFactory.rand_color
+
+  def hits(bbox: Rectangle2D.Double) = agent_bubble.intersects(bbox)
 
   def render() {
     state.g2d.setColor(color)
@@ -70,7 +72,7 @@ class DrawDriver(val agent: Agent, state: GuiState) {
     }
   }
 
-  def color(): Color = state.current_obj match {
+  private def color(): Color = state.current_obj match {
     case Some(v: Vertex) => agent.all_tickets(v.intersection).toList match {
       case Nil => Color.GRAY
       case ls if ls.find(_.is_approved).isDefined => Color.GREEN
@@ -91,22 +93,20 @@ class DrawDriver(val agent: Agent, state: GuiState) {
     }
   }
 
-  def agent_bubble = state.bubble(agent.at.location)
+  private def agent_bubble = state.bubble(agent.at.location)
 }
 
 class DrawRoad(val road: Road, state: GuiState) {
-  private val center_lines = road.pairs_of_points.map(pair => new Line2D.Double(
+  val edges = road.all_lanes.map(e => new DrawEdge(e, state))
+
+  protected val center_lines = road.pairs_of_points.map(pair => new Line2D.Double(
     pair._1.x, pair._1.y, pair._2.x, pair._2.y
   ))
 
-  // A heuristic used for quick collision checks. Will have false negatives.
-  // TODO breaks mousing over roads with weird shapes.
-  val collision_line = new Line2D.Double(
-    road.points.head.x, road.points.head.y,
-    road.points.last.x, road.points.last.y
-  )
+  def hits(bbox: Rectangle2D.Double) =
+    center_lines.find(l => l.intersects(bbox)).isDefined
 
-  def render() {
+  def render_road() {
     state.g2d.setColor(color)
     if (state.route_members(road) && !state.canvas.zoomed_in) {
       state.g2d.setStroke(GeomFactory.strokes(road.num_lanes * 2))
@@ -117,16 +117,21 @@ class DrawRoad(val road: Road, state: GuiState) {
     render_bg_line()
   }
 
-  def render_bg_line() {
+  protected def render_bg_line() {
     center_lines.foreach(l => state.g2d.draw(l))
   }
 
-  // Assume the stroke and color have been set by our caller, for efficiency.
   def render_center_line() {
+    state.g2d.setColor(Color.YELLOW)
+    state.g2d.setStroke(GeomFactory.center_stroke)
     center_lines.foreach(l => state.g2d.draw(l))
   }
 
-  def color(): Color =
+  def render_edges() {
+    edges.foreach(e => e.render())
+  }
+
+  private def color(): Color =
     if (state.chosen_road.getOrElse(null) == road)
       cfg.chosen_road_color
     else if (state.route_members(road))
@@ -145,7 +150,7 @@ class DrawRoad(val road: Road, state: GuiState) {
 }
 
 class DrawOneWayRoad(r: Road, state: GuiState) extends DrawRoad(r, state) {
-  val bg_lines = road.pairs_of_points.map(shift_line)
+  private val bg_lines = road.pairs_of_points.map(shift_line)
 
   override def render_bg_line() {
     bg_lines.foreach(l => state.g2d.draw(l))
@@ -153,6 +158,43 @@ class DrawOneWayRoad(r: Road, state: GuiState) extends DrawRoad(r, state) {
 
   private def shift_line(pair: (Coordinate, Coordinate)): Line2D.Double = {
     val l = new Line(pair._1, pair._2).perp_shift(road.num_lanes / 2.0)
+    return new Line2D.Double(l.x1, l.y1, l.x2, l.y2)
+  }
+}
+
+class DrawEdge(val edge: Edge, state: GuiState) {
+  private val lines = edge.lines.map(shift_edge_line)
+
+  def hits(bbox: Rectangle2D.Double) =
+    lines.find(l => l.intersects(bbox)).isDefined
+
+  def render() {
+    // TODO forget about the arrows, unless maybe highlighted?
+    /*GeomFactory.draw_arrow(l, l.midpt, 1)
+    state.g2d.setColor(cfg.lane_color)
+    state.g2d.fill(l.arrow)*/
+
+    state.g2d.setStroke(GeomFactory.lane_stroke)
+    state.g2d.setColor(color)
+    for (l <- lines) {
+      state.g2d.draw(l)
+    }
+  }
+
+  private def color(): Color =
+    // TODO cfg
+    if (state.chosen_edge1.getOrElse(null) == edge)
+      Color.BLUE
+    else if (state.chosen_edge2.getOrElse(null) == edge)
+      Color.RED
+    else if (edge.doomed)
+      Color.RED
+    else
+      Color.WHITE
+
+  private def shift_edge_line(line: Line): Line2D.Double = {
+    // Draw the lines on the borders of lanes, not in the middle
+    val l = line.perp_shift(0.5)
     return new Line2D.Double(l.x1, l.y1, l.x2, l.y2)
   }
 }
