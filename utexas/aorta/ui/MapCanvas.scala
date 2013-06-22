@@ -80,6 +80,10 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
   // TODO this could just be a nice sorted list instead. only have to do lookup
   // when agents are destroyed. could batch those TODO...
   private val driver_renderers = new mutable.HashMap[Agent, DrawDriver]()
+  // If we loaded from a savestate, we won't know about these
+  for (a <- sim.agents) {
+    driver_renderers(a) = new DrawDriver(a, state)
+  }
 
   private val road_renderers = sim.graph.roads.map(r =>
     if (!r.is_oneway)
@@ -90,8 +94,9 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
 
   // TODO eventually, GUI should listen to this and manage the gui, not
   // mapcanvas.
+  // Register to hear events
   private var last_tick = 0.0
-  sim.listen("statusbar", (ev: Sim_Event) => { ev match {
+  sim.listen("ui", (ev: Sim_Event) => { ev match {
     case EV_Heartbeat(info) => {
       update_status()
       status.agents.text = info.describe
@@ -104,8 +109,15 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
     case EV_Agent_Destroyed(a) => {
       driver_renderers -= a
     }
+    case EV_Signal_Change(greens) => {
+      green_turns.clear
+      for (t <- greens) {
+        green_turns(t) = GeomFactory.turn_geom(t)
+      }
+    }
     case _ =>
-  }})
+  } })
+
 
 
 
@@ -208,17 +220,6 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
   private val drawing_stroke = new BasicStroke(
     5.0f, BasicStroke.CAP_BUTT, BasicStroke.JOIN_MITER, 1.0f, Array(1.0f), 0.0f
   )
-
-  // Register to hear events
-  sim.listen("UI", (ev: Sim_Event) => { ev match {
-    case EV_Signal_Change(greens) => {
-      green_turns.clear
-      for (t <- greens) {
-        green_turns(t) = GeomFactory.turn_geom(t)
-      }
-    }
-    case _ =>
-  } })
 
   // At this point, signal policies have already fired up and sent the first
   // round of greens. We missed it, so compute manually the first time.
