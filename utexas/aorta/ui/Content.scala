@@ -94,6 +94,27 @@ class DrawDriver(val agent: Agent, state: GuiState) {
   }
 
   private def agent_bubble = state.bubble(agent.at.location)
+
+  def moused_over() {
+    // Circle our main constraint
+    state.g2d.setColor(Color.WHITE)
+    state.g2d.setStroke(GeomFactory.center_stroke)
+    agent.cur_queue.ahead_of(agent) match {
+      case Some(a) => {
+        state.g2d.draw(state.bubble(a.at.location))
+      }
+      case None => {
+        // Waiting on the intersection, then
+        state.g2d.draw(state.bubble(agent.cur_vert.location))
+      }
+    }
+    // Draw where we're headed
+    // TODO deal with multiple per vert in a much better way
+    agent.all_tickets(agent.cur_vert.intersection).headOption match {
+      case Some(t) => state.draw_turn(t.turn, Color.WHITE)
+      case None =>
+    }
+  }
 }
 
 class DrawRoad(val road: Road, state: GuiState) {

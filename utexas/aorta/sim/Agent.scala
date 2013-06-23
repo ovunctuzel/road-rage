@@ -460,6 +460,10 @@ class Agent(
     case (_, Some(l)) if l == t => true
     case _ => false
   }
+  def cur_vert = at.on match {
+    case e: Edge => e.to
+    case t: Turn => t.vert
+  }
   def our_lead = at.on.queue.ahead_of(this)
   def our_tail = at.on.queue.behind(this)
   def how_far_away(i: Intersection) =

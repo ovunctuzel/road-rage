@@ -54,6 +54,13 @@ class GuiState(val canvas: MapCanvas) {
     tooltips.clear()
   }
 
+  def draw_turn(turn: Turn, color: Color) {
+    g2d.setColor(color)
+    val l = GeomFactory.turn_body(turn)
+    g2d.draw(GeomFactory.line2awt(l))
+    g2d.fill(GeomFactory.turn_tip(l))
+  }
+
   // Queries
   def current_edge: Option[Edge] = current_obj match {
     case Some(pos: Position) => Some(pos.on.asInstanceOf[Edge])
@@ -110,9 +117,9 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
       driver_renderers -= a
     }
     case EV_Signal_Change(greens) => {
-      green_turns.clear
+      green_turns.clear()
       for (t <- greens) {
-        green_turns(t) = GeomFactory.turn_geom(t)
+        green_turns(t) = GeomFactory.line2awt(GeomFactory.turn_body(t))
       }
     }
     case _ =>
@@ -207,8 +214,6 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
     IntersectionType.CommonCase -> cfg.commoncase_color
   )
 
-  implicit def line2awt(l: Line): Line2D.Double = new Line2D.Double(l.x1, l.y1, l.x2, l.y2)
-
   def canvas_width = sim.graph.width.toInt
   def canvas_height = sim.graph.height.toInt
 
@@ -226,7 +231,7 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
   // TODO better solution
   for (v <- sim.vertices) {
     for (t <- v.intersection.policy.current_greens) {
-      green_turns(t) = GeomFactory.turn_geom(t)
+      green_turns(t) = GeomFactory.line2awt(GeomFactory.turn_body(t))
     }
   }
 
@@ -253,7 +258,7 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
         case Some(pos: Position) => draw_intersection(g2d, pos.on.asInstanceOf[Edge])
         case Some(v: Vertex) => {
           for (t <- v.intersection.policy.current_greens) {
-            draw_turn(g2d, t, cfg.turn_color)
+            state.draw_turn(t, cfg.turn_color)
           }
         }
         case _ =>
@@ -263,11 +268,9 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
       if (show_green) {
         g2d.setStroke(GeomFactory.center_stroke)
         g2d.setColor(Color.GREEN)
-        /*green_turns.values.foreach(
-          t => if (t.intersects(window)) { g2d.draw(t) }
-        )*/
         green_turns.foreach(t => if (t._2.intersects(window)) {
-          draw_turn(g2d, t._1, Color.GREEN)
+          g2d.fill(t._2)
+          // TODO draw the tip too?
         })
       }
 
@@ -299,32 +302,30 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
           screen_to_map_x(mouse_at_x), screen_to_map_y(mouse_at_y),
           thing.tooltip, false
         )
+        thing match {
+          // TODO make all the moused over things be renderables with this method
+          case a: Agent => driver_renderers(a).moused_over()
+          case _ =>
+        }
       }
       case None =>
     }
     return state.tooltips.toList
   }
 
-  def draw_turn(g2d: Graphics2D, turn: Turn, color: Color) = {
-    val line = GeomFactory.turn_geom(turn)
-    g2d.setColor(color)
-    g2d.draw(line)
-    g2d.fill(GeomFactory.draw_arrow(line, line.shift_back(0.75), 3))
-  }
-
   def draw_intersection(g2d: Graphics2D, e: Edge) = {
     if (current_turn == -1) {
       // show all turns
       for (turn <- e.next_turns) {
-        draw_turn(g2d, turn, Color.GREEN)
+        state.draw_turn(turn, Color.GREEN)
       }
     } else {
       // show one turn and its conflicts
       val turn = e.next_turns(current_turn)
-      draw_turn(g2d, turn, Color.GREEN)
+      state.draw_turn(turn, Color.GREEN)
 
       for (conflict <- turn.conflicts) {
-        draw_turn(g2d, conflict, Color.RED)
+        state.draw_turn(conflict, Color.RED)
       }
     }
   }
@@ -762,7 +763,7 @@ object GeomFactory {
   val center_stroke     = new BasicStroke(0.1f)
   val lane_stroke       = new BasicStroke(0.05f)
 
-  def draw_arrow(line: Line, base: Coordinate, size: Int): Shape = {
+  def arrow(line: Line, base: Coordinate, size: Int): Shape = {
     // TODO enum for size
     // width = how far out is the tip
     val width = size match {
@@ -797,18 +798,22 @@ object GeomFactory {
     return arrow
   }
 
-  def turn_geom(turn: Turn): Line = {
+  def turn_body(t: Turn): Line = {
     // We don't use the conflict_line, since that doesn't draw very
     // informatively, unless lane lines are trimmed back well.
     // Shift the lines to match the EdgeLines we draw.
-    val pt1 = turn.from.lines.last.perp_shift(0.5).shift_back()
-    val pt2 = turn.to.lines.head.perp_shift(0.5).shift_fwd()
+    val pt1 = t.from.lines.last.perp_shift(0.5).shift_back()
+    val pt2 = t.to.lines.head.perp_shift(0.5).shift_fwd()
     return new Line(pt1, pt2)
   }
+
+  def turn_tip(line: Line) = arrow(line, line.shift_back(0.75), 3)
 
   def rand_color() = new Color(
     rng.double(0.0, 1.0).toFloat,
     rng.double(0.0, 1.0).toFloat,
     rng.double(0.0, 1.0).toFloat
   )
+
+  def line2awt(l: Line): Line2D.Double = new Line2D.Double(l.x1, l.y1, l.x2, l.y2)
 }

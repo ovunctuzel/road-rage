@@ -159,8 +159,8 @@ class DirectedRoad(val road: Road, var id: Int, val dir: Direction.Value)
               else
                 road.neg_lanes
 
-  def from = edges.head.from
-  def to = edges.head.to
+  def from: Vertex = edges.head.from
+  def to: Vertex = edges.head.to
 
   def start_pt = edges.head.from.location
   def end_pt = edges.head.to.location
