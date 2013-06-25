@@ -109,6 +109,7 @@ class Edge(
     Util.log("Speed lim " + speed_limit)
     Util.log("Succs: " + next_turns)
     Util.log("Preds: " + prev_turns)
+    Util.log(s"From $from to $to")
   }
 
   // For debug only
