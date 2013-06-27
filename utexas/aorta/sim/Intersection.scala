@@ -95,6 +95,37 @@ class Intersection(val v: Vertex, policy_type: IntersectionType.Value,
   }
 }
 
+object Intersection {
+  // TODO wheres this belong?
+  def detect_gridlock(turn: Turn): Boolean = {
+    var current = turn.from
+    val seen = new MutableSet[Edge]()
+    while (current != null && !current.queue.slot_avail) {
+      // A cycle!
+      if (seen(current)) {
+        Util.log(s"Gridlock detected, involving: $seen")
+        return true
+      }
+      seen += current
+
+      // Where's the head of that stuck queue trying to go?
+      current = current.queue.head match {
+        case Some(a) => a.all_tickets(current.to.intersection).toList match {
+          case Nil => null
+          // TODO which ticket?
+          case ticket :: rest =>
+            if (ticket.is_approved)
+              null
+            else
+              ticket.turn.to
+        }
+        case None => null
+      }
+    }
+    return false
+  }
+}
+
 class Ticket(val a: Agent, val turn: Turn) extends Ordered[Ticket] {
   //////////////////////////////////////////////////////////////////////////////
   // State
@@ -180,31 +211,6 @@ class Ticket(val a: Agent, val turn: Turn) extends Ordered[Ticket] {
       waiting_since = Common.tick
     }
     return false
-
-    // Perform gridlock detection!
-    /*var current = target
-    val seen = new MutableSet[Edge]()
-    seen += turn.from
-    while (current != null && !current.queue.slot_avail) {
-      // A cycle!
-      if (seen(current)) {
-        Util.log(s"Gridlock detected by $this. Seen: $seen")
-        return true
-      }
-      seen += current
-
-      // Where's the head of that stuck queue trying to go?
-      current = current.queue.head match {
-        case Some(a) => a.all_tickets(current.to.intersection).toList match {
-          case Nil => null
-          // TODO which ticket? the approved one?
-          case ls => ls.head.turn.to
-        }
-        case None => null
-      }
-    }
-
-    return false*/
   }
 
   //////////////////////////////////////////////////////////////////////////////

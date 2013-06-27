@@ -197,6 +197,7 @@ class PathRoute(goal: DirectedRoad, rng: RNG) extends Route(goal, rng) {
       // lane-changing.
 
       val choice = e.next_turns.maxBy(t => t.to.queue.percent_avail)
+      Intersection.detect_gridlock(choice)
       val source = choice.to.directed_road
 
       // TODO Erase all turn choices AFTER source, if we've made any?
