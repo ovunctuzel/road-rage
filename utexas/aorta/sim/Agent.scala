@@ -46,6 +46,8 @@ class Agent(
 
   // how long has our speed been 0?
   private var idle_since = -1.0
+  // how long has our speed been (cfg.epsilon, 0.1)? TODO this is floating pt hack.
+  private var almost_idle_since = -1.0
 
   val tickets = new MutableSet[Ticket]()
 
@@ -86,6 +88,7 @@ class Agent(
     }
     w.double(lanechange_dist_left)
     w.double(idle_since)
+    w.double(almost_idle_since)
     w.int(tickets.size)
     tickets.foreach(ticket => ticket.serialize(w))
   }
@@ -117,7 +120,7 @@ class Agent(
     // Subtle note: Do this after LCing, else we see the wrong speed
     val new_dist = update_kinematics(cfg.dt_s)
 
-    // Currently Lane-changing?
+    // Currently lane-changing?
     old_lane match {
       case Some(lane) => {
         lanechange_dist_left -= new_dist
@@ -133,6 +136,15 @@ class Agent(
         }
       }
       case None =>
+    }
+
+    if (!is_stopped && speed < 0.1) {
+      if (almost_idle_since == -1.0) {
+        almost_idle_since = Common.tick
+      }
+    }
+    if (speed >= 0.1) {
+      almost_idle_since = -1.0
     }
 
     if (is_stopped && target_accel <= 0.0) {
@@ -321,6 +333,10 @@ class Agent(
                         0
                       else
                         Common.tick - idle_since
+  def how_long_almost_idle = if (almost_idle_since == -1.0)
+                        0
+                      else
+                        Common.tick - almost_idle_since
   def is_stopped = speed <= cfg.epsilon
 
   def involved_with(i: Intersection) = all_tickets(i).nonEmpty
@@ -501,6 +517,7 @@ object Agent {
     }
     a.lanechange_dist_left = r.double
     a.idle_since = r.double
+    a.almost_idle_since = r.double
     val num_tickets = r.int
     a.tickets ++= Range(0, num_tickets).map(_ => Ticket.unserialize(r, a, graph))
     // Add ourselves back to a queue

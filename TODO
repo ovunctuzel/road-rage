@@ -15,6 +15,7 @@
     - measure how long a vehicle spends thrashing about bc original path is congested
   - bugs
     - agents not stopping at exactly the right dist the first time
+      - want a clean fix for this
   - savestating
     - multiple sims existing per process better
       DR ids ugly... sys wallets are a hack. phase IDs?

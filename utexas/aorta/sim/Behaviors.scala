@@ -356,7 +356,7 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
   private def accel_to_end(want_dist: Double): Double = {
     // TODO dist > epsilon too? test totally with whatever i go with
     if (want_dist > 0.0) {
-      if (a.speed > cfg.epsilon) {
+      if (a.speed > cfg.epsilon && a.how_long_almost_idle < 10.0) {
         // d = (v_1)(t) + (1/2)(a)(t^2)
         // 0 = (v_1) + (a)(t)
         // Eliminating time yields the formula for accel below.
