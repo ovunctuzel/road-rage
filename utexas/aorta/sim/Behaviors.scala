@@ -289,7 +289,25 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
       case e: Edge if route.done(e) => false
       // Otherwise, ask the intersection
       case e: Edge => a.get_ticket(route.pick_turn(e)) match {
-        case Some(ticket) => ticket.is_approved
+        case Some(ticket) => {
+          if (ticket.is_approved) {
+            true
+          } else {
+            if (ticket.should_cancel) {
+              // Try again. The routing should avoid choices that're filled up,
+              // hopefully avoiding gridlock.
+              ticket.cancel()
+              // TODO if we end up doing the same thing... wtf, why? if theyre
+              // all congested, do something..
+              route.reroute(e)
+              val next_turn = route.pick_turn(e)
+              val replacement = new Ticket(a, next_turn)
+              a.tickets += replacement
+              e.to.intersection.request_turn(replacement)
+            }
+            false
+          }
+        }
         case None => false
       }
     }

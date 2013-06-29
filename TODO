@@ -12,6 +12,7 @@
     - total rewrite in something
     - viz: color roads thatre planned for use
   - gridlock is still a stigma
+    - measure how long a vehicle spends thrashing about bc original path is congested
   - bugs
     - agents not stopping at exactly the right dist the first time
   - savestating

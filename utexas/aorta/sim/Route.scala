@@ -43,6 +43,8 @@ abstract class Route(val goal: DirectedRoad, rng: RNG)
   def pick_turn(e: Edge): Turn
   // The client may try to lane-change somewhere
   def pick_lane(e: Edge): Edge
+  // Just mark that we don't have to take the old turn prescribed
+  def reroute(at: Edge) {}
 
   //////////////////////////////////////////////////////////////////////////////
   // Queries
@@ -171,6 +173,11 @@ class PathRoute(goal: DirectedRoad, rng: RNG) extends Route(goal, rng) {
     tell_listeners(EV_Transition(from, to))
   }
 
+  override def reroute(at: Edge) {
+    Util.assert_eq(chosen_turns.contains(at), true)
+    chosen_turns -= at
+  }
+
   def pick_turn(e: Edge): Turn = {
     // Just lookup if we've already committed to something.
     // TODO ultimately, our clients should ask us less and look at tickets.
@@ -197,7 +204,6 @@ class PathRoute(goal: DirectedRoad, rng: RNG) extends Route(goal, rng) {
       // lane-changing.
 
       val choice = e.next_turns.maxBy(t => t.to.queue.percent_avail)
-      Intersection.detect_gridlock(choice)
       val source = choice.to.directed_road
 
       // TODO Erase all turn choices AFTER source, if we've made any?

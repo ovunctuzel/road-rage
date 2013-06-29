@@ -36,6 +36,11 @@ class Intersection(val v: Vertex, policy_type: IntersectionType.Value,
     policy.request_turn(ticket)
   }
 
+  def cancel_turn(ticket: Ticket) {
+    Util.assert_eq(ticket.turn.vert, v)
+    policy.cancel_turn(ticket)
+  }
+
   // Check for collisions
   def end_step(): Unit = {
     if (turns.size < 2) {
@@ -103,7 +108,7 @@ object Intersection {
     while (current != null && !current.queue.slot_avail) {
       // A cycle!
       if (seen(current)) {
-        Util.log(s"Gridlock detected, involving: $seen")
+        //Util.log(s"Gridlock detected, involving: $seen")
         return true
       }
       seen += current
@@ -167,6 +172,12 @@ class Ticket(val a: Agent, val turn: Turn) extends Ordered[Ticket] {
       // When we became the interrupting ticket, we grabbed the slot.
       turn.to.queue.allocate_slot
     }
+  }
+
+  def cancel() {
+    Util.assert_eq(is_approved, false)
+    a.tickets.remove(this)
+    intersection.cancel_turn(this)
   }
 
   // To enforce liveness, policies shouldn't accept a turn that can't certainly
@@ -255,6 +266,10 @@ class Ticket(val a: Agent, val turn: Turn) extends Ordered[Ticket] {
       // arrive at the turn soon
       eta_earliest <= 10.0
     }
+
+  // If we're part of gridlock and we have a choice, bail out.
+  def should_cancel() =
+    turn.from.next_turns.size > 1 && Intersection.detect_gridlock(turn)
 }
 
 object Ticket {
@@ -305,6 +320,14 @@ abstract class Policy(val intersection: Intersection) {
     synchronized {
       new_requests += ticket
       // TODO do extra book-keeping to verify agents aren't double requesting?
+    }
+  }
+
+  def cancel_turn(ticket: Ticket) {
+    synchronized {
+      // TODO assert not in new_requests
+      // TODO assert it was in here!
+      request_queue = request_queue.filter(t => t != ticket)
     }
   }
 
