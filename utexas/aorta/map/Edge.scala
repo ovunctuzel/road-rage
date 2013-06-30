@@ -131,6 +131,14 @@ class Edge(
   def dont_block() = from.intersection.policy.approveds_to(this).find(
     t => t.a.wont_block(from.intersection)
   ).isDefined
+
+  // Returns [0, 100] where 0 is light traffic and 100 is heavy.
+  def congestion_rating(): Int = {
+    // TODO a full road thats flowing is good... how to combine?
+    //val avg_speed = queue.agents.map(_.speed).sum / queue.agents.size
+    //avg_speed / e.speed_limit
+    return queue.percent_full.toInt
+  }
 }
 
 object Edge {

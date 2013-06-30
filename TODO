@@ -20,6 +20,7 @@
     - multiple sims existing per process better
       DR ids ugly... sys wallets are a hack. phase IDs?
       (minimize objects with state)
+  - resumable logging doesnt really work if they simulated past the savestate...
 2) big breaux
 3) marginal effects
 
