@@ -97,28 +97,34 @@ class Pass2(old_graph: PreGraph1) {
 
   private def merge_short_roads() = {
     Util.log("Merging short roads...")
-    graph.edges.find(r => r.length < cfg.min_road_len && !r.is_culdesac) match {
-      case Some(shorty) => {
-        // Remove this short road
-        graph.edges = graph.edges.filter(e => e != shorty)
-        // TODO throw away the metadata on it. :(
+    // TODO could probably just loop through once...
+    var changed = true
+    while (changed) {
+      graph.edges.find(r => r.length < cfg.min_road_len && !r.is_culdesac) match {
+        case Some(shorty) => {
+          // Remove this short road
+          graph.edges = graph.edges.filter(e => e != shorty)
+          // TODO throw away the metadata on it. :(
 
-        // A weird approach that seems to work: delete the road, but magically
-        // make other roads connected to shorty.from instead connect to
-        // shorty.to. aka, delete the vertex shorty.from.
-        Util.assert_ne(shorty.from, shorty.to)
-        val nuke_vert = shorty.from
-        val replace_vert = shorty.to
-        for (e <- graph.edges) {
-          if (e.from == nuke_vert) {
-            e.from = replace_vert
-          }
-          if (e.to == nuke_vert) {
-            e.to = replace_vert
+          // A weird approach that seems to work: delete the road, but magically
+          // make other roads connected to shorty.from instead connect to
+          // shorty.to. aka, delete the vertex shorty.from.
+          Util.assert_ne(shorty.from, shorty.to)
+          val nuke_vert = shorty.from
+          val replace_vert = shorty.to
+          for (e <- graph.edges) {
+            if (e.from == nuke_vert) {
+              e.from = replace_vert
+            }
+            if (e.to == nuke_vert) {
+              e.to = replace_vert
+            }
           }
         }
+        case None => {
+          changed = false
+        }
       }
-      case None =>
     }
   }
 }
