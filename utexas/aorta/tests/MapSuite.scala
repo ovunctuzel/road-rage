@@ -7,64 +7,52 @@ package utexas.aorta.tests
 import scala.collection.mutable.Stack
 import scala.collection.mutable.{HashSet => MutableHashSet}
 
-import java.io.File
-
-import utexas.aorta.map.make.Builder
 import utexas.aorta.map.{Graph, Traversable}
 import utexas.aorta.cfg
 
 // TODO Use ScalaTests or another framework.
 
 object MapSuite {
-  def main(args: Array[String]) = {
-    for (fn <- maps) {
-      println(s"Building $fn...")
-      val output = Builder.convert(fn)
-      println(s"Loading $output...")
-      // TODO add tests to make sure the XML encoding still yields the same map
-      val graph = Graph.load(output)
-      println(s"Checking $output...")
-      check_map(graph)
-      println("--------------------------------------------------")
-    }
+  def main(args: Array[String]) {
+    val graph = Graph.load(args.head)
+    check_emptiness(graph)
+    check_connectivity(graph)
+    check_turn_conflicts(graph)
+    check_geometry(graph)
+    check_degenerate_verts(graph)
   }
 
-  // Must run tests from the root project directory
-  def maps = new File("osm/").listFiles.map(_.getPath)
-
-  def check_map(g: Graph) = {
-    check_emptiness(g)
-    check_connectivity(g)
-    check_turn_conflicts(g)
-    check_geometry(g)
+  def oops(msg: String) {
+    //throw new Exception(msg)
+    println(msg)
   }
 
   // Make sure things aren't empty
-  def check_emptiness(g: Graph) = {
+  def check_emptiness(g: Graph) {
     for (r <- g.roads) {
       if (r.all_lanes.isEmpty) {
-        throw new Exception(s"$r has no lanes")
+        oops(s"$r has no lanes")
       }
     }
 
     for (v <- g.vertices) {
       if (v.turns.isEmpty) {
-        throw new Exception(s"$v has no turns")
+        oops(s"$v has no turns")
       }
     }
   }
 
   // Every edge should be reachable from every other edge, barring approaches
   // that try to lane-change in too-short areas.
-  def check_connectivity(g: Graph) = {
+  def check_connectivity(g: Graph) {
     // This is a weak check that just looks at individual edges, not connected
     // components of the whole graph.
     for (e <- g.edges) {
       if (e.next_turns.isEmpty) {
-        throw new Exception(s"$e leads nowhere")
+        oops(s"$e leads nowhere")
       }
       if (e.prev_turns.isEmpty) {
-        throw new Exception(s"Nothing leads to $e")
+        oops(s"Nothing leads to $e")
       }
     }
 
@@ -89,19 +77,19 @@ object MapSuite {
     val size1 = visited.size
     val size2 = g.traversables.size
     if (size1 != size2) {
-      throw new Exception(
+      oops(
         s"Reached $size1 traversables from $start, but should have found $size2"
       )
     }
   }
 
   // Conflicts should be symmetric.
-  def check_turn_conflicts(g: Graph) = {
+  def check_turn_conflicts(g: Graph) {
     for (e <- g.edges) {
       for (t1 <- e.next_turns) {
         for (t2 <- t1.conflicts) {
           if (!t2.conflicts_with(t1)) {
-            throw new Exception(s"Asymmetric turn conflict between $t1 and $t2")
+            oops(s"Asymmetric turn conflict between $t1 and $t2")
           }
         }
       }
@@ -109,10 +97,11 @@ object MapSuite {
   }
 
   // OSM leads to short edges and long turns, but impose some limits.
-  def check_geometry(g: Graph) = {
+  def check_geometry(g: Graph) {
     for (e <- g.edges) {
-      if (e.length <= cfg.epsilon || e.length.isNaN) {
-        throw new Exception(s"$e has length ${e.length}")
+      // TODO cul-de-sacs? edges might be a bit shorter than roads?
+      if (e.length <= cfg.min_road_len || e.length.isNaN) {
+        oops(s"$e has length ${e.length}. The road has length ${e.road.length}")
       }
     }
 
@@ -120,8 +109,16 @@ object MapSuite {
     g.traversables.foreach(t => {
       val l = t.lines.foldLeft(0.0)((a, b) => a + b.length)
       if (l != t.length) {
-        println(s"$t has recorded length ${t.length} and computed $l")
+        oops(s"$t has recorded length ${t.length} and computed $l")
       }
     })
+  }
+
+  // These shouldn't exist
+  def check_degenerate_verts(g: Graph) {
+    val silly = g.vertices.filter(v => v.roads.size == 2)
+    if (silly.nonEmpty) {
+      oops("Degenerate vertices: " + silly.toList)
+    }
   }
 }
