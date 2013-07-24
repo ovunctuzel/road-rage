@@ -13,9 +13,10 @@ import utexas.aorta.{Util, Common, cfg}
 
 // Use hillclimbing to tune the rates of system bids.
 object TuneSystemBids {
+  // (thruput_bonus, capacity_bonus, dependency_rate, waiting_rate, ready_bonus)
   type State = (Int, Int, Int, Int, Int)
 
-  // Or stop when we can't do any better
+  // Stop after this long or when we can't do any better
   val iters = 100
 
   // Cut off after how many hours?

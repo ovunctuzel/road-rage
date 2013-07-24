@@ -484,6 +484,10 @@ class Agent(
   def our_tail = at.on.queue.behind(this)
   def how_far_away(i: Intersection) =
     route.steps_to(at.on, i.v).map(_.length).sum - (at.on.length - at.dist_left)
+  // Report some number that fully encodes our current choice
+  // TODO should be getting turns chosen and LCs done too, to distinguish a few
+  // rare cases thatd we'll otherwise blur.
+  def characterize_choice = target_accel
 
   // Math shortcuts
   def max_lookahead_dist = Physics.max_lookahead_dist(speed, at.on.speed_limit)

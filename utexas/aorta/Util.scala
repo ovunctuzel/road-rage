@@ -173,6 +173,7 @@ object cfg {
   val antialias = bool(params("antialias"))
   val army_size = params("army_size").toInt
   val autosave_every = params("autosave_every").toDouble
+  val replay_freq = params("replay_freq").toDouble
   val chosen_road_color = color(params("chosen_road_color"))
   val commoncase_color = color(params("commoncase_color"))
   val dash_center = bool(params("dash_center"))
@@ -203,8 +204,9 @@ object cfg {
   val zoom_threshold = params("zoom_threshold").toDouble
 
   val lanechange_dist = lane_width * params("lanechange_dist_rate").toDouble
-  // Make sure autosave_every is a multiple of dt_s.
+  // Make sure time-based params are a multiple of dt_s.
   Util.assert_eq((autosave_every / dt_s).isValidInt, true)
+  Util.assert_eq((replay_freq / dt_s).isValidInt, true)
 }
 
 // Plumbing some stuff everywhere is hard, so share here sometimes. Plus,
@@ -226,7 +228,7 @@ object Common {
 
   sys.ShutdownHookThread({
     if (sim != null) {
-      sim.agents.foreach(a => a.terminate(interrupted = true))
+      sim.terminate()
     }
   })
 }

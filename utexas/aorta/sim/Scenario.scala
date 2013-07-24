@@ -12,7 +12,7 @@ import scala.collection.mutable
 
 import utexas.aorta.{Util, RNG, Common, cfg, StateWriter, StateReader}
 
-// Array index and agent/intersection ID must correspond. Client's
+// Array index and agent/intersection ID must correspond. Creator's
 // responsibility.
 case class Scenario(name: String, map_fn: String, agents: Array[MkAgent],
                     intersections: Array[MkIntersection],
@@ -148,6 +148,8 @@ case class Scenario(name: String, map_fn: String, agents: Array[MkAgent],
     }
     return times.toMap
   }
+
+  def num_agents = agents.size
 }
 
 object Scenario {

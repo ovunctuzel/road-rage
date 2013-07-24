@@ -16,7 +16,7 @@ import utexas.aorta.map.{Graph, Road, Edge, Vertex, Turn, DirectedRoad}
 import utexas.aorta.sim.policies.Phase
 
 import utexas.aorta.{Util, Common, cfg, StateWriter, StateReader}
-import utexas.aorta.analysis.{Heartbeat_Stat, Scenario_Stat}
+import utexas.aorta.analysis.{Heartbeat_Stat, Scenario_Stat, ReplayChecker}
 
 // TODO take just a scenario, or graph and scenario?
 class Simulation(val graph: Graph, val scenario: Scenario)
@@ -40,6 +40,12 @@ class Simulation(val graph: Graph, val scenario: Scenario)
   // Not private because these get incremented elsewhere.
   var ch_since_last_time = 0
   var astar_since_last_time = 0
+
+  private val replay = new ReplayChecker(this) {
+    override def difference(id: Int, expect: Double, actual: Double) {
+      Util.log(s"At $tick, $id chose $actual rather than $expect")
+    }
+  }
 
   //////////////////////////////////////////////////////////////////////////////
   // Meta
@@ -149,6 +155,9 @@ class Simulation(val graph: Graph, val scenario: Scenario)
     if ((tick / cfg.autosave_every).isValidInt && tick > 0.0) {
       savestate()
     }
+    if ((tick / cfg.replay_freq).isValidInt && tick > 0.0) {
+      replay.handle_tick()
+    }
   }
 
   def multi_step(total_dt: Double) {
@@ -157,6 +166,11 @@ class Simulation(val graph: Graph, val scenario: Scenario)
     for (i <- Range(0, ticks.toInt)) {
       step()
     }
+  }
+
+  def terminate() {
+    agents.foreach(a => a.terminate(interrupted = true))
+    replay.done()
   }
 
   // True if we've correctly promoted into real agents. Does the work of

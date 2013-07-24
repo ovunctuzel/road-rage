@@ -3,16 +3,13 @@
 # Roadmap #
 
 1) cleanup
-  - good enough default sys bids, to get new default over FIFO
-  - fix up maps once and for allish
-  - common case policy, in places like claycut rd
+  - sysbids
+    - better defaults, retry the tuning (low-pri)
+  - could use a common case policy, in places like claycut rd
+  - measure how long a vehicle spends thrashing about bc original path is congested
+  - gridlock nit: dont rechoose same thing when trying again
   - sim speed
     - turn blocked invariant, really maintain it for efficiency!
-  - ui
-    - total rewrite in something
-    - viz: color roads thatre planned for use
-  - gridlock is still a stigma
-    - measure how long a vehicle spends thrashing about bc original path is congested
   - bugs
     - agents not stopping at exactly the right dist the first time
       - want a clean fix for this
@@ -20,7 +17,8 @@
     - multiple sims existing per process better
       DR ids ugly... sys wallets are a hack. phase IDs?
       (minimize objects with state)
-  - resumable logging doesnt really work if they simulated past the savestate...
+    - filenames when saving from a loaded savestate
+    - resumable logging doesnt really work if they simulated past the savestate...
 2) big breaux
 3) marginal effects
 
