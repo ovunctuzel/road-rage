@@ -192,7 +192,11 @@ class Simulation(val graph: Graph, val scenario: Scenario)
         return false
       } else {
         val a = spawn.make(this)
-        a.setup(graph.edges(spawn.start_edge), spawn.start_dist)
+        if (Common.omit.getOrElse(-1) == a.id) {
+          Util.log(s"$a would have been created, but omitting")
+        } else {
+          a.setup(graph.edges(spawn.start_edge), spawn.start_dist)
+        }
         return true
       }
     } else {

@@ -77,6 +77,7 @@ object Util {
         case "--log" => { Common.stats_log = new StatsRecorder(value) }
         case "--time_limit" => { Common.time_limit = value.toDouble }
         case "--focus" => { Common.focus = Some(value.toInt) }
+        case "--omit" => { Common.omit = Some(value.toInt) }
         case _ => { Util.log("Unknown argument: " + key); sys.exit }
       }
     }
@@ -219,6 +220,7 @@ object Common {
   var stats_log: StatsRecorder = null
   // TODO think of a better Flags setup
   var focus: Option[Int] = None // an agent ID to treat as special
+  var omit: Option[Int] = None // an agent ID to not spawn
 
   def scenario = sim.scenario
   def tick = sim.tick
