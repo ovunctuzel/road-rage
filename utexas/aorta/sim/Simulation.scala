@@ -41,7 +41,8 @@ class Simulation(val graph: Graph, val scenario: Scenario)
   var ch_since_last_time = 0
   var astar_since_last_time = 0
 
-  private val replay = new ReplayChecker(this) {
+  private val replay = new ReplayChecker(this, List(Common.focus).flatten.toSet)
+  {
     override def difference(id: Int, expect: Double, actual: Double) {
       Util.log(s"At $tick, $id chose $actual rather than $expect")
     }

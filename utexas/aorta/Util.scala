@@ -76,6 +76,7 @@ object Util {
       key match {
         case "--log" => { Common.stats_log = new StatsRecorder(value) }
         case "--time_limit" => { Common.time_limit = value.toDouble }
+        case "--focus" => { Common.focus = Some(value.toInt) }
         case _ => { Util.log("Unknown argument: " + key); sys.exit }
       }
     }
@@ -216,6 +217,8 @@ object Common {
   var sim: utexas.aorta.sim.Simulation = null
   var time_limit = -1.0
   var stats_log: StatsRecorder = null
+  // TODO think of a better Flags setup
+  var focus: Option[Int] = None // an agent ID to treat as special
 
   def scenario = sim.scenario
   def tick = sim.tick
