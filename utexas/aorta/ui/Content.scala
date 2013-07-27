@@ -22,12 +22,12 @@ trait Renderable {
 class DrawDriver(val agent: Agent, state: GuiState) {
   // When we don't want to mark this agent in a special way, display a random
   // but fixed color
-  private val personal_color = GeomFactory.rand_color
+  val personal_color = GeomFactory.rand_color
 
   def hits(bbox: Rectangle2D.Double) = agent_bubble.intersects(bbox)
 
   def render() {
-    state.g2d.setColor(color)
+    state.g2d.setColor(ColorScheme.color(this, state))
     if (state.canvas.zoomed_in) {
       // TODO cfg. just tweak these by sight.
       val vehicle_length = 0.2  // along the edge
@@ -69,27 +69,6 @@ class DrawDriver(val agent: Agent, state: GuiState) {
       }
     } else {
       state.g2d.fill(agent_bubble)
-    }
-  }
-
-  private def color(): Color = state.current_obj match {
-    case Some(v: Vertex) => agent.all_tickets(v.intersection).toList match {
-      case Nil => Color.GRAY
-      case ls if ls.find(_.is_approved).isDefined => Color.GREEN
-      case ls if ls.find(_.is_interruption).isDefined => Color.YELLOW
-      case _ => Color.RED
-    }
-    case _ => state.camera_agent match {
-      case Some(a) if agent == a => Color.WHITE
-      case _ =>
-        // try to avoid flashing red, this feature is used to visually spot true
-        // clumps
-        if (agent.how_long_idle >= 30.0)
-          Color.RED
-        else if (!state.canvas.zoomed_in)
-          Color.GRAY
-        else
-          personal_color
     }
   }
 
