@@ -16,7 +16,7 @@ import java.io.{File, EOFException}
 // Ignore IDs of new agents introduced when we're replaying, or when we record
 // if we plan to remove that agent later.
 abstract class ReplayChecker(sim: Simulation, ignore: Set[Int]) {
-  def difference(id: Int, expect: Double, actual: Double)
+  def difference(id: Int, expected: Double, actual: Double)
 
   // What're we doing?
   private var reader: StateReader = null
@@ -69,23 +69,23 @@ abstract class ReplayChecker(sim: Simulation, ignore: Set[Int]) {
       for (a <- sim.agents) {
         // [expect_id, a.id)
         for (id <- Range(expect_id, a.id) if !ignore.contains(id)) {
-          val expect = reader.double
-          if (expect != ReplayChecker.MISSING) {
-            difference(id, expect, ReplayChecker.MISSING)
+          val expected = reader.double
+          if (expected != ReplayChecker.MISSING) {
+            difference(id, expected, ReplayChecker.MISSING)
           }
         }
         if (!ignore.contains(a.id)) {
-          val expect = reader.double
+          val expected = reader.double
           expect_id = a.id + 1
-          if (expect != a.characterize_choice) {
-            difference(a.id, expect, a.characterize_choice)
+          if (expected != a.characterize_choice) {
+            difference(a.id, expected, a.characterize_choice)
           }
         }
       }
       for (id <- Range(expect_id, agents + 1) if !ignore.contains(id)) {
-        val expect = reader.double
-        if (expect != ReplayChecker.MISSING) {
-          difference(id, expect, ReplayChecker.MISSING)
+        val expected = reader.double
+        if (expected != ReplayChecker.MISSING) {
+          difference(id, expected, ReplayChecker.MISSING)
         }
       }
     } catch {

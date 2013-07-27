@@ -15,6 +15,7 @@ import scala.io.Source
 import utexas.aorta.map.{Graph, Road, Edge, Vertex, Turn, DirectedRoad}
 import utexas.aorta.sim.policies.Phase
 
+import utexas.aorta.ui.ReplayDiffScheme
 import utexas.aorta.{Util, Common, cfg, StateWriter, StateReader}
 import utexas.aorta.analysis.{Heartbeat_Stat, Scenario_Stat, ReplayChecker}
 
@@ -43,9 +44,9 @@ class Simulation(val graph: Graph, val scenario: Scenario)
 
   private val replay = new ReplayChecker(this, List(Common.focus).flatten.toSet)
   {
-    override def difference(id: Int, expect: Double, actual: Double) {
+    override def difference(id: Int, expected: Double, actual: Double) {
       // TODO this is a bit messy, reaching over to the UI...
-      utexas.aorta.ui.ReplayDiffScheme.diff.add(id)
+      ReplayDiffScheme.add_delta(id, actual - expected)
     }
   }
 
