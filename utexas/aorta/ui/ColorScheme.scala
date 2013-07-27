@@ -8,12 +8,27 @@ import java.awt.Color
 
 import utexas.aorta.map.Vertex
 
+import scala.collection.mutable.{HashSet => MutableSet}
+
 import utexas.aorta.cfg
 
-// The hierarchy: FocusVertexScheme, CameraScheme, StalledScheme, PersonalScheme
+// The hierarchy: ReplayDiffScheme, FocusVertexScheme, CameraScheme, StalledScheme, PersonalScheme
 // TODO make that order explicit here. color(...): Option[Color]
 object ColorScheme {
-  def color(d: DrawDriver, state: GuiState) = FocusVertexScheme.color(d, state)
+  def color(d: DrawDriver, state: GuiState) = ReplayDiffScheme.color(d, state)
+}
+
+// Reveal who's acting differently from their past life
+object ReplayDiffScheme {
+  val diff = new MutableSet[Int]()
+
+  def color(d: DrawDriver, state: GuiState) =
+    if (state.canvas.zoomed_in)
+      FocusVertexScheme.color(d, state)
+    else if (diff.contains(d.agent.id))
+      Color.GREEN
+    else
+      Color.GRAY
 }
 
 // Focus on tickets at one intersection

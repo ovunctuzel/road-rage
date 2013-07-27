@@ -43,13 +43,9 @@ class Simulation(val graph: Graph, val scenario: Scenario)
 
   private val replay = new ReplayChecker(this, List(Common.focus).flatten.toSet)
   {
-    private val diff = new MutableSet[Int]()
-
     override def difference(id: Int, expect: Double, actual: Double) {
-      if (!diff.contains(id)) {
-        diff += id
-        Util.log(s"At $tick, $id chose $actual rather than $expect")
-      }
+      // TODO this is a bit messy, reaching over to the UI...
+      utexas.aorta.ui.ReplayDiffScheme.diff.add(id)
     }
   }
 
