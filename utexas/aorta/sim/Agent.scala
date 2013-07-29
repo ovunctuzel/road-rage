@@ -59,7 +59,7 @@ class Agent(
     at = enter(spawn, dist)
     spawn.queue.allocate_slot
     Common.sim.insert_agent(this)
-    Common.sim.tell_listeners(EV_Agent_Created(this))
+    AgentMap.maps.foreach(m => m.when_created(this))
   }
 
   def serialize(w: StateWriter) {
@@ -299,7 +299,7 @@ class Agent(
       route.route_type, wallet.wallet_type, stat_memory._4, Common.tick,
       wallet.budget, wallet.priority, !interrupted
     ))
-    Common.sim.tell_listeners(EV_Agent_Destroyed(this))
+    AgentMap.maps.foreach(m => m.when_created(this))
   }
 
   //////////////////////////////////////////////////////////////////////////////

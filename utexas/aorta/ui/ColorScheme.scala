@@ -7,6 +7,7 @@ package utexas.aorta.ui
 import java.awt.Color
 
 import utexas.aorta.map.Vertex
+import utexas.aorta.sim.AgentMap
 
 import scala.collection.mutable.{HashMap => MutableMap}
 
@@ -20,16 +21,16 @@ object ColorScheme {
 
 // Reveal who's acting differently from their past life
 object ReplayDiffScheme {
-  val deltas = new MutableMap[Int, Double]()
+  private val deltas = new AgentMap[Double](0.0)
 
   def add_delta(id: Int, delta: Double) {
-    deltas.put(id, deltas.getOrElse(id, 0.0) + delta)
+    deltas.put(id, deltas.get(id) + delta)
   }
 
   def color(d: DrawDriver, state: GuiState) =
     if (state.canvas.zoomed_in)
       FocusVertexScheme.color(d, state)
-    else deltas.getOrElse(d.agent.id, 0.0) match {
+    else deltas.get(d.agent.id) match {
       case 0.0 => Color.GRAY
       case x if x < 0.0 => Color.RED
       case _ => Color.GREEN

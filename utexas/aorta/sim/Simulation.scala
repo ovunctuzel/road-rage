@@ -45,7 +45,7 @@ class Simulation(val graph: Graph, val scenario: Scenario)
   private val replay = new ReplayChecker(this, List(Common.focus).flatten.toSet)
   {
     override def difference(id: Int, expected: Double, actual: Double) {
-      // TODO this is a bit messy, reaching over to the UI...
+      // TODO this is a bit messy, reaching over to the UI... bcast an event.
       ReplayDiffScheme.add_delta(id, actual - expected)
     }
   }
@@ -319,8 +319,6 @@ trait ListenerPattern[T] {
 abstract class Sim_Event
 final case class EV_Signal_Change(greens: Set[Turn]) extends Sim_Event
 final case class EV_Heartbeat(heartbeat: Heartbeat_Stat) extends Sim_Event
-final case class EV_Agent_Created(a: Agent) extends Sim_Event
-final case class EV_Agent_Destroyed(a: Agent) extends Sim_Event
 
 trait AgentManager {
   //////////////////////////////////////////////////////////////////////////////
@@ -357,4 +355,27 @@ trait AgentManager {
   // Only used by the UI, so is O(n) rather than a binary search.
   def get_agent(id: Int) = agents.find(a => a.id == id)
   def has_agent(a: Agent) = agents.contains(a)
+}
+
+// A map from agent to something else, which supports defaults and knows when
+// agents are created or destroyed.
+class AgentMap[T](default: T) {
+  private val mapping = new MutableMap[Int, T]()
+  AgentMap.maps += this
+
+  def get(id: Int): T = mapping.getOrElse(id, default)
+  def get(a: Agent): T = get(a.id)
+  def put(id: Int, value: T) {
+    mapping(id) = value
+  }
+  def values = mapping.values
+
+  def when_created(a: Agent) {}
+  def destroy(a: Agent) {
+    mapping.remove(a.id)
+  }
+}
+
+object AgentMap {
+  val maps = new MutableList[AgentMap[_ <: Any]]()
 }

@@ -14,8 +14,7 @@ import scala.language.implicitConversions
 import utexas.aorta.map._  // TODO yeah getting lazy.
 import utexas.aorta.sim.{Simulation, Agent, Sim_Event, EV_Signal_Change,
                          IntersectionType, RouteType, Route_Event,
-                         EV_Transition, EV_Reroute, EV_Heartbeat,
-                         EV_Agent_Created, EV_Agent_Destroyed}
+                         EV_Transition, EV_Reroute, EV_Heartbeat, AgentMap}
 import utexas.aorta.sim.PathRoute
 
 import utexas.aorta.{Util, RNG, Common, cfg}
@@ -86,10 +85,14 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
 
   // TODO this could just be a nice sorted list instead. only have to do lookup
   // when agents are destroyed. could batch those TODO...
-  private val driver_renderers = new mutable.HashMap[Agent, DrawDriver]()
+  private val driver_renderers = new AgentMap[DrawDriver](null) {
+    override def when_created(a: Agent) {
+      put(a.id, new DrawDriver(a, state))
+    }
+  }
   // If we loaded from a savestate, we won't know about these
   for (a <- sim.agents) {
-    driver_renderers(a) = new DrawDriver(a, state)
+    driver_renderers.put(a.id, new DrawDriver(a, state))
   }
 
   private val road_renderers = sim.graph.roads.map(r =>
@@ -109,12 +112,6 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
       status.agents.text = info.describe
       status.time.text = Util.time_num(info.tick)
       last_tick = info.tick
-    }
-    case EV_Agent_Created(a) => {
-      driver_renderers(a) = new DrawDriver(a, state)
-    }
-    case EV_Agent_Destroyed(a) => {
-      driver_renderers -= a
     }
     case EV_Signal_Change(greens) => {
       green_turns.clear()
@@ -304,7 +301,7 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
         )
         thing match {
           // TODO make all the moused over things be renderables with this method
-          case a: Agent => driver_renderers(a).moused_over()
+          case a: Agent => driver_renderers.get(a).moused_over()
           case _ =>
         }
       }
