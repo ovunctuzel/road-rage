@@ -10,6 +10,7 @@ import scala.annotation.elidable
 import scala.annotation.elidable.ASSERTION
 import scala.io.Source
 import java.awt.Color
+import scala.collection.mutable.{HashMap => MutableMap}
 
 import java.io.{ObjectOutputStream, FileOutputStream, ObjectInputStream,
                 FileInputStream, PrintWriter, BufferedReader, FileReader, File}
@@ -73,13 +74,8 @@ object Util {
     val vals = args.zipWithIndex.filter(p => p._2 % 2 == 1).map(p => p._1)
 
     for ((key, value) <- keys.zip(vals)) {
-      key match {
-        case "--log" => { Common.stats_log = new StatsRecorder(value) }
-        case "--time_limit" => { Common.time_limit = value.toDouble }
-        case "--focus" => { Common.focus = Some(value.toInt) }
-        case "--omit" => { Common.omit = Some(value.toInt) }
-        case _ => { Util.log("Unknown argument: " + key); sys.exit }
-      }
+      // TODO can't detect unknown args yet. :(
+      Flags.values(key) = value
     }
 
     if (load.startsWith("scenarios/savestate_")) {
@@ -216,15 +212,15 @@ object cfg {
 object Common {
   // TODO make it easier to set the current active sim.
   var sim: utexas.aorta.sim.Simulation = null
-  var time_limit = -1.0
-  var stats_log: StatsRecorder = null
-  // TODO think of a better Flags setup
-  var focus: Option[Int] = None // an agent ID to treat as special
-  var omit: Option[Int] = None // an agent ID to not spawn
 
   def scenario = sim.scenario
   def tick = sim.tick
   def timer(name: String) = new Timer(name)
+
+  private lazy val stats_log = Flags.string("--log") match {
+    case Some(value) => new StatsRecorder(value)
+    case None => null
+  }
   def record(item: Measurement) {
     if (stats_log != null) {
       stats_log.record(item)
@@ -394,4 +390,15 @@ class StringStateReader(fn: String) extends StateReader(fn) {
     in.readLine
     return null   // TODO dont use this.
   }
+}
+
+object Flags {
+  val values = new MutableMap[String, String]()
+
+  def string(name: String): Option[String] = values.get(name)
+  def string(name: String, default: String): String = string(name).getOrElse(default)
+  def int(name: String): Option[Int] = values.get(name).map(_.toInt)
+  def int(name: String, default: Int): Int = int(name).getOrElse(default)
+  def double(name: String): Option[Double] = values.get(name).map(_.toDouble)
+  def double(name: String, default: Double): Double = double(name).getOrElse(default)
 }

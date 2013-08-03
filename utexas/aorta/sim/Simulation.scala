@@ -16,7 +16,7 @@ import utexas.aorta.map.{Graph, Road, Edge, Vertex, Turn, DirectedRoad}
 import utexas.aorta.sim.policies.Phase
 
 import utexas.aorta.ui.ReplayDiffScheme
-import utexas.aorta.{Util, Common, cfg, StateWriter, StateReader}
+import utexas.aorta.{Util, Common, cfg, StateWriter, StateReader, Flags}
 import utexas.aorta.analysis.{Heartbeat_Stat, Scenario_Stat, ReplayChecker}
 
 // TODO take just a scenario, or graph and scenario?
@@ -42,13 +42,17 @@ class Simulation(val graph: Graph, val scenario: Scenario)
   var ch_since_last_time = 0
   var astar_since_last_time = 0
 
-  private val replay = new ReplayChecker(this, List(Common.focus).flatten.toSet)
-  {
+  private lazy val replay = new ReplayChecker(
+    this, List(Flags.int("--focus")).flatten.toSet
+  ) {
     override def difference(id: Int, expected: Double, actual: Double) {
       // TODO this is a bit messy, reaching over to the UI... bcast an event.
       ReplayDiffScheme.add_delta(id, actual - expected)
     }
   }
+
+  private lazy val time_limit = Flags.double("--time_limit", Double.MaxValue)
+  private lazy val omit = Flags.int("--omit", -1)
 
   //////////////////////////////////////////////////////////////////////////////
   // Meta
@@ -194,7 +198,7 @@ class Simulation(val graph: Graph, val scenario: Scenario)
         return false
       } else {
         val a = spawn.make(this)
-        if (Common.omit.getOrElse(-1) == a.id) {
+        if (omit == a.id) {
           Util.log(s"$a would have been created, but omitting")
         } else {
           a.setup(graph.edges(spawn.start_edge), spawn.start_dist)
@@ -217,7 +221,7 @@ class Simulation(val graph: Graph, val scenario: Scenario)
   // TODO move time limit to scenarios?
   def done =
     (agents.isEmpty && ready_to_spawn.isEmpty && future_spawn.isEmpty) ||
-    (Common.time_limit != -1.0 && tick > Common.time_limit)
+    (tick > time_limit)
 
   // Do some temporary debugging type thing from the UI
   def ui_debug() = {
