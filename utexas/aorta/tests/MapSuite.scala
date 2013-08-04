@@ -8,7 +8,7 @@ import scala.collection.mutable.Stack
 import scala.collection.mutable.{HashSet => MutableHashSet}
 
 import utexas.aorta.map.{Graph, Traversable}
-import utexas.aorta.cfg
+import utexas.aorta.common.cfg
 
 // TODO Use ScalaTests or another framework.
 

@@ -8,7 +8,7 @@ import java.io.File
 
 import utexas.aorta.ui.{MapCanvas, GUI, EV_Action}
 
-import utexas.aorta.{Util, Common, cfg}
+import utexas.aorta.common.{Util, Common, cfg}
 
 object Headless {
   def main(args: Array[String]): Unit = {

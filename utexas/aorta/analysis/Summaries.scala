@@ -16,7 +16,7 @@ import org.jfree.chart.renderer.category.StatisticalBarRenderer
 import java.io.File
 import javax.imageio.ImageIO
 
-import utexas.aorta.Util
+import utexas.aorta.common.Util
 
 class RunSummary() {
   def metrics = Summaries.metrics

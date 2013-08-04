@@ -7,7 +7,7 @@ package utexas.aorta.sim.policies
 import utexas.aorta.sim.{Intersection, Policy, Agent, Ticket, IntersectionType}
 import utexas.aorta.sim.market.IntersectionOrdering
 
-import utexas.aorta.{Util, cfg}
+import utexas.aorta.common.{Util, cfg}
 
 // Always stop, then FIFO. Totally unoptimized.
 class StopSignPolicy(intersection: Intersection,

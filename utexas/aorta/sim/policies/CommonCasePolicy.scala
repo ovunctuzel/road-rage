@@ -11,7 +11,7 @@ import utexas.aorta.map.{Turn, Edge}
 import utexas.aorta.sim.{Intersection, Policy, Ticket, Agent, IntersectionType}
 import utexas.aorta.sim.market.IntersectionOrdering
 
-import utexas.aorta.{Util, cfg}
+import utexas.aorta.common.{Util, cfg}
 
 // Automatically admit agents requesting common turns, and make the others queue
 // and go when they can.

@@ -8,7 +8,7 @@ import scala.collection.mutable.MutableList
 
 import utexas.aorta.ui.Renderable
 
-import utexas.aorta.{Util, StateWriter, StateReader}
+import utexas.aorta.common.{Util, StateWriter, StateReader}
 
 // TODO enum for type. also, it's var because of tarjan's...
 // TODO var id due to tarjan

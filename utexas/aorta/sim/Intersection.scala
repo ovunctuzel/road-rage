@@ -12,7 +12,7 @@ import utexas.aorta.sim.policies._
 import utexas.aorta.map.{Vertex, Turn, Edge, Graph}
 import utexas.aorta.analysis.Turn_Stat
 
-import utexas.aorta.{Util, Common, cfg, StateWriter, StateReader}
+import utexas.aorta.common.{Util, Common, cfg, StateWriter, StateReader}
 
 // Common stuff goes here, particular implementations are in utexas.aorta.sim.policies
 

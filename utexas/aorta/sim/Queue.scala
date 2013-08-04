@@ -11,7 +11,7 @@ import scala.collection.mutable.{TreeSet => MutableSet}
 
 import utexas.aorta.map.{Edge, Traversable, Position}
 
-import utexas.aorta.{Util, Common, cfg, Physics, StateWriter, StateReader}
+import utexas.aorta.common.{Util, Common, cfg, Physics, StateWriter, StateReader}
 
 // Reason about collisions on edges and within individual turns.
 class Queue(t: Traversable) {

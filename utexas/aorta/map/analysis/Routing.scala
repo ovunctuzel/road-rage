@@ -10,7 +10,7 @@ import com.graphhopper.routing.ch.PrepareContractionHierarchies
 
 import utexas.aorta.map.{Graph, DirectedRoad}
 
-import utexas.aorta.{Util, Common}
+import utexas.aorta.common.{Util, Common}
 
 abstract class Router(graph: Graph) {
   // Doesn't include 'from' as the first step

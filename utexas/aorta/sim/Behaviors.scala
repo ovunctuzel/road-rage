@@ -8,7 +8,7 @@ import scala.collection.mutable.ListBuffer
 
 import utexas.aorta.map.{Edge, Turn, Traversable, DirectedRoad}
 
-import utexas.aorta.{Util, Common, cfg, Physics}
+import utexas.aorta.common.{Util, Common, cfg, Physics}
 
 abstract class Behavior(a: Agent) {
   // As an optimization and to keep some stats on how successful lane-changing

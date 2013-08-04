@@ -14,7 +14,7 @@ import scala.collection.mutable.ListBuffer
 import utexas.aorta.map.{Road, Edge, Vertex, Turn, Line, Coordinate,
                          Traversable, DirectedRoad}
 
-import utexas.aorta.{Util, Common, cfg}
+import utexas.aorta.common.{Util, Common, cfg}
 
 // TODO split this file up
 

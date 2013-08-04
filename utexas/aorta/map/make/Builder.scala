@@ -6,7 +6,7 @@ package utexas.aorta.map.make
 
 import utexas.aorta.map.Graph
 
-import utexas.aorta.Util
+import utexas.aorta.common.Util
 
 object Builder {
   def main(args: Array[String]) {

@@ -5,7 +5,7 @@
 package utexas.aorta.analysis
 
 import utexas.aorta.sim.Simulation
-import utexas.aorta.{StateReader, StateWriter, Util, Common}
+import utexas.aorta.common.{StateReader, StateWriter, Util, Common}
 
 import java.io.{File, EOFException}
 

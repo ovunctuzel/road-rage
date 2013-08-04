@@ -10,7 +10,7 @@ import scala.collection.mutable.MutableList
 import utexas.aorta.map.{Coordinate, Vertex, Road, Edge, Direction, Turn,
                          GraphLike}
 
-import utexas.aorta.{Util, cfg, Physics}
+import utexas.aorta.common.{Util, cfg, Physics}
 
 // TODO we should really subclass the real Graph, but not sure yet.
 

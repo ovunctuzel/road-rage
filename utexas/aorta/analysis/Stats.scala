@@ -19,7 +19,7 @@ import javax.imageio.ImageIO
 import utexas.aorta.sim.{MkIntersection, RouteType, WalletType,
                          IntersectionType, OrderingType}
 
-import utexas.aorta.Util
+import utexas.aorta.common.Util
 
 // Anything that we log online and post-process offline.
 // Hacky fast, memory-happy serialization... use java's convenient way to

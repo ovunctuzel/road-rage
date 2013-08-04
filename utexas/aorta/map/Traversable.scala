@@ -9,7 +9,7 @@ package utexas.aorta.map
 import utexas.aorta.sim.Queue
 import utexas.aorta.ui.Renderable
 
-import utexas.aorta.{cfg, Util, Physics, StateWriter, StateReader}
+import utexas.aorta.common.{cfg, Util, Physics, StateWriter, StateReader}
 
 // Something with a sequence of lines forming a path and a way to get to more
 // somethings

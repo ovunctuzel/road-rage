@@ -8,7 +8,7 @@ import scala.collection.mutable.MutableList
 
 import utexas.aorta.ui.Renderable
 
-import utexas.aorta.{Util, StateWriter, StateReader}
+import utexas.aorta.common.{Util, StateWriter, StateReader}
 
 // TODO I don't want this dependency, but at the moment, it leads to a great
 // perf boost due to dropping a pricy hash lookup

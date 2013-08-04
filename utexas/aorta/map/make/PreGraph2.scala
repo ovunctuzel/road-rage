@@ -10,7 +10,7 @@ import scala.collection.mutable.MutableList
 
 import utexas.aorta.map.{Coordinate, Road}
 
-import utexas.aorta.Util
+import utexas.aorta.common.Util
 
 class PreGraph2(old_graph: PreGraph1) {
   // (v1, v2, road name) to the edge. used for detecting cul-de-sacs easily.

@@ -11,7 +11,7 @@ import java.awt.geom.{Rectangle2D, RoundRectangle2D}
 
 import utexas.aorta.map.Coordinate
 
-import utexas.aorta.Util
+import utexas.aorta.common.Util
 
 // TODO we can't hear the tab key until we figure out how to
 // have 'with Component.SuperMixin' so we can do setFocusTraversalEnabled(false)

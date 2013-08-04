@@ -10,7 +10,7 @@ import utexas.aorta.sim.market._
 
 import scala.collection.mutable
 
-import utexas.aorta.{Util, RNG, Common, cfg, StateWriter, StateReader}
+import utexas.aorta.common.{Util, RNG, Common, cfg, StateWriter, StateReader}
 
 // Array index and agent/intersection ID must correspond. Creator's
 // responsibility.

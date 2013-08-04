@@ -9,7 +9,7 @@ import scala.collection.mutable.{HashMap => MutableMap}
 import utexas.aorta.sim.{Scenario, SystemWalletConfig}
 import utexas.aorta.map.Graph
 
-import utexas.aorta.{Util, Common, cfg}
+import utexas.aorta.common.{Util, Common, cfg}
 
 // Use hillclimbing to tune the rates of system bids.
 object TuneSystemBids {

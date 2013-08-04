@@ -10,7 +10,7 @@ import utexas.aorta.sim.{Agent, Ticket, WalletType, Policy, IntersectionType,
 import utexas.aorta.map.{Turn, Vertex}
 import utexas.aorta.sim.policies.{Phase, ReservationPolicy, SignalPolicy}
 
-import utexas.aorta.{Util, Common, cfg, StateReader, StateWriter}
+import utexas.aorta.common.{Util, Common, cfg, StateReader, StateWriter}
 
 // Express an agent's preferences of trading between time and cost.
 // TODO dont require an agent, ultimately

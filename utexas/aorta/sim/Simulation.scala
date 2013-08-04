@@ -16,7 +16,7 @@ import utexas.aorta.map.{Graph, Road, Edge, Vertex, Turn, DirectedRoad}
 import utexas.aorta.sim.policies.Phase
 
 import utexas.aorta.ui.ReplayDiffScheme
-import utexas.aorta.{Util, Common, cfg, StateWriter, StateReader, Flags}
+import utexas.aorta.common.{Util, Common, cfg, StateWriter, StateReader, Flags}
 import utexas.aorta.analysis.{Heartbeat_Stat, Scenario_Stat, ReplayChecker}
 
 // TODO take just a scenario, or graph and scenario?

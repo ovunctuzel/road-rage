@@ -17,7 +17,7 @@ import utexas.aorta.sim.{Simulation, Agent, Sim_Event, EV_Signal_Change,
                          EV_Transition, EV_Reroute, EV_Heartbeat, AgentMap}
 import utexas.aorta.sim.PathRoute
 
-import utexas.aorta.{Util, RNG, Common, cfg}
+import utexas.aorta.common.{Util, RNG, Common, cfg}
 
 object Mode extends Enumeration {
   type Mode = Value

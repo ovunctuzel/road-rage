@@ -9,7 +9,7 @@ import utexas.aorta.sim.{Intersection, Policy, Ticket, Agent, IntersectionType,
                          Simulation}
 import utexas.aorta.sim.market.IntersectionOrdering
 
-import utexas.aorta.{Util, Common, cfg, StateWriter, StateReader}
+import utexas.aorta.common.{Util, Common, cfg, StateWriter, StateReader}
 
 // Accept as many compatible turns as possible, until an interruption occurs.
 // (To get the old greedy behavior, add the constraint back to candidates, or

@@ -9,7 +9,7 @@ import scala.collection.mutable.{HashMap, PriorityQueue, HashSet}
 import utexas.aorta.map.analysis.{Router, DijkstraRouter, CHRouter,
                                   CongestionRouter}
 
-import utexas.aorta.{Util, Common, StateWriter, StateReader}
+import utexas.aorta.common.{Util, Common, StateWriter, StateReader}
 
 class Graph(
   val roads: Array[Road], val edges: Array[Edge], val vertices: Array[Vertex],

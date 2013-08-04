@@ -7,7 +7,7 @@ package utexas.aorta.map
 import utexas.aorta.map.analysis.AbstractEdge
 import utexas.aorta.ui.Renderable
 
-import utexas.aorta.{cfg, RNG, Util, StateWriter, StateReader}
+import utexas.aorta.common.{cfg, RNG, Util, StateWriter, StateReader}
 
 // TODO subclass Edge for pos/neg.. seems easier for lots of things
 

@@ -12,7 +12,7 @@ import utexas.aorta.sim.{Intersection, Policy, Agent, EV_Signal_Change,
                          IntersectionType, Ticket, OrderingType, Simulation}
 import utexas.aorta.sim.market.{IntersectionOrdering, FIFO_Ordering}
 
-import utexas.aorta.{Util, Common, cfg, StateWriter, StateReader}
+import utexas.aorta.common.{Util, Common, cfg, StateWriter, StateReader}
 
 // A phase-based light.
 class SignalPolicy(intersection: Intersection,

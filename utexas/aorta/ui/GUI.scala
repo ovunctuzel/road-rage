@@ -10,7 +10,7 @@ import swing.Dialog
 import javax.swing.WindowConstants
 
 import utexas.aorta.sim.Simulation
-import utexas.aorta.{Util, cfg}
+import utexas.aorta.common.{Util, cfg}
 
 object Status_Bar {
   val zoom       = new Label("1.0") // TODO from cfg

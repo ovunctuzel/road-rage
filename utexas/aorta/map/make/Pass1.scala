@@ -11,7 +11,7 @@ import scala.collection.mutable.{HashMap, MutableList, HashSet}
 
 import utexas.aorta.map.Coordinate
 
-import utexas.aorta.Util
+import utexas.aorta.common.Util
 
 class Pass1(fn: String) {
   // OSM's id to (longitude, latitude)

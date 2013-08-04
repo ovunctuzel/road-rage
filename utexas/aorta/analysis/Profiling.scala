@@ -6,7 +6,7 @@ package utexas.aorta.analysis
 
 import scala.annotation.elidable
 
-import utexas.aorta.Util
+import utexas.aorta.common.Util
 
 // Ironically, using timers in tight loops has caused up to 3x slowdown before.
 // Java profilers might be safer.

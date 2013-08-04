@@ -10,7 +10,7 @@ import java.awt.geom.{Line2D, Rectangle2D}
 import utexas.aorta.map.{Coordinate, Edge, Line, Road, Vertex}
 import utexas.aorta.sim.Agent
 
-import utexas.aorta.cfg
+import utexas.aorta.common.cfg
 
 trait Renderable {
   def debug(): Unit

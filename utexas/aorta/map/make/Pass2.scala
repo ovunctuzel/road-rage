@@ -9,7 +9,7 @@ import scala.collection.mutable.{TreeSet => MutableSet}
 
 import utexas.aorta.map.Coordinate
 
-import utexas.aorta.{Util, cfg}
+import utexas.aorta.common.{Util, cfg}
 
 class Pass2(old_graph: PreGraph1) {
   val graph = new PreGraph2(old_graph)

@@ -9,7 +9,7 @@ import utexas.aorta.sim.{Agent, Ticket, Policy, IntersectionType, OrderingType}
 import scala.collection.mutable.{HashMap, MultiMap}
 import scala.collection.mutable.{Set => MutableSet}
 
-import utexas.aorta.{Util, cfg}
+import utexas.aorta.common.{Util, cfg}
 
 abstract class IntersectionOrdering[T <: Ordered[T]]() {
   def choose(choices: Iterable[T], participants: Iterable[Ticket], client: Policy): Option[T]

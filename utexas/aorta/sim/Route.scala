@@ -9,7 +9,7 @@ import scala.collection.mutable.ImmutableMapAdaptor
 
 import utexas.aorta.map.{Edge, DirectedRoad, Traversable, Turn, Vertex, Graph}
 
-import utexas.aorta.{Util, RNG, Common, cfg, StateWriter, StateReader}
+import utexas.aorta.common.{Util, RNG, Common, cfg, StateWriter, StateReader}
 
 // Get a client to their goal by any means possible.
 abstract class Route(val goal: DirectedRoad, rng: RNG)

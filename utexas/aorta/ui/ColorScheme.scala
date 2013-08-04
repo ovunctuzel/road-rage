@@ -11,7 +11,7 @@ import utexas.aorta.sim.AgentMap
 
 import scala.collection.mutable.{HashMap => MutableMap}
 
-import utexas.aorta.cfg
+import utexas.aorta.common.cfg
 
 // The hierarchy: ReplayDiffScheme, FocusVertexScheme, CameraScheme, StalledScheme, PersonalScheme
 // TODO make that order explicit here. color(...): Option[Color]

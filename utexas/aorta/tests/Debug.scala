@@ -7,7 +7,7 @@ package utexas.aorta.tests
 import utexas.aorta.sim.Simulation
 import utexas.aorta.sim.policies.SignalPolicy
 
-import utexas.aorta.{Util, Common, cfg}
+import utexas.aorta.common.{Util, Common, cfg}
 
 // Misc, temporary stuff. Maybe they'll become real tests someday.
 object Debug {
@@ -32,7 +32,7 @@ object Debug {
     // 1) Run for some time, save original
     Util.log("Running for 60 seconds...")
     orig_sim.multi_step(60.0)
-    val w1 = new utexas.aorta.BinaryStateWriter("orig_snapshot")
+    val w1 = new utexas.aorta.common.BinaryStateWriter("orig_snapshot")
     orig_sim.serialize(w1)
     w1.done
 
@@ -41,17 +41,17 @@ object Debug {
     val stdout = Console.out
     Console.setOut(new java.io.FileOutputStream("log_orig"))
     orig_sim.multi_step(30.0)
-    val w2 = new utexas.aorta.BinaryStateWriter("snapshot1")
+    val w2 = new utexas.aorta.common.BinaryStateWriter("snapshot1")
     orig_sim.serialize(w2)
     w2.done
 
     // 4) Load the serialized one and continue it for a bit
     Console.setOut(stdout)
     Util.log("Loading serialized original, continuing that...")
-    val new_sim = Simulation.unserialize(new utexas.aorta.BinaryStateReader("orig_snapshot"))
+    val new_sim = Simulation.unserialize(new utexas.aorta.common.BinaryStateReader("orig_snapshot"))
     Console.setOut(new java.io.FileOutputStream("log_new"))
     new_sim.multi_step(30.0)
-    val w3 = new utexas.aorta.BinaryStateWriter("snapshot2")
+    val w3 = new utexas.aorta.common.BinaryStateWriter("snapshot2")
     new_sim.serialize(w3)
     w3.done
   }
@@ -80,7 +80,7 @@ object Debug {
   }
 
   private def stress_test_pathfind(sim: Simulation) = {
-    val rng = new utexas.aorta.RNG()
+    val rng = new utexas.aorta.common.RNG()
     // CH (if available), or Dijkstra's
     val router = sim.graph.router
     val t = Common.timer("routing")

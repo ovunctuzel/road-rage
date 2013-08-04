@@ -11,7 +11,7 @@ import utexas.aorta.sim.market._
 import utexas.aorta.ui.Renderable
 import utexas.aorta.analysis.Agent_Lifetime_Stat
 
-import utexas.aorta.{Util, RNG, Common, cfg, Physics, StateWriter, StateReader}
+import utexas.aorta.common.{Util, RNG, Common, cfg, Physics, StateWriter, StateReader}
 
 // TODO come up with a notion of dimension and movement capability. at first,
 // just use radius bounded by lane widths?

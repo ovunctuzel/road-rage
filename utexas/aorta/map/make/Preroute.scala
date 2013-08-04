@@ -10,7 +10,7 @@ import com.graphhopper.routing.ch.PrepareContractionHierarchies
 
 import utexas.aorta.map.Graph
 
-import utexas.aorta.{Util, Common}
+import utexas.aorta.common.{Util, Common}
 
 object Preroute {
   def main(args: Array[String]) = {
