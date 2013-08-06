@@ -27,8 +27,8 @@ object TuneSystemBids {
 
   // Feed it the scenario to use as a metric
   def main(args: Array[String]): Unit = {
-    Flags.set("--should_savestate", "false")
-    Flags.set("--should_replay", "false")
+    Flags.set("--savestate", "false")
+    Flags.set("--replay", "false")
     base = Scenario.load(args.head)
     graph = Graph.load(base.map_fn)
 

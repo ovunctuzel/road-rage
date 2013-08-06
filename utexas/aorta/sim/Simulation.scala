@@ -42,19 +42,20 @@ class Simulation(val graph: Graph, val scenario: Scenario)
   var ch_since_last_time = 0
   var astar_since_last_time = 0
 
-  private lazy val replay = new ReplayChecker(
-    this, List(Flags.int("--focus")).flatten.toSet
-  ) {
-    override def difference(id: Int, expected: Double, actual: Double) {
-      // TODO this is a bit messy, reaching over to the UI... bcast an event.
-      ReplayDiffScheme.add_delta(id, actual - expected)
-    }
-  }
+  private lazy val replay =
+    if (Flags.boolean("--replay", true))
+      new ReplayChecker(this, List(Flags.int("--focus")).flatten.toSet) {
+        override def difference(id: Int, expected: Double, actual: Double) {
+          // TODO this is a bit messy, reaching over to the UI... bcast an event.
+          ReplayDiffScheme.add_delta(id, actual - expected)
+        }
+      }
+    else
+      null
 
   private lazy val time_limit = Flags.double("--time_limit", Double.MaxValue)
   private lazy val omit = Flags.int("--omit", -1)
   private lazy val should_savestate = Flags.boolean("--savestate", true)
-  private lazy val should_replay = Flags.boolean("--replay", true)
 
   //////////////////////////////////////////////////////////////////////////////
   // Meta
@@ -164,7 +165,7 @@ class Simulation(val graph: Graph, val scenario: Scenario)
     if (should_savestate && (tick / cfg.autosave_every).isValidInt && tick > 0.0) {
       savestate()
     }
-    if (should_replay && (tick / cfg.replay_freq).isValidInt && tick > 0.0) {
+    if (replay != null && (tick / cfg.replay_freq).isValidInt && tick > 0.0) {
       replay.handle_tick()
     }
   }
@@ -179,7 +180,9 @@ class Simulation(val graph: Graph, val scenario: Scenario)
 
   def terminate() {
     agents.foreach(a => a.terminate(interrupted = true))
-    replay.done()
+    if (replay != null) {
+      replay.done()
+    }
   }
 
   // True if we've correctly promoted into real agents. Does the work of
