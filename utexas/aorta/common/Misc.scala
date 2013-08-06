@@ -71,7 +71,7 @@ object Util {
 
     for ((key, value) <- keys.zip(vals)) {
       // TODO can't detect unknown args yet. :(
-      Flags.values(key) = value
+      Flags.set(key, value)
     }
 
     if (load.startsWith("scenarios/savestate_")) {
@@ -161,10 +161,18 @@ object Common {
 object Flags {
   val values = new MutableMap[String, String]()
 
+  def set(name: String, value: String) {
+    values(name) = value
+  }
+
   def string(name: String): Option[String] = values.get(name)
   def string(name: String, default: String): String = string(name).getOrElse(default)
   def int(name: String): Option[Int] = values.get(name).map(_.toInt)
   def int(name: String, default: Int): Int = int(name).getOrElse(default)
   def double(name: String): Option[Double] = values.get(name).map(_.toDouble)
   def double(name: String, default: Double): Double = double(name).getOrElse(default)
+  def boolean(name: String): Option[Boolean] = values.get(name).map(is_true(_))
+  def boolean(name: String, default: Boolean): Boolean = boolean(name).getOrElse(default)
+
+  private def is_true(value: String) = value.toLowerCase == "true"
 }

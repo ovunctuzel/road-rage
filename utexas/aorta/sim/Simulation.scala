@@ -53,6 +53,8 @@ class Simulation(val graph: Graph, val scenario: Scenario)
 
   private lazy val time_limit = Flags.double("--time_limit", Double.MaxValue)
   private lazy val omit = Flags.int("--omit", -1)
+  private lazy val should_savestate = Flags.boolean("--savestate", true)
+  private lazy val should_replay = Flags.boolean("--replay", true)
 
   //////////////////////////////////////////////////////////////////////////////
   // Meta
@@ -159,10 +161,10 @@ class Simulation(val graph: Graph, val scenario: Scenario)
       astar_since_last_time = 0
     }
 
-    if ((tick / cfg.autosave_every).isValidInt && tick > 0.0) {
+    if (should_savestate && (tick / cfg.autosave_every).isValidInt && tick > 0.0) {
       savestate()
     }
-    if ((tick / cfg.replay_freq).isValidInt && tick > 0.0) {
+    if (should_replay && (tick / cfg.replay_freq).isValidInt && tick > 0.0) {
       replay.handle_tick()
     }
   }

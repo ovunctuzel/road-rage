@@ -9,7 +9,7 @@ import scala.collection.mutable.{HashMap => MutableMap}
 import utexas.aorta.sim.{Scenario, SystemWalletConfig}
 import utexas.aorta.map.Graph
 
-import utexas.aorta.common.{Util, Common, cfg}
+import utexas.aorta.common.{Util, Common, cfg, Flags}
 
 // Use hillclimbing to tune the rates of system bids.
 object TuneSystemBids {
@@ -27,6 +27,8 @@ object TuneSystemBids {
 
   // Feed it the scenario to use as a metric
   def main(args: Array[String]): Unit = {
+    Flags.set("--should_savestate", "false")
+    Flags.set("--should_replay", "false")
     base = Scenario.load(args.head)
     graph = Graph.load(base.map_fn)
 

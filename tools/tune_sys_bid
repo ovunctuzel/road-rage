@@ -6,7 +6,7 @@
 
 # TODO what makes a good benchmark?
 ./experiment maps/synthetic.map --spawn 5000 delay=1800 --all_verts \
-  ordering=Auction policy=Reservation --out scenarios/tune_sys_bid
+  ordering=Auction policy=Reservation --out scenarios/tune_sys_bid > /dev/null
 
 scala -cp $CLASSPATH $JVM_OPTS utexas.aorta.analysis.TuneSystemBids \
   scenarios/tune_sys_bid
