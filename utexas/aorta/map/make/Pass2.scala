@@ -97,7 +97,8 @@ class Pass2(old_graph: PreGraph1) {
 
   private def merge_short_roads() = {
     Util.log("Merging short roads...")
-    // TODO could probably just loop through once...
+    // TODO could probably just loop through once... or since edge len monotonically increases here,
+    // keep a stack/queue of TODOs
     var changed = true
     while (changed) {
       graph.edges.find(r => r.length < cfg.min_road_len && !r.is_culdesac) match {

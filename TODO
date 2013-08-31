@@ -1,44 +1,53 @@
 # TODO #
 
-# Roadmap #
+# Marginal Externality #
 
-1) cleanup
-  - sysbids
-    - better defaults, retry the tuning (low-pri)
-  - could use a common case policy, in places like claycut rd
-  - measure how long a vehicle spends thrashing about bc original path is congested
-  - gridlock nit: dont rechoose same thing when trying again
-  - sim speed
-    - turn blocked invariant, really maintain it for efficiency!
-  - bugs
-    - agents not stopping at exactly the right dist the first time
-      - want a clean fix for this
-  - savestating
-    - multiple sims existing per process better
-      DR ids ugly... sys wallets are a hack. phase IDs?
-      (minimize objects with state)
-    - filenames when saving from a loaded savestate
-    - resumable logging doesnt really work if they simulated past the savestate...
-2) big breaux
-3) marginal effects
+- post analysis of how people changed
+- a way in the UI to highlight the special guy
+- choose a few diff routes
+  - tradeoff between congested routes and distance
+  - spectrum of congestedness
+- think about features for learning externality
+
+# Cleanup #
+
+- var lines are so confusing and bug-prone
+  when we mod part of a line, line's length AND traversables length gets screwed
+  get rid of set_lines
+- traversables should be list of points, to avoid needing to make things meet up
+- 202 var's used. reduce, especially in objects.
+- num of lanes bounded by num of times could LC
+- keep orig GPS coords and only scale around for UI
+  - then obselete set_params
+- consider a common case policy, in places like claycut rd
+- measure how long a vehicle spends thrashing about bc original path is congested
+- gridlock nit: dont rechoose same thing when trying again
+- sim speed
+  - turn blocked invariant, really maintain it for efficiency!
+  - do it faster with invariants, look at just the next guy
+    - BUT we can be route-done, but have somebody blocking in front of us
+      initially. so in that case, search forward?
+      - this only happens because we join a queue without demanding invariants of
+        stuff in front of us
+- bugs
+  - agents not stopping at exactly the right dist the first time
+- savestating
+  - bad filenames when saving from a loaded savestate
+  - resumable logging doesnt really work if they simulated past the savestate...
 
 # Clever routing #
 
 - reroute when necessary
   - before we hit a jam (k-lookahead...)
   - semi-constantly (D*Lite ?)
-- tradeoff between congested routes and distance
-- spectrum of congestedness
 - worry about liveness?
 
 # Auctions #
 
-- cleanup
-  - tune sysbids properly...
-  - sys wallet can punish by dividing.. also, doubles
-  - multiple bids for same item.. handle that
-  - define losers generally in code too
-  - agents not stopping at exactly the right dist the first time, makes stop signs slow.
+- tune sysbids properly...
+- sys wallet can punish by dividing.. also, doubles
+- multiple bids for same item.. handle that
+- define losers generally in code too
 
 - system bid: bonus to reservation if i'll take the same time as somebody else
 - commoncase auctions and system bid
@@ -69,15 +78,9 @@
   - floating vertices due to nuking all roads that lead up to it, and choosing
     the vert to keep poorly
   - not seeing any geometry is a bit disconcerting... gov st
-- num of lanes bounded by num of times could LC
 - handle cul de sacs once and for all... bernwood is example in BR. remove if
   only one other link?
 - dont tie map filename to the serialized thing
-- var lines are so confusing and bug-prone
-  when we mod part of a line, line's length AND traversables length gets screwed
-  get rid of set_lines
-- keep orig GPS coords and only scale around for UI
-  - then obselete set_params
 - xml output too for non-aorta clients
 - clean up verts with just 2 roads
   - pass3, since doomed pruning makes new problems
@@ -108,7 +111,6 @@
 - give lanes/roads/etc the ability to be closed
 
 # Code Cleanup
-- using new ID stuff, make copies of stuff instead of var?
 - distance/time types
 - split the passes
   - pass1 = read osm + normalize
@@ -116,9 +118,6 @@
   - pass3 = (>make edge geometry), make edges, make turns,
             (>nuke disconnected), (collapse degenerate verts),
             (small roads to long turns), trim lane lines at vertices
-- draw per object
-  - UI state needs to go somewhere accessible to all
-  - package for awt stuff to avoid importing
 - sorted sets everywhere for determinism
 - more privates, make abstract members more explicit, delegates
 - make more immutable things / reduce more vars to vals
@@ -127,14 +126,10 @@
   - Mutable subclasses of everything used during construction..
   - have more ids and methods that access based on those. that'll break it.
   - immutable construction is easy... have parent entity create child.
+  - using new ID stuff, make copies of stuff instead of var?
 
 # Intersection Policies
 - backpressure light optimization
-- do it faster with invariants, look at just the next guy
-  - BUT we can be route-done, but have somebody blocking in front of us
-    initially. so in that case, search forward?
-    - this only happens because we join a queue without demanding invariants of
-      stuff in front of us
 - make new stuff faster, mark when first elgiible or something with very
   powerful FPs
   - aka candidate list can be greatly narrowed, or ordered
@@ -205,3 +200,4 @@
 - rename lanes/intersections/junctions in code too? policy -> controller?
 - switch ant to sbt? https://github.com/harrah/xsbt/wiki/Examples
 - repository of detailed cities with demand data?
+- logo
