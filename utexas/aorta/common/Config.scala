@@ -72,6 +72,7 @@ object cfg {
   val turn_color = color(params("turn_color"))
   val wallet = params("wallet")
   val zoom_threshold = params("zoom_threshold").toDouble
+  val render_ms = params("render_ms").toInt
 
   val lanechange_dist = lane_width * params("lanechange_dist_rate").toDouble
   // Make sure time-based params are a multiple of dt_s.

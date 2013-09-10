@@ -151,8 +151,7 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
 
     // Only render every 0.2 seconds
     val now = System.currentTimeMillis
-    // TODO cfg
-    if (now - last_render > 200 && sim.tick != tick_last_render ) {
+    if (now - last_render > cfg.render_ms && sim.tick != tick_last_render ) {
       handle_ev(EV_Action("step"))
       last_render = now
       tick_last_render = sim.tick
