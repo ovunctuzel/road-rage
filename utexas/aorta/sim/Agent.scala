@@ -299,7 +299,7 @@ class Agent(
       route.route_type, wallet.wallet_type, stat_memory._4, Common.tick,
       wallet.budget, wallet.priority, !interrupted
     ))
-    AgentMap.maps.foreach(m => m.when_created(this))
+    AgentMap.maps.foreach(m => m.destroy(this))
   }
 
   //////////////////////////////////////////////////////////////////////////////

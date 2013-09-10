@@ -93,6 +93,7 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
 
   def choose_action(): Action = {
     // Do we want to lane change?
+    // TODO these issues are both controlled by routing, so move this comment there
     // TODO 1) discretionary lane changing to pass people
     // TODO 2) routes can lookahead a bit to tell us to lane-change early
     
@@ -106,6 +107,7 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
     // a turn.
     target_lane match {
       case Some(target) => {
+        // TODO move these changes to one place, with reset_target_lane
         // No room? Fundamentally impossible
         // Somebody in the way? If we're stalled and somebody's in the way,
         // we're probably waiting in a queue. Don't waste time hoping, grab a
