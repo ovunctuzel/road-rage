@@ -193,7 +193,7 @@ class Simulation(val graph: Graph, val scenario: Scenario)
       // Will we block anybody that's ready?
       val intersection = e.to.intersection
       val will_block =
-        if (spawn.route.goal != e.directed_road.id)
+        if (graph.edges(spawn.route.goal).directed_road != e.directed_road)
           e.queue.all_agents.find(
             a => a.at.dist < spawn.start_dist && a.wont_block(intersection)
           ).isDefined || e.dont_block

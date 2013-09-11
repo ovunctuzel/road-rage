@@ -249,6 +249,7 @@ case class MkAgentSpawner(frequency: Double, expires: Double, seed: Long)
 }*/
 
 // goal is the ID of an edge in the desired directed road
+// TODO ID of a directed road would be way better.
 case class MkRoute(strategy: RouteType.Value, goal: Integer, seed: Long) {
   def make(sim: Simulation) =
     Factory.make_route(strategy, sim.edges(goal).directed_road, new RNG(seed))

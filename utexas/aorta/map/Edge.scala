@@ -160,7 +160,7 @@ object Direction extends Enumeration {
 class DirectedRoad(val road: Road, var id: Int, val dir: Direction.Value)
   extends AbstractEdge with Ordered[DirectedRoad]
 {
-  override def toString = "%s's %s lanes".format(road, dir)
+  override def toString = "%s's %s lanes (DR %d)".format(road, dir, id)
   override def compare(other: DirectedRoad) = id.compare(other.id)
 
   def edges = if (dir == Direction.POS)
