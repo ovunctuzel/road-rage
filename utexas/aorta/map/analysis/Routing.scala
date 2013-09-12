@@ -140,6 +140,7 @@ class CHRouter(graph: Graph) extends Router(graph) {
 
 // Run sparingly -- it's A* that penalizes going through roads that're congested
 // right now
+// TODO remove, it's a degenerate case of the future impl...
 class CongestionRouter(graph: Graph) extends Router(graph) {
   // TODO clean this up >_<
   def path(from: DirectedRoad, to: DirectedRoad, time: Double): List[DirectedRoad] = {
@@ -233,3 +234,105 @@ class CongestionRouter(graph: Graph) extends Router(graph) {
     throw new Exception("Couldn't A* from " + from + " to " + to)
   }
 }
+
+/*class AstarRouter(graph) extends Router(graph) {
+  // Encodes all factors describing the quality of a path
+  // TODO heurisitc to goal point
+  private case class RouteFeatures(
+    total_length: Double,           // sum of path length
+    total_freeflow_time: Double,    // sum of time to cross each road at the speed limit
+    congested_road_count: Int,      // number of congested roads
+    // TODO historical avg/max of road congestion, and more than a binary is/is not
+    intersection_count: Int,        // number of intersections crossed
+    // TODO account for intersection type?
+    queued_turn_count: Int,         // sum of queued turns at each intersection
+    // TODO historical avg/max. and count this carefully!
+    total_avg_waiting_time: Double  // sum of average waiting time of turns at each intersection
+  ) {
+    def add(other: RouteFeatures) = RouteFeatures(
+      total_length + other.total_length,
+      total_freeflow_time + other.total_freeflow_time,
+      congested_road_count + other.congested_road_count,
+      intersection_count + other.intersection_count,
+      queued_turn_count + other.queued_turn_count,
+      total_avg_waiting_time + other.total_avg_waiting_time)
+
+    // TODO dot product with a vector of weights.
+    def score(): Double
+      = total_length + total_freeflow_time + congested_road_count + intersection_count +
+        queued_turn_count + total_avg_waiting_time
+  }
+
+  override def path(from: DirectedRoad, to: DirectedRoad, time: Double): List[DirectedRoad] = {
+    if (from == to) {
+      return Nil
+    }
+
+    Common.sim.astar_since_last_time += 1
+
+    // Stitch together our path
+    val backrefs = new HashMap[DirectedRoad, DirectedRoad]()
+    // We're finished with these
+    val visited = new HashSet[DirectedRoad]()
+    // Best cost so far
+    val costs = new HashMap[DirectedRoad, RouteFeatures]()  // TODO or double?
+    // Used to see if we've already added a road to the queue
+    val open_members = new HashSet[DirectedRoad]()
+
+    case class Step(state: DirectedRoad) {
+      def cost = costs(state).score
+    }
+    val ordering = Ordering[Double].on((step: Step) => step.cost).reverse
+    // Priority queue grabs highest priority first, so reverse to get lowest
+    // cost first.
+    val open = new PriorityQueue[Step]()(ordering)
+
+    costs(from) = RouteFeatures(0, 0, 0, 0, 0, 0)
+    open.enqueue(Step(from))
+    open_members += from
+    backrefs(from) = null
+
+    while (open.nonEmpty) {
+      val current = open.dequeue()
+      visited += current.state
+      open_members -= current.state
+
+      if (current.state == to) {
+        // Reconstruct the path
+        var path: List[DirectedRoad] = Nil
+        var pointer: Option[DirectedRoad] = Some(current.state)
+        while (pointer.isDefined && pointer.get != null) {
+          path = pointer.get :: path
+          // Clean as we go to break loops
+          pointer = backrefs.remove(pointer.get)
+        }
+        // Exclude 'from'
+        return path.tail
+      } else {
+        for ((next_state_raw, _) <- current.state.succs) {
+          val next_state = next_state_raw.asInstanceOf[DirectedRoad]
+          val next_time_cost = transition_cost + next_state.cost(time)
+          val next_congestion_cost =
+            if (next_state.is_congested)
+              1.0
+            else
+              0.0
+          val tentative_cost = add_cost(
+            costs(current.state), (next_congestion_cost, next_time_cost)
+          )
+          if (!visited.contains(next_state) && (!open_members.contains(next_state) || ordering_tuple.lt(tentative_cost, costs(next_state)))) {
+            backrefs(next_state) = current.state
+            costs(next_state) = tentative_cost
+            // TODO if they're in open_members, modify weight in the queue? or
+            // new step will clobber it. fine.
+            open.enqueue(Step(next_state))
+            open_members += next_state
+          }
+        }
+      }
+    }
+
+    // We didn't find the way?! The graph is connected!
+    throw new Exception("Couldn't A* from " + from + " to " + to)
+  }
+}*/

@@ -20,6 +20,7 @@ object ColorScheme {
 }
 
 // Reveal who's acting differently from their past life
+// TODO disable sometimes
 object ReplayDiffScheme {
   private val deltas = new AgentMap[Double](0.0)
 
@@ -54,7 +55,7 @@ object FocusVertexScheme {
 object CameraScheme {
   def color(d: DrawDriver, state: GuiState) = state.camera_agent match {
     case Some(a) if d.agent == a => Color.WHITE
-    case None => StalledScheme.color(d, state)
+    case _ => StalledScheme.color(d, state)
   }
 }
 
@@ -73,5 +74,5 @@ object PersonalScheme {
     if (state.canvas.zoomed_in)
       d.personal_color
     else
-      Color.GRAY
+      Color.BLUE
 }
