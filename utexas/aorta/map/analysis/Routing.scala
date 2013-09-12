@@ -235,10 +235,10 @@ class CongestionRouter(graph: Graph) extends Router(graph) {
   }
 }
 
-/*class AstarRouter(graph) extends Router(graph) {
+class AstarRouter(graph: Graph) extends Router(graph) {
   // Encodes all factors describing the quality of a path
   // TODO heurisitc to goal point
-  private case class RouteFeatures(
+  case class RouteFeatures(
     total_length: Double,           // sum of path length
     total_freeflow_time: Double,    // sum of time to cross each road at the speed limit
     congested_road_count: Int,      // number of congested roads
@@ -249,7 +249,7 @@ class CongestionRouter(graph: Graph) extends Router(graph) {
     // TODO historical avg/max. and count this carefully!
     total_avg_waiting_time: Double  // sum of average waiting time of turns at each intersection
   ) {
-    def add(other: RouteFeatures) = RouteFeatures(
+    def +(other: RouteFeatures) = RouteFeatures(
       total_length + other.total_length,
       total_freeflow_time + other.total_freeflow_time,
       congested_road_count + other.congested_road_count,
@@ -261,6 +261,19 @@ class CongestionRouter(graph: Graph) extends Router(graph) {
     def score(): Double
       = total_length + total_freeflow_time + congested_road_count + intersection_count +
         queued_turn_count + total_avg_waiting_time
+  }
+
+  object RouteFeatures {
+    val BLANK = RouteFeatures(0, 0, 0, 0, 0, 0)
+
+    def for_step(step: DirectedRoad) = RouteFeatures(
+      total_length = step.length,
+      total_freeflow_time = step.cost(0.0),
+      congested_road_count =
+        if (step.is_congested) 1 else 0,
+      intersection_count = 1,
+      queued_turn_count = -1,
+      total_avg_waiting_time = -1)
   }
 
   override def path(from: DirectedRoad, to: DirectedRoad, time: Double): List[DirectedRoad] = {
@@ -287,7 +300,7 @@ class CongestionRouter(graph: Graph) extends Router(graph) {
     // cost first.
     val open = new PriorityQueue[Step]()(ordering)
 
-    costs(from) = RouteFeatures(0, 0, 0, 0, 0, 0)
+    costs(from) = RouteFeatures.BLANK
     open.enqueue(Step(from))
     open_members += from
     backrefs(from) = null
@@ -311,16 +324,8 @@ class CongestionRouter(graph: Graph) extends Router(graph) {
       } else {
         for ((next_state_raw, _) <- current.state.succs) {
           val next_state = next_state_raw.asInstanceOf[DirectedRoad]
-          val next_time_cost = transition_cost + next_state.cost(time)
-          val next_congestion_cost =
-            if (next_state.is_congested)
-              1.0
-            else
-              0.0
-          val tentative_cost = add_cost(
-            costs(current.state), (next_congestion_cost, next_time_cost)
-          )
-          if (!visited.contains(next_state) && (!open_members.contains(next_state) || ordering_tuple.lt(tentative_cost, costs(next_state)))) {
+          val tentative_cost = costs(current.state) + RouteFeatures.for_step(next_state)
+          if (!visited.contains(next_state) && (!open_members.contains(next_state) || tentative_cost.score < costs(next_state).score)) {
             backrefs(next_state) = current.state
             costs(next_state) = tentative_cost
             // TODO if they're in open_members, modify weight in the queue? or
@@ -335,4 +340,4 @@ class CongestionRouter(graph: Graph) extends Router(graph) {
     // We didn't find the way?! The graph is connected!
     throw new Exception("Couldn't A* from " + from + " to " + to)
   }
-}*/
+}
