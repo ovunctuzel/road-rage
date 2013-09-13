@@ -196,7 +196,6 @@ class CongestionRouter(graph: Graph) extends Router(graph) {
 
       if (current.state == to) {
         // Reconstruct the path
-        //println(s"Cost of path: ${costs(current.state)}") // TODO debug
         var path: List[DirectedRoad] = Nil
         var pointer: Option[DirectedRoad] = Some(current.state)
         while (pointer.isDefined && pointer.get != null) {
@@ -235,47 +234,53 @@ class CongestionRouter(graph: Graph) extends Router(graph) {
   }
 }
 
-class AstarRouter(graph: Graph) extends Router(graph) {
-  // Encodes all factors describing the quality of a path
-  // TODO heurisitc to goal point
-  case class RouteFeatures(
-    total_length: Double,           // sum of path length
-    total_freeflow_time: Double,    // sum of time to cross each road at the speed limit
-    congested_road_count: Int,      // number of congested roads
-    // TODO historical avg/max of road congestion, and more than a binary is/is not
-    intersection_count: Int,        // number of intersections crossed
-    // TODO account for intersection type?
-    queued_turn_count: Int,         // sum of queued turns at each intersection
-    // TODO historical avg/max. and count this carefully!
-    total_avg_waiting_time: Double  // sum of average waiting time of turns at each intersection
-  ) {
-    def +(other: RouteFeatures) = RouteFeatures(
-      total_length + other.total_length,
-      total_freeflow_time + other.total_freeflow_time,
-      congested_road_count + other.congested_road_count,
-      intersection_count + other.intersection_count,
-      queued_turn_count + other.queued_turn_count,
-      total_avg_waiting_time + other.total_avg_waiting_time)
+// Encodes all factors describing the quality of a path
+// TODO heurisitc to goal point
+// TODO normalized form for everything.
+case class RouteFeatures(
+  total_length: Double,           // sum of path length
+  total_freeflow_time: Double,    // sum of time to cross each road at the speed limit
+  congested_road_count: Int,      // number of congested roads
+  // TODO historical avg/max of road congestion, and more than a binary is/is not
+  intersection_count: Int,        // number of intersections crossed
+  // TODO account for intersection type?
+  queued_turn_count: Int,         // sum of queued turns at each intersection
+  // TODO historical avg/max. and count this carefully!
+  total_avg_waiting_time: Double  // sum of average waiting time of turns at each intersection
+) {
+  // TODO impl as taking a list, so we can do dot product and + easily
 
-    // TODO dot product with a vector of weights.
-    def score(): Double
-      = total_length + total_freeflow_time + congested_road_count + intersection_count +
-        queued_turn_count + total_avg_waiting_time
-  }
+  def +(other: RouteFeatures) = RouteFeatures(
+    total_length + other.total_length,
+    total_freeflow_time + other.total_freeflow_time,
+    congested_road_count + other.congested_road_count,
+    intersection_count + other.intersection_count,
+    queued_turn_count + other.queued_turn_count,
+    total_avg_waiting_time + other.total_avg_waiting_time)
 
-  object RouteFeatures {
-    val BLANK = RouteFeatures(0, 0, 0, 0, 0, 0)
+  def score(weights: RouteFeatures): Double
+    = ((total_length * weights.total_length)
+    + (total_freeflow_time * weights.total_freeflow_time)
+    + (congested_road_count * weights.congested_road_count)
+    + (intersection_count * weights.intersection_count)
+    + (queued_turn_count * weights.queued_turn_count)
+    + (total_avg_waiting_time * weights.total_avg_waiting_time))
+}
 
-    def for_step(step: DirectedRoad) = RouteFeatures(
-      total_length = step.length,
-      total_freeflow_time = step.cost(0.0),
-      congested_road_count =
-        if (step.is_congested) 1 else 0,
-      intersection_count = 1,
-      queued_turn_count = -1,
-      total_avg_waiting_time = -1)
-  }
+object RouteFeatures {
+  val BLANK = RouteFeatures(0, 0, 0, 0, 0, 0)
+  val JUST_FREEFLOW_TIME = BLANK.copy(total_freeflow_time = 1)
 
+  def for_step(step: DirectedRoad) = RouteFeatures(
+    total_length = step.length,
+    total_freeflow_time = step.cost(0.0),
+    congested_road_count = if (step.is_congested) 1 else 0,
+    intersection_count = 1,
+    queued_turn_count = step.to.intersection.policy.queued_count,
+    total_avg_waiting_time = -1)  // TODO this one
+}
+
+class AstarRouter(graph: Graph, weights: RouteFeatures) extends Router(graph) {
   override def path(from: DirectedRoad, to: DirectedRoad, time: Double): List[DirectedRoad] = {
     if (from == to) {
       return Nil
@@ -288,12 +293,12 @@ class AstarRouter(graph: Graph) extends Router(graph) {
     // We're finished with these
     val visited = new HashSet[DirectedRoad]()
     // Best cost so far
-    val costs = new HashMap[DirectedRoad, RouteFeatures]()  // TODO or double?
+    val costs = new HashMap[DirectedRoad, RouteFeatures]()
     // Used to see if we've already added a road to the queue
     val open_members = new HashSet[DirectedRoad]()
 
     case class Step(state: DirectedRoad) {
-      def cost = costs(state).score
+      def cost = costs(state).score(weights)
     }
     val ordering = Ordering[Double].on((step: Step) => step.cost).reverse
     // Priority queue grabs highest priority first, so reverse to get lowest
@@ -307,6 +312,7 @@ class AstarRouter(graph: Graph) extends Router(graph) {
 
     while (open.nonEmpty) {
       val current = open.dequeue()
+      //println(s"- examining ${current.state} with cost ${current.cost} (${costs(current.state)})")
       visited += current.state
       open_members -= current.state
 
@@ -325,7 +331,7 @@ class AstarRouter(graph: Graph) extends Router(graph) {
         for ((next_state_raw, _) <- current.state.succs) {
           val next_state = next_state_raw.asInstanceOf[DirectedRoad]
           val tentative_cost = costs(current.state) + RouteFeatures.for_step(next_state)
-          if (!visited.contains(next_state) && (!open_members.contains(next_state) || tentative_cost.score < costs(next_state).score)) {
+          if (!visited.contains(next_state) && (!open_members.contains(next_state) || tentative_cost.score(weights) < costs(next_state).score(weights))) {
             backrefs(next_state) = current.state
             costs(next_state) = tentative_cost
             // TODO if they're in open_members, modify weight in the queue? or

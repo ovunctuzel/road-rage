@@ -12,6 +12,7 @@ import swing.Dialog
 import scala.language.implicitConversions
 
 import utexas.aorta.map._  // TODO yeah getting lazy.
+import utexas.aorta.map.analysis.{RouteFeatures, AstarRouter}
 import utexas.aorta.sim.{Simulation, Agent, Sim_Event, EV_Signal_Change,
                          IntersectionType, RouteType, Route_Event,
                          EV_Transition, EV_Reroute, EV_Heartbeat, AgentMap}
@@ -729,7 +730,8 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
 
     val timer = Common.timer("Pathfinding")
     // Can choose a specific router...
-    val route = sim.graph.congestion_router.path(from, to, sim.tick)
+    //val route = sim.graph.congestion_router.path(from, to, sim.tick)
+    val route = new AstarRouter(sim.graph, RouteFeatures.JUST_FREEFLOW_TIME).path(from, to, 0)
     route.foreach(step => println("  - " + step))
     timer.stop()
 

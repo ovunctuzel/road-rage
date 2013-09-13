@@ -373,6 +373,7 @@ abstract class Policy(val intersection: Intersection) {
   def approveds_to(target: Edge) = accepted.filter(_.turn.to == target)
   def validate_entry(ticket: Ticket) = accepted.contains(ticket)
   def current_greens() = accepted.map(_.turn).toSet
+  def queued_count = request_queue.size
 }
 
 object Policy {
