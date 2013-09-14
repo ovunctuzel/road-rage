@@ -43,7 +43,7 @@ class Simulation(val graph: Graph, val scenario: Scenario)
   var astar_since_last_time = 0
 
   private lazy val replay =
-    if (Flags.boolean("--replay", true))
+    if (Flags.boolean("--replay", false))
       new ReplayChecker(this, List(Flags.int("--focus")).flatten.toSet) {
         override def difference(id: Int, expected: Double, actual: Double) {
           // TODO this is a bit messy, reaching over to the UI... bcast an event.

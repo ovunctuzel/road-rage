@@ -270,6 +270,7 @@ case class RouteFeatures(
 object RouteFeatures {
   val BLANK = RouteFeatures(0, 0, 0, 0, 0, 0)
   val JUST_FREEFLOW_TIME = BLANK.copy(total_freeflow_time = 1)
+  val JUST_CONGESTION = BLANK.copy(congested_road_count = 1)
 
   def for_step(step: DirectedRoad) = RouteFeatures(
     total_length = step.length,

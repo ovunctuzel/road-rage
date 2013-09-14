@@ -108,7 +108,7 @@ class DrawRoad(val road: Road, state: GuiState) {
 
   def render_road() {
     state.g2d.setColor(color)
-    if (state.route_members(road) && !state.canvas.zoomed_in) {
+    if (state.route_members.contains(road) && !state.canvas.zoomed_in) {
       state.g2d.setStroke(GeomFactory.strokes(road.num_lanes * 2))
     } else {
       state.g2d.setStroke(GeomFactory.strokes(road.num_lanes))
@@ -134,8 +134,8 @@ class DrawRoad(val road: Road, state: GuiState) {
   private def color(): Color =
     if (state.chosen_road.getOrElse(null) == road)
       cfg.chosen_road_color
-    else if (state.route_members(road))
-      cfg.route_member_color
+    else if (state.route_members.contains(road))
+      state.route_members.color(road).get
     else if (state.polygon_roads1(road))
       cfg.src_polygon_color
     else if (state.polygon_roads2(road))

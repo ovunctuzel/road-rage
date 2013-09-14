@@ -27,6 +27,23 @@ object Mode extends Enumeration {
   val PICK_2nd = Value("Pick 2nd edge")
 }
 
+class ColorMap() {
+  private val route_members = new mutable.HashMap[Color, Set[Road]]()
+
+  def clear() {
+    route_members.clear()
+  }
+  def set(color: Color, roads: Set[Road]) {
+    route_members(color) = roads
+  }
+  def remove(color: Color, road: Road) {
+    route_members(color) -= road
+  }
+  def color(road: Road): Option[Color] =
+    route_members.keys.find(color => route_members(color).contains(road))
+  def contains(road: Road) = color(road).isDefined
+}
+
 // Cleanly separates GUI state from users of it
 class GuiState(val canvas: MapCanvas) {
   // TODO ******** lots of stuff in mapcanvas that just sets/gets us... move it
@@ -40,7 +57,7 @@ class GuiState(val canvas: MapCanvas) {
   var show_tooltips = true
   var current_obj: Option[Renderable] = None
   var camera_agent: Option[Agent] = None
-  var route_members = Set[Road]()
+  val route_members = new ColorMap()
   var chosen_road: Option[Road] = None
   var highlight_type: Option[String] = None
   var polygon_roads1: Set[Road] = Set()
@@ -144,7 +161,7 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
         } else {
           Util.log(a + " is done; the camera won't stalk them anymore")
           state.camera_agent = None
-          state.route_members = Set[Road]()
+          state.route_members.clear()
         }
       }
       case None =>
@@ -466,14 +483,14 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
       switch_mode(Mode.PICK_1st)
       state.chosen_edge1 = None
       state.chosen_edge2 = None
-      state.route_members = Set[Road]()
+      state.route_members.clear()
       repaint
     }
     case "clear-route" => {
       switch_mode(Mode.EXPLORE)
       state.chosen_edge1 = None
       state.chosen_edge2 = None
-      state.route_members = Set[Road]()
+      state.route_members.clear()
       repaint
     }
     // TODO refactor the 4 teleports?
@@ -631,14 +648,14 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
       state.camera_agent match {
         case Some(a) => a.route match {
           case r: PathRoute => {
-            state.route_members = r.roads
+            state.route_members.set(cfg.route_member_color, r.roads)
             r.listen("UI", (ev: Route_Event) => { ev match {
               case EV_Reroute(path) => {
-                state.route_members = path.map(_.road).toSet
+                state.route_members.set(cfg.route_member_color, path.map(_.road).toSet)
               }
               case EV_Transition(from, to) => from match {
                 case e: Edge => {
-                  state.route_members -= e.road
+                  state.route_members.remove(cfg.route_member_color, e.road)
                 }
                 case _ =>
               }
@@ -647,7 +664,7 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
           case _ =>
         }
         case None => {
-          state.route_members = Set[Road]()
+          state.route_members.clear()
         }
       }
     }
@@ -729,17 +746,23 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
     val to = state.chosen_edge2.get.directed_road
 
     val timer = Common.timer("Pathfinding")
-    // Can choose a specific router...
-    //val route = sim.graph.congestion_router.path(from, to, sim.tick)
-    val route = new AstarRouter(sim.graph, RouteFeatures.JUST_FREEFLOW_TIME).path(from, to, 0)
-    route.foreach(step => println("  - " + step))
-    timer.stop()
+    // Show each type of route in a different color...
+    val colors = List(Color.RED, Color.BLUE, Color.CYAN, Color.GREEN, Color.YELLOW)
+    val routers = List(
+      new AstarRouter(sim.graph, RouteFeatures.JUST_FREEFLOW_TIME),
+      new AstarRouter(sim.graph, RouteFeatures.JUST_CONGESTION))
 
-    // Filter and just remember the edges; the UI doesn't want to highlight
-    // turns.
-    // TODO pathfinding is by directed road now, not edge. just pick some edge
-    // in each group.
-    state.route_members = route.map(_.road).toSet
+    for ((router, color) <- routers.zip(colors)) {
+      val route = router.path(from, to, sim.tick)
+      //route.foreach(step => println("  - " + step))
+
+      // Filter and just remember the edges; the UI doesn't want to highlight
+      // turns.
+      // TODO pathfinding is by directed road now, not edge. just pick some edge
+      // in each group.
+      state.route_members.set(color, route.map(_.road).toSet)
+    }
+    timer.stop()
     repaint
   }
 }
