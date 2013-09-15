@@ -84,22 +84,21 @@ object TuneSystemBids {
         while (sim.done == false && sim.tick < run_for) {
           sim.step()
           val now = System.currentTimeMillis
-          if (now - last_time > 1000 * 15) {
-            println(s"    Currently it's ${Util.time_num(sim.tick)}")
+          if (now - last_time > 1000 * 1) {
+            print(s"\r    It's ${Util.time_num(sim.tick)} and ${sim.finished_count} have finished")
             last_time = now
           }
         }
 
         // The more agents that completed, the better.
-        // TODO count this in the sim
-        finished = mod.agents.size - sim.agents.size - sim.ready_to_spawn.size - sim.future_spawn.size
+        finished = sim.finished_count
       } catch {
         case e: Throwable => {
           println(s"  !!! Simulation of $state broke... $e")
         }
       }
 
-      println(s"  $state had $finished agents finish")
+      println(s"\n  $state had $finished agents finish")
       scores(state) = finished
       return finished
     }

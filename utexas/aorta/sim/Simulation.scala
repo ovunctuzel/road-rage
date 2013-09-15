@@ -81,6 +81,7 @@ class Simulation(val graph: Graph, val scenario: Scenario)
     w.string(scenario.name)
     w.int(max_agent_id)
     w.double(tick)
+    w.int(finished_count)
     w.int(agents.size)
     agents.foreach(a => a.serialize(w))
     w.int(ready_to_spawn.size)
@@ -136,6 +137,7 @@ class Simulation(val graph: Graph, val scenario: Scenario)
       // TODO batch GC.
       reap.foreach(a => a.terminate())
       agents = agents.filter(a => !reap(a))
+      finished_count += reap.size
     }
 
     // Let intersections react to the new world. By doing this after agent
@@ -287,6 +289,7 @@ object Simulation {
     // Do this before setup so we don't add the wrong spawners
     sim.max_agent_id = r.int
     sim.tick = r.double
+    sim.finished_count = r.int
     // Need so queues/intersections are set up.
     sim.setup()
     val num_agents = r.int
@@ -337,6 +340,7 @@ trait AgentManager {
   var ready_to_spawn = new ListBuffer[MkAgent]()
   protected var max_agent_id = -1
   val future_spawn = new PriorityQueue[MkAgent]()
+  var finished_count = 0
 
   //////////////////////////////////////////////////////////////////////////////
   // Actions
