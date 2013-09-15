@@ -281,21 +281,15 @@ class SystemWallet() extends Wallet(0, 0) {
 object SystemWallets {
   // Keep these separate just for book-keeping
 
+  // TODO this singleton is a prime example of why multiple simulations per process dont work well
+  // with the scala singleton pattern.
+
   val thruput = new SystemWallet()
-  lazy val thruput_bonus = Common.scenario.system_wallet.thruput_bonus
-
   val capacity = new SystemWallet()
-  lazy val avail_capacity_threshold = Common.scenario.system_wallet.avail_capacity_threshold
-  lazy val capacity_bonus = Common.scenario.system_wallet.capacity_bonus
-
   val dependency = new SystemWallet()
-  lazy val dependency_rate = Common.scenario.system_wallet.dependency_rate
-
   val waiting = new SystemWallet()
-  lazy val waiting_rate = Common.scenario.system_wallet.waiting_rate
-
   val ready = new SystemWallet()
-  lazy val ready_bonus = Common.scenario.system_wallet.ready_bonus
+  private def rates = Common.scenario.system_wallet
 
   def meta_bid[T](items: List[T], policy: Policy): List[Bid[T]] =
     (bid_thruput(items, policy) ++ bid_pointless_impatience(items, policy) ++
@@ -306,7 +300,7 @@ object SystemWallets {
   def bid_thruput[T](items: List[T], policy: Policy) = policy match {
     case p: ReservationPolicy =>
       for (ticket <- items if !p.accepted_conflicts(ticket.asInstanceOf[Ticket].turn))
-        yield Bid(thruput, ticket, thruput_bonus, null)
+        yield Bid(thruput, ticket, rates.thruput_bonus, null)
 
     case _ => Nil
   }
@@ -319,8 +313,8 @@ object SystemWallets {
     case _: SignalPolicy => Nil
     case _ => items.flatMap(ticket => {
       val target = ticket.asInstanceOf[Ticket].turn.to.queue
-      if (target.percent_avail >= avail_capacity_threshold)
-        Some(Bid(capacity, ticket, capacity_bonus, null))
+      if (target.percent_avail >= rates.avail_capacity_threshold)
+        Some(Bid(capacity, ticket, rates.capacity_bonus, null))
       else
         None
     })
@@ -331,10 +325,10 @@ object SystemWallets {
   def bid_dependency[T](items: List[T], policy: Policy) = policy match {
     case p: SignalPolicy =>
       for (phase <- items)
-        yield Bid(dependency, phase, dependency_rate * num_phase(phase), null)
+        yield Bid(dependency, phase, rates.dependency_rate * num_phase(phase), null)
     case _ =>
       for (ticket <- items)
-        yield Bid(dependency, ticket, dependency_rate * num_ticket(ticket), null)
+        yield Bid(dependency, ticket, rates.dependency_rate * num_ticket(ticket), null)
   }
   private def num_phase(phase: Any) =
     phase.asInstanceOf[Phase].turns.map(_.from.queue.agents.size).sum
@@ -354,12 +348,12 @@ object SystemWallets {
   def bid_waiting[T](items: List[T], policy: Policy) = policy match {
     case p: SignalPolicy =>
       for (phase <- items)
-        yield Bid(dependency, phase, (waiting_rate * waiting_phase(phase)).toInt, null)
+        yield Bid(dependency, phase, (rates.waiting_rate * waiting_phase(phase)).toInt, null)
     case _ =>
       for (ticket <- items)
         yield Bid(
           dependency, ticket,
-          (waiting_rate * ticket.asInstanceOf[Ticket].how_long_waiting).toInt, null
+          (rates.waiting_rate * ticket.asInstanceOf[Ticket].how_long_waiting).toInt, null
         )
   }
   private def waiting_phase(phase: Any) =
@@ -369,7 +363,7 @@ object SystemWallets {
   def bid_ready[T](items: List[T], policy: Policy) = policy match {
     case p: ReservationPolicy =>
       for (ticket <- items if ticket.asInstanceOf[Ticket].close_to_start)
-        yield Bid(ready, ticket, ready_bonus, null)
+        yield Bid(ready, ticket, rates.ready_bonus, null)
 
     case _ => Nil
   }
