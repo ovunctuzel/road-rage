@@ -29,11 +29,15 @@ abstract class Measurement {
   def write(stream: ObjectOutputStream)
 }
 
+class StatsListener() {
+  def record(item: Measurement) {}
+}
+
 // Appends to logfile
-class StatsRecorder(fn: String) {
+class StatsRecorder(fn: String) extends StatsListener {
   val log = new ObjectOutputStream(new FileOutputStream(fn, true))
 
-  @elidable(elidable.ASSERTION) def record(item: Measurement) = {
+  @elidable(elidable.ASSERTION) override def record(item: Measurement) {
     if (log != null) {
       synchronized {
         item.write(log)

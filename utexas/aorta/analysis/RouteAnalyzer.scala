@@ -4,17 +4,17 @@
 
 package utexas.aorta.analysis
 
+import scala.collection.mutable
 import java.io.File
 
 import utexas.aorta.map.Graph
-import utexas.aorta.sim.{ScenarioTool, Simulation, Scenario}
+import utexas.aorta.sim.{ScenarioTool, Simulation, Scenario, AgentDistribution}
 
-import utexas.aorta.common.{RNG, Util, Flags}
+import utexas.aorta.common.{RNG, Util, Flags, Common}
 
 object RouteAnalyzer {
   // No arguments
   def main(args: Array[String]): Unit = {
-    notify("Route analyzer initiated")
     val rng = new RNG()
 
     // Pick a random map
@@ -34,11 +34,35 @@ object RouteAnalyzer {
     Flags.set("--savestate", "false")
     val base_times = simulate(0, Scenario.load(scenario_fn).make_sim(graph))
     val base_fn = scenario_fn.replace("scenarios/", "scenarios/savestate_") + "_3600"
+
+    // Pick a random source and destination for the new driver
+    val candidate_edges = AgentDistribution.filter_candidates(graph.edges)
+    val start = rng.choose(candidate_edges)
+    val end = rng.choose(candidate_edges)
+
+
+
+    for (id <- base_times.keys) {
+      println(s"$id had time ${base_times(id)}")
+    }
   }
 
   // Simulate and return trip time for every agent ID
-  private def simulate(round: Int, sim: Simulation): Map[Integer, Double] = {
-    var last_time = System.currentTimeMillis
+  private def simulate(round: Int, sim: Simulation): Map[Int, Double] = {
+    val times = new mutable.HashMap[Int, Double]()
+    Common.stats_log = new StatsListener() {
+      override def record(item: Measurement) {
+        item match {
+          case s: Agent_Lifetime_Stat => {
+            times(s.id) = s.trip_time
+          }
+          case _ =>
+        }
+      }
+    }
+
+    var last_time = 0
+    sim.setup()
     while (!sim.done) {
       sim.step()
       if (sim.tick == 3600.0 && round == 0) {
@@ -50,7 +74,7 @@ object RouteAnalyzer {
         notify(s"Round $round at ${Util.time_num(sim.tick)}")
       }
     }
-    return null  // TODO hijack statsrecorder to get times
+    return times.toMap
   }
 
   private def notify(status: String) {

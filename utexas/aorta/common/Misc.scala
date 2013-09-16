@@ -13,7 +13,7 @@ import scala.collection.mutable.{HashMap => MutableMap}
 
 import utexas.aorta.map.Graph
 import utexas.aorta.sim.{Simulation, Scenario}
-import utexas.aorta.analysis.{Timer, StatsRecorder, Measurement}
+import utexas.aorta.analysis.{Timer, StatsListener, StatsRecorder, Measurement}
 
 object Util {
   private var indent_log = 0
@@ -141,14 +141,15 @@ object Common {
   def tick = sim.tick
   def timer(name: String) = new Timer(name)
 
-  private lazy val stats_log = Flags.string("--log") match {
-    case Some(value) => new StatsRecorder(value)
-    case None => null
-  }
+  var stats_log: StatsListener = null
   def record(item: Measurement) {
-    if (stats_log != null) {
-      stats_log.record(item)
+    if (stats_log == null) {
+      stats_log = Flags.string("--log") match {
+        case Some(value) => new StatsRecorder(value)
+        case None => new StatsListener()
+      }
     }
+    stats_log.record(item)
   }
 
   sys.ShutdownHookThread({
