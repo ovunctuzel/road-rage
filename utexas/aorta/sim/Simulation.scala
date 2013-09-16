@@ -266,16 +266,17 @@ class Simulation(val graph: Graph, val scenario: Scenario)
     }
   }
 
-  def savestate(fn: String) {
+  def savestate(fn: String): String = {
     val t = Common.timer("savestating")
     val w = Util.writer(fn)
     serialize(w)
     w.done()
     Util.log(s"Savestated to $fn. It took ${t.so_far}s.")
+    return fn
   }
 
-  def savestate() {
-    savestate(
+  def savestate(): String = {
+    return savestate(
       scenario.name.replace("scenarios/", "scenarios/savestate_") + "_" +
       tick.toInt
     )
