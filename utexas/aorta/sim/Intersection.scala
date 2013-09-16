@@ -28,6 +28,10 @@ class Intersection(val v: Vertex, policy_type: IntersectionType.Value,
   // attempting it.
   val turns = MutableMap[Turn, Int]()
 
+  // For reporting stats
+  private var sum_waiting_times = 0.0
+  private var number_finished = 0
+
   override def toString = "Intersection(" + v + ")"
 
   def request_turn(ticket: Ticket) = {
@@ -97,7 +101,11 @@ class Intersection(val v: Vertex, policy_type: IntersectionType.Value,
       }
     }
     policy.handle_exit(ticket)
+    number_finished += 1
+    sum_waiting_times += ticket.how_long_waiting
   }
+
+  def average_waiting_time = sum_waiting_times / number_finished
 }
 
 object Intersection {

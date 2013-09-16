@@ -10,7 +10,7 @@ import com.graphhopper.routing.ch.PrepareContractionHierarchies
 
 import utexas.aorta.map.{Graph, DirectedRoad}
 
-import utexas.aorta.common.{Util, Common}
+import utexas.aorta.common.{Util, Common, Physics, RNG}
 
 abstract class Router(graph: Graph) {
   // Doesn't include 'from' as the first step
@@ -235,16 +235,14 @@ class CongestionRouter(graph: Graph) extends Router(graph) {
 }
 
 // Encodes all factors describing the quality of a path
-// TODO heurisitc to goal point
-// TODO normalized form for everything.
 case class RouteFeatures(
   total_length: Double,           // sum of path length
   total_freeflow_time: Double,    // sum of time to cross each road at the speed limit
-  congested_road_count: Int,      // number of congested roads
+  congested_road_count: Double,   // number of congested roads
   // TODO historical avg/max of road congestion, and more than a binary is/is not
-  intersection_count: Int,        // number of intersections crossed
+  intersection_count: Double,     // number of intersections crossed
   // TODO account for intersection type?
-  queued_turn_count: Int,         // sum of queued turns at each intersection
+  queued_turn_count: Double,      // sum of queued turns at each intersection
   // TODO historical avg/max. and count this carefully!
   total_avg_waiting_time: Double  // sum of average waiting time of turns at each intersection
 ) {
@@ -258,6 +256,15 @@ case class RouteFeatures(
     queued_turn_count + other.queued_turn_count,
     total_avg_waiting_time + other.total_avg_waiting_time)
 
+  def *(other: RouteFeatures) = RouteFeatures(
+    total_length * other.total_length,
+    total_freeflow_time * other.total_freeflow_time,
+    congested_road_count * other.congested_road_count,
+    intersection_count * other.intersection_count,
+    queued_turn_count * other.queued_turn_count,
+    total_avg_waiting_time * other.total_avg_waiting_time)
+
+  // weights should also account for normalization by dividing by the "soft max" for each feature
   def score(weights: RouteFeatures): Double
     = ((total_length * weights.total_length)
     + (total_freeflow_time * weights.total_freeflow_time)
@@ -268,9 +275,9 @@ case class RouteFeatures(
 }
 
 object RouteFeatures {
+  // Some presets
   val BLANK = RouteFeatures(0, 0, 0, 0, 0, 0)
   val JUST_FREEFLOW_TIME = BLANK.copy(total_freeflow_time = 1)
-  val JUST_CONGESTION = BLANK.copy(congested_road_count = 1)
 
   def for_step(step: DirectedRoad) = RouteFeatures(
     total_length = step.length,
@@ -278,10 +285,19 @@ object RouteFeatures {
     congested_road_count = if (step.is_congested) 1 else 0,
     intersection_count = 1,
     queued_turn_count = step.to.intersection.policy.queued_count,
-    total_avg_waiting_time = -1)  // TODO this one
+    total_avg_waiting_time = step.to.intersection.average_waiting_time)
+
+  private val rng = new RNG()
+  def random_weight = RouteFeatures(
+    rng.double(0, 1), rng.double(0, 1), rng.double(0, 1), rng.double(0, 1), rng.double(0, 1),
+    rng.double(0, 1)
+  )
 }
 
-class AstarRouter(graph: Graph, weights: RouteFeatures) extends Router(graph) {
+// A* is a misnomer; there's no heuristic right now.
+class AstarRouter(graph: Graph, raw_weights: RouteFeatures) extends Router(graph) {
+  private val weights = raw_weights * normalize_weights()
+
   override def path(from: DirectedRoad, to: DirectedRoad, time: Double): List[DirectedRoad] = {
     if (from == to) {
       return Nil
@@ -299,6 +315,7 @@ class AstarRouter(graph: Graph, weights: RouteFeatures) extends Router(graph) {
     val open_members = new HashSet[DirectedRoad]()
 
     case class Step(state: DirectedRoad) {
+      // No heuristics for now
       def cost = costs(state).score(weights)
     }
     val ordering = Ordering[Double].on((step: Step) => step.cost).reverse
@@ -346,5 +363,18 @@ class AstarRouter(graph: Graph, weights: RouteFeatures) extends Router(graph) {
 
     // We didn't find the way?! The graph is connected!
     throw new Exception("Couldn't A* from " + from + " to " + to)
+  }
+
+  private def normalize_weights(): RouteFeatures = {
+    // These are "soft max" values, meaning the actual value could exceed these, but generally they
+    // wont.
+    val max_length = graph.width + graph.height // TODO is this the right dist unit?
+    val max_time = max_length / Physics.mph_to_si(30)
+    val max_congestion = graph.directed_roads.size
+    val max_intersections = graph.vertices.size
+    val max_queued_turns = graph.edges.map(e => e.queue.capacity).sum
+    val max_avg_waiting = graph.vertices.size * 60  // particularly arbitrary, this one!
+    return RouteFeatures(max_length, max_time, max_congestion, max_intersections, max_queued_turns,
+      max_avg_waiting)
   }
 }

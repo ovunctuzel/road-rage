@@ -8,10 +8,11 @@ import scala.collection.mutable.MutableList
 
 import utexas.aorta.ui.Renderable
 
-import utexas.aorta.common.{Util, StateWriter, StateReader}
+import utexas.aorta.common.{Util, StateWriter, StateReader, Physics}
 
 // TODO enum for type. also, it's var because of tarjan's...
 // TODO var id due to tarjan
+// TODO speed limit stored directly.
 class Road(
   var id: Int, val length: Double, val name: String, var road_type: String,
   val osm_id: String, v1_id: Int, v2_id: Int, var points: Array[Coordinate]
@@ -36,7 +37,7 @@ class Road(
   val neg_lanes = new MutableList[Edge]
 
   // TODO move this table
-  val speed_limit = mph_to_si(road_type match {
+  val speed_limit = Physics.mph_to_si(road_type match {
     case "residential"    => 30
     case "motorway"       => 80
     // Actually these don't have a speed limit legally...  35 is suggested, but NOBODY does that
@@ -119,9 +120,6 @@ class Road(
   def outgoing_lanes(v: Vertex) = if (v == v1) pos_lanes else neg_lanes
 
   def pairs_of_points = points.zip(points.tail)
-
-  // to meters/sec
-  def mph_to_si(r: Double) = r * 0.44704
 
   def debug() {
     Util.log(this + " is a " + road_type + " of length " + length + " meters")

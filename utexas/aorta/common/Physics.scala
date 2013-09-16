@@ -61,4 +61,7 @@ object Physics {
 
   // To stop in one time-step, that is. From v_f = v_i + at
   def accel_to_stop(speed: Double) = (-1 * speed) / cfg.dt_s
+
+  // to meters/sec
+  def mph_to_si(r: Double) = r * 0.44704
 }
