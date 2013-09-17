@@ -60,7 +60,7 @@ class Simulation(val graph: Graph, val scenario: Scenario)
   //////////////////////////////////////////////////////////////////////////////
   // Meta
 
-  def setup() {
+  def setup(): Simulation = {
     Common.sim = this
     Phase.id = 0
 
@@ -75,6 +75,7 @@ class Simulation(val graph: Graph, val scenario: Scenario)
     } else {
       future_spawn ++= scenario.agents.filter(_.birth_tick > tick)
     }
+    return this
   }
 
   def serialize(w: StateWriter) {

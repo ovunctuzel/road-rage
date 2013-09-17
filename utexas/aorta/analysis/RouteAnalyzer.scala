@@ -8,11 +8,23 @@ import scala.collection.mutable
 import java.io.File
 
 import utexas.aorta.map.Graph
-import utexas.aorta.sim.{ScenarioTool, Simulation, Scenario, AgentDistribution}
+import utexas.aorta.map.analysis.{AstarRouter, RouteFeatures}
+import utexas.aorta.sim.{ScenarioTool, Simulation, Scenario, AgentDistribution, MkAgent, MkWallet,
+                         MkSpecificPathRoute}
 
 import utexas.aorta.common.{RNG, Util, Flags, Common}
 
 object RouteAnalyzer {
+  // Params
+  val scenario_params = Array("--spawn", "5000", "delay=3600", "generations=3", "lifetime=3600")
+  val new_id = 15000  // This has to be correct based on scenario_params
+  val warmup_time = 3600
+  val report_every_ms = 10 * 1000
+  val num_routes = 5
+
+  // TODO vary more things, like scenario size.
+  // TODO maybe fix the map for now, make the learning easier.
+
   // No arguments
   def main(args: Array[String]): Unit = {
     val rng = new RNG()
@@ -24,26 +36,37 @@ object RouteAnalyzer {
     // Generate a scenario for it
     notify("Generating random scenario")
     val scenario_fn = map_fn.replace("maps/", "scenarios/").replace(".map", "_routes")
-    ScenarioTool.main(Array(
-      map_fn, "--out", scenario_fn, "--spawn", "5000", "delay=3600", "generations=3", "lifetime=3600"
-    ))
+    ScenarioTool.main(Array(map_fn, "--out", scenario_fn) ++ scenario_params)
     // TODO do the caching in the graph load layer.
     val graph = Graph.load(map_fn)
 
     // Simulate fully, savestating at 1 hour
     Flags.set("--savestate", "false")
-    val base_times = simulate(0, Scenario.load(scenario_fn).make_sim(graph))
-    val base_fn = scenario_fn.replace("scenarios/", "scenarios/savestate_") + "_3600"
+    val base_times = simulate(0, Scenario.load(scenario_fn).make_sim(graph).setup)
+    val base_fn = scenario_fn.replace("scenarios/", "scenarios/savestate_") + "_" + warmup_time
 
     // Pick a random source and destination for the new driver
     val candidate_edges = AgentDistribution.filter_candidates(graph.edges)
     val start = rng.choose(candidate_edges)
     val end = rng.choose(candidate_edges)
 
+    // Try some routes
+    for (round <- 1 to num_routes) {
+      notify(s"Creating modified world for round $round")
+      val router = new AstarRouter(graph, RouteFeatures.random_weight)
+      val new_sim = Simulation.unserialize(Util.reader(base_fn))
+      // Modify the simulation by adding a new driver
+      // (No need to modify the scenario or anything)
+      val route = router.path(start.directed_road, end.directed_road, warmup_time.toDouble)
+      new_sim.future_spawn += MkAgent(
+        new_id, warmup_time + 5.0, rng.new_seed, start.id, start.safe_spawn_dist(rng),
+        new MkSpecificPathRoute(route.map(_.id), rng.new_seed),
+        MkWallet(AgentDistribution.default_wallet, 42, 42)  // wallet doesn't matter
+      )
 
-
-    for (id <- base_times.keys) {
-      println(s"$id had time ${base_times(id)}")
+      val new_times = simulate(round, new_sim)
+      val new_drivers_trip_time = new_times(new_id)
+      val externality = calc_externality(base_times, new_times)
     }
   }
 
@@ -53,7 +76,8 @@ object RouteAnalyzer {
     Common.stats_log = new StatsListener() {
       override def record(item: Measurement) {
         item match {
-          case s: Agent_Lifetime_Stat => {
+          // We don't care about anybody who finishes before the new driver is introduced
+          case s: Agent_Lifetime_Stat if sim.tick > warmup_time => {
             times(s.id) = s.trip_time
           }
           case _ =>
@@ -61,20 +85,26 @@ object RouteAnalyzer {
       }
     }
 
-    var last_time = 0
-    sim.setup()
+    var last_time = 0L
     while (!sim.done) {
       sim.step()
-      if (sim.tick == 3600.0 && round == 0) {
+      if (sim.tick.toInt == warmup_time && round == 0) {
         sim.savestate()
       }
       val now = System.currentTimeMillis
-      if (now - last_time > 10000) {
+      if (now - last_time > report_every_ms) {
         last_time = now
+        // TODO have detailed stuff
         notify(s"Round $round at ${Util.time_num(sim.tick)}")
       }
     }
     return times.toMap
+  }
+
+  private def calc_externality(base: Map[Int, Double], mod: Map[Int, Double]): Double = {
+    // The keys (drivers) should be the same, except for the new agent
+    Util.assert_eq(base.size, mod.size - 1)
+    return base.keys.map(id => mod(id) - base(id)).sum
   }
 
   private def notify(status: String) {
