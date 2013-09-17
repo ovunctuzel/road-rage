@@ -10,7 +10,7 @@ import java.io.File
 import utexas.aorta.map.Graph
 import utexas.aorta.map.analysis.{AstarRouter, RouteFeatures}
 import utexas.aorta.sim.{ScenarioTool, Simulation, Scenario, AgentDistribution, MkAgent, MkWallet,
-                         MkSpecificPathRoute}
+                         MkSpecificPathRoute, Sim_Event, EV_Heartbeat}
 
 import utexas.aorta.common.{RNG, Util, Flags, Common}
 
@@ -86,16 +86,22 @@ object RouteAnalyzer {
     }
 
     var last_time = 0L
+    sim.listen("route-analyzer", (ev: Sim_Event) => { ev match {
+      case EV_Heartbeat(info) => {
+        val now = System.currentTimeMillis
+        if (now - last_time > report_every_ms) {
+          last_time = now
+          notify(s"Round $round at ${Util.time_num(sim.tick)}: ${info.describe}" +
+                 s" / ${sim.finished_count} finished")
+        }
+      }
+      case _ =>
+    } })
+
     while (!sim.done) {
       sim.step()
       if (sim.tick.toInt == warmup_time && round == 0) {
         sim.savestate()
-      }
-      val now = System.currentTimeMillis
-      if (now - last_time > report_every_ms) {
-        last_time = now
-        // TODO have detailed stuff
-        notify(s"Round $round at ${Util.time_num(sim.tick)}")
       }
     }
     return times.toMap
