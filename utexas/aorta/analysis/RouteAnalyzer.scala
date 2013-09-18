@@ -10,7 +10,7 @@ import java.io.File
 import utexas.aorta.map.Graph
 import utexas.aorta.map.analysis.{AstarRouter, RouteFeatures}
 import utexas.aorta.sim.{ScenarioTool, Simulation, Scenario, AgentDistribution, MkAgent, MkWallet,
-                         MkSpecificPathRoute, Sim_Event, EV_Heartbeat}
+                         MkRoute, Sim_Event, EV_Heartbeat, RouteType}
 
 import utexas.aorta.common.{RNG, Util, Flags, Common}
 
@@ -57,10 +57,12 @@ object RouteAnalyzer {
       val new_sim = Simulation.unserialize(Util.reader(base_fn))
       // Modify the simulation by adding a new driver
       // (No need to modify the scenario or anything)
-      val route = router.path(start.directed_road, end.directed_road, warmup_time.toDouble)
+      val route = start.directed_road :: router.path(
+        start.directed_road, end.directed_road, warmup_time.toDouble
+      )
       new_sim.future_spawn += MkAgent(
         new_id, warmup_time + 5.0, rng.new_seed, start.id, start.safe_spawn_dist(rng),
-        new MkSpecificPathRoute(route.map(_.id), rng.new_seed),
+        new MkRoute(RouteType.Path, route.map(_.id), end.id, rng.new_seed),
         MkWallet(AgentDistribution.default_wallet, 42, 42)  // wallet doesn't matter
       )
 

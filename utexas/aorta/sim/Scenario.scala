@@ -249,18 +249,21 @@ case class MkAgentSpawner(frequency: Double, expires: Double, seed: Long)
 }*/
 
 // goal is the ID of an edge in the desired directed road
+// initial_path is a list of directed road IDs. can be empty.
 // TODO ID of a directed road would be way better.
-case class MkRoute(strategy: RouteType.Value, goal: Integer, seed: Long) {
-  def make(sim: Simulation) =
-    Factory.make_route(strategy, sim.edges(goal).directed_road, new RNG(seed))
+case class MkRoute(strategy: RouteType.Value, initial_path: List[Int], goal: Integer, seed: Long) {
+  def make(sim: Simulation) = Factory.make_route(
+    strategy, sim.edges(goal).directed_road, new RNG(seed),
+    initial_path.map(id => sim.graph.directed_roads(id))
+  )
 
   def serialize(w: StateWriter) {
     w.int(strategy.id)
     w.int(goal)
     w.long(seed)
+    w.int(initial_path.size)
+    initial_path.foreach(id => w.int(id))
   }
-
-  def unserialize(r: StateReader) {}
 }
 
 object MkRoute {
@@ -268,27 +271,8 @@ object MkRoute {
     val rtype = RouteType(r.int)
     val goal = r.int
     val seed = r.long
-    return rtype match {
-      case RouteType.SpecificPath =>
-        new MkSpecificPathRoute(Range(0, r.int).map(_ => r.int).toList, seed)
-      case _ =>
-        MkRoute(rtype, goal, seed)
-    }
-  }
-}
-
-// path is a list of directed road IDs
-class MkSpecificPathRoute(path: List[Int], seed: Long)
-  extends MkRoute(RouteType.SpecificPath, path.last, seed)
-{
-  override def make(sim: Simulation) = new SpecificPathRoute(
-    path.map(id => sim.graph.directed_roads(id)), new RNG(seed)
-  )
-
-  override def serialize(w: StateWriter) {
-    super.serialize(w)
-    w.int(path.size)
-    path.foreach(id => w.int(id))
+    val initial_path = Range(0, r.int).map(_ => r.int).toList
+    return MkRoute(rtype, initial_path, goal, seed)
   }
 }
 
@@ -424,7 +408,7 @@ object AgentDistribution {
       MkAgent(
         id, rng.double(times._1, times._2), rng.new_seed, start.id,
         start.safe_spawn_dist(rng),
-        MkRoute(rng.choose(routes), rng.choose(ends).id, rng.new_seed),
+        MkRoute(rng.choose(routes), Nil, rng.choose(ends).id, rng.new_seed),
         // For now, force the same budget and priority here, and clean it up
         // later.
         MkWallet(rng.choose(wallets), budget, budget)
@@ -447,7 +431,7 @@ object IntersectionType extends Enumeration {
 
 object RouteType extends Enumeration {
   type RouteType = Value
-  val Dijkstra, Path, Drunken, DirectionalDrunk, DrunkenExplorer, SpecificPath = Value
+  val Dijkstra, Path, Drunken, DirectionalDrunk, DrunkenExplorer = Value
 }
 
 object OrderingType extends Enumeration {
@@ -476,9 +460,11 @@ object Factory {
       new CommonCasePolicy(i, make_intersection_ordering[Ticket](ordering))
   }
 
-  def make_route(enum: RouteType.Value, goal: DirectedRoad, rng: RNG) = enum match {
+  def make_route(enum: RouteType.Value, goal: DirectedRoad, rng: RNG,
+                 initial_path: List[DirectedRoad])
+  = enum match {
     case RouteType.Dijkstra => new DijkstraRoute(goal, rng)
-    case RouteType.Path => new PathRoute(goal, rng)
+    case RouteType.Path => new PathRoute(goal, initial_path, rng)
     case RouteType.Drunken => new DrunkenRoute(goal, rng)
     case RouteType.DirectionalDrunk => new DirectionalDrunkRoute(goal, rng)
     case RouteType.DrunkenExplorer => new DrunkenExplorerRoute(goal, rng)

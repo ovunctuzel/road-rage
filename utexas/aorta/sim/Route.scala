@@ -12,9 +12,7 @@ import utexas.aorta.map.{Edge, DirectedRoad, Traversable, Turn, Vertex, Graph}
 import utexas.aorta.common.{Util, RNG, Common, cfg, StateWriter, StateReader}
 
 // Get a client to their goal by any means possible.
-abstract class Route(val goal: DirectedRoad, rng: RNG)
-  extends ListenerPattern[Route_Event]
-{
+abstract class Route(val goal: DirectedRoad, rng: RNG) extends ListenerPattern[Route_Event] {
   //////////////////////////////////////////////////////////////////////////////
   // Meta
 
@@ -56,8 +54,10 @@ abstract class Route(val goal: DirectedRoad, rng: RNG)
 
 object Route {
   def unserialize(r: StateReader, graph: Graph): Route = {
+    // It's fine to pass in Nil for the initial path. PathRoute, the only user of this right now,
+    // will unserialize it.
     val route = Factory.make_route(
-      RouteType(r.int), graph.directed_roads(r.int), RNG.unserialize(r)
+      RouteType(r.int), graph.directed_roads(r.int), RNG.unserialize(r), Nil
     )
     route.unserialize(r, graph)
     return route
@@ -106,16 +106,17 @@ class DijkstraRoute(goal: DirectedRoad, rng: RNG) extends Route(goal, rng) {
   }
 }
 
-// Compute and follow a specific path to the goal. When we're forced to deviate
-// from the path, recalculate.
+// Follow the given route first. If orig_route can be empty, the first routing will be static.
+// When we're forced or encouraged to deviate from the path, use a router to avoid congestion.
 // TODO clean up design and make repathing more clear 
-class PathRoute(goal: DirectedRoad, rng: RNG) extends Route(goal, rng) {
+class PathRoute(goal: DirectedRoad, orig_route: List[DirectedRoad], rng: RNG) extends Route(goal, rng)
+{
   //////////////////////////////////////////////////////////////////////////////
   // State
 
   // Head is the current step. If that step isn't immediately reachable, we have
   // to re-route.
-  private var path: List[DirectedRoad] = null
+  private var path: List[DirectedRoad] = orig_route
   private val chosen_turns = new ImmutableMapAdaptor(new TreeMap[Edge, Turn]())
 
   //////////////////////////////////////////////////////////////////////////////
@@ -224,7 +225,8 @@ class PathRoute(goal: DirectedRoad, rng: RNG) extends Route(goal, rng) {
   }
 
   def pick_lane(from: Edge): Edge = {
-    if (path == null) {
+    // This method is called first, so do the lazy initialization here.
+    if (path.isEmpty) {
       path =
         from.directed_road ::
         Common.sim.graph.router.path(from.directed_road, goal, Common.tick)
@@ -449,31 +451,4 @@ class DrunkenExplorerRoute(goal: DirectedRoad, rng: RNG)
   // Queries
 
   override def route_type = RouteType.DrunkenExplorer
-}
-
-class SpecificPathRoute(path: List[DirectedRoad], rng: RNG)
-  extends Route(path.last, rng)
-{
-  //////////////////////////////////////////////////////////////////////////////
-  // Meta
-
-  // TODO serialize, unserialize
-
-  //////////////////////////////////////////////////////////////////////////////
-  // Actions
-
-  def transition(from: Traversable, to: Traversable) {
-    // TODO make sure we're following the path?
-  }
-
-  def pick_turn(e: Edge): Turn = null // TODO
-  def pick_lane(e: Edge) = e  // TODO
-
-  //////////////////////////////////////////////////////////////////////////////
-  // Queries
-
-  def route_type = RouteType.SpecificPath
-  def dump_info() = {
-    Util.log(s"Specific route to $goal using $path")
-  }
 }
