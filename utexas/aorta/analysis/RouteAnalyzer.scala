@@ -21,8 +21,9 @@ object RouteAnalyzer {
   val warmup_time = 3600
   val report_every_ms = 10 * 1000
   val num_routes = 5
+  val csv_out_fn = "route_data"
 
-  // TODO vary more things, like scenario size.
+  // TODO vary more things, like scenario size, or the warmup time
   // TODO maybe fix the map for now, make the learning easier.
 
   // No arguments
@@ -57,9 +58,8 @@ object RouteAnalyzer {
       val new_sim = Simulation.unserialize(Util.reader(base_fn))
       // Modify the simulation by adding a new driver
       // (No need to modify the scenario or anything)
-      val route = start.directed_road :: router.path(
-        start.directed_road, end.directed_road, warmup_time.toDouble
-      )
+      val result = router.scored_path(start.directed_road, end.directed_road)
+      val route = start.directed_road :: result._1
       new_sim.future_spawn += MkAgent(
         new_id, warmup_time + 5.0, rng.new_seed, start.id, start.safe_spawn_dist(rng),
         new MkRoute(RouteType.Path, route.map(_.id), end.id, rng.new_seed),
@@ -69,6 +69,8 @@ object RouteAnalyzer {
       val new_times = simulate(round, new_sim)
       val new_drivers_trip_time = new_times(new_id)
       val externality = calc_externality(base_times, new_times)
+      notify(s"Round $round done! New driver's time is $new_drivers_trip_time, externality is $externality")
+      println(s"  path score was ${result._2}, normalized weight used to pick route was ${router.weights}")
     }
   }
 
@@ -106,6 +108,7 @@ object RouteAnalyzer {
         sim.savestate()
       }
     }
+    notify(s"Round $round done at ${Util.time_num(sim.tick)}")
     return times.toMap
   }
 

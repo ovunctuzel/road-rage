@@ -296,11 +296,14 @@ object RouteFeatures {
 
 // A* is a misnomer; there's no heuristic right now.
 class AstarRouter(graph: Graph, raw_weights: RouteFeatures) extends Router(graph) {
-  private val weights = raw_weights * normalize_weights()
+  val weights = raw_weights * normalize_weights()
 
-  override def path(from: DirectedRoad, to: DirectedRoad, time: Double): List[DirectedRoad] = {
+  override def path(from: DirectedRoad, to: DirectedRoad, time: Double) = scored_path(from, to)._1
+
+  // Return the weight of the final path too
+  def scored_path(from: DirectedRoad, to: DirectedRoad): (List[DirectedRoad], RouteFeatures) = {
     if (from == to) {
-      return Nil
+      return (Nil, RouteFeatures.BLANK)
     }
 
     Common.sim.astar_since_last_time += 1
@@ -344,7 +347,7 @@ class AstarRouter(graph: Graph, raw_weights: RouteFeatures) extends Router(graph
           pointer = backrefs.remove(pointer.get)
         }
         // Exclude 'from'
-        return path.tail
+        return (path.tail, costs(current.state))
       } else {
         for ((next_state_raw, _) <- current.state.succs) {
           val next_state = next_state_raw.asInstanceOf[DirectedRoad]
