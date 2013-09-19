@@ -256,13 +256,13 @@ case class RouteFeatures(
     queued_turn_count + other.queued_turn_count,
     total_avg_waiting_time + other.total_avg_waiting_time)
 
-  def *(other: RouteFeatures) = RouteFeatures(
-    total_length * other.total_length,
-    total_freeflow_time * other.total_freeflow_time,
-    congested_road_count * other.congested_road_count,
-    intersection_count * other.intersection_count,
-    queued_turn_count * other.queued_turn_count,
-    total_avg_waiting_time * other.total_avg_waiting_time)
+  def /(other: RouteFeatures) = RouteFeatures(
+    total_length / other.total_length,
+    total_freeflow_time / other.total_freeflow_time,
+    congested_road_count / other.congested_road_count,
+    intersection_count / other.intersection_count,
+    queued_turn_count / other.queued_turn_count,
+    total_avg_waiting_time / other.total_avg_waiting_time)
 
   // weights should also account for normalization by dividing by the "soft max" for each feature
   def score(weights: RouteFeatures): Double
@@ -296,7 +296,7 @@ object RouteFeatures {
 
 // A* is a misnomer; there's no heuristic right now.
 class AstarRouter(graph: Graph, raw_weights: RouteFeatures) extends Router(graph) {
-  val weights = raw_weights * normalize_weights()
+  val weights = raw_weights / max_weights()
 
   override def path(from: DirectedRoad, to: DirectedRoad, time: Double) = scored_path(from, to)._1
 
@@ -368,7 +368,7 @@ class AstarRouter(graph: Graph, raw_weights: RouteFeatures) extends Router(graph
     throw new Exception("Couldn't A* from " + from + " to " + to)
   }
 
-  private def normalize_weights(): RouteFeatures = {
+  private def max_weights(): RouteFeatures = {
     // These are "soft max" values, meaning the actual value could exceed these, but generally they
     // wont.
     val max_length = graph.width + graph.height // TODO is this the right dist unit?
