@@ -185,8 +185,11 @@ case class MkAgent(id: Int, birth_tick: Double, seed: Long,
                    start_edge: Int, start_dist: Double, route: MkRoute,
                    wallet: MkWallet) extends Ordered[MkAgent]
 {
-  // TODO break ties by ID!
-  def compare(other: MkAgent) = other.birth_tick.compare(birth_tick)
+  // break ties by ID
+  def compare(other: MkAgent) =
+    implicitly[Ordering[Tuple2[Double, Integer]]].compare(
+      (other.birth_tick, other.id), (birth_tick, id)
+    )
 
   def make(sim: Simulation) = new Agent(
     id, route.make(sim), new RNG(seed), wallet.make, birth_tick, start_edge
