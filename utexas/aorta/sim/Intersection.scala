@@ -105,7 +105,11 @@ class Intersection(val v: Vertex, policy_type: IntersectionType.Value,
     sum_waiting_times += ticket.how_long_waiting
   }
 
-  def average_waiting_time = sum_waiting_times / number_finished
+  def average_waiting_time =
+    if (number_finished > 0)
+      sum_waiting_times / number_finished
+    else
+      0.0
 }
 
 object Intersection {

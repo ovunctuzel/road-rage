@@ -752,14 +752,15 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
                   Range(0, 4).map(i => new AstarRouter(sim.graph, RouteFeatures.random_weight))
 
     for ((router, color) <- routers.zip(colors)) {
-      val route = router.path(from, to, sim.tick)
+      val route = router.scored_path(from, to)
       //route.foreach(step => println("  - " + step))
+      println(s"for $color, we have ${route._2}")
 
       // Filter and just remember the edges; the UI doesn't want to highlight
       // turns.
       // TODO pathfinding is by directed road now, not edge. just pick some edge
       // in each group.
-      state.route_members.set(color, route.map(_.road).toSet)
+      state.route_members.set(color, route._1.map(_.road).toSet)
     }
     timer.stop()
     repaint
