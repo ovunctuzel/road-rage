@@ -307,10 +307,9 @@ object RouteFeatures {
   }
 
   private val rng = new RNG()
-  def random_weight = RouteFeatures(
-    rng.double(0, 1), rng.double(0, 1), rng.double(0, 1), rng.double(0, 1), rng.double(0, 1),
-    rng.double(0, 1), rng.double(0, 1), rng.double(0, 1)
-  )
+  // Produce more diverse paths by rewarding things usually considered bad
+  private def rnd = rng.double(-1, 1)
+  def random_weight = RouteFeatures(rnd, rnd, rnd, rnd, rnd, rnd, rnd, rnd)
 }
 
 // A* is a misnomer; there's no heuristic right now.
