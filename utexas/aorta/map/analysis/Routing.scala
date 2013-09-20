@@ -8,7 +8,7 @@ import scala.collection.mutable.{PriorityQueue, HashSet, ListBuffer, HashMap}
 import com.graphhopper.storage.{LevelGraphStorage, RAMDirectory}
 import com.graphhopper.routing.ch.PrepareContractionHierarchies
 
-import utexas.aorta.map.{Graph, DirectedRoad}
+import utexas.aorta.map.{Graph, DirectedRoad, Coordinate}
 import utexas.aorta.sim.{IntersectionType}
 
 import utexas.aorta.common.{Util, Common, Physics, RNG}
@@ -386,10 +386,14 @@ class AstarRouter(graph: Graph, raw_weights: RouteFeatures) extends Router(graph
     throw new Exception("Couldn't A* from " + from + " to " + to)
   }
 
-  private def max_weights(): RouteFeatures = {
+  def max_weights(): RouteFeatures = {
     // These are "soft max" values, meaning the actual value could exceed these, but generally they
     // wont.
-    val max_length = graph.width + graph.height // TODO is this the right dist unit?
+    val min_x = graph.vertices.map(_.location.x).min
+    val max_x = graph.vertices.map(_.location.x).max
+    val min_y = graph.vertices.map(_.location.y).min
+    val max_y = graph.vertices.map(_.location.y).max
+    val max_length = new Coordinate(min_x, min_y).dist_to(new Coordinate(max_x, max_y))
     val max_time = max_length / Physics.mph_to_si(30)
     val max_congestion = graph.directed_roads.size
     val intersections = graph.vertices.groupBy(_.intersection.policy.policy_type)

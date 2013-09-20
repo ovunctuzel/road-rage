@@ -83,6 +83,7 @@ object RouteAnalyzer {
       val externality = calc_externality(base_times, new_times)
       notify(s"Round $round done! New driver's time is $new_drivers_trip_time, externality is $externality")
       println(s"  path score was ${result._2}, normalized weight used to pick route was ${router.weights}")
+      println("  normalized score for this path... " + (result._2 / router.max_weights))
     }
   }
 
