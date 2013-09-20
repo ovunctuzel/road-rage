@@ -7,7 +7,7 @@ package utexas.aorta.analysis
 import scala.collection.mutable
 import java.io.File
 
-import utexas.aorta.map.Graph
+import utexas.aorta.map.{Graph, DirectedRoad}
 import utexas.aorta.map.analysis.{AstarRouter, RouteFeatures}
 import utexas.aorta.sim.{ScenarioTool, Simulation, Scenario, AgentDistribution, MkAgent, MkWallet,
                          MkRoute, Sim_Event, EV_Heartbeat, RouteType}
@@ -52,13 +52,25 @@ object RouteAnalyzer {
     val end = rng.choose(candidate_edges)
 
     // Try some routes
+    val scores_seen = new mutable.HashSet[RouteFeatures]()
     for (round <- 1 to num_routes) {
-      notify(s"Creating modified world for round $round")
-      val router = new AstarRouter(graph, RouteFeatures.random_weight)
-      val new_sim = Simulation.unserialize(Util.reader(base_fn))
+      notify(s"Discovering new route for round $round")
+      var continue = true
+      var router: AstarRouter = null
+      var result: (List[DirectedRoad], RouteFeatures) = null
+      while (continue) {
+        router = new AstarRouter(graph, RouteFeatures.random_weight)
+        result = router.scored_path(start.directed_road, end.directed_road)
+        if (!scores_seen.contains(result._2)) {
+          scores_seen += result._2
+          continue = false
+        }
+      }
+
       // Modify the simulation by adding a new driver
       // (No need to modify the scenario or anything)
-      val result = router.scored_path(start.directed_road, end.directed_road)
+      notify(s"Creating modified world for round $round")
+      val new_sim = Simulation.unserialize(Util.reader(base_fn))
       val route = start.directed_road :: result._1
       new_sim.future_spawn += MkAgent(
         new_id, warmup_time + 5.0, rng.new_seed, start.id, start.safe_spawn_dist(rng),
