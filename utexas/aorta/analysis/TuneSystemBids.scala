@@ -11,6 +11,8 @@ import utexas.aorta.map.Graph
 
 import utexas.aorta.common.{Util, Common, cfg, Flags}
 
+// TODO synthetic is a bad map to use, since it neglects ready_bonus
+
 // Use hillclimbing to tune the rates of system bids.
 object TuneSystemBids {
   // (thruput_bonus, capacity_bonus, dependency_rate, waiting_rate, ready_bonus)

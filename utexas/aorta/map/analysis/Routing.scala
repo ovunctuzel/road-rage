@@ -9,6 +9,7 @@ import com.graphhopper.storage.{LevelGraphStorage, RAMDirectory}
 import com.graphhopper.routing.ch.PrepareContractionHierarchies
 
 import utexas.aorta.map.{Graph, DirectedRoad}
+import utexas.aorta.sim.{IntersectionType}
 
 import utexas.aorta.common.{Util, Common, Physics, RNG}
 
@@ -240,7 +241,9 @@ case class RouteFeatures(
   total_freeflow_time: Double,    // sum of time to cross each road at the speed limit
   congested_road_count: Double,   // number of congested roads
   // TODO historical avg/max of road congestion, and more than a binary is/is not
-  intersection_count: Double,     // number of intersections crossed
+  stop_sign_count: Double,        // number of intersections crossed
+  signal_count: Double,
+  reservation_count: Double,
   // TODO account for intersection type?
   queued_turn_count: Double,      // sum of queued turns at each intersection
   // TODO historical avg/max. and count this carefully!
@@ -252,7 +255,9 @@ case class RouteFeatures(
     total_length + other.total_length,
     total_freeflow_time + other.total_freeflow_time,
     congested_road_count + other.congested_road_count,
-    intersection_count + other.intersection_count,
+    stop_sign_count + other.stop_sign_count,
+    signal_count + other.signal_count,
+    reservation_count + other.reservation_count,
     queued_turn_count + other.queued_turn_count,
     total_avg_waiting_time + other.total_avg_waiting_time)
 
@@ -260,7 +265,9 @@ case class RouteFeatures(
     total_length / other.total_length,
     total_freeflow_time / other.total_freeflow_time,
     congested_road_count / other.congested_road_count,
-    intersection_count / other.intersection_count,
+    stop_sign_count / other.stop_sign_count,
+    signal_count / other.signal_count,
+    reservation_count / other.reservation_count,
     queued_turn_count / other.queued_turn_count,
     total_avg_waiting_time / other.total_avg_waiting_time)
 
@@ -269,28 +276,40 @@ case class RouteFeatures(
     = ((total_length * weights.total_length)
     + (total_freeflow_time * weights.total_freeflow_time)
     + (congested_road_count * weights.congested_road_count)
-    + (intersection_count * weights.intersection_count)
+    + (stop_sign_count * weights.stop_sign_count)
+    + (signal_count * weights.signal_count)
+    + (reservation_count * weights.reservation_count)
     + (queued_turn_count * weights.queued_turn_count)
     + (total_avg_waiting_time * weights.total_avg_waiting_time))
 }
 
 object RouteFeatures {
   // Some presets
-  val BLANK = RouteFeatures(0, 0, 0, 0, 0, 0)
+  val BLANK = RouteFeatures(0, 0, 0, 0, 0, 0, 0, 0)
   val JUST_FREEFLOW_TIME = BLANK.copy(total_freeflow_time = 1)
 
-  def for_step(step: DirectedRoad) = RouteFeatures(
-    total_length = step.length,
-    total_freeflow_time = step.cost(0.0),
-    congested_road_count = if (step.is_congested) 1 else 0,
-    intersection_count = 1,
-    queued_turn_count = step.to.intersection.policy.queued_count,
-    total_avg_waiting_time = step.to.intersection.average_waiting_time)
+  def for_step(step: DirectedRoad): RouteFeatures = {
+    def one_if(matches: IntersectionType.Value) =
+      if (step.to.intersection.policy.policy_type == matches)
+        1.0
+      else
+        0.0
+    return RouteFeatures(
+      total_length = step.length,
+      total_freeflow_time = step.cost(0.0),
+      congested_road_count = if (step.is_congested) 1 else 0,
+      stop_sign_count = one_if(IntersectionType.StopSign),
+      signal_count = one_if(IntersectionType.Signal),
+      reservation_count = one_if(IntersectionType.Reservation),
+      queued_turn_count = step.to.intersection.policy.queued_count,
+      total_avg_waiting_time = step.to.intersection.average_waiting_time
+    )
+  }
 
   private val rng = new RNG()
   def random_weight = RouteFeatures(
     rng.double(0, 1), rng.double(0, 1), rng.double(0, 1), rng.double(0, 1), rng.double(0, 1),
-    rng.double(0, 1)
+    rng.double(0, 1), rng.double(0, 1), rng.double(0, 1)
   )
 }
 
@@ -374,10 +393,15 @@ class AstarRouter(graph: Graph, raw_weights: RouteFeatures) extends Router(graph
     val max_length = graph.width + graph.height // TODO is this the right dist unit?
     val max_time = max_length / Physics.mph_to_si(30)
     val max_congestion = graph.directed_roads.size
-    val max_intersections = graph.vertices.size
+    val intersections = graph.vertices.groupBy(_.intersection.policy.policy_type)
     val max_queued_turns = graph.edges.map(e => e.queue.capacity).sum
     val max_avg_waiting = graph.vertices.size * 60  // particularly arbitrary, this one!
-    return RouteFeatures(max_length, max_time, max_congestion, max_intersections, max_queued_turns,
-      max_avg_waiting)
+    return RouteFeatures(
+      max_length, max_time, max_congestion,
+      intersections(IntersectionType.StopSign).size,
+      intersections(IntersectionType.Signal).size,
+      intersections(IntersectionType.Reservation).size,
+      max_queued_turns, max_avg_waiting
+    )
   }
 }

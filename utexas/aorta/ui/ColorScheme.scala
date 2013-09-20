@@ -16,7 +16,8 @@ import utexas.aorta.common.cfg
 // The hierarchy: ReplayDiffScheme, FocusVertexScheme, CameraScheme, StalledScheme, PersonalScheme
 // TODO make that order explicit here. color(...): Option[Color]
 object ColorScheme {
-  def color(d: DrawDriver, state: GuiState) = ReplayDiffScheme.color(d, state)
+  // TODO choose based on if replay is enabled
+  def color(d: DrawDriver, state: GuiState) = FocusVertexScheme.color(d, state)
 }
 
 // Reveal who's acting differently from their past life
