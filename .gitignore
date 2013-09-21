@@ -13,3 +13,6 @@ scenarios/*
 logs/*
 plots/*
 final*/*
+
+# ew, python
+*.pyc

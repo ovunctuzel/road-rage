@@ -92,7 +92,8 @@ object RouteAnalyzer {
         // input: normalized route features (length, time, congested roads, stop signs, signals,
         // reservations, queued turns, waiting time), scenario size
         // output: driver's time, total externality
-        val weka_line = score.toList ++ List(new_id, new_drivers_trip_time, externality)
+        val weka_line =
+          (score.toList ++ List(new_id, new_drivers_trip_time, externality)).mkString(",")
 
         notify(s"Round $round done! New driver's time is $new_drivers_trip_time, externality is $externality")
         println(s"  path score was ${result._2}, normalized weight used to pick route was ${router.weights}")
