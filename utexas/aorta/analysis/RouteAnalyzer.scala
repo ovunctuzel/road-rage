@@ -22,6 +22,7 @@ object RouteAnalyzer {
   val report_every_ms = 10 * 1000
   val num_routes = 5
   val csv_out_fn = "route_data"
+  val deadline = 3600 * 12  // Give up after 12 hours
 
   // TODO vary more things, like scenario size, or the warmup time
   // TODO maybe fix the map for now, make the learning easier.
@@ -78,12 +79,30 @@ object RouteAnalyzer {
         MkWallet(AgentDistribution.default_wallet, 42, 42)  // wallet doesn't matter
       )
 
-      val new_times = simulate(round, new_sim)
-      val new_drivers_trip_time = new_times(new_id)
-      val externality = calc_externality(base_times, new_times)
-      notify(s"Round $round done! New driver's time is $new_drivers_trip_time, externality is $externality")
-      println(s"  path score was ${result._2}, normalized weight used to pick route was ${router.weights}")
-      println("  normalized score for this path... " + (result._2 / router.max_weights))
+      try {
+        val new_times = simulate(round, new_sim)
+        val new_drivers_trip_time = new_times(new_id)
+        val externality = calc_externality(base_times, new_times)
+
+        // Output in weka format
+        val score = result._2 / router.max_weights
+
+        // TODO scenario size should be num of agents after the new driver spawns
+
+        // input: normalized route features (length, time, congested roads, stop signs, signals,
+        // reservations, queued turns, waiting time), scenario size
+        // output: driver's time, total externality
+        val weka_line = score.toList ++ List(new_id, new_drivers_trip_time, externality)
+
+        notify(s"Round $round done! New driver's time is $new_drivers_trip_time, externality is $externality")
+        println(s"  path score was ${result._2}, normalized weight used to pick route was ${router.weights}")
+        println("  normalized score for this path... " + (result._2 / router.max_weights))
+        println("weka line: " + weka_line)
+      } catch {
+        case e: Throwable => {
+          notify(s"Problem simulating round $round: $e")
+        }
+      }
     }
   }
 
@@ -119,6 +138,9 @@ object RouteAnalyzer {
       sim.step()
       if (sim.tick.toInt == warmup_time && round == 0) {
         sim.savestate()
+      }
+      if (sim.tick >= deadline) {
+        throw new Exception(s"Simulation past $deadline seconds. Giving up, discarding result.")
       }
     }
     notify(s"Round $round done at ${Util.time_num(sim.tick)}")

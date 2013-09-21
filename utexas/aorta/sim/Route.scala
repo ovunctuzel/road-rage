@@ -201,6 +201,8 @@ class PathRoute(goal: DirectedRoad, orig_route: List[DirectedRoad], rng: RNG) ex
     val should_reroute = dest.is_congested
 
     val best = if (must_reroute || should_reroute) {
+      // TODO emit a stat here about deviating from orig path if it's the first time. a stat or
+      // listener framework makes more and more sense...
       // Re-route, but start from a source we can definitely reach without
       // lane-changing.
 

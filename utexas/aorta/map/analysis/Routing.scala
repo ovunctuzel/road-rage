@@ -281,6 +281,11 @@ case class RouteFeatures(
     + (reservation_count * weights.reservation_count)
     + (queued_turn_count * weights.queued_turn_count)
     + (total_avg_waiting_time * weights.total_avg_waiting_time))
+
+  def toList = List(
+    total_length, total_freeflow_time, congested_road_count, stop_sign_count, signal_count,
+    reservation_count, queued_turn_count, total_avg_waiting_time
+  )
 }
 
 object RouteFeatures {
