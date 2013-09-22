@@ -19,16 +19,28 @@ object RouteAnalyzer {
   val scenario_params = Array("--spawn", "5000", "delay=3600", "generations=3", "lifetime=3600")
   val new_id = 15000  // This has to be correct based on scenario_params
   val warmup_time = 3600
-  val report_every_ms = 10 * 1000
+  val report_locally_every_ms = 10 * 1000
+  val report_remotely_every_ms = 60 * 1000
   val num_routes = 5
   val csv_out_fn = "route_data"
   val deadline = 3600 * 12  // Give up after 12 hours
+
+  // Bit of config
+  var gs_prefix = ""
+  var report_every_ms = report_locally_every_ms
 
   // TODO vary more things, like scenario size, or the warmup time
   // TODO maybe fix the map for now, make the learning easier.
 
   // No arguments
   def main(args: Array[String]): Unit = {
+    // Append to this, so we only write one file
+    var results = ""
+
+    if (args.nonEmpty) {
+      gs_prefix = args.head
+      report_every_ms = report_remotely_every_ms
+    }
     val rng = new RNG()
 
     // Pick a random map
@@ -92,16 +104,21 @@ object RouteAnalyzer {
         // input: normalized route features (length, time, congested roads, stop signs, signals,
         // reservations, queued turns, waiting time), scenario size
         // output: driver's time, total externality
-        val weka_line =
+        val weka_line = graph.name + ":" +
           (score.toList ++ List(new_id, new_drivers_trip_time, externality)).mkString(",")
+        results += weka_line + "\n"
 
         notify(s"Round $round done! New driver's time is $new_drivers_trip_time, externality is $externality")
         println(s"  path score was ${result._2}, normalized weight used to pick route was ${router.weights}")
         println("  normalized score for this path... " + (result._2 / router.max_weights))
-        println("weka line: " + weka_line)
+        if (gs_prefix.nonEmpty) {
+          upload_gs(gs_prefix + "results", results)
+        } else {
+          println(s"Would normally upload to GS: $results")
+        }
       } catch {
         case e: Throwable => {
-          notify(s"Problem simulating round $round: $e")
+          println(s"Problem simulating round $round: $e")
         }
       }
     }
@@ -144,7 +161,6 @@ object RouteAnalyzer {
         throw new Exception(s"Simulation past $deadline seconds. Giving up, discarding result.")
       }
     }
-    notify(s"Round $round done at ${Util.time_num(sim.tick)}")
     return times.toMap
   }
 
@@ -155,7 +171,14 @@ object RouteAnalyzer {
   }
 
   private def notify(status: String) {
-    // TODO asynchronously write to GS or so...
-    println(s"*** $status ***")
+    if (gs_prefix.nonEmpty) {
+      upload_gs(gs_prefix + "status", status)
+    } else {
+      println(s"*** $status ***")
+    }
+  }
+
+  private def upload_gs(fn: String, contents: String) {
+    Runtime.getRuntime.exec(Array("./tools/cloud/upload_gs.sh", fn, contents))
   }
 }

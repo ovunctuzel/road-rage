@@ -9,7 +9,7 @@ set -e
 # Package up AORTA
 echo Packaging AORTA...
 rm -f aorta.tgz
-tar czf aorta.tgz ` find *| grep -v '^logs' | grep -v '^plots' | grep -v scenarios/savestate | grep -v '^final' | grep -v '^osm' | xargs`
+tar czf aorta.tgz `find * .build | grep -v '^logs' | grep -v '^plots' | grep -v scenarios/savestate | grep -v '^final' | grep -v '^osm' | xargs`
 
 # Stick it on GS
 gsutil rm -f gs://aorta/aorta.tgz

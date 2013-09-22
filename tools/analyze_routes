@@ -4,4 +4,4 @@
 
 . common
 
-scala -cp $CLASSPATH $JVM_OPTS utexas.aorta.analysis.RouteAnalyzer
+scala -cp $CLASSPATH $JVM_OPTS utexas.aorta.analysis.RouteAnalyzer $@
