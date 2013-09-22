@@ -65,7 +65,7 @@ case class Scenario(name: String, map_fn: String, agents: Array[MkAgent],
     Util.log_push
     for (key <- count.keys) {
       val percent = count(key).toDouble / total * 100.0
-      Util.log(f"$key: ${percent}%.2f%")
+      Util.log(f"$key: ${percent}%.2f%%")
     }
     Util.log_pop
   }
