@@ -1,7 +1,7 @@
 #!/bin/bash
 # Startup script each instance executes to setup packages and launch the script to run experiments.
 
-GS=gs://aorta/`hostname`-
+GS=gs://aorta/`hostname`
 
 # Install java and scala
 sudo apt-get install -y openjdk-6-jre libjansi-java
@@ -13,13 +13,14 @@ gsutil cp gs://aorta/aorta.tgz .  # TODO force...
 mkdir aorta
 cd aorta
 tar xzf ../aorta.tgz
-./tools/cloud/upload_gs.sh ${GS}-status 'Compiling'
+./tools/cloud/upload_gs.sh ${GS}-a-status 'Compiling'
 ./recompile
 
 # Run the experiment
-./tools/analyze_routes $GS
-# TODO do it multiple times to amortize compilation time? can't overwrite results
+for iter in a b c d e do
+  ./tools/analyze_routes ${GS}-${iter}-
+  ./tools/cloud/upload_gs.sh ${GS}-${iter}-status 'Done'
+done
 
 # When we're done, shutdown
-./tools/cloud/upload_gs.sh ${GS}-status 'Done'
 gcutil deleteinstance --force `hostname`
