@@ -9,7 +9,7 @@ import com.graphhopper.storage.{LevelGraphStorage, RAMDirectory}
 import com.graphhopper.routing.ch.PrepareContractionHierarchies
 
 import utexas.aorta.map.{Graph, DirectedRoad, Coordinate}
-import utexas.aorta.sim.{IntersectionType}
+import utexas.aorta.sim.{IntersectionType, Scenario}
 
 import utexas.aorta.common.{Util, Common, Physics, RNG}
 
@@ -107,7 +107,9 @@ class CHRouter(graph: Graph) extends Router(graph) {
       return Nil
     }
 
-    Common.sim.ch_since_last_time += 1
+    if (Common.sim != null) {
+      Common.sim.ch_since_last_time += 1
+    }
 
     Util.assert_eq(usable, true)
     val path = algo.calcPath(from.id, to.id)
@@ -247,7 +249,9 @@ case class RouteFeatures(
   // TODO account for intersection type?
   queued_turn_count: Double,      // sum of queued turns at each intersection
   // TODO historical avg/max. and count this carefully!
-  total_avg_waiting_time: Double  // sum of average waiting time of turns at each intersection
+  total_avg_waiting_time: Double, // sum of average waiting time of turns at each intersection
+  road_demand: Double,            // number of agents who want to use this road sometime
+  intersection_demand: Double     // likewise for intersections
 ) {
   // TODO impl as taking a list, so we can do dot product and + easily
 
@@ -259,7 +263,9 @@ case class RouteFeatures(
     signal_count + other.signal_count,
     reservation_count + other.reservation_count,
     queued_turn_count + other.queued_turn_count,
-    total_avg_waiting_time + other.total_avg_waiting_time)
+    total_avg_waiting_time + other.total_avg_waiting_time,
+    road_demand + other.road_demand,
+    intersection_demand + other.intersection_demand)
 
   def /(other: RouteFeatures) = RouteFeatures(
     total_length / other.total_length,
@@ -269,7 +275,9 @@ case class RouteFeatures(
     signal_count / other.signal_count,
     reservation_count / other.reservation_count,
     queued_turn_count / other.queued_turn_count,
-    total_avg_waiting_time / other.total_avg_waiting_time)
+    total_avg_waiting_time / other.total_avg_waiting_time,
+    road_demand / other.road_demand,
+    intersection_demand / other.intersection_demand)
 
   // weights should also account for normalization by dividing by the "soft max" for each feature
   def score(weights: RouteFeatures): Double
@@ -280,20 +288,22 @@ case class RouteFeatures(
     + (signal_count * weights.signal_count)
     + (reservation_count * weights.reservation_count)
     + (queued_turn_count * weights.queued_turn_count)
-    + (total_avg_waiting_time * weights.total_avg_waiting_time))
+    + (total_avg_waiting_time * weights.total_avg_waiting_time)
+    + (road_demand * weights.road_demand)
+    + (intersection_demand * weights.intersection_demand))
 
   def toList = List(
     total_length, total_freeflow_time, congested_road_count, stop_sign_count, signal_count,
-    reservation_count, queued_turn_count, total_avg_waiting_time
+    reservation_count, queued_turn_count, total_avg_waiting_time, road_demand, intersection_demand
   )
 }
 
 object RouteFeatures {
   // Some presets
-  val BLANK = RouteFeatures(0, 0, 0, 0, 0, 0, 0, 0)
+  val BLANK = RouteFeatures(0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
   val JUST_FREEFLOW_TIME = BLANK.copy(total_freeflow_time = 1)
 
-  def for_step(step: DirectedRoad): RouteFeatures = {
+  def for_step(step: DirectedRoad, demand: Demand): RouteFeatures = {
     def one_if(matches: IntersectionType.Value) =
       if (step.to.intersection.policy.policy_type == matches)
         1.0
@@ -307,18 +317,44 @@ object RouteFeatures {
       signal_count = one_if(IntersectionType.Signal),
       reservation_count = one_if(IntersectionType.Reservation),
       queued_turn_count = step.to.intersection.policy.queued_count,
-      total_avg_waiting_time = step.to.intersection.average_waiting_time
+      total_avg_waiting_time = step.to.intersection.average_waiting_time,
+      road_demand = demand.directed_roads(step.id).toDouble,
+      intersection_demand = demand.intersections(step.to.id).toDouble
     )
   }
 
   private val rng = new RNG()
   // Produce more diverse paths by rewarding things usually considered bad
   private def rnd = rng.double(-1, 1)
-  def random_weight = RouteFeatures(rnd, rnd, rnd, rnd, rnd, rnd, rnd, rnd)
+  def random_weight = RouteFeatures(rnd, rnd, rnd, rnd, rnd, rnd, rnd, rnd, rnd, rnd)
+}
+
+// Magically knows where everybody wants to go ahead of time. Think of this as representing a
+// historical average, though.
+case class Demand(directed_roads: Array[Integer], intersections: Array[Integer])
+
+object Demand {
+  def blank_for(scenario: Scenario, graph: Graph) =
+    Demand(Array.fill(graph.directed_roads.size)(0), Array.fill(graph.vertices.size)(0))
+
+  def demand_for(scenario: Scenario, graph: Graph): Demand = {
+    val demand = blank_for(scenario, graph)
+    for (a <- scenario.agents) {
+      val from = graph.edges(a.start_edge).directed_road
+      val to = graph.edges(a.route.goal).directed_road
+      for (step <- graph.router.path(from, to, 0)) {
+        demand.directed_roads(step.id) += 1
+        demand.intersections(step.to.id) += 1
+      }
+    }
+    return demand
+  }
 }
 
 // A* is a misnomer; there's no heuristic right now.
-class AstarRouter(graph: Graph, raw_weights: RouteFeatures) extends Router(graph) {
+class AstarRouter(graph: Graph, raw_weights: RouteFeatures, demand: Demand)
+  extends Router(graph)
+{
   val weights = raw_weights / max_weights()
 
   override def path(from: DirectedRoad, to: DirectedRoad, time: Double) = scored_path(from, to)._1
@@ -374,7 +410,7 @@ class AstarRouter(graph: Graph, raw_weights: RouteFeatures) extends Router(graph
       } else {
         for ((next_state_raw, _) <- current.state.succs) {
           val next_state = next_state_raw.asInstanceOf[DirectedRoad]
-          val tentative_cost = costs(current.state) + RouteFeatures.for_step(next_state)
+          val tentative_cost = costs(current.state) + RouteFeatures.for_step(next_state, demand)
           if (!visited.contains(next_state) && (!open_members.contains(next_state) || tentative_cost.score(weights) < costs(next_state).score(weights))) {
             backrefs(next_state) = current.state
             costs(next_state) = tentative_cost
@@ -404,12 +440,15 @@ class AstarRouter(graph: Graph, raw_weights: RouteFeatures) extends Router(graph
     val intersections = graph.vertices.groupBy(_.intersection.policy.policy_type)
     val max_queued_turns = graph.edges.map(e => e.queue.capacity).sum
     val max_avg_waiting = graph.vertices.size * 60  // particularly arbitrary, this one!
+    // These depend on the scenario size! Really no way to pick.
+    val max_road_demand = 15000
+    val max_intersection_demand = 15000
     return RouteFeatures(
       max_length, max_time, max_congestion,
       intersections(IntersectionType.StopSign).size,
       intersections(IntersectionType.Signal).size,
       intersections(IntersectionType.Reservation).size,
-      max_queued_turns, max_avg_waiting
+      max_queued_turns, max_avg_waiting, max_road_demand, max_intersection_demand
     )
   }
 }

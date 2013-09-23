@@ -12,7 +12,7 @@ import swing.Dialog
 import scala.language.implicitConversions
 
 import utexas.aorta.map._  // TODO yeah getting lazy.
-import utexas.aorta.map.analysis.{RouteFeatures, AstarRouter}
+import utexas.aorta.map.analysis.{RouteFeatures, AstarRouter, Demand}
 import utexas.aorta.sim.{Simulation, Agent, Sim_Event, EV_Signal_Change,
                          IntersectionType, RouteType, Route_Event,
                          EV_Transition, EV_Reroute, EV_Heartbeat, AgentMap}
@@ -748,8 +748,12 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
     val timer = Common.timer("Pathfinding")
     // Show each type of route in a different color...
     val colors = List(Color.RED, Color.BLUE, Color.CYAN, Color.GREEN, Color.YELLOW)
-    val routers = List(new AstarRouter(sim.graph, RouteFeatures.JUST_FREEFLOW_TIME)) ++
-                  Range(0, 4).map(i => new AstarRouter(sim.graph, RouteFeatures.random_weight))
+    val routers =
+      List(new AstarRouter(
+        sim.graph, RouteFeatures.JUST_FREEFLOW_TIME, Demand.blank_for(sim.scenario, sim.graph))
+      ) ++ Range(0, 4).map(i => new AstarRouter(
+        sim.graph, RouteFeatures.random_weight, Demand.blank_for(sim.scenario, sim.graph)
+      ))
 
     for ((router, color) <- routers.zip(colors)) {
       val route = router.scored_path(from, to)

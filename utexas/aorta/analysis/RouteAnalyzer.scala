@@ -8,7 +8,7 @@ import scala.collection.mutable
 import java.io.File
 
 import utexas.aorta.map.{Graph, DirectedRoad}
-import utexas.aorta.map.analysis.{AstarRouter, RouteFeatures}
+import utexas.aorta.map.analysis.{AstarRouter, RouteFeatures, Demand}
 import utexas.aorta.sim.{ScenarioTool, Simulation, Scenario, AgentDistribution, MkAgent, MkWallet,
                          MkRoute, Sim_Event, EV_Heartbeat, RouteType}
 
@@ -53,16 +53,21 @@ object RouteAnalyzer {
     ScenarioTool.main(Array(map_fn, "--out", scenario_fn) ++ scenario_params)
     // TODO do the caching in the graph load layer.
     val graph = Graph.load(map_fn)
+    val scenario = Scenario.load(scenario_fn)
 
     // Simulate fully, savestating at 1 hour
     Flags.set("--savestate", "false")
-    val base_times = simulate(0, Scenario.load(scenario_fn).make_sim(graph).setup)
+    val base_times = simulate(0, scenario.make_sim(graph).setup)
     val base_fn = scenario_fn.replace("scenarios/", "scenarios/savestate_") + "_" + warmup_time
 
     // Pick a random source and destination for the new driver
     val candidate_edges = AgentDistribution.filter_candidates(graph.edges)
     val start = rng.choose(candidate_edges)
     val end = rng.choose(candidate_edges)
+
+    // Determine the demand once on all roads and intersections
+    notify("Round 0 done, precomputing demand on roads/intersections")
+    val demand = Demand.demand_for(scenario, graph)
 
     // Try some routes
     val scores_seen = new mutable.HashSet[RouteFeatures]()
@@ -72,7 +77,7 @@ object RouteAnalyzer {
       var router: AstarRouter = null
       var result: (List[DirectedRoad], RouteFeatures) = null
       while (continue) {
-        router = new AstarRouter(graph, RouteFeatures.random_weight)
+        router = new AstarRouter(graph, RouteFeatures.random_weight, demand)
         result = router.scored_path(start.directed_road, end.directed_road)
         if (!scores_seen.contains(result._2)) {
           scores_seen += result._2
