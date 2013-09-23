@@ -177,6 +177,7 @@ object RouteAnalyzer {
 
   private def notify(status: String) {
     if (gs_prefix.nonEmpty) {
+      // TODO write the instance name here
       upload_gs(gs_prefix + "status", status)
     } else {
       println(s"*** $status ***")
