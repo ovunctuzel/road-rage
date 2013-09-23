@@ -4,4 +4,5 @@
 FN=$1
 STRING=$2
 
-echo $STRING | gsutil cp - $FN
+echo -e $STRING | cat > foo
+echo -e $STRING | gsutil cp - $FN

@@ -106,7 +106,7 @@ object RouteAnalyzer {
         // output: driver's time, total externality
         val weka_line = graph.name + ":" +
           (score.toList ++ List(new_id, new_drivers_trip_time, externality)).mkString(",")
-        results += weka_line + "\n"
+        results += weka_line + "\\n"  // Gotta escape this so exec() doesn't eat it
 
         notify(s"Round $round done! New driver's time is $new_drivers_trip_time, externality is $externality")
         println(s"  path score was ${result._2}, normalized weight used to pick route was ${router.weights}")
