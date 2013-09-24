@@ -176,7 +176,9 @@ class PathRoute(goal: DirectedRoad, orig_route: List[DirectedRoad], rng: RNG) ex
 
   override def reroute(at: Edge) {
     Util.assert_eq(chosen_turns.contains(at), true)
-    chosen_turns -= at
+    if (!stick_to_orig) {
+      chosen_turns -= at
+    }
   }
 
   def pick_turn(e: Edge): Turn = {
@@ -200,7 +202,7 @@ class PathRoute(goal: DirectedRoad, orig_route: List[DirectedRoad], rng: RNG) ex
     // TODO a more refined policy, please!
     val should_reroute = dest.is_congested
 
-    val best = if (must_reroute || should_reroute) {
+    val best = if (must_reroute || (should_reroute && !stick_to_orig)) {
       // TODO emit a stat here about deviating from orig path if it's the first time. a stat or
       // listener framework makes more and more sense...
       // Re-route, but start from a source we can definitely reach without
@@ -275,6 +277,9 @@ class PathRoute(goal: DirectedRoad, orig_route: List[DirectedRoad], rng: RNG) ex
   }
 
   def roads = path.map(_.road).toSet
+
+  // Don't reroute unless we have to
+  private def stick_to_orig = orig_route.nonEmpty
 
   // Prefer the one that's emptiest now and try to get close to a lane that
   // we'll want to LC to anyway. Only call when we haven't chosen something yet.
