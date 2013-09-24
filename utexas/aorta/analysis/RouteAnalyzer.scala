@@ -123,7 +123,8 @@ object RouteAnalyzer {
         }
       } catch {
         case e: Throwable => {
-          println(s"Problem simulating round $round: $e")
+          println(s"Problem simulating round $round")
+          e.printStackTrace
         }
       }
     }

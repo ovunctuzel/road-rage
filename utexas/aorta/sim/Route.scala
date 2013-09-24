@@ -203,6 +203,10 @@ class PathRoute(goal: DirectedRoad, orig_route: List[DirectedRoad], rng: RNG) ex
     val should_reroute = dest.is_congested
 
     val best = if (must_reroute || (should_reroute && !stick_to_orig)) {
+      if (stick_to_orig) {
+        // TODO rm once it's clear this doesn't happen
+        throw new Exception("Agent is rerouting, even though they should've quit early!")
+      }
       // TODO emit a stat here about deviating from orig path if it's the first time. a stat or
       // listener framework makes more and more sense...
       // Re-route, but start from a source we can definitely reach without
@@ -277,6 +281,28 @@ class PathRoute(goal: DirectedRoad, orig_route: List[DirectedRoad], rng: RNG) ex
   }
 
   def roads = path.map(_.road).toSet
+
+  override def done(e: Edge): Boolean = {
+    if (stick_to_orig) {
+      val remaining_route = path.span(r => r != e.directed_road)._2.tail
+      if (remaining_route.isEmpty) {
+        // We're actually done
+        return true
+      } else {
+        // If we're supposed to stick to a fixed route, then give up when we're forced to reroute.
+        val dest = remaining_route.head
+        val continue = e.next_turns.filter(t => t.to.directed_road == dest).nonEmpty
+        if (continue) {
+          return false
+        } else {
+          // This branch happens spuriously, when the agent isn't done LCing yet
+          return true
+        }
+      }
+    } else {
+      return super.done(e)
+    }
+  }
 
   // Don't reroute unless we have to
   private def stick_to_orig = orig_route.nonEmpty
