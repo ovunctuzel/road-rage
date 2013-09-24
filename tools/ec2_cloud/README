@@ -1,0 +1,3 @@
+yaourt -S ec2-api-tools
+
+and then export AWS_ACCESS_KEY and AWS_SECRET_KEY
