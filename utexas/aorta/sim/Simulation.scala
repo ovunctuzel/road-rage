@@ -333,6 +333,8 @@ trait ListenerPattern[T] {
 abstract class Sim_Event
 final case class EV_Signal_Change(greens: Set[Turn]) extends Sim_Event
 final case class EV_Heartbeat(heartbeat: Heartbeat_Stat) extends Sim_Event
+// A bit specific to RouteAnalyzer...
+final case class EV_AgentDone(a: Agent) extends Sim_Event
 
 trait AgentManager {
   //////////////////////////////////////////////////////////////////////////////

@@ -116,7 +116,7 @@ class PathRoute(goal: DirectedRoad, orig_route: List[DirectedRoad], rng: RNG) ex
 
   // Head is the current step. If that step isn't immediately reachable, we have
   // to re-route.
-  private var path: List[DirectedRoad] = orig_route
+  var path: List[DirectedRoad] = orig_route // TODO private
   private val chosen_turns = new ImmutableMapAdaptor(new TreeMap[Edge, Turn]())
 
   //////////////////////////////////////////////////////////////////////////////

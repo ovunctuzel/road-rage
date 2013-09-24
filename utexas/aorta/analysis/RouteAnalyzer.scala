@@ -10,7 +10,7 @@ import java.io.File
 import utexas.aorta.map.{Graph, DirectedRoad}
 import utexas.aorta.map.analysis.{AstarRouter, RouteFeatures, Demand}
 import utexas.aorta.sim.{ScenarioTool, Simulation, Scenario, AgentDistribution, MkAgent, MkWallet,
-                         MkRoute, Sim_Event, EV_Heartbeat, RouteType}
+                         MkRoute, Sim_Event, EV_Heartbeat, RouteType, EV_AgentDone, PathRoute}
 
 import utexas.aorta.common.{RNG, Util, Flags, Common}
 
@@ -57,7 +57,7 @@ object RouteAnalyzer {
 
     // Simulate fully, savestating at 1 hour
     Flags.set("--savestate", "false")
-    val base_times = simulate(0, scenario.make_sim(graph).setup)
+    val base_times = simulate(0, scenario.make_sim(graph).setup)._1
     val base_fn = scenario_fn.replace("scenarios/", "scenarios/savestate_") + "_" + warmup_time
 
     // Pick a random source and destination for the new driver
@@ -97,15 +97,23 @@ object RouteAnalyzer {
       )
 
       try {
-        val new_times = simulate(round, new_sim)
+        val sim_results = simulate(round, new_sim)
+        val new_times = sim_results._1
         val new_drivers_trip_time = new_times(new_id)
         val externality = calc_externality(base_times, new_times)
 
-        // Output in weka format
-        val score = result._2 / router.max_weights
+        // How much of the route did they follow? Determine the score for the piece of the route
+        // they followed, not for the full thing.
+        val score: RouteFeatures = route
+          .takeWhile(step => step != sim_results._2.headOption.getOrElse(null))
+          .map(step => RouteFeatures.for_step(step, demand))
+          .fold(RouteFeatures.BLANK)((a, b) => a + b)
+        println(s"Orig score was ${result._2}, but actual is $score")
+        println(s"New driver had ${sim_results._2.size} steps left of ${route.size}")
 
         // TODO scenario size should be num of agents after the new driver spawns
 
+        // Output in weka format
         // input: normalized route features (length, time, congested roads, stop signs, signals,
         // reservations, queued turns, waiting time), scenario size
         // output: driver's time, total externality
@@ -114,8 +122,6 @@ object RouteAnalyzer {
         results += weka_line + "\\n"  // Gotta escape this so exec() doesn't eat it
 
         notify(s"Round $round done! New driver's time is $new_drivers_trip_time, externality is $externality")
-        println(s"  path score was ${result._2}, normalized weight used to pick route was ${router.weights}")
-        println("  normalized score for this path... " + (result._2 / router.max_weights))
         if (gs_prefix.nonEmpty) {
           upload_gs(gs_prefix + "results", results)
         } else {
@@ -131,7 +137,7 @@ object RouteAnalyzer {
   }
 
   // Simulate and return trip time for every agent ID
-  private def simulate(round: Int, sim: Simulation): Map[Int, Double] = {
+  private def simulate(round: Int, sim: Simulation): (Map[Int, Double], List[DirectedRoad]) = {
     val times = new mutable.HashMap[Int, Double]()
     Common.stats_log = new StatsListener() {
       override def record(item: Measurement) {
@@ -144,6 +150,8 @@ object RouteAnalyzer {
         }
       }
     }
+    // of the new driver
+    var remaining_route: List[DirectedRoad] = Nil
 
     var last_time = 0L
     sim.listen("route-analyzer", (ev: Sim_Event) => { ev match {
@@ -154,6 +162,10 @@ object RouteAnalyzer {
           notify(s"Round $round at ${Util.time_num(sim.tick)}: ${info.describe}" +
                  s" / ${sim.finished_count} finished")
         }
+      }
+      case EV_AgentDone(a) if a.id == new_id => {
+        // The first step of the remaining route is where they end
+        remaining_route = a.route.asInstanceOf[PathRoute].path.tail
       }
       case _ =>
     } })
@@ -167,7 +179,7 @@ object RouteAnalyzer {
         throw new Exception(s"Simulation past $deadline seconds. Giving up, discarding result.")
       }
     }
-    return times.toMap
+    return (times.toMap, remaining_route)
   }
 
   private def calc_externality(base: Map[Int, Double], mod: Map[Int, Double]): Double = {
