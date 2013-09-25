@@ -5,6 +5,7 @@
 package utexas.aorta.map
 
 import scala.collection.mutable.MutableList
+import Function.tupled
 
 import utexas.aorta.ui.Renderable
 
@@ -142,9 +143,7 @@ object Road {
   )
 
   def road_len(pts: Iterable[Coordinate]) =
-    pts.zip(pts.tail).map(p => new Line(p._1, p._2)).foldLeft(0.0)(
-      (a, b) => a + b.length
-    )
+    pts.zip(pts.tail).map(tupled((p1, p2) => new Line(p1, p2).length)).sum
 
   // PreGraph3's fix_ids also mods us.
   var num_directed_roads = 0

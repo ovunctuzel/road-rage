@@ -5,6 +5,7 @@
 package utexas.aorta.map
 
 import scala.collection.mutable.MutableList
+import Function.tupled
 
 import utexas.aorta.ui.Renderable
 
@@ -81,7 +82,7 @@ class Vertex(val location: Coordinate, var id: Int) extends Renderable
                                                                         
     Util.log("Current turns active:")                                   
     Util.log_push
-    i.turns.foreach(pair => Util.log(pair._2 + " doing " + pair._1))
+    i.turns.foreach(tupled((turn, count) => Util.log(s"$count doing $turn")))
     Util.log_pop
 
     Util.log("Roads: " + roads)

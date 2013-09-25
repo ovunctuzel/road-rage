@@ -26,7 +26,7 @@ class Intersection(val v: Vertex, policy_type: IntersectionType.Value,
   // handle collisions. So in fact, we want to track which turns are active...
   // but we have to know how many are on the turn to know when nobody's
   // attempting it.
-  val turns = MutableMap[Turn, Int]()
+  val turns = MutableMap[Turn, Int]() // TODO count type
 
   // For reporting stats
   private var sum_waiting_times = 0.0
