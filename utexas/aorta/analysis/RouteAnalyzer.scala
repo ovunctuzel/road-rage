@@ -58,8 +58,9 @@ object RouteAnalyzer {
 
     // Simulate fully, savestating at 1 hour
     Flags.set("--savestate", "false")
-    val base_times = record_trip_times()
-    simulate(0, scenario.make_sim(graph).setup)
+    val base_sim = scenario.make_sim(graph).setup()
+    val base_times = record_trip_times(base_sim)
+    simulate(0, base_sim)
     val base_fn = scenario_fn.replace("scenarios/", "scenarios/savestate_") + "_" + warmup_time
 
     // Pick a random source and destination for the new driver
@@ -100,7 +101,7 @@ object RouteAnalyzer {
       )
 
       try {
-        val new_times = record_trip_times()
+        val new_times = record_trip_times(new_sim)
         val actual_paths = record_agent_paths(new_sim, everybody = false)
         simulate(round, new_sim)
         val new_drivers_trip_time = new_times(new_id)
@@ -108,7 +109,7 @@ object RouteAnalyzer {
 
         // How much of the route did they follow? Determine the score for the piece of the route
         // they followed, not for the full thing.
-        val score = actual_paths(new_id)
+        val score = actual_paths(new_id).actual_path
           .map(step => RouteFeatures.for_step(step, demand))
           .fold(RouteFeatures.BLANK)((a, b) => a + b)
         println(s"Orig score was ${result._2}, but actual is $score")
@@ -139,7 +140,7 @@ object RouteAnalyzer {
   }
 
   // TODO agent id => trip time
-  private def record_trip_times(): mutable.Map[Int, Double] = {
+  private def record_trip_times(sim: Simulation): mutable.Map[Int, Double] = {
     val times = new mutable.HashMap[Int, Double]()
     Common.stats_log = new StatsListener() {
       override def record(item: Measurement) {
@@ -158,7 +159,7 @@ object RouteAnalyzer {
   private def record_agent_paths(sim: Simulation, everybody: Boolean): mutable.Map[Int, RouteRecorder] = {
     val routes = new mutable.HashMap[Int, RouteRecorder]()
     sim.listen("route-analyzer", (ev: Sim_Event) => { ev match {
-      case EV_AgentSpanwed(a) => {
+      case EV_AgentSpawned(a) => {
         if (everybody || a.id == new_id) {
           routes(a.id) = new RouteRecorder(a.route)
         }
@@ -193,7 +194,7 @@ object RouteAnalyzer {
     }
   }
 
-  private def calc_externality(base: Map[Int, Double], mod: Map[Int, Double]): Double = {
+  private def calc_externality(base: mutable.Map[Int, Double], mod: mutable.Map[Int, Double]): Double = {
     // The keys (drivers) should be the same, except for the new agent
     Util.assert_eq(base.size, mod.size - 1)
     return base.keys.map(id => mod(id) - base(id)).sum
