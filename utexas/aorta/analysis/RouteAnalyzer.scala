@@ -58,7 +58,8 @@ object RouteAnalyzer {
 
     // Simulate fully, savestating at 1 hour
     Flags.set("--savestate", "false")
-    val base_times = simulate(0, scenario.make_sim(graph).setup)
+    val base_times = record_trip_times()
+    simulate(0, scenario.make_sim(graph).setup)
     val base_fn = scenario_fn.replace("scenarios/", "scenarios/savestate_") + "_" + warmup_time
 
     // Pick a random source and destination for the new driver
@@ -99,18 +100,18 @@ object RouteAnalyzer {
       )
 
       try {
-        val new_times = simulate(round, new_sim)
+        val new_times = record_trip_times()
+        val actual_paths = record_agent_paths(new_sim, everybody = false)
+        simulate(round, new_sim)
         val new_drivers_trip_time = new_times(new_id)
         val externality = calc_externality(base_times, new_times)
 
         // How much of the route did they follow? Determine the score for the piece of the route
         // they followed, not for the full thing.
-        val score: RouteFeatures = route
-          .takeWhile(step => step != sim_results._2.headOption.getOrElse(null))
+        val score = actual_paths(new_id)
           .map(step => RouteFeatures.for_step(step, demand))
           .fold(RouteFeatures.BLANK)((a, b) => a + b)
         println(s"Orig score was ${result._2}, but actual is $score")
-        println(s"New driver had ${sim_results._2.size} steps left of ${route.size}")
 
         // TODO scenario size should be num of agents after the new driver spawns
 
@@ -154,7 +155,7 @@ object RouteAnalyzer {
     return times
   }
 
-  private def record_agent_paths(everybody: Boolean): mutable.Map[Int, RouteRecorder] = {
+  private def record_agent_paths(sim: Simulation, everybody: Boolean): mutable.Map[Int, RouteRecorder] = {
     val routes = new mutable.HashMap[Int, RouteRecorder]()
     sim.listen("route-analyzer", (ev: Sim_Event) => { ev match {
       case EV_AgentSpanwed(a) => {
