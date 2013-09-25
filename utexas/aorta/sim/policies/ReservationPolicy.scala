@@ -25,7 +25,7 @@ class ReservationPolicy(intersection: Intersection,
     super.serialize(w)
     interruption match {
       case Some(ticket) => {
-        w.int(ticket.a.id)
+        w.id(ticket.a.id)
         w.int(ticket.turn.id)
       }
       case None => {

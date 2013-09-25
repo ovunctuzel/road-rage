@@ -16,7 +16,7 @@ import utexas.aorta.map.{Graph, Road, Edge, Vertex, Turn, DirectedRoad}
 import utexas.aorta.sim.policies.Phase
 
 import utexas.aorta.ui.ReplayDiffScheme
-import utexas.aorta.common.{Util, Common, cfg, StateWriter, StateReader, Flags}
+import utexas.aorta.common.{Util, Common, cfg, StateWriter, StateReader, Flags, AgentID}
 import utexas.aorta.analysis.{Heartbeat_Stat, Scenario_Stat, ReplayChecker}
 
 // TODO take just a scenario, or graph and scenario?
@@ -44,8 +44,8 @@ class Simulation(val graph: Graph, val scenario: Scenario)
 
   private lazy val replay =
     if (Flags.boolean("--replay", false))
-      new ReplayChecker(this, List(Flags.int("--focus")).flatten.toSet) {
-        override def difference(id: Int, expected: Double, actual: Double) {
+      new ReplayChecker(this, List(Flags.int("--focus")).flatten.map(new AgentID(_)).toSet) {
+        override def difference(id: AgentID, expected: Double, actual: Double) {
           // TODO this is a bit messy, reaching over to the UI... bcast an event.
           ReplayDiffScheme.add_delta(id, actual - expected)
         }
@@ -54,7 +54,7 @@ class Simulation(val graph: Graph, val scenario: Scenario)
       null
 
   private lazy val time_limit = Flags.double("--time_limit", Double.MaxValue)
-  private lazy val omit = Flags.int("--omit", -1)
+  private lazy val omit = new AgentID(Flags.int("--omit", -1))
   private lazy val should_savestate = Flags.boolean("--savestate", true)
 
   //////////////////////////////////////////////////////////////////////////////
@@ -80,13 +80,13 @@ class Simulation(val graph: Graph, val scenario: Scenario)
 
   def serialize(w: StateWriter) {
     w.string(scenario.name)
-    w.int(max_agent_id)
+    w.id(max_agent_id)
     w.double(tick)
     w.int(finished_count)
     w.int(agents.size)
     agents.foreach(a => a.serialize(w))
     w.int(ready_to_spawn.size)
-    ready_to_spawn.foreach(a => w.int(a.id))
+    ready_to_spawn.foreach(a => w.id(a.id))
     graph.traversables.foreach(t => t.queue.serialize(w))
     graph.vertices.foreach(v => v.intersection.policy.serialize(w))
   }
@@ -290,7 +290,7 @@ object Simulation {
   def unserialize(r: StateReader): Simulation = {
     val sim = Scenario.load(r.string).make_sim()
     // Do this before setup so we don't add the wrong spawners
-    sim.max_agent_id = r.int
+    sim.max_agent_id = new AgentID(r.int)
     sim.tick = r.double
     sim.finished_count = r.int
     // Need so queues/intersections are set up.
@@ -300,7 +300,7 @@ object Simulation {
       sim.insert_agent(Agent.unserialize(r, sim.graph))
     }
     val num_ready = r.int
-    val ready_ids = Range(0, num_ready).map(_ => r.int).toSet
+    val ready_ids = Range(0, num_ready).map(_ => new AgentID(r.int)).toSet
     sim.ready_to_spawn ++=
       sim.scenario.agents.filter(a => ready_ids.contains(a.id)).sortBy(_.birth_tick)
     for (t <- sim.graph.traversables) {
@@ -342,7 +342,7 @@ trait AgentManager {
 
   var agents: SortedSet[Agent] = TreeSet.empty[Agent]
   var ready_to_spawn = new ListBuffer[MkAgent]()
-  protected var max_agent_id = -1
+  protected var max_agent_id = new AgentID(-1)
   val future_spawn = new PriorityQueue[MkAgent]()
   var finished_count = 0
 
@@ -358,11 +358,11 @@ trait AgentManager {
   def insert_agent(a: Agent) = {
     Util.assert_eq(agents.contains(a), false)
     agents += a
-    max_agent_id = math.max(max_agent_id, a.id)
+    max_agent_id = new AgentID(math.max(max_agent_id.id, a.id.id))
   }
   // This reserves the ID returned to the caller, so it'll never be reused.
-  def next_agent_id(): Int = {
-    max_agent_id += 1
+  def next_agent_id(): AgentID = {
+    max_agent_id = new AgentID(max_agent_id.id + 1)
     return max_agent_id
   }
 
@@ -377,12 +377,12 @@ trait AgentManager {
 // A map from agent to something else, which supports defaults and knows when
 // agents are created or destroyed.
 class AgentMap[T](default: T) {
-  private val mapping = new MutableMap[Int, T]()
+  private val mapping = new MutableMap[AgentID, T]()
   AgentMap.maps += this
 
-  def get(id: Int): T = mapping.getOrElse(id, default)
+  def get(id: AgentID): T = mapping.getOrElse(id, default)
   def get(a: Agent): T = get(a.id)
-  def put(id: Int, value: T) {
+  def put(id: AgentID, value: T) {
     mapping(id) = value
   }
   def values = mapping.values

@@ -316,7 +316,7 @@ abstract class Policy(val intersection: Intersection) {
     Util.assert_eq(new_requests.isEmpty, true)
     w.int(request_queue.size)
     for (ticket <- request_queue) {
-      w.int(ticket.a.id)
+      w.id(ticket.a.id)
       w.int(ticket.turn.id)
     }
   }

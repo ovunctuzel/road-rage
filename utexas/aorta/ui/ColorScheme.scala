@@ -11,7 +11,7 @@ import utexas.aorta.sim.AgentMap
 
 import scala.collection.mutable.{HashMap => MutableMap}
 
-import utexas.aorta.common.cfg
+import utexas.aorta.common.{cfg, AgentID}
 
 // The hierarchy: ReplayDiffScheme, FocusVertexScheme, CameraScheme, StalledScheme, PersonalScheme
 // TODO make that order explicit here. color(...): Option[Color]
@@ -25,7 +25,7 @@ object ColorScheme {
 object ReplayDiffScheme {
   private val deltas = new AgentMap[Double](0.0)
 
-  def add_delta(id: Int, delta: Double) {
+  def add_delta(id: AgentID, delta: Double) {
     deltas.put(id, deltas.get(id) + delta)
   }
 

@@ -5,7 +5,7 @@
 package utexas.aorta.analysis
 
 import utexas.aorta.sim.Simulation
-import utexas.aorta.common.{StateReader, StateWriter, Util, Common}
+import utexas.aorta.common.{StateReader, StateWriter, Util, Common, AgentID}
 
 import java.io.{File, EOFException}
 
@@ -15,8 +15,8 @@ import java.io.{File, EOFException}
 // starts deviating.
 // Ignore IDs of new agents introduced when we're replaying, or when we record
 // if we plan to remove that agent later.
-abstract class ReplayChecker(sim: Simulation, ignore: Set[Int]) {
-  def difference(id: Int, expected: Double, actual: Double)
+abstract class ReplayChecker(sim: Simulation, ignore: Set[AgentID]) {
+  def difference(id: AgentID, expected: Double, actual: Double)
 
   // What're we doing?
   private var reader: StateReader = null
@@ -47,16 +47,16 @@ abstract class ReplayChecker(sim: Simulation, ignore: Set[Int]) {
     var expect_id = 0
     for (a <- sim.agents) {
       // [expect_id, a.id)
-      for (id <- Range(expect_id, a.id) if !ignore.contains(id)) {
+      for (id <- Range(expect_id, a.id.id) if !ignore.contains(new AgentID(id))) {
         writer.double(ReplayChecker.MISSING)
       }
       if (!ignore.contains(a.id)) {
         writer.double(a.characterize_choice)
       }
-      expect_id = a.id + 1
+      expect_id = a.id.id + 1
     }
     // TODO theres a range with inclusive upper bounds...
-    for (id <- Range(expect_id, agents + 1) if !ignore.contains(id)) {
+    for (id <- Range(expect_id, agents + 1) if !ignore.contains(new AgentID(id))) {
       writer.double(ReplayChecker.MISSING)
     }
   }
@@ -68,24 +68,25 @@ abstract class ReplayChecker(sim: Simulation, ignore: Set[Int]) {
     try {
       for (a <- sim.agents) {
         // [expect_id, a.id)
-        for (id <- Range(expect_id, a.id) if !ignore.contains(id)) {
+        // TODO ranges of these ID-space units
+        for (id <- Range(expect_id, a.id.id) if !ignore.contains(new AgentID(id))) {
           val expected = reader.double
           if (expected != ReplayChecker.MISSING) {
-            difference(id, expected, ReplayChecker.MISSING)
+            difference(new AgentID(id), expected, ReplayChecker.MISSING)
           }
         }
         if (!ignore.contains(a.id)) {
           val expected = reader.double
-          expect_id = a.id + 1
+          expect_id = a.id.id + 1
           if (expected != a.characterize_choice) {
             difference(a.id, expected, a.characterize_choice)
           }
         }
       }
-      for (id <- Range(expect_id, agents + 1) if !ignore.contains(id)) {
+      for (id <- Range(expect_id, agents + 1) if !ignore.contains(new AgentID(id))) {
         val expected = reader.double
         if (expected != ReplayChecker.MISSING) {
-          difference(id, expected, ReplayChecker.MISSING)
+          difference(new AgentID(id), expected, ReplayChecker.MISSING)
         }
       }
     } catch {

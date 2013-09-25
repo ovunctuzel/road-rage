@@ -19,7 +19,7 @@ import javax.imageio.ImageIO
 import utexas.aorta.sim.{MkIntersection, RouteType, WalletType,
                          IntersectionType, OrderingType}
 
-import utexas.aorta.common.Util
+import utexas.aorta.common.{Util, AgentID}
 
 // Anything that we log online and post-process offline.
 // Hacky fast, memory-happy serialization... use java's convenient way to
@@ -66,7 +66,7 @@ case class Scenario_Stat(
 
 // Summarizes an agent's lifetime
 case class Agent_Lifetime_Stat(
-  id: Int, spawn_tick: Double, start_tick: Double, start: Int, end: Int,
+  id: AgentID, spawn_tick: Double, start_tick: Double, start: Int, end: Int,
   route: RouteType.Value, wallet: WalletType.Value, start_budget: Int,
   end_tick: Double, end_budget: Int, priority: Int, finished: Boolean
 ) extends Measurement
@@ -83,7 +83,7 @@ case class Agent_Lifetime_Stat(
 
   def write(stream: ObjectOutputStream) = {
     stream.writeInt(1)
-    stream.writeInt(id)
+    stream.writeInt(id.id)
     stream.writeDouble(spawn_tick)
     stream.writeDouble(start_tick)
     stream.writeInt(start)
@@ -100,7 +100,7 @@ case class Agent_Lifetime_Stat(
 
 // Describes a turn.
 case class Turn_Stat(
-  agent: Int, vert: Int, req_tick: Double, accept_tick: Double,
+  agent: AgentID, vert: Int, req_tick: Double, accept_tick: Double,
   done_tick: Double, cost_paid: Double
 ) extends Measurement
 {
@@ -112,7 +112,7 @@ case class Turn_Stat(
 
   def write(stream: ObjectOutputStream) = {
     stream.writeInt(2)
-    stream.writeInt(agent)
+    stream.writeInt(agent.id)
     stream.writeInt(vert)
     stream.writeDouble(req_tick)
     stream.writeDouble(accept_tick)
@@ -183,12 +183,12 @@ object PostProcess {
   def read_stat(s: ObjectInputStream): Measurement = s.readInt match {
     case 0 => Scenario_Stat(s.readUTF, read_intersections(s))
     case 1 => Agent_Lifetime_Stat(
-      s.readInt, s.readDouble, s.readDouble, s.readInt, s.readInt,
+      new AgentID(s.readInt), s.readDouble, s.readDouble, s.readInt, s.readInt,
       RouteType(s.readInt), WalletType(s.readInt), s.readInt, s.readDouble,
       s.readInt, s.readInt, s.readBoolean
     )
     case 2 => Turn_Stat(
-      s.readInt, s.readInt, s.readDouble, s.readDouble, s.readDouble,
+      new AgentID(s.readInt), s.readInt, s.readDouble, s.readDouble, s.readDouble,
       s.readDouble
     )
     case 3 => Heartbeat_Stat(

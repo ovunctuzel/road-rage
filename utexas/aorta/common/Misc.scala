@@ -177,3 +177,7 @@ object Flags {
 
   private def is_true(value: String) = value.toLowerCase == "true"
 }
+
+// TODO make units easy to import
+
+class AgentID(val id: Int) extends AnyVal

@@ -11,13 +11,13 @@ import utexas.aorta.sim.market._
 import utexas.aorta.ui.Renderable
 import utexas.aorta.analysis.Agent_Lifetime_Stat
 
-import utexas.aorta.common.{Util, RNG, Common, cfg, Physics, StateWriter, StateReader}
+import utexas.aorta.common.{Util, RNG, Common, cfg, Physics, StateWriter, StateReader, AgentID}
 
 // TODO come up with a notion of dimension and movement capability. at first,
 // just use radius bounded by lane widths?
 
 class Agent(
-  val id: Int, val route: Route, val rng: RNG, val wallet: Wallet,
+  val id: AgentID, val route: Route, val rng: RNG, val wallet: Wallet,
   birth_tick: Double, start_edge: Int
 ) extends Ordered[Agent] with Renderable
 {
@@ -64,7 +64,7 @@ class Agent(
 
   def serialize(w: StateWriter) {
     // First do parameters
-    w.int(id)
+    w.id(id)
     route.serialize(w)
     rng.serialize(w)
     wallet.serialize(w)
@@ -307,7 +307,7 @@ class Agent(
   // Queries
 
   override def toString = "Agent " + id
-  override def compare(other: Agent) = id.compare(other.id)
+  override def compare(other: Agent) = id.id.compare(other.id.id)
   override def tooltip = List(toString, wallet.toString) ++ wallet.tooltip
   def debug = {
     Util.log("" + this)
@@ -505,7 +505,7 @@ object Agent {
   def unserialize(r: StateReader, graph: Graph): Agent = {
     // Pass in a bogus birth_tick, since we fix it up 
     val a = new Agent(
-      r.int, Route.unserialize(r, graph), RNG.unserialize(r),
+      new AgentID(r.int), Route.unserialize(r, graph), RNG.unserialize(r),
       Wallet.unserialize(r), -1.0, r.int
     )
     a.at = Position.unserialize(r, graph)

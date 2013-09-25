@@ -13,12 +13,12 @@ import utexas.aorta.sim.{ScenarioTool, Simulation, Scenario, AgentDistribution, 
                          MkRoute, Sim_Event, EV_Heartbeat, RouteType, EV_AgentSpawned, PathRoute,
                          RouteRecorder}
 
-import utexas.aorta.common.{RNG, Util, Flags, Common}
+import utexas.aorta.common.{RNG, Util, Flags, Common, AgentID}
 
 object RouteAnalyzer {
   // Params
   val scenario_params = Array("--spawn", "5000", "delay=3600", "generations=3", "lifetime=3600")
-  val new_id = 15000  // This has to be correct based on scenario_params
+  val new_id = new AgentID(15000)  // This has to be correct based on scenario_params
   val warmup_time = 3600
   val report_locally_every_ms = 10 * 1000
   val report_remotely_every_ms = 60 * 1000
@@ -140,8 +140,8 @@ object RouteAnalyzer {
   }
 
   // TODO agent id => trip time
-  private def record_trip_times(sim: Simulation): mutable.Map[Int, Double] = {
-    val times = new mutable.HashMap[Int, Double]()
+  private def record_trip_times(sim: Simulation): mutable.Map[AgentID, Double] = {
+    val times = new mutable.HashMap[AgentID, Double]()
     Common.stats_log = new StatsListener() {
       override def record(item: Measurement) {
         item match {
@@ -156,8 +156,8 @@ object RouteAnalyzer {
     return times
   }
 
-  private def record_agent_paths(sim: Simulation, everybody: Boolean): mutable.Map[Int, RouteRecorder] = {
-    val routes = new mutable.HashMap[Int, RouteRecorder]()
+  private def record_agent_paths(sim: Simulation, everybody: Boolean): mutable.Map[AgentID, RouteRecorder] = {
+    val routes = new mutable.HashMap[AgentID, RouteRecorder]()
     sim.listen("route-analyzer", (ev: Sim_Event) => { ev match {
       case EV_AgentSpawned(a) => {
         if (everybody || a.id == new_id) {
@@ -194,7 +194,7 @@ object RouteAnalyzer {
     }
   }
 
-  private def calc_externality(base: mutable.Map[Int, Double], mod: mutable.Map[Int, Double]): Double = {
+  private def calc_externality(base: mutable.Map[AgentID, Double], mod: mutable.Map[AgentID, Double]): Double = {
     // The keys (drivers) should be the same, except for the new agent
     Util.assert_eq(base.size, mod.size - 1)
     return base.keys.map(id => mod(id) - base(id)).sum

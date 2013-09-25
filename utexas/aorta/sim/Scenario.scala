@@ -10,7 +10,7 @@ import utexas.aorta.sim.market._
 
 import scala.collection.mutable
 
-import utexas.aorta.common.{Util, RNG, Common, cfg, StateWriter, StateReader}
+import utexas.aorta.common.{Util, RNG, Common, cfg, StateWriter, StateReader, AgentID}
 
 // Array index and agent/intersection ID must correspond. Creator's
 // responsibility.
@@ -103,10 +103,10 @@ case class Scenario(name: String, map_fn: String, agents: Array[MkAgent],
   // Spawn each agent in an empty simulation, then figure out how long it takes
   // each to complete their trip with nobody else around. Returns a map from
   // agent ID to that time.
-  def compute_optimal_times_by_simulation(): Map[Int, Double] = {
+  def compute_optimal_times_by_simulation(): Map[AgentID, Double] = {
     val empty_scenario = this.copy(agents = Array())
     val graph = Graph.load(map_fn)
-    val times = new mutable.HashMap[Int, Double]()
+    val times = new mutable.HashMap[AgentID, Double]()
     var cnt = 0
     for (a <- agents) {
       cnt += 1
@@ -126,7 +126,7 @@ case class Scenario(name: String, map_fn: String, agents: Array[MkAgent],
   // Return a map from agent ID to trip time if that agent was moving through an
   // otherwise empty world. Compute the time analytically, so lower than the
   // true optimal time.
-  def compute_optimal_times_analytically(): Map[Int, Double] = {
+  def compute_optimal_times_analytically(): Map[AgentID, Double] = {
     // Hokey assumptions:
     // - don't stop for intersections; immediately blaze through
     // - instantly reach speed limit of each road
@@ -134,7 +134,7 @@ case class Scenario(name: String, map_fn: String, agents: Array[MkAgent],
     // it
     // TODO (major) use CH router always
     val graph = Graph.load(map_fn)
-    val times = new mutable.HashMap[Int, Double]()
+    val times = new mutable.HashMap[AgentID, Double]()
     var cnt = 0
     for (a <- agents) {
       cnt += 1
@@ -181,14 +181,14 @@ object Scenario {
 // agents/intersections/etc.
 // TODO associate directly with their corresponding class?
 
-case class MkAgent(id: Int, birth_tick: Double, seed: Long,
+case class MkAgent(id: AgentID, birth_tick: Double, seed: Long,
                    start_edge: Int, start_dist: Double, route: MkRoute,
                    wallet: MkWallet) extends Ordered[MkAgent]
 {
   // break ties by ID
   def compare(other: MkAgent) =
     implicitly[Ordering[Tuple2[Double, Integer]]].compare(
-      (other.birth_tick, other.id), (birth_tick, id)
+      (other.birth_tick, other.id.id), (birth_tick, id.id)
     )
 
   def make(sim: Simulation) = new Agent(
@@ -196,7 +196,7 @@ case class MkAgent(id: Int, birth_tick: Double, seed: Long,
   )
 
   def serialize(w: StateWriter) {
-    w.int(id)
+    w.id(id)
     w.double(birth_tick)
     w.long(seed)
     w.int(start_edge)
@@ -226,7 +226,7 @@ case class MkAgent(id: Int, birth_tick: Double, seed: Long,
 
 object MkAgent {
   def unserialize(r: StateReader) = MkAgent(
-    r.int, r.double, r.long, r.int, r.double, MkRoute.unserialize(r),
+    new AgentID(r.int), r.double, r.long, r.int, r.double, MkRoute.unserialize(r),
     MkWallet.unserialize(r)
   )
 }
@@ -409,7 +409,7 @@ object AgentDistribution {
       val start = rng.choose(actual_starts)
       val budget = rng.int(budgets._1, budgets._2)
       MkAgent(
-        id, rng.double(times._1, times._2), rng.new_seed, start.id,
+        new AgentID(id), rng.double(times._1, times._2), rng.new_seed, start.id,
         start.safe_spawn_dist(rng),
         MkRoute(rng.choose(routes), Nil, rng.choose(ends).id, rng.new_seed),
         // For now, force the same budget and priority here, and clean it up

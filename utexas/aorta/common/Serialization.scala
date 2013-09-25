@@ -20,6 +20,8 @@ abstract class StateWriter(fn: String) {
   def long(x: Long)
   def obj(x: Any)   // TODO remove.
 
+  def id(id: AgentID) = int(id.id)
+
   // TODO a macro to do lots of these in one line?
 }
 
