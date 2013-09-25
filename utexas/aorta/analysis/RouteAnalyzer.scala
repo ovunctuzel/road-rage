@@ -10,7 +10,8 @@ import java.io.File
 import utexas.aorta.map.{Graph, DirectedRoad}
 import utexas.aorta.map.analysis.{AstarRouter, RouteFeatures, Demand}
 import utexas.aorta.sim.{ScenarioTool, Simulation, Scenario, AgentDistribution, MkAgent, MkWallet,
-                         MkRoute, Sim_Event, EV_Heartbeat, RouteType, EV_AgentDone, PathRoute}
+                         MkRoute, Sim_Event, EV_Heartbeat, RouteType, EV_AgentSpawned, PathRoute,
+                         RouteRecorder}
 
 import utexas.aorta.common.{RNG, Util, Flags, Common}
 
@@ -57,7 +58,7 @@ object RouteAnalyzer {
 
     // Simulate fully, savestating at 1 hour
     Flags.set("--savestate", "false")
-    val base_times = simulate(0, scenario.make_sim(graph).setup)._1
+    val base_times = simulate(0, scenario.make_sim(graph).setup)
     val base_fn = scenario_fn.replace("scenarios/", "scenarios/savestate_") + "_" + warmup_time
 
     // Pick a random source and destination for the new driver
@@ -78,6 +79,7 @@ object RouteAnalyzer {
       var result: (List[DirectedRoad], RouteFeatures) = null
       while (continue) {
         router = new AstarRouter(graph, RouteFeatures.random_weight, demand)
+        // TODO return a Path that could also compute score, stuff like that?
         result = router.scored_path(start.directed_road, end.directed_road)
         if (!scores_seen.contains(result._2)) {
           scores_seen += result._2
@@ -97,8 +99,7 @@ object RouteAnalyzer {
       )
 
       try {
-        val sim_results = simulate(round, new_sim)
-        val new_times = sim_results._1
+        val new_times = simulate(round, new_sim)
         val new_drivers_trip_time = new_times(new_id)
         val externality = calc_externality(base_times, new_times)
 
@@ -136,8 +137,8 @@ object RouteAnalyzer {
     }
   }
 
-  // Simulate and return trip time for every agent ID
-  private def simulate(round: Int, sim: Simulation): (Map[Int, Double], List[DirectedRoad]) = {
+  // TODO agent id => trip time
+  private def record_trip_times(): mutable.Map[Int, Double] = {
     val times = new mutable.HashMap[Int, Double]()
     Common.stats_log = new StatsListener() {
       override def record(item: Measurement) {
@@ -150,9 +151,23 @@ object RouteAnalyzer {
         }
       }
     }
-    // of the new driver
-    var remaining_route: List[DirectedRoad] = Nil
+    return times
+  }
 
+  private def record_agent_paths(everybody: Boolean): mutable.Map[Int, RouteRecorder] = {
+    val routes = new mutable.HashMap[Int, RouteRecorder]()
+    sim.listen("route-analyzer", (ev: Sim_Event) => { ev match {
+      case EV_AgentSpanwed(a) => {
+        if (everybody || a.id == new_id) {
+          routes(a.id) = new RouteRecorder(a.route)
+        }
+      }
+      case _ =>
+    } })
+    return routes
+  }
+
+  private def simulate(round: Int, sim: Simulation) = {
     var last_time = 0L
     sim.listen("route-analyzer", (ev: Sim_Event) => { ev match {
       case EV_Heartbeat(info) => {
@@ -162,10 +177,6 @@ object RouteAnalyzer {
           notify(s"Round $round at ${Util.time_num(sim.tick)}: ${info.describe}" +
                  s" / ${sim.finished_count} finished")
         }
-      }
-      case EV_AgentDone(a) if a.id == new_id => {
-        // The first step of the remaining route is where they end
-        remaining_route = a.route.asInstanceOf[PathRoute].path.tail
       }
       case _ =>
     } })
@@ -179,7 +190,6 @@ object RouteAnalyzer {
         throw new Exception(s"Simulation past $deadline seconds. Giving up, discarding result.")
       }
     }
-    return (times.toMap, remaining_route)
   }
 
   private def calc_externality(base: Map[Int, Double], mod: Map[Int, Double]): Double = {

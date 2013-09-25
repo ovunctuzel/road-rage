@@ -5,7 +5,7 @@
 package utexas.aorta.sim
 
 import scala.collection.immutable.TreeMap
-import scala.collection.mutable.ImmutableMapAdaptor
+import scala.collection.mutable.{ImmutableMapAdaptor, ListBuffer}
 
 import utexas.aorta.map.{Edge, DirectedRoad, Traversable, Turn, Vertex, Graph}
 
@@ -64,6 +64,25 @@ object Route {
   }
 }
 
+class RouteRecorder(route: Route) {
+  private val path = new ListBuffer[DirectedRoad]()
+
+  route.listen("recorder", (ev: Route_Event) => { ev match {
+    case EV_Transition(from, to) => to match {
+      case t: Turn => {
+        if (path.isEmpty) {
+          // Capture where we start
+          path += t.from.directed_road
+        }
+        path += t.to.directed_road
+      }
+      case _ =>
+    }
+  } })
+
+  def actual_path = path.toList
+}
+
 abstract class Route_Event
 final case class EV_Transition(from: Traversable, to: Traversable) extends Route_Event
 final case class EV_Reroute(path: List[DirectedRoad]) extends Route_Event
@@ -116,7 +135,7 @@ class PathRoute(goal: DirectedRoad, orig_route: List[DirectedRoad], rng: RNG) ex
 
   // Head is the current step. If that step isn't immediately reachable, we have
   // to re-route.
-  var path: List[DirectedRoad] = orig_route // TODO private
+  private var path: List[DirectedRoad] = orig_route
   private val chosen_turns = new ImmutableMapAdaptor(new TreeMap[Edge, Turn]())
 
   //////////////////////////////////////////////////////////////////////////////
