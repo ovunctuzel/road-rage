@@ -370,7 +370,7 @@ trait AgentManager {
   // Queries
 
   // Only used by the UI, so is O(n) rather than a binary search.
-  def get_agent(id: Int) = agents.find(a => a.id == id)
+  def get_agent(id: Int) = agents.find(a => a.id.int == id)
   def has_agent(a: Agent) = agents.contains(a)
 }
 

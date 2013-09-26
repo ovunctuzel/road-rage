@@ -170,6 +170,8 @@ class Queue(t: Traversable) {
     else
       None
 
+  override def toString = s"Queue of $t"
+
   def slot_avail = avail_slots > 0
   def is_full = !slot_avail
   def percent_avail = avail_slots.toDouble / capacity.toDouble * 100.0
