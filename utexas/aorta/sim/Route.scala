@@ -78,6 +78,7 @@ class RouteRecorder(route: Route) {
       }
       case _ =>
     }
+    case _ =>
   } })
 
   def actual_path = path.toList
