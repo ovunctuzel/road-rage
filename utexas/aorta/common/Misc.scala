@@ -178,7 +178,17 @@ object Flags {
   private def is_true(value: String) = value.toLowerCase == "true"
 }
 
-// TODO with a trait that lets things be added/toString'd?
-class AgentID(val int: Int) extends AnyVal
-class RoadID(val int: Int) extends AnyVal
-class VertexID(val int: Int) extends AnyVal
+class AgentID(val int: Int) extends AnyVal {
+  override def toString = int.toString
+}
+class RoadID(val int: Int) extends AnyVal {
+  override def toString = int.toString
+}
+class VertexID(val int: Int) extends AnyVal {
+  override def toString = int.toString
+}
+class TurnID(val int: Int) extends AnyVal {
+  override def toString = int.toString
+}
+
+// TODO value classes for durations, times, distance, speed...

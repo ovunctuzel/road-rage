@@ -9,7 +9,7 @@ import scala.collection.mutable.{ImmutableMapAdaptor, ListBuffer}
 
 import utexas.aorta.map.{Edge, DirectedRoad, Traversable, Turn, Vertex, Graph}
 
-import utexas.aorta.common.{Util, RNG, Common, cfg, StateWriter, StateReader}
+import utexas.aorta.common.{Util, RNG, Common, cfg, StateWriter, StateReader, TurnID}
 
 // Get a client to their goal by any means possible.
 abstract class Route(val goal: DirectedRoad, rng: RNG) extends ListenerPattern[Route_Event] {
@@ -154,7 +154,7 @@ class PathRoute(goal: DirectedRoad, orig_route: List[DirectedRoad], rng: RNG) ex
     w.int(chosen_turns.size)
     chosen_turns.foreach(pair => {
       w.int(pair._1.id)
-      w.int(pair._2.id)
+      w.int(pair._2.id.int)
     })
   }
 
@@ -166,7 +166,7 @@ class PathRoute(goal: DirectedRoad, orig_route: List[DirectedRoad], rng: RNG) ex
     }
     val chosen_size = r.int
     for (i <- Range(0, chosen_size)) {
-      chosen_turns(graph.edges(r.int)) = graph.turns(r.int)
+      chosen_turns(graph.edges(r.int)) = graph.turns(new TurnID(r.int))
     }
   }
 
@@ -378,7 +378,7 @@ class DrunkenRoute(goal: DirectedRoad, rng: RNG) extends Route(goal, rng) {
     }
     chosen_turns.foreach(pair => {
       w.int(pair._1.id)
-      w.int(pair._2.id)
+      w.int(pair._2.id.int)
     })
   }
 
@@ -389,7 +389,7 @@ class DrunkenRoute(goal: DirectedRoad, rng: RNG) extends Route(goal, rng) {
     }
     val chosen_size = r.int
     for (i <- Range(0, chosen_size)) {
-      chosen_turns(graph.edges(r.int)) = graph.turns(r.int)
+      chosen_turns(graph.edges(r.int)) = graph.turns(new TurnID(r.int))
     }
   }
 

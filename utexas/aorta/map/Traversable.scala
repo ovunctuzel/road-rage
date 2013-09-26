@@ -9,7 +9,7 @@ package utexas.aorta.map
 import utexas.aorta.sim.Queue
 import utexas.aorta.ui.Renderable
 
-import utexas.aorta.common.{cfg, Util, Physics, StateWriter, StateReader}
+import utexas.aorta.common.{cfg, Util, Physics, StateWriter, StateReader, TurnID}
 
 // Something with a sequence of lines forming a path and a way to get to more
 // somethings
@@ -250,7 +250,7 @@ case class Position(on: Traversable, dist: Double) extends Renderable {
       }
       case t: Turn => {
         w.bool(false)
-        w.int(t.id)
+        w.int(t.id.int)
       }
     }
     w.double(dist)
@@ -263,7 +263,7 @@ object Position {
       if (r.bool)
         graph.edges(r.int)
       else
-        graph.turns(r.int)
+        graph.turns(new TurnID(r.int))
     return Position(on, r.double)
   }
 }

@@ -9,7 +9,7 @@ import utexas.aorta.sim.{Intersection, Policy, Ticket, Agent, IntersectionType,
                          Simulation}
 import utexas.aorta.sim.market.IntersectionOrdering
 
-import utexas.aorta.common.{Util, Common, cfg, StateWriter, StateReader}
+import utexas.aorta.common.{Util, Common, cfg, StateWriter, StateReader, TurnID}
 
 // Accept as many compatible turns as possible, until an interruption occurs.
 // (To get the old greedy behavior, add the constraint back to candidates, or
@@ -26,7 +26,7 @@ class ReservationPolicy(intersection: Intersection,
     interruption match {
       case Some(ticket) => {
         w.int(ticket.a.id.int)
-        w.int(ticket.turn.id)
+        w.int(ticket.turn.id.int)
       }
       case None => {
         w.int(-1)
@@ -37,7 +37,7 @@ class ReservationPolicy(intersection: Intersection,
 
   override protected def unserialize(r: StateReader, sim: Simulation) {
     val agent_id = r.int
-    val turn_id = r.int
+    val turn_id = new TurnID(r.int)
     if (agent_id != -1) {
       interruption = Some(Policy.find_ticket(sim, agent_id, turn_id))
     }

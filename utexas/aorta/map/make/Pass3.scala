@@ -14,7 +14,7 @@ import scala.collection.mutable.ListBuffer
 import utexas.aorta.map.{Road, Edge, Vertex, Turn, Line, Coordinate,
                          Traversable, DirectedRoad}
 
-import utexas.aorta.common.{Util, Common, cfg}
+import utexas.aorta.common.{Util, Common, cfg, TurnID}
 
 // TODO split this file up
 
@@ -120,7 +120,7 @@ class Pass3(old_graph: PreGraph2) {
     val cross_thresshold = math.Pi / 10 // allow 18 degrees
 
     def make_turn(pair: (Edge, Edge)): Turn = {
-      val t = new Turn(next_id, pair._1.id, pair._2.id)
+      val t = new Turn(new TurnID(next_id), pair._1.id, pair._2.id)
       t.setup(graph)
       return t
     }

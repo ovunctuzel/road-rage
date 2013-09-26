@@ -12,7 +12,7 @@ import utexas.aorta.sim.policies._
 import utexas.aorta.map.{Vertex, Turn, Edge, Graph}
 import utexas.aorta.analysis.Turn_Stat
 
-import utexas.aorta.common.{Util, Common, cfg, StateWriter, StateReader}
+import utexas.aorta.common.{Util, Common, cfg, StateWriter, StateReader, TurnID}
 
 // Common stuff goes here, particular implementations are in utexas.aorta.sim.policies
 
@@ -53,7 +53,7 @@ class Intersection(val v: Vertex, policy_type: IntersectionType.Value,
 
     // The naive way is quadratic (a Cartesian product), with a slight
     // optimization by observing that the conflicts-with relation is symmetric.
-    for (t1 <- turns.keys; t2 <- turns.keys if t1.id < t2.id) {
+    for (t1 <- turns.keys; t2 <- turns.keys if t1.id.int < t2.id.int) {
       if (t1.conflicts_with(t2)) {
         throw new Exception(s"Intersection collision: $t1 and $t2 conflict")
       }
@@ -163,7 +163,7 @@ class Ticket(val a: Agent, val turn: Turn) extends Ordered[Ticket] {
 
   def serialize(w: StateWriter) {
     // Agent is implied, since we belong to them
-    w.int(turn.id)
+    w.int(turn.id.int)
     w.double(stat.req_tick)
     w.double(stat.accept_tick)
     w.double(stat.done_tick)
@@ -286,7 +286,7 @@ class Ticket(val a: Agent, val turn: Turn) extends Ordered[Ticket] {
 
 object Ticket {
   def unserialize(r: StateReader, a: Agent, graph: Graph): Ticket = {
-    val ticket = new Ticket(a, graph.turns(r.int))
+    val ticket = new Ticket(a, graph.turns(new TurnID(r.int)))
     ticket.stat = ticket.stat.copy(
       req_tick = r.double, accept_tick = r.double, done_tick = r.double,
       cost_paid = r.double
@@ -317,7 +317,7 @@ abstract class Policy(val intersection: Intersection) {
     w.int(request_queue.size)
     for (ticket <- request_queue) {
       w.int(ticket.a.id.int)
-      w.int(ticket.turn.id)
+      w.int(ticket.turn.id.int)
     }
   }
 
@@ -398,8 +398,8 @@ object Policy {
   }
 
   def find_ticket(r: StateReader, sim: Simulation): Ticket =
-    find_ticket(sim, r.int, r.int)
-  def find_ticket(sim: Simulation, agent_id: Int, turn_id: Int): Ticket =
+    find_ticket(sim, r.int, new TurnID(r.int))
+  def find_ticket(sim: Simulation, agent_id: Int, turn_id: TurnID): Ticket =
     sim.get_agent(agent_id).get.get_ticket(sim.graph.turns(turn_id)).get
 }
 

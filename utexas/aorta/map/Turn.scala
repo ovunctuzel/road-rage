@@ -6,13 +6,13 @@ package utexas.aorta.map
 
 import scala.collection.mutable.HashSet
 
-import utexas.aorta.common.{Common, StateWriter, StateReader}
+import utexas.aorta.common.{Common, StateWriter, StateReader, TurnID}
 
 // This constructor eschews geometry, taking a length and two points for
 // conflicts.
 // TODO from and to ID are var because we fiddle with IDs during Pass 3
 // construction.
-class Turn(val id: Int, var from_id: Int, var to_id: Int)
+class Turn(val id: TurnID, var from_id: Int, var to_id: Int)
   extends Traversable with Ordered[Turn]
 {
   //////////////////////////////////////////////////////////////////////////////
@@ -31,7 +31,7 @@ class Turn(val id: Int, var from_id: Int, var to_id: Int)
   // Meta
 
   override def serialize(w: StateWriter) {
-    w.int(id)
+    w.int(id.int)
     w.int(from_id)
     w.int(to_id)
     // Don't serialize our conflict line, since it follows from our state.
@@ -59,7 +59,7 @@ class Turn(val id: Int, var from_id: Int, var to_id: Int)
   //////////////////////////////////////////////////////////////////////////////
   // Queries
 
-  override def compare(other: Turn) = id.compare(other.id)
+  override def compare(other: Turn) = id.int.compare(other.id.int)
 
   override def toString = "turn[" + id + "](" + from + ", " + to + ")"
   // Short form is nice.
@@ -81,5 +81,5 @@ class Turn(val id: Int, var from_id: Int, var to_id: Int)
 }
 
 object Turn {
-  def unserialize(r: StateReader) = new Turn(r.int, r.int, r.int)
+  def unserialize(r: StateReader) = new Turn(new TurnID(r.int), r.int, r.int)
 }
