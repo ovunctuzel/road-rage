@@ -190,5 +190,8 @@ class VertexID(val int: Int) extends AnyVal {
 class TurnID(val int: Int) extends AnyVal {
   override def toString = int.toString
 }
+class EdgeID(val int: Int) extends AnyVal {
+  override def toString = int.toString
+}
 
 // TODO value classes for durations, times, distance, speed...

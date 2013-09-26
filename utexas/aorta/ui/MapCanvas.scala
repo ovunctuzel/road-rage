@@ -450,7 +450,7 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
           ).map(_.id).toArray
           val w = Util.writer(s"${dir}/${name}")
           w.int(edges.size)
-          edges.foreach(id => w.int(id))
+          edges.foreach(id => w.int(id.int))
           w.done()
           Util.log(s"Area saved to ${dir}/${name}")
         }

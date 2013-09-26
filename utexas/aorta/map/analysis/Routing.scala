@@ -340,8 +340,8 @@ object Demand {
   def demand_for(scenario: Scenario, graph: Graph): Demand = {
     val demand = blank_for(scenario, graph)
     for (a <- scenario.agents) {
-      val from = graph.edges(a.start_edge).directed_road
-      val to = graph.edges(a.route.goal).directed_road
+      val from = graph.edges(a.start_edge.int).directed_road
+      val to = graph.edges(a.route.goal.int).directed_road
       for (step <- graph.router.path(from, to, 0)) {
         demand.directed_roads(step.id) += 1
         demand.intersections(step.to.id.int) += 1

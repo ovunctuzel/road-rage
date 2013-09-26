@@ -11,14 +11,15 @@ import utexas.aorta.sim.market._
 import utexas.aorta.ui.Renderable
 import utexas.aorta.analysis.Agent_Lifetime_Stat
 
-import utexas.aorta.common.{Util, RNG, Common, cfg, Physics, StateWriter, StateReader, AgentID}
+import utexas.aorta.common.{Util, RNG, Common, cfg, Physics, StateWriter, StateReader, AgentID,
+                            EdgeID}
 
 // TODO come up with a notion of dimension and movement capability. at first,
 // just use radius bounded by lane widths?
 
 class Agent(
   val id: AgentID, val route: Route, val rng: RNG, val wallet: Wallet,
-  birth_tick: Double, start_edge: Int
+  birth_tick: Double, start_edge: EdgeID
 ) extends Ordered[Agent] with Renderable
 {
   //////////////////////////////////////////////////////////////////////////////
@@ -68,22 +69,22 @@ class Agent(
     route.serialize(w)
     rng.serialize(w)
     wallet.serialize(w)
-    w.int(start_edge)
+    w.int(start_edge.int)
 
     // Then the rest of our state
     at.serialize(w)
     w.double(stat_memory._1)
     w.double(stat_memory._2)
-    w.int(stat_memory._3)
+    w.int(stat_memory._3.int)
     w.int(stat_memory._4)
     w.double(speed)
     w.double(target_accel)
     behavior.target_lane match {
-      case Some(e) => w.int(e.id)
+      case Some(e) => w.int(e.id.int)
       case None => w.int(-1)
     }
     old_lane match {
-      case Some(e) => w.int(e.id)
+      case Some(e) => w.int(e.id.int)
       case None => w.int(-1)
     }
     w.double(lanechange_dist_left)
@@ -506,10 +507,10 @@ object Agent {
     // Pass in a bogus birth_tick, since we fix it up 
     val a = new Agent(
       new AgentID(r.int), Route.unserialize(r, graph), RNG.unserialize(r),
-      Wallet.unserialize(r), -1.0, r.int
+      Wallet.unserialize(r), -1.0, new EdgeID(r.int)
     )
     a.at = Position.unserialize(r, graph)
-    a.stat_memory = (r.double, r.double, r.int, r.int)
+    a.stat_memory = (r.double, r.double, new EdgeID(r.int), r.int)
     a.speed = r.double
     a.target_accel = r.double
     a.behavior.target_lane = r.int match {

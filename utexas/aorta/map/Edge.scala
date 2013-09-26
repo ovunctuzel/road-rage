@@ -7,14 +7,14 @@ package utexas.aorta.map
 import utexas.aorta.map.analysis.AbstractEdge
 import utexas.aorta.ui.Renderable
 
-import utexas.aorta.common.{cfg, RNG, Util, StateWriter, StateReader, RoadID}
+import utexas.aorta.common.{cfg, RNG, Util, StateWriter, StateReader, RoadID, EdgeID}
 
 // TODO subclass Edge for pos/neg.. seems easier for lots of things
 
 // TODO var id due to tarjan, var lane num due to fixing IDs. maybe not
 // necessary...
 class Edge(
-  var id: Int, road_id: RoadID, val dir: Direction.Value, var lane_num: Int
+  var id: EdgeID, road_id: RoadID, val dir: Direction.Value, var lane_num: Int
 ) extends Traversable with Renderable with Ordered[Edge]
 {
   //////////////////////////////////////////////////////////////////////////////
@@ -26,7 +26,7 @@ class Edge(
   // Meta
 
   override def serialize(w: StateWriter) {
-    w.int(id)
+    w.int(id.int)
     w.int(road.id.int)
     w.int(dir.id)
     w.int(lane_num)
@@ -41,7 +41,7 @@ class Edge(
   //////////////////////////////////////////////////////////////////////////////
   // Queries
 
-  override def compare(other: Edge) = id.compare(other.id)
+  override def compare(other: Edge) = id.int.compare(other.id.int)
   override def toString = "Lane %s%d of %s (%d)".format(dir, lane_num, road.name, id)
   //override def toString = "Lane %d".format(id)
 
@@ -143,7 +143,7 @@ class Edge(
 
 object Edge {
   def unserialize(r: StateReader): Edge = {
-    val e = new Edge(r.int, new RoadID(r.int), Direction(r.int), r.int)
+    val e = new Edge(new EdgeID(r.int), new RoadID(r.int), Direction(r.int), r.int)
     e.unserialize(r)
     return e
   }

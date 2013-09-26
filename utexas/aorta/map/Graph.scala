@@ -10,7 +10,7 @@ import utexas.aorta.map.analysis.{Router, DijkstraRouter, CHRouter,
                                   CongestionRouter}
 
 import utexas.aorta.common.{Util, Common, StateWriter, StateReader, RoadID,
-                            VertexID}
+                            VertexID, EdgeID}
 
 class Graph(
   val roads: Array[Road], val edges: Array[Edge], val vertices: Array[Vertex],
@@ -74,7 +74,7 @@ class Graph(
 
   override def get_r(id: RoadID) = roads(id.int)
   override def get_v(id: VertexID) = vertices(id.int)
-  override def get_e(id: Int) = edges(id)
+  override def get_e(id: EdgeID) = edges(id.int)
 }
 
 // It's a bit funky, but the actual graph instance doesn't have this; we do.
@@ -128,5 +128,5 @@ object Graph {
 abstract class GraphLike {
   def get_r(id: RoadID): Road
   def get_v(id: VertexID): Vertex
-  def get_e(id: Int): Edge
+  def get_e(id: EdgeID): Edge
 }

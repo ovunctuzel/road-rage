@@ -11,7 +11,7 @@ import utexas.aorta.sim.market._
 import scala.collection.mutable
 
 import utexas.aorta.common.{Util, RNG, Common, cfg, StateWriter, StateReader,
-                            AgentID, VertexID}
+                            AgentID, VertexID, EdgeID}
 
 // Array index and agent/intersection ID must correspond. Creator's
 // responsibility.
@@ -142,8 +142,8 @@ case class Scenario(name: String, map_fn: String, agents: Array[MkAgent],
       // TODO every 1000 or so, refactor that from mapmaking
       //Util.log(s"Computing ~optimal time for agent $cnt/${agents.size}")
       val path = graph.ch_router.path(
-        graph.edges(a.start_edge).directed_road,
-        graph.edges(a.route.goal).directed_road, a.birth_tick
+        graph.edges(a.start_edge.int).directed_road,
+        graph.edges(a.route.goal.int).directed_road, a.birth_tick
       )
       times(a.id) = path.map(step => step.road.length / step.road.speed_limit).sum
     }
@@ -183,7 +183,7 @@ object Scenario {
 // TODO associate directly with their corresponding class?
 
 case class MkAgent(id: AgentID, birth_tick: Double, seed: Long,
-                   start_edge: Int, start_dist: Double, route: MkRoute,
+                   start_edge: EdgeID, start_dist: Double, route: MkRoute,
                    wallet: MkWallet) extends Ordered[MkAgent]
 {
   // break ties by ID
@@ -200,7 +200,7 @@ case class MkAgent(id: AgentID, birth_tick: Double, seed: Long,
     w.int(id.int)
     w.double(birth_tick)
     w.long(seed)
-    w.int(start_edge)
+    w.int(start_edge.int)
     w.double(start_dist)
     route.serialize(w)
     wallet.serialize(w)
@@ -227,7 +227,7 @@ case class MkAgent(id: AgentID, birth_tick: Double, seed: Long,
 
 object MkAgent {
   def unserialize(r: StateReader) = MkAgent(
-    new AgentID(r.int), r.double, r.long, r.int, r.double, MkRoute.unserialize(r),
+    new AgentID(r.int), r.double, r.long, new EdgeID(r.int), r.double, MkRoute.unserialize(r),
     MkWallet.unserialize(r)
   )
 }
@@ -252,18 +252,17 @@ case class MkAgentSpawner(frequency: Double, expires: Double, seed: Long)
   }
 }*/
 
-// goal is the ID of an edge in the desired directed road
 // initial_path is a list of directed road IDs. can be empty.
 // TODO ID of a directed road would be way better.
-case class MkRoute(strategy: RouteType.Value, initial_path: List[Int], goal: Integer, seed: Long) {
+case class MkRoute(strategy: RouteType.Value, initial_path: List[Int], goal: EdgeID, seed: Long) {
   def make(sim: Simulation) = Factory.make_route(
-    strategy, sim.edges(goal).directed_road, new RNG(seed),
+    strategy, sim.edges(goal.int).directed_road, new RNG(seed),
     initial_path.map(id => sim.graph.directed_roads(id))
   )
 
   def serialize(w: StateWriter) {
     w.int(strategy.id)
-    w.int(goal)
+    w.int(goal.int)
     w.long(seed)
     w.int(initial_path.size)
     initial_path.foreach(id => w.int(id))
@@ -273,7 +272,7 @@ case class MkRoute(strategy: RouteType.Value, initial_path: List[Int], goal: Int
 object MkRoute {
   def unserialize(r: StateReader): MkRoute = {
     val rtype = RouteType(r.int)
-    val goal = r.int
+    val goal = new EdgeID(r.int)
     val seed = r.long
     val initial_path = Range(0, r.int).map(_ => r.int).toList
     return MkRoute(rtype, initial_path, goal, seed)
@@ -614,9 +613,9 @@ object ScenarioTool {
           }
 
           val new_a = old_a.copy(
-            start_edge = params.getOrElse(
-              "start", old_a.start_edge.toString
-            ).toInt,
+            // TODO fix all the orElse patterns here
+            start_edge =
+              params.get("start").map(e => new EdgeID(e.toInt)).getOrElse(old_a.start_edge),
             start_dist = start_dist,
             birth_tick = params.getOrElse(
               "time", old_a.birth_tick.toString
@@ -625,7 +624,7 @@ object ScenarioTool {
               strategy = RouteType.withName(
                 params.getOrElse("route", old_a.route.strategy.toString)
               ),
-              goal = params.getOrElse("end", old_a.route.goal.toString).toInt
+              goal = params.get("end").map(e => new EdgeID(e.toInt)).getOrElse(old_a.route.goal)
             ),
             wallet = old_a.wallet.copy(
               policy = WalletType.withName(

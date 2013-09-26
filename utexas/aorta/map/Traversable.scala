@@ -246,7 +246,7 @@ case class Position(on: Traversable, dist: Double) extends Renderable {
     on match {
       case e: Edge => {
         w.bool(true)
-        w.int(e.id)
+        w.int(e.id.int)
       }
       case t: Turn => {
         w.bool(false)

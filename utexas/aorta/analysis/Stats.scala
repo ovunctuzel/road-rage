@@ -19,7 +19,7 @@ import javax.imageio.ImageIO
 import utexas.aorta.sim.{MkIntersection, RouteType, WalletType,
                          IntersectionType, OrderingType}
 
-import utexas.aorta.common.{Util, AgentID, VertexID}
+import utexas.aorta.common.{Util, AgentID, VertexID, EdgeID}
 
 // Anything that we log online and post-process offline.
 // Hacky fast, memory-happy serialization... use java's convenient way to
@@ -66,7 +66,7 @@ case class Scenario_Stat(
 
 // Summarizes an agent's lifetime
 case class Agent_Lifetime_Stat(
-  id: AgentID, spawn_tick: Double, start_tick: Double, start: Int, end: Int,
+  id: AgentID, spawn_tick: Double, start_tick: Double, start: EdgeID, end: Int,
   route: RouteType.Value, wallet: WalletType.Value, start_budget: Int,
   end_tick: Double, end_budget: Int, priority: Int, finished: Boolean
 ) extends Measurement
@@ -86,7 +86,7 @@ case class Agent_Lifetime_Stat(
     stream.writeInt(id.int)
     stream.writeDouble(spawn_tick)
     stream.writeDouble(start_tick)
-    stream.writeInt(start)
+    stream.writeInt(start.int)
     stream.writeInt(end)
     stream.writeInt(route.id)
     stream.writeInt(wallet.id)
@@ -183,8 +183,8 @@ object PostProcess {
   def read_stat(s: ObjectInputStream): Measurement = s.readInt match {
     case 0 => Scenario_Stat(s.readUTF, read_intersections(s))
     case 1 => Agent_Lifetime_Stat(
-      new AgentID(s.readInt), s.readDouble, s.readDouble, s.readInt, s.readInt,
-      RouteType(s.readInt), WalletType(s.readInt), s.readInt, s.readDouble,
+      new AgentID(s.readInt), s.readDouble, s.readDouble, new EdgeID(s.readInt),
+      s.readInt, RouteType(s.readInt), WalletType(s.readInt), s.readInt, s.readDouble,
       s.readInt, s.readInt, s.readBoolean
     )
     case 2 => Turn_Stat(

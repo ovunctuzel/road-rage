@@ -153,7 +153,7 @@ class PathRoute(goal: DirectedRoad, orig_route: List[DirectedRoad], rng: RNG) ex
     }
     w.int(chosen_turns.size)
     chosen_turns.foreach(pair => {
-      w.int(pair._1.id)
+      w.int(pair._1.id.int)
       w.int(pair._2.id.int)
     })
   }
@@ -373,11 +373,11 @@ class DrunkenRoute(goal: DirectedRoad, rng: RNG) extends Route(goal, rng) {
   override def serialize(w: StateWriter) {
     super.serialize(w)
     desired_lane match {
-      case Some(e) => w.int(e.id)
+      case Some(e) => w.int(e.id.int)
       case None => w.int(-1)
     }
     chosen_turns.foreach(pair => {
-      w.int(pair._1.id)
+      w.int(pair._1.id.int)
       w.int(pair._2.id.int)
     })
   }

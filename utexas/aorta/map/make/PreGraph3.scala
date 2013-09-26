@@ -10,7 +10,7 @@ import scala.collection.mutable.MutableList
 import utexas.aorta.map.{Coordinate, Vertex, Road, Edge, Direction, Turn,
                          GraphLike}
 
-import utexas.aorta.common.{Util, cfg, Physics, RoadID, VertexID}
+import utexas.aorta.common.{Util, cfg, Physics, RoadID, VertexID, EdgeID}
 
 // TODO we should really subclass the real Graph, but not sure yet.
 
@@ -41,8 +41,8 @@ class PreGraph3(old_graph: PreGraph2) extends GraphLike {
     Util.assert_eq(v.id, id)
     return v
   }
-  override def get_e(id: Int): Edge = {
-    val e = edges(id)
+  override def get_e(id: EdgeID): Edge = {
+    val e = edges(id.int)
     Util.assert_eq(e.id, id)
     return e
   }
@@ -106,7 +106,7 @@ class PreGraph3(old_graph: PreGraph2) extends GraphLike {
     }
 
   private def add_edge(r: Road, dir: Direction.Value, lane_num: Int) = {
-    val e = new Edge(edges.length, r.id, dir, lane_num)
+    val e = new Edge(new EdgeID(edges.length), r.id, dir, lane_num)
     e.setup(this)
     edges += e
   }
@@ -177,7 +177,8 @@ class PreGraph3(old_graph: PreGraph2) extends GraphLike {
   def fix_ids() = {
     // TODO a better way, and one without reassigning to 'val' id? if we just
     // clone each structure and have a mapping from old to new... worth it?
-    for ((e, id) <- edges.zipWithIndex) {
+    for ((e, raw_id) <- edges.zipWithIndex) {
+      val id = new EdgeID(raw_id)
       e.id = id
       e.next_turns.foreach(t => t.from_id = id)
       e.prev_turns.foreach(t => t.to_id = id)
