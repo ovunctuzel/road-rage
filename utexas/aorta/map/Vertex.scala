@@ -9,14 +9,14 @@ import Function.tupled
 
 import utexas.aorta.ui.Renderable
 
-import utexas.aorta.common.{Util, StateWriter, StateReader}
+import utexas.aorta.common.{Util, StateWriter, StateReader, VertexID}
 
 // TODO I don't want this dependency, but at the moment, it leads to a great
 // perf boost due to dropping a pricy hash lookup
 import utexas.aorta.sim.Intersection
 
 // TODO var id due to tarjan
-class Vertex(val location: Coordinate, var id: Int) extends Renderable
+class Vertex(val location: Coordinate, var id: VertexID) extends Renderable
 {
   //////////////////////////////////////////////////////////////////////////////
   // State
@@ -36,7 +36,7 @@ class Vertex(val location: Coordinate, var id: Int) extends Renderable
   def serialize(w: StateWriter) {
     w.double(location.x)
     w.double(location.y)
-    w.int(id)
+    w.int(id.int)
     w.int(turns.length)
     turns.foreach(t => t.serialize(w))
   }
@@ -94,7 +94,7 @@ class Vertex(val location: Coordinate, var id: Int) extends Renderable
 
 object Vertex {
   def unserialize(r: StateReader): Vertex = {
-    val v = new Vertex(new Coordinate(r.double, r.double), r.int)
+    val v = new Vertex(new Coordinate(r.double, r.double), new VertexID(r.int))
     v.turns ++= Range(0, r.int).map(_ => Turn.unserialize(r))
     return v
   }

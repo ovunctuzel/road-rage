@@ -10,7 +10,7 @@ import scala.collection.mutable.MutableList
 import utexas.aorta.map.{Coordinate, Vertex, Road, Edge, Direction, Turn,
                          GraphLike}
 
-import utexas.aorta.common.{Util, cfg, Physics, RoadID}
+import utexas.aorta.common.{Util, cfg, Physics, RoadID, VertexID}
 
 // TODO we should really subclass the real Graph, but not sure yet.
 
@@ -36,8 +36,8 @@ class PreGraph3(old_graph: PreGraph2) extends GraphLike {
     Util.assert_eq(r.id, id)
     return r
   }
-  override def get_v(id: Int): Vertex = {
-    val v = vertices(id)
+  override def get_v(id: VertexID): Vertex = {
+    val v = vertices(id.int)
     Util.assert_eq(v.id, id)
     return v
   }
@@ -99,7 +99,7 @@ class PreGraph3(old_graph: PreGraph2) extends GraphLike {
     if (vert_lookup.contains(at)) {
       vert_lookup(at)
     } else {
-      val v = new Vertex(at, vertices.length)
+      val v = new Vertex(at, new VertexID(vertices.length))
       vertices += v
       vert_lookup += ((at, v))
       v
@@ -183,7 +183,7 @@ class PreGraph3(old_graph: PreGraph2) extends GraphLike {
       e.prev_turns.foreach(t => t.to_id = id)
     }
     for ((v, id) <- vertices.zipWithIndex) {
-      v.id = id
+      v.id = new VertexID(id)
     }
     // Get rid of directed roads with no lanes.
     var cnt = 0

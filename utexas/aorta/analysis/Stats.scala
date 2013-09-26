@@ -19,7 +19,7 @@ import javax.imageio.ImageIO
 import utexas.aorta.sim.{MkIntersection, RouteType, WalletType,
                          IntersectionType, OrderingType}
 
-import utexas.aorta.common.{Util, AgentID}
+import utexas.aorta.common.{Util, AgentID, VertexID}
 
 // Anything that we log online and post-process offline.
 // Hacky fast, memory-happy serialization... use java's convenient way to
@@ -100,7 +100,7 @@ case class Agent_Lifetime_Stat(
 
 // Describes a turn.
 case class Turn_Stat(
-  agent: AgentID, vert: Int, req_tick: Double, accept_tick: Double,
+  agent: AgentID, vert: VertexID, req_tick: Double, accept_tick: Double,
   done_tick: Double, cost_paid: Double
 ) extends Measurement
 {
@@ -113,7 +113,7 @@ case class Turn_Stat(
   def write(stream: ObjectOutputStream) = {
     stream.writeInt(2)
     stream.writeInt(agent.int)
-    stream.writeInt(vert)
+    stream.writeInt(vert.int)
     stream.writeDouble(req_tick)
     stream.writeDouble(accept_tick)
     stream.writeDouble(done_tick)
@@ -188,7 +188,7 @@ object PostProcess {
       s.readInt, s.readInt, s.readBoolean
     )
     case 2 => Turn_Stat(
-      new AgentID(s.readInt), s.readInt, s.readDouble, s.readDouble, s.readDouble,
+      new AgentID(s.readInt), new VertexID(s.readInt), s.readDouble, s.readDouble, s.readDouble,
       s.readDouble
     )
     case 3 => Heartbeat_Stat(
@@ -202,7 +202,7 @@ object PostProcess {
     val ls = new Array[MkIntersection](s.readInt)
     for (id <- Range(0, ls.size)) {
       ls(id) = MkIntersection(
-        id, IntersectionType(s.readInt), OrderingType(s.readInt)
+        new VertexID(id), IntersectionType(s.readInt), OrderingType(s.readInt)
       )
     }
     return ls
@@ -244,7 +244,7 @@ class TurnTimeAnalysis(dir: String) extends StatAnalysis(dir) {
 
   def process(stat: Measurement) = stat match {
     case s: Turn_Stat => {
-      delays_per_policy(intersections(s.vert).policy) += s.accept_delay
+      delays_per_policy(intersections(s.vert.int).policy) += s.accept_delay
     }
     case Scenario_Stat(_, i) => {
       intersections = i

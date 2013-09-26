@@ -319,7 +319,7 @@ object RouteFeatures {
       queued_turn_count = step.to.intersection.policy.queued_count,
       total_avg_waiting_time = step.to.intersection.average_waiting_time,
       road_demand = demand.directed_roads(step.id).toDouble,
-      intersection_demand = demand.intersections(step.to.id).toDouble
+      intersection_demand = demand.intersections(step.to.id.int).toDouble
     )
   }
 
@@ -344,7 +344,7 @@ object Demand {
       val to = graph.edges(a.route.goal).directed_road
       for (step <- graph.router.path(from, to, 0)) {
         demand.directed_roads(step.id) += 1
-        demand.intersections(step.to.id) += 1
+        demand.intersections(step.to.id.int) += 1
       }
     }
     return demand

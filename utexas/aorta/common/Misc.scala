@@ -178,7 +178,7 @@ object Flags {
   private def is_true(value: String) = value.toLowerCase == "true"
 }
 
-// TODO make units easy to import
-
+// TODO with a trait that lets things be added/toString'd?
 class AgentID(val int: Int) extends AnyVal
 class RoadID(val int: Int) extends AnyVal
+class VertexID(val int: Int) extends AnyVal

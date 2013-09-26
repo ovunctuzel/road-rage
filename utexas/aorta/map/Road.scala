@@ -9,14 +9,15 @@ import Function.tupled
 
 import utexas.aorta.ui.Renderable
 
-import utexas.aorta.common.{Util, StateWriter, StateReader, Physics, RoadID}
+import utexas.aorta.common.{Util, StateWriter, StateReader, Physics, RoadID,
+                            VertexID}
 
 // TODO enum for type. also, it's var because of tarjan's...
 // TODO var id due to tarjan
 // TODO speed limit stored directly.
 class Road(
   var id: RoadID, val length: Double, val name: String, var road_type: String,
-  val osm_id: String, v1_id: Int, v2_id: Int, var points: Array[Coordinate]
+  val osm_id: String, v1_id: VertexID, v2_id: VertexID, var points: Array[Coordinate]
 ) extends Renderable
 {
   //////////////////////////////////////////////////////////////////////////////
@@ -76,8 +77,8 @@ class Road(
     w.string(name)
     w.string(road_type)
     w.string(osm_id)
-    w.int(v1.id)
-    w.int(v2.id)
+    w.int(v1.id.int)
+    w.int(v2.id.int)
     w.int(points.size)
     for (pt <- points) {
       w.double(pt.x)
@@ -138,7 +139,8 @@ class Road(
 
 object Road {
   def unserialize(r: StateReader) = new Road(
-    new RoadID(r.int), r.double, r.string, r.string, r.string, r.int, r.int,
+    new RoadID(r.int), r.double, r.string, r.string, r.string,
+    new VertexID(r.int), new VertexID(r.int),
     Range(0, r.int).map(_ => new Coordinate(r.double, r.double)).toArray
   )
 

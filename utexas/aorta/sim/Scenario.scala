@@ -10,7 +10,8 @@ import utexas.aorta.sim.market._
 
 import scala.collection.mutable
 
-import utexas.aorta.common.{Util, RNG, Common, cfg, StateWriter, StateReader, AgentID}
+import utexas.aorta.common.{Util, RNG, Common, cfg, StateWriter, StateReader,
+                            AgentID, VertexID}
 
 // Array index and agent/intersection ID must correspond. Creator's
 // responsibility.
@@ -25,7 +26,7 @@ case class Scenario(name: String, map_fn: String, agents: Array[MkAgent],
     w.done()
   }
 
-  def make_intersection(v: Vertex) = intersections(v.id).make(v)
+  def make_intersection(v: Vertex) = intersections(v.id.int).make(v)
 
   // Although the massive numbers of agents were probably created with a
   // distribution function originally, we just see the individual list in the
@@ -293,7 +294,7 @@ object MkWallet {
   def unserialize(r: StateReader) = MkWallet(WalletType(r.int), r.int, r.int)
 }
 
-case class MkIntersection(id: Integer, policy: IntersectionType.Value,
+case class MkIntersection(id: VertexID, policy: IntersectionType.Value,
                           ordering: OrderingType.Value)
 {
   def make(v: Vertex) = new Intersection(v, policy, ordering)
@@ -310,7 +311,7 @@ case class MkIntersection(id: Integer, policy: IntersectionType.Value,
   }
 
   def serialize(w: StateWriter) {
-    w.int(id)
+    w.int(id.int)
     w.int(policy.id)
     w.int(ordering.id)
   }
@@ -318,7 +319,7 @@ case class MkIntersection(id: Integer, policy: IntersectionType.Value,
 
 object MkIntersection {
   def unserialize(r: StateReader) = MkIntersection(
-    r.int, IntersectionType(r.int), OrderingType(r.int)
+    new VertexID(r.int), IntersectionType(r.int), OrderingType(r.int)
   )
 }
 
