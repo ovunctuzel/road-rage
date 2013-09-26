@@ -10,7 +10,7 @@ import scala.collection.mutable.MutableList
 import utexas.aorta.map.{Coordinate, Vertex, Road, Edge, Direction, Turn,
                          GraphLike}
 
-import utexas.aorta.common.{Util, cfg, Physics, RoadID, VertexID, EdgeID}
+import utexas.aorta.common.{Util, cfg, Physics, RoadID, VertexID, EdgeID, DirectedRoadID}
 
 // TODO we should really subclass the real Graph, but not sure yet.
 
@@ -198,7 +198,7 @@ class PreGraph3(old_graph: PreGraph2) extends GraphLike {
         r.neg_group = None
       }
       List(r.pos_group, r.neg_group).flatten.foreach(r => {
-        r.id = cnt
+        r.id = new DirectedRoadID(cnt)
         cnt += 1
       })
     }

@@ -10,7 +10,7 @@ import Function.tupled
 import utexas.aorta.ui.Renderable
 
 import utexas.aorta.common.{Util, StateWriter, StateReader, Physics, RoadID,
-                            VertexID}
+                            VertexID, DirectedRoadID}
 
 // TODO enum for type. also, it's var because of tarjan's...
 // TODO var id due to tarjan
@@ -28,10 +28,10 @@ class Road(
 
   // TODO move the lanes to be part of the D.R.
   var pos_group: Option[DirectedRoad] = Some(new DirectedRoad(
-    this, Road.next_directed_id, Direction.POS
+    this, new DirectedRoadID(Road.next_directed_id), Direction.POS
   ))
   var neg_group: Option[DirectedRoad] = Some(new DirectedRoad(
-    this, Road.next_directed_id, Direction.NEG
+    this, new DirectedRoadID(Road.next_directed_id), Direction.NEG
   ))
 
   // + lanes go from v1->v2; - lanes go from v2->v1

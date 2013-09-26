@@ -7,7 +7,7 @@ package utexas.aorta.map
 import utexas.aorta.map.analysis.AbstractEdge
 import utexas.aorta.ui.Renderable
 
-import utexas.aorta.common.{cfg, RNG, Util, StateWriter, StateReader, RoadID, EdgeID}
+import utexas.aorta.common.{cfg, RNG, Util, StateWriter, StateReader, RoadID, EdgeID, DirectedRoadID}
 
 // TODO subclass Edge for pos/neg.. seems easier for lots of things
 
@@ -42,8 +42,7 @@ class Edge(
   // Queries
 
   override def compare(other: Edge) = id.int.compare(other.id.int)
-  override def toString = "Lane %s%d of %s (%d)".format(dir, lane_num, road.name, id)
-  //override def toString = "Lane %d".format(id)
+  override def toString = "Lane %s%d of %s (%s)".format(dir, lane_num, road.name, id)
 
   // no lane-changing
   //def leads_to = next_turns
@@ -157,11 +156,11 @@ object Direction extends Enumeration {
 
 // Represent a group of directed edges on one road
 // TODO var id because things get chopped up
-class DirectedRoad(val road: Road, var id: Int, val dir: Direction.Value)
+class DirectedRoad(val road: Road, var id: DirectedRoadID, val dir: Direction.Value)
   extends AbstractEdge with Ordered[DirectedRoad]
 {
-  override def toString = "%s's %s lanes (DR %d)".format(road, dir, id)
-  override def compare(other: DirectedRoad) = id.compare(other.id)
+  override def toString = "%s's %s lanes (DR %s)".format(road, dir, id)
+  override def compare(other: DirectedRoad) = id.int.compare(other.id.int)
 
   def edges = if (dir == Direction.POS)
                 road.pos_lanes

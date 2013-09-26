@@ -10,7 +10,7 @@ import utexas.aorta.map.analysis.{Router, DijkstraRouter, CHRouter,
                                   CongestionRouter}
 
 import utexas.aorta.common.{Util, Common, StateWriter, StateReader, RoadID,
-                            VertexID, EdgeID}
+                            VertexID, EdgeID, DirectedRoadID}
 
 class Graph(
   val roads: Array[Road], val edges: Array[Edge], val vertices: Array[Vertex],
@@ -54,7 +54,7 @@ class Graph(
     directed_roads =
       roads.flatMap(r => List(r.pos_group, r.neg_group).flatten).toArray
     for ((dr, id) <- directed_roads.zipWithIndex) {
-      dr.id = id
+      dr.id = new DirectedRoadID(id)
     }
   }
 

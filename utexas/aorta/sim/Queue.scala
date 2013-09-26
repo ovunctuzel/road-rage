@@ -89,7 +89,7 @@ class Queue(t: Traversable) {
     if (!alist.zip(alist.tail).forall(pair => pair._1.at.dist > pair._2.at.dist)) {
       throw new Exception(
         s"Agents out of order on $t: " +
-        alist.map(a => "%d at %.2f".format(a.id, a.at.dist))
+        alist.map(a => "%s at %.2f".format(a.id, a.at.dist))
       )
     }
 

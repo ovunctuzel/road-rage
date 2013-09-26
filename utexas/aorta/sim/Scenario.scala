@@ -11,7 +11,7 @@ import utexas.aorta.sim.market._
 import scala.collection.mutable
 
 import utexas.aorta.common.{Util, RNG, Common, cfg, StateWriter, StateReader,
-                            AgentID, VertexID, EdgeID}
+                            AgentID, VertexID, EdgeID, DirectedRoadID}
 
 // Array index and agent/intersection ID must correspond. Creator's
 // responsibility.
@@ -254,10 +254,12 @@ case class MkAgentSpawner(frequency: Double, expires: Double, seed: Long)
 
 // initial_path is a list of directed road IDs. can be empty.
 // TODO ID of a directed road would be way better.
-case class MkRoute(strategy: RouteType.Value, initial_path: List[Int], goal: EdgeID, seed: Long) {
+case class MkRoute(
+  strategy: RouteType.Value, initial_path: List[DirectedRoadID], goal: EdgeID, seed: Long
+) {
   def make(sim: Simulation) = Factory.make_route(
     strategy, sim.edges(goal.int).directed_road, new RNG(seed),
-    initial_path.map(id => sim.graph.directed_roads(id))
+    initial_path.map(id => sim.graph.directed_roads(id.int))
   )
 
   def serialize(w: StateWriter) {
@@ -265,7 +267,7 @@ case class MkRoute(strategy: RouteType.Value, initial_path: List[Int], goal: Edg
     w.int(goal.int)
     w.long(seed)
     w.int(initial_path.size)
-    initial_path.foreach(id => w.int(id))
+    initial_path.foreach(id => w.int(id.int))
   }
 }
 
@@ -274,7 +276,7 @@ object MkRoute {
     val rtype = RouteType(r.int)
     val goal = new EdgeID(r.int)
     val seed = r.long
-    val initial_path = Range(0, r.int).map(_ => r.int).toList
+    val initial_path = Range(0, r.int).map(_ => new DirectedRoadID(r.int)).toList
     return MkRoute(rtype, initial_path, goal, seed)
   }
 }

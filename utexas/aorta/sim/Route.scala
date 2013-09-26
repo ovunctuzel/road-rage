@@ -18,7 +18,7 @@ abstract class Route(val goal: DirectedRoad, rng: RNG) extends ListenerPattern[R
 
   def serialize(w: StateWriter) {
     w.int(route_type.id)
-    w.int(goal.id)
+    w.int(goal.id.int)
     rng.serialize(w)
   }
 
@@ -103,12 +103,12 @@ class DijkstraRoute(goal: DirectedRoad, rng: RNG) extends Route(goal, rng) {
   // We don't care.
   def transition(from: Traversable, to: Traversable) = {}
 
-  def pick_turn(e: Edge) = e.next_turns.minBy(t => costs(t.to.directed_road.id))
+  def pick_turn(e: Edge) = e.next_turns.minBy(t => costs(t.to.directed_road.id.int))
   def pick_lane(from: Edge): Edge = {
     // Break ties for the best lane overall by picking the lane closest to the
     // current.
     val target_lane = from.other_lanes.minBy(
-      e => (costs(pick_turn(e).to.directed_road.id), math.abs(from.lane_num - e.lane_num))
+      e => (costs(pick_turn(e).to.directed_road.id.int), math.abs(from.lane_num - e.lane_num))
     )
     // Get as close to target_lane as possible.
     return from.adjacent_lanes.minBy(
@@ -149,7 +149,7 @@ class PathRoute(goal: DirectedRoad, orig_route: List[DirectedRoad], rng: RNG) ex
       w.int(0)
     } else {
       w.int(path.size)
-      path.foreach(step => w.int(step.id))
+      path.foreach(step => w.int(step.id.int))
     }
     w.int(chosen_turns.size)
     chosen_turns.foreach(pair => {
@@ -473,7 +473,7 @@ class DrunkenExplorerRoute(goal: DirectedRoad, rng: RNG)
   override def serialize(w: StateWriter) {
     super.serialize(w)
     past.foreach(pair => {
-      w.int(pair._1.id)
+      w.int(pair._1.id.int)
       w.int(pair._2)
     })
   }

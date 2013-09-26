@@ -11,7 +11,7 @@ import com.graphhopper.routing.ch.PrepareContractionHierarchies
 import utexas.aorta.map.{Graph, DirectedRoad, Coordinate}
 import utexas.aorta.sim.{IntersectionType, Scenario}
 
-import utexas.aorta.common.{Util, Common, Physics, RNG}
+import utexas.aorta.common.{Util, Common, Physics, RNG, DirectedRoadID}
 
 abstract class Router(graph: Graph) {
   // Doesn't include 'from' as the first step
@@ -21,7 +21,8 @@ abstract class Router(graph: Graph) {
 // A convenient abstraction if we ever switch to pathfinding on
 // edges/roads/others.
 abstract class AbstractEdge {
-  var id: Int // TODO var because fix_ids
+  // TODO dont tie it to this ID space...
+  var id: DirectedRoadID // TODO var because fix_ids
   def cost(time: Double): Double
   // List and not Set means there could be multiple transitions, with possibly
   // different weights.
@@ -47,7 +48,7 @@ class DijkstraRouter(graph: Graph) extends Router(graph) {
     // TODO needs tests!
     // TODO pass in a comparator to the queue instead of having a wrapper class
     class Step(val edge: AbstractEdge) extends Ordered[Step] {
-      def cost = costs(edge.id)
+      def cost = costs(edge.id.int)
       def compare(other: Step) = other.cost.compare(cost)
     }
 
@@ -55,7 +56,7 @@ class DijkstraRouter(graph: Graph) extends Router(graph) {
     val open = new PriorityQueue[Step]()
     val done = new HashSet[AbstractEdge]()
 
-    costs(source.id) = 0
+    costs(source.id.int) = 0
     open.enqueue(new Step(source))
 
     while (open.nonEmpty) {
@@ -67,9 +68,9 @@ class DijkstraRouter(graph: Graph) extends Router(graph) {
 
         for ((next, transition_cost) <- next(step.edge) if !done.contains(next)) {
           val cost = step.cost + transition_cost + next.cost(time)
-          if (cost < costs(next.id)) {
+          if (cost < costs(next.id.int)) {
             // Relax!
-            costs(next.id) = cost
+            costs(next.id.int) = cost
             // TODO ideally, decrease-key
             // 1) get a PQ that uses a fibonacci heap
             // 2) remove, re-insert again
@@ -85,10 +86,10 @@ class DijkstraRouter(graph: Graph) extends Router(graph) {
 
   // Starts at source, hillclimbs to lower costs, and returns the path to 0.
   def hillclimb(costs: Array[Double], start: AbstractEdge): List[AbstractEdge] =
-    costs(start.id) match {
+    costs(start.id.int) match {
       case 0 => start :: Nil
       case c => start :: hillclimb(
-        costs, start.succs.minBy(t => costs(t._1.id))._1
+        costs, start.succs.minBy(t => costs(t._1.id.int))._1
       )
     }
 }
@@ -112,7 +113,7 @@ class CHRouter(graph: Graph) extends Router(graph) {
     }
 
     Util.assert_eq(usable, true)
-    val path = algo.calcPath(from.id, to.id)
+    val path = algo.calcPath(from.id.int, to.id.int)
     algo.clear
     Util.assert_eq(path.found, true)
 
@@ -134,7 +135,7 @@ class CHRouter(graph: Graph) extends Router(graph) {
     Common.sim.ch_since_last_time += 1
 
     Util.assert_eq(usable, true)
-    val path = algo.calcPath(from.id, to.id)
+    val path = algo.calcPath(from.id.int, to.id.int)
     algo.clear
     Util.assert_eq(path.found, true)
     return path.distance
@@ -318,7 +319,7 @@ object RouteFeatures {
       reservation_count = one_if(IntersectionType.Reservation),
       queued_turn_count = step.to.intersection.policy.queued_count,
       total_avg_waiting_time = step.to.intersection.average_waiting_time,
-      road_demand = demand.directed_roads(step.id).toDouble,
+      road_demand = demand.directed_roads(step.id.int).toDouble,
       intersection_demand = demand.intersections(step.to.id.int).toDouble
     )
   }
@@ -343,7 +344,7 @@ object Demand {
       val from = graph.edges(a.start_edge.int).directed_road
       val to = graph.edges(a.route.goal.int).directed_road
       for (step <- graph.router.path(from, to, 0)) {
-        demand.directed_roads(step.id) += 1
+        demand.directed_roads(step.id.int) += 1
         demand.intersections(step.to.id.int) += 1
       }
     }
