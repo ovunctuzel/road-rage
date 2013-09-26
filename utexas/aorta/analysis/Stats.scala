@@ -83,7 +83,7 @@ case class Agent_Lifetime_Stat(
 
   def write(stream: ObjectOutputStream) = {
     stream.writeInt(1)
-    stream.writeInt(id.id)
+    stream.writeInt(id.int)
     stream.writeDouble(spawn_tick)
     stream.writeDouble(start_tick)
     stream.writeInt(start)
@@ -112,7 +112,7 @@ case class Turn_Stat(
 
   def write(stream: ObjectOutputStream) = {
     stream.writeInt(2)
-    stream.writeInt(agent.id)
+    stream.writeInt(agent.int)
     stream.writeInt(vert)
     stream.writeDouble(req_tick)
     stream.writeDouble(accept_tick)

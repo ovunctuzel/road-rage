@@ -47,13 +47,13 @@ abstract class ReplayChecker(sim: Simulation, ignore: Set[AgentID]) {
     var expect_id = 0
     for (a <- sim.agents) {
       // [expect_id, a.id)
-      for (id <- Range(expect_id, a.id.id) if !ignore.contains(new AgentID(id))) {
+      for (id <- Range(expect_id, a.id.int) if !ignore.contains(new AgentID(id))) {
         writer.double(ReplayChecker.MISSING)
       }
       if (!ignore.contains(a.id)) {
         writer.double(a.characterize_choice)
       }
-      expect_id = a.id.id + 1
+      expect_id = a.id.int + 1
     }
     // TODO theres a range with inclusive upper bounds...
     for (id <- Range(expect_id, agents + 1) if !ignore.contains(new AgentID(id))) {
@@ -69,7 +69,7 @@ abstract class ReplayChecker(sim: Simulation, ignore: Set[AgentID]) {
       for (a <- sim.agents) {
         // [expect_id, a.id)
         // TODO ranges of these ID-space units
-        for (id <- Range(expect_id, a.id.id) if !ignore.contains(new AgentID(id))) {
+        for (id <- Range(expect_id, a.id.int) if !ignore.contains(new AgentID(id))) {
           val expected = reader.double
           if (expected != ReplayChecker.MISSING) {
             difference(new AgentID(id), expected, ReplayChecker.MISSING)
@@ -77,7 +77,7 @@ abstract class ReplayChecker(sim: Simulation, ignore: Set[AgentID]) {
         }
         if (!ignore.contains(a.id)) {
           val expected = reader.double
-          expect_id = a.id.id + 1
+          expect_id = a.id.int + 1
           if (expected != a.characterize_choice) {
             difference(a.id, expected, a.characterize_choice)
           }

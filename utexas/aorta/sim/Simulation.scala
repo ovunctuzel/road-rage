@@ -80,13 +80,13 @@ class Simulation(val graph: Graph, val scenario: Scenario)
 
   def serialize(w: StateWriter) {
     w.string(scenario.name)
-    w.id(max_agent_id)
+    w.int(max_agent_id.int)
     w.double(tick)
     w.int(finished_count)
     w.int(agents.size)
     agents.foreach(a => a.serialize(w))
     w.int(ready_to_spawn.size)
-    ready_to_spawn.foreach(a => w.id(a.id))
+    ready_to_spawn.foreach(a => w.int(a.id.int))
     graph.traversables.foreach(t => t.queue.serialize(w))
     graph.vertices.foreach(v => v.intersection.policy.serialize(w))
   }
@@ -358,11 +358,11 @@ trait AgentManager {
   def insert_agent(a: Agent) = {
     Util.assert_eq(agents.contains(a), false)
     agents += a
-    max_agent_id = new AgentID(math.max(max_agent_id.id, a.id.id))
+    max_agent_id = new AgentID(math.max(max_agent_id.int, a.id.int))
   }
   // This reserves the ID returned to the caller, so it'll never be reused.
   def next_agent_id(): AgentID = {
-    max_agent_id = new AgentID(max_agent_id.id + 1)
+    max_agent_id = new AgentID(max_agent_id.int + 1)
     return max_agent_id
   }
 

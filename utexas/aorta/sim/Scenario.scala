@@ -188,7 +188,7 @@ case class MkAgent(id: AgentID, birth_tick: Double, seed: Long,
   // break ties by ID
   def compare(other: MkAgent) =
     implicitly[Ordering[Tuple2[Double, Integer]]].compare(
-      (other.birth_tick, other.id.id), (birth_tick, id.id)
+      (other.birth_tick, other.id.int), (birth_tick, id.int)
     )
 
   def make(sim: Simulation) = new Agent(
@@ -196,7 +196,7 @@ case class MkAgent(id: AgentID, birth_tick: Double, seed: Long,
   )
 
   def serialize(w: StateWriter) {
-    w.id(id)
+    w.int(id.int)
     w.double(birth_tick)
     w.long(seed)
     w.int(start_edge)

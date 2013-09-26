@@ -10,7 +10,7 @@ import scala.collection.mutable.MutableList
 import utexas.aorta.map.{Coordinate, Vertex, Road, Edge, Direction, Turn,
                          GraphLike}
 
-import utexas.aorta.common.{Util, cfg, Physics}
+import utexas.aorta.common.{Util, cfg, Physics, RoadID}
 
 // TODO we should really subclass the real Graph, but not sure yet.
 
@@ -31,17 +31,17 @@ class PreGraph3(old_graph: PreGraph2) extends GraphLike {
   }
 
   // TODO binary search or direct lookup possible?
-  def get_r(id: Int): Road = {
-    val r = roads(id)
+  override def get_r(id: RoadID): Road = {
+    val r = roads(id.int)
     Util.assert_eq(r.id, id)
     return r
   }
-  def get_v(id: Int): Vertex = {
+  override def get_v(id: Int): Vertex = {
     val v = vertices(id)
     Util.assert_eq(v.id, id)
     return v
   }
-  def get_e(id: Int): Edge = {
+  override def get_e(id: Int): Edge = {
     val e = edges(id)
     Util.assert_eq(e.id, id)
     return e
@@ -54,7 +54,7 @@ class PreGraph3(old_graph: PreGraph2) extends GraphLike {
   def add_road(old_edge: PreEdge2) {
     // do addEdges too, once we decide how many lanes to do
     val r = new Road(
-      road_id_cnt, Road.road_len(old_edge.points),
+      new RoadID(road_id_cnt), Road.road_len(old_edge.points),
       old_edge.dat.name, old_edge.dat.road_type, old_edge.dat.orig_id,
       get_vert(old_edge.from).id, get_vert(old_edge.to).id,
       old_edge.points.toArray
@@ -188,7 +188,7 @@ class PreGraph3(old_graph: PreGraph2) extends GraphLike {
     // Get rid of directed roads with no lanes.
     var cnt = 0
     for ((r, id) <- roads.zipWithIndex) {
-      r.id = id
+      r.id = new RoadID(id)
 
       if (r.pos_group.isDefined && r.pos_group.get.edges.isEmpty) {
         r.pos_group = None

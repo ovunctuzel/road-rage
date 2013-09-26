@@ -180,4 +180,5 @@ object Flags {
 
 // TODO make units easy to import
 
-class AgentID(val id: Int) extends AnyVal
+class AgentID(val int: Int) extends AnyVal
+class RoadID(val int: Int) extends AnyVal

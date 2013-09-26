@@ -64,7 +64,7 @@ class Agent(
 
   def serialize(w: StateWriter) {
     // First do parameters
-    w.id(id)
+    w.int(id.int)
     route.serialize(w)
     rng.serialize(w)
     wallet.serialize(w)
@@ -307,7 +307,7 @@ class Agent(
   // Queries
 
   override def toString = "Agent " + id
-  override def compare(other: Agent) = id.id.compare(other.id.id)
+  override def compare(other: Agent) = id.int.compare(other.id.int)
   override def tooltip = List(toString, wallet.toString) ++ wallet.tooltip
   def debug = {
     Util.log("" + this)

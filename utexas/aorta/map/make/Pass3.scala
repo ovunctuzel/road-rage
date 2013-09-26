@@ -137,8 +137,8 @@ class Pass3(old_graph: PreGraph2) {
     // To account for one-ways, we actually want to reason about roads that are
     // incoming to or outgoing from this vert.
     // Sorting is for determinism.
-    val incoming_roads = roads.filter(_.incoming_lanes(v).nonEmpty).toList.sortBy(_.id)
-    val outgoing_roads = roads.filter(_.outgoing_lanes(v).nonEmpty).toList.sortBy(_.id)
+    val incoming_roads = roads.filter(_.incoming_lanes(v).nonEmpty).toList.sortBy(_.id.int)
+    val outgoing_roads = roads.filter(_.outgoing_lanes(v).nonEmpty).toList.sortBy(_.id.int)
 
     // this is a Cartesian product.
     for (r1 <- incoming_roads; r2 <- outgoing_roads if r1 != r2) {

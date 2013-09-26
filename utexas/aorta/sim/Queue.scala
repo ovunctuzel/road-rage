@@ -38,7 +38,7 @@ class Queue(t: Traversable) {
     // TODO some of these feel transient, but eh.
     w.double(last_tick)
     w.int(prev_agents.size)
-    prev_agents.foreach(a => w.id(a.id))
+    prev_agents.foreach(a => w.int(a.id.int))
   }
 
   //////////////////////////////////////////////////////////////////////////////

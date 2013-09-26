@@ -9,7 +9,7 @@ import scala.collection.mutable.{HashMap, PriorityQueue, HashSet}
 import utexas.aorta.map.analysis.{Router, DijkstraRouter, CHRouter,
                                   CongestionRouter}
 
-import utexas.aorta.common.{Util, Common, StateWriter, StateReader}
+import utexas.aorta.common.{Util, Common, StateWriter, StateReader, RoadID}
 
 class Graph(
   val roads: Array[Road], val edges: Array[Edge], val vertices: Array[Vertex],
@@ -71,9 +71,9 @@ class Graph(
 
   def traversables() = edges ++ turns.values
 
-  def get_r(id: Int) = roads(id)
-  def get_v(id: Int) = vertices(id)
-  def get_e(id: Int) = edges(id)
+  override def get_r(id: RoadID) = roads(id.int)
+  override def get_v(id: Int) = vertices(id)
+  override def get_e(id: Int) = edges(id)
 }
 
 // It's a bit funky, but the actual graph instance doesn't have this; we do.
@@ -125,7 +125,7 @@ object Graph {
 
 // This is only so setup routines can reference Graph or PreGraph3.
 abstract class GraphLike {
-  def get_r(id: Int): Road
+  def get_r(id: RoadID): Road
   def get_v(id: Int): Vertex
   def get_e(id: Int): Edge
 }
