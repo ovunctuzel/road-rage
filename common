@@ -1,7 +1,7 @@
 #!/bin/bash
 
 GRAPHHOPPER="3rd_party/graphhopper-0.1.jar"
-SWING="/usr/share/java/scala-swing.jar"
+SWING="/usr/share/java/scala-swing.jar" # TODO not used on my system anymore
 JFREECHART="3rd_party/jfreechart-1.0.14.jar:3rd_party/jcommon-1.0.17.jar"
 
 CLASSPATH=".build:$GRAPHHOPPER"

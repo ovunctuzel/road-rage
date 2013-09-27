@@ -263,9 +263,10 @@ class Simulation(val graph: Graph, val scenario: Scenario)
     }
 
     // Find queues with the most demand
-    for (e <- graph.edges.map(e => (-demands(e), e)).sorted.take(10)) {
+    // TODO figure out lexicographic tuple ordering
+    /*for (e <- graph.edges.map(e => (-demands(e), e)).sorted.take(10)) {
       Util.log(s"${e._2} has total demand ${-e._1}")
-    }
+    }*/
   }
 
   def savestate(fn: String): String = {

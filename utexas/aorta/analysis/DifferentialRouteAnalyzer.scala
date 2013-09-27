@@ -7,6 +7,7 @@ package utexas.aorta.analysis
 import scala.collection.mutable
 import java.io.File
 
+// TODO clean
 import utexas.aorta.map.{Graph, DirectedRoad}
 import utexas.aorta.map.analysis.{AstarRouter, RouteFeatures, Demand}
 import utexas.aorta.sim.{ScenarioTool, Simulation, Scenario, AgentDistribution, MkAgent, MkWallet,
@@ -16,49 +17,25 @@ import utexas.aorta.sim.{ScenarioTool, Simulation, Scenario, AgentDistribution, 
 import utexas.aorta.common.{RNG, Util, Flags, Common, AgentID}
 
 object DifferentialRouteAnalyzer {
-  // Params
-  val scenario_params = Array("--spawn", "5000", "delay=3600", "generations=3", "lifetime=3600")
-  val new_id = new AgentID(15000)  // This has to be correct based on scenario_params
+  def main(args: Array[String]) {
+    new DifferentialRouteAnalyzer(ExpConfig.from_args(args)).run()
+  }
+}
+
+class DifferentialRouteAnalyzer(config: ExpConfig) extends Experiment(config) {
+  val new_id = new AgentID(scenario.agents.size)
   val warmup_time = 3600
-  val report_locally_every_ms = 10 * 1000
-  val report_remotely_every_ms = 60 * 1000
   val num_routes = 5
-  val deadline = 3600 * 12  // Give up after 12 hours
 
-  // Bit of config
-  var gs_prefix = ""
-  var report_every_ms = report_locally_every_ms
-
-  // TODO vary more things, like scenario size, or the warmup time
-  // TODO maybe fix the map for now, make the learning easier.
-
-  // Optional GS prefix
-  def main(args: Array[String]): Unit = {
+  def run() {
     // Append to this, so we only write one file
     var results = ""
 
-    if (args.nonEmpty) {
-      gs_prefix = args.head
-      report_every_ms = report_remotely_every_ms
-    }
     val rng = new RNG()
 
-    // Pick a random map
-    // TODO have a file IO lib for stuff like this
-    val map_fn = rng.choose(new File("maps").listFiles.map(_.toString).filter(_.endsWith(".map")))
-
-    // Generate a scenario for it
-    notify("Generating random scenario")
-    val scenario_fn = map_fn.replace("maps/", "scenarios/").replace(".map", "_routes")
-    ScenarioTool.main(Array(map_fn, "--out", scenario_fn) ++ scenario_params)
-    // TODO do the caching in the graph load layer.
-    val graph = Graph.load(map_fn)
-    val scenario = Scenario.load(scenario_fn)
-
     // Simulate fully, savestating at 1 hour
-    Flags.set("--savestate", "false")
     val base_sim = scenario.make_sim(graph).setup()
-    val base_times = record_trip_times(base_sim)
+    val base_times = record_trip_times(() => base_sim.tick > warmup_time)
     simulate(0, base_sim)
     val base_fn = scenario_fn.replace("scenarios/", "scenarios/savestate_") + "_" + warmup_time
 
@@ -71,7 +48,7 @@ object DifferentialRouteAnalyzer {
     notify("Round 0 done, precomputing demand on roads/intersections")
     val demand = Demand.demand_for(scenario, graph)
 
-    // Try some routes
+    // Try some routes for the new driver
     val scores_seen = new mutable.HashSet[RouteFeatures]()
     for (round <- 1 to num_routes) {
       notify(s"Discovering new route for round $round")
@@ -100,8 +77,8 @@ object DifferentialRouteAnalyzer {
       )
 
       try {
-        val new_times = record_trip_times(new_sim)
-        val actual_paths = record_agent_paths(new_sim, everybody = false)
+        val new_times = record_trip_times(() => new_sim.tick > warmup_time)
+        val actual_paths = record_agent_paths(new_sim, (a) => a.id == new_id)
         simulate(round, new_sim)
         val new_drivers_trip_time = new_times(new_id)
         val externality = calc_externality(base_times, new_times)
@@ -126,10 +103,9 @@ object DifferentialRouteAnalyzer {
         results += weka_line + "\\n"  // Gotta escape this so exec() doesn't eat it
 
         notify(s"Round $round done! New driver's time is $new_drivers_trip_time, externality is $externality")
-        if (gs_prefix.nonEmpty) {
-          upload_gs(gs_prefix + "results", results)
-        } else {
-          println(s"Would normally upload to GS: $results")
+        config.gs_prefix match {
+          case Some(prefix) => upload_gs(prefix + "results", results)
+          case None => println(s"Would normally upload to GS: $results")
         }
       } catch {
         case e: Throwable => {
@@ -140,77 +116,9 @@ object DifferentialRouteAnalyzer {
     }
   }
 
-  // TODO agent id => trip time
-  private def record_trip_times(sim: Simulation): mutable.Map[AgentID, Double] = {
-    val times = new mutable.HashMap[AgentID, Double]()
-    Common.stats_log = new StatsListener() {
-      override def record(item: Measurement) {
-        item match {
-          // We don't care about anybody who finishes before the new driver is introduced
-          case s: Agent_Lifetime_Stat if sim.tick > warmup_time => {
-            times(s.id) = s.trip_time
-          }
-          case _ =>
-        }
-      }
-    }
-    return times
-  }
-
-  private def record_agent_paths(sim: Simulation, everybody: Boolean): mutable.Map[AgentID, RouteRecorder] = {
-    val routes = new mutable.HashMap[AgentID, RouteRecorder]()
-    sim.listen("route-analyzer", (ev: Sim_Event) => { ev match {
-      case EV_AgentSpawned(a) => {
-        if (everybody || a.id == new_id) {
-          routes(a.id) = new RouteRecorder(a.route)
-        }
-      }
-      case _ =>
-    } })
-    return routes
-  }
-
-  private def simulate(round: Int, sim: Simulation) = {
-    var last_time = 0L
-    sim.listen("route-analyzer", (ev: Sim_Event) => { ev match {
-      case EV_Heartbeat(info) => {
-        val now = System.currentTimeMillis
-        if (now - last_time > report_every_ms) {
-          last_time = now
-          notify(s"Round $round at ${Util.time_num(sim.tick)}: ${info.describe}" +
-                 s" / ${sim.finished_count} finished")
-        }
-      }
-      case _ =>
-    } })
-
-    while (!sim.done) {
-      sim.step()
-      if (sim.tick.toInt == warmup_time && round == 0) {
-        sim.savestate()
-      }
-      if (sim.tick >= deadline) {
-        throw new Exception(s"Simulation past $deadline seconds. Giving up, discarding result.")
-      }
-    }
-  }
-
   private def calc_externality(base: mutable.Map[AgentID, Double], mod: mutable.Map[AgentID, Double]): Double = {
     // The keys (drivers) should be the same, except for the new agent
     Util.assert_eq(base.size, mod.size - 1)
     return base.keys.map(id => mod(id) - base(id)).sum
-  }
-
-  private def notify(status: String) {
-    if (gs_prefix.nonEmpty) {
-      // TODO write the instance name here
-      upload_gs(gs_prefix + "status", status)
-    } else {
-      println(s"*** $status ***")
-    }
-  }
-
-  private def upload_gs(fn: String, contents: String) {
-    Runtime.getRuntime.exec(Array("./tools/cloud/upload_gs.sh", fn, contents))
   }
 }

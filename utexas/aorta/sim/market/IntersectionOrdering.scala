@@ -9,7 +9,7 @@ import utexas.aorta.sim.{Agent, Ticket, Policy, IntersectionType, OrderingType}
 import scala.collection.mutable.{HashMap, MultiMap}
 import scala.collection.mutable.{Set => MutableSet}
 
-import utexas.aorta.common.{Util, cfg}
+import utexas.aorta.common.{Util, cfg, VertexID}
 
 abstract class IntersectionOrdering[T <: Ordered[T]]() {
   def choose(choices: Iterable[T], participants: Iterable[Ticket], client: Policy): Option[T]
@@ -69,7 +69,7 @@ class AuctionOrdering[T <: Ordered[T]]() extends IntersectionOrdering[T]() {
       // They're all apathetic, so just do FIFO.
       return choices.headOption
     } else {
-      val debug = client.intersection.v.id == -1
+      val debug = client.intersection.v.id == new VertexID(-1)
       Some(process_auction(debug, bids, multipliers, client))
     }
   }

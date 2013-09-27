@@ -38,22 +38,22 @@ object Debug {
 
     // 2) Continue the original track
     Util.log("Continuing original sim...")
-    val stdout = Console.out
-    Console.setOut(new java.io.FileOutputStream("log_orig"))
-    orig_sim.multi_step(30.0)
-    val w2 = new utexas.aorta.common.BinaryStateWriter("snapshot1")
-    orig_sim.serialize(w2)
-    w2.done
+    Console.withOut(new java.io.FileOutputStream("log_orig")) {
+      orig_sim.multi_step(30.0)
+      val w2 = new utexas.aorta.common.BinaryStateWriter("snapshot1")
+      orig_sim.serialize(w2)
+      w2.done
+    }
 
     // 4) Load the serialized one and continue it for a bit
-    Console.setOut(stdout)
     Util.log("Loading serialized original, continuing that...")
     val new_sim = Simulation.unserialize(new utexas.aorta.common.BinaryStateReader("orig_snapshot"))
-    Console.setOut(new java.io.FileOutputStream("log_new"))
-    new_sim.multi_step(30.0)
-    val w3 = new utexas.aorta.common.BinaryStateWriter("snapshot2")
-    new_sim.serialize(w3)
-    w3.done
+    Console.withOut(new java.io.FileOutputStream("log_new")) {
+      new_sim.multi_step(30.0)
+      val w3 = new utexas.aorta.common.BinaryStateWriter("snapshot2")
+      new_sim.serialize(w3)
+      w3.done
+    }
   }
 
   private def find_crazy_signals(sim: Simulation) = {

@@ -243,8 +243,9 @@ class Ticket(val a: Agent, val turn: Turn) extends Ordered[Ticket] {
 
   // TODO if an agent ever loops and requests the same turn before clearing the
   // prev one, gonna have a bad time!
-  override def compare(other: Ticket) =
-    implicitly[Ordering[Tuple2[Agent, Turn]]].compare((a, turn), (other.a, other.turn))
+  override def compare(other: Ticket) = Ordering[Tuple2[Int, Int]].compare(
+    (a.id.int, turn.id.int), (other.a.id.int, other.turn.id.int)
+  )
 
   def intersection = turn.vert.intersection
 
