@@ -252,7 +252,8 @@ case class RouteFeatures(
   // TODO historical avg/max. and count this carefully!
   total_avg_waiting_time: Double, // sum of average waiting time of turns at each intersection
   road_demand: Double,            // number of agents who want to use this road sometime
-  intersection_demand: Double     // likewise for intersections
+  intersection_demand: Double,    // likewise for intersections
+  agents_enroute: Double          // number of agents on the path right now
 ) {
   // TODO impl as taking a list, so we can do dot product and + easily
 
@@ -266,7 +267,8 @@ case class RouteFeatures(
     queued_turn_count + other.queued_turn_count,
     total_avg_waiting_time + other.total_avg_waiting_time,
     road_demand + other.road_demand,
-    intersection_demand + other.intersection_demand)
+    intersection_demand + other.intersection_demand,
+    agents_enroute + other.agents_enroute)
 
   def /(other: RouteFeatures) = RouteFeatures(
     total_length / other.total_length,
@@ -278,7 +280,8 @@ case class RouteFeatures(
     queued_turn_count / other.queued_turn_count,
     total_avg_waiting_time / other.total_avg_waiting_time,
     road_demand / other.road_demand,
-    intersection_demand / other.intersection_demand)
+    intersection_demand / other.intersection_demand,
+    agents_enroute / other.agents_enroute)
 
   // weights should also account for normalization by dividing by the "soft max" for each feature
   def score(weights: RouteFeatures): Double
@@ -291,17 +294,19 @@ case class RouteFeatures(
     + (queued_turn_count * weights.queued_turn_count)
     + (total_avg_waiting_time * weights.total_avg_waiting_time)
     + (road_demand * weights.road_demand)
-    + (intersection_demand * weights.intersection_demand))
+    + (intersection_demand * weights.intersection_demand)
+    + (agents_enroute * weights.agents_enroute))
 
   def toList = List(
     total_length, total_freeflow_time, congested_road_count, stop_sign_count, signal_count,
-    reservation_count, queued_turn_count, total_avg_waiting_time, road_demand, intersection_demand
+    reservation_count, queued_turn_count, total_avg_waiting_time, road_demand, intersection_demand,
+    agents_enroute
   )
 }
 
 object RouteFeatures {
   // Some presets
-  val BLANK = RouteFeatures(0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+  val BLANK = RouteFeatures(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
   val JUST_FREEFLOW_TIME = BLANK.copy(total_freeflow_time = 1)
 
   def for_step(step: DirectedRoad, demand: Demand): RouteFeatures = {
@@ -320,14 +325,15 @@ object RouteFeatures {
       queued_turn_count = step.to.intersection.policy.queued_count,
       total_avg_waiting_time = step.to.intersection.average_waiting_time,
       road_demand = demand.directed_roads(step.id.int).toDouble,
-      intersection_demand = demand.intersections(step.to.id.int).toDouble
+      intersection_demand = demand.intersections(step.to.id.int).toDouble,
+      agents_enroute = step.edges.map(_.queue.agents.size).sum
     )
   }
 
   private val rng = new RNG()
   // Produce more diverse paths by rewarding things usually considered bad
   private def rnd = rng.double(-1, 1)
-  def random_weight = RouteFeatures(rnd, rnd, rnd, rnd, rnd, rnd, rnd, rnd, rnd, rnd)
+  def random_weight = RouteFeatures(rnd, rnd, rnd, rnd, rnd, rnd, rnd, rnd, rnd, rnd, rnd)
 }
 
 // Magically knows where everybody wants to go ahead of time. Think of this as representing a
@@ -444,12 +450,13 @@ class AstarRouter(graph: Graph, raw_weights: RouteFeatures, demand: Demand)
     // These depend on the scenario size! Really no way to pick.
     val max_road_demand = 15000
     val max_intersection_demand = 15000
+    val max_enroute = 15000
     return RouteFeatures(
       max_length, max_time, max_congestion,
       intersections(IntersectionType.StopSign).size,
       intersections(IntersectionType.Signal).size,
       intersections(IntersectionType.Reservation).size,
-      max_queued_turns, max_avg_waiting, max_road_demand, max_intersection_demand
+      max_queued_turns, max_avg_waiting, max_road_demand, max_intersection_demand, max_enroute
     )
   }
 }
