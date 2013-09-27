@@ -7,12 +7,10 @@ package utexas.aorta.analysis
 import scala.collection.mutable
 import java.io.File
 
-// TODO clean
 import utexas.aorta.map.{Graph, DirectedRoad}
 import utexas.aorta.map.analysis.{AstarRouter, RouteFeatures, Demand}
 import utexas.aorta.sim.{ScenarioTool, Simulation, Scenario, AgentDistribution, MkAgent, MkWallet,
-                         MkRoute, Sim_Event, EV_Heartbeat, RouteType, EV_AgentSpawned, PathRoute,
-                         RouteRecorder}
+                         MkRoute, EV_Heartbeat, RouteType, EV_AgentSpawned}
 
 import utexas.aorta.common.{RNG, Util, Flags, Common, AgentID}
 

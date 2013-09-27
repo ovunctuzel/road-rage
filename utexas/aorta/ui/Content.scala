@@ -36,7 +36,7 @@ class DrawDriver(val agent: Agent, state: GuiState) {
       var (line, front_dist) = agent.at.on.current_pos(agent.at.dist)
       agent.old_lane match {
         case Some(l) => {
-          val (line2, more_dist) = l.current_pos(agent.at.dist)
+          val (line2, _) = l.current_pos(agent.at.dist)
           // TODO I'd think 1 - progress should work, but by visual inspection,
           // apparently not.
           val progress = (agent.lanechange_dist_left / cfg.lanechange_dist)

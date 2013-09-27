@@ -49,7 +49,7 @@ abstract class Route(val goal: DirectedRoad, rng: RNG) extends ListenerPattern[R
 
   def route_type(): RouteType.Value
   def done(at: Edge) = at.directed_road == goal
-  def dump_info
+  def dump_info()
 }
 
 object Route {
@@ -121,7 +121,7 @@ class DijkstraRoute(goal: DirectedRoad, rng: RNG) extends Route(goal, rng) {
   // Queries
 
   def route_type = RouteType.Dijkstra
-  def dump_info() = {
+  def dump_info() {
     Util.log(s"Static route to $goal")
   }
 }
@@ -264,7 +264,6 @@ class PathRoute(goal: DirectedRoad, orig_route: List[DirectedRoad], rng: RNG) ex
     // Lookahead could be calling us from anywhere. Figure out where we are in
     // the path.
     val pair = path.span(r => r != from.directed_road)
-    val before = pair._1
     val slice = pair._2
     Util.assert_eq(slice.nonEmpty, true)
 
@@ -296,7 +295,7 @@ class PathRoute(goal: DirectedRoad, orig_route: List[DirectedRoad], rng: RNG) ex
   // Queries
 
   def route_type = RouteType.Path
-  def dump_info() = {
+  def dump_info() {
     Util.log(s"Static route to $goal using $path")
   }
 
@@ -427,7 +426,7 @@ class DrunkenRoute(goal: DirectedRoad, rng: RNG) extends Route(goal, rng) {
   // Queries
 
   def route_type = RouteType.Drunken
-  def dump_info() = {
+  def dump_info() {
     Util.log(s"Drunken route to $goal")
     Util.log(s"  Desired lane: $desired_lane")
     Util.log(s"  Chosen turns: $chosen_turns")

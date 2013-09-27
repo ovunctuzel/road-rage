@@ -105,7 +105,6 @@ case class Scenario(name: String, map_fn: String, agents: Array[MkAgent],
   // each to complete their trip with nobody else around. Returns a map from
   // agent ID to that time.
   def compute_optimal_times_by_simulation(): Map[AgentID, Double] = {
-    val empty_scenario = this.copy(agents = Array())
     val graph = Graph.load(map_fn)
     val times = new mutable.HashMap[AgentID, Double]()
     var cnt = 0

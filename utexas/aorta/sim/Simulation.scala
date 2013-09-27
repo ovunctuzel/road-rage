@@ -12,7 +12,7 @@ import scala.collection.mutable.{HashMap => MutableMap}
 import java.io.FileWriter
 import scala.io.Source
 
-import utexas.aorta.map.{Graph, Road, Edge, Vertex, Turn, DirectedRoad}
+import utexas.aorta.map.{Graph, Road, Edge, Vertex, Turn}
 import utexas.aorta.sim.policies.Phase
 
 import utexas.aorta.ui.ReplayDiffScheme
@@ -318,17 +318,17 @@ trait ListenerPattern[T] {
   //////////////////////////////////////////////////////////////////////////////
   // State
 
-  private var listeners: List[(String, T => Any)] = Nil
+  private val listeners = new ListBuffer[(String, T => Any)]()
 
   //////////////////////////////////////////////////////////////////////////////
   // Actions
 
   def tell_listeners(ev: T) = listeners.foreach(l => l._2(ev))
   def listen(tag: String, subscriber: T => Any) = {
-    listeners :+= (tag, subscriber)
+    listeners += ((tag, subscriber))
   }
   def unlisten(tag: String) = {
-    listeners = listeners.filter(l => l._1 != tag)
+    listeners --= listeners.filter(l => l._1 != tag)
   }
 }
 

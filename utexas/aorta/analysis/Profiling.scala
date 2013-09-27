@@ -17,7 +17,7 @@ class Timer(val msg: String = "") {
 
   def so_far = (System.nanoTime - start) / 1000000000.0
 
-  def stop(): Unit = {
+  def stop() {
     Util.log("\"" + msg + "\": " + so_far + "s")
   }
 }
@@ -32,7 +32,7 @@ class Stopwatch(val name: String) {
     return this
   }
 
-  @elidable(elidable.ASSERTION) def stop = {
+  @elidable(elidable.ASSERTION) def stop() {
     val now = System.nanoTime
     seconds += (now - from) / 1000000000.0
   }

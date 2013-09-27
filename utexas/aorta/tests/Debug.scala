@@ -24,7 +24,7 @@ object Debug {
   private def get_optimal_times(fn: String) {
     val scenario = utexas.aorta.sim.Scenario.load(fn)
     val t = Common.timer("all optimal times")
-    val times = scenario.compute_optimal_times_analytically()
+    scenario.compute_optimal_times_analytically()
     t.stop()
   }
 

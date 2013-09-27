@@ -17,8 +17,12 @@ import utexas.aorta.analysis.{Timer, StatsListener, StatsRecorder, Measurement}
 
 object Util {
   private var indent_log = 0
-  def log_push = { indent_log += 1 }
-  def log_pop =  { indent_log -= 1 }
+  def log_push() {
+    indent_log += 1
+  }
+  def log_pop() {
+    indent_log -= 1
+  }
   def indent = "  " * indent_log
   def log(msg: String) = println(indent + msg)
 

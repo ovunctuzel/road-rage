@@ -465,10 +465,6 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
       prompt_generator(sim.edges, sim.edges)
     }
     case "step" => {
-      val note = if (running)
-                   ""
-                 else
-                   " [Paused]"
       repaint
     }
     case "toggle-running" => {

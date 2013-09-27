@@ -11,8 +11,7 @@ import scala.collection.mutable.{Set => MutableSet}
 import scala.collection.mutable.MultiMap
 import scala.collection.mutable.ListBuffer
 
-import utexas.aorta.map.{Road, Edge, Vertex, Turn, Line, Coordinate,
-                         Traversable, DirectedRoad}
+import utexas.aorta.map.{Road, Edge, Vertex, Turn, Line, Coordinate, Traversable}
 
 import utexas.aorta.common.{Util, Common, cfg, TurnID}
 
@@ -176,25 +175,25 @@ class Pass3(old_graph: PreGraph2) {
           val (mergers, regulars) = from_edges.splitAt(from_edges.length - (to_edges.length - 1))
           Util.assert_eq(regulars.length, to_edges.length - 1)
 
-          v.turns ++= mergers.map(from => make_turn(from, to_edges.head))
+          v.turns ++= mergers.map(from => make_turn((from, to_edges.head)))
           v.turns ++= regulars.zip(to_edges.tail).map(make_turn)
         } else if (lane_diff > 0) {
           // less to more. the leftmost gets to pick many destinations.
           val lucky_src = from_edges.last
-          var regular_srcs = from_edges.dropRight(1)
+          val regular_srcs = from_edges.dropRight(1)
 
           val (regular_dsts, choices) = to_edges.splitAt(to_edges.size - lane_diff - 1)
           Util.assert_eq(regular_srcs.size, regular_dsts.size)
           
           v.turns ++= regular_srcs.zip(regular_dsts).map(make_turn)
-          v.turns ++= choices.map(to => make_turn(lucky_src, to))
+          v.turns ++= choices.map(to => make_turn((lucky_src, to)))
         }
       } else if (angle_btwn < 0) {
         // no multiple turn lanes supported yet. it's just too hard to know when
         // this is the case.
-        v.turns = make_turn(from_rep.leftmost_lane, to_rep.leftmost_lane) :: v.turns
+        v.turns = make_turn((from_rep.leftmost_lane, to_rep.leftmost_lane)) :: v.turns
       } else {
-        v.turns = make_turn(from_rep.rightmost_lane, to_rep.rightmost_lane) :: v.turns
+        v.turns = make_turn((from_rep.rightmost_lane, to_rep.rightmost_lane)) :: v.turns
       }
     }
   }
@@ -398,8 +397,7 @@ class Pass3(old_graph: PreGraph2) {
           // these all make an scc
           var member: Traversable = null
           // TODO a functional way? :P
-          var cnt = 0
-          var scc = new ListBuffer[Traversable]
+          val scc = new ListBuffer[Traversable]
           do {
             member = t_stack.pop
             in_stack -= member

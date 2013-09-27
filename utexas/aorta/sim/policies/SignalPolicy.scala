@@ -10,7 +10,7 @@ import scala.collection.mutable.{ListBuffer, TreeSet}
 import utexas.aorta.map.{Turn, Vertex, Edge}
 import utexas.aorta.sim.{Intersection, Policy, Agent, EV_Signal_Change,
                          IntersectionType, Ticket, OrderingType, Simulation}
-import utexas.aorta.sim.market.{IntersectionOrdering, FIFO_Ordering}
+import utexas.aorta.sim.market.IntersectionOrdering
 
 import utexas.aorta.common.{Util, Common, cfg, StateWriter, StateReader}
 

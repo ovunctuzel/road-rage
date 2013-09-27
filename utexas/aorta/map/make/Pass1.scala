@@ -130,7 +130,7 @@ class Pass1(fn: String) {
             }
 
             // what points does this edge touch?
-            var points = new MutableList[Coordinate]()
+            val points = new MutableList[Coordinate]()
             for (ref <- refs) {
               points += id_to_node(ref)
               id_to_uses(ref) += 1

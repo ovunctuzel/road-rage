@@ -238,8 +238,6 @@ class Agent(
 
   // Returns true if we're done
   def react(): Boolean = {
-    val was_lanechanging = is_lanechanging
-
     return behavior.choose_action match {
       case Act_Set_Accel(new_accel) => {
         // we have physical limits

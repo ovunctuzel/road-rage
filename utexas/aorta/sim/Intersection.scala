@@ -8,7 +8,6 @@ import scala.collection.mutable.{HashMap => MutableMap}
 import scala.collection.mutable.{HashSet => MutableSet}
 import scala.collection.mutable.{TreeSet, ListBuffer}
 
-import utexas.aorta.sim.policies._
 import utexas.aorta.map.{Vertex, Turn, Edge, Graph}
 import utexas.aorta.analysis.Turn_Stat
 
@@ -308,7 +307,7 @@ abstract class Policy(val intersection: Intersection) {
 
   // Agents could be added to this in any order, but they'll wind up in
   // request_queue in a deterministic order. This is transient state.
-  private var new_requests = new TreeSet[Ticket]()
+  private val new_requests = new TreeSet[Ticket]()
 
   //////////////////////////////////////////////////////////////////////////////
   // State

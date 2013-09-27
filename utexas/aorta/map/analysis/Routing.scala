@@ -118,7 +118,7 @@ class CHRouter(graph: Graph) extends Router(graph) {
     Util.assert_eq(path.found, true)
 
     val result = new ListBuffer[DirectedRoad]()
-    var iter = path.calcNodes.iterator
+    val iter = path.calcNodes.iterator
     while (iter.hasNext) {
       result += graph.directed_roads(iter.next)
     }

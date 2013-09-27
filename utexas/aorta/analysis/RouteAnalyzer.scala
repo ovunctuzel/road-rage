@@ -8,9 +8,9 @@ import scala.collection.mutable
 import java.io.{File, PrintWriter, FileWriter}
 
 import utexas.aorta.map.{Graph, DirectedRoad}
-import utexas.aorta.map.analysis.{AstarRouter, RouteFeatures, Demand}
+import utexas.aorta.map.analysis.{RouteFeatures, Demand}
 import utexas.aorta.sim.{ScenarioTool, Simulation, Scenario, AgentDistribution, MkAgent, MkWallet,
-                         MkRoute, Sim_Event, EV_Heartbeat, RouteType, EV_AgentSpawned, PathRoute,
+                         MkRoute, Sim_Event, EV_Heartbeat, RouteType, EV_AgentSpawned,
                          RouteRecorder}
 
 import utexas.aorta.common.{RNG, Util, Flags, Common, AgentID}

@@ -4,12 +4,11 @@
 
 package utexas.aorta.sim.policies
 
-import utexas.aorta.map.{Turn, Edge}
-import utexas.aorta.sim.{Intersection, Policy, Ticket, Agent, IntersectionType,
-                         Simulation}
+import utexas.aorta.map.Turn
+import utexas.aorta.sim.{Intersection, Policy, Ticket, IntersectionType, Simulation}
 import utexas.aorta.sim.market.IntersectionOrdering
 
-import utexas.aorta.common.{Util, Common, cfg, StateWriter, StateReader, TurnID}
+import utexas.aorta.common.{Util, StateWriter, StateReader, TurnID}
 
 // Accept as many compatible turns as possible, until an interruption occurs.
 // (To get the old greedy behavior, add the constraint back to candidates, or
