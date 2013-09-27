@@ -171,6 +171,8 @@ class Simulation(val graph: Graph, val scenario: Scenario)
     if (replay != null && (tick / cfg.replay_freq).isValidInt && tick > 0.0) {
       replay.handle_tick()
     }
+
+    tell_listeners(EV_Step(tick))
   }
 
   def multi_step(total_dt: Double) {
@@ -336,6 +338,7 @@ abstract class Sim_Event
 final case class EV_Signal_Change(greens: Set[Turn]) extends Sim_Event
 final case class EV_Heartbeat(heartbeat: Heartbeat_Stat) extends Sim_Event
 final case class EV_AgentSpawned(a: Agent) extends Sim_Event
+final case class EV_Step(tick: Double) extends Sim_Event
 
 trait AgentManager {
   //////////////////////////////////////////////////////////////////////////////

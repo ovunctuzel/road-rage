@@ -10,53 +10,24 @@ import java.io.{File, PrintWriter, FileWriter}
 import utexas.aorta.map.{Graph, DirectedRoad}
 import utexas.aorta.map.analysis.{RouteFeatures, Demand}
 import utexas.aorta.sim.{ScenarioTool, Simulation, Scenario, AgentDistribution, MkAgent, MkWallet,
-                         MkRoute, Sim_Event, EV_Heartbeat, RouteType, EV_AgentSpawned,
-                         RouteRecorder}
+                         MkRoute, Sim_Event, EV_Heartbeat, RouteType, EV_AgentSpawned}
 
-import utexas.aorta.common.{RNG, Util, Flags, Common, AgentID}
-
-// TODO refactor an Experiment class.
+import utexas.aorta.common.{Util, Flags, Common, AgentID}
 
 object RouteAnalyzer {
-  // Params
-  val scenario_params = Array("--spawn", "5000", "delay=3600", "generations=3", "lifetime=3600")
-  val report_locally_every_ms = 10 * 1000
-  val report_remotely_every_ms = 60 * 1000
-  val deadline = 3600 * 12  // Give up after 12 hours
+  def main(args: Array[String]) {
+    new RouteAnalyzer(ExpConfig.from_args(args)).run()
+  }
+}
 
-  // Bit of config
-  var gs_prefix = ""
-  var report_every_ms = report_locally_every_ms
-
-  // TODO vary more things, like scenario size, or the warmup time
-  // TODO maybe fix the map for now, make the learning easier.
-
-  // Optional GS prefix
-  def main(args: Array[String]): Unit = {
-    if (args.nonEmpty) {
-      gs_prefix = args.head
-      report_every_ms = report_remotely_every_ms
-    }
+class RouteAnalyzer(config: ExpConfig) extends Experiment(config) {
+  def run() {
     val outfn = "route-results"
     val output = new PrintWriter(new FileWriter(new File(outfn)))
-    val rng = new RNG()
-
-    // Pick a random map
-    // TODO have a file IO lib for stuff like this
-    val map_fn = rng.choose(new File("maps").listFiles.map(_.toString).filter(_.endsWith(".map")))
-
-    // Generate a scenario for it
-    notify("Generating random scenario")
-    val scenario_fn = map_fn.replace("maps/", "scenarios/").replace(".map", "_routes")
-    ScenarioTool.main(Array(map_fn, "--out", scenario_fn) ++ scenario_params)
-    // TODO do the caching in the graph load layer.
-    val graph = Graph.load(map_fn)
-    val scenario = Scenario.load(scenario_fn)
 
     // Simulate, capturing every driver's route and trip time
-    Flags.set("--savestate", "false")
     val base_sim = scenario.make_sim(graph).setup()
-    val times = record_trip_times(base_sim)
+    val times = record_trip_times()
     val actual_paths = record_agent_paths(base_sim)
     simulate(0, base_sim)
 
@@ -82,8 +53,9 @@ object RouteAnalyzer {
     simulate(1, sim_again)
     output.close()
 
-    if (gs_prefix.nonEmpty) {
-      Runtime.getRuntime.exec(Array("gsutil", "cp", outfn, gs_prefix + "results"))
+    config.gs_prefix match {
+      case Some(prefix) => Runtime.getRuntime.exec(Array("gsutil", "cp", outfn, prefix + "results"))
+      case None =>
     }
   }
 
@@ -91,67 +63,4 @@ object RouteAnalyzer {
     path
       .map(step => RouteFeatures.for_step(step, demand))
       .fold(RouteFeatures.BLANK)((a, b) => a + b)
-
-  // TODO agent id => trip time
-  private def record_trip_times(sim: Simulation): mutable.Map[AgentID, Double] = {
-    val times = new mutable.HashMap[AgentID, Double]()
-    Common.stats_log = new StatsListener() {
-      override def record(item: Measurement) {
-        item match {
-          // We don't care about anybody who finishes before the new driver is introduced
-          case s: Agent_Lifetime_Stat => {
-            times(s.id) = s.trip_time
-          }
-          case _ =>
-        }
-      }
-    }
-    return times
-  }
-
-  private def record_agent_paths(sim: Simulation): mutable.Map[AgentID, RouteRecorder] = {
-    val routes = new mutable.HashMap[AgentID, RouteRecorder]()
-    sim.listen("route-analyzer", (ev: Sim_Event) => { ev match {
-      case EV_AgentSpawned(a) => {
-        routes(a.id) = new RouteRecorder(a.route)
-      }
-      case _ =>
-    } })
-    return routes
-  }
-
-  private def simulate(round: Int, sim: Simulation) = {
-    var last_time = 0L
-    sim.listen("route-analyzer", (ev: Sim_Event) => { ev match {
-      case EV_Heartbeat(info) => {
-        val now = System.currentTimeMillis
-        if (now - last_time > report_every_ms) {
-          last_time = now
-          notify(s"Round $round at ${Util.time_num(sim.tick)}: ${info.describe}" +
-                 s" / ${sim.finished_count} finished")
-        }
-      }
-      case _ =>
-    } })
-
-    while (!sim.done) {
-      sim.step()
-      if (sim.tick >= deadline) {
-        throw new Exception(s"Simulation past $deadline seconds. Giving up, discarding result.")
-      }
-    }
-  }
-
-  private def notify(status: String) {
-    if (gs_prefix.nonEmpty) {
-      // TODO write the instance name here
-      upload_gs(gs_prefix + "status", status)
-    } else {
-      println(s"*** $status ***")
-    }
-  }
-
-  private def upload_gs(fn: String, contents: String) {
-    Runtime.getRuntime.exec(Array("./tools/cloud/upload_gs.sh", fn, contents))
-  }
 }
