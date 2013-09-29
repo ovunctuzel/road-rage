@@ -7,12 +7,9 @@ package utexas.aorta.analysis
 import scala.collection.mutable
 import java.io.{File, PrintWriter, FileWriter}
 
-import utexas.aorta.map.{Graph, DirectedRoad}
+import utexas.aorta.map.DirectedRoad
 import utexas.aorta.map.analysis.{RouteFeatures, Demand}
-import utexas.aorta.sim.{ScenarioTool, Simulation, Scenario, AgentDistribution, MkAgent, MkWallet,
-                         MkRoute, Sim_Event, EV_Heartbeat, RouteType, EV_AgentSpawned}
-
-import utexas.aorta.common.{Util, Flags, Common, AgentID}
+import utexas.aorta.sim.{Sim_Event, EV_AgentSpawned, Agent}
 
 object RouteAnalyzer {
   def main(args: Array[String]) {
@@ -21,10 +18,10 @@ object RouteAnalyzer {
 }
 
 class RouteAnalyzer(config: ExpConfig) extends Experiment(config) {
-  def run() {
-    val outfn = "route-results"
-    val output = new PrintWriter(new FileWriter(new File(outfn)))
+  private val outfn = "route-results"
+  protected val output = new PrintWriter(new FileWriter(new File(outfn)))
 
+  def run() {
     // Simulate, capturing every driver's route and trip time
     val base_sim = scenario.make_sim(graph).setup()
     val times = record_trip_times()
@@ -40,13 +37,7 @@ class RouteAnalyzer(config: ExpConfig) extends Experiment(config) {
     sim_again.listen("route-analyzer", (ev: Sim_Event) => { ev match {
       case EV_AgentSpawned(a) => {
         val score = score_path(actual_paths(a.id).actual_path, demand)
-        // Output in weka format
-        // input: normalized route features (length, time, congested roads, stop signs, signals,
-        // reservations, queued turns, waiting time), scenario size
-        // output: driver's time, total externality
-        output.println(
-          (score.toList ++ List(scenario.agents.size, times(a.id), 0)).mkString(",")
-        )
+        output_score(a, score, times(a.id))
       }
       case _ =>
     } })
@@ -57,6 +48,10 @@ class RouteAnalyzer(config: ExpConfig) extends Experiment(config) {
       case Some(prefix) => Runtime.getRuntime.exec(Array("gsutil", "cp", outfn, prefix + "results"))
       case None =>
     }
+  }
+
+  protected def output_score(a: Agent, score: RouteFeatures, trip_time: Double) {
+    output.println((score.toList ++ List(scenario.agents.size, trip_time)).mkString(","))
   }
 
   private def score_path(path: List[DirectedRoad], demand: Demand) =

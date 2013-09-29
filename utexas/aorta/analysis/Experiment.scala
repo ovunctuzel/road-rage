@@ -61,17 +61,17 @@ class Experiment(config: ExpConfig) {
   protected val scenario_fn = config.map_fn.replace("maps/", "scenarios/").replace(".map", "_routes")
   // TODO do the caching in the graph load layer.
   protected lazy val graph = Graph.load(config.map_fn)
-  protected lazy val scenario = {
+  protected lazy val scenario = get_scenario()
+  Flags.set("--savestate", "false")
+
+  protected def get_scenario(): Scenario = {
     notify("Generating scenario")
     ScenarioTool.main(Array(
       config.map_fn, "--out", scenario_fn, "--spawn", config.spawn_per_hour.toString,
       "delay=3600", "lifetime=3600", "generations=" + config.generations
     ))
-    Scenario.load(scenario_fn)
+    return Scenario.load(scenario_fn)
   }
-
-  Flags.set("--savestate", "false")
-
 
   // TODO => trip time
   protected def record_trip_times(
@@ -94,6 +94,7 @@ class Experiment(config: ExpConfig) {
   protected def record_agent_paths(
     sim: Simulation, include: (Agent) => Boolean = Function.const(true)
   ): mutable.Map[AgentID, RouteRecorder] = {
+    // TODO could save memory by computing score of route incrementally
     val routes = new mutable.HashMap[AgentID, RouteRecorder]()
     sim.listen("route-analyzer", (ev: Sim_Event) => { ev match {
       case EV_AgentSpawned(a) => {

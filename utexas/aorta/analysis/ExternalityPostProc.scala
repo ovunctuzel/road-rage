@@ -12,12 +12,12 @@ import utexas.aorta.map.analysis.RouteFeatures
 
 import utexas.aorta.common.AgentID
 
-object ExternalityApproximater {
+object ExternalityPostProc {
   def main(args: Array[String]) {
     // args = [test driver lower inclusive, test driver upper inclusive, files with worlds]
     val test_drivers = Range(args(0).toInt, args(1).toInt + 1).map(new AgentID(_))
     val worlds = args.drop(2).map(fn => read_world(fn))
-    new ExternalityApproximater(test_drivers).compute_externality(worlds)
+    new ExternalityPostProc(test_drivers).compute_externality(worlds)
   }
 
   def read_world(fn: String): Map[AgentID, Experience] = {
@@ -33,7 +33,7 @@ object ExternalityApproximater {
 
 case class Experience(trip_time: Double, route_score: RouteFeatures)
 
-class ExternalityApproximater(test_drivers: Seq[AgentID]) {
+class ExternalityPostProc(test_drivers: Seq[AgentID]) {
   // The fixed population, not the test drivers
   private val population = Range(0, test_drivers.head.int).map(new AgentID(_))
 

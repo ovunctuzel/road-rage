@@ -9,7 +9,7 @@ wget http://scala-lang.org/files/archive/scala-2.10.2.deb
 sudo dpkg -i scala-2.10.2.deb
 
 # Grab the AORTA package
-gsutil cp gs://aorta/aorta.tgz .  # TODO force...
+gsutil cp gs://aorta/aorta.tgz .
 mkdir aorta
 cd aorta
 tar xzf ../aorta.tgz
