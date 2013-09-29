@@ -10,12 +10,13 @@ import scala.io.Source
 
 import utexas.aorta.map.analysis.RouteFeatures
 
-import utexas.aorta.common.AgentID
+import utexas.aorta.common.{AgentID, Util}
 
 object ExternalityPostProc {
   def main(args: Array[String]) {
     // args = [test driver lower inclusive, test driver upper inclusive, files with worlds]
     val test_drivers = Range(args(0).toInt, args(1).toInt + 1).map(new AgentID(_))
+    Util.log("Parsing results from each world...")
     val worlds = args.drop(2).map(fn => read_world(fn))
     new ExternalityPostProc(test_drivers).compute_externality(worlds)
   }
@@ -23,9 +24,10 @@ object ExternalityPostProc {
   def read_world(fn: String): Map[AgentID, Experience] = {
     val world = new mutable.HashMap[AgentID, Experience]()
     for (line <- Source.fromFile(fn).getLines) {
-      val Array(id, trip_time, raw_features) = line.split(",", 3)
+      val Array(raw_id, trip_time, raw_features) = line.split(",", 3)
+      val id = new AgentID(raw_id.toDouble.toInt)
       val features = RouteFeatures.fromList(raw_features.split(",").map(_.toDouble))
-      world(new AgentID(id.toInt)) = Experience(trip_time.toDouble, features)
+      world(id) = Experience(trip_time.toDouble, features)
     }
     return world.toMap
   }
@@ -37,12 +39,18 @@ class ExternalityPostProc(test_drivers: Seq[AgentID]) {
   // The fixed population, not the test drivers
   private val population = Range(0, test_drivers.head.int).map(new AgentID(_))
 
-  private val outfn = "externality-results"
+  private val outfn = "externality-data.arff"
   private val output = new PrintWriter(new FileWriter(new File(outfn)))
 
   def compute_externality(worlds: Seq[Map[AgentID, Experience]]) {
+    Util.log("Computing externality...")
     val externality = new mutable.HashMap[AgentID, Double]().withDefaultValue(0)
+    var cnt = 0
     for (driver <- population) {
+      cnt += 1
+      if (cnt % 1000 == 0) {
+        print(s"\r  Evaluated impact on $cnt drivers...")
+      }
       val relevant_worlds = worlds.filter(_.contains(driver))
       if (relevant_worlds.nonEmpty) {
         val best_world = relevant_worlds.minBy(w => w(driver).trip_time)
@@ -50,13 +58,15 @@ class ExternalityPostProc(test_drivers: Seq[AgentID]) {
 
         for (world <- relevant_worlds) {
           val lost_time = world(driver).trip_time - best_time
-          val blame_drivers = world.keys.toSet.diff(best_world.keys.toSet).intersect(test_drivers.toSet)
+          val blame_drivers = test_drivers.filter(a => world.contains(a) && !best_world.contains(a))
+          val num = blame_drivers.size
           for (blame <- blame_drivers) {
-            externality(blame) += lost_time / blame_drivers.size
+            externality(blame) += lost_time / num
           }
         }
       }
     }
+    Util.log("\nPrinting results...")
 
     // Copy the ARFF header
     for (line <- Source.fromFile("misc/route_features.arff").getLines) {
@@ -73,7 +83,7 @@ class ExternalityPostProc(test_drivers: Seq[AgentID]) {
       // externality), or shortest time (most externality)? HOPEFULLY arbitrary since it should be
       // similar among all worlds, since few drivers are changing.
       val features = (worlds.find(_.contains(test_driver)).get)(test_driver).route_score
-      output.println((features.toList ++ List(scenario_size, externality)).mkString(","))
+      output.println((features.toList ++ List(scenario_size, externality(test_driver))).mkString(","))
     }
     output.close()
   }

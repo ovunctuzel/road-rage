@@ -39,7 +39,7 @@ class DifferentialRouteAnalyzer(config: ExpConfig) extends Experiment(config) {
       case _ =>
     } })
     simulate(0, base_sim)
-    val base_fn = scenario_fn.replace("scenarios/", "scenarios/savestate_") + "_" + warmup_time
+    val base_fn = scenario.name.replace("scenarios/", "scenarios/savestate_") + "_" + warmup_time
 
     // Pick a random source and destination for the new driver
     val candidate_edges = AgentDistribution.filter_candidates(graph.edges)

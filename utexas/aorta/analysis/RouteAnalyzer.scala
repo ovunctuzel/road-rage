@@ -18,7 +18,7 @@ object RouteAnalyzer {
 }
 
 class RouteAnalyzer(config: ExpConfig) extends Experiment(config) {
-  private val outfn = "route-results"
+  protected def outfn = "route-results"
   protected val output = new PrintWriter(new FileWriter(new File(outfn)))
 
   def run() {

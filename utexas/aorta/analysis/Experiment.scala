@@ -58,13 +58,13 @@ object ExpConfig {
 }
 
 class Experiment(config: ExpConfig) {
-  protected val scenario_fn = config.map_fn.replace("maps/", "scenarios/").replace(".map", "_routes")
   // TODO do the caching in the graph load layer.
-  protected lazy val graph = Graph.load(config.map_fn)
   protected lazy val scenario = get_scenario()
+  protected lazy val graph = Graph.load(scenario.map_fn)
   Flags.set("--savestate", "false")
 
   protected def get_scenario(): Scenario = {
+    val scenario_fn = config.map_fn.replace("maps/", "scenarios/").replace(".map", "_routes")
     notify("Generating scenario")
     ScenarioTool.main(Array(
       config.map_fn, "--out", scenario_fn, "--spawn", config.spawn_per_hour.toString,
