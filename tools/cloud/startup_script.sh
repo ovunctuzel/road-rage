@@ -19,7 +19,7 @@ tar xzf ../aorta.tgz
 # Run the experiment
 for iter in a b c d e
 do
-  ./tools/analyze_routes ${GS}-${iter}-
+  ./tools/analyze_routes cloud ${GS}-${iter}-
   ./tools/cloud/upload_gs.sh ${GS}-${iter}-status 'Done'
 done
 
