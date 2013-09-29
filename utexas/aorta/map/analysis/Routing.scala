@@ -334,6 +334,11 @@ object RouteFeatures {
   // Produce more diverse paths by rewarding things usually considered bad
   private def rnd = rng.double(-1, 1)
   def random_weight = RouteFeatures(rnd, rnd, rnd, rnd, rnd, rnd, rnd, rnd, rnd, rnd, rnd)
+
+  def fromList(list: Array[Double]) = RouteFeatures(
+    list(0), list(1), list(2), list(3), list(4), list(5), list(6), list(7), list(8), list(9),
+    list(10)
+  )
 }
 
 // Magically knows where everybody wants to go ahead of time. Think of this as representing a

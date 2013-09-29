@@ -12,7 +12,3 @@
 @ATTRIBUTE intersectionDemand NUMERIC
 @ATTRIBUTE agentsRoute NUMERIC
 @ATTRIBUTE scenarioSize NUMERIC
-@ATTRIBUTE tripTime NUMERIC
-@ATTRIBUTE externality NUMERIC
-
-@DATA
