@@ -33,8 +33,13 @@ object ExpConfig {
   def template = ExpConfig(0, 0, 0, 12 * 3600, random_map, None)
 
   def small_local_test = template.copy(spawn_per_hour = 5000, generations = 3)
-  def atx_cloud_test =
-    template.copy(spawn_per_hour = 10000, generations = 3, map_fn = "maps/austin.map")
+  def atx_cloud_test = template.copy(
+    spawn_per_hour = rng.int(10000, 15000), generations = 3,
+    map_fn = rng.choose(Array(
+      "maps/austin.map", "maps/baton_rouge.map", "maps/seattle.map", "maps/sf.map"
+    )))
+  //def safe_atx_cloud_test =
+    //template.copy(spawn_per_hour = 10000, generations = 3, map_fn = "maps/austin.map")
 
   def from_args(args: Array[String]): ExpConfig = {
     // Empty, just mode, or mode and GS prefix

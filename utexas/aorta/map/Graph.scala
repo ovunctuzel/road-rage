@@ -75,6 +75,9 @@ class Graph(
   override def get_r(id: RoadID) = roads(id.int)
   override def get_v(id: VertexID) = vertices(id.int)
   override def get_e(id: EdgeID) = edges(id.int)
+
+  // TODO file library
+  def basename = name.replace("maps/", "").replace(".map", "")
 }
 
 // It's a bit funky, but the actual graph instance doesn't have this; we do.

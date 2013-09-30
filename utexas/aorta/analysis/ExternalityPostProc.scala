@@ -43,6 +43,9 @@ class ExternalityPostProc(test_drivers: Seq[AgentID]) {
   private val output = new PrintWriter(new FileWriter(new File(outfn)))
 
   def compute_externality(worlds: Seq[Map[AgentID, Experience]]) {
+    // TODO this can be MUCH faster by computing the pairwise diff in test drivers between all
+    // worlds once. O(worlds^2) is tiny compared to O(30k population * worlds), and always will be,
+    // unless I get tons of compute power.
     Util.log("Computing externality...")
     val externality = new mutable.HashMap[AgentID, Double]().withDefaultValue(0)
     var cnt = 0

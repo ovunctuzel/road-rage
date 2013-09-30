@@ -45,7 +45,9 @@ class RouteAnalyzer(config: ExpConfig) extends Experiment(config) {
     output.close()
 
     config.gs_prefix match {
-      case Some(prefix) => Runtime.getRuntime.exec(Array("gsutil", "cp", outfn, prefix + "results"))
+      case Some(prefix) => Runtime.getRuntime.exec(Array(
+        "gsutil", "cp", outfn, prefix + "results_" + graph.basename
+      ))
       case None =>
     }
   }
