@@ -1,6 +1,0 @@
-#!/bin/bash
-# Must be run from the base AORTA directory, eg,
-# ./tools/setup_externality_experiment
-
-# Base population of 30k, with 1000 test drivers at the end
-./experiment maps/austin.map --out scenarios/austin_externality --spawn 10000 delay=3600 lifetime=3600 generations=3 --spawn 1000 delay=10800

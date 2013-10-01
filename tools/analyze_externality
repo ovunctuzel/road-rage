@@ -4,4 +4,5 @@
 
 . common
 
-scala -cp $CLASSPATH $JVM_OPTS utexas.aorta.analysis.ExternalityAnalyzer scenarios/austin_externality 30000 $@
+scala -cp $CLASSPATH $JVM_OPTS utexas.aorta.analysis.ExternalityAnalyzer 30000 1000 $@
+# TODO run the postproc on the cloud too?
