@@ -13,59 +13,67 @@ import utexas.aorta.map.analysis.RouteFeatures
 import utexas.aorta.common.{AgentID, Util}
 
 object ExternalityPostProc {
+  private var num_worlds = -1
+
+  // TODO Grab features from which world? Average features? Use longest time (least
+  // externality), or shortest time (most externality)? HOPEFULLY arbitrary since it should be
+  // similar among all worlds, since few drivers are changing.
+  private val testers_features = new mutable.HashMap[AgentID, RouteFeatures]()
+
   def main(args: Array[String]) {
-    // args = [test driver lower inclusive, test driver upper inclusive, files with worlds]
-    val test_drivers = Range(args(0).toInt, args(1).toInt + 1).map(new AgentID(_))
+    // args = [test driver lower inclusive, test driver upper exclusive, files with worlds]
+    val test_drivers = Range(args(0).toInt, args(1).toInt).map(new AgentID(_))
     Util.log("Parsing results from each world...")
+    num_worlds = args.size - 2
     val worlds = args.drop(2).map(fn => read_world(fn))
-    new ExternalityPostProc(test_drivers).compute_externality(worlds)
+    Util.log("")
+    new ExternalityPostProc(test_drivers, num_worlds).compute_externality(
+      worlds, testers_features.toMap
+    )
   }
 
-  def read_world(fn: String): Map[AgentID, Experience] = {
-    val world = new mutable.HashMap[AgentID, Experience]()
+  private var next_id = -1
+
+  def read_world(fn: String): World = {
+    next_id += 1
+    print(s"\r  Parsing world ${next_id + 1} / $num_worlds...")
+    val results = new mutable.HashMap[AgentID, Double]()
     for (line <- Source.fromFile(fn).getLines) {
       val Array(raw_id, trip_time, raw_features) = line.split(",", 3)
       val id = new AgentID(raw_id.toDouble.toInt)
-      val features = RouteFeatures.fromList(raw_features.split(",").map(_.toDouble))
-      world(id) = Experience(trip_time.toDouble, features)
+      if (!testers_features.contains(id)) {
+        testers_features(id) = RouteFeatures.fromList(raw_features.split(",").map(_.toDouble))
+      }
+      results(id) = trip_time.toDouble
     }
-    return world.toMap
+    return World(next_id, results.toMap)
   }
 }
 
-case class Experience(trip_time: Double, route_score: RouteFeatures)
+case class World(id: Int, results: Map[AgentID, Double])
 
-class ExternalityPostProc(test_drivers: Seq[AgentID]) {
+class ExternalityPostProc(test_drivers: Seq[AgentID], num_worlds: Int) {
   // The fixed population, not the test drivers
   private val population = Range(0, test_drivers.head.int).map(new AgentID(_))
 
   private val outfn = "externality-data.arff"
   private val output = new PrintWriter(new FileWriter(new File(outfn)))
 
-  def compute_externality(worlds: Seq[Map[AgentID, Experience]]) {
-    // TODO this can be MUCH faster by computing the pairwise diff in test drivers between all
-    // worlds once. O(worlds^2) is tiny compared to O(30k population * worlds), and always will be,
-    // unless I get tons of compute power.
+  def compute_externality(worlds: Seq[World], testers_features: Map[AgentID, RouteFeatures]) {
+    // Represents the externality of all test drivers in the first world but not the second
+    val externality = Array.fill(num_worlds)(0.0)
     Util.log("Computing externality...")
-    val externality = new mutable.HashMap[AgentID, Double]().withDefaultValue(0)
     var cnt = 0
     for (driver <- population) {
       cnt += 1
       if (cnt % 1000 == 0) {
         print(s"\r  Evaluated impact on $cnt drivers...")
       }
-      val relevant_worlds = worlds.filter(_.contains(driver))
+      val relevant_worlds = worlds.filter(_.results.contains(driver))
       if (relevant_worlds.nonEmpty) {
-        val best_world = relevant_worlds.minBy(w => w(driver).trip_time)
-        val best_time = best_world(driver).trip_time
-
+        val best_time = relevant_worlds.map(_.results(driver)).min
         for (world <- relevant_worlds) {
-          val lost_time = world(driver).trip_time - best_time
-          val blame_drivers = test_drivers.filter(a => world.contains(a) && !best_world.contains(a))
-          val num = blame_drivers.size
-          for (blame <- blame_drivers) {
-            externality(blame) += lost_time / num
-          }
+          externality(world.id) += world.results(driver) - best_time
         }
       }
     }
@@ -79,14 +87,14 @@ class ExternalityPostProc(test_drivers: Seq[AgentID]) {
     output.println("")
     output.println("@DATA")
 
-    // For each test driver with externality defined, print out a weka line
+    // For each test driver, print out a weka line
     val scenario_size = test_drivers.head.int
-    for (test_driver <- test_drivers if externality.contains(test_driver)) {
-      // TODO Grab features from which world? Average features? Use longest time (least
-      // externality), or shortest time (most externality)? HOPEFULLY arbitrary since it should be
-      // similar among all worlds, since few drivers are changing.
-      val features = (worlds.find(_.contains(test_driver)).get)(test_driver).route_score
-      output.println((features.toList ++ List(scenario_size, externality(test_driver))).mkString(","))
+    for (test_driver <- test_drivers) {
+      val their_worlds = worlds.filter(_.results.contains(test_driver)).map(_.id)
+      val their_blame = their_worlds.map(externality(_)).sum
+      output.println(
+        (testers_features(test_driver).toList ++ List(scenario_size, their_blame)).mkString(",")
+      )
     }
     output.close()
   }
