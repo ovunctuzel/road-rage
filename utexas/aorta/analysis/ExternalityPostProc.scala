@@ -91,10 +91,12 @@ class ExternalityPostProc(test_drivers: Seq[AgentID], num_worlds: Int) {
     val scenario_size = test_drivers.head.int
     for (test_driver <- test_drivers) {
       val their_worlds = worlds.filter(_.results.contains(test_driver)).map(_.id)
-      val their_blame = their_worlds.map(externality(_)).sum
-      output.println(
-        (testers_features(test_driver).toList ++ List(scenario_size, their_blame)).mkString(",")
-      )
+      if (their_worlds.nonEmpty) {
+        val their_blame = their_worlds.map(externality(_)).sum
+        output.println(
+          (testers_features(test_driver).toList ++ List(scenario_size, their_blame)).mkString(",")
+        )
+      }
     }
     output.close()
   }
