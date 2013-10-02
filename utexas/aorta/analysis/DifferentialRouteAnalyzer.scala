@@ -20,6 +20,8 @@ object DifferentialRouteAnalyzer {
   }
 }
 
+// TODO I haven't kept this code up to date much, since it's been replaced with other forms of
+// experiments.
 class DifferentialRouteAnalyzer(config: ExpConfig) extends Experiment(config) {
   val new_id = new AgentID(scenario.agents.size)
   val warmup_time = 3600

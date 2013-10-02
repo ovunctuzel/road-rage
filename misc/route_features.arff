@@ -10,5 +10,5 @@
 @ATTRIBUTE waitingTime NUMERIC
 @ATTRIBUTE roadDemand NUMERIC
 @ATTRIBUTE intersectionDemand NUMERIC
-@ATTRIBUTE agentsRoute NUMERIC
+@ATTRIBUTE agentsEnroute NUMERIC
 @ATTRIBUTE scenarioSize NUMERIC

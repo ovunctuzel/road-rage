@@ -283,7 +283,6 @@ case class RouteFeatures(
     intersection_demand / other.intersection_demand,
     agents_enroute / other.agents_enroute)
 
-  // weights should also account for normalization by dividing by the "soft max" for each feature
   def score(weights: RouteFeatures): Double
     = ((total_length * weights.total_length)
     + (total_freeflow_time * weights.total_freeflow_time)
