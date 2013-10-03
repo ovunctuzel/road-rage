@@ -25,10 +25,11 @@ object ExternalityPostProc {
     val test_drivers = Range(args(0).toInt, args(1).toInt).map(new AgentID(_))
     Util.log("Parsing results from each world...")
     num_worlds = args.size - 2
-    val worlds = args.drop(2).map(fn => read_world(fn))
+    val base_world = read_world(args(2))
+    val worlds = args.drop(3).map(fn => read_world(fn))
     Util.log("")
     new ExternalityPostProc(test_drivers, num_worlds).compute_externality(
-      worlds, testers_features.toMap
+      base_world, worlds, testers_features.toMap
     )
   }
 
@@ -50,6 +51,7 @@ object ExternalityPostProc {
   }
 }
 
+// double is trip time
 case class World(id: Int, results: Map[AgentID, Double])
 
 class ExternalityPostProc(test_drivers: Seq[AgentID], num_worlds: Int) {
@@ -59,7 +61,7 @@ class ExternalityPostProc(test_drivers: Seq[AgentID], num_worlds: Int) {
   private val outfn = "externality-data.arff"
   private val output = new PrintWriter(new FileWriter(new File(outfn)))
 
-  def compute_externality(worlds: Seq[World], testers_features: Map[AgentID, RouteFeatures]) {
+  def compute_externality(base_world: World, worlds: Seq[World], testers_features: Map[AgentID, RouteFeatures]) {
     // Represents the externality of all test drivers in the first world but not the second
     val externality = Array.fill(num_worlds)(0.0)
     Util.log("Computing externality...")
@@ -71,9 +73,9 @@ class ExternalityPostProc(test_drivers: Seq[AgentID], num_worlds: Int) {
       }
       val relevant_worlds = worlds.filter(_.results.contains(driver))
       if (relevant_worlds.nonEmpty) {
-        val best_time = relevant_worlds.map(_.results(driver)).min
+        val base_time = base_world.results(driver)
         for (world <- relevant_worlds) {
-          externality(world.id) += world.results(driver) - best_time
+          externality(world.id) += world.results(driver) - base_time
         }
       }
     }
@@ -92,7 +94,8 @@ class ExternalityPostProc(test_drivers: Seq[AgentID], num_worlds: Int) {
     for (test_driver <- test_drivers) {
       val their_worlds = worlds.filter(_.results.contains(test_driver)).map(_.id)
       if (their_worlds.nonEmpty) {
-        val their_blame = their_worlds.map(externality(_)).sum
+        // Discount them for the number of worlds they were in
+        val their_blame = their_worlds.map(externality(_)).sum / their_worlds.size
         output.println(
           (testers_features(test_driver).toList ++ List(scenario_size, their_blame)).mkString(",")
         )

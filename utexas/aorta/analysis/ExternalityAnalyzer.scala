@@ -42,6 +42,7 @@ class ExternalityAnalyzer(population_size: Int, test_size: Int, config: ExpConfi
     // Choose a random half of the test population
     val chosen_testers = Random.shuffle(test_drivers.toList).take(test_size / 2)
     Util.log(s"Randomly chose the following test drivers: ${chosen_testers.map(_.id).sortBy(_.int)}")
+    // TODO instrument so base scenario can run, 0 chosen_testers
     return base.copy(agents = population ++ chosen_testers)
   }
 
