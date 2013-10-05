@@ -37,18 +37,28 @@ class RouteChooser(graph: Graph, demand: Demand, predictor: Predictor) {
     val scores_seen = new mutable.HashSet[RouteFeatures]()
     val result = new mutable.ListBuffer[RouteChoice]()
     for (i <- 1 to num_routes) {
-      var continue = true
-      while (continue) {
-        val router = new AstarRouter(graph, RouteFeatures.random_weight, demand)
-        val scored_path = router.scored_path(start, end)
-        val path = scored_path._1
-        val score = scored_path._2
-        if (!scores_seen.contains(score)) {
-          scores_seen += score
-          result += RouteChoice(
-            path, score, predictor.trip_time(score), predictor.externality(score)
-          )
-          continue = false
+      if (i == 1) {
+        // Always include the baseline path
+        val path = graph.ch_router.path(start, end, Common.tick)
+        val score = path
+          .map(step => RouteFeatures.for_step(step, demand))
+          .fold(RouteFeatures.BLANK)((a, b) => a + b)
+        scores_seen += score
+        result += RouteChoice(path, score, predictor.trip_time(score), predictor.externality(score))
+      } else {
+        var continue = true
+        while (continue) {
+          val router = new AstarRouter(graph, RouteFeatures.random_weight, demand)
+          val scored_path = router.scored_path(start, end)
+          val path = scored_path._1
+          val score = scored_path._2
+          if (!scores_seen.contains(score)) {
+            scores_seen += score
+            result += RouteChoice(
+              path, score, predictor.trip_time(score), predictor.externality(score)
+            )
+            continue = false
+          }
         }
       }
     }
@@ -60,18 +70,19 @@ class RouteChooser(graph: Graph, demand: Demand, predictor: Predictor) {
 
     // The cheapest route is the baseline
     val baseline = choices.minBy(_.predicted_externality)
+    val alts = choices.filter(c => c != baseline)
     def rating(r: RouteChoice): ValueOfTime = new ValueOfTime(
       (baseline.predicted_time - r.predicted_time) /
       (r.predicted_externality - baseline.predicted_externality)
     )
-    val best = choices.maxBy(c => rating(c).time_per_cost)
+    val best = alts.maxBy(c => rating(c).time_per_cost)
 
     if (debug) {
       println(s"baseline is $baseline")
-      for (c <- choices) {
+      for (c <- alts) {
         println(s"  $c")
-        println(s"  time savings: ${baseline.predicted_time - c.predicted_time}, cost ${c.predicted_externality - baseline.predicted_externality}, value ${rating(c)}")
-        println(s"  features... ${c.score}")
+        println(s"    time savings: ${baseline.predicted_time - c.predicted_time}, cost ${c.predicted_externality - baseline.predicted_externality}, value ${rating(c)}")
+        println(s"    features... ${c.score}")
       }
       println(s"best is $best, with rating ${rating(best)}")
       println(s"agents VOT is $vot")

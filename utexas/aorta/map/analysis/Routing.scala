@@ -318,7 +318,7 @@ object RouteFeatures {
 
   private val rng = new RNG()
   // Produce more diverse paths by rewarding things usually considered bad
-  private def rnd = rng.double(-1, 1)
+  private def rnd = rng.double(0, 1)
   def random_weight = RouteFeatures(rnd, rnd, rnd, rnd, rnd, rnd, rnd, rnd, rnd, rnd, rnd)
 
   def fromList(list: Array[Double]) = RouteFeatures(

@@ -30,6 +30,7 @@ class TradeoffExperiment(config: ExpConfig) extends Experiment(config) {
 
     // Enable route choices
     // TODO the hackiness! :O
+    notify("Precomputing demand...")
     Graph.route_chooser = new RouteChooser(
       graph, Demand.demand_for(scenario, graph), new Predictor(
         // from the SF model
