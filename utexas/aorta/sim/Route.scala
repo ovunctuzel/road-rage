@@ -8,6 +8,7 @@ import scala.collection.immutable.TreeMap
 import scala.collection.mutable.{ImmutableMapAdaptor, ListBuffer}
 
 import utexas.aorta.map.{Edge, DirectedRoad, Traversable, Turn, Vertex, Graph}
+import utexas.aorta.sim.meep.AgentAdaptor
 
 import utexas.aorta.common.{Util, RNG, Common, cfg, StateWriter, StateReader, TurnID}
 
@@ -251,10 +252,7 @@ class PathRoute(goal: DirectedRoad, orig_route: List[DirectedRoad], rng: RNG) ex
       // TODO hax
       val new_path =
         if (Graph.route_chooser != null) {
-          val choices = Graph.route_chooser.discover_routes(source, goal, Graph.num_routes)
-          val choice = Graph.route_chooser.choose_route(choices, agent.value_of_time)
-          // TODO dbug
-          slice.head :: source :: choice.path
+          slice.head :: source :: AgentAdaptor.path(source, goal, agent)
         } else {
           slice.head :: source ::
           Common.sim.graph.congestion_router.path(source, goal, Common.tick)
@@ -275,9 +273,7 @@ class PathRoute(goal: DirectedRoad, orig_route: List[DirectedRoad], rng: RNG) ex
       // TODO hax
       path =
         if (Graph.route_chooser != null) {
-          val choices = Graph.route_chooser.discover_routes(from.directed_road, goal, Graph.num_routes)
-          val choice = Graph.route_chooser.choose_route(choices, agent.value_of_time)
-          from.directed_road :: choice.path
+          from.directed_road :: AgentAdaptor.path(from.directed_road, goal, agent)
         } else {
           from.directed_road ::
           Common.sim.graph.router.path(from.directed_road, goal, Common.tick)

@@ -6,7 +6,8 @@ package utexas.aorta.sim.meep
 
 import utexas.aorta.map.{Graph, DirectedRoad}
 import utexas.aorta.map.analysis.{AstarRouter, Demand, RouteFeatures}
-import utexas.aorta.common.Common
+import utexas.aorta.sim.Agent
+import utexas.aorta.common.{Common, AgentID}
 
 import scala.collection.mutable
 
@@ -100,5 +101,16 @@ class RouteChooser(graph: Graph, demand: Demand, predictor: Predictor) {
       // Freebie
       return baseline.copy(predicted_externality = 0)
     }
+  }
+}
+
+object AgentAdaptor {
+  var max_paid = new mutable.HashMap[AgentID, Double]().withDefaultValue(0)
+
+  def path(from: DirectedRoad, to: DirectedRoad, a: Agent): List[DirectedRoad] = {
+    val choices = Graph.route_chooser.discover_routes(from, to, Graph.num_routes)
+    val choice = Graph.route_chooser.choose_route(choices, a.value_of_time)
+    max_paid(a.id) = math.max(max_paid(a.id), choice.predicted_externality)
+    return choice.path
   }
 }
