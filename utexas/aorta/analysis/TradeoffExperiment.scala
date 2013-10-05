@@ -10,7 +10,7 @@ import java.io.{File, PrintWriter, FileWriter}
 import utexas.aorta.map.{DirectedRoad, Graph}
 import utexas.aorta.map.analysis.{RouteFeatures, Demand}
 import utexas.aorta.sim.{Sim_Event, EV_AgentSpawned, Agent}
-import utexas.aorta.sim.meep.{RouteChooser, Predictor, LinearModel}
+import utexas.aorta.sim.meep.{RouteChooser, Predictor, LinearModel, AgentAdaptor}
 
 object TradeoffExperiment {
   def main(args: Array[String]) {
@@ -45,14 +45,33 @@ class TradeoffExperiment(config: ExpConfig) extends Experiment(config) {
             agents_enroute = 1.5), scenario_size_weight = 5.0, constant = 0
         )
       ))
-    Graph.num_routes = 5
+    
+    // Try different numbers of route choices? For now, just one
+    for (num_routes <- List(5)) {
+      Graph.num_routes = num_routes
+      AgentAdaptor.reset()
+      val mod_sim = scenario.make_sim(graph).setup()
+      val mod_times = record_trip_times()
+      simulate(1, mod_sim)
 
-    // TODO multiple rounds and stuff, for one base?
-    val mod_sim = scenario.make_sim(graph).setup()
-    val mod_times = record_trip_times()
-    simulate(1, mod_sim)
+      val total_saved_time = scenario.agents.map(a => mod_times(a.id) - base_times(a.id)).sum
+      val aggregate_vot = total_saved_time / AgentAdaptor.max_paid.values.sum
+      val gain_vot = scenario.agents.map(
+        a => ((mod_times(a.id) - base_times(a.id)) / AgentAdaptor.max_paid(a.id)) - a.wallet.priority
+      ).sum
+      output.println(List(
+        num_routes, scenario.agents.size, total_saved_time, aggregate_vot, gain_vot
+      ).mkString(","))
 
-    // TODO emit lotsa output. 3 metrics in the paper.
+      val debug = true
+      if (debug) {
+        // TODO perhaps record, in some form?
+        println("Individual experiences...")
+        for (a <- scenario.agents) {
+          println(s"  $a: base ${base_times(a.id)}, mod ${mod_times(a.id)}, paid ${AgentAdaptor.max_paid(a.id)}, VOT ${a.wallet.priority}")
+        }
+      }
+    }
 
     output.close()
     config.gs_prefix match {

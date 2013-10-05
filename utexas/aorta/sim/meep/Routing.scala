@@ -70,11 +70,16 @@ class RouteChooser(graph: Graph, demand: Demand, predictor: Predictor) {
   }
 
   def choose_route(choices: List[RouteChoice], vot: ValueOfTime): RouteChoice = {
-    val debug = true  // TODO
+    val debug = false // TODO
 
     // The cheapest route is the baseline
     val baseline = choices.minBy(_.predicted_externality)
     val alts = choices.filter(c => c != baseline)
+    if (alts.isEmpty) {
+      // Sad day.
+      return baseline.copy(predicted_externality = 0)
+    }
+
     def rating(r: RouteChoice): ValueOfTime = new ValueOfTime(
       (baseline.predicted_time - r.predicted_time) /
       (r.predicted_externality - baseline.predicted_externality)
@@ -105,7 +110,11 @@ class RouteChooser(graph: Graph, demand: Demand, predictor: Predictor) {
 }
 
 object AgentAdaptor {
-  var max_paid = new mutable.HashMap[AgentID, Double]().withDefaultValue(0)
+  val max_paid = new mutable.HashMap[AgentID, Double]().withDefaultValue(0)
+
+  def reset() {
+    max_paid.clear()
+  }
 
   def path(from: DirectedRoad, to: DirectedRoad, a: Agent): List[DirectedRoad] = {
     val choices = Graph.route_chooser.discover_routes(from, to, Graph.num_routes)
