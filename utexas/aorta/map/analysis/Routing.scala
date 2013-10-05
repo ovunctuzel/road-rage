@@ -270,19 +270,6 @@ case class RouteFeatures(
     intersection_demand + other.intersection_demand,
     agents_enroute + other.agents_enroute)
 
-  def /(other: RouteFeatures) = RouteFeatures(
-    total_length / other.total_length,
-    total_freeflow_time / other.total_freeflow_time,
-    congested_road_count / other.congested_road_count,
-    stop_sign_count / other.stop_sign_count,
-    signal_count / other.signal_count,
-    reservation_count / other.reservation_count,
-    queued_turn_count / other.queued_turn_count,
-    total_avg_waiting_time / other.total_avg_waiting_time,
-    road_demand / other.road_demand,
-    intersection_demand / other.intersection_demand,
-    agents_enroute / other.agents_enroute)
-
   def score(weights: RouteFeatures): Double
     = ((total_length * weights.total_length)
     + (total_freeflow_time * weights.total_freeflow_time)
@@ -363,11 +350,7 @@ object Demand {
 }
 
 // A* is a misnomer; there's no heuristic right now.
-class AstarRouter(graph: Graph, raw_weights: RouteFeatures, demand: Demand)
-  extends Router(graph)
-{
-  val weights = raw_weights / max_weights()
-
+class AstarRouter(graph: Graph, val weights: RouteFeatures, demand: Demand) extends Router(graph) {
   override def path(from: DirectedRoad, to: DirectedRoad, time: Double) = scored_path(from, to)._1
 
   // Return the weight of the final path too
@@ -436,31 +419,5 @@ class AstarRouter(graph: Graph, raw_weights: RouteFeatures, demand: Demand)
 
     // We didn't find the way?! The graph is connected!
     throw new Exception("Couldn't A* from " + from + " to " + to)
-  }
-
-  def max_weights(): RouteFeatures = {
-    // These are "soft max" values, meaning the actual value could exceed these, but generally they
-    // wont.
-    val min_x = graph.vertices.map(_.location.x).min
-    val max_x = graph.vertices.map(_.location.x).max
-    val min_y = graph.vertices.map(_.location.y).min
-    val max_y = graph.vertices.map(_.location.y).max
-    val max_length = new Coordinate(min_x, min_y).dist_to(new Coordinate(max_x, max_y))
-    val max_time = max_length / Physics.mph_to_si(30)
-    val max_congestion = graph.directed_roads.size
-    val intersections = graph.vertices.groupBy(_.intersection.policy.policy_type)
-    val max_queued_turns = graph.edges.map(e => e.queue.capacity).sum
-    val max_avg_waiting = graph.vertices.size * 60  // particularly arbitrary, this one!
-    // These depend on the scenario size! Really no way to pick.
-    val max_road_demand = 15000
-    val max_intersection_demand = 15000
-    val max_enroute = 15000
-    return RouteFeatures(
-      max_length, max_time, max_congestion,
-      intersections(IntersectionType.StopSign).size,
-      intersections(IntersectionType.Signal).size,
-      intersections(IntersectionType.Reservation).size,
-      max_queued_turns, max_avg_waiting, max_road_demand, max_intersection_demand, max_enroute
-    )
   }
 }

@@ -51,7 +51,7 @@ class TradeoffExperiment(config: ExpConfig) extends Experiment(config) {
     val mod_times = record_trip_times()
     simulate(1, mod_sim)
 
-    // TODO emit lotsa output
+    // TODO emit lotsa output. 3 metrics in the paper.
 
     output.close()
     config.gs_prefix match {

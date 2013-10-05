@@ -71,7 +71,7 @@ class RouteChooser(graph: Graph, demand: Demand, predictor: Predictor) {
       for (c <- choices) {
         println(s"  $c")
         println(s"  time savings: ${baseline.predicted_time - c.predicted_time}, cost ${c.predicted_externality - baseline.predicted_externality}, value ${rating(c)}")
-        println(s"  features... ${c.features}")
+        println(s"  features... ${c.score}")
       }
       println(s"best is $best, with rating ${rating(best)}")
       println(s"agents VOT is $vot")
