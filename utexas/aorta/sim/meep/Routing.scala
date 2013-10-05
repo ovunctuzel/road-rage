@@ -13,7 +13,7 @@ case class LinearModel(weights: RouteFeatures, constant: Double) {
   def predict(score: RouteFeatures) = weights.score(score) + constant
 }
 
-class Predictor(time_model: LinearModel, externality_model: LinearModel) {
+case class Predictor(time_model: LinearModel, externality_model: LinearModel) {
   def trip_time(score: RouteFeatures) = time_model.predict(score)
   def externality(score: RouteFeatures) = externality_model.predict(score)
 }
@@ -28,7 +28,7 @@ class ValueOfTime(val time_per_cost: Double) extends AnyVal {
 }
 
 class RouteChooser(graph: Graph, demand: Demand, predictor: Predictor) {
-  def discover_routes(start: DirectedRoad, end: DirectedRoad, num: Int): List[RouteChoice] = {
+  def discover_routes(start: DirectedRoad, end: DirectedRoad, num_routes: Int): List[RouteChoice] = {
     val scores_seen = new mutable.HashSet[RouteFeatures]()
     val result = new mutable.ListBuffer[RouteChoice]()
     for (i <- 1 to num) {

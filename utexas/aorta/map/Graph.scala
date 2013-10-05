@@ -82,6 +82,9 @@ class Graph(
 
 // It's a bit funky, but the actual graph instance doesn't have this; we do.
 object Graph {
+  // TODO total hack, please do this properly when i have time.
+  var route_choice_experiment = false
+
   var width = 0.0
   var height = 0.0
   var xoff = 0.0

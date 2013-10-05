@@ -14,12 +14,21 @@ import utexas.aorta.common.{Util, RNG, Common, cfg, StateWriter, StateReader, Tu
 // Get a client to their goal by any means possible.
 abstract class Route(val goal: DirectedRoad, rng: RNG) extends ListenerPattern[Route_Event] {
   //////////////////////////////////////////////////////////////////////////////
+  // State
+
+  protected var agent: Agent = null
+
+  //////////////////////////////////////////////////////////////////////////////
   // Meta
 
   def serialize(w: StateWriter) {
     w.int(route_type.id)
     w.int(goal.id.int)
     rng.serialize(w)
+  }
+
+  def setup(a: Agent) {
+    agent = a
   }
 
   protected def unserialize(r: StateReader, graph: Graph) {}
