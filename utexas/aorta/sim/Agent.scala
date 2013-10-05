@@ -8,6 +8,7 @@ import scala.collection.mutable.{TreeSet => MutableSet}
 
 import utexas.aorta.map.{Edge, Coordinate, Turn, Traversable, Graph, Position}
 import utexas.aorta.sim.market._
+import utexas.aorta.sim.meep.ValueOfTime
 import utexas.aorta.ui.Renderable
 import utexas.aorta.analysis.Agent_Lifetime_Stat
 
@@ -499,6 +500,9 @@ class Agent(
   def max_next_dist = Physics.max_next_dist(speed, at.on.speed_limit)
   def min_next_dist = Physics.min_next_dist(speed)
   def max_next_speed = Physics.max_next_speed(speed, at.on.speed_limit)
+
+  // Seconds saved per dollar. Just use priority for now.
+  def value_of_time = new ValueOfTime(wallet.priority)
 }
 
 object Agent {

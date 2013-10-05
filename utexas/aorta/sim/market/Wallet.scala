@@ -279,11 +279,10 @@ class SystemWallet() extends Wallet(0, 0) {
 
 // Bids to maintain "fairness."
 object SystemWallets {
-  // Keep these separate just for book-keeping
-
   // TODO this singleton is a prime example of why multiple simulations per process dont work well
   // with the scala singleton pattern.
 
+  // Keep these separate just for book-keeping
   val thruput = new SystemWallet()
   val capacity = new SystemWallet()
   val dependency = new SystemWallet()

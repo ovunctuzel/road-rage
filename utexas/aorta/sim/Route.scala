@@ -248,9 +248,17 @@ class PathRoute(goal: DirectedRoad, orig_route: List[DirectedRoad], rng: RNG) ex
 
       // Stitch together the new path into the full thing. Avoid congestion
       // during this reroute.
+      // TODO hax
       val new_path =
-        slice.head :: source ::
-        Common.sim.graph.congestion_router.path(source, goal, Common.tick)
+        if (Graph.route_chooser != null) {
+          val choices = Graph.route_chooser.discover_routes(source, goal, Graph.num_routes)
+          val choice = Graph.route_chooser.choose_route(choices, agent.value_of_time)
+          // TODO dbug
+          slice.head :: source :: choice.path
+        } else {
+          slice.head :: source ::
+          Common.sim.graph.congestion_router.path(source, goal, Common.tick)
+        }
       path = before ++ new_path
       tell_listeners(EV_Reroute(path))
       choice
@@ -264,9 +272,16 @@ class PathRoute(goal: DirectedRoad, orig_route: List[DirectedRoad], rng: RNG) ex
   def pick_lane(from: Edge): Edge = {
     // This method is called first, so do the lazy initialization here.
     if (path.isEmpty) {
+      // TODO hax
       path =
-        from.directed_road ::
-        Common.sim.graph.router.path(from.directed_road, goal, Common.tick)
+        if (Graph.route_chooser != null) {
+          val choices = Graph.route_chooser.discover_routes(from.directed_road, goal, Graph.num_routes)
+          val choice = Graph.route_chooser.choose_route(choices, agent.value_of_time)
+          from.directed_road :: choice.path
+        } else {
+          from.directed_road ::
+          Common.sim.graph.router.path(from.directed_road, goal, Common.tick)
+        }
       tell_listeners(EV_Reroute(path))
     }
 

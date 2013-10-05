@@ -10,6 +10,7 @@ import java.io.{File, PrintWriter, FileWriter}
 import utexas.aorta.map.{DirectedRoad, Graph}
 import utexas.aorta.map.analysis.{RouteFeatures, Demand}
 import utexas.aorta.sim.{Sim_Event, EV_AgentSpawned, Agent}
+import utexas.aorta.sim.meep.{RouteChooser, Predictor, LinearModel}
 
 object TradeoffExperiment {
   def main(args: Array[String]) {
@@ -28,15 +29,24 @@ class TradeoffExperiment(config: ExpConfig) extends Experiment(config) {
     simulate(0, base_sim)
 
     // Enable route choices
-    Graph.route_choice_experiment = true
     // TODO the hackiness! :O
-    Graph.tmp_demand = Demand.demand_for(scenario, graph)
-    Graph.tmp_predictor = Predictor(
-      time_model = LinearModel(),
-      externality_model = LinearModel()
-    )
+    Graph.route_chooser = new RouteChooser(
+      graph, Demand.demand_for(scenario, graph), new Predictor(
+        // from the SF model
+        time_model = LinearModel(
+          RouteFeatures(-0.0439, 1.3905, 46.2986, 8.0701, 36.8984, 4.2773, 4.051, -0.6787, -0.009,
+            0.0063, 3.0402), scenario_size_weight = -0.0053, constant = 221.7262
+        ),
+        // made up!
+        externality_model = LinearModel(
+          RouteFeatures.BLANK.copy(congested_road_count = 1.0, queued_turn_count = 2.0,
+            total_avg_waiting_time = 3.0, road_demand = 1.5, intersection_demand = 4.5,
+            agents_enroute = 1.5), scenario_size_weight = 5.0, constant = 0
+        )
+      ))
+    Graph.num_routes = 5
 
-    // TODO multiple rounds and stuff, for one base
+    // TODO multiple rounds and stuff, for one base?
     val mod_sim = scenario.make_sim(graph).setup()
     val mod_times = record_trip_times()
     simulate(1, mod_sim)

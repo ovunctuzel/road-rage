@@ -6,8 +6,8 @@ package utexas.aorta.map
 
 import scala.collection.mutable.{HashMap, PriorityQueue, HashSet}
 
-import utexas.aorta.map.analysis.{Router, DijkstraRouter, CHRouter,
-                                  CongestionRouter}
+import utexas.aorta.map.analysis.{Router, DijkstraRouter, CHRouter, CongestionRouter}
+import utexas.aorta.sim.meep.RouteChooser
 
 import utexas.aorta.common.{Util, Common, StateWriter, StateReader, RoadID,
                             VertexID, EdgeID, DirectedRoadID}
@@ -83,7 +83,8 @@ class Graph(
 // It's a bit funky, but the actual graph instance doesn't have this; we do.
 object Graph {
   // TODO total hack, please do this properly when i have time.
-  var route_choice_experiment = false
+  var route_chooser: RouteChooser = null
+  var num_routes = 0
 
   var width = 0.0
   var height = 0.0

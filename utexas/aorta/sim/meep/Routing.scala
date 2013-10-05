@@ -6,11 +6,14 @@ package utexas.aorta.sim.meep
 
 import utexas.aorta.map.{Graph, DirectedRoad}
 import utexas.aorta.map.analysis.{AstarRouter, Demand, RouteFeatures}
+import utexas.aorta.common.Common
 
 import scala.collection.mutable
 
-case class LinearModel(weights: RouteFeatures, constant: Double) {
-  def predict(score: RouteFeatures) = weights.score(score) + constant
+// TODO hackish to have an extra weight there.
+case class LinearModel(weights: RouteFeatures, scenario_size_weight: Double, constant: Double) {
+  def predict(score: RouteFeatures) =
+    weights.score(score) + (scenario_size_weight * Common.scenario.agents.size) + constant
 }
 
 case class Predictor(time_model: LinearModel, externality_model: LinearModel) {
@@ -21,7 +24,9 @@ case class Predictor(time_model: LinearModel, externality_model: LinearModel) {
 case class RouteChoice(
   path: List[DirectedRoad], score: RouteFeatures, predicted_time: Double,
   predicted_externality: Double
-)
+) {
+  override def toString = s"Route Choice[time ~ $predicted_time, cost ~ $predicted_externality]"
+}
 
 class ValueOfTime(val time_per_cost: Double) extends AnyVal {
   override def toString = time_per_cost.toString
@@ -31,7 +36,7 @@ class RouteChooser(graph: Graph, demand: Demand, predictor: Predictor) {
   def discover_routes(start: DirectedRoad, end: DirectedRoad, num_routes: Int): List[RouteChoice] = {
     val scores_seen = new mutable.HashSet[RouteFeatures]()
     val result = new mutable.ListBuffer[RouteChoice]()
-    for (i <- 1 to num) {
+    for (i <- 1 to num_routes) {
       var continue = true
       while (continue) {
         val router = new AstarRouter(graph, RouteFeatures.random_weight, demand)
@@ -51,6 +56,8 @@ class RouteChooser(graph: Graph, demand: Demand, predictor: Predictor) {
   }
 
   def choose_route(choices: List[RouteChoice], vot: ValueOfTime): RouteChoice = {
+    val debug = true  // TODO
+
     // The cheapest route is the baseline
     val baseline = choices.minBy(_.predicted_externality)
     def rating(r: RouteChoice): ValueOfTime = new ValueOfTime(
@@ -58,6 +65,18 @@ class RouteChooser(graph: Graph, demand: Demand, predictor: Predictor) {
       (r.predicted_externality - baseline.predicted_externality)
     )
     val best = choices.maxBy(c => rating(c).time_per_cost)
+
+    if (debug) {
+      println(s"baseline is $baseline")
+      for (c <- choices) {
+        println(s"  $c")
+        println(s"  time savings: ${baseline.predicted_time - c.predicted_time}, cost ${c.predicted_externality - baseline.predicted_externality}, value ${rating(c)}")
+        println(s"  features... ${c.features}")
+      }
+      println(s"best is $best, with rating ${rating(best)}")
+      println(s"agents VOT is $vot")
+    }
+
     if (rating(best).time_per_cost >= vot.time_per_cost) {
       // Pay the difference
       return best.copy(
