@@ -36,6 +36,8 @@ class RouteChooser(graph: Graph, demand: Demand, predictor: Predictor) {
   def discover_routes(start: DirectedRoad, end: DirectedRoad, num_routes: Int): List[RouteChoice] = {
     val scores_seen = new mutable.HashSet[RouteFeatures]()
     val result = new mutable.ListBuffer[RouteChoice]()
+    // Don't block completely
+    var total_attempts_remaining = num_routes * 2
     for (i <- 1 to num_routes) {
       if (i == 1) {
         // Always include the baseline path
@@ -47,7 +49,8 @@ class RouteChooser(graph: Graph, demand: Demand, predictor: Predictor) {
         result += RouteChoice(path, score, predictor.trip_time(score), predictor.externality(score))
       } else {
         var continue = true
-        while (continue) {
+        while (continue && total_attempts_remaining > 0) {
+          total_attempts_remaining -= 1
           val router = new AstarRouter(graph, RouteFeatures.random_weight, demand)
           val scored_path = router.scored_path(start, end)
           val path = scored_path._1
