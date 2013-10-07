@@ -111,6 +111,7 @@ class RouteChooser(graph: Graph, demand: Demand, predictor: Predictor) {
 
 object AgentAdaptor {
   val max_paid = new mutable.HashMap[AgentID, Double]().withDefaultValue(0)
+  var special_routes: Set[AgentID] = Nil.toSet
 
   def reset() {
     max_paid.clear()

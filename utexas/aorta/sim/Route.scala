@@ -251,7 +251,7 @@ class PathRoute(goal: DirectedRoad, orig_route: List[DirectedRoad], rng: RNG) ex
       // during this reroute.
       // TODO hax
       val new_path =
-        if (Graph.route_chooser != null) {
+        if (AgentAdaptor.special_routes.contains(agent.id)) {
           slice.head :: source :: AgentAdaptor.path(source, goal, agent)
         } else {
           slice.head :: source ::
@@ -272,7 +272,7 @@ class PathRoute(goal: DirectedRoad, orig_route: List[DirectedRoad], rng: RNG) ex
     if (path.isEmpty) {
       // TODO hax
       path =
-        if (Graph.route_chooser != null) {
+        if (AgentAdaptor.special_routes.contains(agent.id)) {
           from.directed_road :: AgentAdaptor.path(from.directed_road, goal, agent)
         } else {
           from.directed_road ::

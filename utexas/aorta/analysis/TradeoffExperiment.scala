@@ -6,6 +6,7 @@ package utexas.aorta.analysis
 
 import scala.collection.mutable
 import java.io.{File, PrintWriter, FileWriter}
+import scala.util.Random
 
 import utexas.aorta.map.{DirectedRoad, Graph}
 import utexas.aorta.map.analysis.{RouteFeatures, Demand}
@@ -22,13 +23,21 @@ class TradeoffExperiment(config: ExpConfig) extends Experiment(config) {
   protected def outfn = "tradeoff-results"
   protected val output = new PrintWriter(new FileWriter(new File(outfn)))
 
+  val num_special = 1000
+
   def run() {
     // Simulate with normal routes, capturing trip time
     val base_sim = scenario.make_sim(graph).setup()
     val base_times = record_trip_times()
     simulate(0, base_sim)
 
-    // Enable route choices
+    // Enable route choices for a random subset of the population
+    // (Doing it for everyone makes running simulations way too slow)
+    AgentAdaptor.special_routes =
+      Random.shuffle(scenario.agents.map(_.id).toList).take(num_special).toSet
+    Util.log("Special agents: ${AgentAdaptor.special_routes}")
+    //AgentAdaptor.special_routes = scenario.agents.map(_.id).toSet
+
     // TODO the hackiness! :O
     notify("Precomputing demand...")
     Graph.route_chooser = new RouteChooser(
@@ -54,13 +63,15 @@ class TradeoffExperiment(config: ExpConfig) extends Experiment(config) {
       val mod_times = record_trip_times()
       simulate(1, mod_sim)
 
-      val total_saved_time = scenario.agents.map(a => mod_times(a.id) - base_times(a.id)).sum
+      // TODO account for everybody? they didnt all get to choose
+      // TODO dont? then ignoring externality of route-choosers
+      val total_saved_time = AgentAdaptor.special_routes.map(id => mod_times(id) - base_times(id)).sum
       val aggregate_vot = total_saved_time / AgentAdaptor.max_paid.values.sum
-      val gain_vot = scenario.agents.map(
-        a => ((mod_times(a.id) - base_times(a.id)) / AgentAdaptor.max_paid(a.id)) - a.wallet.priority
+      val gain_vot = AgentAdaptor.special_routes.map(
+        id => ((mod_times(id) - base_times(id)) / AgentAdaptor.max_paid(id)) - scenario.agents(id.int).wallet.priority
       ).sum
       output.println(List(
-        num_routes, scenario.agents.size, total_saved_time, aggregate_vot, gain_vot
+        num_routes, scenario.agents.size, num_special, total_saved_time, aggregate_vot, gain_vot
       ).mkString(","))
 
       val debug = true
@@ -68,7 +79,7 @@ class TradeoffExperiment(config: ExpConfig) extends Experiment(config) {
         // TODO perhaps record, in some form?
         println("Individual experiences...")
         for (a <- scenario.agents) {
-          println(s"  $a: base ${base_times(a.id)}, mod ${mod_times(a.id)}, paid ${AgentAdaptor.max_paid(a.id)}, VOT ${a.wallet.priority}")
+          println(s"  ${a.id}: base ${base_times(a.id)}, mod ${mod_times(a.id)}, paid ${AgentAdaptor.max_paid(a.id)}, VOT ${a.wallet.priority}")
         }
       }
     }
