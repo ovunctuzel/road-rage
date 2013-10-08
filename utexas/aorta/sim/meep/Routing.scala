@@ -109,6 +109,7 @@ class RouteChooser(graph: Graph, demand: Demand, predictor: Predictor) {
   }
 }
 
+// Most of this is completely tmp.
 object AgentAdaptor {
   val max_paid = new mutable.HashMap[AgentID, Double]().withDefaultValue(0)
   var special_routes: Set[AgentID] = Nil.toSet
@@ -123,4 +124,6 @@ object AgentAdaptor {
     max_paid(a.id) = math.max(max_paid(a.id), choice.predicted_externality)
     return choice.path
   }
+
+  def paying_drivers = max_paid.keys.filter(a => max_paid(a) != 0)
 }
