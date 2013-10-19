@@ -190,6 +190,10 @@ class Queue(t: Traversable) {
   // Round down. How many drivers max could squish together here? Minimum 1,
   // short edges just support 1.
   def capacity = math.max(1, math.floor(t.length / separation_dist).toInt)
+  // How many people can travel at the speed limit comfortably? This is generous, since cars are
+  // planning for a worst-case where the leader slams on their brakes
+  def freeflow_capacity =
+    math.max(1, math.floor(t.length / (t.speed_limit * cfg.dt_s + cfg.follow_dist)).toInt)
 
   def head = wrap_option(agents.firstEntry)
   def last = wrap_option(agents.lastEntry)

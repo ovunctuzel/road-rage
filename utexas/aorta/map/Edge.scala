@@ -105,7 +105,7 @@ class Edge(
     Util.log("(lanechange dist is " + (cfg.lanechange_dist +
              cfg.end_threshold) + ")")
     Util.log("Queue contains " + queue.agents)
-    Util.log("Speed lim " + speed_limit)
+    Util.log(s"Speed lim $speed_limit, still capacity ${queue.capacity}, freeflow capacity ${queue.freeflow_capacity}")
     Util.log("Succs: " + next_turns)
     Util.log("Preds: " + prev_turns)
     Util.log(s"From $from to $to")
