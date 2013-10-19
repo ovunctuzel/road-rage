@@ -8,12 +8,11 @@ import scala.collection.mutable.{TreeSet => MutableSet}
 
 import utexas.aorta.map.{Edge, Coordinate, Turn, Traversable, Graph, Position}
 import utexas.aorta.sim.market._
-import utexas.aorta.sim.meep.ValueOfTime
 import utexas.aorta.ui.Renderable
 import utexas.aorta.analysis.Agent_Lifetime_Stat
 
 import utexas.aorta.common.{Util, RNG, Common, cfg, Physics, StateWriter, StateReader, AgentID,
-                            EdgeID}
+                            EdgeID, ValueOfTime}
 
 // TODO come up with a notion of dimension and movement capability. at first,
 // just use radius bounded by lane widths?

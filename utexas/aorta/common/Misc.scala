@@ -200,5 +200,13 @@ class EdgeID(val int: Int) extends AnyVal {
 class DirectedRoadID(val int: Int) extends AnyVal {
   override def toString = int.toString
 }
+class ValueOfTime(val time_per_cost: Double) extends AnyVal {
+  override def toString = time_per_cost.toString
+  // TODO return Time type
+  //def time(cost: Price) = time_per_cost * cost.dollars
+}
+class Price(val dollars: Double) extends AnyVal {
+  override def toString = dollars.toString
+}
 
 // TODO value classes for durations, times, distance, speed...

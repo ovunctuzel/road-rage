@@ -7,7 +7,7 @@ package utexas.aorta.sim.meep
 import utexas.aorta.map.{Graph, DirectedRoad}
 import utexas.aorta.map.analysis.{AstarRouter, Demand, RouteFeatures}
 import utexas.aorta.sim.Agent
-import utexas.aorta.common.{Common, AgentID}
+import utexas.aorta.common.{Common, AgentID, ValueOfTime}
 
 import scala.collection.mutable
 
@@ -27,10 +27,6 @@ case class RouteChoice(
   predicted_externality: Double
 ) {
   override def toString = s"Route Choice[time ~ $predicted_time, cost ~ $predicted_externality]"
-}
-
-class ValueOfTime(val time_per_cost: Double) extends AnyVal {
-  override def toString = time_per_cost.toString
 }
 
 class RouteChooser(graph: Graph, demand: Demand, predictor: Predictor) {

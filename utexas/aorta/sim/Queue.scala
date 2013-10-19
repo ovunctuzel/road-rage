@@ -194,6 +194,8 @@ class Queue(t: Traversable) {
   // planning for a worst-case where the leader slams on their brakes
   def freeflow_capacity =
     math.max(1, math.floor(t.length / (t.speed_limit * cfg.dt_s + cfg.follow_dist)).toInt)
+  // Easily can be >100% when we're congested
+  def percent_freeflow_full = 100.0 * (slots_filled.toDouble / freeflow_capacity.toDouble)
 
   def head = wrap_option(agents.firstEntry)
   def last = wrap_option(agents.lastEntry)

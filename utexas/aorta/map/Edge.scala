@@ -7,7 +7,8 @@ package utexas.aorta.map
 import utexas.aorta.map.analysis.AbstractEdge
 import utexas.aorta.ui.Renderable
 
-import utexas.aorta.common.{cfg, RNG, Util, StateWriter, StateReader, RoadID, EdgeID, DirectedRoadID}
+import utexas.aorta.common.{cfg, RNG, Util, StateWriter, StateReader, RoadID, EdgeID,
+                            DirectedRoadID, Price}
 
 // TODO subclass Edge for pos/neg.. seems easier for lots of things
 
@@ -191,4 +192,19 @@ class DirectedRoad(val road: Road, var id: DirectedRoadID, val dir: Direction.Va
 
   // We're congested if any of our lanes are.
   def is_congested = edges.find(e => e.queue.is_congested).isDefined
+
+  // Worst-case of any constituent lanes
+  def freeflow_capacity = edges.map(_.queue.freeflow_capacity).min
+  def freeflow_percent_full = edges.map(_.queue.percent_freeflow_full).max
+
+  // TODO decorate dir roads with something to add these
+
+  // Free until 75% freeflow capacity, then $1 per % full. Should range from $0-$25 until
+  // congestion.
+  // Also, ignore roads with absurdly low capacity. Those're always free.
+  def toll =
+    if (freeflow_capacity >= 3)
+      new Price(math.max(0, freeflow_percent_full - 75))
+    else
+      new Price(0)
 }
