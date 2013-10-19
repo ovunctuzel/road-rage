@@ -51,6 +51,7 @@ class Pass1(fn: String) {
     // fill out graph with roads and collect all info
     match_events(new XMLEventReader(Source.fromFile(fn, "UTF-8")))
     graph.normalize()
+    Util.log(s"OSM nodes: ${id_to_node.size}, ways: ${graph.edges.size}")
     return graph
   }
 

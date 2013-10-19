@@ -1,5 +1,21 @@
 # TODO #
 
+general post-thesis plan
+  1) document code, write tutorials, make a website
+  2) cleanup code
+    - rename edges as lanes, and directed roads as links?
+    - why end_threshold at all?
+    - dont mess with gps coords
+    - rm vertex location coordinate? unless for heuristics
+  3) scale up
+  4) fix
+    - better trip distribution
+    - traffic lights shouldnt have long yellow
+    - reservation protocol should actually be faster
+    - not sure: if LC dist is > road dist, super problems
+    - min lengths should matter for lanes everywhere, not roads
+    - degenerate verts should have same num of lanes
+
 # Marginal Externality #
 
 - post analysis of how people changed

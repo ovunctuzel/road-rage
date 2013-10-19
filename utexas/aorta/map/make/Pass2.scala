@@ -47,6 +47,7 @@ class Pass2(old_graph: PreGraph1) {
       addBinding(e.to, e)
     }
 
+    // TODO whys this a fixpoint?
     var changed = true
     while (changed) {
       verts.find(v => v._2.size == 2) match {
