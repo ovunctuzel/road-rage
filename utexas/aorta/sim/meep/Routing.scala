@@ -43,7 +43,8 @@ class RouteChooser(graph: Graph, demand: Demand, predictor: Predictor) {
           .map(step => RouteFeatures.for_step(step, demand))
           .fold(RouteFeatures.BLANK)((a, b) => a + b)
         scores_seen += score
-        result += RouteChoice(path, score, predictor.trip_time(score), predictor.externality(score))
+        //result += RouteChoice(path, score, predictor.trip_time(score), predictor.externality(score))
+        result += RouteChoice(path, score, predictor.trip_time(score), cost(path))
       } else {
         var continue = true
         while (continue && total_attempts_remaining > 0) {
@@ -55,7 +56,8 @@ class RouteChooser(graph: Graph, demand: Demand, predictor: Predictor) {
           if (!scores_seen.contains(score)) {
             scores_seen += score
             result += RouteChoice(
-              path, score, predictor.trip_time(score), predictor.externality(score)
+              //path, score, predictor.trip_time(score), predictor.externality(score)
+              path, score, predictor.trip_time(score), cost(path)
             )
             continue = false
           }
@@ -64,6 +66,12 @@ class RouteChooser(graph: Graph, demand: Demand, predictor: Predictor) {
     }
     return result.toList
   }
+
+  def cost(route: List[DirectedRoad]) =
+    if (route.nonEmpty)
+      route.map(_.toll.dollars).max
+    else
+      0
 
   def choose_route(choices: List[RouteChoice], vot: ValueOfTime): RouteChoice = {
     val debug = false // TODO
