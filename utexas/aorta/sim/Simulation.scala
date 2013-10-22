@@ -80,7 +80,6 @@ class Simulation(val graph: Graph, val scenario: Scenario)
 
   def serialize(w: StateWriter) {
     w.string(scenario.name)
-    w.int(max_agent_id.int)
     w.double(tick)
     w.int(finished_count)
     w.int(agents.size)
@@ -293,7 +292,6 @@ object Simulation {
   def unserialize(r: StateReader): Simulation = {
     val sim = Scenario.load(r.string).make_sim()
     // Do this before setup so we don't add the wrong spawners
-    sim.max_agent_id = new AgentID(r.int)
     sim.tick = r.double
     sim.finished_count = r.int
     // Need so queues/intersections are set up.
@@ -346,7 +344,6 @@ trait AgentManager {
 
   var agents: SortedSet[Agent] = TreeSet.empty[Agent]
   var ready_to_spawn = new ListBuffer[MkAgent]()
-  protected var max_agent_id = new AgentID(-1)
   val future_spawn = new PriorityQueue[MkAgent]()
   var finished_count = 0
 
@@ -362,12 +359,6 @@ trait AgentManager {
   def insert_agent(a: Agent) = {
     Util.assert_eq(agents.contains(a), false)
     agents += a
-    max_agent_id = new AgentID(math.max(max_agent_id.int, a.id.int))
-  }
-  // This reserves the ID returned to the caller, so it'll never be reused.
-  def next_agent_id(): AgentID = {
-    max_agent_id = new AgentID(max_agent_id.int + 1)
-    return max_agent_id
   }
 
   //////////////////////////////////////////////////////////////////////////////
