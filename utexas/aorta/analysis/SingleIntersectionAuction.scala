@@ -43,14 +43,19 @@ class SingleIntersectionAuction(config: ExpConfig) extends Experiment(config) {
       )
       for (use_auctions <- List(true, false)) {
         // By default, off
-        if (use_auctions) {
-          s = s.copy(
-            intersections = s.intersections.map(_.copy(ordering = OrderingType.Auction))
-          )
-        }
+        val which_ordering =
+          if (use_auctions)
+            OrderingType.Auction
+          else
+            OrderingType.FIFO
+        s = s.copy(
+          intersections = s.intersections.map(_.copy(ordering = which_ordering))
+        )
         for (use_sysbids <- List(true, false)) {
           // By default, on
-          if (!use_sysbids) {
+          if (use_sysbids) {
+            s = s.copy(system_wallet = SystemWalletConfig())
+          } else {
             s = s.copy(system_wallet = SystemWalletConfig.blank)
           }
           for (bid_ahead <- List(true, false)) {
