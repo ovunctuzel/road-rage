@@ -155,12 +155,12 @@ class Agent(
       }
       // We shouldn't ever stall during a turn! Leave a little slack time-wise
       // since the agents in front might not be packed together yet...
-      if (how_long_idle >= cfg.dt_s * 10) {
+      /*if (how_long_idle >= cfg.dt_s * 10) {
         at.on match {
           case t: Turn => Util.log(s"  $this stalled during $t!")
           case _ =>
         }
-      }
+      }*/
 
       // short-circuit... we're not going anywhere.
       return false

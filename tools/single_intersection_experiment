@@ -1,0 +1,7 @@
+#!/bin/bash
+# Must be run from the base AORTA directory, eg,
+# ./tools/single_intersection_experiment
+
+. common
+
+scala -cp $CLASSPATH $JVM_OPTS utexas.aorta.analysis.SingleIntersectionAuction $@
