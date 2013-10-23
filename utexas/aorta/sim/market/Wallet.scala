@@ -92,8 +92,15 @@ abstract class Wallet(initial_budget: Int, val priority: Int) {
   protected def bid_signal(phases: Iterable[Phase], ours: Ticket): Iterable[(Phase, Int)]
   protected def bid_reservation(tickets: Iterable[Ticket], ours: Ticket): Iterable[(Ticket, Int)]
 
-  // This is for just our ticket.
+  // TODO tmp hack
   protected def my_ticket(tickets: Iterable[Ticket], ours: Ticket) =
+    if (Wallet.tmp_bid_ahead)
+      greedy_my_ticket(tickets, ours)
+    else
+      just_my_ticket(tickets, ours)
+
+  // This is for just our ticket.
+  protected def just_my_ticket(tickets: Iterable[Ticket], ours: Ticket) =
     tickets.filter(t => t == ours)
   // Pay for people ahead of us.
   protected def greedy_my_ticket(tickets: Iterable[Ticket], ours: Ticket) =
@@ -104,6 +111,9 @@ abstract class Wallet(initial_budget: Int, val priority: Int) {
 }
 
 object Wallet {
+  // TODO this is hacky, give fair wallet a parameter
+  var tmp_bid_ahead = false
+
   def unserialize(r: StateReader): Wallet = {
     val wallet = Factory.make_wallet(WalletType(r.int), r.int, r.int)
     val num_tooltips = r.int

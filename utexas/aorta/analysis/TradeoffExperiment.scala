@@ -21,12 +21,12 @@ object TradeoffExperiment {
 }
 
 class TradeoffExperiment(config: ExpConfig) extends Experiment(config) {
-  protected def outfn = "tradeoff-results"
-  protected val output = new PrintWriter(new FileWriter(new File(outfn)))
-
   val num_special = 3000
 
   def run() {
+    val outfn = "tradeoff-results"
+    val output = new PrintWriter(new FileWriter(new File(outfn)))
+
     // Simulate with normal routes, capturing trip time
     val base_sim = scenario.make_sim(graph).setup()
     val base_times = record_trip_times()

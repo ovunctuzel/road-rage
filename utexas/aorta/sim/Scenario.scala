@@ -349,6 +349,8 @@ object SystemWalletConfig {
   def unserialize(r: StateReader) = SystemWalletConfig(
     r.int, r.int, r.int, r.int, r.int, r.int
   )
+
+  def blank = SystemWalletConfig(0, 0, 0, 0, 0, 0)
 }
 
 object IntersectionDistribution {

@@ -8,6 +8,7 @@ general post-thesis plan
     - dont mess with gps coords
     - rm vertex location coordinate? unless for heuristics
     - tests
+    - dont savestate the queue/intersection state, usually. agents have tickets.
   3) scale up
   4) fix
     - better trip distribution
