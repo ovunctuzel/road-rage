@@ -1,10 +1,9 @@
 @RELATION results
 
-@ATTRIBUTE useAuctions NUMERIC
 @ATTRIBUTE useSysbids NUMERIC
 @ATTRIBUTE bidAhead NUMERIC
 @ATTRIBUTE vehiclesPerHour NUMERIC
-@ATTRIBUTE unweightedTime NUMERIC
-@ATTRIBUTE weightedTime NUMERIC
+@ATTRIBUTE unweightedTimeSavings NUMERIC
+@ATTRIBUTE weightedTimeSavings NUMERIC
 
 @DATA

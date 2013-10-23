@@ -38,18 +38,21 @@ class SingleIntersectionAuction(config: ExpConfig) extends Experiment(config) {
           budgets
         ),
         intersections = IntersectionDistribution.uniform_default(test_graph)
-          .map(_.copy(policy = IntersectionType.Reservation)),
+          .map(_.copy(policy = IntersectionType.Reservation, ordering = OrderingType.FIFO)),
         system_wallet = SystemWalletConfig()
       )
-      for (use_auctions <- List(true, false)) {
-        // By default, off
-        val which_ordering =
-          if (use_auctions)
-            OrderingType.Auction
-          else
-            OrderingType.FIFO
+      // Run baseline of FCFS
+      val base_sim = s.make_sim(test_graph).setup()
+      val base_times = record_trip_times()
+      try {
+        notify(s"Testing $spawn_per_hour for FCFS")
+        simulate(0, base_sim)
+        val base_unweighted_time = base_times.values.sum
+        val base_weighted_time = s.agents.map(a => a.wallet.budget * base_times(a.id)).sum
+
+        // Now, enable auctions for other cases
         s = s.copy(
-          intersections = s.intersections.map(_.copy(ordering = which_ordering))
+          intersections = s.intersections.map(_.copy(ordering = OrderingType.Auction))
         )
         for (use_sysbids <- List(true, false)) {
           // By default, on
@@ -60,34 +63,36 @@ class SingleIntersectionAuction(config: ExpConfig) extends Experiment(config) {
           }
           for (bid_ahead <- List(true, false)) {
             Wallet.tmp_bid_ahead = bid_ahead
-            if (!use_auctions && (bid_ahead || use_sysbids)) {
-              // Skip
-            } else {
-              // Run!
-              val sim = s.make_sim(test_graph).setup()
-              val times = record_trip_times()
-              notify(s"Testing $spawn_per_hour with $use_auctions, $use_sysbids, $bid_ahead")
-              try {
-                simulate(0, sim)
-                val unweighted_time = times.values.sum
-                val weighted_time = s.agents.map(a => a.wallet.budget * times(a.id)).sum
+            // Run!
+            val sim = s.make_sim(test_graph).setup()
+            val times = record_trip_times()
+            notify(s"Testing $spawn_per_hour with $use_sysbids, $bid_ahead")
+            try {
+              simulate(0, sim)
+              val unweighted_time = times.values.sum
+              val weighted_time = s.agents.map(a => a.wallet.budget * times(a.id)).sum
 
-                def bit(bool: Boolean) =
-                  if (bool)
-                    1
-                  else
-                    0
-                output.println(List(
-                  bit(use_auctions), bit(use_sysbids), bit(bid_ahead), spawn_per_hour,
-                  unweighted_time, weighted_time
-                ).mkString(","))
-              } catch {
-                case e: Throwable => {
-                  notify(s"Simulation broke: $e")
-                }
+              def bit(bool: Boolean) =
+                if (bool)
+                  1
+                else
+                  0
+              // The worse we do vs baseline, the more negative the value
+              // The better we do, the higher the value
+              output.println(List(
+                bit(use_sysbids), bit(bid_ahead), spawn_per_hour,
+                base_unweighted_time - unweighted_time, base_weighted_time - weighted_time
+              ).mkString(","))
+            } catch {
+              case e: Throwable => {
+                notify(s"Simulation broke: $e")
               }
             }
           }
+        }
+      } catch {
+        case e: Throwable => {
+          notify(s"Simulation broke: $e")
         }
       }
     }
