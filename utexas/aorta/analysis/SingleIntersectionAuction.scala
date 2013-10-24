@@ -43,7 +43,7 @@ class SingleIntersectionAuction(config: ExpConfig) extends Experiment(config) {
       )
       // Run baseline of FCFS
       try {
-        // Get the strawman baseline
+        // Get the baseline
         val base_sim = s.make_sim(test_graph).setup()
         val base_times = record_trip_times()
         notify(s"Testing $spawn_per_hour for FCFS")
@@ -55,17 +55,6 @@ class SingleIntersectionAuction(config: ExpConfig) extends Experiment(config) {
         s = s.copy(
           intersections = s.intersections.map(_.copy(ordering = OrderingType.Auction))
         )
-
-        // Get the equal mode baseline
-        val baseline_scenario = s.copy(agents = s.agents.map(a => a.copy(wallet = a.wallet.copy(
-          policy = WalletType.Static, budget = 1
-        ))), system_wallet = SystemWalletConfig())
-        val baseline_sim = baseline_scenario.make_sim(test_graph).setup()
-        val baseline_times = record_trip_times()
-        notify(s"Testing $spawn_per_hour for Equal")
-        simulate(0, baseline_sim)
-        val baseline_unweighted_time = baseline_times.values.sum
-        val baseline_weighted_time = s.agents.map(a => a.wallet.priority * baseline_times(a.id)).sum
 
         for (use_sysbids <- List(true, false)) {
           // By default, on
@@ -94,8 +83,7 @@ class SingleIntersectionAuction(config: ExpConfig) extends Experiment(config) {
               // The better we do, the higher the value
               output.println(List(
                 bit(use_sysbids), bit(bid_ahead), spawn_per_hour,
-                base_unweighted_time - unweighted_time, base_weighted_time - weighted_time,
-                baseline_unweighted_time - unweighted_time, baseline_weighted_time - weighted_time
+                unweighted_time, weighted_time, base_unweighted_time, base_weighted_time
               ).mkString(","))
             } catch {
               case e: Throwable => {

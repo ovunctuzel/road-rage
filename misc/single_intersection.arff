@@ -3,9 +3,9 @@
 @ATTRIBUTE useSysbids NUMERIC
 @ATTRIBUTE bidAhead NUMERIC
 @ATTRIBUTE vehiclesPerHour NUMERIC
-@ATTRIBUTE unweightedTimeSavingsStrawman NUMERIC
-@ATTRIBUTE weightedTimeSavingsStrawman NUMERIC
-@ATTRIBUTE unweightedTimeSavingsEqualMode NUMERIC
-@ATTRIBUTE weightedTimeSavingsEqualMode NUMERIC
+@ATTRIBUTE unweightedTimeAuctions NUMERIC
+@ATTRIBUTE weightedTimeAuctions NUMERIC
+@ATTRIBUTE unweightedTimeBaseline NUMERIC
+@ATTRIBUTE weightedTimeBaseline NUMERIC
 
 @DATA

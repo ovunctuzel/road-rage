@@ -9,6 +9,8 @@ general post-thesis plan
     - rm vertex location coordinate? unless for heuristics
     - tests
     - dont savestate the queue/intersection state, usually. agents have tickets.
+    - only spawn on rightmost
+    - get rid of stats in files
   3) scale up
   4) fix
     - better trip distribution
@@ -17,6 +19,11 @@ general post-thesis plan
     - not sure: if LC dist is > road dist, super problems
     - min lengths should matter for lanes everywhere, not roads
     - degenerate verts should have same num of lanes
+    - different agent params
+    - tune all params
+  5) experiment framework
+    - output RAW data thats importable into other stuff, have easy script-like way to get aggregate
+      results later
 
 # Marginal Externality #
 
