@@ -13,6 +13,7 @@ import utexas.aorta.sim.{ScenarioTool, Simulation, Scenario, Sim_Event, EV_Heart
 
 import utexas.aorta.common.{RNG, Util, Flags, Common, AgentID}
 
+// TODO divorce scenario generation from the rest
 case class ExpConfig(
   spawn_per_hour: Int,
   generations: Int,
@@ -79,6 +80,7 @@ class Experiment(config: ExpConfig) {
   }
 
   // TODO => trip time
+  // TODO move to Metrics
   protected def record_trip_times(
     include: () => Boolean = () => true
   ): mutable.Map[AgentID, Double] = {
@@ -141,6 +143,7 @@ class Experiment(config: ExpConfig) {
     }
   }
 
+  // TODO mark a bunch of files with this class, auto upload
   protected def upload_gs(fn: String, contents: String) {
     Runtime.getRuntime.exec(Array("./tools/cloud/upload_gs.sh", fn, contents))
   }

@@ -79,8 +79,8 @@ class SingleIntersectionAuction(config: ExpConfig) extends Experiment(config) {
                   1
                 else
                   0
-              // The worse we do vs baseline, the more negative the value
-              // The better we do, the higher the value
+              // TODO just print all the times together, for one spawn_per_hour, in all configs.
+              // then each line is really meaningful
               output.println(List(
                 bit(use_sysbids), bit(bid_ahead), spawn_per_hour,
                 unweighted_time, weighted_time, base_unweighted_time, base_weighted_time

@@ -3,6 +3,8 @@
 general post-thesis plan
   1) document code, write tutorials, make a website
   2) cleanup code
+    - replace old experiment system with new one
+      - get rid of stats in files
     - rename edges as lanes, and directed roads as links?
     - why end_threshold at all?
     - dont mess with gps coords
@@ -10,7 +12,6 @@ general post-thesis plan
     - tests
     - dont savestate the queue/intersection state, usually. agents have tickets.
     - only spawn on rightmost
-    - get rid of stats in files
   3) scale up
   4) fix
     - better trip distribution
@@ -21,6 +22,8 @@ general post-thesis plan
     - degenerate verts should have same num of lanes
     - different agent params
     - tune all params
+    - yield policy
+    - unprotected left, right turn on red, better stop sign
   5) experiment framework
     - output RAW data thats importable into other stuff, have easy script-like way to get aggregate
       results later
