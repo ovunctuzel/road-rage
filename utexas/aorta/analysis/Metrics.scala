@@ -2,7 +2,7 @@
 // Khandelwal of UT Austin
 // License: GNU GPL v2
 
-package utexas.aorta.sim.meep
+package utexas.aorta.analysis
 
 import utexas.aorta.sim.{Simulation, Sim_Event, Route_Event, EV_AgentSpawned, EV_AgentQuit,
                          EV_Reroute}
@@ -21,7 +21,7 @@ class OriginalRouteMetric(sim: Simulation) {
 
   sim.listen("orig-route", (sim_ev: Sim_Event) => sim_ev match {
     case EV_AgentSpawned(a) => a.route.listen("orig-route", (ev: Route_Event) => ev match {
-      case EV_Reroute(_) if !first_reroute_time.contains(a.id) =>
+      case EV_Reroute(_, false) if !first_reroute_time.contains(a.id) =>
         first_reroute_time(a.id) = Common.tick
       case _ =>
     })

@@ -218,7 +218,7 @@ class FairWallet(initial_budget: Int, p: Int)
   override def setup(agent: Agent) {
     super.setup(agent)
     a.route.listen("fair_wallet", (ev: Route_Event) => { ev match {
-      case EV_Reroute(path) => {
+      case EV_Reroute(path, _) => {
         total_weight = path.map(r => weight(r.to)).sum
       }
       case EV_Transition(from, to) => to match {

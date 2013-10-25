@@ -96,7 +96,8 @@ class RouteRecorder(route: Route) {
 
 abstract class Route_Event
 final case class EV_Transition(from: Traversable, to: Traversable) extends Route_Event
-final case class EV_Reroute(path: List[DirectedRoad]) extends Route_Event
+// orig = true when initializing the path. bit of a hack.
+final case class EV_Reroute(path: List[DirectedRoad], orig: Boolean) extends Route_Event
 
 // Compute the cost of the path from every source to our single goal, then
 // hillclimb each step.
@@ -258,7 +259,7 @@ class PathRoute(goal: DirectedRoad, orig_route: List[DirectedRoad], rng: RNG) ex
           Common.sim.graph.congestion_router.path(source, goal, Common.tick)
         }
       path = before ++ new_path
-      tell_listeners(EV_Reroute(path))
+      tell_listeners(EV_Reroute(path, false))
       choice
     } else {
       best_turn(e, dest, slice.tail.tail.headOption.getOrElse(null))
@@ -278,7 +279,7 @@ class PathRoute(goal: DirectedRoad, orig_route: List[DirectedRoad], rng: RNG) ex
           from.directed_road ::
           Common.sim.graph.router.path(from.directed_road, goal, Common.tick)
         }
-      tell_listeners(EV_Reroute(path))
+      tell_listeners(EV_Reroute(path, true))
     }
 
     // Lookahead could be calling us from anywhere. Figure out where we are in

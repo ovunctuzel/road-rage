@@ -646,7 +646,7 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
           case r: PathRoute => {
             state.route_members.set(cfg.route_member_color, r.roads)
             r.listen("UI", (ev: Route_Event) => { ev match {
-              case EV_Reroute(path) => {
+              case EV_Reroute(path, _) => {
                 state.route_members.set(cfg.route_member_color, path.map(_.road).toSet)
               }
               case EV_Transition(from, to) => from match {
