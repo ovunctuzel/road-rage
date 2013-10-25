@@ -300,6 +300,7 @@ class Agent(
       route.route_type, wallet.wallet_type, stat_memory._4, Common.tick,
       wallet.budget, wallet.priority, !interrupted
     ))
+    Common.sim.tell_listeners(EV_AgentQuit(this))
     AgentMap.maps.foreach(m => m.destroy(this))
   }
 
@@ -502,6 +503,8 @@ class Agent(
 
   // Seconds saved per dollar. Just use priority for now.
   def value_of_time = new ValueOfTime(wallet.priority)
+
+  def time_spawned = stat_memory._2
 }
 
 object Agent {
