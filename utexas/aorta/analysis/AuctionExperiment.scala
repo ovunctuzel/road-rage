@@ -5,6 +5,9 @@
 package utexas.aorta.analysis
 
 import utexas.aorta.sim.{Scenario, SystemWalletConfig, OrderingType, WalletType}
+import utexas.aorta.common.AgentID
+
+import scala.collection.mutable
 
 // TODO get a macro or something for main, or have a more flexible cmdline tool
 object AuctionExperiment {
@@ -26,16 +29,39 @@ object AuctionExperiment {
 }
 
 class AuctionExperiment(config: ExpConfig) extends Experiment(config) {
+  private var round = 0 // TODO count this in base class too
+
   def run() {
     // The generated scenario is the baseline.
-    //simulate(0, scenario)
+    val sysbid_base = AuctionExperiment.enable_auctions(scenario)
+    val nosys_base = AuctionExperiment.disable_sysbids(sysbid_base)
 
-    val auction_base = AuctionExperiment.enable_auctions(scenario)
-    for (base <- List(auction_base, AuctionExperiment.disable_sysbids(auction_base))) {
-      //simulate(1, auction_base)
-      //simulate(2, AuctionExperiment.equal_budgets(auction_base))
-      //simulate(3, AuctionExperimentfixed_budgets(auction_base))
-      // TODO fxn that sets up sim from scenario, metrics, writes output
-    }
+    val fcfs = run_trial(scenario)
+    val auction_sys = run_trial(sysbid_base)
+    val auction_nosys = run_trial(nosys_base)
+    val equal_sys = run_trial(AuctionExperiment.equal_budgets(sysbid_base))
+    val equal_nosys = run_trial(AuctionExperiment.equal_budgets(nosys_base))
+    val fixed_sys = run_trial(AuctionExperiment.fixed_budgets(sysbid_base))
+    val fixed_nosys = run_trial(AuctionExperiment.fixed_budgets(nosys_base))
+
+    // TODO have modes... transformation fxn, name.
+    // TODO or just move the lines above down here...
+    output_times(Map(
+      "FCFS" -> fcfs, "Auction (with sysbids)" -> auction_sys,
+      "Auction (no sysbids)" -> auction_nosys, "Equal (with sysbids)" -> equal_sys,
+      "Equal (no sysbids)" -> equal_nosys, "Fixed (with sysbids)" -> fixed_sys,
+      "Fixed (no sysbids)" -> fixed_nosys
+    ))
+  }
+
+  // TODO rename scenario, graph in base class. its too restrictive.
+  // and refactor this.
+  private def run_trial(s: Scenario): mutable.Map[AgentID, Double] = {
+    round += 1
+    val sim = s.make_sim().setup()
+    val times = record_trip_times()
+    // TODO record other metrics too.
+    simulate(round, sim)
+    return times
   }
 }
