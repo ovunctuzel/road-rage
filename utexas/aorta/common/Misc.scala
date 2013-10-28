@@ -106,6 +106,8 @@ object Util {
 
   def writer(fn: String) = new BinaryStateWriter(fn)
   def reader(fn: String) = new BinaryStateReader(fn)
+
+  def unique_id = System.currentTimeMillis.toString
 }
 
 class RNG(seed: Long = System.currentTimeMillis) extends Serializable {

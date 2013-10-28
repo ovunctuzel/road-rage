@@ -5,7 +5,7 @@
 package utexas.aorta.analysis
 
 import utexas.aorta.sim.{Scenario, SystemWalletConfig, OrderingType, WalletType}
-import utexas.aorta.common.AgentID
+import utexas.aorta.common.{AgentID, Util}
 
 import scala.collection.mutable
 
@@ -36,22 +36,15 @@ class AuctionExperiment(config: ExpConfig) extends Experiment(config) {
     val sysbid_base = AuctionExperiment.enable_auctions(scenario)
     val nosys_base = AuctionExperiment.disable_sysbids(sysbid_base)
 
-    val fcfs = run_trial(scenario)
-    val auction_sys = run_trial(sysbid_base)
-    val auction_nosys = run_trial(nosys_base)
-    val equal_sys = run_trial(AuctionExperiment.equal_budgets(sysbid_base))
-    val equal_nosys = run_trial(AuctionExperiment.equal_budgets(nosys_base))
-    val fixed_sys = run_trial(AuctionExperiment.fixed_budgets(sysbid_base))
-    val fixed_nosys = run_trial(AuctionExperiment.fixed_budgets(nosys_base))
-
-    // TODO have modes... transformation fxn, name.
-    // TODO or just move the lines above down here...
-    output_times(Map(
-      "FCFS" -> fcfs, "Auction (with sysbids)" -> auction_sys,
-      "Auction (no sysbids)" -> auction_nosys, "Equal (with sysbids)" -> equal_sys,
-      "Equal (no sysbids)" -> equal_nosys, "Fixed (with sysbids)" -> fixed_sys,
-      "Fixed (no sysbids)" -> fixed_nosys
-    ))
+    output_times(List(
+      "fcfs" -> run_trial(scenario),
+      "auctions_sysbids" -> run_trial(sysbid_base),
+      "auctions_no_sysbids" -> run_trial(nosys_base),
+      "equal_sysbids" -> run_trial(AuctionExperiment.equal_budgets(sysbid_base)),
+      "equal_no_sysbids" -> run_trial(AuctionExperiment.equal_budgets(nosys_base)),
+      "fixed_sysbids" -> run_trial(AuctionExperiment.fixed_budgets(sysbid_base)),
+      "fixed_no_sysbids" -> run_trial(AuctionExperiment.fixed_budgets(nosys_base))
+    ), scenario)
   }
 
   // TODO rename scenario, graph in base class. its too restrictive.
@@ -63,5 +56,16 @@ class AuctionExperiment(config: ExpConfig) extends Experiment(config) {
     // TODO record other metrics too.
     simulate(round, sim)
     return times
+  }
+
+  // TODO move to base class
+  protected def output_times(times: List[(String, mutable.Map[AgentID, Double])], s: Scenario) {
+    val f = output("times") // TODO scenario size, map somewhere...
+    f.println("scenario agent priority " + times.map(_._1).mkString(" "))
+    val uid = Util.unique_id
+    // We should have the same agents in all runs
+    for (a <- s.agents) {
+      f.println(List(uid, a.id, a.wallet.priority, times.map(_._2(a.id))).mkString(" "))
+    }
   }
 }

@@ -5,7 +5,7 @@
 package utexas.aorta.analysis
 
 import scala.collection.mutable
-import java.io.File
+import java.io.{File, PrintWriter, FileWriter}
 
 import utexas.aorta.map.Graph
 import utexas.aorta.sim.{ScenarioTool, Simulation, Scenario, Sim_Event, EV_Heartbeat, EV_AgentSpawned,
@@ -147,4 +147,8 @@ class Experiment(config: ExpConfig) {
   protected def upload_gs(fn: String, contents: String) {
     Runtime.getRuntime.exec(Array("./tools/cloud/upload_gs.sh", fn, contents))
   }
+
+  // TODO auto close this, and auto upload to GS.
+  // TODO and keep it open if needed
+  def output(fn: String) = new PrintWriter(new FileWriter(new File(fn + "_" + graph.basename)))
 }
