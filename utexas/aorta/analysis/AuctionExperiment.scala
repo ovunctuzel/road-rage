@@ -106,6 +106,11 @@ object AuctionResults {
       w * equal_no_sysbids, w * fixed_sysbids, w * fixed_no_sysbids
     )
 
+    def savings = ResultPerMode(
+      0, fcfs - auctions_sysbids, fcfs - auctions_no_sysbids, fcfs - equal_sysbids,
+      fcfs - equal_no_sysbids, fcfs - fixed_sysbids, fcfs - fixed_no_sysbids
+    )
+
     override def toString = s"$fcfs $auctions_sysbids $auctions_no_sysbids $equal_sysbids $equal_no_sysbids $fixed_sysbids $fixed_no_sysbids"
   }
   val zero = ResultPerMode(0, 0, 0, 0, 0, 0, 0)
@@ -115,6 +120,7 @@ object AuctionResults {
     // TODO for now, neglect pairing specific results by scenario.
     val unweighted = unweighted_times(raws)
     val weighted = weighted_times(raws)
+    val raws_per_city = raws.groupBy(_.graph)
     val cities = unweighted.keys
     val modes = "fcfs auctions_sysbids auctions_no_sysbids equal_sysbids equal_no_sysbids fixed_sysbids fixed_no_sysbids"
 
@@ -122,11 +128,18 @@ object AuctionResults {
       val f1 = Util.output(s"unweighted_$city")
       f1.println(modes)
       unweighted(city).foreach(r => f1.println(r.toString))
-      f1.close()
 
       val f2 = Util.output(s"weighted_$city")
       f2.println(modes)
       weighted(city).foreach(r => f2.println(r.toString))
+
+      val f3 = Util.output(s"unweighted_savings_$city")
+      f3.println(modes)
+      unweighted(city).foreach(r => f3.println(r.savings.toString))
+
+      val f4 = Util.output(s"unweighted_savings_per_agent_$city")
+      f4.println(modes)
+      raws_per_city(city).foreach(r => f4.println(r.per_mode.savings.toString))
     }
   }
 
