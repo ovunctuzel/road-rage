@@ -33,6 +33,7 @@ object ExpConfig {
 
   def template = ExpConfig(0, 0, 0, 12 * 3600, random_map, None)
 
+  def tiny_test = template.copy(spawn_per_hour = 1000, generations = 1)
   def small_local_test = template.copy(spawn_per_hour = 5000, generations = 3)
   def atx_cloud_test = template.copy(
     spawn_per_hour = rng.int(10000, 15000), generations = 3,
@@ -48,6 +49,7 @@ object ExpConfig {
       return small_local_test
     } else {
       val base = args.head match {
+        case "tiny" => tiny_test
         case "local" => small_local_test
         case "cloud" => atx_cloud_test
         case _ => throw new IllegalArgumentException(s"Dunno mode ${args.head}")
@@ -160,4 +162,7 @@ class Experiment(config: ExpConfig) {
   // TODO auto close this, and auto upload to GS.
   // TODO and keep it open if needed
   def output(fn: String) = new PrintWriter(new FileWriter(new File(fn)), true /* autoFlush */)
+  def compress(fn: String) {
+    Runtime.getRuntime.exec(Array("gzip", fn))
+  }
 }

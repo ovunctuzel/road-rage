@@ -8,6 +8,8 @@ import utexas.aorta.sim.{Scenario, SystemWalletConfig, OrderingType, WalletType}
 import utexas.aorta.common.{AgentID, Util}
 
 import scala.collection.mutable
+import java.io.File
+import java.util.Scanner
 
 // TODO get a macro or something for main, or have a more flexible cmdline tool
 object AuctionExperiment {
@@ -65,10 +67,38 @@ class AuctionExperiment(config: ExpConfig) extends Experiment(config) {
     val uid = Util.unique_id
     // We should have the same agents in all runs
     for (a <- s.agents) {
-      f.println(List(graph.basename, uid, a.id, a.wallet.priority, times.map(_._2(a.id))).mkString(" "))
+      f.println((List(graph.basename, uid, a.id, a.wallet.priority) ++ times.map(_._2(a.id))).mkString(" "))
     }
     // TODO do this differently...
     f.close()
-    upload("times")
+    compress("times")
+    upload("times.gz")
+  }
+}
+
+// TODO this is more like, compare trip times
+object AuctionResults {
+  case class RawResult(
+    graph: String, scenario: Long, agent: Int, priority: Int, fcfs: Double,
+    auctions_sysbids: Double, auctions_no_sysbids: Double, equal_sysbids: Double,
+    equal_no_sysbids: Double, fixed_sysbids: Double, fixed_no_sysbids: Double
+  )
+
+  def main(args: Array[String]) {
+    val raws = args.flatMap(read_raws)
+    for (r <- raws) {
+      println(r.toString)
+    }
+  }
+
+  private def read_raws(fn: String): List[RawResult] = {
+    val raws = new mutable.ListBuffer[RawResult]()
+    val s = new Scanner(new File(fn))
+    s.nextLine()  // header
+    while (s.hasNext) {
+      raws += RawResult(s.next, s.nextLong, s.nextInt, s.nextInt, s.nextDouble, s.nextDouble,
+                        s.nextDouble, s.nextDouble, s.nextDouble, s.nextDouble, s.nextDouble)
+    }
+    return raws.toList
   }
 }

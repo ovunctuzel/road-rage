@@ -4,4 +4,5 @@
 
 . common
 
-scala -cp $CLASSPATH $JVM_OPTS utexas.aorta.analysis.AuctionExperiment $@
+#scala -cp $CLASSPATH $JVM_OPTS utexas.aorta.analysis.AuctionExperiment $@
+scala -cp $CLASSPATH $JVM_OPTS utexas.aorta.analysis.AuctionResults $@
