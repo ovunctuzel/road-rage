@@ -42,12 +42,10 @@ If you are on Linux, the shell scripts are the easiest method:
 If you can't run bash shell scripts or want to use an IDE,
 I don't have specific instructions for you.
 - The source code is in utexas/aorta
-- There are 3 dependencies you must build and run with:
+- There are 2 dependencies you must build and run with:
   - Scala swing, included in your Scala distribution
     (/usr/share/java/scala-swing.jar on my machine)
   - GraphHopper, found at 3rd_party/graphhopper-0.1.jar
-  - JFreeChart, found at 3rd_party/jfreechart-1.0.14.jar and
-    3rd_party/jcommon-1.0.17.jar
 
 #################
 # GETTING A MAP #
