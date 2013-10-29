@@ -5,7 +5,7 @@
 package utexas.aorta.common
 
 import java.util.Random // TODO use scala one when its serializable in 2.11
-import java.io.{FileWriter, Serializable, File}
+import java.io.{FileWriter, Serializable, File, PrintWriter}
 import scala.annotation.elidable
 import scala.annotation.elidable.ASSERTION
 import java.awt.Color
@@ -108,6 +108,7 @@ object Util {
   def reader(fn: String) = new BinaryStateReader(fn)
 
   def unique_id = System.currentTimeMillis.toString
+  def output(fn: String) = new PrintWriter(new FileWriter(new File(fn)), true /* autoFlush */)
 }
 
 class RNG(seed: Long = System.currentTimeMillis) extends Serializable {

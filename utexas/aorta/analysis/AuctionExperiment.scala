@@ -82,12 +82,51 @@ object AuctionResults {
     graph: String, scenario: Long, agent: Int, priority: Int, fcfs: Double,
     auctions_sysbids: Double, auctions_no_sysbids: Double, equal_sysbids: Double,
     equal_no_sysbids: Double, fixed_sysbids: Double, fixed_no_sysbids: Double
-  )
+  ) {
+    def per_mode = ResultPerMode(
+      fcfs, auctions_sysbids, auctions_no_sysbids, equal_sysbids, equal_no_sysbids, fixed_sysbids,
+      fixed_no_sysbids
+    )
+  }
+
+  case class ResultPerMode(
+    fcfs: Double, auctions_sysbids: Double, auctions_no_sysbids: Double, equal_sysbids: Double,
+    equal_no_sysbids: Double, fixed_sysbids: Double, fixed_no_sysbids: Double
+  ) {
+    // TODO need vector type in scala!
+    def plus(o: ResultPerMode) = ResultPerMode(
+      fcfs + o.fcfs, auctions_sysbids + o.auctions_sysbids,
+      auctions_no_sysbids + o.auctions_no_sysbids, equal_sysbids + o.equal_sysbids,
+      equal_no_sysbids + o.equal_no_sysbids, fixed_sysbids + o.fixed_sysbids,
+      fixed_no_sysbids + o.fixed_no_sysbids
+    )
+
+    def times(w: Double) = ResultPerMode(
+      w * fcfs, w * auctions_sysbids, w * auctions_no_sysbids, w * equal_sysbids,
+      w * equal_no_sysbids, w * fixed_sysbids, w * fixed_no_sysbids
+    )
+
+    override def toString = s"$fcfs $auctions_sysbids $auctions_no_sysbids $equal_sysbids $equal_no_sysbids $fixed_sysbids $fixed_no_sysbids"
+  }
+  val zero = ResultPerMode(0, 0, 0, 0, 0, 0, 0)
 
   def main(args: Array[String]) {
-    val raws = args.flatMap(read_raws)
-    for (r <- raws) {
-      println(r.toString)
+    val raws = args.toList.flatMap(read_raws)
+    // TODO for now, neglect pairing specific results by scenario.
+    val unweighted = unweighted_times(raws)
+    val weighted = weighted_times(raws)
+    val cities = unweighted.keys
+    val modes = "fcfs auctions_sysbids auctions_no_sysbids equal_sysbids equal_no_sysbids fixed_sysbids fixed_no_sysbids"
+
+    for (city <- cities) {
+      val f1 = Util.output(s"unweighted_$city")
+      f1.println(modes)
+      unweighted(city).foreach(r => f1.println(r.toString))
+      f1.close()
+
+      val f2 = Util.output(s"weighted_$city")
+      f2.println(modes)
+      weighted(city).foreach(r => f2.println(r.toString))
     }
   }
 
@@ -100,5 +139,32 @@ object AuctionResults {
                         s.nextDouble, s.nextDouble, s.nextDouble, s.nextDouble, s.nextDouble)
     }
     return raws.toList
+  }
+
+  // per city
+  private def unweighted_times(raws: List[RawResult]): Map[String, List[ResultPerMode]] = {
+    val times = new mutable.HashMap[String, List[ResultPerMode]]()
+    val results_per_city = raws.groupBy(_.graph)
+    for (city <- results_per_city.keys) {
+      val results_per_scenario = results_per_city(city).groupBy(_.scenario)
+      times(city) = results_per_scenario.values.map(
+        run => run.map(_.per_mode).foldLeft(zero)((a, b) => a.plus(b))
+      ).toList
+    }
+    return times.toMap
+  }
+
+  // per city
+  // TODO refactor...
+  private def weighted_times(raws: List[RawResult]): Map[String, List[ResultPerMode]] = {
+    val times = new mutable.HashMap[String, List[ResultPerMode]]()
+    val results_per_city = raws.groupBy(_.graph)
+    for (city <- results_per_city.keys) {
+      val results_per_scenario = results_per_city(city).groupBy(_.scenario)
+      times(city) = results_per_scenario.values.map(
+        run => run.map(a => a.per_mode.times(a.priority)).foldLeft(zero)((a, b) => a.plus(b))
+      ).toList
+    }
+    return times.toMap
   }
 }

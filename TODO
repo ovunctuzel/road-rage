@@ -3,6 +3,7 @@
 general post-thesis plan
   1) document code, write tutorials, make a website
   2) cleanup code
+    - rm birth tick from agents
     - replace old experiment system with new one
       - get rid of stats in files
     - rename edges as lanes, and directed roads as links?

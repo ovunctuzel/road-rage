@@ -66,7 +66,7 @@ case class Agent_Lifetime_Stat(
 {
   // ID 1
 
-  def trip_time = end_tick - spawn_tick
+  def trip_time = end_tick - spawn_tick // could be start_tick
   def total_spent = end_budget - start_budget
   // High priority and long trip time is bad; low priority or low trip time is
   // good.
