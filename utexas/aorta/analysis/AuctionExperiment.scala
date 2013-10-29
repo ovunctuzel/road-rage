@@ -32,13 +32,14 @@ object AuctionExperiment {
 
 class AuctionExperiment(config: ExpConfig) extends Experiment(config) {
   private var round = 0 // TODO count this in base class too
+  val uid = Util.unique_id
 
   def run() {
     // The generated scenario is the baseline.
     val sysbid_base = AuctionExperiment.enable_auctions(scenario)
     val nosys_base = AuctionExperiment.disable_sysbids(sysbid_base)
 
-    output_times(List(
+    output_data(List(
       "fcfs" -> run_trial(scenario),
       "auctions_sysbids" -> run_trial(sysbid_base),
       "auctions_no_sysbids" -> run_trial(nosys_base),
@@ -49,30 +50,42 @@ class AuctionExperiment(config: ExpConfig) extends Experiment(config) {
     ), scenario)
   }
 
+  // TODO or change schema. col is map, scenario, agent, trip time, percent. row per mode.
+  case class AgentResult(trip_time: Double, orig_route_percent: Double)
+
   // TODO rename scenario, graph in base class. its too restrictive.
   // and refactor this.
-  private def run_trial(s: Scenario): mutable.Map[AgentID, Double] = {
+  private def run_trial(s: Scenario): Map[AgentID, AgentResult] = {
     round += 1
     val sim = s.make_sim().setup()
     val times = record_trip_times()
-    // TODO record other metrics too.
+    val orig_routes = new OriginalRouteMetric(sim)
     simulate(round, sim)
-    return times
+    return times.keys.map(a => a -> AgentResult(times(a), orig_routes(a))).toMap
   }
 
-  // TODO move to base class
-  protected def output_times(times: List[(String, mutable.Map[AgentID, Double])], s: Scenario) {
-    val f = output("times")
-    f.println("map scenario agent priority " + times.map(_._1).mkString(" "))
-    val uid = Util.unique_id
+  protected def output_data(data: List[(String, Map[AgentID, AgentResult])], s: Scenario) {
+    output_metric("times", data, s, (r: AgentResult) => r.trip_time)
+    output_metric("orig_routes", data, s, (r: AgentResult) => r.orig_route_percent)
+  }
+
+  // One double per agent per mode
+  protected def output_metric(fn: String, data: List[(String, Map[AgentID, AgentResult])],
+    s: Scenario, extractor: (AgentResult) => Double)
+  {
+    val f = output(fn)
+    f.println("map scenario agent priority " + data.map(_._1).mkString(" "))
     // We should have the same agents in all runs
     for (a <- s.agents) {
-      f.println((List(graph.basename, uid, a.id, a.wallet.priority) ++ times.map(_._2(a.id))).mkString(" "))
+      f.println((
+        List(graph.basename, uid, a.id, a.wallet.priority) ++
+        data.map(per_mode => extractor(per_mode._2(a.id)))
+      ).mkString(" "))
     }
     // TODO do this differently...
     f.close()
-    compress("times")
-    upload("times.gz")
+    compress(fn)
+    upload(fn + ".gz")
   }
 }
 

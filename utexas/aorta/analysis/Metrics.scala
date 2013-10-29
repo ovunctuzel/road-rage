@@ -33,8 +33,10 @@ class OriginalRouteMetric(sim: Simulation) {
   })
 
   // [0, 100]
-  def percent_time_orig(a: AgentID) = first_reroute_time.get(a) match {
+  def apply(a: AgentID) = first_reroute_time.get(a) match {
     case Some(tick) => 100.0 * (tick - start_time(a)) / (stop_time(a) - start_time(a))
     case None => 100.0
   }
 }
+
+// TODO make a class of per-agent metrics, and have a way to merge them..
