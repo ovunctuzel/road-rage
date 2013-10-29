@@ -1,5 +1,10 @@
 require("gplots")
 colors <- c("blue", "red", "green", "cyan", "orange", "purple", "coral")
+cities = list()
+cities["austin"] = "Austin"
+cities["baton_rouge"] = "Baton Rouge"
+cities["seattle"] = "Seattle"
+cities["sf"] = "San Francisco"
 
 concat <- function(s1, s2) {
   paste(s1, s2, sep="")

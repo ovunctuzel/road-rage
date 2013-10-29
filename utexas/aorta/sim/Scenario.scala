@@ -411,9 +411,10 @@ object AgentDistribution {
     return ids.map(id => {
       val start = rng.choose(actual_starts)
       val budget = rng.int(budgets._1, budgets._2)
+      val raw_time = rng.double(times._1, times._2)
+      val time = raw_time - (raw_time % cfg.dt_s) // TODO may still have fp issue
       MkAgent(
-        new AgentID(id), rng.double(times._1, times._2), rng.new_seed, start.id,
-        start.safe_spawn_dist(rng),
+        new AgentID(id), time, rng.new_seed, start.id, start.safe_spawn_dist(rng),
         MkRoute(rng.choose(routes), Nil, rng.choose(ends).id, rng.new_seed),
         // For now, force the same budget and priority here, and clean it up
         // later.
