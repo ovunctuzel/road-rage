@@ -148,7 +148,16 @@ class Experiment(config: ExpConfig) {
     Runtime.getRuntime.exec(Array("./tools/cloud/upload_gs.sh", fn, contents))
   }
 
+  protected def upload(fn: String) {
+    config.gs_prefix match {
+      case Some(prefix) => Runtime.getRuntime.exec(Array(
+        "gsutil", "cp", fn, prefix + fn
+      ))
+      case None =>
+    }
+  }
+
   // TODO auto close this, and auto upload to GS.
   // TODO and keep it open if needed
-  def output(fn: String) = new PrintWriter(new FileWriter(new File(fn + "_" + graph.basename)))
+  def output(fn: String) = new PrintWriter(new FileWriter(new File(fn)), true /* autoFlush */)
 }

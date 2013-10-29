@@ -67,5 +67,8 @@ class AuctionExperiment(config: ExpConfig) extends Experiment(config) {
     for (a <- s.agents) {
       f.println(List(uid, a.id, a.wallet.priority, times.map(_._2(a.id))).mkString(" "))
     }
+    // TODO do this differently...
+    f.close()
+    upload("times")
   }
 }
