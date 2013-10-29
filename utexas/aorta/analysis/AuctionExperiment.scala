@@ -60,12 +60,12 @@ class AuctionExperiment(config: ExpConfig) extends Experiment(config) {
 
   // TODO move to base class
   protected def output_times(times: List[(String, mutable.Map[AgentID, Double])], s: Scenario) {
-    val f = output("times") // TODO scenario size, map somewhere...
-    f.println("scenario agent priority " + times.map(_._1).mkString(" "))
+    val f = output("times")
+    f.println("map scenario agent priority " + times.map(_._1).mkString(" "))
     val uid = Util.unique_id
     // We should have the same agents in all runs
     for (a <- s.agents) {
-      f.println(List(uid, a.id, a.wallet.priority, times.map(_._2(a.id))).mkString(" "))
+      f.println(List(graph.basename, uid, a.id, a.wallet.priority, times.map(_._2(a.id))).mkString(" "))
     }
     // TODO do this differently...
     f.close()
