@@ -5,7 +5,7 @@
 package utexas.aorta.analysis
 
 import utexas.aorta.sim.{Simulation, Sim_Event, Route_Event, EV_AgentSpawned, EV_AgentQuit,
-                         EV_Reroute, IntersectionType, EV_Stat}
+                         EV_Reroute, IntersectionType, EV_Stat, EV_IntersectionOutcome}
 import utexas.aorta.common.{Common, AgentID}
 
 import scala.collection.mutable
@@ -54,6 +54,22 @@ class TurnDelayMetric(sim: Simulation) {
   })
 
   def delays = delay_per_policy.keys.map(p => p.id -> delay_per_policy(p).toList).toMap
+}
+
+// Measure how much competition is present at intersections
+class TurnCompetitionMetric(sim: Simulation) {
+  private val losers_per_policy = IntersectionType.values.toList.map(
+    t => t -> new mutable.ListBuffer[Double]()
+  ).toMap
+
+  sim.listen("turn-competition", (sim_ev: Sim_Event) => sim_ev match {
+    case EV_IntersectionOutcome(policy, losers) => {
+      losers_per_policy(policy) += losers.size
+    }
+    case _ =>
+  })
+
+  def competition = losers_per_policy.keys.map(p => p.id -> losers_per_policy(p).toList).toMap
 }
 
 // TODO make a class of per-agent metrics, and have a way to merge them..

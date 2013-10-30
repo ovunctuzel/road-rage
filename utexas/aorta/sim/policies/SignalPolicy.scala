@@ -9,7 +9,7 @@ import scala.collection.mutable.{ListBuffer, TreeSet}
 
 import utexas.aorta.map.{Turn, Vertex, Edge}
 import utexas.aorta.sim.{Intersection, Policy, Agent, EV_Signal_Change,
-                         IntersectionType, Ticket, OrderingType, Simulation}
+                         IntersectionType, Ticket, OrderingType, Simulation, EV_IntersectionOutcome}
 import utexas.aorta.sim.market.IntersectionOrdering
 
 import utexas.aorta.common.{Util, Common, cfg, StateWriter, StateReader}
@@ -58,6 +58,9 @@ class SignalPolicy(intersection: Intersection,
       // In auctions, we may not have a viable next phase at all...
       ordering.choose(candidates, request_queue, this) match {
         case Some(p) => {
+          Common.sim.tell_listeners(
+            EV_IntersectionOutcome(policy_type, request_queue.filter(t => !p.has(t.turn)))
+          )
           current_phase = p
           phase_order = phase_order.filter(phase => phase != p)
           phase_order += p
@@ -67,7 +70,7 @@ class SignalPolicy(intersection: Intersection,
           // callback for UI usually
           Common.sim.tell_listeners(EV_Signal_Change(current_phase.turns.toSet))
         }
-        case None =>
+        case None =>  // shouldn't happen...
       }
     }
 

@@ -53,6 +53,7 @@ class AuctionExperiment(config: ExpConfig) extends Experiment(config) {
   // per mode
   // TODO or change schema? col is map, scenario, agent, trip time, percent. row per mode.
   // TODO have mode in here, and get rid of the pair (string, Experience)
+  // TODO per_category shouldnt use int, should be string, since mode is a string anyway...
   case class Experience(per_agent: Map[String, Map[AgentID, Double]],
                         per_category: Map[String, Map[Int, List[Double]]])
 
@@ -64,16 +65,22 @@ class AuctionExperiment(config: ExpConfig) extends Experiment(config) {
     val times = record_trip_times(sim)
     val orig_routes = new OriginalRouteMetric(sim)
     val turn_delays = new TurnDelayMetric(sim)
+    val turn_competition = new TurnCompetitionMetric(sim)
     simulate(round, sim)
     return Experience(Map(
-      "times" -> times.toMap, "orig_routes" -> s.agents.map(a => a.id -> orig_routes(a.id)).toMap
-    ), Map("turn_delays" -> turn_delays.delays))
+      "times" -> times.toMap,
+      "orig_routes" -> s.agents.map(a => a.id -> orig_routes(a.id)).toMap
+    ), Map(
+      "turn_delays" -> turn_delays.delays,
+      "turn_competition" -> turn_competition.competition
+    ))
   }
 
   protected def output_data(data: List[(String, Experience)], s: Scenario) {
     output_per_agent("times", data, s)
     output_per_agent("orig_routes", data, s)
     output_per_category("turn_delays", data, "intersection_type")
+    output_per_category("turn_competition", data, "intersection_type")
   }
 
   // One double per agent per mode

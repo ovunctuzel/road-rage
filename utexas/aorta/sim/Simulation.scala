@@ -339,6 +339,8 @@ final case class EV_AgentSpawned(a: Agent) extends Sim_Event
 final case class EV_AgentQuit(a: Agent) extends Sim_Event
 final case class EV_Step(tick: Double) extends Sim_Event
 final case class EV_Stat(stat: Measurement) extends Sim_Event
+final case class EV_IntersectionOutcome(intersection: IntersectionType.Value, losers: List[Ticket])
+  extends Sim_Event
 
 trait AgentManager {
   //////////////////////////////////////////////////////////////////////////////
