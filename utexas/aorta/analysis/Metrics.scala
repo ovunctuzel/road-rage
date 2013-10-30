@@ -41,6 +41,8 @@ class OriginalRouteMetric(sim: Simulation) {
 
 // Measure how long drivers wait at intersections
 class TurnDelayMetric(sim: Simulation) {
+  // TODO correlate with the agent that experiences it. problem is how to do the same for
+  // TurnCompetitionMetric, where there could be multiple winners.
   private val delay_per_policy = IntersectionType.values.toList.map(
     t => t -> new mutable.ListBuffer[Double]()
   ).toMap
