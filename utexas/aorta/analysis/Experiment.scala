@@ -65,10 +65,18 @@ object ExpConfig {
   }
 }
 
+// per mode
+// TODO or change schema? col is map, scenario, agent, trip time, percent. row per mode.
+case class Experience(
+  mode: String, per_agent: Map[String, Map[AgentID, Double]],
+  per_category: Map[String, Map[String, List[Double]]]
+)
+
 class Experiment(config: ExpConfig) {
   // TODO do the caching in the graph load layer.
   protected lazy val scenario = get_scenario()
   protected lazy val graph = Graph.load(scenario.map_fn)
+  protected val uid = Util.unique_id
   Flags.set("--savestate", "false")
 
   protected def get_scenario(): Scenario = {
@@ -161,5 +169,40 @@ class Experiment(config: ExpConfig) {
   def output(fn: String) = new PrintWriter(new FileWriter(new File(fn)), true /* autoFlush */)
   def compress(fn: String) {
     Runtime.getRuntime.exec(Array("gzip", fn))
+  }
+
+  // One double per agent per mode
+  protected def output_per_agent(metric: String, data: List[Experience], s: Scenario) {
+    val f = output(metric)
+    f.println("map scenario agent priority " + data.map(_.mode).mkString(" "))
+    // We should have the same agents in all runs
+    for (a <- s.agents) {
+      f.println((
+        List(graph.basename, uid, a.id, a.wallet.priority) ++
+        data.map(per_mode => per_mode.per_agent(metric)(a.id))
+      ).mkString(" "))
+    }
+    // TODO do this differently...
+    f.close()
+    compress(metric)
+    upload(metric + ".gz")
+  }
+
+  // TODO i kind of want sql.
+  protected def output_per_category(
+    metric: String, data: List[Experience], category: String
+  ) {
+    val f = output(metric)
+    f.println(s"mode $category value")
+    for (per_mode <- data) {
+      for (instance <- per_mode.per_category(metric).keys) {
+        for (value <- per_mode.per_category(metric)(instance)) {
+          f.println(List(per_mode.mode, instance, value).mkString(" "))
+        }
+      }
+    }
+    f.close()
+    compress(metric)
+    upload(metric + ".gz")
   }
 }

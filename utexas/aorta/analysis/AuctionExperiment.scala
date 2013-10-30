@@ -32,7 +32,6 @@ object AuctionExperiment {
 
 class AuctionExperiment(config: ExpConfig) extends Experiment(config) {
   private var round = 0 // TODO count this in base class too
-  val uid = Util.unique_id
 
   def run() {
     // The generated scenario is the baseline.
@@ -40,25 +39,19 @@ class AuctionExperiment(config: ExpConfig) extends Experiment(config) {
     val nosys_base = AuctionExperiment.disable_sysbids(sysbid_base)
 
     output_data(List(
-      "fcfs" -> run_trial(scenario),
-      "auctions_sysbids" -> run_trial(sysbid_base),
-      "auctions_no_sysbids" -> run_trial(nosys_base),
-      "equal_sysbids" -> run_trial(AuctionExperiment.equal_budgets(sysbid_base)),
-      "equal_no_sysbids" -> run_trial(AuctionExperiment.equal_budgets(nosys_base)),
-      "fixed_sysbids" -> run_trial(AuctionExperiment.fixed_budgets(sysbid_base)),
-      "fixed_no_sysbids" -> run_trial(AuctionExperiment.fixed_budgets(nosys_base))
+      run_trial(scenario, "fcfs"),
+      run_trial(sysbid_base, "auctions_sysbids"),
+      run_trial(nosys_base, "auctions_no_sysbids"),
+      run_trial(AuctionExperiment.equal_budgets(sysbid_base), "equal_sysbids"),
+      run_trial(AuctionExperiment.equal_budgets(nosys_base), "equal_no_sysbids"),
+      run_trial(AuctionExperiment.fixed_budgets(sysbid_base), "fixed_sysbids"),
+      run_trial(AuctionExperiment.fixed_budgets(nosys_base), "fixed_no_sysbids")
     ), scenario)
   }
 
-  // per mode
-  // TODO or change schema? col is map, scenario, agent, trip time, percent. row per mode.
-  // TODO have mode in here, and get rid of the pair (string, Experience)
-  case class Experience(per_agent: Map[String, Map[AgentID, Double]],
-                        per_category: Map[String, Map[String, List[Double]]])
-
   // TODO rename scenario, graph in base class. its too restrictive.
   // and refactor this.
-  private def run_trial(s: Scenario): Experience = {
+  private def run_trial(s: Scenario, mode: String): Experience = {
     round += 1
     val sim = s.make_sim().setup()
     val times = record_trip_times(sim)
@@ -66,7 +59,7 @@ class AuctionExperiment(config: ExpConfig) extends Experiment(config) {
     val turn_delays = new TurnDelayMetric(sim)
     val turn_competition = new TurnCompetitionMetric(sim)
     simulate(round, sim)
-    return Experience(Map(
+    return Experience(mode, Map(
       "times" -> times.toMap,
       "orig_routes" -> s.agents.map(a => a.id -> orig_routes(a.id)).toMap
     ), Map(
@@ -75,47 +68,11 @@ class AuctionExperiment(config: ExpConfig) extends Experiment(config) {
     ))
   }
 
-  protected def output_data(data: List[(String, Experience)], s: Scenario) {
+  protected def output_data(data: List[Experience], s: Scenario) {
     output_per_agent("times", data, s)
     output_per_agent("orig_routes", data, s)
     output_per_category("turn_delays", data, "intersection_type")
     output_per_category("turn_competition", data, "intersection_type")
-  }
-
-  // One double per agent per mode
-  protected def output_per_agent(metric: String, data: List[(String, Experience)], s: Scenario) {
-    val f = output(metric)
-    f.println("map scenario agent priority " + data.map(_._1).mkString(" "))
-    // We should have the same agents in all runs
-    for (a <- s.agents) {
-      f.println((
-        List(graph.basename, uid, a.id, a.wallet.priority) ++
-        data.map(per_mode => per_mode._2.per_agent(metric)(a.id))
-      ).mkString(" "))
-    }
-    // TODO do this differently...
-    f.close()
-    compress(metric)
-    upload(metric + ".gz")
-  }
-
-  // TODO i kind of want sql.
-  protected def output_per_category(
-    metric: String, data: List[(String, Experience)], category: String
-  ) {
-    val f = output(metric)
-    f.println(s"mode $category value")
-    for (pair <- data) {
-      val mode = pair._1
-      for (instance <- pair._2.per_category(metric).keys) {
-        for (value <- pair._2.per_category(metric)(instance)) {
-          f.println(List(mode, instance, value).mkString(" "))
-        }
-      }
-    }
-    f.close()
-    compress(metric)
-    upload(metric + ".gz")
   }
 }
 
