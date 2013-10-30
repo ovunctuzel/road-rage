@@ -54,7 +54,7 @@ class AuctionExperiment(config: ExpConfig) extends Experiment(config) {
   // TODO or change schema? col is map, scenario, agent, trip time, percent. row per mode.
   // TODO have mode in here, and get rid of the pair (string, Experience)
   case class Experience(per_agent: Map[String, Map[AgentID, Double]],
-                        per_category: Map[String, Map[Int, Double]])
+                        per_category: Map[String, Map[Int, List[Double]]])
 
   // TODO rename scenario, graph in base class. its too restrictive.
   // and refactor this.
@@ -71,7 +71,6 @@ class AuctionExperiment(config: ExpConfig) extends Experiment(config) {
   }
 
   protected def output_data(data: List[(String, Experience)], s: Scenario) {
-    // TODO extractor pattern would be cleaner? string map with key?
     output_per_agent("times", data, s)
     output_per_agent("orig_routes", data, s)
     output_per_category("turn_delays", data, "intersection_type")
@@ -99,8 +98,15 @@ class AuctionExperiment(config: ExpConfig) extends Experiment(config) {
     metric: String, data: List[(String, Experience)], category: String
   ) {
     val f = output(metric)
-    // TODO factor1 factor2 thing. then do SQL-ish SELECT.
-
+    f.println(s"mode $category value")
+    for (pair <- data) {
+      val mode = pair._1
+      for (instance <- pair._2.per_category(metric).keys) {
+        for (value <- pair._2.per_category(metric)(instance)) {
+          f.println(List(mode, instance, value).mkString(" "))
+        }
+      }
+    }
     f.close()
     compress(metric)
     upload(metric + ".gz")
