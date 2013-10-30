@@ -4,7 +4,7 @@
 
 package utexas.aorta.analysis
 
-import utexas.aorta.sim.{Scenario, SystemWalletConfig, OrderingType, WalletType}
+import utexas.aorta.sim.{Scenario, SystemWalletConfig, OrderingType, WalletType, IntersectionType}
 import utexas.aorta.common.{AgentID, Util}
 
 import scala.collection.mutable
@@ -50,42 +50,60 @@ class AuctionExperiment(config: ExpConfig) extends Experiment(config) {
     ), scenario)
   }
 
-  // TODO or change schema. col is map, scenario, agent, trip time, percent. row per mode.
-  case class AgentResult(trip_time: Double, orig_route_percent: Double)
+  // per mode
+  // TODO or change schema? col is map, scenario, agent, trip time, percent. row per mode.
+  // TODO have mode in here, and get rid of the pair (string, Experience)
+  case class Experience(per_agent: Map[String, Map[AgentID, Double]],
+                        per_category: Map[String, Map[Int, Double]])
 
   // TODO rename scenario, graph in base class. its too restrictive.
   // and refactor this.
-  private def run_trial(s: Scenario): Map[AgentID, AgentResult] = {
+  private def run_trial(s: Scenario): Experience = {
     round += 1
     val sim = s.make_sim().setup()
     val times = record_trip_times(sim)
     val orig_routes = new OriginalRouteMetric(sim)
+    val turn_delays = new TurnDelayMetric(sim)
     simulate(round, sim)
-    return times.keys.map(a => a -> AgentResult(times(a), orig_routes(a))).toMap
+    return Experience(Map(
+      "times" -> times.toMap, "orig_routes" -> s.agents.map(a => a.id -> orig_routes(a.id)).toMap
+    ), Map("turn_delays" -> turn_delays.delays))
   }
 
-  protected def output_data(data: List[(String, Map[AgentID, AgentResult])], s: Scenario) {
-    output_metric("times", data, s, (r: AgentResult) => r.trip_time)
-    output_metric("orig_routes", data, s, (r: AgentResult) => r.orig_route_percent)
+  protected def output_data(data: List[(String, Experience)], s: Scenario) {
+    // TODO extractor pattern would be cleaner? string map with key?
+    output_per_agent("times", data, s)
+    output_per_agent("orig_routes", data, s)
+    output_per_category("turn_delays", data, "intersection_type")
   }
 
   // One double per agent per mode
-  protected def output_metric(fn: String, data: List[(String, Map[AgentID, AgentResult])],
-    s: Scenario, extractor: (AgentResult) => Double)
-  {
-    val f = output(fn)
+  protected def output_per_agent(metric: String, data: List[(String, Experience)], s: Scenario) {
+    val f = output(metric)
     f.println("map scenario agent priority " + data.map(_._1).mkString(" "))
     // We should have the same agents in all runs
     for (a <- s.agents) {
       f.println((
         List(graph.basename, uid, a.id, a.wallet.priority) ++
-        data.map(per_mode => extractor(per_mode._2(a.id)))
+        data.map(per_mode => per_mode._2.per_agent(metric)(a.id))
       ).mkString(" "))
     }
     // TODO do this differently...
     f.close()
-    compress(fn)
-    upload(fn + ".gz")
+    compress(metric)
+    upload(metric + ".gz")
+  }
+
+  // TODO i kind of want sql.
+  protected def output_per_category(
+    metric: String, data: List[(String, Experience)], category: String
+  ) {
+    val f = output(metric)
+    // TODO factor1 factor2 thing. then do SQL-ish SELECT.
+
+    f.close()
+    compress(metric)
+    upload(metric + ".gz")
   }
 }
 

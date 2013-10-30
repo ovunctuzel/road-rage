@@ -41,7 +41,7 @@ class OriginalRouteMetric(sim: Simulation) {
 
 // Measure how long drivers wait at intersections
 class TurnDelayMetric(sim: Simulation) {
-  val delay_per_policy = IntersectionType.values.map(
+  private val delay_per_policy = IntersectionType.values.toList.map(
     t => t -> new mutable.ListBuffer[Double]()
   ).toMap
 
@@ -52,6 +52,8 @@ class TurnDelayMetric(sim: Simulation) {
     }
     case _ =>
   })
+
+  def delays = delay_per_policy.keys.map(p => p.id -> delay_per_policy(p).toList).toMap
 }
 
 // TODO make a class of per-agent metrics, and have a way to merge them..
