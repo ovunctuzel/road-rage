@@ -28,11 +28,10 @@ class RouteAnalyzer(config: ExpConfig) extends Experiment(config) {
     val actual_paths = record_agent_paths(base_sim)
     simulate(0, base_sim)
 
-    // Resimulate, calculating the path score at the moment 
+    // Simulate again, scoring the path that the agent is destined to take at the time they spawn
     notify("Round 0 done, precomputing demand on roads/intersections")
     val demand = Demand.demand_for(scenario, graph)
 
-    // Simulate again, scoring the path that the agent is destined to take at the time they spawn
     val sim_again = scenario.make_sim(graph).setup()
     sim_again.listen("route-analyzer", (ev: Sim_Event) => { ev match {
       case EV_AgentSpawned(a) => {

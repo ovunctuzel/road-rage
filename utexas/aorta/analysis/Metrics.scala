@@ -5,7 +5,9 @@
 package utexas.aorta.analysis
 
 import utexas.aorta.sim.{Simulation, Sim_Event, Route_Event, EV_AgentSpawned, EV_AgentQuit,
-                         EV_Reroute, IntersectionType, EV_Stat, EV_IntersectionOutcome}
+                         EV_Reroute, IntersectionType, EV_Stat, EV_IntersectionOutcome,
+                         EV_Transition}
+import utexas.aorta.map.Edge
 import utexas.aorta.common.{Common, AgentID}
 
 import scala.collection.mutable
@@ -72,6 +74,20 @@ class TurnCompetitionMetric(sim: Simulation) {
   })
 
   def competition = losers_per_policy.keys.map(p => p.toString -> losers_per_policy(p).toList).toMap
+}
+
+// Measure how congested roads are when agents enter them
+class RoadCongestionMetric(sim: Simulation) {
+  private val congestion = new mutable.HashMap[AgentID, mutable.Set[Double]]
+    with mutable.MultiMap[AgentID, Double]
+
+  sim.listen("road-congestion", (sim_ev: Sim_Event) => sim_ev match {
+    case EV_AgentSpawned(a) => a.route.listen("road-congestion", (ev: Route_Event) => ev match {
+      case EV_Transition(_, to: Edge) => congestion(a.id) += to.directed_road.freeflow_percent_full
+      case _ =>
+    })
+    case _ =>
+  })
 }
 
 // TODO make a class of per-agent metrics, and have a way to merge them..

@@ -13,7 +13,7 @@ import scala.collection.mutable.{HashMap => MutableMap}
 
 import utexas.aorta.map.Graph
 import utexas.aorta.sim.{Simulation, Scenario, EV_Stat}
-import utexas.aorta.analysis.{Timer, Measurement}
+import utexas.aorta.analysis.Measurement
 
 object Util {
   private var indent_log = 0
@@ -176,6 +176,50 @@ object Flags {
   def boolean(name: String, default: Boolean): Boolean = boolean(name).getOrElse(default)
 
   private def is_true(value: String) = value.toLowerCase == "true"
+}
+
+// Ironically, using timers in tight loops has caused up to 3x slowdown before.
+// Java profilers might be safer.
+
+// One use
+class Timer(val msg: String = "") {
+  private val start = System.nanoTime
+
+  def so_far = (System.nanoTime - start) / 1000000000.0
+
+  def stop() {
+    Util.log("\"" + msg + "\": " + so_far + "s")
+  }
+}
+
+// Multi-use
+class Stopwatch(val name: String) {
+  private var from: Long = 0
+  var seconds: Double = 0.0
+
+  @elidable(elidable.ASSERTION) def start(): Stopwatch = {
+    from = System.nanoTime
+    return this
+  }
+
+  @elidable(elidable.ASSERTION) def stop() {
+    val now = System.nanoTime
+    seconds += (now - from) / 1000000000.0
+  }
+
+  // TODO replace with what?
+  def time[A](thunk: () => A): A = {
+    try {
+      start
+      thunk()
+    } finally {
+      stop
+    }
+  }
+
+  def describe() = {
+    Util.log(s"$name took $seconds seconds")
+  }
 }
 
 class AgentID(val int: Int) extends AnyVal {
