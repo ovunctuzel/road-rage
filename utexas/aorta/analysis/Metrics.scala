@@ -5,7 +5,7 @@
 package utexas.aorta.analysis
 
 import utexas.aorta.sim.{Simulation, Sim_Event, Route_Event, EV_AgentSpawned, EV_AgentQuit,
-                         EV_Reroute}
+                         EV_Reroute, IntersectionType, EV_Stat}
 import utexas.aorta.common.{Common, AgentID}
 
 import scala.collection.mutable
@@ -37,6 +37,21 @@ class OriginalRouteMetric(sim: Simulation) {
     case Some(tick) => 100.0 * (tick - start_time(a)) / (stop_time(a) - start_time(a))
     case None => 100.0
   }
+}
+
+// Measure how long drivers wait at intersections
+class TurnDelayMetric(sim: Simulation) {
+  val delay_per_policy = IntersectionType.values.map(
+    t => t -> new mutable.ListBuffer[Double]()
+  ).toMap
+
+  sim.listen("turn-delay", (sim_ev: Sim_Event) => sim_ev match {
+    case EV_Stat(s: Turn_Stat) => {
+      val t = Common.sim.graph.vertices(s.vert.int).intersection.policy.policy_type
+      delay_per_policy(t) += s.total_delay  // could be accept_delay
+    }
+    case _ =>
+  })
 }
 
 // TODO make a class of per-agent metrics, and have a way to merge them..
