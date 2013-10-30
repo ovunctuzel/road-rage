@@ -53,7 +53,7 @@ class TurnDelayMetric(sim: Simulation) {
     case _ =>
   })
 
-  def delays = delay_per_policy.keys.map(p => p.id -> delay_per_policy(p).toList).toMap
+  def delays = delay_per_policy.keys.map(p => p.toString -> delay_per_policy(p).toList).toMap
 }
 
 // Measure how much competition is present at intersections
@@ -69,7 +69,7 @@ class TurnCompetitionMetric(sim: Simulation) {
     case _ =>
   })
 
-  def competition = losers_per_policy.keys.map(p => p.id -> losers_per_policy(p).toList).toMap
+  def competition = losers_per_policy.keys.map(p => p.toString -> losers_per_policy(p).toList).toMap
 }
 
 // TODO make a class of per-agent metrics, and have a way to merge them..

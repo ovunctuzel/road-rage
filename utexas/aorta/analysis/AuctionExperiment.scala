@@ -53,9 +53,8 @@ class AuctionExperiment(config: ExpConfig) extends Experiment(config) {
   // per mode
   // TODO or change schema? col is map, scenario, agent, trip time, percent. row per mode.
   // TODO have mode in here, and get rid of the pair (string, Experience)
-  // TODO per_category shouldnt use int, should be string, since mode is a string anyway...
   case class Experience(per_agent: Map[String, Map[AgentID, Double]],
-                        per_category: Map[String, Map[Int, List[Double]]])
+                        per_category: Map[String, Map[String, List[Double]]])
 
   // TODO rename scenario, graph in base class. its too restrictive.
   // and refactor this.

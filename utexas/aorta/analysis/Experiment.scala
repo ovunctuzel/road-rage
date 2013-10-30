@@ -33,7 +33,7 @@ object ExpConfig {
 
   def template = ExpConfig(0, 0, 0, 12 * 3600, random_map, None)
 
-  def tiny_test = template.copy(spawn_per_hour = 100, generations = 1)
+  def tiny_test = template.copy(spawn_per_hour = 1000, generations = 1)
   def small_local_test = template.copy(spawn_per_hour = 5000, generations = 3)
   def atx_cloud_test = template.copy(
     spawn_per_hour = rng.int(10000, 15000), generations = 3,
