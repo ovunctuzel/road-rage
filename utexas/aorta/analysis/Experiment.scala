@@ -9,7 +9,7 @@ import java.io.{File, PrintWriter, FileWriter}
 
 import utexas.aorta.map.Graph
 import utexas.aorta.sim.{ScenarioTool, Simulation, Scenario, Sim_Event, EV_Heartbeat, EV_AgentSpawned,
-                         RouteRecorder, Agent}
+                         RouteRecorder, Agent, EV_Stat}
 
 import utexas.aorta.common.{RNG, Util, Flags, Common, AgentID}
 
@@ -84,19 +84,16 @@ class Experiment(config: ExpConfig) {
   // TODO => trip time
   // TODO move to Metrics
   protected def record_trip_times(
-    include: () => Boolean = () => true
+    sim: Simulation, include: () => Boolean = () => true
   ): mutable.Map[AgentID, Double] = {
     val times = new mutable.HashMap[AgentID, Double]()
-    Common.stats_log = new StatsListener() {
-      override def record(item: Measurement) {
-        item match {
-          case s: Agent_Lifetime_Stat if include() => {
-            times(s.id) = s.trip_time
-          }
-          case _ =>
+    sim.listen("trip-time-recorder", (ev: Sim_Event) => { ev match {
+        case EV_Stat(s: Agent_Lifetime_Stat) if include() => {
+          times(s.id) = s.trip_time
         }
+        case _ =>
       }
-    }
+    })
     return times
   }
 

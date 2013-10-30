@@ -17,7 +17,7 @@ import utexas.aorta.sim.policies.Phase
 
 import utexas.aorta.ui.ReplayDiffScheme
 import utexas.aorta.common.{Util, Common, cfg, StateWriter, StateReader, Flags, AgentID}
-import utexas.aorta.analysis.{Heartbeat_Stat, Scenario_Stat, ReplayChecker}
+import utexas.aorta.analysis.{Heartbeat_Stat, Scenario_Stat, ReplayChecker, Measurement}
 
 // TODO take just a scenario, or graph and scenario?
 class Simulation(val graph: Graph, val scenario: Scenario)
@@ -338,6 +338,7 @@ final case class EV_Heartbeat(heartbeat: Heartbeat_Stat) extends Sim_Event
 final case class EV_AgentSpawned(a: Agent) extends Sim_Event
 final case class EV_AgentQuit(a: Agent) extends Sim_Event
 final case class EV_Step(tick: Double) extends Sim_Event
+final case class EV_Stat(stat: Measurement) extends Sim_Event
 
 trait AgentManager {
   //////////////////////////////////////////////////////////////////////////////

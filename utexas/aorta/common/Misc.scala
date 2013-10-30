@@ -12,8 +12,8 @@ import java.awt.Color
 import scala.collection.mutable.{HashMap => MutableMap}
 
 import utexas.aorta.map.Graph
-import utexas.aorta.sim.{Simulation, Scenario}
-import utexas.aorta.analysis.{Timer, StatsListener, StatsRecorder, Measurement}
+import utexas.aorta.sim.{Simulation, Scenario, EV_Stat}
+import utexas.aorta.analysis.{Timer, Measurement}
 
 object Util {
   private var indent_log = 0
@@ -148,15 +148,8 @@ object Common {
   def tick = sim.tick
   def timer(name: String) = new Timer(name)
 
-  var stats_log: StatsListener = null
   def record(item: Measurement) {
-    if (stats_log == null) {
-      stats_log = Flags.string("--log") match {
-        case Some(value) => new StatsRecorder(value)
-        case None => new StatsListener()
-      }
-    }
-    stats_log.record(item)
+    sim.tell_listeners(EV_Stat(item))
   }
 
   sys.ShutdownHookThread({

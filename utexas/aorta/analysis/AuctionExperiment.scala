@@ -58,7 +58,7 @@ class AuctionExperiment(config: ExpConfig) extends Experiment(config) {
   private def run_trial(s: Scenario): Map[AgentID, AgentResult] = {
     round += 1
     val sim = s.make_sim().setup()
-    val times = record_trip_times()
+    val times = record_trip_times(sim)
     val orig_routes = new OriginalRouteMetric(sim)
     simulate(round, sim)
     return times.keys.map(a => a -> AgentResult(times(a), orig_routes(a))).toMap

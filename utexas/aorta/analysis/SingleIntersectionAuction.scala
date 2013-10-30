@@ -45,7 +45,7 @@ class SingleIntersectionAuction(config: ExpConfig) extends Experiment(config) {
       try {
         // Get the baseline
         val base_sim = s.make_sim(test_graph).setup()
-        val base_times = record_trip_times()
+        val base_times = record_trip_times(base_sim)
         notify(s"Testing $spawn_per_hour for FCFS")
         simulate(0, base_sim)
         val base_unweighted_time = base_times.values.sum
@@ -67,7 +67,7 @@ class SingleIntersectionAuction(config: ExpConfig) extends Experiment(config) {
             Wallet.tmp_bid_ahead = bid_ahead
             // Run!
             val sim = s.make_sim(test_graph).setup()
-            val times = record_trip_times()
+            val times = record_trip_times(sim)
             notify(s"Testing $spawn_per_hour with $use_sysbids, $bid_ahead")
             try {
               simulate(0, sim)

@@ -29,7 +29,7 @@ class TradeoffExperiment(config: ExpConfig) extends Experiment(config) {
 
     // Simulate with normal routes, capturing trip time
     val base_sim = scenario.make_sim(graph).setup()
-    val base_times = record_trip_times()
+    val base_times = record_trip_times(base_sim)
     simulate(0, base_sim)
 
     // Enable route choices for a random subset of the population
@@ -61,7 +61,7 @@ class TradeoffExperiment(config: ExpConfig) extends Experiment(config) {
       Graph.num_routes = num_routes
       AgentAdaptor.reset()
       val mod_sim = scenario.make_sim(graph).setup()
-      val mod_times = record_trip_times()
+      val mod_times = record_trip_times(mod_sim)
       simulate(1, mod_sim)
 
       val saved_time_special = AgentAdaptor.special_routes.map(id => mod_times(id) - base_times(id)).sum

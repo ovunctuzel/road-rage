@@ -35,7 +35,7 @@ class DifferentialRouteAnalyzer(config: ExpConfig) extends Experiment(config) {
 
     // Simulate fully, savestating at 1 hour
     val base_sim = scenario.make_sim(graph).setup()
-    val base_times = record_trip_times(() => base_sim.tick > warmup_time)
+    val base_times = record_trip_times(base_sim, () => base_sim.tick > warmup_time)
     base_sim.listen("diff-route-analyzer", (ev: Sim_Event) => { ev match {
       case EV_Step(tick) if tick == warmup_time => base_sim.savestate()
       case _ =>
@@ -81,7 +81,7 @@ class DifferentialRouteAnalyzer(config: ExpConfig) extends Experiment(config) {
       )
 
       try {
-        val new_times = record_trip_times(() => new_sim.tick > warmup_time)
+        val new_times = record_trip_times(new_sim, () => new_sim.tick > warmup_time)
         val actual_paths = record_agent_paths(new_sim, (a) => a.id == new_id)
         simulate(round, new_sim)
         val new_drivers_trip_time = new_times(new_id)

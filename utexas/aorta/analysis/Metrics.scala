@@ -40,3 +40,5 @@ class OriginalRouteMetric(sim: Simulation) {
 }
 
 // TODO make a class of per-agent metrics, and have a way to merge them..
+
+// TODO delay on roads vs at intersections?
