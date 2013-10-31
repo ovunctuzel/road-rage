@@ -2,8 +2,5 @@
 # Must be run from the base AORTA directory, eg,
 # ./tools/auction_results
 
-. common
-
-scala -cp $CLASSPATH $JVM_OPTS utexas.aorta.analysis.AuctionResults $@
 Rscript misc/auction_report.r
-rm -f unweighted_* weighted_*
+rm -f times.db
