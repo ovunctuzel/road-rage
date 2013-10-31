@@ -52,13 +52,13 @@ class AuctionExperiment(config: ExpConfig) extends Experiment(config) {
   // and refactor this.
   private def run_trial(s: Scenario, mode: String): Experience = {
     val sim = s.make_sim().setup()
-    val times = record_trip_times(sim)
+    val times = new TripTimeMetric(sim)
     val orig_routes = new OriginalRouteMetric(sim)
     val turn_delays = new TurnDelayMetric(sim)
     val turn_competition = new TurnCompetitionMetric(sim)
     simulate(sim)
     return Experience(mode, Map(
-      "times" -> times.toMap,
+      "times" -> times.result,
       "orig_routes" -> s.agents.map(a => a.id -> orig_routes(a.id)).toMap
     ), Map(
       "turn_delays" -> turn_delays.delays,

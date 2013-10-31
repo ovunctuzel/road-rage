@@ -2,7 +2,7 @@
 // Khandelwal of UT Austin
 // License: GNU GPL v2
 
-package utexas.aorta.analysis
+/*package utexas.aorta.analysis
 
 import scala.collection.mutable
 import java.io.File
@@ -125,4 +125,4 @@ class DifferentialRouteAnalyzer(config: ExpConfig) extends Experiment(config) {
     Util.assert_eq(base.size, mod.size - 1)
     return base.keys.map(id => mod(id) - base(id)).sum
   }
-}
+}*/

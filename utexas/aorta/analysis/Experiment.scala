@@ -89,22 +89,6 @@ class Experiment(config: ExpConfig) {
     return Scenario.load(scenario_fn)
   }
 
-  // TODO => trip time
-  // TODO move to Metrics
-  protected def record_trip_times(
-    sim: Simulation, include: () => Boolean = () => true
-  ): mutable.Map[AgentID, Double] = {
-    val times = new mutable.HashMap[AgentID, Double]()
-    sim.listen("trip-time-recorder", (ev: Sim_Event) => { ev match {
-        case EV_Stat(s: Agent_Lifetime_Stat) if include() => {
-          times(s.id) = s.trip_time
-        }
-        case _ =>
-      }
-    })
-    return times
-  }
-
   protected def record_agent_paths(
     sim: Simulation, include: (Agent) => Boolean = Function.const(true)
   ): mutable.Map[AgentID, RouteRecorder] = {

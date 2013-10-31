@@ -2,7 +2,7 @@
 // Khandelwal of UT Austin
 // License: GNU GPL v2
 
-package utexas.aorta.analysis
+/*package utexas.aorta.analysis
 
 import scala.collection.mutable
 import java.io.{File, PrintWriter, FileWriter}
@@ -49,4 +49,4 @@ class ExternalityAnalyzer(population_size: Int, test_size: Int, config: ExpConfi
   override def output_score(a: Agent, score: RouteFeatures, trip_time: Double) {
     output.println((List(a.id.int, trip_time) ++ score.toList).mkString(","))
   }
-}
+}*/

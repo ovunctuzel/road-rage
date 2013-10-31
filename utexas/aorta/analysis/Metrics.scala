@@ -90,6 +90,19 @@ class RoadCongestionMetric(sim: Simulation) {
   })
 }
 
+// Measure how long each agent's trip takes
+class TripTimeMetric(sim: Simulation) {
+  private val times = new mutable.HashMap[AgentID, Double]()
+
+  sim.listen("trip-time", _ match {
+    case EV_Stat(s: Agent_Lifetime_Stat) => times(s.id) = s.trip_time
+    case _ =>
+  })
+
+  def result = times.toMap
+  def apply(a: AgentID) = times(a)
+}
+
 // TODO make a class of per-agent metrics, and have a way to merge them..
 
 // TODO delay on roads vs at intersections?

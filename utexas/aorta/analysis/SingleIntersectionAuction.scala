@@ -45,10 +45,10 @@ class SingleIntersectionAuction(config: ExpConfig) extends Experiment(config) {
       try {
         // Get the baseline
         val base_sim = s.make_sim(test_graph).setup()
-        val base_times = record_trip_times(base_sim)
+        val base_times = new TripTimeMetric(base_sim)
         notify(s"Testing $spawn_per_hour for FCFS")
         simulate(base_sim)
-        val base_unweighted_time = base_times.values.sum
+        val base_unweighted_time = base_times.result.values.sum
         val base_weighted_time = s.agents.map(a => a.wallet.priority * base_times(a.id)).sum
 
         // Now, enable auctions for other cases
@@ -67,11 +67,11 @@ class SingleIntersectionAuction(config: ExpConfig) extends Experiment(config) {
             Wallet.tmp_bid_ahead = bid_ahead
             // Run!
             val sim = s.make_sim(test_graph).setup()
-            val times = record_trip_times(sim)
+            val times = new TripTimeMetric(sim)
             notify(s"Testing $spawn_per_hour with $use_sysbids, $bid_ahead")
             try {
               simulate(sim)
-              val unweighted_time = times.values.sum
+              val unweighted_time = times.result.values.sum
               val weighted_time = s.agents.map(a => a.wallet.priority * times(a.id)).sum
 
               def bit(bool: Boolean) =

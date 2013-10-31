@@ -51,11 +51,11 @@ class ClownCarExperiment(config: ExpConfig) extends Experiment(config) {
 
   private def run_trial(s: Scenario, mode: String): Experience = {
     val sim = s.make_sim().setup()
-    val times = record_trip_times(sim)
+    val times = new TripTimeMetric(sim)
     // TODO other metrics, please!
     simulate(sim)
     return Experience(mode, Map(
-      "times" -> times.toMap
+      "times" -> times.result
     ), Map())
   }
 

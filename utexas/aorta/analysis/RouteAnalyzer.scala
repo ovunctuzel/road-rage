@@ -24,7 +24,7 @@ class RouteAnalyzer(config: ExpConfig) extends Experiment(config) {
   def run() {
     // Simulate, capturing every driver's route and trip time
     val base_sim = scenario.make_sim(graph).setup()
-    val times = record_trip_times(base_sim)
+    val times = new TripTimeMetric(base_sim)
     val actual_paths = record_agent_paths(base_sim)
     simulate(base_sim)
 
