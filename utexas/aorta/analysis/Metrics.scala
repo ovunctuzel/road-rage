@@ -41,8 +41,8 @@ class OriginalRouteMetric(sim: Simulation) {
   private val start_time = new mutable.HashMap[AgentID, Double]()
   private val stop_time = new mutable.HashMap[AgentID, Double]()
 
-  sim.listen("orig-route", (sim_ev: Sim_Event) => sim_ev match {
-    case EV_AgentSpawned(a) => a.route.listen("orig-route", (ev: Route_Event) => ev match {
+  sim.listen("orig-route", _ match {
+    case EV_AgentSpawned(a) => a.route.listen("orig-route", _ match {
       case EV_Reroute(_, false) if !first_reroute_time.contains(a.id) =>
         first_reroute_time(a.id) = Common.tick
       case _ =>
@@ -69,7 +69,7 @@ class TurnDelayMetric(sim: Simulation) {
     t => t -> new mutable.ListBuffer[Double]()
   ).toMap
 
-  sim.listen("turn-delay", (sim_ev: Sim_Event) => sim_ev match {
+  sim.listen("turn-delay", _ match {
     case EV_Stat(s: Turn_Stat) => {
       val t = Common.sim.graph.vertices(s.vert.int).intersection.policy.policy_type
       delay_per_policy(t) += s.total_delay  // could be accept_delay
@@ -86,7 +86,7 @@ class TurnCompetitionMetric(sim: Simulation) {
     t => t -> new mutable.ListBuffer[Double]()
   ).toMap
 
-  sim.listen("turn-competition", (sim_ev: Sim_Event) => sim_ev match {
+  sim.listen("turn-competition", _ match {
     case EV_IntersectionOutcome(policy, losers) => {
       losers_per_policy(policy) += losers.size
     }
@@ -101,8 +101,8 @@ class RoadCongestionMetric(sim: Simulation) {
   private val congestion = new mutable.HashMap[AgentID, mutable.Set[Double]]
     with mutable.MultiMap[AgentID, Double]
 
-  sim.listen("road-congestion", (sim_ev: Sim_Event) => sim_ev match {
-    case EV_AgentSpawned(a) => a.route.listen("road-congestion", (ev: Route_Event) => ev match {
+  sim.listen("road-congestion", _ match {
+    case EV_AgentSpawned(a) => a.route.listen("road-congestion", _ match {
       case EV_Transition(_, to: Edge) => congestion(a.id) += to.directed_road.freeflow_percent_full
       case _ =>
     })

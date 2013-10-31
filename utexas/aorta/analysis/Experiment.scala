@@ -92,7 +92,7 @@ class Experiment(config: ExpConfig) {
   protected var round = 0
   protected def simulate(sim: Simulation) = {
     var last_time = 0L
-    sim.listen("experiment-framework", (ev: Sim_Event) => { ev match {
+    sim.listen("experiment-framework", _ match {
       case EV_Heartbeat(info) => {
         val now = System.currentTimeMillis
         if (now - last_time > config.report_every_ms) {
@@ -102,7 +102,7 @@ class Experiment(config: ExpConfig) {
         }
       }
       case _ =>
-    } })
+    })
 
     while (!sim.done) {
       sim.step()

@@ -9,7 +9,7 @@ import java.io.{File, PrintWriter, FileWriter}
 
 import utexas.aorta.map.DirectedRoad
 import utexas.aorta.map.analysis.{RouteFeatures, Demand}
-import utexas.aorta.sim.{Sim_Event, EV_AgentSpawned, Agent}
+import utexas.aorta.sim.{EV_AgentSpawned, Agent}
 
 object RouteAnalyzer {
   def main(args: Array[String]) {
@@ -33,13 +33,13 @@ class RouteAnalyzer(config: ExpConfig) extends Experiment(config) {
     val demand = Demand.demand_for(scenario, graph)
 
     val sim_again = scenario.make_sim(graph).setup()
-    sim_again.listen("route-analyzer", (ev: Sim_Event) => { ev match {
+    sim_again.listen("route-analyzer", _ match {
       case EV_AgentSpawned(a) => {
         val score = score_path(actual_paths(a.id), demand)
         output_score(a, score, times(a.id))
       }
       case _ =>
-    } })
+    })
     simulate(sim_again)
     output.close()
 

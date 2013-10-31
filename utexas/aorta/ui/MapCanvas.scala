@@ -13,8 +13,7 @@ import scala.language.implicitConversions
 
 import utexas.aorta.map._  // TODO yeah getting lazy.
 import utexas.aorta.map.analysis.{RouteFeatures, AstarRouter, Demand}
-import utexas.aorta.sim.{Simulation, Agent, Sim_Event, EV_Signal_Change,
-                         IntersectionType, RouteType, Route_Event,
+import utexas.aorta.sim.{Simulation, Agent, EV_Signal_Change, IntersectionType, RouteType,
                          EV_Transition, EV_Reroute, EV_Heartbeat, AgentMap}
 import utexas.aorta.sim.PathRoute
 
@@ -124,7 +123,7 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
   // mapcanvas.
   // Register to hear events
   private var last_tick = 0.0
-  sim.listen("ui", (ev: Sim_Event) => { ev match {
+  sim.listen("ui", _ match {
     case EV_Heartbeat(info) => {
       update_status()
       status.agents.text = info.describe
@@ -138,9 +137,7 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
       }
     }
     case _ =>
-  } })
-
-
+  })
 
 
   ///////////////////////
@@ -645,7 +642,7 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
         case Some(a) => a.route match {
           case r: PathRoute => {
             state.route_members.set(cfg.route_member_color, r.roads)
-            r.listen("UI", (ev: Route_Event) => { ev match {
+            r.listen("UI", _ match {
               case EV_Reroute(path, _) => {
                 state.route_members.set(cfg.route_member_color, path.map(_.road).toSet)
               }
@@ -655,7 +652,7 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
                 }
                 case _ =>
               }
-            } })
+            })
           }
           case _ =>
         }
