@@ -49,17 +49,17 @@ class ClownCarExperiment(config: ExpConfig) extends Experiment(config) {
     output_data(List(t1, t2), scenario)
   }
 
-  private def run_trial(s: Scenario, mode: String): Experience = {
+  private def run_trial(s: Scenario, mode: String): RawResult = {
     val sim = s.make_sim().setup()
     val times = new TripTimeMetric(sim)
     // TODO other metrics, please!
     simulate(sim)
-    return Experience(mode, Map(
+    return RawResult(mode, Map(
       "times" -> times.result
     ), Map())
   }
 
-  protected def output_data(data: List[Experience], s: Scenario) {
+  protected def output_data(data: List[RawResult], s: Scenario) {
     output_per_agent("times", data, s)
   }
 }

@@ -12,6 +12,26 @@ import utexas.aorta.common.{Common, AgentID}
 
 import scala.collection.mutable
 
+// Record one double per agent
+abstract class SinglePerAgentMetric {
+  private val per_agent = new mutable.HashMap[AgentID, Double]()
+  def apply(a: AgentID) = per_agent(a)
+  abstract def name: String
+}
+
+// Measure how long each agent's trip takes
+class TripTimeMetric(sim: Simulation) {
+  private val times = new mutable.HashMap[AgentID, Double]()
+
+  sim.listen("trip-time", _ match {
+    case EV_Stat(s: Agent_Lifetime_Stat) => times(s.id) = s.trip_time
+    case _ =>
+  })
+
+  def result = times.toMap
+  def apply(a: AgentID) = times(a)
+}
+
 // Measure how long a driver follows their original route.
 class OriginalRouteMetric(sim: Simulation) {
   // TODO make this one create a TripTimeMetric or so, reusing code to get start/stop time
@@ -88,19 +108,6 @@ class RoadCongestionMetric(sim: Simulation) {
     })
     case _ =>
   })
-}
-
-// Measure how long each agent's trip takes
-class TripTimeMetric(sim: Simulation) {
-  private val times = new mutable.HashMap[AgentID, Double]()
-
-  sim.listen("trip-time", _ match {
-    case EV_Stat(s: Agent_Lifetime_Stat) => times(s.id) = s.trip_time
-    case _ =>
-  })
-
-  def result = times.toMap
-  def apply(a: AgentID) = times(a)
 }
 
 class RouteRecordingMetric(sim: Simulation) {

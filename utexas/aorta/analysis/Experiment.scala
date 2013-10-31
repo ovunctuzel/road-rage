@@ -13,7 +13,7 @@ import utexas.aorta.sim.{ScenarioTool, Simulation, Scenario, Sim_Event, EV_Heart
 
 import utexas.aorta.common.{RNG, Util, Flags, Common, AgentID}
 
-// TODO divorce scenario generation from the rest
+// TODO divorce scenario generation from the rest?
 case class ExpConfig(
   spawn_per_hour: Int,
   generations: Int,
@@ -65,9 +65,9 @@ object ExpConfig {
   }
 }
 
-// per mode
-// TODO or change schema? col is map, scenario, agent, trip time, percent. row per mode.
-case class Experience(
+// TODO restructure this, probably. per_agent should be a list of metrics!
+case class RawResults(
+  // the String key in the outer map is a metric
   mode: String, per_agent: Map[String, Map[AgentID, Double]],
   per_category: Map[String, Map[String, List[Double]]]
 )
@@ -142,8 +142,9 @@ class Experiment(config: ExpConfig) {
     Runtime.getRuntime.exec(Array("gzip", fn))
   }
 
+  // TODO keep the format (at least for agents), but change for multi-things with categories.
   // One double per agent per mode
-  protected def output_per_agent(metric: String, data: List[Experience], s: Scenario) {
+  protected def output_per_agent(metric: String, data: List[RawResult], s: Scenario) {
     val f = output(metric)
     f.println("map scenario agent priority " + data.map(_.mode).mkString(" "))
     // We should have the same agents in all runs
@@ -159,9 +160,8 @@ class Experiment(config: ExpConfig) {
     upload(metric + ".gz")
   }
 
-  // TODO i kind of want sql.
   protected def output_per_category(
-    metric: String, data: List[Experience], category: String
+    metric: String, data: List[RawResult], category: String
   ) {
     val f = output(metric)
     f.println(s"mode $category value")
@@ -176,4 +176,8 @@ class Experiment(config: ExpConfig) {
     compress(metric)
     upload(metric + ".gz")
   }
+}
+
+// The future! All experiments should be rewritten to have this form, probably
+class SmartExperiment(config: ExpConfig) extends Experiment(config) {
 }
