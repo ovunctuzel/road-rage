@@ -14,6 +14,7 @@ import utexas.aorta.sim.{Sim_Event, EV_AgentSpawned, Agent}
 import utexas.aorta.sim.meep.{RouteChooser, Predictor, LinearModel, AgentAdaptor}
 import utexas.aorta.common.Util
 
+// TODO this is replaced by clown car experiment...
 object TradeoffExperiment {
   def main(args: Array[String]) {
     new TradeoffExperiment(ExpConfig.from_args(args)).run()
@@ -30,7 +31,7 @@ class TradeoffExperiment(config: ExpConfig) extends Experiment(config) {
     // Simulate with normal routes, capturing trip time
     val base_sim = scenario.make_sim(graph).setup()
     val base_times = record_trip_times(base_sim)
-    simulate(0, base_sim)
+    simulate(base_sim)
 
     // Enable route choices for a random subset of the population
     // (Doing it for everyone makes running simulations way too slow)
@@ -62,7 +63,7 @@ class TradeoffExperiment(config: ExpConfig) extends Experiment(config) {
       AgentAdaptor.reset()
       val mod_sim = scenario.make_sim(graph).setup()
       val mod_times = record_trip_times(mod_sim)
-      simulate(1, mod_sim)
+      simulate(mod_sim)
 
       val saved_time_special = AgentAdaptor.special_routes.map(id => mod_times(id) - base_times(id)).sum
       val saved_time_rest = scenario.agents

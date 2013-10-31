@@ -40,7 +40,7 @@ class DifferentialRouteAnalyzer(config: ExpConfig) extends Experiment(config) {
       case EV_Step(tick) if tick == warmup_time => base_sim.savestate()
       case _ =>
     } })
-    simulate(0, base_sim)
+    simulate(base_sim)
     val base_fn = scenario.name.replace("scenarios/", "scenarios/savestate_") + "_" + warmup_time
 
     // Pick a random source and destination for the new driver
@@ -83,7 +83,7 @@ class DifferentialRouteAnalyzer(config: ExpConfig) extends Experiment(config) {
       try {
         val new_times = record_trip_times(new_sim, () => new_sim.tick > warmup_time)
         val actual_paths = record_agent_paths(new_sim, (a) => a.id == new_id)
-        simulate(round, new_sim)
+        simulate(new_sim)
         val new_drivers_trip_time = new_times(new_id)
         val externality = calc_externality(base_times, new_times)
 

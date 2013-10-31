@@ -121,7 +121,8 @@ class Experiment(config: ExpConfig) {
     return routes
   }
 
-  protected def simulate(round: Int, sim: Simulation) = {
+  protected var round = 0
+  protected def simulate(sim: Simulation) = {
     var last_time = 0L
     sim.listen("experiment-framework", (ev: Sim_Event) => { ev match {
       case EV_Heartbeat(info) => {
@@ -138,9 +139,11 @@ class Experiment(config: ExpConfig) {
     while (!sim.done) {
       sim.step()
       if (sim.tick >= config.deadline) {
+        round += 1
         throw new Exception(s"Simulation past ${config.deadline} seconds. Giving up")
       }
     }
+    round += 1
   }
 
   protected def notify(status: String) {

@@ -26,7 +26,7 @@ class RouteAnalyzer(config: ExpConfig) extends Experiment(config) {
     val base_sim = scenario.make_sim(graph).setup()
     val times = record_trip_times(base_sim)
     val actual_paths = record_agent_paths(base_sim)
-    simulate(0, base_sim)
+    simulate(base_sim)
 
     // Simulate again, scoring the path that the agent is destined to take at the time they spawn
     notify("Round 0 done, precomputing demand on roads/intersections")
@@ -40,7 +40,7 @@ class RouteAnalyzer(config: ExpConfig) extends Experiment(config) {
       }
       case _ =>
     } })
-    simulate(1, sim_again)
+    simulate(sim_again)
     output.close()
 
     config.gs_prefix match {

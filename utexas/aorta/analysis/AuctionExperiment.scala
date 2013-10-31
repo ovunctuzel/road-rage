@@ -12,6 +12,7 @@ import java.io.File
 import java.util.Scanner
 
 // TODO get a macro or something for main, or have a more flexible cmdline tool
+// likewise for the scripts
 object AuctionExperiment {
   def main(args: Array[String]) {
     new AuctionExperiment(ExpConfig.from_args(args)).run()
@@ -31,8 +32,6 @@ object AuctionExperiment {
 }
 
 class AuctionExperiment(config: ExpConfig) extends Experiment(config) {
-  private var round = 0 // TODO count this in base class too
-
   def run() {
     // The generated scenario is the baseline.
     val sysbid_base = AuctionExperiment.enable_auctions(scenario)
@@ -52,13 +51,12 @@ class AuctionExperiment(config: ExpConfig) extends Experiment(config) {
   // TODO rename scenario, graph in base class. its too restrictive.
   // and refactor this.
   private def run_trial(s: Scenario, mode: String): Experience = {
-    round += 1
     val sim = s.make_sim().setup()
     val times = record_trip_times(sim)
     val orig_routes = new OriginalRouteMetric(sim)
     val turn_delays = new TurnDelayMetric(sim)
     val turn_competition = new TurnCompetitionMetric(sim)
-    simulate(round, sim)
+    simulate(sim)
     return Experience(mode, Map(
       "times" -> times.toMap,
       "orig_routes" -> s.agents.map(a => a.id -> orig_routes(a.id)).toMap
