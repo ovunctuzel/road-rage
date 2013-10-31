@@ -25,6 +25,7 @@ general post-thesis plan
     - tune all params
     - yield policy
     - unprotected left, right turn on red, better stop sign
+    - sysbids should be able to divide
   5) experiment framework
     - output RAW data thats importable into other stuff, have easy script-like way to get aggregate
       results later

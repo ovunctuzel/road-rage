@@ -10,7 +10,7 @@ import java.io.File
 import utexas.aorta.map.{Graph, DirectedRoad}
 import utexas.aorta.map.analysis.{AstarRouter, RouteFeatures, Demand}
 import utexas.aorta.sim.{ScenarioTool, Simulation, Scenario, AgentDistribution, MkAgent, MkWallet,
-                         MkRoute, EV_Heartbeat, RouteType, EV_AgentSpawned, Sim_Event, EV_Step}
+                         MkRoute, EV_Heartbeat, RouteType, EV_AgentSpawned, EV_Step}
 
 import utexas.aorta.common.{RNG, Util, Flags, Common, AgentID}
 
@@ -36,10 +36,10 @@ class DifferentialRouteAnalyzer(config: ExpConfig) extends Experiment(config) {
     // Simulate fully, savestating at 1 hour
     val base_sim = scenario.make_sim(graph).setup()
     val base_times = record_trip_times(base_sim, () => base_sim.tick > warmup_time)
-    base_sim.listen("diff-route-analyzer", (ev: Sim_Event) => { ev match {
+    base_sim.listen("diff-route-analyzer", _ match {
       case EV_Step(tick) if tick == warmup_time => base_sim.savestate()
       case _ =>
-    } })
+    })
     simulate(0, base_sim)
     val base_fn = scenario.name.replace("scenarios/", "scenarios/savestate_") + "_" + warmup_time
 

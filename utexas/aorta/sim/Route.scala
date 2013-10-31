@@ -77,7 +77,7 @@ object Route {
 class RouteRecorder(route: Route) {
   private val path = new ListBuffer[DirectedRoad]()
 
-  route.listen("recorder", (ev: Route_Event) => { ev match {
+  route.listen("recorder", _ match {
     case EV_Transition(from, to) => to match {
       case t: Turn => {
         if (path.isEmpty) {
@@ -89,7 +89,7 @@ class RouteRecorder(route: Route) {
       case _ =>
     }
     case _ =>
-  } })
+  })
 
   def actual_path = path.toList
 }

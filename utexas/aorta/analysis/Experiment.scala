@@ -8,7 +8,7 @@ import scala.collection.mutable
 import java.io.{File, PrintWriter, FileWriter}
 
 import utexas.aorta.map.Graph
-import utexas.aorta.sim.{ScenarioTool, Simulation, Scenario, Sim_Event, EV_Heartbeat, EV_AgentSpawned,
+import utexas.aorta.sim.{ScenarioTool, Simulation, Scenario, EV_Heartbeat, EV_AgentSpawned,
                          RouteRecorder, Agent, EV_Stat}
 
 import utexas.aorta.common.{RNG, Util, Flags, Common, AgentID}
@@ -95,12 +95,11 @@ class Experiment(config: ExpConfig) {
     sim: Simulation, include: () => Boolean = () => true
   ): mutable.Map[AgentID, Double] = {
     val times = new mutable.HashMap[AgentID, Double]()
-    sim.listen("trip-time-recorder", (ev: Sim_Event) => { ev match {
-        case EV_Stat(s: Agent_Lifetime_Stat) if include() => {
-          times(s.id) = s.trip_time
-        }
-        case _ =>
+    sim.listen("trip-time-recorder", _ match {
+      case EV_Stat(s: Agent_Lifetime_Stat) if include() => {
+        times(s.id) = s.trip_time
       }
+      case _ =>
     })
     return times
   }
@@ -110,20 +109,20 @@ class Experiment(config: ExpConfig) {
   ): mutable.Map[AgentID, RouteRecorder] = {
     // TODO could save memory by computing score of route incrementally
     val routes = new mutable.HashMap[AgentID, RouteRecorder]()
-    sim.listen("route-analyzer", (ev: Sim_Event) => { ev match {
+    sim.listen("route-analyzer", _ match {
       case EV_AgentSpawned(a) => {
         if (include(a)) {
           routes(a.id) = new RouteRecorder(a.route)
         }
       }
       case _ =>
-    } })
+    })
     return routes
   }
 
   protected def simulate(round: Int, sim: Simulation) = {
     var last_time = 0L
-    sim.listen("experiment-framework", (ev: Sim_Event) => { ev match {
+    sim.listen("experiment-framework", _ match {
       case EV_Heartbeat(info) => {
         val now = System.currentTimeMillis
         if (now - last_time > config.report_every_ms) {
@@ -133,7 +132,7 @@ class Experiment(config: ExpConfig) {
         }
       }
       case _ =>
-    } })
+    })
 
     while (!sim.done) {
       sim.step()
