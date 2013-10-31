@@ -25,7 +25,7 @@ class RouteAnalyzer(config: ExpConfig) extends Experiment(config) {
     // Simulate, capturing every driver's route and trip time
     val base_sim = scenario.make_sim(graph).setup()
     val times = new TripTimeMetric(base_sim)
-    val actual_paths = record_agent_paths(base_sim)
+    val actual_paths = new RouteRecordingMetric(base_sim)
     simulate(base_sim)
 
     // Simulate again, scoring the path that the agent is destined to take at the time they spawn
@@ -35,7 +35,7 @@ class RouteAnalyzer(config: ExpConfig) extends Experiment(config) {
     val sim_again = scenario.make_sim(graph).setup()
     sim_again.listen("route-analyzer", (ev: Sim_Event) => { ev match {
       case EV_AgentSpawned(a) => {
-        val score = score_path(actual_paths(a.id).actual_path, demand)
+        val score = score_path(actual_paths(a.id), demand)
         output_score(a, score, times(a.id))
       }
       case _ =>

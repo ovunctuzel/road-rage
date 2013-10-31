@@ -8,8 +8,8 @@ import scala.collection.mutable
 import java.io.{File, PrintWriter, FileWriter}
 
 import utexas.aorta.map.Graph
-import utexas.aorta.sim.{ScenarioTool, Simulation, Scenario, Sim_Event, EV_Heartbeat, EV_AgentSpawned,
-                         RouteRecorder, Agent, EV_Stat}
+import utexas.aorta.sim.{ScenarioTool, Simulation, Scenario, Sim_Event, EV_Heartbeat,
+                         EV_AgentSpawned, Agent, EV_Stat}
 
 import utexas.aorta.common.{RNG, Util, Flags, Common, AgentID}
 
@@ -87,22 +87,6 @@ class Experiment(config: ExpConfig) {
       "delay=3600", "lifetime=3600", "generations=" + config.generations
     ))
     return Scenario.load(scenario_fn)
-  }
-
-  protected def record_agent_paths(
-    sim: Simulation, include: (Agent) => Boolean = Function.const(true)
-  ): mutable.Map[AgentID, RouteRecorder] = {
-    // TODO could save memory by computing score of route incrementally
-    val routes = new mutable.HashMap[AgentID, RouteRecorder]()
-    sim.listen("route-analyzer", (ev: Sim_Event) => { ev match {
-      case EV_AgentSpawned(a) => {
-        if (include(a)) {
-          routes(a.id) = new RouteRecorder(a.route)
-        }
-      }
-      case _ =>
-    } })
-    return routes
   }
 
   protected var round = 0

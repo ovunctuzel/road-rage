@@ -74,26 +74,6 @@ object Route {
   }
 }
 
-class RouteRecorder(route: Route) {
-  private val path = new ListBuffer[DirectedRoad]()
-
-  route.listen("recorder", (ev: Route_Event) => { ev match {
-    case EV_Transition(from, to) => to match {
-      case t: Turn => {
-        if (path.isEmpty) {
-          // Capture where we start
-          path += t.from.directed_road
-        }
-        path += t.to.directed_road
-      }
-      case _ =>
-    }
-    case _ =>
-  } })
-
-  def actual_path = path.toList
-}
-
 abstract class Route_Event
 final case class EV_Transition(from: Traversable, to: Traversable) extends Route_Event
 // orig = true when initializing the path. bit of a hack.

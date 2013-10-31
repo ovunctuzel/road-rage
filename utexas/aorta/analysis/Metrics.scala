@@ -7,7 +7,7 @@ package utexas.aorta.analysis
 import utexas.aorta.sim.{Simulation, Sim_Event, Route_Event, EV_AgentSpawned, EV_AgentQuit,
                          EV_Reroute, IntersectionType, EV_Stat, EV_IntersectionOutcome,
                          EV_Transition}
-import utexas.aorta.map.Edge
+import utexas.aorta.map.{Edge, DirectedRoad, Turn}
 import utexas.aorta.common.{Common, AgentID}
 
 import scala.collection.mutable
@@ -101,6 +101,32 @@ class TripTimeMetric(sim: Simulation) {
 
   def result = times.toMap
   def apply(a: AgentID) = times(a)
+}
+
+class RouteRecordingMetric(sim: Simulation) {
+  private val routes = new mutable.HashMap[AgentID, mutable.ListBuffer[DirectedRoad]]()
+
+  sim.listen("route-recording", _ match {
+    case EV_AgentSpawned(a) => {
+      routes(a.id) = new mutable.ListBuffer[DirectedRoad]()
+      a.route.listen("route-recording", _ match {
+        case EV_Transition(from, to) => to match {
+          case t: Turn => {
+            val path = routes(a.id)
+            if (path.isEmpty) {
+              path += t.from.directed_road
+            }
+            path += t.to.directed_road
+          }
+          case _ =>
+        }
+        case _ =>
+      })
+    }
+    case _ =>
+  })
+
+  def apply(a: AgentID) = routes(a).toList
 }
 
 // TODO make a class of per-agent metrics, and have a way to merge them..
