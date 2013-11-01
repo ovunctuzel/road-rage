@@ -41,28 +41,23 @@ abstract class SinglePerAgentMetric(info: MetricInfo) extends Metric(info) {
   }
 }
 
-// Record many doubles per agent, further grouped by some string category
-abstract class MultiplePerAgentMetric(info: MetricInfo) extends Metric(info) {
-  def category: String
-  private type Key = (AgentID, String)
-  protected val per_agent_category = new mutable.HashMap[Key, mutable.Set[Double]]
-    with mutable.MultiMap[Key, Double]
+// Record many values without structuring things at all
+abstract class EmitMetric(info: MetricInfo) extends Metric(info) {
+  // Subclasses should just write to this file directly
+  protected val f = info.io.output_file(name + "_" + info.mode)
 
-  // TODO why even store? just output as we collect, since we don't group by mode.
+  def header: String
+
   override def output(ls: List[Metric], s: Scenario) {
-    val f = info.io.output_file(name)
-    f.println(s"map scenario agent mode $category value")
+    // Have to combine all the files now
     for (raw_metric <- ls) {
-      val metric = raw_metric.asInstanceOf[MultiplePerAgentMetric]
-      for (key <- metric.per_agent_category.keys) {
-        for (value <- metric.per_agent_category(key)) {
-          f.println(List(
-            info.sim.graph.basename, info.uid, key._1, metric.mode, key._2, value
-          ).mkString(" "))
-        }
-      }
+      raw_metric.asInstanceOf[EmitMetric].f.close()
     }
-    f.close()
+    val final_file = info.io.output_file(name)
+    final_file.println(header)
+    final_file.close()
+    Runtime.getRuntime.exec(Array("/bin/sh", "-c", s"cat ${name}_ >> $name"))
+    Runtime.getRuntime.exec(Array("/bin/sh", "-c", s"rm -f ${name}_*"))
     info.io.compress(name)
     info.io.upload(name + ".gz")
   }
@@ -97,28 +92,32 @@ class OriginalRouteMetric(info: MetricInfo) extends SinglePerAgentMetric(info) {
 }
 
 // Measure how long drivers wait at intersections, grouped by intersection type
-class TurnDelayMetric(info: MetricInfo) extends MultiplePerAgentMetric(info) {
+class TurnDelayMetric(info: MetricInfo) extends EmitMetric(info) {
   override def name = "turn_delays"
-  override def category = "intersection_type"
+  override def header = "map scenario agent mode intersection_type turn_delay"
 
   info.sim.listen(name, _ match {
     case EV_Stat(s: Turn_Stat) => {
       val policy = info.sim.graph.vertices(s.vert.int).intersection.policy.policy_type.toString
-      per_agent_category.addBinding((s.agent, policy), s.total_delay)  // could be accept_delay
+      f.println(List(
+        // could be accept_delay
+        info.sim.graph.basename, info.uid, s.agent, mode, policy, s.total_delay
+      ).mkString(" "))
     }
     case _ =>
   })
 }
 
-// Measure how congested roads are when agents enter them, grouped by nothing (category "all")
-class RoadCongestionMetric(info: MetricInfo) extends MultiplePerAgentMetric(info) {
+// Measure how congested roads are when agents enter them
+class RoadCongestionMetric(info: MetricInfo) extends EmitMetric(info) {
   override def name = "road_congestion"
-  override def category = "type"  // TODO this doesnt fit the pattern!
+  override def header = "map scenario agent mode percent_full"
 
   info.sim.listen(name, _ match {
     case EV_AgentSpawned(a) => a.route.listen(name, _ match {
-      case EV_Transition(_, to: Edge) =>
-        per_agent_category((a.id, "all")) += to.directed_road.freeflow_percent_full
+      case EV_Transition(_, to: Edge) => f.println(List(
+        info.sim.graph.basename, info.uid, a.id, mode, to.directed_road.freeflow_percent_full
+      ).mkString(" "))
       case _ =>
     })
     case _ =>
@@ -126,37 +125,16 @@ class RoadCongestionMetric(info: MetricInfo) extends MultiplePerAgentMetric(info
 }
 
 // Measure how much competition is present at intersections
-class TurnCompetitionMetric(info: MetricInfo) extends Metric(info) {
+class TurnCompetitionMetric(info: MetricInfo) extends EmitMetric(info) {
   override def name = "turn_competition"
-
-  private val losers_per_policy = IntersectionType.values.toList.map(
-    t => t -> new mutable.ListBuffer[Double]()
-  ).toMap
+  override def header = "map scenario mode intersection_type losers"
 
   info.sim.listen(name, _ match {
-    case EV_IntersectionOutcome(policy, losers) => {
-      losers_per_policy(policy) += losers.size
-    }
+    case EV_IntersectionOutcome(policy, losers) => f.println(List(
+      info.sim.graph.basename, info.uid, mode, policy, losers.size
+    ).mkString(" "))
     case _ =>
   })
-
-  override def output(ls: List[Metric], scenario: Scenario) {
-    val f = info.io.output_file(name)
-    f.println("map scenario mode intersection_type losers")
-    for (raw_metric <- ls) {
-      val metric = raw_metric.asInstanceOf[TurnCompetitionMetric]
-      for (key <- IntersectionType.values) {
-        for (value <- metric.losers_per_policy(key)) {
-          f.println(List(
-            info.sim.graph.basename, info.uid, metric.mode, key, value
-          ).mkString(" "))
-        }
-      }
-    }
-    f.close()
-    info.io.compress(name)
-    info.io.upload(name + ".gz")
-  }
 }
 
 class RouteRecordingMetric(info: MetricInfo) extends Metric(info) {
