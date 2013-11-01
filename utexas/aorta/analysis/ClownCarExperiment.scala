@@ -4,15 +4,10 @@
 
 package utexas.aorta.analysis
 
-import utexas.aorta.sim.Scenario
+import utexas.aorta.sim.Simulation
 import utexas.aorta.map.Graph
 import utexas.aorta.map.analysis.{RouteFeatures, Demand}
 import utexas.aorta.sim.meep._
-import utexas.aorta.common.{AgentID, Util}
-
-import scala.collection.mutable
-import java.io.File
-import java.util.Scanner
 
 object ClownCarExperiment {
   def main(args: Array[String]) {
@@ -20,15 +15,14 @@ object ClownCarExperiment {
   }
 }
 
-class ClownCarExperiment(config: ExpConfig) extends Experiment(config) {
-  // TODO itd be cool to refactor run_trial and output_data by just defining what metrics we want.
+class ClownCarExperiment(config: ExpConfig) extends SmartExperiment(config) {
+  override def get_metrics(info: MetricInfo) = List(new TripTimeMetric(info))
 
   def run() {
-    // TODO only hacky due to change not being in the scenario.
     val t1 = run_trial(scenario, "baseline")
 
-    // TODO this isnt the clown-car, single-route way...
-    notify("Precomputing demand...")
+    // TODO this isnt the clown-car, single-route way... modify the scenario!
+    io.notify("Precomputing demand...")
     Graph.route_chooser = new RouteChooser(
       graph, Demand.demand_for(scenario, graph), new Predictor(
         // from the SF model
@@ -47,19 +41,5 @@ class ClownCarExperiment(config: ExpConfig) extends Experiment(config) {
     val t2 = run_trial(scenario, "clown_car")
 
     output_data(List(t1, t2), scenario)
-  }
-
-  private def run_trial(s: Scenario, mode: String): RawResult = {
-    val sim = s.make_sim().setup()
-    val times = new TripTimeMetric(sim)
-    // TODO other metrics, please!
-    simulate(sim)
-    return RawResult(mode, Map(
-      "times" -> times.result
-    ), Map())
-  }
-
-  protected def output_data(data: List[RawResult], s: Scenario) {
-    output_per_agent("times", data, s)
   }
 }

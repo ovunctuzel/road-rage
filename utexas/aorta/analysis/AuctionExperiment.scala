@@ -4,12 +4,7 @@
 
 package utexas.aorta.analysis
 
-import utexas.aorta.sim.{Scenario, SystemWalletConfig, OrderingType, WalletType, IntersectionType}
-import utexas.aorta.common.{AgentID, Util}
-
-import scala.collection.mutable
-import java.io.File
-import java.util.Scanner
+import utexas.aorta.sim.{Scenario, SystemWalletConfig, OrderingType, WalletType, Simulation}
 
 // TODO get a macro or something for main, or have a more flexible cmdline tool
 // likewise for the scripts
@@ -31,7 +26,12 @@ object AuctionExperiment {
   )
 }
 
-class AuctionExperiment(config: ExpConfig) extends Experiment(config) {
+class AuctionExperiment(config: ExpConfig) extends SmartExperiment(config) {
+  override def get_metrics(info: MetricInfo) = List(
+    new TripTimeMetric(info), new OriginalRouteMetric(info), new TurnDelayMetric(info),
+    new TurnCompetitionMetric(info)
+  )
+
   def run() {
     // The generated scenario is the baseline.
     val sysbid_base = AuctionExperiment.enable_auctions(scenario)
@@ -46,30 +46,5 @@ class AuctionExperiment(config: ExpConfig) extends Experiment(config) {
       run_trial(AuctionExperiment.fixed_budgets(sysbid_base), "fixed_sysbids"),
       run_trial(AuctionExperiment.fixed_budgets(nosys_base), "fixed_no_sysbids")
     ), scenario)
-  }
-
-  // TODO rename scenario, graph in base class. its too restrictive.
-  // and refactor this.
-  private def run_trial(s: Scenario, mode: String): RawResult = {
-    val sim = s.make_sim().setup()
-    val times = new TripTimeMetric(sim)
-    val orig_routes = new OriginalRouteMetric(sim)
-    val turn_delays = new TurnDelayMetric(sim)
-    val turn_competition = new TurnCompetitionMetric(sim)
-    simulate(sim)
-    return RawResult(mode, Map(
-      "times" -> times.result,
-      "orig_routes" -> s.agents.map(a => a.id -> orig_routes(a.id)).toMap
-    ), Map(
-      "turn_delays" -> turn_delays.delays,
-      "turn_competition" -> turn_competition.competition
-    ))
-  }
-
-  protected def output_data(data: List[RawResult], s: Scenario) {
-    output_per_agent("times", data, s)
-    output_per_agent("orig_routes", data, s)
-    output_per_category("turn_delays", data, "intersection_type")
-    output_per_category("turn_competition", data, "intersection_type")
   }
 }

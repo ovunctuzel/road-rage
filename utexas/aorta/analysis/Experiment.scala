@@ -5,13 +5,13 @@
 package utexas.aorta.analysis
 
 import scala.collection.mutable
-import java.io.{File, PrintWriter, FileWriter}
+import java.io.File
 
 import utexas.aorta.map.Graph
 import utexas.aorta.sim.{ScenarioTool, Simulation, Scenario, Sim_Event, EV_Heartbeat,
                          EV_AgentSpawned, Agent, EV_Stat}
 
-import utexas.aorta.common.{RNG, Util, Flags, Common, AgentID}
+import utexas.aorta.common.{RNG, Util, Flags, Common, AgentID, IO}
 
 // TODO divorce scenario generation from the rest?
 case class ExpConfig(
@@ -65,23 +65,17 @@ object ExpConfig {
   }
 }
 
-// TODO restructure this, probably. per_agent should be a list of metrics!
-case class RawResult(
-  // the String key in the outer map is a metric
-  mode: String, per_agent: Map[String, Map[AgentID, Double]],
-  per_category: Map[String, Map[String, List[Double]]]
-)
-
 class Experiment(config: ExpConfig) {
   // TODO do the caching in the graph load layer.
   protected lazy val scenario = get_scenario()
   protected lazy val graph = Graph.load(scenario.map_fn)
   protected val uid = Util.unique_id
+  protected val io = new IO(config.gs_prefix)
   Flags.set("--savestate", "false")
 
   protected def get_scenario(): Scenario = {
     val scenario_fn = config.map_fn.replace("maps/", "scenarios/").replace(".map", "_routes")
-    notify("Generating scenario")
+    io.notify("Generating scenario")
     ScenarioTool.main(Array(
       config.map_fn, "--out", scenario_fn, "--spawn", config.spawn_per_hour.toString,
       "delay=3600", "lifetime=3600", "generations=" + config.generations
@@ -97,8 +91,8 @@ class Experiment(config: ExpConfig) {
         val now = System.currentTimeMillis
         if (now - last_time > config.report_every_ms) {
           last_time = now
-          notify(s"Round $round at ${Util.time_num(sim.tick)}: ${info.describe}" +
-                 s" / ${sim.finished_count} finished")
+          io.notify(s"Round $round at ${Util.time_num(sim.tick)}: ${info.describe}" +
+                    s" / ${sim.finished_count} finished")
         }
       }
       case _ =>
@@ -113,71 +107,25 @@ class Experiment(config: ExpConfig) {
     }
     round += 1
   }
-
-  protected def notify(status: String) {
-    config.gs_prefix match {
-      case Some(prefix) => upload_gs(prefix + "status", status)
-      case None => println(s"*** $status ***")
-    }
-  }
-
-  // TODO mark a bunch of files with this class, auto upload
-  protected def upload_gs(fn: String, contents: String) {
-    Runtime.getRuntime.exec(Array("./tools/cloud/upload_gs.sh", fn, contents))
-  }
-
-  protected def upload(fn: String) {
-    config.gs_prefix match {
-      case Some(prefix) => Runtime.getRuntime.exec(Array(
-        "gsutil", "cp", fn, prefix + fn
-      ))
-      case None =>
-    }
-  }
-
-  // TODO auto close this, and auto upload to GS.
-  // TODO and keep it open if needed
-  def output(fn: String) = new PrintWriter(new FileWriter(new File(fn)), true /* autoFlush */)
-  def compress(fn: String) {
-    Runtime.getRuntime.exec(Array("gzip", fn))
-  }
-
-  // TODO keep the format (at least for agents), but change for multi-things with categories.
-  // One double per agent per mode
-  protected def output_per_agent(metric: String, data: List[RawResult], s: Scenario) {
-    val f = output(metric)
-    f.println("map scenario agent priority " + data.map(_.mode).mkString(" "))
-    // We should have the same agents in all runs
-    for (a <- s.agents) {
-      f.println((
-        List(graph.basename, uid, a.id, a.wallet.priority) ++
-        data.map(per_mode => per_mode.per_agent(metric)(a.id))
-      ).mkString(" "))
-    }
-    // TODO do this differently...
-    f.close()
-    compress(metric)
-    upload(metric + ".gz")
-  }
-
-  protected def output_per_category(
-    metric: String, data: List[RawResult], category: String
-  ) {
-    val f = output(metric)
-    f.println(s"mode $category value")
-    for (per_mode <- data) {
-      for (instance <- per_mode.per_category(metric).keys) {
-        for (value <- per_mode.per_category(metric)(instance)) {
-          f.println(List(per_mode.mode, instance, value).mkString(" "))
-        }
-      }
-    }
-    f.close()
-    compress(metric)
-    upload(metric + ".gz")
-  }
 }
 
 // The future! All experiments should be rewritten to have this form, probably
-class SmartExperiment(config: ExpConfig) extends Experiment(config) {
+abstract class SmartExperiment(config: ExpConfig) extends Experiment(config) {
+  def get_metrics(info: MetricInfo): List[Metric]
+
+  protected def run_trial(s: Scenario, mode: String): List[Metric] = {
+    val sim = s.make_sim().setup()
+    val metrics = get_metrics(MetricInfo(sim, mode, io, uid))
+    simulate(sim)
+    return metrics
+  }
+
+  protected def output_data(results: List[List[Metric]], s: Scenario) {
+    val mode_order = results.map(ls => ls.head.mode)
+    for ((name, metrics) <- results.flatten.groupBy(_.name)) {
+      val metrics_by_mode = metrics.map(m => m.mode -> m).toMap
+      // Sort into a canonical mode order, which should come from the results
+      metrics.head.output(mode_order.map(m => metrics_by_mode(m)), s)
+    }
+  }
 }

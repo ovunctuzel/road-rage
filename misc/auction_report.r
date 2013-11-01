@@ -14,7 +14,7 @@ concat <- function(s1, s2) {
 
 # Mangle the data into SQL
 db <- dbConnect(dbDriver("SQLite"), "times.db")
-dbWriteTable(db, "raw_times", read.table("times", header=TRUE))
+dbWriteTable(db, "raw_times", read.table("trip_time", header=TRUE))
 cities <- dbGetQuery(db, "SELECT DISTINCT map FROM raw_times")
 
 for (city in cities) {

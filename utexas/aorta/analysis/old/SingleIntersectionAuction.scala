@@ -2,7 +2,7 @@
 // Khandelwal of UT Austin
 // License: GNU GPL v2
 
-package utexas.aorta.analysis
+/*package utexas.aorta.analysis
 
 import java.io.{File, PrintWriter, FileWriter}
 
@@ -24,9 +24,9 @@ class SingleIntersectionAuction(config: ExpConfig) extends Experiment(config) {
   val test_graph = Graph.load(synthetic)
 
   def run() {
-    val outfn = "single-results"
-    val output = new PrintWriter(new FileWriter(new File(outfn)), true /* autoFlush */)
-
+    val outfn = "single-results"*/
+    //val output = new PrintWriter(new FileWriter(new File(outfn)), true /* autoFlush */)
+/*
     for (spawn_per_hour <- List(500, 1000, 1500, 2000, 2500, 3000, 3500, 4000)) {
       // Generate scenario
       var s = Scenario(
@@ -46,7 +46,7 @@ class SingleIntersectionAuction(config: ExpConfig) extends Experiment(config) {
         // Get the baseline
         val base_sim = s.make_sim(test_graph).setup()
         val base_times = new TripTimeMetric(base_sim)
-        notify(s"Testing $spawn_per_hour for FCFS")
+        io.notify(s"Testing $spawn_per_hour for FCFS")
         simulate(base_sim)
         val base_unweighted_time = base_times.result.values.sum
         val base_weighted_time = s.agents.map(a => a.wallet.priority * base_times(a.id)).sum
@@ -68,7 +68,7 @@ class SingleIntersectionAuction(config: ExpConfig) extends Experiment(config) {
             // Run!
             val sim = s.make_sim(test_graph).setup()
             val times = new TripTimeMetric(sim)
-            notify(s"Testing $spawn_per_hour with $use_sysbids, $bid_ahead")
+            io.notify(s"Testing $spawn_per_hour with $use_sysbids, $bid_ahead")
             try {
               simulate(sim)
               val unweighted_time = times.result.values.sum
@@ -87,14 +87,14 @@ class SingleIntersectionAuction(config: ExpConfig) extends Experiment(config) {
               ).mkString(","))
             } catch {
               case e: Throwable => {
-                notify(s"Simulation broke: $e")
+                io.notify(s"Simulation broke: $e")
               }
             }
           }
         }
       } catch {
         case e: Throwable => {
-          notify(s"Simulation broke: $e")
+          io.notify(s"Simulation broke: $e")
         }
       }
     }
@@ -107,4 +107,4 @@ class SingleIntersectionAuction(config: ExpConfig) extends Experiment(config) {
       case None =>
     }
   }
-}
+}*/

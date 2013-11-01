@@ -5,7 +5,7 @@ general post-thesis plan
   2) cleanup code
     - rm birth tick from agents
     - replace old experiment system with new one
-      - get rid of stats in files
+      - and even record the parameters of the runs
     - rename edges as lanes, and directed roads as links?
     - why end_threshold at all?
     - dont mess with gps coords

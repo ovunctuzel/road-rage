@@ -2,7 +2,7 @@
 // Khandelwal of UT Austin
 // License: GNU GPL v2
 
-package utexas.aorta.analysis
+/*package utexas.aorta.analysis
 
 import scala.collection.mutable
 import java.io.{File, PrintWriter, FileWriter}
@@ -42,7 +42,7 @@ class TradeoffExperiment(config: ExpConfig) extends Experiment(config) {
     //AgentAdaptor.special_routes = scenario.agents.map(_.id).toSet
 
     // TODO the hackiness! :O
-    notify("Precomputing demand...")
+    io.notify("Precomputing demand...")
     Graph.route_chooser = new RouteChooser(
       graph, Demand.demand_for(scenario, graph), new Predictor(
         // from the SF model
@@ -100,4 +100,4 @@ class TradeoffExperiment(config: ExpConfig) extends Experiment(config) {
       case None =>
     }
   }
-}
+}*/

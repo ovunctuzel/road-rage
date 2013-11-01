@@ -2,7 +2,7 @@
 // Khandelwal of UT Austin
 // License: GNU GPL v2
 
-package utexas.aorta.analysis
+/*package utexas.aorta.analysis
 
 import scala.collection.mutable
 import java.io.{File, PrintWriter, FileWriter}
@@ -29,7 +29,7 @@ class RouteAnalyzer(config: ExpConfig) extends Experiment(config) {
     simulate(base_sim)
 
     // Simulate again, scoring the path that the agent is destined to take at the time they spawn
-    notify("Round 0 done, precomputing demand on roads/intersections")
+    io.notify("Round 0 done, precomputing demand on roads/intersections")
     val demand = Demand.demand_for(scenario, graph)
 
     val sim_again = scenario.make_sim(graph).setup()
@@ -59,4 +59,4 @@ class RouteAnalyzer(config: ExpConfig) extends Experiment(config) {
     path
       .map(step => RouteFeatures.for_step(step, demand))
       .fold(RouteFeatures.BLANK)((a, b) => a + b)
-}
+}*/
