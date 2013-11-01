@@ -7,15 +7,26 @@ package utexas.aorta.map.analysis
 import scala.collection.mutable.{PriorityQueue, HashSet, ListBuffer, HashMap}
 import com.graphhopper.storage.{LevelGraphStorage, RAMDirectory}
 import com.graphhopper.routing.ch.PrepareContractionHierarchies
+import com.graphhopper.routing.DijkstraBidirectionRef
 
 import utexas.aorta.map.{Graph, DirectedRoad, Coordinate}
-import utexas.aorta.sim.{IntersectionType, Scenario}
+import utexas.aorta.sim.{IntersectionType, Scenario, RouterType}
 
 import utexas.aorta.common.{Util, Common, Physics, RNG, DirectedRoadID}
 
 abstract class Router(graph: Graph) {
+  def router_type: RouterType.Value
   // Doesn't include 'from' as the first step
   def path(from: DirectedRoad, to: DirectedRoad, time: Double): List[DirectedRoad]
+}
+
+class FixedRouter(graph: Graph, path: List[DirectedRoad]) extends Router(graph) {
+  override def router_type = RouterType.Fixed
+  override def path(from: DirectedRoad, to: DirectedRoad, time: Double): List[DirectedRoad] = {
+    Util.assert_eq(from, path.head)
+    Util.assert_eq(to, path.last)
+    return path
+  }
 }
 
 // A convenient abstraction if we ever switch to pathfinding on
@@ -31,6 +42,8 @@ abstract class AbstractEdge {
 }
 
 class DijkstraRouter(graph: Graph) extends Router(graph) {
+  override def router_type = RouterType.TMP
+
   def costs_to(r: DirectedRoad, time: Double) = dijkstras(
     graph.directed_roads.size, r, (e: AbstractEdge) => e.preds, time
   )
@@ -94,12 +107,21 @@ class DijkstraRouter(graph: Graph) extends Router(graph) {
     }
 }
 
+// One of these in memory per graph, please
+object CHRouter {
+  var gh: LevelGraphStorage = null
+  var usable = false
+  var algo: DijkstraBidirectionRef = null
+}
+
 class CHRouter(graph: Graph) extends Router(graph) {
-  private val gh = new LevelGraphStorage(
-    new RAMDirectory(s"maps/route_${graph.name}", true)
-  )
-  var usable = gh.loadExisting
-  private val algo = new PrepareContractionHierarchies().graph(gh).createAlgo
+  if (CHRouter.gh == null) {
+    CHRouter.gh = new LevelGraphStorage(new RAMDirectory(s"maps/route_${graph.name}", true))
+    CHRouter.usable = CHRouter.gh.loadExisting
+    CHRouter.algo = new PrepareContractionHierarchies().graph(CHRouter.gh).createAlgo
+  }
+
+  override def router_type = RouterType.ContractionHierarchy
 
   def path(from: DirectedRoad, to: DirectedRoad, path: Double): List[DirectedRoad] = {
     // GraphHopper can't handle loops. For now, empty path; freebie.
@@ -112,9 +134,9 @@ class CHRouter(graph: Graph) extends Router(graph) {
       Common.sim.ch_since_last_time += 1
     }
 
-    Util.assert_eq(usable, true)
-    val path = algo.calcPath(from.id.int, to.id.int)
-    algo.clear
+    Util.assert_eq(CHRouter.usable, true)
+    val path = CHRouter.algo.calcPath(from.id.int, to.id.int)
+    CHRouter.algo.clear()
     Util.assert_eq(path.found, true)
 
     val result = new ListBuffer[DirectedRoad]()
@@ -134,9 +156,9 @@ class CHRouter(graph: Graph) extends Router(graph) {
 
     Common.sim.ch_since_last_time += 1
 
-    Util.assert_eq(usable, true)
-    val path = algo.calcPath(from.id.int, to.id.int)
-    algo.clear
+    Util.assert_eq(CHRouter.usable, true)
+    val path = CHRouter.algo.calcPath(from.id.int, to.id.int)
+    CHRouter.algo.clear()
     Util.assert_eq(path.found, true)
     return path.distance
   }
@@ -146,6 +168,8 @@ class CHRouter(graph: Graph) extends Router(graph) {
 // right now
 // TODO remove, it's a degenerate case of the future impl...
 class CongestionRouter(graph: Graph) extends Router(graph) {
+  override def router_type = RouterType.Congestion
+
   // TODO clean this up >_<
   def path(from: DirectedRoad, to: DirectedRoad, time: Double): List[DirectedRoad] = {
     if (from == to) {
@@ -337,20 +361,21 @@ object Demand {
 
   def demand_for(scenario: Scenario, graph: Graph): Demand = {
     val demand = blank_for(scenario, graph)
-    for (a <- scenario.agents) {
+    /*for (a <- scenario.agents) {
       val from = graph.edges(a.start_edge.int).directed_road
       val to = graph.edges(a.route.goal.int).directed_road
       for (step <- graph.router.path(from, to, 0)) {
         demand.directed_roads(step.id.int) += 1
         demand.intersections(step.to.id.int) += 1
       }
-    }
+    }*/
     return demand
   }
 }
 
 // A* is a misnomer; there's no heuristic right now.
 class AstarRouter(graph: Graph, val weights: RouteFeatures, demand: Demand) extends Router(graph) {
+  override def router_type = RouterType.TMP
   override def path(from: DirectedRoad, to: DirectedRoad, time: Double) = scored_path(from, to)._1
 
   // Return the weight of the final path too

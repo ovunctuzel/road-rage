@@ -6,9 +6,6 @@ package utexas.aorta.map
 
 import scala.collection.mutable.{HashMap, PriorityQueue, HashSet}
 
-import utexas.aorta.map.analysis.{Router, DijkstraRouter, CHRouter, CongestionRouter}
-import utexas.aorta.sim.meep.RouteChooser
-
 import utexas.aorta.common.{Util, Common, StateWriter, StateReader, RoadID,
                             VertexID, EdgeID, DirectedRoadID}
 
@@ -26,11 +23,6 @@ class Graph(
     (l, v) => v.turns.toList ++ l
   ).map(t => t.id -> t).toMap
   var directed_roads: Array[DirectedRoad] = Array()
-
-  val dijkstra_router = new DijkstraRouter(this)
-  val ch_router = new CHRouter(this)
-  val congestion_router = new CongestionRouter(this)
-  val router: Router = choose_router
 
   //////////////////////////////////////////////////////////////////////////////
   // Meta
@@ -61,15 +53,6 @@ class Graph(
   //////////////////////////////////////////////////////////////////////////////
   // Queries
 
-  // Prefer CH if this map has been prerouted.
-  private def choose_router(): Router = {
-    if (ch_router.usable) {
-      return ch_router
-    } else {
-      return dijkstra_router
-    }
-  }
-
   def traversables() = edges ++ turns.values
 
   override def get_r(id: RoadID) = roads(id.int)
@@ -82,10 +65,6 @@ class Graph(
 
 // It's a bit funky, but the actual graph instance doesn't have this; we do.
 object Graph {
-  // TODO total hack, please do this properly when i have time.
-  var route_chooser: RouteChooser = null
-  var num_routes = 0
-
   var width = 0.0
   var height = 0.0
   var xoff = 0.0

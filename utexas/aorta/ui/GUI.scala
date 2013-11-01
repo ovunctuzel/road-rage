@@ -212,6 +212,7 @@ object GUI extends SimpleSwingApplication {
   }
 }
 
+// TODO make pause work with whoever's calling us
 class GUIDebugger(sim: Simulation) {
   // When this file exists, launch a GUI for sudden interactive watching.
   private val gui_signal = new File(".headless_gui")

@@ -2,7 +2,7 @@
 // Khandelwal of UT Austin
 // License: GNU GPL v2
 
-package utexas.aorta.sim.meep
+/*package utexas.aorta.sim.meep
 
 import utexas.aorta.map.{Graph, DirectedRoad}
 import utexas.aorta.map.analysis.{AstarRouter, Demand, RouteFeatures}
@@ -130,4 +130,4 @@ object AgentAdaptor {
   }
 
   def paying_drivers = max_paid.keys.filter(a => max_paid(a) != 0)
-}
+}*/

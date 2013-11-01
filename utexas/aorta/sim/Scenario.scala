@@ -5,6 +5,7 @@
 package utexas.aorta.sim
 
 import utexas.aorta.map.{Graph, Edge, Vertex, DirectedRoad}
+import utexas.aorta.map.analysis.{FixedRouter, CHRouter, CongestionRouter, Router}
 import utexas.aorta.sim.policies._
 import utexas.aorta.sim.market._
 
@@ -123,6 +124,7 @@ case class Scenario(name: String, map_fn: String, agents: Array[MkAgent],
     return times.toMap
   }
 
+  /*
   // Return a map from agent ID to trip time if that agent was moving through an
   // otherwise empty world. Compute the time analytically, so lower than the
   // true optimal time.
@@ -147,7 +149,7 @@ case class Scenario(name: String, map_fn: String, agents: Array[MkAgent],
       times(a.id) = path.map(step => step.road.length / step.road.speed_limit).sum
     }
     return times.toMap
-  }
+  }*/
 
   def num_agents = agents.size
 }
@@ -231,53 +233,33 @@ object MkAgent {
   )
 }
 
-// Spawns some distribution of agents every frequency seconds.
-/*@SerialVersionUID(1)
-case class MkAgentSpawner(frequency: Double, expires: Double, seed: Long)
-  extends MkAgent
-{
-  def make() = {
-    spawn
-  }
-
-  private def spawn(): Unit = {
-    val sim = Common.sim
-    if (sim.tick < expires) {
-      // Re-schedule ourselves
-      sim.schedule(sim.tick + frequency, spawn)
-    }
-
-    // TODO do something interesting
-  }
-}*/
-
-// initial_path is a list of directed road IDs. can be empty.
-// TODO ID of a directed road would be way better.
+// orig_router, rerouter, and initial_path are only for strategy = Path
+// TODO ID of a directed road would be way better for goal
 case class MkRoute(
-  strategy: RouteType.Value, initial_path: List[DirectedRoadID], goal: EdgeID, seed: Long
+  strategy: RouteType.Value, orig_router: RouterType.Value, rerouter: RouterType.Value,
+  initial_path: List[DirectedRoadID], goal: EdgeID, seed: Long
 ) {
   def make(sim: Simulation) = Factory.make_route(
-    strategy, sim.edges(goal.int).directed_road, new RNG(seed),
+    strategy, sim.graph, orig_router, rerouter, sim.edges(goal.int).directed_road, new RNG(seed),
     initial_path.map(id => sim.graph.directed_roads(id.int))
   )
 
   def serialize(w: StateWriter) {
     w.int(strategy.id)
-    w.int(goal.int)
-    w.long(seed)
+    w.int(orig_router.id)
+    w.int(rerouter.id)
     w.int(initial_path.size)
     initial_path.foreach(id => w.int(id.int))
+    w.int(goal.int)
+    w.long(seed)
   }
 }
 
 object MkRoute {
-  def unserialize(r: StateReader): MkRoute = {
-    val rtype = RouteType(r.int)
-    val goal = new EdgeID(r.int)
-    val seed = r.long
-    val initial_path = Range(0, r.int).map(_ => new DirectedRoadID(r.int)).toList
-    return MkRoute(rtype, initial_path, goal, seed)
-  }
+  def unserialize(r: StateReader) = MkRoute(
+    RouteType(r.int), RouterType(r.int), RouterType(r.int),
+    Range(0, r.int).map(_ => new DirectedRoadID(r.int)).toList, new EdgeID(r.int), r.long
+  )
 }
 
 case class MkWallet(policy: WalletType.Value, budget: Int, priority: Int) {
@@ -415,7 +397,8 @@ object AgentDistribution {
       val time = raw_time - (raw_time % cfg.dt_s) // TODO may still have fp issue
       MkAgent(
         new AgentID(id), time, rng.new_seed, start.id, start.safe_spawn_dist(rng),
-        MkRoute(rng.choose(routes), Nil, rng.choose(ends).id, rng.new_seed),
+        MkRoute(rng.choose(routes), RouterType.ContractionHierarchy, RouterType.Congestion,
+                Nil, rng.choose(ends).id, rng.new_seed),
         // For now, force the same budget and priority here, and clean it up
         // later.
         MkWallet(rng.choose(wallets), budget, budget)
@@ -439,6 +422,13 @@ object IntersectionType extends Enumeration {
 object RouteType extends Enumeration {
   type RouteType = Value
   val Dijkstra, Path, Drunken, DirectionalDrunk, DrunkenExplorer = Value
+}
+
+object RouterType extends Enumeration {
+  type RouterType = Value
+  // TODO RouteFeatureBased, the new clown car thing
+  // TODO and rm TMP
+  val ContractionHierarchy, Congestion, Fixed, TMP = Value
 }
 
 object OrderingType extends Enumeration {
@@ -467,14 +457,25 @@ object Factory {
       new CommonCasePolicy(i, make_intersection_ordering[Ticket](ordering))
   }
 
-  def make_route(enum: RouteType.Value, goal: DirectedRoad, rng: RNG,
-                 initial_path: List[DirectedRoad])
-  = enum match {
+  def make_route(
+    enum: RouteType.Value, graph: Graph, orig_router: RouterType.Value, rerouter: RouterType.Value,
+    goal: DirectedRoad, rng: RNG, initial_path: List[DirectedRoad]
+  ) = enum match {
     case RouteType.Dijkstra => new DijkstraRoute(goal, rng)
-    case RouteType.Path => new PathRoute(goal, initial_path, rng)
+    case RouteType.Path => new PathRoute(
+      goal, make_router(orig_router, graph, initial_path), make_router(rerouter, graph, Nil), rng
+    )
     case RouteType.Drunken => new DrunkenRoute(goal, rng)
     case RouteType.DirectionalDrunk => new DirectionalDrunkRoute(goal, rng)
     case RouteType.DrunkenExplorer => new DrunkenExplorerRoute(goal, rng)
+  }
+
+  def make_router(enum: RouterType.Value, graph: Graph, initial_path: List[DirectedRoad])
+  = enum match {
+    // TODO fall back on dijkstra if unusable?
+    case RouterType.ContractionHierarchy => new CHRouter(graph)
+    case RouterType.Congestion => new CongestionRouter(graph)
+    case RouterType.Fixed => new FixedRouter(graph, initial_path)
   }
 
   def make_intersection_ordering[T <: Ordered[T]](enum: OrderingType.Value) = enum match

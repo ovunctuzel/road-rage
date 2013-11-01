@@ -7,7 +7,6 @@ package utexas.aorta.analysis
 import utexas.aorta.sim.Simulation
 import utexas.aorta.map.Graph
 import utexas.aorta.map.analysis.{RouteFeatures, Demand}
-import utexas.aorta.sim.meep._
 
 object ClownCarExperiment {
   def main(args: Array[String]) {
@@ -22,7 +21,7 @@ class ClownCarExperiment(config: ExpConfig) extends SmartExperiment(config) {
     val t1 = run_trial(scenario, "baseline")
 
     // TODO this isnt the clown-car, single-route way... modify the scenario!
-    io.notify("Precomputing demand...")
+    /*io.notify("Precomputing demand...")
     Graph.route_chooser = new RouteChooser(
       graph, Demand.demand_for(scenario, graph), new Predictor(
         // from the SF model
@@ -37,7 +36,7 @@ class ClownCarExperiment(config: ExpConfig) extends SmartExperiment(config) {
             agents_enroute = 0.007), scenario_size_weight = 0.003, constant = 0
         )
       )
-    )
+    )*/
     val t2 = run_trial(scenario, "clown_car")
 
     output_data(List(t1, t2), scenario)

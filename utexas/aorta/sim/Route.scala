@@ -8,7 +8,7 @@ import scala.collection.immutable.TreeMap
 import scala.collection.mutable.{ImmutableMapAdaptor, ListBuffer}
 
 import utexas.aorta.map.{Edge, DirectedRoad, Traversable, Turn, Vertex, Graph}
-import utexas.aorta.sim.meep.AgentAdaptor
+import utexas.aorta.map.analysis.{Router, DijkstraRouter}
 
 import utexas.aorta.common.{Util, RNG, Common, cfg, StateWriter, StateReader, TurnID}
 
@@ -64,10 +64,10 @@ abstract class Route(val goal: DirectedRoad, rng: RNG) extends ListenerPattern[R
 
 object Route {
   def unserialize(r: StateReader, graph: Graph): Route = {
-    // It's fine to pass in Nil for the initial path. PathRoute, the only user of this right now,
-    // will unserialize it.
+    // Original router will never be used again, and rerouter will have to be reset by PathRoute.
     val route = Factory.make_route(
-      RouteType(r.int), graph.directed_roads(r.int), RNG.unserialize(r), Nil
+      RouteType(r.int), graph, RouterType.Fixed, RouterType.Fixed, graph.directed_roads(r.int),
+      RNG.unserialize(r), Nil
     )
     route.unserialize(r, graph)
     return route
@@ -81,11 +81,12 @@ final case class EV_Reroute(path: List[DirectedRoad], orig: Boolean) extends Rou
 
 // Compute the cost of the path from every source to our single goal, then
 // hillclimb each step.
+// TODO rename 'cost' router? hillclimber?
 class DijkstraRoute(goal: DirectedRoad, rng: RNG) extends Route(goal, rng) {
   //////////////////////////////////////////////////////////////////////////////
   // State
 
-  private val costs = Common.sim.graph.dijkstra_router.costs_to(
+  private val costs = new DijkstraRouter(Common.sim.graph).costs_to(
     goal, Common.tick
   )
 
@@ -117,17 +118,17 @@ class DijkstraRoute(goal: DirectedRoad, rng: RNG) extends Route(goal, rng) {
   }
 }
 
-// Follow the given route first. If orig_route can be empty, the first routing will be static.
-// When we're forced or encouraged to deviate from the path, use a router to avoid congestion.
-// TODO clean up design and make repathing more clear 
-class PathRoute(goal: DirectedRoad, orig_route: List[DirectedRoad], rng: RNG) extends Route(goal, rng)
+// Follow routes prescribed by routers. Only reroute when forced or encouraged to.
+// TODO rerouter only var due to serialization
+class PathRoute(goal: DirectedRoad, orig_router: Router, private var rerouter: Router, rng: RNG)
+  extends Route(goal, rng)
 {
   //////////////////////////////////////////////////////////////////////////////
   // State
 
   // Head is the current step. If that step isn't immediately reachable, we have
   // to re-route.
-  private var path: List[DirectedRoad] = orig_route
+  private var path: List[DirectedRoad] = Nil
   private val chosen_turns = new ImmutableMapAdaptor(new TreeMap[Edge, Turn]())
 
   //////////////////////////////////////////////////////////////////////////////
@@ -135,6 +136,7 @@ class PathRoute(goal: DirectedRoad, orig_route: List[DirectedRoad], rng: RNG) ex
 
   override def serialize(w: StateWriter) {
     super.serialize(w)
+    w.int(rerouter.router_type.id)
     // We can't tell when we last rerouted given less state; store the full
     // path.
     if (path == null) {
@@ -151,6 +153,7 @@ class PathRoute(goal: DirectedRoad, orig_route: List[DirectedRoad], rng: RNG) ex
   }
 
   override protected def unserialize(r: StateReader, graph: Graph) {
+    rerouter = Factory.make_router(RouterType(r.int), graph, Nil)
     val path_size = r.int
     // Leave null otherwise
     if (path_size > 0) {
@@ -187,9 +190,7 @@ class PathRoute(goal: DirectedRoad, orig_route: List[DirectedRoad], rng: RNG) ex
 
   override def reroute(at: Edge) {
     Util.assert_eq(chosen_turns.contains(at), true)
-    if (!stick_to_orig) {
-      chosen_turns -= at
-    }
+    chosen_turns -= at
   }
 
   def pick_turn(e: Edge): Turn = {
@@ -213,31 +214,16 @@ class PathRoute(goal: DirectedRoad, orig_route: List[DirectedRoad], rng: RNG) ex
     // TODO a more refined policy, please!
     val should_reroute = dest.is_congested
 
-    val best = if (must_reroute || (should_reroute && !stick_to_orig)) {
-      if (stick_to_orig) {
-        // TODO rm once it's clear this doesn't happen
-        throw new Exception("Agent is rerouting, even though they should've quit early!")
-      }
-      // TODO emit a stat here about deviating from orig path if it's the first time. a stat or
-      // listener framework makes more and more sense...
+    val best = if (must_reroute || should_reroute) {
       // Re-route, but start from a source we can definitely reach without
       // lane-changing.
-
       val choice = e.next_turns.maxBy(t => t.to.queue.percent_avail)
       val source = choice.to.directed_road
 
       // TODO Erase all turn choices AFTER source, if we've made any?
 
-      // Stitch together the new path into the full thing. Avoid congestion
-      // during this reroute.
-      // TODO hax
-      val new_path =
-        if (AgentAdaptor.special_routes.contains(agent.id)) {
-          slice.head :: source :: AgentAdaptor.path(source, goal, agent)
-        } else {
-          slice.head :: source ::
-          Common.sim.graph.congestion_router.path(source, goal, Common.tick)
-        }
+      // Stitch together the new path into the full thing.
+      val new_path = slice.head :: source :: rerouter.path(source, goal, Common.tick)
       path = before ++ new_path
       tell_listeners(EV_Reroute(path, false))
       choice
@@ -251,14 +237,7 @@ class PathRoute(goal: DirectedRoad, orig_route: List[DirectedRoad], rng: RNG) ex
   def pick_lane(from: Edge): Edge = {
     // This method is called first, so do the lazy initialization here.
     if (path.isEmpty) {
-      // TODO hax
-      path =
-        if (AgentAdaptor.special_routes.contains(agent.id)) {
-          from.directed_road :: AgentAdaptor.path(from.directed_road, goal, agent)
-        } else {
-          from.directed_road ::
-          Common.sim.graph.router.path(from.directed_road, goal, Common.tick)
-        }
+      path = from.directed_road :: orig_router.path(from.directed_road, goal, Common.tick)
       tell_listeners(EV_Reroute(path, true))
     }
 
@@ -302,35 +281,9 @@ class PathRoute(goal: DirectedRoad, orig_route: List[DirectedRoad], rng: RNG) ex
 
   def roads = path.map(_.road).toSet
 
-  override def done(e: Edge): Boolean = {
-    if (stick_to_orig) {
-      val remaining_route = path.span(r => r != e.directed_road)._2.tail
-      if (remaining_route.isEmpty) {
-        // We're actually done
-        return true
-      } else {
-        // If we're supposed to stick to a fixed route, then give up when we're forced to reroute.
-        val dest = remaining_route.head
-        val continue = e.next_turns.filter(t => t.to.directed_road == dest).nonEmpty
-        if (continue) {
-          return false
-        } else {
-          // This branch happens spuriously, when the agent isn't done LCing yet
-          return true
-        }
-      }
-    } else {
-      return super.done(e)
-    }
-  }
-
-  // Don't reroute unless we have to
-  private def stick_to_orig = orig_route.nonEmpty
-
   // Prefer the one that's emptiest now and try to get close to a lane that
   // we'll want to LC to anyway. Only call when we haven't chosen something yet.
-  private def best_turn(e: Edge, dest: DirectedRoad, next_dest: DirectedRoad): Turn =
-  {
+  private def best_turn(e: Edge, dest: DirectedRoad, next_dest: DirectedRoad): Turn = {
     val ideal_lanes =
       if (next_dest != null)
         candidate_lanes(dest.edges.head, next_dest)

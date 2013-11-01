@@ -24,7 +24,7 @@ object Debug {
   private def get_optimal_times(fn: String) {
     val scenario = utexas.aorta.sim.Scenario.load(fn)
     val t = Common.timer("all optimal times")
-    scenario.compute_optimal_times_analytically()
+    //scenario.compute_optimal_times_analytically()
     t.stop()
   }
 
@@ -80,7 +80,7 @@ object Debug {
   }
 
   private def stress_test_pathfind(sim: Simulation) = {
-    val rng = new utexas.aorta.common.RNG()
+    /*val rng = new utexas.aorta.common.RNG()
     // CH (if available), or Dijkstra's
     val router = sim.graph.router
     val t = Common.timer("routing")
@@ -100,6 +100,6 @@ object Debug {
       }
       // TODO verify path
     }
-    t.stop
+    t.stop*/
   }
 }
