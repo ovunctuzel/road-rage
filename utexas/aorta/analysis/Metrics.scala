@@ -12,72 +12,73 @@ import utexas.aorta.common.{Common, AgentID}
 
 import scala.collection.mutable
 
+// TODO one metric base class with name, output method
+
 // Record one double per agent
 abstract class SinglePerAgentMetric {
-  private val per_agent = new mutable.HashMap[AgentID, Double]()
+  protected val per_agent = new mutable.HashMap[AgentID, Double]()
   def apply(a: AgentID) = per_agent(a)
-  abstract def name: String
+  def name: String
+}
+
+// Record many doubles per agent, further grouped by some string category
+abstract class MultiplePerAgentMetric {
+  type Key = (AgentID, String)
+  protected val per_agent_category = new mutable.HashMap[Key, mutable.Set[Double]]
+    with mutable.MultiMap[Key, Double]
+  def name: String
 }
 
 // Measure how long each agent's trip takes
-class TripTimeMetric(sim: Simulation) {
-  private val times = new mutable.HashMap[AgentID, Double]()
+class TripTimeMetric(sim: Simulation) extends SinglePerAgentMetric {
+  override def name = "trip_time"
 
-  sim.listen("trip-time", _ match {
-    case EV_Stat(s: Agent_Lifetime_Stat) => times(s.id) = s.trip_time
+  sim.listen(name, _ match {
+    case EV_Stat(s: Agent_Lifetime_Stat) => per_agent(s.id) = s.trip_time
     case _ =>
   })
-
-  def result = times.toMap
-  def apply(a: AgentID) = times(a)
 }
 
 // Measure how long a driver follows their original route.
-class OriginalRouteMetric(sim: Simulation) {
-  // TODO make this one create a TripTimeMetric or so, reusing code to get start/stop time
+class OriginalRouteMetric(sim: Simulation) extends SinglePerAgentMetric {
+  override def name = "orig_routes"
 
-  // TODO map all to times
   private val first_reroute_time = new mutable.HashMap[AgentID, Double]()
-  private val start_time = new mutable.HashMap[AgentID, Double]()
-  private val stop_time = new mutable.HashMap[AgentID, Double]()
-
-  sim.listen("orig-route", _ match {
-    case EV_AgentSpawned(a) => a.route.listen("orig-route", _ match {
-      case EV_Reroute(_, false) if !first_reroute_time.contains(a.id) =>
-        first_reroute_time(a.id) = Common.tick
-      case _ =>
-    })
-    case EV_AgentQuit(a) => {
-      start_time(a.id) = a.time_spawned
-      stop_time(a.id) = Common.tick
-    }
+  sim.listen(name, _ match {
+    case EV_Reroute(_, false) if !first_reroute_time.contains(a.id) =>
+      first_reroute_time(a.id) = Common.tick
+    // [0, 100]
+    case EV_Stat(s: Agent_Lifetime_Stat) => per_agent(s.id) =
+      100.0 * ((first_reroute_time.getOrElse(a, s.end_tick) - s.start_tick) / s.trip_time)
     case _ =>
   })
-
-  // [0, 100]
-  def apply(a: AgentID) = first_reroute_time.get(a) match {
-    case Some(tick) => 100.0 * (tick - start_time(a)) / (stop_time(a) - start_time(a))
-    case None => 100.0
-  }
 }
 
-// Measure how long drivers wait at intersections
-class TurnDelayMetric(sim: Simulation) {
-  // TODO correlate with the agent that experiences it. problem is how to do the same for
-  // TurnCompetitionMetric, where there could be multiple winners.
-  private val delay_per_policy = IntersectionType.values.toList.map(
-    t => t -> new mutable.ListBuffer[Double]()
-  ).toMap
+// Measure how long drivers wait at intersections, grouped by intersection type
+class TurnDelayMetric(sim: Simulation) extends MultiplePerAgentMetric {
+  override def name = "turn_delays"
 
-  sim.listen("turn-delay", _ match {
+  sim.listen(name, _ match {
     case EV_Stat(s: Turn_Stat) => {
-      val t = Common.sim.graph.vertices(s.vert.int).intersection.policy.policy_type
-      delay_per_policy(t) += s.total_delay  // could be accept_delay
+      val policy = Common.sim.graph.vertices(s.vert.int).intersection.policy.policy_type.toString
+      per_agent_category((s.agent, policy)) += s.total_delay  // could be accept_delay
     }
     case _ =>
   })
+}
 
-  def delays = delay_per_policy.keys.map(p => p.toString -> delay_per_policy(p).toList).toMap
+// Measure how congested roads are when agents enter them, grouped by nothing (category "all")
+class RoadCongestionMetric(sim: Simulation) extends MultiplePerAgentMetric {
+  override def name = "road_congestion"
+
+  sim.listen(name, _ match {
+    case EV_AgentSpawned(a) => a.route.listen(name, _ match {
+      case EV_Transition(_, to: Edge) =>
+        per_agent_category((a.id, "all")) += to.directed_road.freeflow_percent_full
+      case _ =>
+    })
+    case _ =>
+  })
 }
 
 // Measure how much competition is present at intersections
@@ -96,36 +97,21 @@ class TurnCompetitionMetric(sim: Simulation) {
   def competition = losers_per_policy.keys.map(p => p.toString -> losers_per_policy(p).toList).toMap
 }
 
-// Measure how congested roads are when agents enter them
-class RoadCongestionMetric(sim: Simulation) {
-  private val congestion = new mutable.HashMap[AgentID, mutable.Set[Double]]
-    with mutable.MultiMap[AgentID, Double]
-
-  sim.listen("road-congestion", _ match {
-    case EV_AgentSpawned(a) => a.route.listen("road-congestion", _ match {
-      case EV_Transition(_, to: Edge) => congestion(a.id) += to.directed_road.freeflow_percent_full
-      case _ =>
-    })
-    case _ =>
-  })
-}
-
 class RouteRecordingMetric(sim: Simulation) {
+  def name = "route_recording"
+
   private val routes = new mutable.HashMap[AgentID, mutable.ListBuffer[DirectedRoad]]()
 
-  sim.listen("route-recording", _ match {
+  sim.listen(name, _ match {
     case EV_AgentSpawned(a) => {
       routes(a.id) = new mutable.ListBuffer[DirectedRoad]()
-      a.route.listen("route-recording", _ match {
-        case EV_Transition(from, to) => to match {
-          case t: Turn => {
-            val path = routes(a.id)
-            if (path.isEmpty) {
-              path += t.from.directed_road
-            }
-            path += t.to.directed_road
+      a.route.listen(name, _ match {
+        case EV_Transition(from, to: Turn) => {
+          val path = routes(a.id)
+          if (path.isEmpty) {
+            path += t.from.directed_road
           }
-          case _ =>
+          path += t.to.directed_road
         }
         case _ =>
       })
@@ -135,7 +121,5 @@ class RouteRecordingMetric(sim: Simulation) {
 
   def apply(a: AgentID) = routes(a).toList
 }
-
-// TODO make a class of per-agent metrics, and have a way to merge them..
 
 // TODO delay on roads vs at intersections?

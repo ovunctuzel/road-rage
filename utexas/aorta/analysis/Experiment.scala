@@ -66,7 +66,7 @@ object ExpConfig {
 }
 
 // TODO restructure this, probably. per_agent should be a list of metrics!
-case class RawResults(
+case class RawResult(
   // the String key in the outer map is a metric
   mode: String, per_agent: Map[String, Map[AgentID, Double]],
   per_category: Map[String, Map[String, List[Double]]]
