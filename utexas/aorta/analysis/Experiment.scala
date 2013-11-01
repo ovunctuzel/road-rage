@@ -10,6 +10,7 @@ import java.io.File
 import utexas.aorta.map.Graph
 import utexas.aorta.sim.{ScenarioTool, Simulation, Scenario, Sim_Event, EV_Heartbeat,
                          EV_AgentSpawned, Agent, EV_Stat}
+import utexas.aorta.ui.GUIDebugger
 
 import utexas.aorta.common.{RNG, Util, Flags, Common, AgentID, IO}
 
@@ -97,6 +98,7 @@ class Experiment(config: ExpConfig) {
       }
       case _ =>
     })
+    val optional_gui = new GUIDebugger(sim) // TODO hafta sys.exit at end if used
 
     while (!sim.done) {
       sim.step()

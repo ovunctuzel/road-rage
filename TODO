@@ -13,6 +13,7 @@ general post-thesis plan
     - tests
     - dont savestate the queue/intersection state, usually. agents have tickets.
     - only spawn on rightmost
+    - https://github.com/scala/pickling
   3) scale up
   4) fix
     - better trip distribution

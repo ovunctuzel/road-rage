@@ -8,8 +8,9 @@ import swing._  // TODO figure out exactly what
 import java.awt.{Color, Component}
 import swing.Dialog
 import javax.swing.WindowConstants
+import java.io.File
 
-import utexas.aorta.sim.Simulation
+import utexas.aorta.sim.{Simulation, EV_Heartbeat}
 import utexas.aorta.common.{Util, cfg}
 
 object Status_Bar {
@@ -209,4 +210,37 @@ object GUI extends SimpleSwingApplication {
   def popup_config() = {
     // TODO tabbed pane by category?
   }
+}
+
+class GUIDebugger(sim: Simulation) {
+  // When this file exists, launch a GUI for sudden interactive watching.
+  private val gui_signal = new File(".headless_gui")
+  private var gui: Option[MapCanvas] = None
+
+  sim.listen("gui-debugger", _ match {
+    case EV_Heartbeat(info) => {
+      if (gui_signal.exists) {
+        gui_signal.delete()
+        gui match {
+          case Some(ui) => {
+            if (GUI.closed) {
+              println("Resuming the GUI...")
+              GUI.top.open()
+              GUI.closed = false
+            }
+          }
+          case None => {
+            println("Launching the GUI...")
+            gui = Some(new MapCanvas(sim, headless = true))
+            GUI.launch_from_headless(gui.get)
+          }
+        }
+      }
+      gui match {
+        case Some(ui) if !GUI.closed => ui.handle_ev(EV_Action("step"))
+        case _ =>
+      }
+    }
+    case _ =>
+  })
 }

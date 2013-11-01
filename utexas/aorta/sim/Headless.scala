@@ -4,19 +4,14 @@
 
 package utexas.aorta.sim
 
-import java.io.File
-
-import utexas.aorta.ui.{MapCanvas, GUI, EV_Action}
+import utexas.aorta.ui.GUIDebugger
 
 import utexas.aorta.common.{Util, Common, cfg}
 
 object Headless {
   def main(args: Array[String]): Unit = {
     val sim = Util.process_args(args)
-
-    // When this file exists, launch a GUI for sudden interactive watching.
-    val gui_signal = new File(".headless_gui")
-    var gui: Option[MapCanvas] = None
+    val gui = new GUIDebugger(sim)
 
     // Print an update every second
     var last_tick = sim.tick
@@ -28,28 +23,6 @@ object Headless {
           Util.comma_num(info.ch_paths), Util.comma_num(info.astar_paths)
         ))
         last_tick = info.tick
-
-        if (gui_signal.exists) {
-          gui_signal.delete
-          gui match {
-            case Some(ui) => {
-              if (GUI.closed) {
-                println("Resuming the GUI...")
-                GUI.top.open
-                GUI.closed = false
-              }
-            }
-            case None => {
-              println("Launching the GUI...")
-              gui = Some(new MapCanvas(sim, headless = true))
-              GUI.launch_from_headless(gui.get)
-            }
-          }
-        }
-        gui match {
-          case Some(ui) if !GUI.closed => ui.handle_ev(EV_Action("step"))
-          case _ =>
-        }
       }
       case _ =>
     })
