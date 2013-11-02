@@ -10,6 +10,7 @@ import scala.annotation.elidable
 import scala.annotation.elidable.ASSERTION
 import java.awt.Color
 import scala.collection.mutable.{HashMap => MutableMap}
+import scala.sys.process._
 
 import utexas.aorta.map.Graph
 import utexas.aorta.sim.{Simulation, Scenario, EV_Stat}
@@ -109,6 +110,7 @@ object Util {
 
   def unique_id = System.currentTimeMillis.toString
   def output(fn: String) = new PrintWriter(new FileWriter(new File(fn)), true /* autoFlush */)
+  def blockingly_run(argv: Seq[String]) = argv.!
 }
 
 class RNG(seed: Long = System.currentTimeMillis) extends Serializable {

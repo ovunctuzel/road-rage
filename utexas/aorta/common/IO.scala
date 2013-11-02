@@ -16,12 +16,12 @@ class IO(gs_prefix: Option[String]) {
   
   // TODO mark a bunch of files with this class, auto upload
   def upload_gs(fn: String, contents: String) {
-    Runtime.getRuntime.exec(Array("./tools/cloud/upload_gs.sh", fn, contents))
+    Util.blockingly_run(Seq("./tools/cloud/upload_gs.sh", fn, contents))
   }
   
   def upload(fn: String) {
     gs_prefix match {
-      case Some(prefix) => Runtime.getRuntime.exec(Array(
+      case Some(prefix) => Util.blockingly_run(Seq(
         "gsutil", "cp", fn, prefix + fn
       ))
       case None =>
@@ -32,6 +32,6 @@ class IO(gs_prefix: Option[String]) {
   // TODO and keep it open if needed
   def output_file(fn: String) = new PrintWriter(new FileWriter(new File(fn)), true /* autoFlush */)
   def compress(fn: String) {
-    Runtime.getRuntime.exec(Array("gzip", fn))
+    Util.blockingly_run(Seq("gzip", fn))
   }
 }

@@ -8,7 +8,7 @@ import utexas.aorta.sim.{Simulation, Sim_Event, Route_Event, EV_AgentSpawned, EV
                          EV_Reroute, IntersectionType, EV_Stat, EV_IntersectionOutcome,
                          EV_Transition, Scenario}
 import utexas.aorta.map.{Edge, DirectedRoad, Turn}
-import utexas.aorta.common.{Common, AgentID, IO}
+import utexas.aorta.common.{Common, AgentID, IO, Util}
 
 import scala.collection.mutable
 
@@ -56,8 +56,7 @@ abstract class EmitMetric(info: MetricInfo) extends Metric(info) {
     val final_file = info.io.output_file(name)
     final_file.println(header)
     final_file.close()
-    Runtime.getRuntime.exec(Array("/bin/sh", "-c", s"cat ${name}_ >> $name"))
-    Runtime.getRuntime.exec(Array("/bin/sh", "-c", s"rm -f ${name}_*"))
+    Util.blockingly_run(Seq("./tools/cat.sh", name))
     info.io.compress(name)
     info.io.upload(name + ".gz")
   }
