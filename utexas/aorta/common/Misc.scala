@@ -111,6 +111,7 @@ object Util {
   def unique_id = System.currentTimeMillis.toString
   def output(fn: String) = new PrintWriter(new FileWriter(new File(fn)), true /* autoFlush */)
   def blockingly_run(argv: Seq[String]) = argv.!
+  def bool2binary(value: Boolean) = if (value) 1.0 else 0.0
 }
 
 class RNG(seed: Long = System.currentTimeMillis) extends Serializable {

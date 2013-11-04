@@ -164,33 +164,18 @@ class CHRouter(graph: Graph) extends Router(graph) {
   }
 }
 
-// Run sparingly -- it's A* that penalizes going through roads that're congested
-// right now
-// TODO remove, it's a degenerate case of the future impl...
-class CongestionRouter(graph: Graph) extends Router(graph) {
-  override def router_type = RouterType.Congestion
+// Score is a pair of doubles
+abstract class AbstractPairAstarRouter(graph: Graph) extends Router(graph) {
+  def calc_heuristic(state: DirectedRoad): (Double, Double)
+  def cost_step(turn_cost: Double, state: DirectedRoad, time: Double): (Double, Double)
 
-  // TODO clean this up >_<
-  def path(from: DirectedRoad, to: DirectedRoad, time: Double): List[DirectedRoad] = {
+  protected def add_cost(a: (Double, Double), b: (Double, Double)) =
+    (a._1 + b._1, a._2 + b._2)
+
+  override def path(from: DirectedRoad, to: DirectedRoad, time: Double): List[DirectedRoad] = {
     if (from == to) {
       return Nil
     }
-
-    Common.sim.astar_since_last_time += 1
-
-    val goal_pt = to.end_pt
-    def calc_heuristic(state: DirectedRoad) =
-      (0.0, state.end_pt.dist_to(goal_pt))
-    // Alternate heuristics explore MUCH less states, but the oracles are too
-    // pricy.
-    /*def calc_heuristic(state: DirectedRoad) =
-      (0.0, graph.ch_router.dist(state, to))*/
-    /*val table = graph.dijkstra_router.costs_to(to)
-    def calc_heuristic(state: DirectedRoad) =
-      (0.0, table(state.id))*/
-
-    def add_cost(a: (Double, Double), b: (Double, Double)) =
-      (a._1 + b._1, a._2 + b._2)
 
     // Stitch together our path
     val backrefs = new HashMap[DirectedRoad, DirectedRoad]()
@@ -236,14 +221,8 @@ class CongestionRouter(graph: Graph) extends Router(graph) {
       } else {
         for ((next_state_raw, transition_cost) <- current.state.succs) {
           val next_state = next_state_raw.asInstanceOf[DirectedRoad]
-          val next_time_cost = transition_cost + next_state.cost(time)
-          val next_congestion_cost =
-            if (next_state.is_congested)
-              1.0
-            else
-              0.0
           val tentative_cost = add_cost(
-            costs(current.state), (next_congestion_cost, next_time_cost)
+            costs(current.state), cost_step(transition_cost, next_state, time)
           )
           if (!visited.contains(next_state) && (!open_members.contains(next_state) || ordering_tuple.lt(tentative_cost, costs(next_state)))) {
             backrefs(next_state) = current.state
@@ -260,6 +239,24 @@ class CongestionRouter(graph: Graph) extends Router(graph) {
     // We didn't find the way?! The graph is connected!
     throw new Exception("Couldn't A* from " + from + " to " + to)
   }
+}
+
+class CongestionRouter(graph: Graph) extends Router(graph) {
+  override def router_type = RouterType.Congestion
+
+  private val goal_pt = to.end_pt
+  override def calc_heuristic(state: DirectedRoad) =
+    (0.0, state.end_pt.dist_to(goal_pt))  // TODO divided by some speed limit?
+  // Alternate heuristics explore MUCH less states, but the oracles are too
+  // pricy.
+  /*def calc_heuristic(state: DirectedRoad) =
+    (0.0, graph.ch_router.dist(state, to))*/
+  /*val table = graph.dijkstra_router.costs_to(to)
+  def calc_heuristic(state: DirectedRoad) =
+    (0.0, table(state.id))*/
+
+  override def cost_step(turn_cost: Double, state: DirectedRoad, time: Double) =
+    (Util.bool2binary(state.is_congested), transition_cost + state.cost(time))
 }
 
 // Encodes all factors describing the quality of a path
@@ -321,10 +318,7 @@ object RouteFeatures {
 
   def for_step(step: DirectedRoad, demand: Demand): RouteFeatures = {
     def one_if(matches: IntersectionType.Value) =
-      if (step.to.intersection.policy.policy_type == matches)
-        1.0
-      else
-        0.0
+      Util.bool2binary(step.to.intersection.policy.policy_type == matches))
     return RouteFeatures(
       total_length = step.length,
       total_freeflow_time = step.cost(0.0),

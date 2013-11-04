@@ -72,7 +72,7 @@ class Experiment(config: ExpConfig) {
   protected lazy val graph = Graph.load(scenario.map_fn)
   protected val uid = Util.unique_id
   protected val io = new IO(config.gs_prefix)
-  Flags.set("--savestate", "false")
+  //Flags.set("--savestate", "false")
 
   protected def get_scenario(): Scenario = {
     val scenario_fn = config.map_fn.replace("maps/", "scenarios/").replace(".map", "_routes")
