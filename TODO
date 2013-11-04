@@ -27,6 +27,7 @@ general post-thesis plan
     - yield policy
     - unprotected left, right turn on red, better stop sign
     - sysbids should be able to divide
+    - if easy: backpressure lights
   5) experiment framework
     - output RAW data thats importable into other stuff, have easy script-like way to get aggregate
       results later

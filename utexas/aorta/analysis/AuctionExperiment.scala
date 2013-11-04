@@ -19,7 +19,7 @@ object AuctionExperiment {
   )
   def disable_sysbids(s: Scenario) = s.copy(system_wallet = SystemWalletConfig.blank)
   def equal_budgets(s: Scenario) = s.copy(
-    agents = s.agents.map(a => a.copy(wallet = a.wallet.copy(budget = 1)))
+    agents = s.agents.map(a => a.copy(wallet = a.wallet.copy(budget = 1, policy = WalletType.Static)))
   )
   def fixed_budgets(s: Scenario) = s.copy(
     agents = s.agents.map(a => a.copy(wallet = a.wallet.copy(policy = WalletType.Static)))
