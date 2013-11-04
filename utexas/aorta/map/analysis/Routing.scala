@@ -166,7 +166,7 @@ class CHRouter(graph: Graph) extends Router(graph) {
 
 // Score is a pair of doubles
 abstract class AbstractPairAstarRouter(graph: Graph) extends Router(graph) {
-  def calc_heuristic(state: DirectedRoad): (Double, Double)
+  def calc_heuristic(state: DirectedRoad, goal: DirectedRoad): (Double, Double)
   def cost_step(turn_cost: Double, state: DirectedRoad, time: Double): (Double, Double)
 
   protected def add_cost(a: (Double, Double), b: (Double, Double)) =
@@ -185,7 +185,7 @@ abstract class AbstractPairAstarRouter(graph: Graph) extends Router(graph) {
     val costs = new HashMap[DirectedRoad, (Double, Double)]()
 
     case class Step(state: DirectedRoad) {
-      lazy val heuristic = calc_heuristic(state)
+      lazy val heuristic = calc_heuristic(state, to)
       def cost = add_cost(costs(state), heuristic)
     }
     val ordering = Ordering[(Double, Double)].on((step: Step) => step.cost).reverse
@@ -241,12 +241,11 @@ abstract class AbstractPairAstarRouter(graph: Graph) extends Router(graph) {
   }
 }
 
-class CongestionRouter(graph: Graph) extends Router(graph) {
+class CongestionRouter(graph: Graph) extends AbstractPairAstarRouter(graph) {
   override def router_type = RouterType.Congestion
 
-  private val goal_pt = to.end_pt
-  override def calc_heuristic(state: DirectedRoad) =
-    (0.0, state.end_pt.dist_to(goal_pt))  // TODO divided by some speed limit?
+  override def calc_heuristic(state: DirectedRoad, goal: DirectedRoad) =
+    (0.0, state.end_pt.dist_to(goal.end_pt))  // TODO divided by some speed limit?
   // Alternate heuristics explore MUCH less states, but the oracles are too
   // pricy.
   /*def calc_heuristic(state: DirectedRoad) =
@@ -256,7 +255,7 @@ class CongestionRouter(graph: Graph) extends Router(graph) {
     (0.0, table(state.id))*/
 
   override def cost_step(turn_cost: Double, state: DirectedRoad, time: Double) =
-    (Util.bool2binary(state.is_congested), transition_cost + state.cost(time))
+    (Util.bool2binary(state.is_congested), turn_cost + state.cost(time))
 }
 
 // Encodes all factors describing the quality of a path
@@ -318,7 +317,7 @@ object RouteFeatures {
 
   def for_step(step: DirectedRoad, demand: Demand): RouteFeatures = {
     def one_if(matches: IntersectionType.Value) =
-      Util.bool2binary(step.to.intersection.policy.policy_type == matches))
+      Util.bool2binary(step.to.intersection.policy.policy_type == matches)
     return RouteFeatures(
       total_length = step.length,
       total_freeflow_time = step.cost(0.0),

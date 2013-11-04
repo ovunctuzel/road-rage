@@ -208,6 +208,9 @@ class Agent(
         }
         case (t: Turn, e: Edge) => {
           val ticket = get_ticket(t).get
+          if (id.int == 13328) {
+            println(s"$this finishing turn, removing $ticket")
+          }
           tickets.remove(ticket)
           ticket.intersection.exit(ticket)
           ticket.stat = ticket.stat.copy(done_tick = Common.tick)
@@ -248,6 +251,10 @@ class Agent(
         false
       }
       case Act_Done_With_Route() => {
+        if (id.int == 13328) {
+          println(s"$this done. at ${at.on}. tickets $tickets")
+        }
+
         // TODO untrue when our dest is tiny and we stop right before it!
         at.on match {
           case e: Edge => // normal
@@ -256,7 +263,7 @@ class Agent(
             t.to.queue.free_slot
 
             val ticket = get_ticket(t).get
-            tickets.remove(ticket)
+            tickets.remove(ticket)  // TODO all applicable tickets?
             ticket.intersection.exit(ticket)
           }
         }
@@ -288,6 +295,9 @@ class Agent(
 
   // Caller must remove this agent from the simulation list
   def terminate(interrupted: Boolean = false) = {
+    if (id.int == 13328) {
+      println(s"$this terminating. tickets $tickets")
+    }
     if (!interrupted) {
       exit(at.on)
       at.on match {

@@ -40,6 +40,9 @@ class Intersection(val v: Vertex, policy_type: IntersectionType.Value,
   }
 
   def cancel_turn(ticket: Ticket) {
+    if (ticket.a.id.int == 13328) {
+      println(s"*** inters cancel $ticket")
+    }
     Util.assert_eq(ticket.turn.vert, v)
     policy.cancel_turn(ticket)
   }
@@ -186,6 +189,9 @@ class Ticket(val a: Agent, val turn: Turn) extends Ordered[Ticket] {
   }
 
   def cancel() {
+    if (a.id.int == 13328) {
+      println(s"*** tick cancel $this")
+    }
     Util.assert_eq(is_approved, false)
     a.tickets.remove(this)
     intersection.cancel_turn(this)
@@ -339,6 +345,9 @@ abstract class Policy(val intersection: Intersection) {
     synchronized {
       // TODO assert not in new_requests
       // TODO assert it was in here!
+      if (ticket.a.id.int == 13328) {
+        println(s"*** policy cancel $ticket")
+      }
       request_queue = request_queue.filter(t => t != ticket)
     }
   }
