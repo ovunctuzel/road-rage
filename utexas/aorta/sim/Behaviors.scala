@@ -53,7 +53,8 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
     if (!a.involved_with(i)) {
       base match {
         case e: Edge => {
-          val target = route.pick_lane(e)
+          val goal = route.pick_final_lane(e)
+          val target = e.adjacent_lanes.minBy(choice => math.abs(choice.lane_num - goal.lane_num))
           // Tough liveness guarantees... give up early.
           // TODO move this check to give up to react()
           if (target != base && a.can_lc_without_blocking(target)) {
@@ -260,11 +261,11 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
   def constraint_stop(step: LookaheadStep): Either[Option[Double], Boolean] = {
     // Request a turn early?
     step.at match {
-      case e: Edge if !route.done(e) && committed_to_lane(step) => {
+      case e: Edge if !route.done(e) => {
         val i = e.to.intersection
         // TODO for multiple tickets at the same intersection... technically
         // should see if the specific ticket exists yet.
-        if (!a.involved_with(i)) {
+        if (!a.involved_with(i) && committed_to_lane(step)) {
           val next_turn = route.pick_turn(e)
           val ticket = new Ticket(a, next_turn)
           a.tickets += ticket

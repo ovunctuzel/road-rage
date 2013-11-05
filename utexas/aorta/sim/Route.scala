@@ -49,8 +49,8 @@ abstract class Route(val goal: DirectedRoad, rng: RNG) extends ListenerPattern[R
   // The client is being forced to pick a turn. If they ask us repeatedly, we
   // have to always return the same answer.
   def pick_turn(e: Edge): Turn
-  // The client may try to lane-change somewhere
-  def pick_lane(e: Edge): Edge
+  // Prescribe the final lane on this directed road to aim for
+  def pick_final_lane(e: Edge): Edge
   // Just mark that we don't have to take the old turn prescribed
   def reroute(at: Edge) {}
 
@@ -97,17 +97,11 @@ class DijkstraRoute(goal: DirectedRoad, rng: RNG) extends Route(goal, rng) {
   def transition(from: Traversable, to: Traversable) = {}
 
   def pick_turn(e: Edge) = e.next_turns.minBy(t => costs(t.to.directed_road.id.int))
-  def pick_lane(from: Edge): Edge = {
-    // Break ties for the best lane overall by picking the lane closest to the
-    // current.
-    val target_lane = from.other_lanes.minBy(
-      e => (costs(pick_turn(e).to.directed_road.id.int), math.abs(from.lane_num - e.lane_num))
-    )
-    // Get as close to target_lane as possible.
-    return from.adjacent_lanes.minBy(
-      e => math.abs(target_lane.lane_num - e.lane_num)
-    )
-  }
+  // Break ties for the best lane overall by picking the lane closest to the
+  // current.
+  def pick_final_lane(from: Edge) = from.other_lanes.minBy(
+    e => (costs(pick_turn(e).to.directed_road.id.int), math.abs(from.lane_num - e.lane_num))
+  )
 
   //////////////////////////////////////////////////////////////////////////////
   // Queries
@@ -234,7 +228,7 @@ class PathRoute(goal: DirectedRoad, orig_router: Router, private var rerouter: R
     return best
   }
 
-  def pick_lane(from: Edge): Edge = {
+  def pick_final_lane(from: Edge): Edge = {
     // This method is called first, so do the lazy initialization here.
     if (path.isEmpty) {
       path = from.directed_road :: orig_router.path(from.directed_road, goal, Common.tick)
@@ -263,12 +257,8 @@ class PathRoute(goal: DirectedRoad, orig_router: Router, private var rerouter: R
       case lanes => lanes
     }
 
-    // Pick the lane closest to the current, then get as close as possible.
-    val target_lane = candidates.minBy(e => math.abs(from.lane_num - e.lane_num))
-    // Get as close to target_lane as possible.
-    return from.adjacent_lanes.minBy(
-      e => math.abs(target_lane.lane_num - e.lane_num)
-    )
+    // Pick the lane closest to the current
+    return candidates.minBy(e => math.abs(from.lane_num - e.lane_num))
   }
 
   //////////////////////////////////////////////////////////////////////////////
@@ -365,15 +355,11 @@ class DrunkenRoute(goal: DirectedRoad, rng: RNG) extends Route(goal, rng) {
 
   def pick_turn(e: Edge) = chosen_turns.getOrElseUpdate(e, choose_turn(e))
 
-  def pick_lane(e: Edge): Edge = {
+  def pick_final_lane(e: Edge): Edge = {
     if (!desired_lane.isDefined) {
-      if (e.ok_to_lanechange) {
-        desired_lane = Some(rng.choose(e.other_lanes))
-      } else {
-        desired_lane = Some(e)
-      }
+      desired_lane = Some(rng.choose(e.other_lanes))
     }
-    return e.best_adj_lane(desired_lane.get)
+    return desired_lane.get
   }
 
   //////////////////////////////////////////////////////////////////////////////
