@@ -49,7 +49,8 @@ abstract class Route(val goal: DirectedRoad, rng: RNG) extends ListenerPattern[R
   // The client is being forced to pick a turn. If they ask us repeatedly, we
   // have to always return the same answer.
   def pick_turn(e: Edge): Turn
-  // Prescribe the final lane on this directed road to aim for
+  // Prescribe the final lane on this directed road to aim for. We should be able to spazz around in
+  // our answer here.
   def pick_final_lane(e: Edge): Edge
   // Just mark that we don't have to take the old turn prescribed
   def reroute(at: Edge) {}
@@ -258,7 +259,10 @@ class PathRoute(goal: DirectedRoad, orig_router: Router, private var rerouter: R
     }
 
     // Pick the lane closest to the current
-    return candidates.minBy(e => math.abs(from.lane_num - e.lane_num))
+    //return candidates.minBy(e => math.abs(from.lane_num - e.lane_num))
+
+    // Discretionary lane-changing: pick the lane with the least congestion
+    return candidates.minBy(e => e.queue.percent_full)
   }
 
   //////////////////////////////////////////////////////////////////////////////

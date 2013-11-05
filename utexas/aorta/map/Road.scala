@@ -125,6 +125,7 @@ class Road(
 
   def debug() {
     Util.log(this + " is a " + road_type + " of length " + length + " meters")
+    Util.log(s"  Originally OSM id = $osm_id")
   }
 
   // For debug only

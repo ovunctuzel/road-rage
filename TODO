@@ -31,6 +31,7 @@ general post-thesis plan
     - sysbids should be able to divide
     - if easy: backpressure lights
     - debugging useful: warn when turn not used for a while
+    - metrics for how many reroutes necessary (grouped by cause), how many failed LCs
   5) experiment framework
     - output RAW data thats importable into other stuff, have easy script-like way to get aggregate
       results later
