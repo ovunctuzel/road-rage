@@ -17,6 +17,7 @@ general post-thesis plan
   3) scale up
     - .view, .withFilter
   4) fix
+    - different measure of live vs moved agents. cumulative
     - better trip distribution
     - traffic lights shouldnt have long yellow
     - reservation protocol should actually be faster

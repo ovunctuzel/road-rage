@@ -191,6 +191,16 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
         }
       }
 
+      // How many LCs do we anticipate here? Slown down to increase chances of doing multi-LCs
+      // TODO (This is a bit ad-hoc)
+      step.at match {
+        case e: Edge => {
+          val num_lcs = math.abs(e.lane_num - route.pick_final_lane(e).lane_num)
+          min_speed_limit = math.min(min_speed_limit, step.at.speed_limit / math.max(1, num_lcs))
+        }
+        case _ =>
+      }
+
       min_speed_limit = math.min(min_speed_limit, step.at.speed_limit)
 
       // Set the next step.
