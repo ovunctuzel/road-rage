@@ -74,13 +74,14 @@ class Experiment(config: ExpConfig) {
   protected val io = new IO(config.gs_prefix)
   //Flags.set("--savestate", "false")
 
+  protected def scenario_params: Array[String] = Array()
   protected def get_scenario(): Scenario = {
     val scenario_fn = config.map_fn.replace("maps/", "scenarios/").replace(".map", "_routes")
     io.notify("Generating scenario")
     ScenarioTool.main(Array(
       config.map_fn, "--out", scenario_fn, "--spawn", config.spawn_per_hour.toString,
       "delay=3600", "lifetime=3600", "generations=" + config.generations
-    ))
+    ) ++ scenario_params)
     return Scenario.load(scenario_fn)
   }
 

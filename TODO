@@ -20,7 +20,7 @@ general post-thesis plan
     - different measure of live vs moved agents. cumulative
     - better trip distribution
     - traffic lights shouldnt have long yellow
-    - reservation protocol should actually be faster
+    - reservation protocol should actually be faster. opportunistic.
     - not sure: if LC dist is > road dist, super problems
     - min lengths should matter for lanes everywhere, not roads
     - degenerate verts should have same num of lanes
@@ -32,6 +32,7 @@ general post-thesis plan
     - if easy: backpressure lights
     - debugging useful: warn when turn not used for a while
     - metrics for how many reroutes necessary (grouped by cause), how many failed LCs
+    - is it even valid to consider results from first/last agents? need steady-state.
   5) experiment framework
     - output RAW data thats importable into other stuff, have easy script-like way to get aggregate
       results later

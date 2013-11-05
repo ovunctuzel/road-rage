@@ -27,6 +27,8 @@ object AuctionExperiment {
 }
 
 class AuctionExperiment(config: ExpConfig) extends SmartExperiment(config) {
+  override def scenario_params = Array("budget=0-500")
+
   override def get_metrics(info: MetricInfo) = List(
     new TripTimeMetric(info), new OriginalRouteMetric(info), new TurnDelayMetric(info),
     new TurnCompetitionMetric(info)
