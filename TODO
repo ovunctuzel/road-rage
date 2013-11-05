@@ -19,6 +19,7 @@ general post-thesis plan
   4) fix
     - different measure of live vs moved agents. cumulative
     - better trip distribution
+      *** buildings in seattle. color in regions of neighborhood blocks by zone.
     - traffic lights shouldnt have long yellow
     - reservation protocol should actually be faster. opportunistic.
     - not sure: if LC dist is > road dist, super problems
