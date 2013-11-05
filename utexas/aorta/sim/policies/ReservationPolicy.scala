@@ -59,9 +59,6 @@ class ReservationPolicy(intersection: Intersection,
           return
         } else {
           // Yes! Resume admitting others now, too.
-          if (ticket.a.id.int == 13328) {
-            println(s"approving the bastards ticket. when did they cancel?")
-          }
           ticket.approve()
           accepted += ticket
           interruption = None
@@ -87,9 +84,6 @@ class ReservationPolicy(intersection: Intersection,
             return
           } else {
             accept(ticket)
-            if (ticket.a.id.int == 13328) {
-              println(s"accepted normally: $ticket")
-            }
           }
         }
         case None => return
@@ -98,12 +92,8 @@ class ReservationPolicy(intersection: Intersection,
   }
 
   override def cancel_turn(ticket: Ticket) {
-    if (ticket.a.id.int == 13328) {
-      println(s"\n\n$ticket canceling in reservation!  $interruption")
-    }
     interruption match {
-      case t if t == ticket => {
-        println("REMOVED INTERRUPTION!")
+      case Some(t) if t == ticket => {
         interruption = None
       }
       case _ => super.cancel_turn(ticket)

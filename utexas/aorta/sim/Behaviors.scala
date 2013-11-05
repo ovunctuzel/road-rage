@@ -267,9 +267,6 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
         if (!a.involved_with(i)) {
           val next_turn = route.pick_turn(e)
           val ticket = new Ticket(a, next_turn)
-          if (a.id.int == 13328) {
-            println(s"$this grabbing $ticket")
-          }
           a.tickets += ticket
           i.request_turn(ticket)
         }
@@ -310,10 +307,6 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
               val replacement = new Ticket(a, next_turn)
               a.tickets += replacement
               e.to.intersection.request_turn(replacement)
-
-              if (a.id.int == 13328) {
-                println(s"**** $this bored. canceled $ticket, doing $replacement instead")
-              }
             }
             false
           }

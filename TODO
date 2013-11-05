@@ -15,6 +15,7 @@ general post-thesis plan
     - only spawn on rightmost
     - https://github.com/scala/pickling
   3) scale up
+    - .view, .withFilter
   4) fix
     - better trip distribution
     - traffic lights shouldnt have long yellow
