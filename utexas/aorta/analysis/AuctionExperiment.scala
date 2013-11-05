@@ -31,7 +31,7 @@ class AuctionExperiment(config: ExpConfig) extends SmartExperiment(config) {
 
   override def get_metrics(info: MetricInfo) = List(
     new TripTimeMetric(info), new OriginalRouteMetric(info), new TurnDelayMetric(info),
-    new TurnCompetitionMetric(info)
+    new TurnCompetitionMetric(info), new MoneySpentMetric(info)
   )
 
   def run() {

@@ -90,6 +90,16 @@ class OriginalRouteMetric(info: MetricInfo) extends SinglePerAgentMetric(info) {
   })
 }
 
+// Measure how much money the agent actually spends of their total budget
+class MoneySpentMetric(info: MetricInfo) extends SinglePerAgentMetric(info) {
+  override def name = "money_spent"
+
+  info.sim.listen(name, _ match {
+    case EV_Stat(s: Agent_Lifetime_Stat) => per_agent(s.id) = s.total_spent
+    case _ =>
+  })
+}
+
 // Measure how long drivers wait at intersections, grouped by intersection type
 class TurnDelayMetric(info: MetricInfo) extends EmitMetric(info) {
   override def name = "turn_delays"
