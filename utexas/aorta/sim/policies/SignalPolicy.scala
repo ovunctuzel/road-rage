@@ -191,10 +191,7 @@ class Phase(val turns: Set[Turn], val offset: Double, val duration: Double)
 object Phase {
   var id = 0
 
-  // SignalPolicy asks us, so we can do some one-time work and dole out the
-  // results or lazily compute
   def phases_for(i: Intersection): List[Phase] = {
-    // for now...
     return arbitrary_phases(i.v)
     //return group_by_roads(i.v)
   }
@@ -251,9 +248,33 @@ object Phase {
     return turn_groups_to_phases(maximize_groups(groups.toList, vert.turns))
   }
 
-  // TODO all turns from some directed roads, except turns merge into one lane
-  /*def group_by_roads(vert: Vertex): List[Phase] = {
-  }*/
+  // Try to group turns from the same directed road
+  // TODO refactor
+  def group_by_roads(vert: Vertex): List[Phase] = {
+    val turns_remaining = new TreeSet[Turn]()
+    turns_remaining ++= vert.turns
+
+    val groups = new ListBuffer[Set[Turn]]()
+    while (turns_remaining.nonEmpty) {
+      val this_group = new MutableSet[Turn]()
+      this_group += turns_remaining.head
+      turns_remaining -= this_group.head
+
+      // Try to add remaining turns in the same directed road first
+      // Then do the rest, normally
+      val road = this_group.head.from.directed_road
+      val consider_order = turns_remaining.partition(t => t.from.directed_road == road)
+      for (candidate <- consider_order._1.toList ++ consider_order._2.toList) {
+        if (!this_group.find(t => t.conflicts_with(candidate)).isDefined) {
+          this_group += candidate
+          turns_remaining -= candidate
+        }
+      }
+
+      groups += this_group.toSet
+    }
+    return turn_groups_to_phases(maximize_groups(groups.toList, vert.turns))
+  }
 
   // TODO other groupings for standard 3/4 phase lights
 }
