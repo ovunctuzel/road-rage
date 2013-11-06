@@ -4,18 +4,35 @@ require("gplots")
 require("RSQLite")
 
 # Definitions
-colors <- c("blue", "red", "green", "cyan", "orange", "purple", "coral")
+colors <- c("purple", "red", "green", "blue", "orangered", "greenyellow", "cyan")
+# TODO make colors match up a bit
 city_names = list()
 city_names["austin"] = "Austin"
 city_names["baton_rouge"] = "Baton Rouge"
 city_names["seattle"] = "Seattle"
 city_names["sf"] = "San Francisco"
 
+mode_labels=c("FCFS\n", "Auctions\n", "Equal\n", "Fixed\n", "Auctions\n+sysbid", "Equal\n+sysbid",
+              "Fixed\n+sysbid")
+
 concat <- function(ls) {
   Reduce(function(a, b) { paste(a, b, sep="") }, ls)
 }
 
+foreach_mode <- function(fxn) {
+  modes = c("fcfs", "auctions_no_sysbids", "equal_no_sysbids", "fixed_no_sysbids",
+            "auctions_sysbids", "equal_sysbids", "fixed_sysbids")
+  Reduce(function(a, b) { paste(a, b, sep=", ") }, Map(fxn, modes))
+}
+
+# query must have scenario
+normalize <- function(query) {
+  concat(c("SELECT ", foreach_mode(function(mode) { concat(c(mode, " / count")) }),
+           " FROM(", query, ") t1 INNER JOIN (", count, ") t2 ON t1.scenario == t2.scenario"))
+}
+
 if (file.exists("times.db")) {
+  # During development of this script, don't recreate the DB every time
   db <- dbConnect(dbDriver("SQLite"), "times.db")
 } else {
   # Read the raw data
@@ -33,49 +50,41 @@ if (file.exists("times.db")) {
 }
 
 cities <- dbGetQuery(db, "SELECT DISTINCT map FROM raw_times")
+count <- "SELECT count, scenario FROM agent_count"
 for (city in cities$map) {
-  # TODO y axis should be more legible time
-  # TODO macro to generate the query. each experiment, plus a transformation.
   filter <- concat(c("FROM raw_times WHERE map='", city, "'"))
-  # TODO if we were using sqldf, apply filter ONCE in this loop. compose operations!
   name <- city_names[city]
-  count <- "SELECT count, scenario FROM agent_count"
+  bplot <- function(data, title, ylabel) {
+    boxplot2(data, col=colors, xaxt="n", ylab=ylabel, main=concat(c(title, " in ", name)))
+    box()
+    axis(side=1, at=1:7, tick=FALSE, line=1, labels=mode_labels)
+  }
 
-  unweighted_sum <- "SELECT scenario, SUM(fcfs) AS fcfs, SUM(auctions_no_sysbids) AS an,
-                     SUM(equal_no_sysbids) AS en, SUM(fixed_no_sysbids) AS fn,
-                     SUM(auctions_sysbids) AS a, SUM(equal_sysbids) AS e, SUM(fixed_sysbids) AS f
-                     FROM raw_times GROUP BY scenario"
-  unweighted_query <- concat(c(
-    "SELECT fcfs / count, an / count, en / count, fn / count, a / count, e / count, f / count
-     FROM(", unweighted_sum, ") t1 INNER JOIN (", count, ") t2 ON t1.scenario == t2.scenario"))
-  unweighted <- dbGetQuery(db, unweighted_query)
-  boxplot2(unweighted, col=colors, xaxt="n", ylab="Time per agent (s / agent)",
-           main=concat(c("Unweighted normalized trip times in ", name)))
-  box()
-  axis(side=1, at=1:7, tick=FALSE, line=1,
-       labels=c("FCFS\n", "Auctions\n", "Equal\n", "Fixed\n", "Auctions\n+sysbid", "Equal\n+sysbid",
-                "Fixed\n+sysbid"))
+  # Normalizing by agent is different from presenting raw individual times to begin with, because it
+  # doesn't account for the grouping by scenario.
+  unweighted <- dbGetQuery(db, normalize(concat(c(
+    "SELECT scenario, ",
+    foreach_mode(function(mode) { concat(c("SUM(", mode, ") / 60 AS ", mode)) }),
+    " ", filter, " GROUP BY scenario"))))
+  bplot(unweighted, "Unweighted normalized trip times", "Time per agent (minute / agent)")
 
-  #weighted <- dbGetQuery(db,
-  #  concat(concat("SELECT SUM(fcfs * priority), SUM(auctions_sysbids * priority),
-  #                SUM(auctions_no_sysbids * priority), SUM(equal_sysbids * priority),
-  #                SUM(equal_no_sysbids * priority), SUM(fixed_sysbids * priority),
-  #                SUM(fixed_no_sysbids * priority) ", filter), " GROUP BY scenario"))
-  #boxplot2(weighted, col=colors, xlab="Time (s) * priority",
-  #         main=concat("Weighted trip times in ", name), horizontal=TRUE, las=1,
-  #         names=c("FCFS", "Auctions", "Equal", "Fixed", "Auctions+sysbids",
-  #                 "Equal+sysbids", "Fixed+sysbids"))
-#
-#  unweighted_savings <- dbGetQuery(db,
-#    concat(concat("SELECT SUM(fcfs - auctions_sysbids), SUM(fcfs - auctions_no_sysbids),
-#                  SUM(fcfs - equal_sysbids), SUM(fcfs - equal_no_sysbids), SUM(fcfs - fixed_sysbids),
-#                  SUM(fcfs - fixed_no_sysbids) ", filter), " GROUP BY scenario"))
-#  boxplot2(unweighted_savings, col=colors, ylab="Time savings (s)",
-#           main=concat("Unweighted trip time savings relative to FCFS in ", name))
-#
-#  unweighted_savings_per_agent <- dbGetQuery(db,
-#    concat("SELECT fcfs - auctions_sysbids, fcfs - auctions_no_sysbids, fcfs - equal_sysbids,
-#           fcfs - equal_no_sysbids, fcfs - fixed_sysbids, fcfs - fixed_no_sysbids ", filter))
-#  boxplot2(unweighted_savings_per_agent, col=colors, ylab="Time savings per agent (s)",
-#           main=concat("Unweighted trip time savings per agent relative to FCFS in ", name))
+  weighted <- dbGetQuery(db, normalize(concat(c(
+    "SELECT scenario, ",
+    foreach_mode(function(mode) { concat(c("SUM(", mode, " * priority) AS ", mode)) }),
+    " ", filter, " GROUP BY scenario"))))
+  bplot(weighted, "Weighted normalized trip times",
+        "Time * priority per agent (minute * $ / agent)")
+
+  savings_fcfs <- dbGetQuery(db, normalize(concat(c(
+    "SELECT scenario, ",
+    foreach_mode(function(mode) { concat(c("SUM(fcfs - ", mode, ") / 60 AS ", mode)) }),
+    " ", filter, " GROUP BY scenario"))))
+  bplot(savings_fcfs, "Trip time savings relative to FCFS", "Time savings per agent (minute / agent)")
+
+  savings_fcfs <- dbGetQuery(db, normalize(concat(c(
+    "SELECT scenario, ",
+    foreach_mode(function(mode) { concat(c("SUM(equal_sysbids - ", mode, ") / 60 AS ", mode)) }),
+    " ", filter, " GROUP BY scenario"))))
+  bplot(savings_fcfs, "Trip time savings relative to Equal with System Bids",
+        "Time savings per agent (minute / agent)")
 }
