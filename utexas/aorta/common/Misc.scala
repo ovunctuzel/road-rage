@@ -225,6 +225,20 @@ class Stopwatch(val name: String) {
   }
 }
 
+abstract class MathVector[T <: MathVector[T]](val value: Array[Double]) {
+  protected def produce(vector: Array[Double]): T
+
+  def size = value.size
+  def +(other: MathVector[T]): T = {
+    Util.assert_eq(size, other.size)
+    return produce(value.zip(other.value).map(pair => pair._1 + pair._2))
+  }
+  def dot(other: MathVector[T]): Double = {
+    Util.assert_eq(size, other.size)
+    return value.zip(other.value).map(pair => pair._1 + pair._2).sum
+  }
+}
+
 class AgentID(val int: Int) extends AnyVal {
   override def toString = int.toString
 }
