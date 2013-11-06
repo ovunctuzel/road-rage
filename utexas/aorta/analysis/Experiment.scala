@@ -126,6 +126,7 @@ abstract class SmartExperiment(config: ExpConfig) extends Experiment(config) {
         io.notify(s"BORKED - $e")
         val fn = "buggy_" + graph.basename
         Util.blockingly_run(Seq("mv", "-f", scenario.name, fn))
+        // TODO also upload latest savestate, and name everything reasonably
         io.upload(fn)
       }
     }

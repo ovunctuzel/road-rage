@@ -24,7 +24,7 @@ case class Agent_Lifetime_Stat(
 ) extends Measurement
 {
   def trip_time = end_tick - spawn_tick // could be start_tick
-  def total_spent = end_budget - start_budget
+  def total_spent = start_budget - end_budget
   // High priority and long trip time is bad; low priority or low trip time is
   // good.
   // Don't neglect freeriders, ever.
