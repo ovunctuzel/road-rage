@@ -4,7 +4,7 @@ require("gplots")
 require("RSQLite")
 
 # Definitions
-colors <- c("purple", "red", "green", "blue", "orangered", "greenyellow", "cyan")
+colors <- c("purple", "red", "blue", "green", "orangered", "cyan", "greenyellow")
 # TODO make colors match up a bit
 city_names = list()
 city_names["austin"] = "Austin"
@@ -80,6 +80,7 @@ for (city in cities$map) {
     foreach_mode(function(mode) { concat(c("SUM(fcfs - ", mode, ") / 60 AS ", mode)) }),
     " ", filter, " GROUP BY scenario"))))
   bplot(savings_fcfs, "Trip time savings relative to FCFS", "Time savings per agent (minute / agent)")
+  abline(h=0)
 
   savings_fcfs <- dbGetQuery(db, normalize(concat(c(
     "SELECT scenario, ",
@@ -87,4 +88,5 @@ for (city in cities$map) {
     " ", filter, " GROUP BY scenario"))))
   bplot(savings_fcfs, "Trip time savings relative to Equal with System Bids",
         "Time savings per agent (minute / agent)")
+  abline(h=0)
 }
