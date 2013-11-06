@@ -218,6 +218,7 @@ class PathRoute(goal: DirectedRoad, orig_router: Router, private var rerouter: R
     val asked_to_reroute = reroutes_requested.contains(e)
 
     val best = if (must_reroute || should_reroute || asked_to_reroute) {
+      reroutes_requested -= e
       // Re-route, but start from a source we can definitely reach without
       // lane-changing.
       val choice = e.next_turns.maxBy(t => t.to.queue.percent_avail)
