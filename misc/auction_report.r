@@ -1,6 +1,9 @@
+# This script is just for trip times
+
 require("gplots")
 require("RSQLite")
 
+# Definitions
 colors <- c("blue", "red", "green", "cyan", "orange", "purple", "coral")
 city_names = list()
 city_names["austin"] = "Austin"
@@ -12,9 +15,15 @@ concat <- function(s1, s2) {
   paste(s1, s2, sep="")
 }
 
+# Read the raw data
+raw_filenames <- Sys.glob(concat(commandArgs(trailingOnly=TRUE)[1], "/*trip_time*"))
+raw_files <- Map(function(fn) { read.table(fn, header=TRUE) }, raw_filenames)
+raw <- do.call(rbind, raw_files)
+row.names(raw) <- seq(nrow(raw))
+
 # Mangle the data into SQL
 db <- dbConnect(dbDriver("SQLite"), "times.db")
-dbWriteTable(db, "raw_times", read.table("trip_time", header=TRUE))
+dbWriteTable(db, "raw_times", raw)
 cities <- dbGetQuery(db, "SELECT DISTINCT map FROM raw_times")
 
 for (city in cities) {
@@ -52,5 +61,3 @@ for (city in cities) {
   boxplot2(unweighted_savings_per_agent, col=colors, ylab="Time savings per agent (s)",
            main=concat("Unweighted trip time savings per agent relative to FCFS in ", name))
 }
-
-# TODO one pdf report, or lots of images..
