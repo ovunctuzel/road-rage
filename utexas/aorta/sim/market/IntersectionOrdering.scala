@@ -134,14 +134,16 @@ class AuctionOrdering[T <: Ordered[T]]() extends IntersectionOrdering[T]() {
     val total_cost = total_runnerup.toDouble / multiplier.toDouble
     val our_orig_total = total_winners.toDouble / multiplier.toDouble
     val rate = total_cost / our_orig_total
-    who.foreach(bid => {
+    for (bid <- who) {
       val price = (bid.amount * rate).toInt
       assert(price <= bid.amount)
       bid.who.spend(price, bid.purpose)
-      // Since wallets may override spend, it's easier to just stick this
+
+      // Disabled because the string concat is super expensive, and this isn't that useful right now
+      /*// Since wallets may override spend, it's easier to just stick this
       // here...
       bid.who.tooltip = List(price + " of " + bid.who.tooltip.mkString(", "))
-      bid.who.dark_tooltip = true
-    })
+      bid.who.dark_tooltip = true*/
+    }
   }
 }
