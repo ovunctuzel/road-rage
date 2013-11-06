@@ -24,7 +24,6 @@ do
   #./tools/analyze_externality cloud ${GS}-${iter}-
   #./tools/tradeoff_experiment cloud ${GS}-${iter}-
   ./tools/auction_experiment cloud ${GS}-${iter}-
-  ./tools/cloud/upload_gs.sh ${GS}-${iter}-status 'Done'
 done
 
 # When we're done, shutdown

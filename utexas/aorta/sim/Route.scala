@@ -5,7 +5,7 @@
 package utexas.aorta.sim
 
 import scala.collection.immutable.TreeMap
-import scala.collection.mutable.{ImmutableMapAdaptor, ListBuffer}
+import scala.collection.mutable.{ImmutableMapAdaptor, ListBuffer, HashSet}
 
 import utexas.aorta.map.{Edge, DirectedRoad, Traversable, Turn, Vertex, Graph}
 import utexas.aorta.map.analysis.{Router, DijkstraRouter}
@@ -125,6 +125,7 @@ class PathRoute(goal: DirectedRoad, orig_router: Router, private var rerouter: R
   // to re-route.
   private var path: List[DirectedRoad] = Nil
   private val chosen_turns = new ImmutableMapAdaptor(new TreeMap[Edge, Turn]())
+  private val reroutes_requested = new HashSet[Edge]()
 
   //////////////////////////////////////////////////////////////////////////////
   // Meta
@@ -145,6 +146,8 @@ class PathRoute(goal: DirectedRoad, orig_router: Router, private var rerouter: R
       w.int(pair._1.id.int)
       w.int(pair._2.id.int)
     })
+    w.int(reroutes_requested.size)
+    reroutes_requested.foreach(e => w.int(e.id.int))
   }
 
   override protected def unserialize(r: StateReader, graph: Graph) {
@@ -158,6 +161,7 @@ class PathRoute(goal: DirectedRoad, orig_router: Router, private var rerouter: R
     for (i <- Range(0, chosen_size)) {
       chosen_turns(graph.edges(r.int)) = graph.turns(new TurnID(r.int))
     }
+    Range(0, r.int).map(_ => reroutes_requested += graph.edges(r.int))
   }
 
   //////////////////////////////////////////////////////////////////////////////
@@ -186,6 +190,7 @@ class PathRoute(goal: DirectedRoad, orig_router: Router, private var rerouter: R
   override def reroute(at: Edge) {
     Util.assert_eq(chosen_turns.contains(at), true)
     chosen_turns -= at
+    reroutes_requested += at
   }
 
   def pick_turn(e: Edge): Turn = {
@@ -206,10 +211,13 @@ class PathRoute(goal: DirectedRoad, orig_router: Router, private var rerouter: R
     // Is the next step reachable?
     val must_reroute =
       e.next_turns.filter(t => t.to.directed_road == dest).isEmpty
-    // TODO a more refined policy, please!
+    // This variant only considers long roads capable of being congested, which is risky...
     val should_reroute = dest.is_congested
+    // Since short roads can gridlock too, have the client detect that and explicitly force us to
+    // handle it
+    val asked_to_reroute = reroutes_requested.contains(e)
 
-    val best = if (must_reroute || should_reroute) {
+    val best = if (must_reroute || should_reroute || asked_to_reroute) {
       // Re-route, but start from a source we can definitely reach without
       // lane-changing.
       val choice = e.next_turns.maxBy(t => t.to.queue.percent_avail)

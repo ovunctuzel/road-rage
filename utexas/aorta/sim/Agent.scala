@@ -321,7 +321,11 @@ class Agent(
     Util.log("Stopping distance next: " + Physics.stopping_distance(max_next_speed))
     Util.log("Lookahead dist: " + max_lookahead_dist)
     Util.log("Dist left here: " + at.dist_left)
-    Util.log("Tickets: " + tickets)
+    Util.log("Tickets:")
+    for (ticket <- tickets) {
+      Util.log(s"  $ticket waiting for ${ticket.how_long_waiting}")
+      Util.log("  Gridlock? " + Intersection.detect_gridlock(ticket.turn))
+    }
     if (is_lanechanging) {
       Util.log(s"Lane-changing from ${old_lane.get}. $lanechange_dist_left to go!")
     } else {

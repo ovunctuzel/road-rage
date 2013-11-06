@@ -181,6 +181,9 @@ class Queue(t: Traversable) {
   // This should be tuned carefully. A queue with only 3 spots isn't really
   // congested if they're all filled.
   def is_congested = capacity > 5 && percent_full >= 80.0
+  // TODO but then theres cases of gridlock because all the full queues are <= 5 capacity. really
+  // want to ask if people there have been stuck for a long time...
+  def gridlock_is_congested = percent_full >= 80.0
 
   // TODO this is way over-conservative. based on accel_to_follow, every
   // negative term in delta_dist, from speed 0.

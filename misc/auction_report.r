@@ -34,19 +34,26 @@ for (city in cities$map) {
   name <- city_names[city]
 
   unweighted <- dbGetQuery(db,
-    concat(concat("SELECT SUM(fcfs), SUM(auctions_sysbids), SUM(auctions_no_sysbids),
-                  SUM(equal_sysbids), SUM(equal_no_sysbids), SUM(fixed_sysbids),
-                  SUM(fixed_no_sysbids) ", filter), " GROUP BY scenario"))
+    concat(concat("SELECT SUM(fcfs), SUM(auctions_no_sysbids), SUM(equal_no_sysbids),
+                  SUM(fixed_no_sysbids), SUM(auctions_sysbids), SUM(equal_sysbids),
+                  SUM(fixed_sysbids) ", filter), " GROUP BY scenario"))
   boxplot2(unweighted, col=colors, ylab="Time (s)",
-           main=concat("Unweighted trip times in ", name))
+           main=concat("Unweighted trip times in ", name), horizontal=FALSE, las=1,
+           xaxt="n")
+  box()
+  axis(side=1, at=1:7, tick=FALSE, line=1,
+       labels=c("FCFS\n", "Auctions\n", "Equal\n", "Fixed\n", "Auctions\n+sysbids", "Equal\n+sysbids",
+                "Fixed\n+sysbids"))
 
   weighted <- dbGetQuery(db,
     concat(concat("SELECT SUM(fcfs * priority), SUM(auctions_sysbids * priority),
                   SUM(auctions_no_sysbids * priority), SUM(equal_sysbids * priority),
                   SUM(equal_no_sysbids * priority), SUM(fixed_sysbids * priority),
                   SUM(fixed_no_sysbids * priority) ", filter), " GROUP BY scenario"))
-  boxplot2(weighted, col=colors, ylab="Time (s) * priority",
-           main=concat("Weighted trip times in ", name))
+  boxplot2(weighted, col=colors, xlab="Time (s) * priority",
+           main=concat("Weighted trip times in ", name), horizontal=TRUE, las=1,
+           names=c("FCFS", "Auctions", "Equal", "Fixed", "Auctions+sysbids",
+                   "Equal+sysbids", "Fixed+sysbids"))
 
   unweighted_savings <- dbGetQuery(db,
     concat(concat("SELECT SUM(fcfs - auctions_sysbids), SUM(fcfs - auctions_no_sysbids),
