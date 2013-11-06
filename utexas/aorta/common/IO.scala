@@ -8,9 +8,10 @@ import java.io.{File, PrintWriter, FileWriter}
 
 class IO(gs_prefix: Option[String]) {
   def notify(status: String) {
+    println(s"*** $status ***")
     gs_prefix match {
       case Some(prefix) => upload_gs(prefix + "status", status)
-      case None => println(s"*** $status ***")
+      case _ =>
     }
   }
   

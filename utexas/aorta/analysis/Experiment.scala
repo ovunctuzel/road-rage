@@ -114,7 +114,22 @@ class Experiment(config: ExpConfig) {
 
 // The future! All experiments should be rewritten to have this form, probably
 abstract class SmartExperiment(config: ExpConfig) extends Experiment(config) {
-  def get_metrics(info: MetricInfo): List[Metric]
+  protected def run(): Unit
+  protected def get_metrics(info: MetricInfo): List[Metric]
+
+  def run_experiment() {
+    try {
+      run()
+      io.notify("Success")
+    } catch {
+      case e: Throwable => {
+        io.notify(s"BORKED - $e")
+        val fn = "buggy_" + graph.basename
+        Util.blockingly_run(Seq("mv", "-f", scenario.name, fn))
+        io.upload(fn)
+      }
+    }
+  }
 
   protected def run_trial(s: Scenario, mode: String): List[Metric] = {
     val sim = s.make_sim().setup()

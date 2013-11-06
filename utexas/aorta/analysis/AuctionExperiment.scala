@@ -10,7 +10,7 @@ import utexas.aorta.sim.{Scenario, SystemWalletConfig, OrderingType, WalletType,
 // likewise for the scripts
 object AuctionExperiment {
   def main(args: Array[String]) {
-    new AuctionExperiment(ExpConfig.from_args(args)).run()
+    new AuctionExperiment(ExpConfig.from_args(args)).run_experiment()
   }
 
   // Scenario transformations
@@ -34,7 +34,7 @@ class AuctionExperiment(config: ExpConfig) extends SmartExperiment(config) {
     new TurnCompetitionMetric(info), new MoneySpentMetric(info)
   )
 
-  def run() {
+  override def run() {
     // The generated scenario is the baseline.
     val sysbid_base = AuctionExperiment.enable_auctions(scenario)
     val nosys_base = AuctionExperiment.disable_sysbids(sysbid_base)

@@ -33,7 +33,7 @@ case class Scenario(name: String, map_fn: String, agents: Array[MkAgent],
   // distribution function originally, we just see the individual list in the
   // end. So compute basic stats about it.
   def summarize() = {
-    Util.log(s"Scenario for $map_fn\n")
+    Util.log(s"Scenario $name for $map_fn\n")
     // TODO breakdown combos of policy/ordering, and wallet/budget
     Util.log("Intersection policies:")
     percentages(intersections.map(_.policy))

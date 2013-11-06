@@ -10,14 +10,14 @@ import utexas.aorta.map.analysis.{RouteFeatures, Demand}
 
 object ClownCarExperiment {
   def main(args: Array[String]) {
-    new ClownCarExperiment(ExpConfig.from_args(args)).run()
+    new ClownCarExperiment(ExpConfig.from_args(args)).run_experiment()
   }
 }
 
 class ClownCarExperiment(config: ExpConfig) extends SmartExperiment(config) {
   override def get_metrics(info: MetricInfo) = List(new TripTimeMetric(info))
 
-  def run() {
+  override def run() {
     val t1 = run_trial(scenario, "baseline")
 
     // TODO this isnt the clown-car, single-route way... modify the scenario!

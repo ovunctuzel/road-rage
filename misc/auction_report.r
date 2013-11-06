@@ -26,7 +26,7 @@ db <- dbConnect(dbDriver("SQLite"), "times.db")
 dbWriteTable(db, "raw_times", raw)
 cities <- dbGetQuery(db, "SELECT DISTINCT map FROM raw_times")
 
-for (city in cities) {
+for (city in cities$map) {
   # TODO x labels dont show up. legend, colors?
   # TODO y axis should be more legible time
   # TODO macro to generate the query. each experiment, plus a transformation.
