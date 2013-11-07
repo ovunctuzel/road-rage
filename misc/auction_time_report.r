@@ -1,23 +1,12 @@
 # This script is just for trip times
-
-require("gplots")
-require("RSQLite")
+source("misc/common.r")
+pdf("time_report.pdf")
 
 # Definitions
 colors <- c("purple", "red", "blue", "green", "orangered", "cyan", "greenyellow")
-# TODO make colors match up a bit
-city_names = list()
-city_names["austin"] = "Austin"
-city_names["baton_rouge"] = "Baton Rouge"
-city_names["seattle"] = "Seattle"
-city_names["sf"] = "San Francisco"
 
 mode_labels=c("FCFS\n", "Auctions\n", "Equal\n", "Fixed\n", "Auctions\n+sysbid", "Equal\n+sysbid",
               "Fixed\n+sysbid")
-
-concat <- function(ls) {
-  Reduce(function(a, b) { paste(a, b, sep="") }, ls)
-}
 
 foreach_mode <- function(fxn) {
   modes = c("fcfs", "auctions_no_sysbids", "equal_no_sysbids", "fixed_no_sysbids",

@@ -6,6 +6,7 @@ general post-thesis plan
     - rm birth tick from agents
     - replace old experiment system with new one
       - and even record the parameters of the runs
+      - some metrics too big. record in multiple files? figure out how to use them
     - rename edges as lanes, and directed roads as links?
     - why end_threshold at all?
     - dont mess with gps coords

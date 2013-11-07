@@ -2,5 +2,5 @@
 # Must be run from the base AORTA directory, eg,
 # ./tools/auction_results
 
-Rscript misc/auction_report.r
-rm -f times.db
+Rscript misc/auction_time_report.r $@
+Rscript misc/auction_money_report.r $@
