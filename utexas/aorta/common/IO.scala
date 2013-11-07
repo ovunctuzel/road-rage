@@ -33,6 +33,6 @@ class IO(gs_prefix: Option[String]) {
   // TODO and keep it open if needed
   def output_file(fn: String) = new PrintWriter(new FileWriter(new File(fn)), true /* autoFlush */)
   def compress(fn: String) {
-    Util.blockingly_run(Seq("gzip", fn))
+    Util.blockingly_run(Seq("gzip", "-f", fn))
   }
 }

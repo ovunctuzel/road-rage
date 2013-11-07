@@ -240,13 +240,13 @@ class FairWallet(initial_budget: Int, p: Int)
   )
 
   protected def bid_stop_sign(tickets: Iterable[Ticket], ours: Ticket) =
-    bid_fair(my_ticket(tickets, ours), ours.turn.vert)
+    bid_fair(greedy_my_ticket(tickets, ours), ours.turn.vert)
 
   protected def bid_signal(phases: Iterable[Phase], ours: Ticket) =
     bid_fair(my_phases(phases, ours), ours.turn.vert)
 
   protected def bid_reservation(tickets: Iterable[Ticket], ours: Ticket) =
-    bid_fair(my_ticket(tickets, ours), ours.turn.vert)
+    bid_fair(greedy_my_ticket(tickets, ours), ours.turn.vert)
 
   // How much should we plan on spending, or actually spend, at this
   // intersection?

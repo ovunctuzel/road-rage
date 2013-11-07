@@ -34,3 +34,5 @@ legend(x="top", c("Auctions with system bids", "Auctions without system bids"),
 hist(100 * auctions_sysbids / priority, col=color1,
      main="Histogram of percent of total budget spent per agent", xlab="Percent of budget spent")
 hist(100 * auctions_no_sysbids / priority, col=color2, add=T)
+legend(x="top", c("Auctions with system bids", "Auctions without system bids"),
+       fill=c(color1, color2))
