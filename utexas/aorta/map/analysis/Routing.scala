@@ -12,7 +12,7 @@ import com.graphhopper.routing.DijkstraBidirectionRef
 import utexas.aorta.map.{Graph, DirectedRoad, Coordinate}
 import utexas.aorta.sim.{IntersectionType, Scenario, RouterType}
 
-import utexas.aorta.common.{Util, Common, Physics, RNG, DirectedRoadID}
+import utexas.aorta.common.{Util, Common, Physics, RNG, DirectedRoadID, Price}
 
 abstract class Router(graph: Graph) {
   def router_type: RouterType.Value
@@ -241,9 +241,8 @@ abstract class AbstractPairAstarRouter(graph: Graph) extends Router(graph) {
   }
 }
 
-class CongestionRouter(graph: Graph) extends AbstractPairAstarRouter(graph) {
-  override def router_type = RouterType.Congestion
-
+// No guess for cost, straight-line distance at 1m/s for freeflow time
+trait SimpleHeuristic extends AbstractPairAstarRouter {
   override def calc_heuristic(state: DirectedRoad, goal: DirectedRoad) =
     (0.0, state.end_pt.dist_to(goal.end_pt))  // TODO divided by some speed limit?
   // Alternate heuristics explore MUCH less states, but the oracles are too
@@ -253,7 +252,34 @@ class CongestionRouter(graph: Graph) extends AbstractPairAstarRouter(graph) {
   /*val table = graph.dijkstra_router.costs_to(to)
   def calc_heuristic(state: DirectedRoad) =
     (0.0, table(state.id))*/
+}
+
+// Score is (number of congested roads, total freeflow time)
+class CongestionRouter(graph: Graph) extends AbstractPairAstarRouter(graph) with SimpleHeuristic {
+  override def router_type = RouterType.Congestion
 
   override def cost_step(turn_cost: Double, state: DirectedRoad, time: Double) =
     (Util.bool2binary(state.is_congested), turn_cost + state.cost(time))
+}
+
+// Score is (max congestion toll, total freeflow time)
+class DumbTollRouter(graph: Graph) extends AbstractPairAstarRouter(graph) with SimpleHeuristic {
+  override def router_type = RouterType.DumbToll
+
+  override def add_cost(a: (Double, Double), b: (Double, Double)) =
+    (math.max(a._1, b._1), a._2 + b._2)
+
+  override def cost_step(turn_cost: Double, state: DirectedRoad, time: Double) =
+    (state.toll.dollars, turn_cost + state.cost(time))
+}
+
+// Score is (number of toll violations, total freeflow time)
+// We have a max_toll we're willing to pay, so we try to never pass through a road with that toll
+class TollThresholdRouter(graph: Graph, max_toll: Price) extends AbstractPairAstarRouter(graph)
+  with SimpleHeuristic
+{
+  override def router_type = RouterType.TollThreshold
+
+  override def cost_step(turn_cost: Double, state: DirectedRoad, time: Double) =
+  (Util.bool2binary(state.toll.dollars > max_toll.dollars), turn_cost + state.cost(time))
 }

@@ -4,7 +4,7 @@
 
 package utexas.aorta.analysis
 
-import utexas.aorta.sim.{Scenario, SystemWalletConfig, OrderingType, WalletType, Simulation}
+import utexas.aorta.sim.{Scenario, SystemWalletConfig, OrderingType, WalletType}
 
 // TODO get a macro or something for main, or have a more flexible cmdline tool
 // likewise for the scripts
@@ -14,6 +14,9 @@ object AuctionExperiment {
   }
 
   // Scenario transformations
+  def enable_bidahead(s: Scenario) = s.copy(
+    agents = s.agents.map(a => a.copy(wallet = a.wallet.copy(bid_ahead = true)))
+  )
   def enable_auctions(s: Scenario) = s.copy(
     intersections = s.intersections.map(_.copy(ordering = OrderingType.Auction))
   )
@@ -36,9 +39,7 @@ class AuctionExperiment(config: ExpConfig) extends SmartExperiment(config) {
   )
 
   override def run() {
-    val fcfs = scenario.copy(
-      agents = scenario.agents.map(a => a.copy(wallet = a.wallet.copy(bid_ahead = true)))
-    )
+    val fcfs = AuctionExperiment.enable_bidahead(scenario)
     val sysbid_base = AuctionExperiment.enable_auctions(fcfs)
     val nosys_base = AuctionExperiment.disable_sysbids(sysbid_base)
 

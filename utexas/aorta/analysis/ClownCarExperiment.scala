@@ -4,41 +4,39 @@
 
 package utexas.aorta.analysis
 
-import utexas.aorta.sim.Simulation
-import utexas.aorta.map.Graph
-import utexas.aorta.map.analysis.{RouteFeatures, Demand}
+import utexas.aorta.sim.{Scenario, OrderingType, WalletType, RouterType}
 
 object ClownCarExperiment {
   def main(args: Array[String]) {
     new ClownCarExperiment(ExpConfig.from_args(args)).run_experiment()
   }
+
+  // Scenario transformations
+  def smart_intersections(s: Scenario) = s.copy(
+    // System bids on by default
+    intersections = s.intersections.map(_.copy(ordering = OrderingType.Auction)),
+    agents = s.agents.map(a => a.copy(wallet = a.wallet.copy(budget = 1, policy = WalletType.Static)))
+  )
+  def use_router(s: Scenario, r: RouterType.Value) = s.copy(
+    agents = s.agents.map(a => a.copy(route = a.route.copy(orig_router = r, rerouter = r)))
+  )
 }
 
 class ClownCarExperiment(config: ExpConfig) extends SmartExperiment(config) {
-  override def get_metrics(info: MetricInfo) = List(new TripTimeMetric(info))
+  // TODO so far, just need to match scale of possible tolls
+  override def scenario_params = Array("budget=0-500")
+
+  override def get_metrics(info: MetricInfo) = List(
+    new TripTimeMetric(info), new OriginalRouteMetric(info), new RoadCongestionMetric(info)
+  )
 
   override def run() {
-    val t1 = run_trial(scenario, "baseline")
+    val baseline = ClownCarExperiment.smart_intersections(scenario)
 
-    // TODO this isnt the clown-car, single-route way... modify the scenario!
-    /*io.notify("Precomputing demand...")
-    Graph.route_chooser = new RouteChooser(
-      graph, Demand.demand_for(scenario, graph), new Predictor(
-        // from the SF model
-        time_model = LinearModel(
-          RouteFeatures(-0.0439, 1.3905, 46.2986, 8.0701, 36.8984, 4.2773, 4.051, -0.6787, -0.009,
-            0.0063, 3.0402), scenario_size_weight = -0.0053, constant = 221.7262
-        ),
-        // made up!
-        externality_model = LinearModel(
-          RouteFeatures.BLANK.copy(congested_road_count = 0.008, queued_turn_count = 0.005,
-            total_avg_waiting_time = 0.009, road_demand = 0.004, intersection_demand = 0.01,
-            agents_enroute = 0.007), scenario_size_weight = 0.003, constant = 0
-        )
-      )
-    )*/
-    val t2 = run_trial(scenario, "clown_car")
-
-    output_data(List(t1, t2), scenario)
+    output_data(List(
+      run_trial(baseline, "baseline"),
+      run_trial(ClownCarExperiment.use_router(baseline, RouterType.DumbToll), "dumb_tolls"),
+      run_trial(ClownCarExperiment.use_router(baseline, RouterType.TollThreshold), "toll_threshold")
+    ), scenario)
   }
 }
