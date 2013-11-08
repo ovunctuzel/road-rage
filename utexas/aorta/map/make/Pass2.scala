@@ -98,33 +98,27 @@ class Pass2(old_graph: PreGraph1) {
 
   private def merge_short_roads() = {
     Util.log("Merging short roads...")
-    // TODO could probably just loop through once... or since edge len monotonically increases here,
-    // keep a stack/queue of TODOs
-    var changed = true
-    while (changed) {
-      graph.edges.find(r => r.length < cfg.min_road_len && !r.is_culdesac) match {
-        case Some(shorty) => {
-          // Remove this short road
-          graph.edges = graph.edges.filter(e => e != shorty)
-          // TODO throw away the metadata on it. :(
-
-          // A weird approach that seems to work: delete the road, but magically
-          // make other roads connected to shorty.from instead connect to
-          // shorty.to. aka, delete the vertex shorty.from.
-          Util.assert_ne(shorty.from, shorty.to)
-          val nuke_vert = shorty.from
-          val replace_vert = shorty.to
-          for (e <- graph.edges) {
-            if (e.from == nuke_vert) {
-              e.from = replace_vert
-            }
-            if (e.to == nuke_vert) {
-              e.to = replace_vert
-            }
+    // Length of roads doesn't actually change by this process, but non-cul-de-sacs could become
+    // cul-de-sacs, so make one pass, but be careful.
+    val shorties = graph.edges.filter(r => r.length < cfg.min_road_len && !r.is_culdesac)
+    for (shorty <- shorties) {
+      // Make sure this shorty is still not a cul-de-sac
+      if (!shorty.is_culdesac) {
+        // TODO throw away the metadata on shorty. :(
+        graph.edges = graph.edges.filter(e => e != shorty)
+        // A weird approach that seems to work: delete the road, but magically
+        // make other roads connected to shorty.from instead connect to
+        // shorty.to. aka, delete the vertex shorty.from.
+        Util.assert_ne(shorty.from, shorty.to)
+        val nuke_vert = shorty.from
+        val replace_vert = shorty.to
+        for (e <- graph.edges) {
+          if (e.from == nuke_vert) {
+            e.from = replace_vert
           }
-        }
-        case None => {
-          changed = false
+          if (e.to == nuke_vert) {
+            e.to = replace_vert
+          }
         }
       }
     }
