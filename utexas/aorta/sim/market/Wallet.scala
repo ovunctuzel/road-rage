@@ -91,13 +91,6 @@ abstract class Wallet(initial_budget: Int, val priority: Int) {
   protected def bid_signal(phases: Iterable[Phase], ours: Ticket): Iterable[(Phase, Int)]
   protected def bid_reservation(tickets: Iterable[Ticket], ours: Ticket): Iterable[(Ticket, Int)]
 
-  // TODO tmp hack
-  protected def my_ticket(tickets: Iterable[Ticket], ours: Ticket) =
-    if (Wallet.tmp_bid_ahead)
-      greedy_my_ticket(tickets, ours)
-    else
-      just_my_ticket(tickets, ours)
-
   // This is for just our ticket.
   protected def just_my_ticket(tickets: Iterable[Ticket], ours: Ticket) =
     tickets.filter(t => t == ours)
@@ -110,42 +103,14 @@ abstract class Wallet(initial_budget: Int, val priority: Int) {
 }
 
 object Wallet {
-  // TODO this is hacky, give fair wallet a parameter
-  var tmp_bid_ahead = false
-
   def unserialize(r: StateReader): Wallet = {
-    val wallet = Factory.make_wallet(WalletType(r.int), r.int, r.int)
+    val wallet = Factory.make_wallet(WalletType(r.int), r.int, r.int, r.bool)
     val num_tooltips = r.int
     wallet.tooltip = Range(0, num_tooltips).map(_ => r.string).toList
     wallet.dark_tooltip = r.bool
     wallet.unserialize(r)
     return wallet
   }
-}
-
-// Bids a random amount on our turn.
-class RandomWallet(initial_budget: Int, p: Int)
-  extends Wallet(initial_budget, p)
-{
-  //////////////////////////////////////////////////////////////////////////////
-  // Queries
-
-  override def toString = s"RND $budget"
-  def wallet_type = WalletType.Random
-
-  private def rng = a.rng
-
-  private def bid_rnd[T](choice: Iterable[T]) =
-    choice.map(thing => (thing, rng.int(0, budget)))
-
-  protected def bid_stop_sign(tickets: Iterable[Ticket], ours: Ticket) =
-    bid_rnd(my_ticket(tickets, ours))
-
-  protected def bid_signal(phases: Iterable[Phase], ours: Ticket) =
-    bid_rnd(my_phases(phases, ours))
-
-  protected def bid_reservation(tickets: Iterable[Ticket], ours: Ticket) =
-    bid_rnd(my_ticket(tickets, ours))
 }
 
 // Always bid the full budget, but never lose any money.
@@ -194,7 +159,7 @@ class FreeriderWallet(p: Int) extends Wallet(0, p) {
 }
 
 // Bid once per intersection some amount proportional to the rest of the trip.
-class FairWallet(initial_budget: Int, p: Int)
+class FairWallet(initial_budget: Int, p: Int, bid_ahead: Boolean)
   extends Wallet(initial_budget, p)
 {
   //////////////////////////////////////////////////////////////////////////////
@@ -235,18 +200,24 @@ class FairWallet(initial_budget: Int, p: Int)
   override def toString = s"FAIR $budget"
   def wallet_type = WalletType.Fair
 
+  protected def my_ticket(tickets: Iterable[Ticket], ours: Ticket) =
+    if (bid_ahead)
+      greedy_my_ticket(tickets, ours)
+    else
+      just_my_ticket(tickets, ours)
+
   private def bid_fair[T](choice: Iterable[T], v: Vertex) = choice.map(
     thing => (thing, math.floor(budget * (weight(v) / total_weight)).toInt)
   )
 
   protected def bid_stop_sign(tickets: Iterable[Ticket], ours: Ticket) =
-    bid_fair(greedy_my_ticket(tickets, ours), ours.turn.vert)
+    bid_fair(my_ticket(tickets, ours), ours.turn.vert)
 
   protected def bid_signal(phases: Iterable[Phase], ours: Ticket) =
     bid_fair(my_phases(phases, ours), ours.turn.vert)
 
   protected def bid_reservation(tickets: Iterable[Ticket], ours: Ticket) =
-    bid_fair(greedy_my_ticket(tickets, ours), ours.turn.vert)
+    bid_fair(my_ticket(tickets, ours), ours.turn.vert)
 
   // How much should we plan on spending, or actually spend, at this
   // intersection?

@@ -30,17 +30,20 @@ class AuctionExperiment(config: ExpConfig) extends SmartExperiment(config) {
   override def scenario_params = Array("budget=0-500")
 
   override def get_metrics(info: MetricInfo) = List(
-    new TripTimeMetric(info), new OriginalRouteMetric(info), new TurnDelayMetric(info),
-    new TurnCompetitionMetric(info), new MoneySpentMetric(info)
+    new TripTimeMetric(info), new OriginalRouteMetric(info), new MoneySpentMetric(info)
+    // TODO these dump way too much right now and are useless
+    // new TurnDelayMetric(info), new TurnCompetitionMetric(info)
   )
 
   override def run() {
-    // The generated scenario is the baseline.
-    val sysbid_base = AuctionExperiment.enable_auctions(scenario)
+    val fcfs = scenario.copy(
+      agents = scenario.agents.map(a => a.copy(wallet = a.wallet.copy(bid_ahead = true)))
+    )
+    val sysbid_base = AuctionExperiment.enable_auctions(fcfs)
     val nosys_base = AuctionExperiment.disable_sysbids(sysbid_base)
 
     output_data(List(
-      run_trial(scenario, "fcfs"),
+      run_trial(fcfs, "fcfs"),
       run_trial(sysbid_base, "auctions_sysbids"),
       run_trial(nosys_base, "auctions_no_sysbids"),
       run_trial(AuctionExperiment.equal_budgets(sysbid_base), "equal_sysbids"),

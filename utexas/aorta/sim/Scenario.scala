@@ -262,18 +262,19 @@ object MkRoute {
   )
 }
 
-case class MkWallet(policy: WalletType.Value, budget: Int, priority: Int) {
-  def make() = Factory.make_wallet(policy, budget, priority)
+case class MkWallet(policy: WalletType.Value, budget: Int, priority: Int, bid_ahead: Boolean) {
+  def make() = Factory.make_wallet(policy, budget, priority, bid_ahead)
 
   def serialize(w: StateWriter) {
     w.int(policy.id)
     w.int(budget)
     w.int(priority)
+    w.bool(bid_ahead)
   }
 }
 
 object MkWallet {
-  def unserialize(r: StateReader) = MkWallet(WalletType(r.int), r.int, r.int)
+  def unserialize(r: StateReader) = MkWallet(WalletType(r.int), r.int, r.int, r.bool)
 }
 
 case class MkIntersection(id: VertexID, policy: IntersectionType.Value,
@@ -401,7 +402,7 @@ object AgentDistribution {
                 Nil, rng.choose(ends).id, rng.new_seed),
         // For now, force the same budget and priority here, and clean it up
         // later.
-        MkWallet(rng.choose(wallets), budget, budget)
+        MkWallet(rng.choose(wallets), budget, budget, false /* bid_ahead */)
       )
     }).toArray
   }
@@ -438,7 +439,7 @@ object OrderingType extends Enumeration {
 
 object WalletType extends Enumeration {
   type WalletType = Value
-  val Random, Static, Freerider, Fair, System = Value
+  val Static, Freerider, Fair, System = Value
 }
 
 object Factory {
@@ -484,11 +485,11 @@ object Factory {
     case OrderingType.Auction => new AuctionOrdering[T]()
   }
 
-  def make_wallet(enum: WalletType.Value, budget: Int, priority: Int) = enum match {
-    case WalletType.Random => new RandomWallet(budget, priority)
+  def make_wallet(enum: WalletType.Value, budget: Int, priority: Int, bid_ahead: Boolean)
+  = enum match {
     case WalletType.Static => new StaticWallet(budget, priority)
     case WalletType.Freerider => new FreeriderWallet(priority)
-    case WalletType.Fair => new FairWallet(budget, priority)
+    case WalletType.Fair => new FairWallet(budget, priority, bid_ahead)
   }
 }
 
