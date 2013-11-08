@@ -10,7 +10,6 @@ general post-thesis plan
     - rename edges as lanes, and directed roads as links?
     - why end_threshold at all?
     - dont mess with gps coords, and have a more boring dist fxn
-    - rm vertex location coordinate? unless for heuristics
     - tests
     - dont savestate the queue/intersection state, usually. agents have tickets.
     - only spawn on rightmost
