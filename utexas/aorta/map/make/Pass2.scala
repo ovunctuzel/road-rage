@@ -6,6 +6,7 @@ package utexas.aorta.map.make
 
 import scala.collection.immutable.TreeMap
 import scala.collection.mutable.{TreeSet => MutableSet}
+import scala.collection.mutable.{MutableList, HashMap}
 
 import utexas.aorta.map.Coordinate
 
@@ -98,6 +99,14 @@ class Pass2(old_graph: PreGraph1) {
 
   private def merge_short_roads() = {
     Util.log("Merging short roads...")
+
+    // This temporary map lets us avoid tons of repeated scans
+    val edges_from_vert = new HashMap[Coordinate, MutableList[PreEdge2]]()
+    edges_from_vert ++= graph.edges.groupBy(_.from)
+    val edges_to_vert = new HashMap[Coordinate, MutableList[PreEdge2]]()
+    edges_to_vert ++= graph.edges.groupBy(_.to)
+    val nil = new MutableList[PreEdge2]()
+
     // Length of roads doesn't actually change by this process, but non-cul-de-sacs could become
     // cul-de-sacs, so make one pass, but be careful.
     val shorties = graph.edges.filter(r => r.length < cfg.min_road_len && !r.is_culdesac)
@@ -112,13 +121,19 @@ class Pass2(old_graph: PreGraph1) {
         Util.assert_ne(shorty.from, shorty.to)
         val nuke_vert = shorty.from
         val replace_vert = shorty.to
-        for (e <- graph.edges) {
-          if (e.from == nuke_vert) {
-            e.from = replace_vert
+        for (e <- edges_from_vert.getOrElse(nuke_vert, nil)) {
+          e.from = replace_vert
+          if (!edges_from_vert.contains(replace_vert)) {
+            edges_from_vert(replace_vert) = new MutableList[PreEdge2]()
           }
-          if (e.to == nuke_vert) {
-            e.to = replace_vert
+          edges_from_vert(replace_vert) += e
+        }
+        for (e <- edges_to_vert.getOrElse(nuke_vert, nil)) {
+          e.to = replace_vert
+          if (!edges_to_vert.contains(replace_vert)) {
+            edges_to_vert(replace_vert) = new MutableList[PreEdge2]()
           }
+          edges_to_vert(replace_vert) += e
         }
       }
     }
