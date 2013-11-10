@@ -3,7 +3,7 @@ source("misc/common.r")
 pdf("time_report.pdf")
 
 # Definitions
-colors <- c("purple", "red", "blue", "green", "orangered", "cyan", "greenyellow")
+colors <- c("purple", "orangered", "turquoise2", "chartreuse1", "red4", "mediumblue", "darkgreen")
 
 mode_labels=c("FCFS\n", "Auctions\n", "Equal\n", "Fixed\n", "Auctions\n+sysbid", "Equal\n+sysbid",
               "Fixed\n+sysbid")
