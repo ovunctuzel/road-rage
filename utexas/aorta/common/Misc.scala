@@ -9,7 +9,7 @@ import java.io.{FileWriter, Serializable, File, PrintWriter}
 import scala.annotation.elidable
 import scala.annotation.elidable.ASSERTION
 import java.awt.Color
-import scala.collection.mutable.{HashMap => MutableMap}
+import scala.collection.mutable
 import scala.sys.process._
 
 import utexas.aorta.map.Graph
@@ -163,7 +163,7 @@ object Common {
 }
 
 object Flags {
-  val values = new MutableMap[String, String]()
+  val values = new mutable.HashMap[String, String]()
 
   def set(name: String, value: String) {
     values(name) = value
@@ -236,6 +236,24 @@ abstract class MathVector[T <: MathVector[T]](val value: Array[Double]) {
   def dot(other: MathVector[T]): Double = {
     Util.assert_eq(size, other.size)
     return value.zip(other.value).map(pair => pair._1 + pair._2).sum
+  }
+}
+
+trait ListenerPattern[T] {
+  //////////////////////////////////////////////////////////////////////////////
+  // State
+
+  private val listeners = new mutable.ListBuffer[(String, T => Any)]()
+
+  //////////////////////////////////////////////////////////////////////////////
+  // Actions
+
+  def tell_listeners(ev: T) = listeners.foreach(l => l._2(ev))
+  def listen(tag: String, subscriber: T => Any) = {
+    listeners += ((tag, subscriber))
+  }
+  def unlisten(tag: String) = {
+    listeners --= listeners.filter(l => l._1 != tag)
   }
 }
 

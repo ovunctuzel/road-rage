@@ -10,7 +10,8 @@ import scala.collection.mutable.{ImmutableMapAdaptor, ListBuffer, HashSet}
 import utexas.aorta.map.{Edge, DirectedRoad, Traversable, Turn, Vertex, Graph}
 import utexas.aorta.map.analysis.{Router, DijkstraRouter}
 
-import utexas.aorta.common.{Util, RNG, Common, cfg, StateWriter, StateReader, TurnID}
+import utexas.aorta.common.{Util, RNG, Common, cfg, StateWriter, StateReader, TurnID,
+                            ListenerPattern}
 
 // Get a client to their goal by any means possible.
 abstract class Route(val goal: DirectedRoad, rng: RNG) extends ListenerPattern[Route_Event] {

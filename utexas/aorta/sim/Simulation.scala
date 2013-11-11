@@ -16,7 +16,8 @@ import utexas.aorta.map.{Graph, Road, Edge, Vertex, Turn}
 import utexas.aorta.sim.policies.Phase
 
 import utexas.aorta.ui.ReplayDiffScheme
-import utexas.aorta.common.{Util, Common, cfg, StateWriter, StateReader, Flags, AgentID}
+import utexas.aorta.common.{Util, Common, cfg, StateWriter, StateReader, Flags, AgentID,
+                            ListenerPattern}
 import utexas.aorta.analysis.{Heartbeat_Stat, Scenario_Stat, ReplayChecker, Measurement}
 
 // TODO take just a scenario, or graph and scenario?
@@ -311,24 +312,6 @@ object Simulation {
       Policy.unserialize(v.intersection.policy, r, sim)
     }
     return sim
-  }
-}
-
-trait ListenerPattern[T] {
-  //////////////////////////////////////////////////////////////////////////////
-  // State
-
-  private val listeners = new ListBuffer[(String, T => Any)]()
-
-  //////////////////////////////////////////////////////////////////////////////
-  // Actions
-
-  def tell_listeners(ev: T) = listeners.foreach(l => l._2(ev))
-  def listen(tag: String, subscriber: T => Any) = {
-    listeners += ((tag, subscriber))
-  }
-  def unlisten(tag: String) = {
-    listeners --= listeners.filter(l => l._1 != tag)
   }
 }
 

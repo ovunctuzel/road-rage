@@ -4,9 +4,6 @@
 
 package utexas.aorta.map.make
 
-import scala.io.Source
-import scala.xml.MetaData
-import scala.xml.pull._
 import scala.collection.mutable.{HashMap, MutableList, HashSet}
 
 import utexas.aorta.map.Coordinate
@@ -14,19 +11,33 @@ import utexas.aorta.map.Coordinate
 import utexas.aorta.common.Util
 
 class Pass1(fn: String) {
-  val id_to_node = new HashMap[String, OSM_Node]()
-  val id_to_way = new HashMap[String, OSM_Way]()
-
   // How many OSM roads reference a point?
-  val id_to_uses = new HashMap[String, Int]()
+  val node_uses = new HashMap[OsmNode, Int]()
+  val osm = new OsmReader(fn)
   val graph = new PreGraph1()
 
+  osm.listen("pass1", _ match {
+    case EV_OSM_Node(node) => node_uses(node) = 0
+    case EV_OSM_Way(way) if !skip(way) => {
+      way.refs.foreach(node => node_uses(node) += 1)
+      graph.edges += PreEdge1(
+        way.name, way.road_type, way.oneway, way.id, way.refs.map(_.coordinate), way.lanes
+      )
+    }
+    case EV_OSM_Relation(relation) if skip_members(relation) => {
+      // We won't worry about the vertices associated with these obselete
+      // edges; they'll only survive to the end if they're referenced by
+      // something else.
+      graph.remove_edges(relation.member_ways.map(_.id).toSet)
+    }
+    case _ =>
+  })
+
   def run(): PreGraph1 = {
-    // Parse the XML
-    match_events(new XMLEventReader(Source.fromFile(fn, "UTF-8")))
+    osm.parse()
     // Vertices are defined as nodes used by >1 way
-    for ((id, uses) <- id_to_uses if uses >= 2) {
-      graph.add_vertex(id_to_node(id).coordinate)
+    for ((node, uses) <- node_uses if uses >= 2) {
+      graph.add_vertex(node.coordinate)
     }
     // The tip and tail of every edge are always vertices
     for (edge <- graph.edges) {
@@ -34,206 +45,35 @@ class Pass1(fn: String) {
       graph.add_vertex(edge.points.last)
     }
     graph.normalize()
-    Util.log(s"OSM nodes: ${id_to_node.size}, ways: ${graph.edges.size}")
+    Util.log(s"OSM nodes: ${osm.id_to_node.size}, ways: ${graph.edges.size}")
     return graph
   }
 
-  // XML parsing stuff below.
-  // TODO split me out into a separate class, and broadcast events. id_to_node moves there,
-  // id_to_uses stays here. then refactor once its done.
-  type XMLIter = BufferedIterator[XMLEvent]
-
-  private def get(attribs: MetaData, key: String): String = attribs.get(key).head.text
-  private def get(attribs: MetaData, key: String, default: String): String =
-    attribs.get(key) match {
-      case Some(ls) => ls.head.text
-      case None => default
+  def skip(way: OsmWay): Boolean = {
+    if (way.tags.getOrElse("name", "").isEmpty && way.road_type == "service") {
+      // TODO wacky alleys, driveways, cemetary paths. when they have a name, they're valid.
+      return true
     }
-
-  private def read_tags(xml: XMLIter): Map[String, String] = {
-    val tags = new HashMap[String, String]()
-    while (xml.hasNext) {
-      xml.head match {
-        case EvElemStart(_, "tag", attribs, _) => {
-          tags(get(attribs, "k")) = get(attribs, "v")
-          xml.next()
-        }
-        case EvElemEnd(_, "tag") => xml.next()
-        case EvText(_) => xml.next()
-        case _ => return tags.toMap
-      }
+    // TODO break down the ignore_me set for these cases, be really precise using the wiki.
+    if (way.tags.keys.filter(way.tags(_) != "no").toSet.intersect(Pass1.ignore_me).nonEmpty) {
+      return true
     }
-    throw new IllegalArgumentException("XML ended with tags")
+    if (Pass1.ignore_me(way.road_type)) {
+      return true
+    }
+    return false
   }
 
-  case class OSM_Node(id: String, lon: Double, lat: Double, tags: Map[String, String]) {
-    def coordinate = new Coordinate(lon, lat)
-  }
-
-  private def read_node(attribs: MetaData, xml: XMLIter): Option[OSM_Node] = {
-    if (get(attribs, "visible", "true") != "true" || get(attribs, "action", "modify") != "modify") {
-      return None
+  def skip_members(rel: OsmRelation): Boolean = {
+    // TODO break down the ignore_me set for these cases, be really precise using the wiki.
+    if (rel.tags.keys.filter(rel.tags(_) != "no").toSet.intersect(Pass1.ignore_me).nonEmpty) {
+      return true
     }
-    val tags = read_tags(xml)
-    xml.next match {
-      case EvElemEnd(_, "node") =>
+    // TODO other tags? highway?
+    if (Pass1.ignore_me(rel.tags.getOrElse("type", ""))) {
+      return true
     }
-    val node = OSM_Node(
-      get(attribs, "id"), get(attribs, "lon").toDouble, get(attribs, "lat").toDouble, tags
-    )
-    id_to_node(node.id) = node
-    return Some(node)
-  }
-
-  case class OSM_Way(id: String, refs: List[OSM_Node], tags: Map[String, String]) {
-    def name = tags.getOrElse("name", s"NO-NAME (ID $id)")
-    def road_type = tags.getOrElse("highway", "null")
-    def oneway = tags.getOrElse("oneway", "") == "yes" || Pass1.forced_oneways(road_type)
-    // TODO fancy "x; y" format... handle eventually
-    def lanes = try {
-      Some(tags.getOrElse("lanes", "").toInt)
-    } catch {
-      case _: NumberFormatException => None
-    }
-    def skip_as_edge: Boolean = {
-      if (tags.getOrElse("name", "").isEmpty && road_type == "service") {
-        // TODO wacky alleys, driveways, cemetary paths. when they have a name, they're valid.
-        return true
-      }
-      // TODO break down the ignore_me set for these cases, be really precise using the wiki.
-      if (tags.keys.filter(key => tags(key) != "no").toSet.intersect(Pass1.ignore_me).nonEmpty) {
-        return true
-      }
-      if (Pass1.ignore_me(road_type)) {
-        return true
-      }
-      return false
-    }
-  }
-
-  private def read_way(attribs: MetaData, xml: XMLIter): Option[OSM_Way] = {
-    if (get(attribs, "visible", "true") != "true" || get(attribs, "action", "modify") != "modify") {
-      return None
-    }
-    // TODO Do tags go before or after nodes? Interspersed?
-    val refs = read_refs(xml)
-    val tags = read_tags(xml)
-    xml.next match {
-      case EvElemEnd(_, "way") =>
-    }
-
-    val way = OSM_Way(get(attribs, "id"), refs, tags)
-    id_to_way(way.id) = way
-    return Some(way)
-  }
-
-  private def read_refs(xml: XMLIter): List[OSM_Node] = {
-    val ls = new MutableList[OSM_Node]()
-    while (xml.hasNext) {
-      xml.head match {
-        case EvElemStart(_, "nd", attribs, _) => {
-          ls += id_to_node(get(attribs, "ref"))
-          // TODO handle when that node's missing
-          xml.next()
-        }
-        case EvElemEnd(_, "nd") => xml.next()
-        case EvText(_) => xml.next()
-        case _ => return ls.toList
-      }
-    }
-    throw new IllegalArgumentException("XML ended with node refs")
-  }
-
-  case class OSM_Relation(
-    id: String, member_ways: List[OSM_Way], member_nodes: List[OSM_Node], tags: Map[String, String]
-  ) {
-    def skip_members: Boolean = {
-      // TODO break down the ignore_me set for these cases, be really precise using the wiki.
-      if (tags.keys.filter(key => tags(key) != "no").toSet.intersect(Pass1.ignore_me).nonEmpty) {
-        return true
-      }
-      // TODO other tags? highway?
-      if (Pass1.ignore_me(tags.getOrElse("type", ""))) {
-        return true
-      }
-      return false
-    }
-  }
-
-  private def read_relation(attribs: MetaData, xml: XMLIter): Option[OSM_Relation] = {
-    if (get(attribs, "visible", "true") != "true" || get(attribs, "action", "modify") != "modify") {
-      return None
-    }
-    // TODO Do tags go before or after nodes? Interspersed?
-    val (ways, nodes) = try {
-      read_members(xml)
-    } catch {
-      case _: java.util.NoSuchElementException => return None
-    }
-    val tags = read_tags(xml)
-    xml.next match {
-      case EvElemEnd(_, "relation") =>
-    }
-
-    return Some(OSM_Relation(get(attribs, "id"), ways, nodes, tags))
-  }
-
-  private def read_members(xml: XMLIter): (List[OSM_Way], List[OSM_Node]) = {
-    val ways = new MutableList[OSM_Way]()
-    val nodes = new MutableList[OSM_Node]()
-    while (xml.hasNext) {
-      xml.head match {
-        case EvElemStart(_, "member", attribs, _) => {
-          (get(attribs, "type"), get(attribs, "ref")) match {
-            case ("way", ref) => ways += id_to_way(ref)
-            // TODO handle when that node's missing
-            case ("node", ref) => nodes += id_to_node(ref)
-            case ("relation", _) => // TODO super-relations! whoa!
-          }
-          xml.next()
-        }
-        case EvElemEnd(_, "member") => xml.next()
-        case EvText(_) => xml.next()
-        case _ => return (ways.toList, nodes.toList)
-      }
-    }
-    throw new IllegalArgumentException("XML ended with member relations")
-  }
-
-  def match_events(event_reader: XMLEventReader) {
-    val xml = event_reader.buffered
-    var toplevel_count = 0
-    // TODO emit events instead.
-    while (xml.hasNext) {
-      xml.next match {
-        case EvElemStart(_, "node", attribs, _) => read_node(attribs, xml).foreach(node => {
-          id_to_uses(node.id) = 0  // no edges reference it yet
-        })
-        case EvElemStart(_, "way", attribs, _) => read_way(attribs, xml).foreach(way => {
-          if (!way.skip_as_edge) {
-            way.refs.foreach(node => id_to_uses(node.id) += 1)
-            graph.edges += PreEdge1(
-              way.name, way.road_type, way.oneway, way.id, way.refs.map(_.coordinate), way.lanes
-            )
-          }
-        })
-        case EvElemStart(_, "relation", attribs, _) => read_relation(attribs, xml).foreach(rel => {
-          if (rel.skip_members) {
-            // We won't worry about the vertices associated with these obselete
-            // edges; they'll only survive to the end if they're referenced by
-            // something else.
-            graph.remove_edges(rel.member_ways.map(_.id).toSet)
-          }
-        })
-        case _ => // TODO make sure we're missing nothing
-      }
-      toplevel_count += 1
-      if (toplevel_count % 1000 == 0) {
-        // it's expensive to spam System.out, believe it or not :P
-        print("\r" + Util.indent + "Processed %,d XML top-level objects".format(toplevel_count))
-      }
-    }
-    println("")
+    return false
   }
 }
 
