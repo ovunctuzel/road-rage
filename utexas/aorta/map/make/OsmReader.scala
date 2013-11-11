@@ -12,11 +12,21 @@ import scala.collection.mutable
 import utexas.aorta.map.Coordinate
 import utexas.aorta.common.ListenerPattern
 
-case class OsmNode(id: String, lon: Double, lat: Double, tags: Map[String, String]) {
+trait OsmElement {
+  val tags: Map[String, String]
+  def points: List[Coordinate]
+}
+final case class EV_OSM(elem: OsmElement)
+
+case class OsmNode(id: String, lon: Double, lat: Double, tags: Map[String, String])
+  extends OsmElement
+{
+  override def points = List(coordinate)
   def coordinate = new Coordinate(lon, lat)
 }
 
-case class OsmWay(id: String, refs: List[OsmNode], tags: Map[String, String]) {
+case class OsmWay(id: String, refs: List[OsmNode], tags: Map[String, String]) extends OsmElement {
+  override def points = refs.map(_.coordinate)
   def name = tags.getOrElse("name", s"NO-NAME (ID $id)")
   def road_type = tags.getOrElse("highway", "null")
   def oneway = tags.getOrElse("oneway", "") == "yes" || Pass1.forced_oneways(road_type)
@@ -30,14 +40,11 @@ case class OsmWay(id: String, refs: List[OsmNode], tags: Map[String, String]) {
 
 case class OsmRelation(
   id: String, member_ways: List[OsmWay], member_nodes: List[OsmNode], tags: Map[String, String]
-)
+) extends OsmElement {
+  override def points = member_ways.flatMap(_.points) ++ member_nodes.map(_.coordinate)
+}
 
-trait OsmEV
-case class EV_OSM_Node(node: OsmNode) extends OsmEV
-case class EV_OSM_Way(way: OsmWay) extends OsmEV
-case class EV_OSM_Relation(relation: OsmRelation) extends OsmEV
-
-class OsmReader(fn: String) extends ListenerPattern[OsmEV] {
+class OsmReader(fn: String) extends ListenerPattern[EV_OSM] {
   val id_to_node = new mutable.HashMap[String, OsmNode]()
   val id_to_way = new mutable.HashMap[String, OsmWay]()
 
@@ -47,13 +54,13 @@ class OsmReader(fn: String) extends ListenerPattern[OsmEV] {
     while (xml.hasNext) {
       xml.next match {
         case EvElemStart(_, "node", attribs, _) => read_node(attribs, xml).foreach(node => {
-          tell_listeners(EV_OSM_Node(node))
+          tell_listeners(EV_OSM(node))
         })
         case EvElemStart(_, "way", attribs, _) => read_way(attribs, xml).foreach(way => {
-          tell_listeners(EV_OSM_Way(way))
+          tell_listeners(EV_OSM(way))
         })
         case EvElemStart(_, "relation", attribs, _) => read_relation(attribs, xml).foreach(rel => {
-          tell_listeners(EV_OSM_Relation(rel))
+          tell_listeners(EV_OSM(rel))
         })
         case _ => // TODO make sure we're missing nothing
       }

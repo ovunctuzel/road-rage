@@ -17,14 +17,14 @@ class Pass1(fn: String, bldgs: BuildingScraper) {
   val graph = new PreGraph1()
 
   osm.listen("pass1", _ match {
-    case EV_OSM_Node(node) => node_uses(node) = 0
-    case EV_OSM_Way(way) if !skip(way) => {
+    case EV_OSM(node: OsmNode) => node_uses(node) = 0
+    case EV_OSM(way: OsmWay) if !skip(way) => {
       way.refs.foreach(node => node_uses(node) += 1)
       graph.edges += PreEdge1(
         way.name, way.road_type, way.oneway, way.id, way.refs.map(_.coordinate), way.lanes
       )
     }
-    case EV_OSM_Relation(relation) if skip_members(relation) => {
+    case EV_OSM(relation: OsmRelation) if skip_members(relation) => {
       // We won't worry about the vertices associated with these obselete
       // edges; they'll only survive to the end if they're referenced by
       // something else.
