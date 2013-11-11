@@ -8,6 +8,7 @@ import scala.io.Source
 import scala.xml.MetaData
 import scala.xml.pull._
 import scala.collection.mutable
+import java.util.NoSuchElementException
 
 import utexas.aorta.map.Coordinate
 import utexas.aorta.common.ListenerPattern
@@ -62,7 +63,7 @@ class OsmReader(fn: String) extends ListenerPattern[EV_OSM] {
         case EvElemStart(_, "relation", attribs, _) => read_relation(attribs, xml).foreach(rel => {
           tell_listeners(EV_OSM(rel))
         })
-        case _ => // TODO make sure we're missing nothing
+        case _ =>
       }
       toplevel_count += 1
       if (toplevel_count % 1000 == 0) {
@@ -118,7 +119,11 @@ class OsmReader(fn: String) extends ListenerPattern[EV_OSM] {
       return None
     }
     // Is this always the order?
-    val refs = read_refs(xml)
+    val refs = try {
+      read_refs(xml)
+    } catch {
+      case _: NoSuchElementException => return None
+    }
     val tags = read_tags(xml)
     xml.next match {
       case EvElemEnd(_, "way") =>
@@ -134,7 +139,6 @@ class OsmReader(fn: String) extends ListenerPattern[EV_OSM] {
     while (xml.hasNext) {
       xml.head match {
         case EvElemStart(_, "nd", attribs, _) => {
-          // TODO handle when that node's missing
           ls += id_to_node(get(attribs, "ref"))
           xml.next()
         }
@@ -154,7 +158,7 @@ class OsmReader(fn: String) extends ListenerPattern[EV_OSM] {
     val (ways, nodes) = try {
       read_members(xml)
     } catch {
-      case _: java.util.NoSuchElementException => return None
+      case _: NoSuchElementException => return None
     }
     val tags = read_tags(xml)
     xml.next match {
@@ -173,7 +177,7 @@ class OsmReader(fn: String) extends ListenerPattern[EV_OSM] {
           (get(attribs, "type"), get(attribs, "ref")) match {
             case ("way", ref) => ways += id_to_way(ref)
             case ("node", ref) => nodes += id_to_node(ref)
-            case ("relation", _) => // TODO super-relations! whoa!
+            case ("relation", _) => // super-relations! whoa!
           }
           xml.next()
         }
