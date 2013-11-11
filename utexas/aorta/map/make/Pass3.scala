@@ -11,9 +11,10 @@ import scala.collection.mutable.{Set => MutableSet}
 import scala.collection.mutable.MultiMap
 import scala.collection.mutable.ListBuffer
 
-import utexas.aorta.map.{Road, Edge, Vertex, Turn, Line, Coordinate, Traversable}
+import utexas.aorta.map.{Road, Edge, Vertex, Turn, Line, Coordinate, Traversable, DirectedRoad,
+                         Direction}
 
-import utexas.aorta.common.{Util, Common, cfg, TurnID}
+import utexas.aorta.common.{Util, Common, cfg, TurnID, DirectedRoadID}
 
 // TODO split this file up
 
@@ -100,9 +101,19 @@ class Pass3(old_graph: PreGraph2) {
     //graph.vertices.foreach(v => adjust_lines(v))
 
     // Recalculate length. TODO temporary approach. set_lines redoes the length.
-    graph.traversables.foreach(t => {
-      t.set_lines(t.lines)
-    })
+    graph.traversables.foreach(t => t.set_lines(t.lines))
+
+    // Another hack to restore directed roads, which get set to None when we first create the road
+    // before its lanes.
+    val dr_id = new DirectedRoadID(-1) // the IDs don't matter
+    for (r <- graph.roads) {
+      if (r.pos_lanes.nonEmpty) {
+        r.pos_group = Some(new DirectedRoad(r, dr_id, Direction.POS))
+      }
+      if (r.neg_lanes.nonEmpty) {
+        r.neg_group = Some(new DirectedRoad(r, dr_id, Direction.NEG))
+      }
+    }
 
     return graph
   }

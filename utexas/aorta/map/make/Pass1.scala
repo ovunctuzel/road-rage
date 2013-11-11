@@ -10,7 +10,7 @@ import utexas.aorta.map.Coordinate
 
 import utexas.aorta.common.Util
 
-class Pass1(fn: String, bldgs: BuildingScraper) {
+class Pass1(fn: String) {
   // How many OSM roads reference a point?
   val node_uses = new HashMap[OsmNode, Int]()
   val osm = new OsmReader(fn)
@@ -32,7 +32,6 @@ class Pass1(fn: String, bldgs: BuildingScraper) {
     }
     case _ =>
   })
-  bldgs.scrape(osm)
 
   def run(): PreGraph1 = {
     osm.parse()

@@ -110,6 +110,7 @@ class Edge(
     Util.log("Succs: " + next_turns)
     Util.log("Preds: " + prev_turns)
     Util.log(s"From $from to $to")
+    Util.log(s"${directed_road.residential_count} houses, ${directed_road.shop_count} shops")
   }
 
   // For debug only
@@ -160,6 +161,10 @@ object Direction extends Enumeration {
 class DirectedRoad(val road: Road, var id: DirectedRoadID, val dir: Direction.Value)
   extends AbstractEdge with Ordered[DirectedRoad]
 {
+  // TODO lets figure out how to build immutable stuff.
+  var residential_count = 0
+  var shop_count = 0
+
   override def toString = "%s's %s lanes (DR %s)".format(road, dir, id)
   override def compare(other: DirectedRoad) = id.int.compare(other.id.int)
 

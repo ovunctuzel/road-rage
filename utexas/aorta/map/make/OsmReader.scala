@@ -67,7 +67,7 @@ class OsmReader(fn: String) extends ListenerPattern[EV_OSM] {
       toplevel_count += 1
       if (toplevel_count % 1000 == 0) {
         // it's expensive to spam System.out, believe it or not :P
-        print(s"\rProcessed %,d XML top-level objects".format(toplevel_count))
+        print(s"\rProcessed %,d top-level XML objects".format(toplevel_count))
       }
     }
     println("")

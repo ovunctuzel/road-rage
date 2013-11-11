@@ -84,6 +84,10 @@ class Road(
       w.double(pt.x)
       w.double(pt.y)
     }
+    w.int(pos_group.map(_.residential_count).getOrElse(0))
+    w.int(pos_group.map(_.shop_count).getOrElse(0))
+    w.int(neg_group.map(_.residential_count).getOrElse(0))
+    w.int(neg_group.map(_.shop_count).getOrElse(0))
   }
 
   def setup(g: GraphLike) {
@@ -108,6 +112,7 @@ class Road(
 
   def all_lanes() = pos_lanes ++ neg_lanes
   def other_vert(v: Vertex) = if (v == v1) v2 else v1
+  def directed_roads = List(pos_group, neg_group).flatten
 
   def is_oneway = pos_lanes.length == 0 || neg_lanes.length == 0
   // TODO assert is_oneway, maybe. or maybe even case class...
@@ -139,11 +144,17 @@ class Road(
 }
 
 object Road {
-  def unserialize(r: StateReader) = new Road(
-    new RoadID(r.int), r.double, r.string, r.string, r.string,
-    new VertexID(r.int), new VertexID(r.int),
-    Range(0, r.int).map(_ => new Coordinate(r.double, r.double)).toArray
-  )
+  def unserialize(r: StateReader): Road = {
+    val road = new Road(
+      new RoadID(r.int), r.double, r.string, r.string, r.string, new VertexID(r.int),
+      new VertexID(r.int), Range(0, r.int).map(_ => new Coordinate(r.double, r.double)).toArray
+    )
+    road.pos_group.get.residential_count = r.int
+    road.pos_group.get.shop_count = r.int
+    road.neg_group.get.residential_count = r.int
+    road.neg_group.get.shop_count = r.int
+    return road
+  }
 
   def road_len(pts: Iterable[Coordinate]) =
     pts.zip(pts.tail).map(tupled((p1, p2) => new Line(p1, p2).length)).sum
