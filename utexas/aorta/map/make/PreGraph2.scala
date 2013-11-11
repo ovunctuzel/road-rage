@@ -6,7 +6,6 @@ package utexas.aorta.map.make
 
 import scala.collection.mutable.ListBuffer
 import scala.collection.mutable.HashMap
-import scala.collection.mutable.MutableList
 
 import utexas.aorta.map.{Coordinate, Road}
 
@@ -55,7 +54,7 @@ class PreGraph2(old_graph: PreGraph1) {
   }
 
   // None if it's already there
-  def find_or_make_edge(points: MutableList[Coordinate], edge_dat: PreEdge1): Option[PreEdge2] =
+  def find_or_make_edge(points: List[Coordinate], edge_dat: PreEdge1): Option[PreEdge2] =
   {
     val v1 = points.head
     val v2 = points.last
@@ -78,7 +77,7 @@ class PreGraph2(old_graph: PreGraph1) {
 }
 
 class PreEdge2(var from: Coordinate, var to: Coordinate,
-               val points: MutableList[Coordinate], val dat: PreEdge1)
+               val points: List[Coordinate], val dat: PreEdge1)
   extends Ordered[PreEdge2]
 {
   def merge_dat(other: PreEdge2) = new PreEdge1(
