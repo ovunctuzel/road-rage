@@ -3,6 +3,7 @@
 general post-thesis plan
   1) document code, write tutorials, make a website, advertise on osm wiki
   2) cleanup code
+    - mutable collections explicitly
     - rm birth tick from agents
     - replace old experiment system with new one
       - and even record the parameters of the runs
