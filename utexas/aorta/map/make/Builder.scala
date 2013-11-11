@@ -22,8 +22,9 @@ object Builder {
       throw new Exception(s"$input must end with .osm")
     }
     val output = input.replace("osm/", "maps/").replace(".osm", ".map")
+    val bldgs = new BuildingScraper()
 
-    val graph1 = new Pass1(input).run()
+    val graph1 = new Pass1(input, bldgs).run()
     Graph.set_params(graph1.width, graph1.height, graph1.offX, graph1.offY, graph1.scale)
     val graph2 = new Pass2(graph1).run()
     val graph3 = new Pass3(graph2).run()
