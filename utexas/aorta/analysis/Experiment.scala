@@ -118,24 +118,25 @@ abstract class SmartExperiment(config: ExpConfig) extends Experiment(config) {
   protected def get_metrics(info: MetricInfo): List[Metric]
 
   def run_experiment() {
-    try {
-      run()
-      io.notify("Success")
-    } catch {
-      case e: Throwable => {
-        io.notify(s"BORKED - $e")
-        val fn = "buggy_" + graph.basename
-        Util.blockingly_run(Seq("mv", "-f", scenario.name, fn))
-        // TODO also upload latest savestate, and name everything reasonably
-        io.upload(fn)
-      }
-    }
+    run()
+    io.notify("Success")
   }
 
   protected def run_trial(s: Scenario, mode: String): List[Metric] = {
     val sim = s.make_sim().setup()
     val metrics = get_metrics(MetricInfo(sim, mode, io, uid))
-    simulate(sim)
+    try {
+      simulate(sim)
+    } catch {
+      case e: Throwable => {
+        io.notify(s"BORKED - $e")
+        val fn = "buggy_" + graph.basename + "_" + mode
+        Util.blockingly_run(Seq("mv", "-f", scenario.name, fn))
+        // TODO also upload latest savestate, and name everything reasonably
+        io.upload(fn)
+        throw e
+      }
+    }
     return metrics
   }
 
