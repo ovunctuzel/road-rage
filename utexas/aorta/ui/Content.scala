@@ -103,8 +103,7 @@ class DrawRoad(val road: Road, state: GuiState) {
     pair._1.x, pair._1.y, pair._2.x, pair._2.y
   ))
 
-  def hits(bbox: Rectangle2D.Double) =
-    center_lines.find(l => l.intersects(bbox)).isDefined
+  def hits(bbox: Rectangle2D.Double) = center_lines.exists(l => l.intersects(bbox))
 
   def render_road() {
     state.g2d.setColor(color)
@@ -165,8 +164,7 @@ class DrawOneWayRoad(r: Road, state: GuiState) extends DrawRoad(r, state) {
 class DrawEdge(val edge: Edge, state: GuiState) {
   private val lines = edge.lines.map(shift_edge_line)
 
-  def hits(bbox: Rectangle2D.Double) =
-    lines.find(l => l.intersects(bbox)).isDefined
+  def hits(bbox: Rectangle2D.Double) = lines.exists(l => l.intersects(bbox))
 
   def render() {
     // TODO forget about the arrows, unless maybe highlighted?

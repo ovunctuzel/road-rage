@@ -44,8 +44,8 @@ object FocusVertexScheme {
   def color(d: DrawDriver, state: GuiState) = state.current_obj match {
     case Some(v: Vertex) => d.agent.all_tickets(v.intersection).toList match {
       case Nil => Color.GRAY
-      case ls if ls.find(_.is_approved).isDefined => Color.GREEN
-      case ls if ls.find(_.is_interruption).isDefined => Color.YELLOW
+      case ls if ls.exists(_.is_approved) => Color.GREEN
+      case ls if ls.exists(_.is_interruption) => Color.YELLOW
       case _ => Color.RED
     }
     case _ => CameraScheme.color(d, state)

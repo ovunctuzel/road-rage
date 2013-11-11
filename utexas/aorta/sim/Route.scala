@@ -311,9 +311,7 @@ class PathRoute(goal: DirectedRoad, orig_router: Router, private var rerouter: R
   }
 
   private def candidate_lanes(from: Edge, dest: DirectedRoad) =
-    from.other_lanes.filter(
-      f => f.succs.find(t => t.directed_road == dest).isDefined
-    ).toList
+    from.other_lanes.filter(f => f.succs.exists(t => t.directed_road == dest)).toList
 }
 
 // DOOMED TO WALK FOREVER (until we happen to reach our goal)

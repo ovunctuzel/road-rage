@@ -82,9 +82,9 @@ class CommonCasePolicy(intersection: Intersection,
     accepted.filter(t => !common_turns.contains(t.turn))
 
   private def commoner_blocks(turn: Turn) =
-    accepted_commoners.find(t => t.turn.conflicts_with(turn)).isDefined
+    accepted_commoners.exists(t => t.turn.conflicts_with(turn))
   private def rare_blocks(turn: Turn) =
-    accepted_rares.find(t => t.turn.conflicts_with(turn)).isDefined
+    accepted_rares.exists(t => t.turn.conflicts_with(turn))
 
   // Rare agents must be the head of their queue and be close enough to us (in
   // case they looked ahead over small edges).
@@ -106,7 +106,7 @@ class CommonCasePolicy(intersection: Intersection,
       val major_bonus = List(t.from.road, t.to.road).filter(_.is_major).size
       t.conflicts.size + (5 * major_bonus)
     }).foreach(new_turn => {
-      if (!turns.find(t => t.conflicts_with(new_turn)).isDefined) {
+      if (!turns.exists(t => t.conflicts_with(new_turn))) {
         turns += new_turn
       }
     })

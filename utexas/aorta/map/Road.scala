@@ -129,7 +129,7 @@ class Road(
   }
 
   // For debug only
-  def doomed = all_lanes.find(e => e.doomed).isDefined
+  def doomed = all_lanes.exists(e => e.doomed)
 
   // TODO better heuristic, based on how much this extended road touches other
   // roads

@@ -43,8 +43,7 @@ class ReservationPolicy(intersection: Intersection,
     }
   }
 
-  def accepted_conflicts(turn: Turn)
-    = accepted.find(t => t.turn.conflicts_with(turn)).isDefined
+  def accepted_conflicts(turn: Turn) = accepted.exists(t => t.turn.conflicts_with(turn))
 
   // TODO and are reasonably close? otherwise somebody who looks ahead a tick
   // earlier than another gets an advantage, even if theyre really far away

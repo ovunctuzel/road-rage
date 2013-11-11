@@ -116,7 +116,7 @@ class SignalPolicy(intersection: Intersection,
     if (ordering.ordering_type == OrderingType.FIFO)
       phase_order
     else
-      phase_order.filter(p => p.all_tickets.find(t => !t.turn_blocked).isDefined)
+      phase_order.filter(p => p.all_tickets.exists(t => !t.turn_blocked))
 
   override def current_greens =
     if (in_overtime)
@@ -215,7 +215,7 @@ object Phase {
     val g = new MutableSet[Turn]()
     g ++= group
     for (turn <- turns) {
-      if (!g.find(t => t.conflicts_with(turn)).isDefined) {
+      if (!g.exists(t => t.conflicts_with(turn))) {
         g += turn
       }
     }
@@ -237,7 +237,7 @@ object Phase {
       // conflict relation is symmetric, but not transitive... so do quadratic
       // conflict checking
       for (candidate <- turns_remaining) {
-        if (!this_group.find(t => t.conflicts_with(candidate)).isDefined) {
+        if (!this_group.exists(t => t.conflicts_with(candidate))) {
           this_group += candidate
           turns_remaining -= candidate
         }
@@ -265,7 +265,7 @@ object Phase {
       val road = this_group.head.from.directed_road
       val consider_order = turns_remaining.partition(t => t.from.directed_road == road)
       for (candidate <- consider_order._1.toList ++ consider_order._2.toList) {
-        if (!this_group.find(t => t.conflicts_with(candidate)).isDefined) {
+        if (!this_group.exists(t => t.conflicts_with(candidate))) {
           this_group += candidate
           turns_remaining -= candidate
         }

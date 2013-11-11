@@ -128,9 +128,9 @@ class Edge(
   def ok_to_lanechange = length >= cfg.lanechange_dist + cfg.end_threshold
 
   // If true, somebody's turning into this lane and already has a turn secured.
-  def dont_block() = from.intersection.policy.approveds_to(this).find(
+  def dont_block() = from.intersection.policy.approveds_to(this).exists(
     t => t.a.wont_block(from.intersection)
-  ).isDefined
+  )
 
   // Returns [0, 100] where 0 is light traffic and 100 is heavy.
   def congestion_rating(): Int = {
@@ -191,7 +191,7 @@ class DirectedRoad(val road: Road, var id: DirectedRoadID, val dir: Direction.Va
   def next_roads = edges.flatMap(e => e.next_roads).toSet
 
   // We're congested if any of our lanes are.
-  def is_congested = edges.find(e => e.queue.is_congested).isDefined
+  def is_congested = edges.exists(e => e.queue.is_congested)
 
   // Worst-case of any constituent lanes
   def freeflow_capacity = edges.map(_.queue.freeflow_capacity).min
