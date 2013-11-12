@@ -267,7 +267,11 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
       }
 
       state.current_obj match {
-        case Some(pos: Position) => draw_intersection(g2d, pos.on.asInstanceOf[Edge])
+        case Some(pos: Position) => {
+          val e = pos.on.asInstanceOf[Edge]
+          draw_intersection(g2d, e)
+          highlight_buildings(g2d, e.directed_road)
+        }
         case Some(v: Vertex) => {
           for (t <- v.intersection.policy.current_greens) {
             state.draw_turn(t, cfg.turn_color)
@@ -339,6 +343,13 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
       for (conflict <- turn.conflicts) {
         state.draw_turn(conflict, Color.RED)
       }
+    }
+  }
+
+  def highlight_buildings(g2d: Graphics2D, r: DirectedRoad) {
+    g2d.setColor(Color.RED)
+    for (bldg <- r.shops ++ r.houses) {
+      g2d.draw(state.bubble(bldg))
     }
   }
 
