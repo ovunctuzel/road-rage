@@ -81,10 +81,17 @@ class Road(
     w.int(v2.id.int)
     w.int(points.size)
     points.foreach(pt => pt.serialize(w))
-    w.int(pos_group.map(_.residential_count).getOrElse(0))
-    w.int(pos_group.map(_.shop_count).getOrElse(0))
-    w.int(neg_group.map(_.residential_count).getOrElse(0))
-    w.int(neg_group.map(_.shop_count).getOrElse(0))
+    for (group <- List(pos_group, neg_group)) {
+      group match {
+        case Some(dr) => {
+          w.int(dr.shops.size)
+          dr.shops.foreach(pt => pt.serialize(w))
+          w.int(dr.houses.size)
+          dr.houses.foreach(pt => pt.serialize(w))
+        }
+        case None => w.int(0)
+      }
+    }
   }
 
   def setup(g: GraphLike) {
@@ -146,10 +153,10 @@ object Road {
       new RoadID(r.int), r.double, r.string, r.string, r.string, new VertexID(r.int),
       new VertexID(r.int), Range(0, r.int).map(_ => Coordinate.unserialize(r)).toArray
     )
-    road.pos_group.get.residential_count = r.int
-    road.pos_group.get.shop_count = r.int
-    road.neg_group.get.residential_count = r.int
-    road.neg_group.get.shop_count = r.int
+    Range(0, r.int).foreach(_ => road.pos_group.get.shops += Coordinate.unserialize(r))
+    Range(0, r.int).foreach(_ => road.pos_group.get.houses += Coordinate.unserialize(r))
+    Range(0, r.int).foreach(_ => road.neg_group.get.shops += Coordinate.unserialize(r))
+    Range(0, r.int).foreach(_ => road.neg_group.get.houses += Coordinate.unserialize(r))
     return road
   }
 

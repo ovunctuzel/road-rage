@@ -12,9 +12,6 @@ class BuildingScraper() {
   // For now, just store the "center" point associated with the building
   case class Bldg(road: Option[String], point: Coordinate, residential: Boolean)
   private val bldgs = new mutable.ListBuffer[Bldg]()
-  private val skipped = new mutable.ListBuffer[Bldg]()
-
-  def included_centers = (bldgs -- skipped).toList.map(_.point) // TODO -- slow?
 
   // TODO missing any?
   private val bldg_tags = Set("addr:housenumber", "shop")
@@ -51,20 +48,21 @@ class BuildingScraper() {
     Util.log(s"Matching ${bldgs.size} buildings to roads...")
     // First group roads by their name for fast pruning
     val roads_by_name = graph.roads.groupBy(_.name)
+    var skipped = 0
     for (bldg <- bldgs) {
       // for now, ignore roads without a name, or with a name we don't know
       if (bldg.road.isDefined && roads_by_name.contains(bldg.road.get)) {
         val candidates = roads_by_name(bldg.road.get).flatMap(_.directed_roads)
         val dr = candidates.minBy(dr => dr.from.location.dist_to(bldg.point))
         if (bldg.residential) {
-          dr.residential_count += 1
+          dr.houses += bldg.point
         } else {
-          dr.shop_count += 1
+          dr.shops += bldg.point
         }
       } else {
-        skipped += bldg
+        skipped += 1
       }
     }
-    Util.log(s"Skipped ${skipped.size} buildings that couldn't be matched to roads by name")
+    Util.log(s"Skipped ${skipped} buildings that couldn't be matched to roads by name")
   }
 }

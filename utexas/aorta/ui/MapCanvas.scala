@@ -263,6 +263,7 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
       for (r <- roads_seen) {
         r.render_center_line()
         r.render_edges()
+        r.render_buildings()
       }
 
       state.current_obj match {
@@ -290,15 +291,6 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
         val bub = state.bubble(v.location)
         if (bub.intersects(window)) {
           g2d.setColor(policy_colors(v.intersection.policy.policy_type))
-          g2d.draw(bub)
-        }
-      }
-
-      // And buildings
-      g2d.setColor(Color.BLACK)
-      for (bldg <- sim.graph.bldg_centers) {
-        val bub = state.bubble(bldg)
-        if (bub.intersects(window)) {
           g2d.draw(bub)
         }
       }

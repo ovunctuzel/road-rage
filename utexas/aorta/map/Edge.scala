@@ -4,6 +4,7 @@
 
 package utexas.aorta.map
 
+import scala.collection.mutable
 import utexas.aorta.map.analysis.AbstractEdge
 import utexas.aorta.ui.Renderable
 
@@ -110,7 +111,7 @@ class Edge(
     Util.log("Succs: " + next_turns)
     Util.log("Preds: " + prev_turns)
     Util.log(s"From $from to $to")
-    Util.log(s"${directed_road.residential_count} houses, ${directed_road.shop_count} shops")
+    Util.log(s"${directed_road.houses.size} houses, ${directed_road.shops.size} shops")
   }
 
   // For debug only
@@ -162,8 +163,8 @@ class DirectedRoad(val road: Road, var id: DirectedRoadID, val dir: Direction.Va
   extends AbstractEdge with Ordered[DirectedRoad]
 {
   // TODO lets figure out how to build immutable stuff.
-  var residential_count = 0
-  var shop_count = 0
+  val houses = new mutable.ListBuffer[Coordinate]()
+  val shops = new mutable.ListBuffer[Coordinate]()
 
   override def toString = "%s's %s lanes (DR %s)".format(road, dir, id)
   override def compare(other: DirectedRoad) = id.int.compare(other.id.int)

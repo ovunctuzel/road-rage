@@ -36,7 +36,7 @@ object Builder {
     val graph = new Graph(
       graph3.roads.toArray, graph3.edges.toArray, graph3.vertices.toArray,
       graph1.width, graph1.height, graph1.offX, graph1.offY, graph1.scale,
-      input.replace(".osm", "").replace("osm/", ""), bldgs.included_centers.toArray
+      input.replace(".osm", "").replace("osm/", "")
     )
     Util.log(
       s"Dumping map with ${graph3.roads.length} roads, ${graph3.edges.length}" +

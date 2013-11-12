@@ -130,6 +130,20 @@ class DrawRoad(val road: Road, state: GuiState) {
     edges.foreach(e => e.render())
   }
 
+  def render_buildings() {
+    for (dr <- road.directed_roads) {
+      state.g2d.setColor(Color.GREEN)
+      for (bldg <- dr.shops) {
+        state.g2d.draw(state.bubble(bldg))
+      }
+      // TODO rectangles? triangles?
+      state.g2d.setColor(Color.BLACK)
+      for (bldg <- dr.houses) {
+        state.g2d.draw(state.bubble(bldg))
+      }
+    }
+  }
+
   private def color(): Color =
     if (state.chosen_road.getOrElse(null) == road)
       cfg.chosen_road_color
