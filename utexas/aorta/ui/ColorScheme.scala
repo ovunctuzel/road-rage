@@ -13,11 +13,10 @@ import scala.collection.mutable.{HashMap => MutableMap}
 
 import utexas.aorta.common.{cfg, AgentID}
 
-// The hierarchy: ReplayDiffScheme, FocusVertexScheme, CameraScheme, StalledScheme, PersonalScheme
-// TODO make that order explicit here. color(...): Option[Color]
 object ColorScheme {
-  // TODO choose based on if replay is enabled
-  def color(d: DrawDriver, state: GuiState) = FocusVertexScheme.color(d, state)
+  def color(d: DrawDriver, state: GuiState) = Stream(
+    FocusVertexScheme.color _, CameraScheme.color _, StalledScheme.color _, PersonalScheme.color _
+  ).flatMap(fxn => fxn(d, state)).head
 }
 
 // Reveal who's acting differently from their past life
@@ -43,20 +42,20 @@ object ReplayDiffScheme {
 object FocusVertexScheme {
   def color(d: DrawDriver, state: GuiState) = state.current_obj match {
     case Some(v: Vertex) => d.agent.all_tickets(v.intersection).toList match {
-      case Nil => Color.GRAY
-      case ls if ls.exists(_.is_approved) => Color.GREEN
-      case ls if ls.exists(_.is_interruption) => Color.YELLOW
-      case _ => Color.RED
+      case Nil => Some(Color.GRAY)
+      case ls if ls.exists(_.is_approved) => Some(Color.GREEN)
+      case ls if ls.exists(_.is_interruption) => Some(Color.YELLOW)
+      case _ => Some(Color.RED)
     }
-    case _ => CameraScheme.color(d, state)
+    case _ => None
   }
 }
 
 // Focus on the agent followed by the camera
 object CameraScheme {
   def color(d: DrawDriver, state: GuiState) = state.camera_agent match {
-    case Some(a) if d.agent == a => Color.WHITE
-    case _ => StalledScheme.color(d, state)
+    case Some(a) if d.agent == a => Some(Color.WHITE)
+    case _ => None
   }
 }
 
@@ -64,16 +63,16 @@ object CameraScheme {
 object StalledScheme {
   def color(d: DrawDriver, state: GuiState) =
     if (d.agent.how_long_idle >= 30.0)
-      Color.RED
+      Some(Color.RED)
     else
-      PersonalScheme.color(d, state)
+      None
 }
 
 // Color each car individually
 object PersonalScheme {
   def color(d: DrawDriver, state: GuiState) =
     if (state.canvas.zoomed_in)
-      d.personal_color
+      Some(d.personal_color)
     else
-      Color.BLUE
+      Some(Color.BLUE)
 }
