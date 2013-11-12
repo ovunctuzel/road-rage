@@ -4,6 +4,8 @@
 
 package utexas.aorta.map
 
+import utexas.aorta.common.{StateWriter, StateReader}
+
 /*
  * A vital note about coordinate systems:
  * - (longitude, latitude) corresponds to (x, y) where y increases upwards
@@ -33,6 +35,11 @@ class Coordinate(val x: Double, val y: Double) extends Ordered[Coordinate] {
   def dist_to(o: Coordinate) = Coordinate.gps_dist_in_meters(
     Graph.world_to_gps(this.x, this.y), Graph.world_to_gps(o.x, o.y)
   )
+
+  def serialize(w: StateWriter) {
+    w.double(x)
+    w.double(y)
+  }
 }
 
 object Coordinate {
@@ -55,4 +62,6 @@ object Coordinate {
     val c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
     return radius * c
   }
+
+  def unserialize(r: StateReader) = new Coordinate(r.double, r.double)
 }

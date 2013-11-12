@@ -80,10 +80,7 @@ class Road(
     w.int(v1.id.int)
     w.int(v2.id.int)
     w.int(points.size)
-    for (pt <- points) {
-      w.double(pt.x)
-      w.double(pt.y)
-    }
+    points.foreach(pt => pt.serialize(w))
     w.int(pos_group.map(_.residential_count).getOrElse(0))
     w.int(pos_group.map(_.shop_count).getOrElse(0))
     w.int(neg_group.map(_.residential_count).getOrElse(0))
@@ -147,7 +144,7 @@ object Road {
   def unserialize(r: StateReader): Road = {
     val road = new Road(
       new RoadID(r.int), r.double, r.string, r.string, r.string, new VertexID(r.int),
-      new VertexID(r.int), Range(0, r.int).map(_ => new Coordinate(r.double, r.double)).toArray
+      new VertexID(r.int), Range(0, r.int).map(_ => Coordinate.unserialize(r)).toArray
     )
     road.pos_group.get.residential_count = r.int
     road.pos_group.get.shop_count = r.int

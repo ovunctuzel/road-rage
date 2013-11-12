@@ -12,7 +12,7 @@ import utexas.aorta.common.{Util, Common, StateWriter, StateReader, RoadID,
 class Graph(
   val roads: Array[Road], val edges: Array[Edge], val vertices: Array[Vertex],
   val width: Double, val height: Double, val offX: Double, val offY: Double,
-  val scale: Double, val name: String
+  val scale: Double, val name: String, bldg_centers: Array[Coordinate]
 ) extends GraphLike
 {
   //////////////////////////////////////////////////////////////////////////////
@@ -40,6 +40,8 @@ class Graph(
     w.double(offY)
     w.double(scale)
     w.string(name)
+    w.int(bldg_centers.size)
+    bldg_centers.foreach(pt => pt.serialize(w))
   }
 
   def setup() {
@@ -96,7 +98,8 @@ object Graph {
       Range(0, r.int).map(_ => Road.unserialize(r)).toArray,
       Range(0, r.int).map(_ => Edge.unserialize(r)).toArray,
       Range(0, r.int).map(_ => Vertex.unserialize(r)).toArray,
-      r.double, r.double, r.double, r.double, r.double, r.string
+      r.double, r.double, r.double, r.double, r.double, r.string,
+      Range(0, r.int).map(_ => Coordinate.unserialize(r)).toArray
     )
     set_params(g.width, g.height, g.offX, g.offY, g.scale)
     g.edges.foreach(e => e.setup(g))

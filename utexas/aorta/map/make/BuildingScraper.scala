@@ -9,9 +9,12 @@ import utexas.aorta.map.Coordinate
 import utexas.aorta.common.Util
 
 class BuildingScraper() {
-  // For now, just store one point associated with the building
+  // For now, just store the "center" point associated with the building
   case class Bldg(road: Option[String], point: Coordinate, residential: Boolean)
   private val bldgs = new mutable.ListBuffer[Bldg]()
+  private val skipped = new mutable.ListBuffer[Bldg]()
+
+  def included_centers = (bldgs -- skipped).toList.map(_.point) // TODO -- slow?
 
   // TODO missing any?
   private val bldg_tags = Set("addr:housenumber", "shop")
@@ -24,9 +27,18 @@ class BuildingScraper() {
     osm.listen("building-scraper", _ match {
       // Grab an arbitrary point from the building
       case EV_OSM(elem) if is_bldg(elem.tags) =>
-        bldgs += Bldg(elem.tags.get("addr:street"), elem.points.head, is_residential(elem.tags))
+        bldgs += Bldg(elem.tags.get("addr:street"), find_center(elem.points), is_residential(elem.tags))
       case _ =>
     })
+  }
+
+  // Not really the center? Something.
+  def find_center(points: List[Coordinate]): Coordinate = {
+    val min_x = points.map(_.x).min
+    val min_y = points.map(_.y).min
+    val max_x = points.map(_.x).max
+    val max_y = points.map(_.y).max
+    return new Coordinate((min_x + max_x) / 2, (min_y + max_y) / 2)
   }
 
   def group(graph: PreGraph3) {
@@ -43,7 +55,10 @@ class BuildingScraper() {
         } else {
           dr.shop_count += 1
         }
+      } else {
+        skipped += bldg
       }
     }
+    Util.log(s"Skipped ${skipped.size} buildings that couldn't be matched to roads by name")
   }
 }

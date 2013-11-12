@@ -34,8 +34,7 @@ class Vertex(val location: Coordinate, var id: VertexID) extends Renderable
   // Meta
 
   def serialize(w: StateWriter) {
-    w.double(location.x)
-    w.double(location.y)
+    location.serialize(w)
     w.int(id.int)
     w.int(turns.length)
     turns.foreach(t => t.serialize(w))
@@ -94,7 +93,7 @@ class Vertex(val location: Coordinate, var id: VertexID) extends Renderable
 
 object Vertex {
   def unserialize(r: StateReader): Vertex = {
-    val v = new Vertex(new Coordinate(r.double, r.double), new VertexID(r.int))
+    val v = new Vertex(Coordinate.unserialize(r), new VertexID(r.int))
     v.turns ++= Range(0, r.int).map(_ => Turn.unserialize(r))
     return v
   }
