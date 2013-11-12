@@ -12,7 +12,7 @@ import utexas.aorta.common.{Util, Common, StateWriter, StateReader, RoadID,
 class Graph(
   val roads: Array[Road], val edges: Array[Edge], val vertices: Array[Vertex],
   val width: Double, val height: Double, val offX: Double, val offY: Double,
-  val scale: Double, val name: String, bldg_centers: Array[Coordinate]
+  val scale: Double, val name: String, val bldg_centers: Array[Coordinate]
 ) extends GraphLike
 {
   //////////////////////////////////////////////////////////////////////////////

@@ -293,6 +293,15 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
           g2d.draw(bub)
         }
       }
+
+      // And buildings
+      g2d.setColor(Color.BLACK)
+      for (bldg <- sim.graph.bldg_centers) {
+        val bub = state.bubble(bldg)
+        if (bub.intersects(window)) {
+          g2d.draw(bub)
+        }
+      }
     }
 
     for (driver <- driver_renderers.values) {

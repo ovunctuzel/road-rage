@@ -27,6 +27,7 @@ object Builder {
     val pass1 = new Pass1(input)
     bldgs.scrape(pass1.osm)
     val graph1 = pass1.run()
+    bldgs.normalize_coords(graph1.fix _)
     Graph.set_params(graph1.width, graph1.height, graph1.offX, graph1.offY, graph1.scale)
     val graph2 = new Pass2(graph1).run()
     val graph3 = new Pass3(graph2).run()

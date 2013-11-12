@@ -33,12 +33,18 @@ class BuildingScraper() {
   }
 
   // Not really the center? Something.
-  def find_center(points: List[Coordinate]): Coordinate = {
+  private def find_center(points: List[Coordinate]): Coordinate = {
     val min_x = points.map(_.x).min
     val min_y = points.map(_.y).min
     val max_x = points.map(_.x).max
     val max_y = points.map(_.y).max
     return new Coordinate((min_x + max_x) / 2, (min_y + max_y) / 2)
+  }
+
+  def normalize_coords(fix: (Coordinate) => Coordinate) {
+    val fixed = bldgs.map(bldg => bldg.copy(point = fix(bldg.point)))
+    bldgs.clear()
+    bldgs ++= fixed
   }
 
   def group(graph: PreGraph3) {
