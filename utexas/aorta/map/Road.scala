@@ -89,7 +89,10 @@ class Road(
           w.int(dr.houses.size)
           dr.houses.foreach(pt => pt.serialize(w))
         }
-        case None => w.int(0)
+        case None => {
+          w.int(0)
+          w.int(0)
+        }
       }
     }
   }
