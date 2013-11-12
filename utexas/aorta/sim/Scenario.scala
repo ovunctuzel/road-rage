@@ -427,9 +427,8 @@ object RouteType extends Enumeration {
 
 object RouterType extends Enumeration {
   type RouterType = Value
-  // TODO RouteFeatureBased, the new clown car thing
   // TODO and rm TMP
-  val ContractionHierarchy, Congestion, Fixed, TMP, DumbToll, TollThreshold = Value
+  val ContractionHierarchy, Congestion, Fixed, TMP, DumbToll, TollThreshold, SumToll = Value
 }
 
 object OrderingType extends Enumeration {
