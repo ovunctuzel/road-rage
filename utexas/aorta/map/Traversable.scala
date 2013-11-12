@@ -100,6 +100,7 @@ abstract class Traversable() {
 
   def start_pt = lines.head.start
   def end_pt  = lines.last.end
+  def approx_midpt = lines(lines.size / 2).midpt
 
   def worst_entry_dist = Physics.worst_entry_dist(speed_limit)
 }

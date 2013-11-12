@@ -53,7 +53,7 @@ class BuildingScraper() {
       // for now, ignore roads without a name, or with a name we don't know
       if (bldg.road.isDefined && roads_by_name.contains(bldg.road.get)) {
         val candidates = roads_by_name(bldg.road.get).flatMap(_.directed_roads)
-        val dr = candidates.minBy(dr => dr.from.location.dist_to(bldg.point))
+        val dr = candidates.minBy(dr => dr.edges.last.approx_midpt.dist_to(bldg.point))
         if (bldg.residential) {
           dr.houses += bldg.point
         } else {
