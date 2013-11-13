@@ -5,7 +5,7 @@
 package utexas.aorta.sim
 
 import utexas.aorta.map.{Graph, Edge, Vertex, DirectedRoad}
-import utexas.aorta.map.analysis.{FixedRouter, CHRouter, CongestionRouter, Router}
+import utexas.aorta.map.analysis._
 import utexas.aorta.sim.policies._
 import utexas.aorta.sim.market._
 
@@ -476,6 +476,9 @@ object Factory {
     case RouterType.ContractionHierarchy => new CHRouter(graph)
     case RouterType.Congestion => new CongestionRouter(graph)
     case RouterType.Fixed => new FixedRouter(graph, initial_path)
+    case RouterType.DumbToll => new DumbTollRouter(graph)
+    // TODO case RouterType.TollThreshold => new TollThresholdRouter(graph, max_toll)
+    case RouterType.SumToll => new SumTollRouter(graph)
   }
 
   def make_intersection_ordering[T <: Ordered[T]](enum: OrderingType.Value) = enum match

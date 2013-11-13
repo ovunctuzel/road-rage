@@ -33,9 +33,8 @@ class AuctionExperiment(config: ExpConfig) extends SmartExperiment(config) {
   override def scenario_params = Array("budget=0-500")
 
   override def get_metrics(info: MetricInfo) = List(
-    new TripTimeMetric(info), new OriginalRouteMetric(info), new MoneySpentMetric(info)
-    // TODO these dump way too much right now and are useless
-    // new TurnDelayMetric(info), new TurnCompetitionMetric(info)
+    new TripTimeMetric(info), new OriginalRouteMetric(info), new MoneySpentMetric(info),
+    new TurnDelayMetric(info), new TurnCompetitionMetric(info)
   )
 
   override def run() {

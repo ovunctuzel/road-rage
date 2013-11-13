@@ -257,6 +257,17 @@ trait ListenerPattern[T] {
   }
 }
 
+class BinnedHistogram(width: Double) {
+  // What's the frequency of each bin?
+  val bin_counts = new mutable.HashMap[Int, Int]().withDefault((_) => 0)
+
+  def add(n: Double) {
+    bin_counts((n / width).toInt) += 1
+  }
+  def bins = bin_counts.keys
+  def apply(bin: Int) = bin_counts(bin)
+}
+
 class AgentID(val int: Int) extends AnyVal {
   override def toString = int.toString
 }

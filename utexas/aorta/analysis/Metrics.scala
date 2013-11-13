@@ -8,7 +8,7 @@ import utexas.aorta.sim.{Simulation, Sim_Event, Route_Event, EV_AgentSpawned, EV
                          EV_Reroute, IntersectionType, EV_Stat, EV_IntersectionOutcome,
                          EV_Transition, Scenario}
 import utexas.aorta.map.{Edge, DirectedRoad, Turn}
-import utexas.aorta.common.{Common, AgentID, IO, Util}
+import utexas.aorta.common.{Common, AgentID, IO, Util, BinnedHistogram}
 
 import scala.collection.mutable
 
@@ -62,6 +62,28 @@ abstract class EmitMetric(info: MetricInfo) extends Metric(info) {
   }
 }
 
+// Too many values? Throw em into bins and count the size of each bin.
+abstract class HistogramMetric(info: MetricInfo, width: Double) extends Metric(info) {
+  protected val histogram = new BinnedHistogram(width)
+
+  override def output(ls: List[Metric], scenario: Scenario) {
+    val f = info.io.output_file(name)
+    f.println(s"map scenario mode ${name}_bin count")
+    for (raw_metric <- ls) {
+      val metric = raw_metric.asInstanceOf[HistogramMetric]
+      for (bin <- metric.histogram.bins) {
+        f.println(List(
+          info.sim.graph.basename, info.uid, metric.mode, (bin * width).toInt,
+          metric.histogram(bin)
+        ).mkString(" "))
+      }
+    }
+    f.close()
+    info.io.compress(name)
+    info.io.upload(name + ".gz")
+  }
+}
+
 // Measure how long each agent's trip takes
 class TripTimeMetric(info: MetricInfo) extends SinglePerAgentMetric(info) {
   override def name = "trip_time"
@@ -101,32 +123,24 @@ class MoneySpentMetric(info: MetricInfo) extends SinglePerAgentMetric(info) {
 }
 
 // Measure how long drivers wait at intersections, grouped by intersection type
-class TurnDelayMetric(info: MetricInfo) extends EmitMetric(info) {
-  override def name = "turn_delays"
-  override def header = "map scenario agent mode intersection_type turn_delay"
+// TODO multiple HistogramMetric. print intersection_type
+class TurnDelayMetric(info: MetricInfo) extends HistogramMetric(info, 5.0) {
+  override def name = "turn_delay"
 
   info.sim.listen(name, _ match {
-    case EV_Stat(s: Turn_Stat) => {
-      val policy = info.sim.graph.vertices(s.vert.int).intersection.policy.policy_type.toString
-      f.println(List(
-        // could be accept_delay
-        info.sim.graph.basename, info.uid, s.agent, mode, policy, s.total_delay
-      ).mkString(" "))
-    }
+    // could be accept_delay
+    case EV_Stat(s: Turn_Stat) => histogram.add(s.total_delay)
     case _ =>
   })
 }
 
 // Measure how congested roads are when agents enter them
-class RoadCongestionMetric(info: MetricInfo) extends EmitMetric(info) {
+class RoadCongestionMetric(info: MetricInfo) extends HistogramMetric(info, 10.0) {
   override def name = "road_congestion"
-  override def header = "map scenario agent mode percent_full"
 
   info.sim.listen(name, _ match {
     case EV_AgentSpawned(a) => a.route.listen(name, _ match {
-      case EV_Transition(_, to: Edge) => f.println(List(
-        info.sim.graph.basename, info.uid, a.id, mode, to.directed_road.freeflow_percent_full
-      ).mkString(" "))
+      case EV_Transition(_, to: Edge) => histogram.add(to.directed_road.freeflow_percent_full)
       case _ =>
     })
     case _ =>
@@ -134,14 +148,12 @@ class RoadCongestionMetric(info: MetricInfo) extends EmitMetric(info) {
 }
 
 // Measure how much competition is present at intersections
-class TurnCompetitionMetric(info: MetricInfo) extends EmitMetric(info) {
+// TODO multiple HistogramMetric. print intersection_type
+class TurnCompetitionMetric(info: MetricInfo) extends HistogramMetric(info, 1.0) {
   override def name = "turn_competition"
-  override def header = "map scenario mode intersection_type losers"
 
   info.sim.listen(name, _ match {
-    case EV_IntersectionOutcome(policy, losers) => f.println(List(
-      info.sim.graph.basename, info.uid, mode, policy, losers.size
-    ).mkString(" "))
+    case EV_IntersectionOutcome(policy, losers) => histogram.add(losers.size)
     case _ =>
   })
 }
