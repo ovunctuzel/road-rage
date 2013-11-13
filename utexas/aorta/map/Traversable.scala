@@ -33,14 +33,10 @@ abstract class Traversable() {
   def serialize(w: StateWriter) {
     w.int(lines.length)
     lines.foreach(l => l.serialize(w))
-    w.double(length)
   }
 
   def unserialize(r: StateReader) {
     set_lines(Range(0, r.int).map(_ => Line.unserialize(r)).toArray)
-    // set_lines calculates the wrong distance, because we haven't done
-    // set_params yet for graph :(
-    length = r.double
   }
 
   //////////////////////////////////////////////////////////////////////////////
@@ -124,9 +120,7 @@ class Line(var x1: Double, var y1: Double, var x2: Double, var y2: Double) {
   // Queries
 
   // TODO Compute and store it once, since the math isn't free?
-  def length = Coordinate.gps_dist_in_meters(
-    Graph.world_to_gps(x1, y1), Graph.world_to_gps(x2, y2)
-  )
+  def length = Coordinate(x1, y1).dist_to(Coordinate(x2, y2))
 
   // return [0, 2pi) like a reasonable bloody...
   // also, this is a place where we have to recall the coordinate system has y

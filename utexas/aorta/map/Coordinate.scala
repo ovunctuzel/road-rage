@@ -24,24 +24,12 @@ case class Coordinate(x: Double, y: Double) extends Ordered[Coordinate] {
   override def toString = "(%f, %f)".format(x, y)
 
   def +(other: Coordinate) = Coordinate(x + other.x, y + other.y)
-  def dist_to(o: Coordinate) = Coordinate.gps_dist_in_meters(
-    Graph.world_to_gps(this.x, this.y), Graph.world_to_gps(o.x, o.y)
-  )
-
-  def serialize(w: StateWriter) {
-    w.double(x)
-    w.double(y)
-  }
-}
-
-object Coordinate {
-  // use Graph.world_to_gps to get original GPS coordinates.
-  def gps_dist_in_meters(c1: Coordinate, c2: Coordinate): Double = {
+  def dist_to(o: Coordinate): Double = {
     // This is Mike's math.
-    val lon1 = math.toRadians(c1.x)
-    val lon2 = math.toRadians(c2.x)
-    val lat1 = math.toRadians(c1.y)
-    val lat2 = math.toRadians(c2.y)
+    val lon1 = math.toRadians(x)
+    val lon2 = math.toRadians(o.x)
+    val lat1 = math.toRadians(y)
+    val lat2 = math.toRadians(o.y)
 
     val radius = 6378100.0  // of earth, in meters
     val dLat = lat2 - lat1
@@ -55,5 +43,12 @@ object Coordinate {
     return radius * c
   }
 
+  def serialize(w: StateWriter) {
+    w.double(x)
+    w.double(y)
+  }
+}
+
+object Coordinate {
   def unserialize(r: StateReader) = Coordinate(r.double, r.double)
 }

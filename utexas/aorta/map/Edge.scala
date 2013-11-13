@@ -87,8 +87,6 @@ class Edge(
   def from: Vertex = if (dir == Direction.POS) road.v1 else road.v2
   def to: Vertex   = if (dir == Direction.POS) road.v2 else road.v1
 
-  //////// Geometry. TODO separate somewhere?
-
   // recall + means v1->v2, and that road's points are stored in that order
   // what's the first line segment we traverse following this lane?
   def first_road_line = if (dir == Direction.POS)

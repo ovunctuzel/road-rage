@@ -38,12 +38,6 @@ class BuildingScraper() {
     return Coordinate((min_x + max_x) / 2, (min_y + max_y) / 2)
   }
 
-  def normalize_coords(fix: (Coordinate) => Coordinate) {
-    val fixed = bldgs.map(bldg => bldg.copy(point = fix(bldg.point)))
-    bldgs.clear()
-    bldgs ++= fixed
-  }
-
   def group(graph: PreGraph3) {
     Util.log(s"Matching ${bldgs.size} buildings to roads...")
     // First group roads by their name for fast pruning

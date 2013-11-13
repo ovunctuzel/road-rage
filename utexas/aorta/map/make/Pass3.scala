@@ -64,9 +64,8 @@ class Pass3(old_graph: PreGraph2) {
       }
     }
 
-    Util.log("Connecting the dots...")
+    Util.log("Creating turns...")
     Util.log_push
-    // TODO return the mapping in the future?
     for (v <- graph.vertices) {
       assert(roads_per_vert.contains(v))
       connect_vertex(v, roads_per_vert(v))

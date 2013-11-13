@@ -10,9 +10,7 @@ import utexas.aorta.common.{Util, Common, StateWriter, StateReader, RoadID,
                             VertexID, EdgeID, DirectedRoadID}
 
 class Graph(
-  val roads: Array[Road], val edges: Array[Edge], val vertices: Array[Vertex],
-  val width: Double, val height: Double, val offX: Double, val offY: Double,
-  val scale: Double, val name: String
+  val roads: Array[Road], val edges: Array[Edge], val vertices: Array[Vertex], val name: String
 ) extends GraphLike
 {
   //////////////////////////////////////////////////////////////////////////////
@@ -34,11 +32,6 @@ class Graph(
     edges.foreach(e => e.serialize(w))
     w.int(vertices.size)
     vertices.foreach(v => v.serialize(w))
-    w.double(width)
-    w.double(height)
-    w.double(offX)
-    w.double(offY)
-    w.double(scale)
     w.string(name)
   }
 
@@ -63,30 +56,8 @@ class Graph(
   def basename = name.replace("maps/", "").replace(".map", "")
 }
 
-// It's a bit funky, but the actual graph instance doesn't have this; we do.
 object Graph {
-  var width = 0.0
-  var height = 0.0
-  var xoff = 0.0
-  var yoff = 0.0
-  var scale = 0.0
-
   private val cached_graphs = new mutable.HashMap[String, Graph]()
-
-  // this MUST be set before world_to_gps is called.
-  // TODO get rid of this approach once GPS coordinates always retained
-  def set_params(w: Double, h: Double, x: Double, y: Double, s: Double) = {
-    width = w
-    height = h
-    xoff = x
-    yoff = y
-    scale = s
-  }
-
-  // inverts what PreGraph1's normalize() does.
-  def world_to_gps(x: Double, y: Double) = Coordinate(
-    (x / scale) - xoff, ((height - y) / scale) - yoff
-  )
 
   def load(fn: String): Graph = {
     if (!cached_graphs.contains(fn)) {
@@ -101,9 +72,8 @@ object Graph {
       Range(0, r.int).map(_ => Road.unserialize(r)).toArray,
       Range(0, r.int).map(_ => Edge.unserialize(r)).toArray,
       Range(0, r.int).map(_ => Vertex.unserialize(r)).toArray,
-      r.double, r.double, r.double, r.double, r.double, r.string
+      r.string
     )
-    set_params(g.width, g.height, g.offX, g.offY, g.scale)
     g.edges.foreach(e => e.setup(g))
     for (v <- g.vertices; t <- v.turns) {
       t.setup(g)
