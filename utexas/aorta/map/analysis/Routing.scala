@@ -10,7 +10,7 @@ import com.graphhopper.routing.ch.PrepareContractionHierarchies
 import com.graphhopper.routing.DijkstraBidirectionRef
 
 import utexas.aorta.map.{Graph, DirectedRoad, Coordinate}
-import utexas.aorta.sim.{IntersectionType, Scenario, RouterType}
+import utexas.aorta.sim.{IntersectionType, Scenario, RouterType, Agent}
 
 import utexas.aorta.common.{Util, Common, Physics, RNG, DirectedRoadID, Price}
 
@@ -18,6 +18,9 @@ abstract class Router(graph: Graph) {
   def router_type: RouterType.Value
   // Doesn't include 'from' as the first step
   def path(from: DirectedRoad, to: DirectedRoad, time: Double): List[DirectedRoad]
+
+  // TODO messy to include this jump, but hard to pipe in specific params...
+  def setup(a: Agent) {}
 }
 
 class FixedRouter(graph: Graph, path: List[DirectedRoad]) extends Router(graph) {
@@ -280,13 +283,19 @@ class DumbTollRouter(graph: Graph) extends AbstractPairAstarRouter(graph)
 
 // Score is (number of toll violations, total freeflow time)
 // We have a max_toll we're willing to pay, so we try to never pass through a road with that toll
-class TollThresholdRouter(graph: Graph, max_toll: Price) extends AbstractPairAstarRouter(graph)
+class TollThresholdRouter(graph: Graph) extends AbstractPairAstarRouter(graph)
   with SimpleHeuristic
 {
+  private var max_toll: Price = new Price(-1)
+
+  override def setup(a: Agent) {
+    max_toll = new Price(a.wallet.priority)
+  }
+
   override def router_type = RouterType.TollThreshold
 
   override def cost_step(turn_cost: Double, state: DirectedRoad, time: Double) =
-  (Util.bool2binary(state.toll.dollars > max_toll.dollars), turn_cost + state.cost(time))
+    (Util.bool2binary(state.toll.dollars > max_toll.dollars), turn_cost + state.cost(time))
 }
 
 // Score is (sum of tolls, total freeflow time). The answer is used as the "free" baseline with the

@@ -429,7 +429,7 @@ object Factory {
     case RouterType.Congestion => new CongestionRouter(graph)
     case RouterType.Fixed => new FixedRouter(graph, initial_path)
     case RouterType.DumbToll => new DumbTollRouter(graph)
-    // TODO case RouterType.TollThreshold => new TollThresholdRouter(graph, max_toll)
+    case RouterType.TollThreshold => new TollThresholdRouter(graph)
     case RouterType.SumToll => new SumTollRouter(graph)
   }
 

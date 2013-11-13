@@ -31,12 +31,13 @@ class ClownCarExperiment(config: ExpConfig) extends SmartExperiment(config) {
   )
 
   override def run() {
-    val baseline = ClownCarExperiment.smart_intersections(scenario)
+    val base = ClownCarExperiment.smart_intersections(scenario)
 
     output_data(List(
-      run_trial(baseline, "baseline"),
-      run_trial(ClownCarExperiment.use_router(baseline, RouterType.DumbToll), "dumb_tolls"),
-      run_trial(ClownCarExperiment.use_router(baseline, RouterType.TollThreshold), "toll_threshold")
+      run_trial(base, "baseline"),
+      run_trial(ClownCarExperiment.use_router(base, RouterType.DumbToll), "avoid_max"),
+      run_trial(ClownCarExperiment.use_router(base, RouterType.TollThreshold), "toll_threshold"),
+      run_trial(ClownCarExperiment.use_router(base, RouterType.SumToll), "avoid_sum")
     ), scenario)
   }
 }
