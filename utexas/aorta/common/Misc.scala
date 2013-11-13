@@ -86,8 +86,7 @@ object Util {
       sim.setup()
       return sim
     } else if (load.startsWith("maps/")) {
-      val g = Graph.load(load)
-      val sim = Scenario.default(load, g).make_sim(g)
+      val sim = Scenario.default(load).make_sim()
       sim.setup()
       return sim
     } else {

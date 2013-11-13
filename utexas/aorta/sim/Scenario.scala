@@ -20,7 +20,7 @@ case class Scenario(name: String, map_fn: String, agents: Array[MkAgent],
                     intersections: Array[MkIntersection],
                     system_wallet: SystemWalletConfig)
 {
-  def make_sim(graph: Graph = Graph.load(map_fn)) = new Simulation(graph, this)
+  def make_sim() = new Simulation(Graph.load(map_fn), this)
   def save() {
     val w = Util.writer(name)
     serialize(w)
@@ -106,14 +106,13 @@ case class Scenario(name: String, map_fn: String, agents: Array[MkAgent],
   // each to complete their trip with nobody else around. Returns a map from
   // agent ID to that time.
   def compute_optimal_times_by_simulation(): Map[AgentID, Double] = {
-    val graph = Graph.load(map_fn)
     val times = new mutable.HashMap[AgentID, Double]()
     var cnt = 0
     for (a <- agents) {
       cnt += 1
       Util.log(s"Computing optimal time for agent $cnt/${agents.size}")
       val solo_scenario = this.copy(agents = Array(a))
-      val sim = solo_scenario.make_sim(graph)
+      val sim = solo_scenario.make_sim()
       // TODO by simulation is way too slow. do it analytically.
       sim.setup()
       while (!sim.done) {
@@ -164,7 +163,8 @@ object Scenario {
 
   def load(fn: String) = unserialize(Util.reader(fn))
 
-  def default(map_fn: String, graph: Graph): Scenario = {
+  def default(map_fn: String): Scenario = {
+    val graph = Graph.load(map_fn)
     val s = Scenario(
       s"scenarios/default_${graph.name}",
       map_fn,

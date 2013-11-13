@@ -67,9 +67,7 @@ object ExpConfig {
 }
 
 class Experiment(config: ExpConfig) {
-  // TODO do the caching in the graph load layer.
   protected lazy val scenario = get_scenario()
-  protected lazy val graph = Graph.load(scenario.map_fn)
   protected val uid = Util.unique_id
   protected val io = new IO(config.gs_prefix)
   //Flags.set("--savestate", "false")
@@ -130,7 +128,7 @@ abstract class SmartExperiment(config: ExpConfig) extends Experiment(config) {
     } catch {
       case e: Throwable => {
         io.notify(s"BORKED - $e")
-        val fn = "buggy_" + graph.basename + "_" + mode
+        val fn = "buggy_" + sim.graph.basename + "_" + mode
         Util.blockingly_run(Seq("mv", "-f", scenario.name, fn))
         // TODO also upload latest savestate, and name everything reasonably
         io.upload(fn)

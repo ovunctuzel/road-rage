@@ -4,7 +4,7 @@
 
 package utexas.aorta.map
 
-import scala.collection.mutable.{HashMap, PriorityQueue, HashSet}
+import scala.collection.mutable
 
 import utexas.aorta.common.{Util, Common, StateWriter, StateReader, RoadID,
                             VertexID, EdgeID, DirectedRoadID}
@@ -71,6 +71,8 @@ object Graph {
   var yoff = 0.0
   var scale = 0.0
 
+  private val cached_graphs = new mutable.HashMap[String, Graph]()
+
   // this MUST be set before world_to_gps is called.
   // TODO get rid of this approach once GPS coordinates always retained
   def set_params(w: Double, h: Double, x: Double, y: Double, s: Double) = {
@@ -87,8 +89,11 @@ object Graph {
   )
 
   def load(fn: String): Graph = {
-    Util.log(s"Loading $fn...")
-    return unserialize(Util.reader(fn))
+    if (!cached_graphs.contains(fn)) {
+      Util.log(s"Loading $fn...")
+      cached_graphs(fn) = unserialize(Util.reader(fn))
+    }
+    return cached_graphs(fn)
   }
 
   def unserialize(r: StateReader): Graph = {

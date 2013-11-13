@@ -188,7 +188,6 @@ general post-thesis plan
 - at big timesteps, nobody moves?
 
 # Testing/Experiments
-- bug: experiment script unserializes objects twice
 - standalone programs to make/mod scenarios
   - specify distribution of rand things, discrete or continuous.
   - breakdown other categories when describing
