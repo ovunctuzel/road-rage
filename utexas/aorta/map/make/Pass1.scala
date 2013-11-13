@@ -129,7 +129,7 @@ class PreGraph1() {
   // Hence height - y
   // This is the ONLY place we handle y inversion. Don't make things
   // confusing after this!
-  def fix(pt: Coordinate) = new Coordinate((pt.x + offX) * scale, height - ((pt.y + offY) * scale))
+  def fix(pt: Coordinate) = Coordinate((pt.x + offX) * scale, height - ((pt.y + offY) * scale))
 
   def normalize() = {
     var minX = Double.MaxValue

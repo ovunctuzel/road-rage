@@ -120,41 +120,6 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
       case _ =>
     }
 
-    // Try a fast-path!
-    /*val no_lc = (!a.is_lanechanging) && (!target_lane.isDefined)
-    val not_near_end = a.at.dist_left >= a.max_lookahead_dist + cfg.end_threshold // TODO +buf?
-    val next_i = a.at.on match {
-      case e: Edge => e.to.intersection
-      case t: Turn => t.to.to.intersection
-    }
-    val already_registered = a.involved_with(next_i)
-    val lead = a.our_lead
-    val not_tailing = lead match {
-      case Some(l) =>
-        // TODO or just stopping dist at max next speed?
-        (l.at.dist - a.at.dist) >= (a.max_lookahead_dist + cfg.follow_dist)
-      case None => true
-    }
-    val at_speed = a.speed == a.at.on.speed_limit
-    // TODO more fast paths that dont do full analysis
-    // TODO go back and prove these are equivalent to the original semantics
-    if (no_lc && not_near_end && already_registered) {
-      if (not_tailing && at_speed) {
-        return Act_Set_Accel(0)
-      } else if (not_tailing) {
-        // so we're not at speed
-        return Act_Set_Accel(
-          math.min(a.accel_to_achieve(a.at.on.speed_limit), a.max_accel)
-        )
-      } else if (at_speed) {
-        // so we're tailing
-        return Act_Set_Accel(math.max(
-          accel_to_follow(lead.get, lead.get.at.dist - a.at.dist),
-          -a.max_accel
-        ))
-      }
-    }*/
-
     return max_safe_accel
   }
 
@@ -436,11 +401,6 @@ class LookaheadStep(
         next_at.length, route
       ))
 }
-
-
-// TODO this would be the coolest thing ever... driving game!
-//class HumanControlBehavior(a: Agent) extends Behavior(a) {
-//}
 
 abstract class Action
 final case class Act_Set_Accel(new_accel: Double) extends Action

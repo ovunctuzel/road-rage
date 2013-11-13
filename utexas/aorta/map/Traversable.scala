@@ -142,11 +142,11 @@ class Line(var x1: Double, var y1: Double, var x2: Double, var y2: Double) {
   // TODO shiftline() broke with the seemingly correct angle(). testing.
   def broken_angle = math.atan2(y2 - y1, x2 - x1)
 
-  def midpt = new Coordinate((x1 + x2) / 2, (y1 + y2) / 2)
+  def midpt = Coordinate((x1 + x2) / 2, (y1 + y2) / 2)
   def width = x2 - x1
   def height = y2 - y1
-  def start = new Coordinate(x1, y1)
-  def end = new Coordinate(x2, y2)
+  def start = Coordinate(x1, y1)
+  def end = Coordinate(x2, y2)
 
   override def toString = "(%f, %f) ---> (%f, %f)".format(x1, y1, x2, y2)
 
@@ -179,7 +179,7 @@ class Line(var x1: Double, var y1: Double, var x2: Double, var y2: Double) {
         val det3And4 = det(x3, y3, x4, y4)
         val x = det(det1And2, x1 - x2, det3And4, x3 - x4) / detDiff
         val y = det(det1And2, y1 - y2, det3And4, y3 - y4) / detDiff
-        return Some(new Coordinate(x, y))
+        return Some(Coordinate(x, y))
       }
     }
   }
@@ -187,10 +187,7 @@ class Line(var x1: Double, var y1: Double, var x2: Double, var y2: Double) {
   // where are we on this line? even handles negative distances
   def point_on(dist_along: Double): Coordinate = {
     val percent = dist_along / length
-    return new Coordinate(
-      x1 + (width * percent),
-      y1 + (height * percent)
-    )
+    return Coordinate(x1 + (width * percent), y1 + (height * percent))
   }
 
   def perp_shift(off: Double): Line = {
@@ -213,7 +210,7 @@ class Line(var x1: Double, var y1: Double, var x2: Double, var y2: Double) {
 
   // this takes a point along a line and moves it back
   // TODO y inversion problems still?!
-  private def shift_pt(x: Double, y: Double, theta: Double, mag: Double) = new Coordinate(
+  private def shift_pt(x: Double, y: Double, theta: Double, mag: Double) = Coordinate(
     x + (mag * math.cos(theta)), y - (mag * math.sin(theta))
   )
   // TODO cfg for shift_mag

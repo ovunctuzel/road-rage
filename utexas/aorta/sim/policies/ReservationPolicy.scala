@@ -47,6 +47,7 @@ class ReservationPolicy(intersection: Intersection,
 
   // TODO and are reasonably close? otherwise somebody who looks ahead a tick
   // earlier than another gets an advantage, even if theyre really far away
+  // TODO thats why waiting a bit to accept turns makes sense.. get more people involved.
   private def candidates = request_queue.filter(ticket => !ticket.turn_blocked)
 
   def react(): Unit = {

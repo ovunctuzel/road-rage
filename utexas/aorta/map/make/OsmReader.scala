@@ -23,7 +23,7 @@ case class OsmNode(id: String, lon: Double, lat: Double, tags: Map[String, Strin
   extends OsmElement
 {
   override def points = List(coordinate)
-  def coordinate = new Coordinate(lon, lat)
+  def coordinate = Coordinate(lon, lat)
 }
 
 case class OsmWay(id: String, refs: List[OsmNode], tags: Map[String, String]) extends OsmElement {

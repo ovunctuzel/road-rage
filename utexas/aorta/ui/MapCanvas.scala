@@ -378,7 +378,7 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
             case None => None
             case Some(r) => Some(r.road)
           }
-          case Some(e) => Some(Position(e.edge, e.edge.approx_dist(new Coordinate(x, y), 1.0)))
+          case Some(e) => Some(Position(e.edge, e.edge.approx_dist(Coordinate(x, y), 1.0)))
         }
         case Some(v) => Some(v)
       }
@@ -689,10 +689,6 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
     }
     case Key.T => {
       state.show_tooltips = !state.show_tooltips
-    }
-    case Key.Q => {
-      // Run some sort of debuggy thing
-      sim.ui_debug
     }
     case _ => // Ignore the rest
   }

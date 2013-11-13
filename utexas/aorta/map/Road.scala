@@ -38,7 +38,7 @@ class Road(
   val pos_lanes = new MutableList[Edge]
   val neg_lanes = new MutableList[Edge]
 
-  // TODO move this table
+  // TODO move this table. actually, store speed limit
   val speed_limit = Physics.mph_to_si(road_type match {
     case "residential"    => 30
     case "motorway"       => 80

@@ -84,7 +84,7 @@ object Graph {
   }
 
   // inverts what PreGraph1's normalize() does.
-  def world_to_gps(x: Double, y: Double) = new Coordinate(
+  def world_to_gps(x: Double, y: Double) = Coordinate(
     (x / scale) - xoff, ((height - y) / scale) - yoff
   )
 

@@ -35,7 +35,7 @@ class BuildingScraper() {
     val min_y = points.map(_.y).min
     val max_x = points.map(_.x).max
     val max_y = points.map(_.y).max
-    return new Coordinate((min_x + max_x) / 2, (min_y + max_y) / 2)
+    return Coordinate((min_x + max_x) / 2, (min_y + max_y) / 2)
   }
 
   def normalize_coords(fix: (Coordinate) => Coordinate) {

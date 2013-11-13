@@ -14,15 +14,7 @@ import utexas.aorta.common.{StateWriter, StateReader}
  *   the "y inversion" handling from everywhere else.
  */
 
-// TODO case class
-class Coordinate(val x: Double, val y: Double) extends Ordered[Coordinate] {
-  override def hashCode = (x, y).hashCode
-  // TODO override this notion of equals and hashCode automatically.
-  override def equals(other: Any) = other match {
-    case other: Coordinate => { hashCode == other.hashCode }
-    case _ => false
-  }
-
+case class Coordinate(x: Double, y: Double) extends Ordered[Coordinate] {
   // Lexicographic
   override def compare(other: Coordinate) = if (x == other.x)
                                               y.compare(other.y)
@@ -31,7 +23,7 @@ class Coordinate(val x: Double, val y: Double) extends Ordered[Coordinate] {
   // pretty printer
   override def toString = "(%f, %f)".format(x, y)
 
-  def +(other: Coordinate) = new Coordinate(x + other.x, y + other.y)
+  def +(other: Coordinate) = Coordinate(x + other.x, y + other.y)
   def dist_to(o: Coordinate) = Coordinate.gps_dist_in_meters(
     Graph.world_to_gps(this.x, this.y), Graph.world_to_gps(o.x, o.y)
   )
@@ -63,5 +55,5 @@ object Coordinate {
     return radius * c
   }
 
-  def unserialize(r: StateReader) = new Coordinate(r.double, r.double)
+  def unserialize(r: StateReader) = Coordinate(r.double, r.double)
 }

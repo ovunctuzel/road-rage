@@ -125,14 +125,7 @@ class Simulation(val graph: Graph, val scenario: Scenario)
 
     // Let agents react to the new world.
 
-    // Sequential or parallel?
     val reap = agents.filter(a => a.react).toSet
-    /*val sz = 100  // TODO how to tune this?
-    val max_idx = (agents.size.toDouble / sz).ceil.toInt
-    val reap = Range(0, max_idx).par.flatMap(
-      // TODO off by one?
-      idx => agents.view(sz * idx, sz * (idx + 1)).filter(a => a.react)
-    ).toSet*/
 
     if (reap.nonEmpty) {
       // TODO batch GC.
@@ -233,43 +226,6 @@ class Simulation(val graph: Graph, val scenario: Scenario)
   def done =
     (agents.isEmpty && ready_to_spawn.isEmpty && future_spawn.isEmpty) ||
     (tick > time_limit)
-
-  // Do some temporary debugging type thing from the UI
-  def ui_debug() = {
-    // Memoize!
-    val demands = new MutableMap[Edge, Int]()
-
-    def demand(e: Edge, seen: Set[Edge]): Int =
-      if (demands.contains(e)) {
-        demands(e)
-      } else if (e.queue.is_full) {
-        val total = e.queue.capacity + e.preds.map(
-          pred => if (pred.queue.depends_on.getOrElse(null) != e) {
-                    0
-                  } else if (seen.contains(pred)) {
-                    99999999  // <-- marker for gridlock :P
-                  } else {
-                    demand(pred, seen + pred)
-                  }
-        ).sum
-        demands(e) = total
-        total
-      } else {
-        val total = e.queue.slots_filled
-        demands(e) = total
-        total
-      }
-
-    for (e <- graph.edges) {
-      demand(e, Set(e))
-    }
-
-    // Find queues with the most demand
-    // TODO figure out lexicographic tuple ordering
-    /*for (e <- graph.edges.map(e => (-demands(e), e)).sorted.take(10)) {
-      Util.log(s"${e._2} has total demand ${-e._1}")
-    }*/
-  }
 
   def savestate(fn: String): String = {
     val t = Common.timer("savestating")

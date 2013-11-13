@@ -16,6 +16,7 @@ general post-thesis plan
     - only spawn on rightmost
     - https://github.com/scala/pickling
     - consider onewayroad type
+    - dont have so many dependencies on singletons. multiple sims at a time should be fine.
   3) scale up
     - .view, .withFilter
   4) fix

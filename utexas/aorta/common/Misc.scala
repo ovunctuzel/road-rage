@@ -70,7 +70,6 @@ object Util {
       sys.exit
     }
 
-    // TODO write with 'partition'
     val keys = args.zipWithIndex.filter(p => p._2 % 2 == 0).map(p => p._1)
     val vals = args.zipWithIndex.filter(p => p._2 % 2 == 1).map(p => p._1)
 
