@@ -95,6 +95,11 @@ class GuiState(val canvas: MapCanvas) {
 }
 
 class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCanvas {
+  private val graph_bounds = sim.graph.bounds
+  gpsoff_scale = 500.0
+  gpsoff_x = 0 - graph_bounds.min_x
+  gpsoff_y = 0 - graph_bounds.min_y
+
   ///////////////////////
   // TODO organize better. new magic here.
 
@@ -225,8 +230,8 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
     IntersectionType.CommonCase -> cfg.commoncase_color
   )
 
-  def canvas_width = sim.graph.width.toInt
-  def canvas_height = sim.graph.height.toInt
+  def canvas_width = gpsoff_scale.toInt
+  def canvas_height = gpsoff_scale.toInt
 
   // begin in the center
   x_off = canvas_width / 2
@@ -249,8 +254,24 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
   def render_canvas(g2d: Graphics2D, window: Rectangle2D.Double): List[Tooltip] = {
     state.reset(g2d)
 
+    println(s"currently clipped to $window. xoff $x_off, yoff $y_off, zoom $zoom, gpsoff $gpsoff_x, $gpsoff_y")
+    val pt = sim.vertices.head.location
+    val src = new Point2D.Double(pt.x, pt.y)
+    val dst = new Point2D.Double(pt.x, pt.y)
+    g2d.getTransform.transform(src, dst)
+    println(s"  $pt, game is doing, $dst")
+
+    val tr = new AffineTransform()
+    tr.translate(gpsoff_x, gpsoff_y)
+    tr.transform(src, dst)
+    println(s"  then gps offset, $dst")
+
+    tr.scale(gpsoff_scale, gpsoff_scale)
+    tr.transform(src, dst)
+    println(s"  then scale, $dst")
+
     val roads_seen = road_renderers.filter(r => {
-      val hit = r.hits(window)
+      val hit = r.hits(window) || true
       if (hit) {
         r.render_road()
       }
@@ -301,7 +322,7 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
     }
 
     for (driver <- driver_renderers.values) {
-      if (driver.hits(window)) {
+      if (driver.hits(window) || true) {
         driver.render()
       }
     }

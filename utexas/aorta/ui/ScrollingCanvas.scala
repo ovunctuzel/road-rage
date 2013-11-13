@@ -24,6 +24,10 @@ case class Tooltip(x: Double, y: Double, lines: List[String], dark: Boolean)
 
 // SuperMixin lets us get tab back
 abstract class ScrollingCanvas extends Component {
+  protected var gpsoff_x = 0.0
+  protected var gpsoff_y = 0.0
+  protected var gpsoff_scale = 0.0
+
   // TODO percentages, ideally!
   preferredSize = new Dimension(600, Int.MaxValue)
 
@@ -213,7 +217,7 @@ abstract class ScrollingCanvas extends Component {
 
   // prevent coordinates from leaving the canvas
   private def fix_oob() = {
-    // upper logical bounds of the current screen
+    /*// upper logical bounds of the current screen
     val x2 = screen_to_map_x(size.width)
     val y2 = screen_to_map_y(size.height)
 
@@ -228,7 +232,7 @@ abstract class ScrollingCanvas extends Component {
 
     // the lower logical bounds are, of course, the origin
     x_off = math.max(0, x_off)
-    y_off = math.max(0, y_off)
+    y_off = math.max(0, y_off)*/
   }
 
   def center_on(pt: Coordinate) = {
@@ -250,9 +254,16 @@ abstract class ScrollingCanvas extends Component {
 
     val orig_transform = g2d.getTransform
 
+    // TODO ops happen in reverse order. maybe xoff/yoff would be easier if they happened BEFORE
+    // zooming. right now they happen after because of order below.
+
     // Perform the transformations to mimic scrolling and zooming
-    g2d.translate(-x_off, -y_off)
+    g2d.translate(x_off, y_off)
     g2d.scale(zoom, zoom)
+
+    // All coordinates are in GPS, so handle them in one fell swoop with a transformation
+    g2d.scale(gpsoff_scale, gpsoff_scale)
+    g2d.translate(gpsoff_x, gpsoff_y)
 
     // TODO antialias cfg
     // ew, clunky old java crap.

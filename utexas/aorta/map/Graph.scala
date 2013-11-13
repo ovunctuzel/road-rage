@@ -54,6 +54,14 @@ class Graph(
 
   // TODO file library
   def basename = name.replace("maps/", "").replace(".map", "")
+
+  case class Bounds(min_x: Double, min_y: Double, max_x: Double, max_y: Double)
+  def bounds = Bounds(
+    min_x = roads.flatMap(_.points.map(_.x)).min,
+    min_y = roads.flatMap(_.points.map(_.y)).min,
+    max_x = roads.flatMap(_.points.map(_.x)).max,
+    max_y = roads.flatMap(_.points.map(_.y)).max
+  )
 }
 
 object Graph {
