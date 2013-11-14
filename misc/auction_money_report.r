@@ -27,12 +27,12 @@ raw <- dbGetQuery(db, "SELECT auctions_sysbids, auctions_no_sysbids, priority FR
 attach(raw)
 hist(auctions_sysbids, col=color1, main="Histogram of total money spent per agent",
      xlab="Money spent (cents)")
-hist(auctions_no_sysbids, col=color2, add=T)
+hist(auctions_no_sysbids, col=color2, add=TRUE)
 legend(x="top", c("Auctions with system bids", "Auctions without system bids"),
        fill=c(color1, color2))
 
 hist(100 * auctions_sysbids / priority, col=color1,
      main="Histogram of percent of total budget spent per agent", xlab="Percent of budget spent")
-hist(100 * auctions_no_sysbids / priority, col=color2, add=T)
+hist(100 * auctions_no_sysbids / priority, col=color2, add=TRUE)
 legend(x="top", c("Auctions with system bids", "Auctions without system bids"),
        fill=c(color1, color2))
