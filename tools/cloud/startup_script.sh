@@ -22,8 +22,8 @@ for iter in a b c d e
 do
   #./tools/analyze_routes cloud ${GS}-${iter}-
   #./tools/analyze_externality cloud ${GS}-${iter}-
-  #./tools/tradeoff_experiment cloud ${GS}-${iter}-
-  ./tools/auction_experiment cloud ${GS}-${iter}-
+  ./tools/clowncar_experiment cloud ${GS}-${iter}-
+  #./tools/auction_experiment cloud ${GS}-${iter}-
 done
 
 # When we're done, shutdown

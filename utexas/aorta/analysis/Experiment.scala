@@ -83,7 +83,7 @@ class Experiment(config: ExpConfig) {
     return Scenario.load(scenario_fn)
   }
 
-  protected var round = 0
+  protected var round = 1
   protected def simulate(sim: Simulation) = {
     var last_time = 0L
     sim.listen("experiment-framework", _ match {
