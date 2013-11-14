@@ -205,12 +205,12 @@ class DirectedRoad(val road: Road, var id: DirectedRoadID, val dir: Direction.Va
 
   // TODO decorate dir roads with something to add these
 
-  // Free until 75% freeflow capacity, then $1 per % full. Should range from $0-$25 until
+  // Free until 50% freeflow capacity, then $1 per % full. Should range from $0-$50 until
   // congestion.
   // Also, ignore roads with absurdly low capacity. Those're always free.
   def toll =
     if (freeflow_capacity >= 3)
-      new Price(math.max(0, freeflow_percent_full - 75))
+      new Price(math.max(0, freeflow_percent_full - 50))
     else
       new Price(0)
 }

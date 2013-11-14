@@ -23,8 +23,9 @@ object ClownCarExperiment {
 }
 
 class ClownCarExperiment(config: ExpConfig) extends SmartExperiment(config) {
-  // TODO so far, just need to match scale of possible tolls
-  override def scenario_params = Array("budget=0-500")
+  // We never want to send somebody to a road already with more than its freeflow capacity, so the
+  // max budget should be 50 (since that's the cost of a 100% freeflow-congested road).
+  override def scenario_params = Array("budget=0-50")
 
   override def get_metrics(info: MetricInfo) = List(
     new TripTimeMetric(info), new OriginalRouteMetric(info), new RoadCongestionMetric(info)
@@ -36,8 +37,8 @@ class ClownCarExperiment(config: ExpConfig) extends SmartExperiment(config) {
     output_data(List(
       run_trial(base, "baseline"),
       run_trial(ClownCarExperiment.use_router(base, RouterType.DumbToll), "avoid_max"),
-      run_trial(ClownCarExperiment.use_router(base, RouterType.TollThreshold), "toll_threshold"),
-      run_trial(ClownCarExperiment.use_router(base, RouterType.SumToll), "avoid_sum")
+      run_trial(ClownCarExperiment.use_router(base, RouterType.SumToll), "avoid_sum"),
+      run_trial(ClownCarExperiment.use_router(base, RouterType.TollThreshold), "toll_threshold")
     ), scenario)
   }
 }
