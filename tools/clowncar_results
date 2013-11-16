@@ -1,0 +1,6 @@
+#!/bin/bash
+# Must be run from the base AORTA directory, eg,
+# ./tools/clowncar_results
+
+Rscript misc/clowncar_time_report.r $@
+Rscript misc/clowncar_congestion_report.r $@
