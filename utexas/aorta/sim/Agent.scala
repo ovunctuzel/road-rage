@@ -14,10 +14,7 @@ import utexas.aorta.analysis.Agent_Lifetime_Stat
 import utexas.aorta.common.{Util, RNG, Common, cfg, Physics, StateWriter, StateReader, AgentID,
                             EdgeID, ValueOfTime}
 
-// TODO come up with a notion of dimension and movement capability. at first,
-// just use radius bounded by lane widths?
-
-// TODO rm birth tick
+// TODO rm birth tick and start_edge
 class Agent(
   val id: AgentID, val route: Route, val rng: RNG, val wallet: Wallet,
   birth_tick: Double, start_edge: EdgeID
@@ -35,7 +32,7 @@ class Agent(
 
   // We can only set a target acceleration, which we travel at for the entire
   // duration of timesteps.
-  val max_accel = cfg.max_accel   // TODO based on vehicle type
+  val max_accel = cfg.max_accel
   // TODO max_deaccel too
   var speed: Double = 0.0   // meters/sec, I believe
   private var target_accel: Double = 0  // m/s^2
