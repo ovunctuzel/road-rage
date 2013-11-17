@@ -3,9 +3,10 @@
 general post-thesis plan
   1) document code, write tutorials, make a website, advertise on osm wiki
   2) cleanup code
+    ** lookup graph things by ID directly, not int. managed array.
     - try IDEs. hot code swapping, faster compilation, somethign
     - mutable collections explicitly
-    - rm birth tick from agents
+    - rm birth tick and start_edge from agents
     - replace old experiment system with new one
       - and even record the parameters of the runs
       - some metrics too big. record in multiple files? figure out how to use them
@@ -14,7 +15,6 @@ general post-thesis plan
     - dont mess with gps coords, and have a more boring dist fxn
     - tests
     - dont savestate the queue/intersection state, usually. agents have tickets.
-    - only spawn on rightmost
     - https://github.com/scala/pickling
     - consider onewayroad type
     - dont have so many dependencies on singletons. multiple sims at a time should be fine.

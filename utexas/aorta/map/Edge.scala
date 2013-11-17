@@ -173,6 +173,7 @@ class DirectedRoad(val road: Road, var id: DirectedRoadID, val dir: Direction.Va
                 road.pos_lanes
               else
                 road.neg_lanes
+  def rightmost = edges.head
 
   def from: Vertex = edges.head.from
   def to: Vertex = edges.head.to

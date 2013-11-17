@@ -17,7 +17,7 @@ import utexas.aorta.common.{Util, RNG, Common, cfg, Physics, StateWriter, StateR
 // TODO come up with a notion of dimension and movement capability. at first,
 // just use radius bounded by lane widths?
 
-// TODO rm birth tick
+// TODO rm birth tick and start_edge
 class Agent(
   val id: AgentID, val route: Route, val rng: RNG, val wallet: Wallet,
   birth_tick: Double, start_edge: EdgeID

@@ -136,7 +136,7 @@ object Scenario {
 // TODO associate directly with their corresponding class?
 
 case class MkAgent(id: AgentID, birth_tick: Double, seed: Long,
-                   start_edge: EdgeID, start_dist: Double, route: MkRoute,
+                   start: DirectedRoadID, start_dist: Double, route: MkRoute,
                    wallet: MkWallet) extends Ordered[MkAgent]
 {
   // break ties by ID
@@ -146,14 +146,16 @@ case class MkAgent(id: AgentID, birth_tick: Double, seed: Long,
     )
 
   def make(sim: Simulation) = new Agent(
-    id, route.make(sim), new RNG(seed), wallet.make, birth_tick, start_edge
+    id, route.make(sim), new RNG(seed), wallet.make, birth_tick,
+    // Always spawn on the rightmost lane
+    sim.directed_roads(start.int).rightmost.id
   )
 
   def serialize(w: StateWriter) {
     w.int(id.int)
     w.double(birth_tick)
     w.long(seed)
-    w.int(start_edge.int)
+    w.int(start.int)
     w.double(start_dist)
     route.serialize(w)
     wallet.serialize(w)
@@ -164,7 +166,7 @@ case class MkAgent(id: AgentID, birth_tick: Double, seed: Long,
     val d = List(
       Util.diff(birth_tick, other.birth_tick, "spawn time"),
       Util.diff(seed, other.seed, "RNG seed"),
-      Util.diff(start_edge, other.start_edge, "start"),
+      Util.diff(start, other.start, "start"),
       Util.diff(start_dist, other.start_dist, "start distance"),
       Util.diff(route.goal, other.route.goal, "end"),
       Util.diff(route.strategy, other.route.strategy, "route"),
@@ -180,8 +182,8 @@ case class MkAgent(id: AgentID, birth_tick: Double, seed: Long,
 
 object MkAgent {
   def unserialize(r: StateReader) = MkAgent(
-    new AgentID(r.int), r.double, r.long, new EdgeID(r.int), r.double, MkRoute.unserialize(r),
-    MkWallet.unserialize(r)
+    new AgentID(r.int), r.double, r.long, new DirectedRoadID(r.int), r.double,
+    MkRoute.unserialize(r), MkWallet.unserialize(r)
   )
 }
 
@@ -333,10 +335,10 @@ object AgentDistribution {
   lazy val default_route = RouteType.withName(cfg.route)
   lazy val default_wallet = WalletType.withName(cfg.wallet)
 
-  def filter_candidates(starts: Array[Edge]) = starts.filter(_.ok_to_spawn)
+  def filter_candidates(starts: Array[DirectedRoad]) = starts.filter(_.rightmost.ok_to_spawn)
 
   // TODO specify "80% x, 20% y" for stuff...
-  def uniform(ids: Range, starts: Array[Edge], ends: Array[DirectedRoad],
+  def uniform(ids: Range, starts: Array[DirectedRoad], ends: Array[DirectedRoad],
               times: (Double, Double), routes: Array[RouteType.Value],
               wallets: Array[WalletType.Value],
               budgets: (Int, Int)): Array[MkAgent] =
@@ -348,7 +350,7 @@ object AgentDistribution {
       val raw_time = rng.double(times._1, times._2)
       val time = raw_time - (raw_time % cfg.dt_s) // TODO may still have fp issue
       MkAgent(
-        new AgentID(id), time, rng.new_seed, start.id, start.safe_spawn_dist(rng),
+        new AgentID(id), time, rng.new_seed, start.id, start.rightmost.safe_spawn_dist(rng),
         MkRoute(rng.choose(routes), RouterType.ContractionHierarchy, RouterType.Congestion,
                 Nil, rng.choose(ends).id, rng.new_seed),
         // For now, force the same budget and priority here, and clean it up
@@ -359,7 +361,7 @@ object AgentDistribution {
   }
 
   def default(graph: Graph) = uniform(
-    Range(0, cfg.army_size), graph.edges, graph.directed_roads, (0.0, 60.0),
+    Range(0, cfg.army_size), graph.directed_roads, graph.directed_roads, (0.0, 60.0),
     Array(default_route), Array(default_wallet), (100, 200)
   )
 }
@@ -566,15 +568,15 @@ object ScenarioTool {
           // Preserve the original spawning distance, or choose an appropriate
           // new one
           val start_dist = params.get("start") match {
-            case Some(e) if e.toInt == old_a.start_edge => old_a.start_dist
-            case Some(e) => graph.edges(e.toInt).safe_spawn_dist(rng)
+            case Some(r) if r.toInt == old_a.start.int => old_a.start_dist
+            case Some(r) => graph.directed_roads(r.toInt).rightmost.safe_spawn_dist(rng)
             case None => old_a.start_dist
           }
 
           val new_a = old_a.copy(
             // TODO fix all the orElse patterns here
-            start_edge =
-              params.get("start").map(e => new EdgeID(e.toInt)).getOrElse(old_a.start_edge),
+            start =
+              params.get("start").map(e => new DirectedRoadID(e.toInt)).getOrElse(old_a.start),
             start_dist = start_dist,
             birth_tick = params.getOrElse(
               "time", old_a.birth_tick.toString
@@ -616,9 +618,9 @@ object ScenarioTool {
           val starts = params.get("starts") match {
             case Some(fn) => {
               val r = Util.reader(fn)
-              Range(0, r.int).map(_ => graph.edges(r.int)).toArray
+              Range(0, r.int).map(_ => graph.directed_roads(r.int)).toArray
             }
-            case None => graph.edges
+            case None => graph.directed_roads
           }
           val ends = params.get("ends") match {
             case Some(fn) => {

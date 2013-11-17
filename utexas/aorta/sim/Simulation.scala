@@ -186,12 +186,13 @@ class Simulation(val graph: Graph, val scenario: Scenario)
   // True if we've correctly promoted into real agents. Does the work of
   // spawning as well.
   private def try_spawn(spawn: MkAgent): Boolean = {
-    val e = graph.edges(spawn.start_edge.int)
+    val dr = graph.directed_roads(spawn.start.int)
+    val e = dr.rightmost
     if (e.queue.can_spawn_now(spawn.start_dist)) {
       // Will we block anybody that's ready?
       val intersection = e.to.intersection
       val will_block =
-        if (graph.edges(spawn.route.goal.int).directed_road != e.directed_road)
+        if (spawn.route.goal != dr.id)
           e.queue.all_agents.find(
             a => a.at.dist < spawn.start_dist && a.wont_block(intersection)
           ).isDefined || e.dont_block
@@ -204,7 +205,7 @@ class Simulation(val graph: Graph, val scenario: Scenario)
         if (omit == a.id) {
           Util.log(s"$a would have been created, but omitting")
         } else {
-          a.setup(graph.edges(spawn.start_edge.int), spawn.start_dist)
+          a.setup(e, spawn.start_dist)
         }
         tell_listeners(EV_AgentSpawned(a))
         return true
