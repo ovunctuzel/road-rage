@@ -186,13 +186,12 @@ object MkAgent {
 }
 
 // orig_router, rerouter, and initial_path are only for strategy = Path
-// TODO ID of a directed road would be way better for goal
 case class MkRoute(
   strategy: RouteType.Value, orig_router: RouterType.Value, rerouter: RouterType.Value,
-  initial_path: List[DirectedRoadID], goal: EdgeID, seed: Long
+  initial_path: List[DirectedRoadID], goal: DirectedRoadID, seed: Long
 ) {
   def make(sim: Simulation) = Factory.make_route(
-    strategy, sim.graph, orig_router, rerouter, sim.edges(goal.int).directed_road, new RNG(seed),
+    strategy, sim.graph, orig_router, rerouter, sim.directed_roads(goal.int), new RNG(seed),
     initial_path.map(id => sim.graph.directed_roads(id.int))
   )
 
@@ -210,7 +209,7 @@ case class MkRoute(
 object MkRoute {
   def unserialize(r: StateReader) = MkRoute(
     RouteType(r.int), RouterType(r.int), RouterType(r.int),
-    Range(0, r.int).map(_ => new DirectedRoadID(r.int)).toList, new EdgeID(r.int), r.long
+    Range(0, r.int).map(_ => new DirectedRoadID(r.int)).toList, new DirectedRoadID(r.int), r.long
   )
 }
 
@@ -337,7 +336,7 @@ object AgentDistribution {
   def filter_candidates(starts: Array[Edge]) = starts.filter(_.ok_to_spawn)
 
   // TODO specify "80% x, 20% y" for stuff...
-  def uniform(ids: Range, starts: Array[Edge], ends: Array[Edge],
+  def uniform(ids: Range, starts: Array[Edge], ends: Array[DirectedRoad],
               times: (Double, Double), routes: Array[RouteType.Value],
               wallets: Array[WalletType.Value],
               budgets: (Int, Int)): Array[MkAgent] =
@@ -360,7 +359,7 @@ object AgentDistribution {
   }
 
   def default(graph: Graph) = uniform(
-    Range(0, cfg.army_size), graph.edges, graph.edges, (0.0, 60.0),
+    Range(0, cfg.army_size), graph.edges, graph.directed_roads, (0.0, 60.0),
     Array(default_route), Array(default_wallet), (100, 200)
   )
 }
@@ -584,7 +583,8 @@ object ScenarioTool {
               strategy = RouteType.withName(
                 params.getOrElse("route", old_a.route.strategy.toString)
               ),
-              goal = params.get("end").map(e => new EdgeID(e.toInt)).getOrElse(old_a.route.goal)
+              goal = params.get("end").map(r => new DirectedRoadID(r.toInt))
+                .getOrElse(old_a.route.goal)
             ),
             wallet = old_a.wallet.copy(
               policy = WalletType.withName(
@@ -623,9 +623,9 @@ object ScenarioTool {
           val ends = params.get("ends") match {
             case Some(fn) => {
               val r = Util.reader(fn)
-              Range(0, r.int).map(_ => graph.edges(r.int)).toArray
+              Range(0, r.int).map(_ => graph.directed_roads(r.int)).toArray
             }
-            case None => graph.edges
+            case None => graph.directed_roads
           }
           val delay = params.get("delay") match {
             case Some(t) => t.toDouble

@@ -221,6 +221,7 @@ class Simulation(val graph: Graph, val scenario: Scenario)
   def roads = graph.roads
   def vertices = graph.vertices
   def edges = graph.edges
+  def directed_roads = graph.directed_roads
 
   // TODO move time limit to scenarios?
   def done =

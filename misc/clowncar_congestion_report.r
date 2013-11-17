@@ -48,4 +48,6 @@ for (city in cities$map) {
   hist(onlybig(grab("avoid_max")), col=color2, add=TRUE, density=5, angle=45)
   hist(onlybig(grab("avoid_sum")), col=color3, add=TRUE, density=5, angle=135, border="black")
   legend(x="top", c("Baseline", "Avoid Max", "Avoid Sum"), fill=c(color1, color2, color3))
+
+  # TODO and under 100 only...
 }
