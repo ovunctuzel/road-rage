@@ -3,7 +3,6 @@
 general post-thesis plan
   1) document code, write tutorials, make a website, advertise on osm wiki
   2) cleanup code
-    ** lookup graph things by ID directly, not int. managed array.
     - try IDEs. hot code swapping, faster compilation, somethign
     - mutable collections explicitly
     - rm birth tick and start_edge from agents

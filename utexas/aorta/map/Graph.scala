@@ -58,6 +58,7 @@ class Graph(
   override def get_r(id: RoadID) = roads(id.int)
   override def get_v(id: VertexID) = vertices(id.int)
   override def get_e(id: EdgeID) = edges(id.int)
+  def get_dr(id: DirectedRoadID) = directed_roads(id.int)
 
   // TODO file library
   def basename = name.replace("maps/", "").replace(".map", "")

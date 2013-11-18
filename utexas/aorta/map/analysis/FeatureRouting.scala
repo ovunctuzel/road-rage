@@ -9,7 +9,7 @@ import scala.collection.mutable.{PriorityQueue, HashSet, ListBuffer, HashMap}
 import utexas.aorta.map.{Graph, DirectedRoad, Coordinate}
 import utexas.aorta.sim.{IntersectionType, Scenario, RouterType}
 
-import utexas.aorta.common.{Util, Common, MathVector}
+import utexas.aorta.common.{Util, Common, MathVector, VertexID, DirectedRoadID}
 
 // Encodes all factors describing the quality of a path
 case class RouteFeatures(
@@ -54,8 +54,8 @@ object RouteFeatures {
       reservation_count = one_if(IntersectionType.Reservation),
       queued_turn_count = step.to.intersection.policy.queued_count,
       total_avg_waiting_time = step.to.intersection.average_waiting_time,
-      road_demand = demand.directed_roads(step.id.int).toDouble,
-      intersection_demand = demand.intersections(step.to.id.int).toDouble,
+      road_demand = demand.directed_road(step.id).toDouble,
+      intersection_demand = demand.intersection(step.to.id).toDouble,
       agents_enroute = step.edges.map(_.queue.agents.size).sum
     )
   }
@@ -63,11 +63,14 @@ object RouteFeatures {
 
 // Magically knows where everybody wants to go ahead of time. Think of this as representing a
 // historical average, though.
-case class Demand(directed_roads: Array[Integer], intersections: Array[Integer])
+class Demand(directed_road_counts: Array[Integer], intersection_counts: Array[Integer]) {
+  def directed_road(id: DirectedRoadID) = directed_road_counts(id.int)
+  def intersection(id: VertexID) = intersection_counts(id.int)
+}
 
 object Demand {
   def blank_for(scenario: Scenario, graph: Graph) =
-    Demand(Array.fill(graph.directed_roads.size)(0), Array.fill(graph.vertices.size)(0))
+    new Demand(Array.fill(graph.directed_roads.size)(0), Array.fill(graph.vertices.size)(0))
 
   def demand_for(scenario: Scenario, graph: Graph): Demand = {
     val demand = blank_for(scenario, graph)

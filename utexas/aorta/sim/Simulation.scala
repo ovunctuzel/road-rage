@@ -17,7 +17,7 @@ import utexas.aorta.sim.policies.Phase
 
 import utexas.aorta.ui.ReplayDiffScheme
 import utexas.aorta.common.{Util, Common, cfg, StateWriter, StateReader, Flags, AgentID,
-                            ListenerPattern}
+                            ListenerPattern, RoadID, VertexID, EdgeID, DirectedRoadID}
 import utexas.aorta.analysis.{Heartbeat_Stat, Scenario_Stat, ReplayChecker, Measurement}
 
 // TODO take just a scenario, or graph and scenario?
@@ -136,7 +136,7 @@ class Simulation(val graph: Graph, val scenario: Scenario)
 
     // Let intersections react to the new world. By doing this after agent
     // steps, we ensure the intersections' temporary state becomes firm.
-    vertices.foreach(v => {
+    graph.vertices.foreach(v => {
       v.intersection.policy.react_tick
     })
     
@@ -219,10 +219,10 @@ class Simulation(val graph: Graph, val scenario: Scenario)
   // Queries
 
   // Provide convenient shortcut to graph stuff
-  def roads = graph.roads
-  def vertices = graph.vertices
-  def edges = graph.edges
-  def directed_roads = graph.directed_roads
+  def get_r(r: RoadID) = graph.get_r(r)
+  def get_v(v: VertexID) = graph.get_v(v)
+  def get_e(e: EdgeID) = graph.get_e(e)
+  def get_dr(dr: DirectedRoadID) = graph.get_dr(dr)
 
   // TODO move time limit to scenarios?
   def done =

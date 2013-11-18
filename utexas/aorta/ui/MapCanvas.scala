@@ -17,7 +17,7 @@ import utexas.aorta.sim.{Simulation, Agent, EV_Signal_Change, IntersectionType, 
                          EV_Transition, EV_Reroute, EV_Heartbeat, AgentMap}
 import utexas.aorta.sim.PathRoute
 
-import utexas.aorta.common.{Util, RNG, Common, cfg}
+import utexas.aorta.common.{Util, RNG, Common, cfg, EdgeID, RoadID, VertexID}
 
 object Mode extends Enumeration {
   type Mode = Value
@@ -240,7 +240,7 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
   // At this point, signal policies have already fired up and sent the first
   // round of greens. We missed it, so compute manually the first time.
   // TODO better solution
-  for (v <- sim.vertices) {
+  for (v <- sim.graph.vertices) {
     for (t <- v.intersection.policy.current_greens) {
       green_turns(t) = GeomFactory.line2awt(GeomFactory.turn_body(t))
     }
@@ -291,7 +291,7 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
       }
 
       // Illustrate the intersection policies
-      for (v <- sim.vertices) {
+      for (v <- sim.graph.vertices) {
         val bub = state.bubble(v.location)
         if (bub.intersects(window)) {
           g2d.setColor(policy_colors(v.intersection.policy.policy_type))
@@ -372,7 +372,7 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
 
     // TODO this is _kind_ of ugly.
     state.current_obj = driver_renderers.values.find(a => a.hits(cursor)) match {
-      case None => sim.vertices.find(v => state.bubble(v.location).intersects(cursor)) match {
+      case None => sim.graph.vertices.find(v => state.bubble(v.location).intersects(cursor)) match {
         case None => road_renderers.flatMap(r => r.edges).find(e => e.hits(cursor)) match {
           case None => road_renderers.find(r => r.hits(cursor)) match {
             case None => None
@@ -404,7 +404,7 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
       // 2) code reads like a simple flow
 
       // Let's find all vertices inside the polygon.
-      val rds = sim.vertices.filter(
+      val rds = sim.graph.vertices.filter(
         v => polygon.contains(v.location.x, v.location.y)).flatMap(v => v.roads
       ).toSet
       Util.log("Matched " + rds.size + " roads")
@@ -432,7 +432,7 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
     }
     case EV_Select_Polygon_For_Policy() => {
       // Let's find all vertices inside the polygon.
-      val intersections = sim.vertices.filter(
+      val intersections = sim.graph.vertices.filter(
         v => polygon.contains(v.location.x, v.location.y)
       ).map(_.intersection)
       Util.log("Matched " + intersections.size + " intersections")
@@ -454,7 +454,7 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
       Util.mkdir(dir)
       Dialog.showInput(message = "Name this area", initial = "") match {
         case Some(name) => {
-          val edges = sim.vertices.filter(
+          val edges = sim.graph.vertices.filter(
             v => polygon.contains(v.location.x, v.location.y)).flatMap(v => v.edges
           ).map(_.id).toArray
           val w = Util.writer(s"${dir}/${name}")
@@ -471,7 +471,7 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
 
   def handle_ev_action(ev: String): Unit = ev match {
     case "spawn-army" => {
-      prompt_generator(sim.edges, sim.edges)
+      prompt_generator(sim.graph.edges, sim.graph.edges)
     }
     case "step" => {
       repaint
@@ -503,7 +503,7 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
       prompt_int("What edge ID do you seek?") match {
         case Some(id) => {
           try {
-            val e = sim.edges(id.toInt)
+            val e = sim.get_e(new EdgeID(id.toInt))
             // TODO center on some part of the edge and zoom in, rather than
             // just vaguely moving that way
             Util.log("Here's " + e)
@@ -522,7 +522,7 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
       prompt_int("What road ID do you seek?") match {
         case Some(id) => {
           try {
-            val r = sim.roads(id.toInt)
+            val r = sim.get_r(new RoadID(id.toInt))
             // TODO center on some part of the road and zoom in, rather than
             // just vaguely moving that way
             Util.log("Here's " + r)
@@ -562,7 +562,7 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
       prompt_int("What vertex ID do you seek?") match {
         case Some(id) => {
           try {
-            val v = sim.vertices(id.toInt)
+            val v = sim.get_v(new VertexID(id.toInt))
             Util.log("Here's " + v)
             center_on(v.location)
             repaint

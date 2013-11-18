@@ -146,9 +146,7 @@ case class MkAgent(id: AgentID, birth_tick: Double, seed: Long,
     )
 
   def make(sim: Simulation) = new Agent(
-    id, route.make(sim), new RNG(seed), wallet.make, birth_tick,
-    // Always spawn on the rightmost lane
-    sim.directed_roads(start.int).rightmost.id
+    id, route.make(sim), new RNG(seed), wallet.make, birth_tick, sim.get_dr(start).rightmost.id
   )
 
   def serialize(w: StateWriter) {
@@ -193,8 +191,8 @@ case class MkRoute(
   initial_path: List[DirectedRoadID], goal: DirectedRoadID, seed: Long
 ) {
   def make(sim: Simulation) = Factory.make_route(
-    strategy, sim.graph, orig_router, rerouter, sim.directed_roads(goal.int), new RNG(seed),
-    initial_path.map(id => sim.graph.directed_roads(id.int))
+    strategy, sim.graph, orig_router, rerouter, sim.get_dr(goal), new RNG(seed),
+    initial_path.map(id => sim.graph.get_dr(id))
   )
 
   def serialize(w: StateWriter) {
