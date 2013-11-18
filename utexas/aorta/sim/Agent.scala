@@ -14,21 +14,14 @@ import utexas.aorta.analysis.Agent_Lifetime_Stat
 import utexas.aorta.common.{Util, RNG, Common, cfg, Physics, StateWriter, StateReader, AgentID,
                             EdgeID, ValueOfTime}
 
-// TODO rm birth tick and start_edge
 class Agent(
-  val id: AgentID, val route: Route, val rng: RNG, val wallet: Wallet,
-  birth_tick: Double, start_edge: EdgeID
+  val id: AgentID, val route: Route, val rng: RNG, val wallet: Wallet
 ) extends Ordered[Agent] with Renderable
 {
   //////////////////////////////////////////////////////////////////////////////
   // State
 
   var at: Position = null
-
-  // Just for stats. Not hard to maintain. (spawned tick, started tick, where we
-  // spawned, initial budget)
-  // (var for serialization...)
-  private var stat_memory = (birth_tick, Common.tick, start_edge, wallet.budget)
 
   // We can only set a target acceleration, which we travel at for the entire
   // duration of timesteps.
@@ -68,14 +61,9 @@ class Agent(
     route.serialize(w)
     rng.serialize(w)
     wallet.serialize(w)
-    w.int(start_edge.int)
 
     // Then the rest of our state
     at.serialize(w)
-    w.double(stat_memory._1)
-    w.double(stat_memory._2)
-    w.int(stat_memory._3.int)
-    w.int(stat_memory._4)
     w.double(speed)
     w.double(target_accel)
     behavior.target_lane match {
@@ -293,10 +281,10 @@ class Agent(
       }
       Util.assert_eq(tickets.isEmpty, true)
     }
+    val maker = Common.sim.scenario.agents(id.int)
     Common.record(Agent_Lifetime_Stat(
-      id, stat_memory._1, stat_memory._2, stat_memory._3, route.goal.id,
-      route.route_type, wallet.wallet_type, stat_memory._4, Common.tick,
-      wallet.budget, wallet.priority, !interrupted
+      id, maker.birth_tick, maker.start, route.goal.id, route.route_type, wallet.wallet_type,
+      maker.wallet.budget, Common.tick, wallet.budget, wallet.priority, !interrupted
     ))
     Common.sim.tell_listeners(EV_AgentQuit(this))
     AgentMap.maps.foreach(m => m.destroy(this))
@@ -328,7 +316,6 @@ class Agent(
     } else {
       Util.log("Not lane-changing")
     }
-    Util.log(s"Stat memory (of spawning): $stat_memory")
     behavior.dump_info
     Util.log_pop
   }
@@ -505,19 +492,15 @@ class Agent(
 
   // Seconds saved per dollar. Just use priority for now.
   def value_of_time = new ValueOfTime(wallet.priority)
-
-  def time_spawned = stat_memory._2
 }
 
 object Agent {
   def unserialize(r: StateReader, graph: Graph): Agent = {
-    // Pass in a bogus birth_tick, since we fix it up 
     val a = new Agent(
       new AgentID(r.int), Route.unserialize(r, graph), RNG.unserialize(r),
-      Wallet.unserialize(r), -1.0, new EdgeID(r.int)
+      Wallet.unserialize(r)
     )
     a.at = Position.unserialize(r, graph)
-    a.stat_memory = (r.double, r.double, new EdgeID(r.int), r.int)
     a.speed = r.double
     a.target_accel = r.double
     a.behavior.target_lane = r.int match {

@@ -145,9 +145,7 @@ case class MkAgent(id: AgentID, birth_tick: Double, seed: Long,
       (other.birth_tick, other.id.int), (birth_tick, id.int)
     )
 
-  def make(sim: Simulation) = new Agent(
-    id, route.make(sim), new RNG(seed), wallet.make, birth_tick, sim.get_dr(start).rightmost.id
-  )
+  def make(sim: Simulation) = new Agent(id, route.make(sim), new RNG(seed), wallet.make)
 
   def serialize(w: StateWriter) {
     w.int(id.int)

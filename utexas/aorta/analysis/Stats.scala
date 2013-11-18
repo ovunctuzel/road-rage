@@ -18,12 +18,13 @@ case class Scenario_Stat(
 
 // Summarizes an agent's lifetime
 case class Agent_Lifetime_Stat(
-  id: AgentID, spawn_tick: Double, start_tick: Double, start: EdgeID, end: DirectedRoadID,
+  id: AgentID, birth_tick: Double, start: DirectedRoadID, end: DirectedRoadID,
   route: RouteType.Value, wallet: WalletType.Value, start_budget: Int,
   end_tick: Double, end_budget: Int, priority: Int, finished: Boolean
 ) extends Measurement
 {
-  def trip_time = end_tick - spawn_tick // could be start_tick
+  // Note this includes waiting to actually spawn on the first lane
+  def trip_time = end_tick - birth_tick
   def total_spent = start_budget - end_budget
   // High priority and long trip time is bad; low priority or low trip time is
   // good.

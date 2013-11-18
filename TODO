@@ -5,7 +5,6 @@ general post-thesis plan
   2) cleanup code
     - try IDEs. hot code swapping, faster compilation, somethign
     - mutable collections explicitly
-    - rm birth tick and start_edge from agents
     - replace old experiment system with new one
       - and even record the parameters of the runs
       - some metrics too big. record in multiple files? figure out how to use them

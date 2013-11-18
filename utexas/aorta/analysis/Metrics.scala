@@ -107,7 +107,7 @@ class OriginalRouteMetric(info: MetricInfo) extends SinglePerAgentMetric(info) {
     })
     // [0, 100]
     case EV_Stat(s: Agent_Lifetime_Stat) => per_agent(s.id) =
-      100.0 * ((first_reroute_time.getOrElse(s.id, s.end_tick) - s.start_tick) / s.trip_time)
+      100.0 * ((first_reroute_time.getOrElse(s.id, s.end_tick) - s.birth_tick) / s.trip_time)
     case _ =>
   })
 }
