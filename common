@@ -4,7 +4,10 @@ GRAPHHOPPER="3rd_party/graphhopper-0.1.jar"
 LWJGL="/usr/share/lwjgl/jar/lwjgl.jar:/usr/share/lwjgl/jar/lwjgl_util.jar"
 GUI="-Djava.library.path=/usr/share/lwjgl/native/linux/"
 
-CLASSPATH=".build:$GRAPHHOPPER:$LWJGL"
+#BUILD=".build"
+BUILD="target/scala-2.11.0-M4/classes/"
+
+CLASSPATH="$BUILD:$GRAPHHOPPER:$LWJGL"
 #TEST_MEM="-J-verbosegc"
 TEST_MEM=""
 JVM_OPTS="-J-Xmx1536m $TEST_MEM"

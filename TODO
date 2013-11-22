@@ -201,8 +201,6 @@ general post-thesis plan
 - merge headless/gui clients
 - step one tick
 - label agents with their number in the GUI
-- javafx?
-- 3D. ardor? jme?
 - visualize red/green lights better
 - cmdline switch to follow stuff or zoom in somewhere
 - visualize lookahead
@@ -231,14 +229,5 @@ general post-thesis plan
   then solve for collisions?
 
 # Administrative
-- website
-  - build instructions (with scala and such)
-  - wiki docs
-  - scaladoc
-  - domain name?
-- osm scraper script
-  https://github.com/migurski/Extractotron/
 - rename lanes/intersections/junctions in code too? policy -> controller?
-- switch ant to sbt? https://github.com/harrah/xsbt/wiki/Examples
 - repository of detailed cities with demand data?
-- logo

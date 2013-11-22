@@ -16,3 +16,8 @@ final*/*
 
 # ew, python
 *.pyc
+
+# sbt
+target/
+.history
+lib/
