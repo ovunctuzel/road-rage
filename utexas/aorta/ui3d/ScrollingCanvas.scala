@@ -61,13 +61,15 @@ trait MousePanning extends Controls {
 
 trait MouseZooming extends Controls {
   // Constants
-  private val zoom_step = (1.0 / 120) * 5
+  private val slow_zoom_step = (1.0 / 120) * 5
+  private val fast_zoom_step = (1.0 / 120) * 30
   private val min_zoom = 0.1
 
   override def handle_input() {
     val scroll_delta = Mouse.getDWheel()
     if (scroll_delta != 0) {
-      zoom = math.max(min_zoom, zoom - (zoom_step * scroll_delta))
+      val step = if (Keyboard.isKeyDown(Keyboard.KEY_LCONTROL)) fast_zoom_step else slow_zoom_step
+      zoom = math.max(min_zoom, zoom - (step * scroll_delta))
       // make mouse still point at the same thing after zooming?
       //x_off = ((zoom / old_zoom) * (mouse_at_x + x_off)) - mouse_at_x
       //y_off = ((zoom / old_zoom) * (mouse_at_y + y_off)) - mouse_at_y
