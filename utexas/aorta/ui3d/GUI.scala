@@ -29,6 +29,14 @@ class GUI(sim: Simulation) extends ScrollingCanvas with PauseToggling {
       GL11.glEnd()
     }
 
+    // Agents...
+    GL11.glColor3d(0, 0, 1)
+    for (a <- sim.agents) {
+      val (line, front_dist) = a.at.on.current_pos(a.at.dist)
+      val front_pt = line.point_on(front_dist)
+      Primitives.sphere(front_pt.x, front_pt.y, 0)
+    }
+
     // Simulate a little
     if (!paused) {
       sim.step()

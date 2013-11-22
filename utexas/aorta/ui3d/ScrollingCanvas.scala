@@ -147,10 +147,7 @@ abstract class ScrollingCanvas() extends Controls
 
       // TODO for debug: Draw the point we're looking at
       GL11.glColor3d(1, 1, 1)
-      GL11.glPushMatrix()
-      GL11.glTranslated(x_off.toFloat, y_off.toFloat, 0)
-      new Sphere().draw(2, 16, 16)
-      GL11.glPopMatrix()
+      Primitives.sphere(x_off, y_off, 0)
 
       Display.update()
       Display.sync(fps)
