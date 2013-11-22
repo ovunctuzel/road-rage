@@ -2,4 +2,4 @@
 
 . common
 
-scala -cp $CLASSPATH:$SWING $JVM_OPTS utexas.aorta.sim.Headless $@
+scala -cp $CLASSPATH $GUI $JVM_OPTS utexas.aorta.sim.Headless $@

@@ -24,6 +24,7 @@ general post-thesis plan
       *** buildings in seattle. color in regions of neighborhood blocks by zone.
     - traffic lights shouldnt have long yellow
     - reservation protocol should actually be faster. opportunistic.
+      - michael's refined notion of turn conflict
     - not sure: if LC dist is > road dist, super problems
     - min lengths should matter for lanes everywhere, not roads
     - degenerate verts should have same num of lanes

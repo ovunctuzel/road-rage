@@ -1,0 +1,5 @@
+#!/bin/bash
+
+. common
+
+scala -cp $CLASSPATH $GUI $JVM_OPTS utexas.aorta.ui3d.GUI $@

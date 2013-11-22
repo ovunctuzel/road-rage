@@ -1,10 +1,12 @@
 #!/bin/bash
 
 GRAPHHOPPER="3rd_party/graphhopper-0.1.jar"
-SWING="/usr/share/java/scala-swing.jar" # TODO not used on my system anymore
+LWJGL="/usr/share/lwjgl/jar/lwjgl.jar:/usr/share/lwjgl/jar/lwjgl_util.jar"
+GUI="-Djava.library.path=/usr/share/lwjgl/native/linux/"
 
-CLASSPATH=".build:$GRAPHHOPPER"
+CLASSPATH=".build:$GRAPHHOPPER:$LWJGL"
 #TEST_MEM="-J-verbosegc"
 TEST_MEM=""
 JVM_OPTS="-J-Xmx1536m $TEST_MEM"
-FULL_CP="$GRAPHHOPPER:$SWING"
+
+# TODO just make a $SCALA
