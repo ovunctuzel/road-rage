@@ -1,233 +1,154 @@
 # TODO #
 
-general post-thesis plan
-  1) document code, write tutorials, make a website, advertise on osm wiki
-  2) cleanup code
-    - try IDEs. hot code swapping, faster compilation, somethign
-    - mutable collections explicitly
-    - replace old experiment system with new one
-      - and even record the parameters of the runs
-      - some metrics too big. record in multiple files? figure out how to use them
-    - rename edges as lanes, and directed roads as links?
-    - why end_threshold at all?
-    - dont mess with gps coords, and have a more boring dist fxn
-    - tests
-    - dont savestate the queue/intersection state, usually. agents have tickets.
-    - https://github.com/scala/pickling
-    - consider onewayroad type
-    - dont have so many dependencies on singletons. multiple sims at a time should be fine.
-  3) scale up
-    - .view, .withFilter
-  4) fix
-    - different measure of live vs moved agents. cumulative
-    - better trip distribution
-      *** buildings in seattle. color in regions of neighborhood blocks by zone.
-    - traffic lights shouldnt have long yellow
-    - reservation protocol should actually be faster. opportunistic.
-      - michael's refined notion of turn conflict
-    - not sure: if LC dist is > road dist, super problems
-    - min lengths should matter for lanes everywhere, not roads
-    - degenerate verts should have same num of lanes
-    - different agent params
-    - tune all params
-    - yield policy
-    - unprotected left, right turn on red, better stop sign
-    - sysbids should be able to divide
-    - if easy: backpressure lights
-    - debugging useful: warn when turn not used for a while
-    - metrics for how many reroutes necessary (grouped by cause), how many failed LCs
-    - is it even valid to consider results from first/last agents? need steady-state.
-    - for better lights, want to defer decision... can we do that now?
-  5) experiment framework
-    - output RAW data thats importable into other stuff, have easy script-like way to get aggregate
-      results later
+####################################################################################################
+### Current projects
 
-# Marginal Externality #
+# Trip distribution #
 
-- post analysis of how people changed
-- a way in the UI to highlight the special guy
-- choose a few diff routes
-  - tradeoff between congested routes and distance
-  - spectrum of congestedness
-- think about features for learning externality
+- poisson, other distributions?
+- repository of detailed cities with demand data?
 
-# Cleanup #
+# 3D GUI: Base #
 
+- port all content things to lwjgl
+- better overhead controls
+- perspective camera
+- 3D buildings
+
+# Website #
+
+- better layout
+  - contact me
+- screenshots
+- about/features page
+- setup instructions
+  - eclipse, sbt tutorials
+- tutorials for using, experimenting
+- advertise on OSM wiki
+
+# Debugging, info, etc #
+
+- different measure of live vs moved agents. cumulative
+- debugging useful: warn when turn not used for a while, and when agent caught in a long loop
+- metrics for how many reroutes necessary (grouped by cause), how many failed LCs
+- is it even valid to consider results from first/last agents? need steady-state.
+- measure how long a vehicle spends thrashing about bc original path is congested
+
+# Easy code cleanup #
+
+- mutable collections explicitly and consistent use of the right one
+  (maybe doc them)
+- rename edges as lanes, and directed roads as links? policy -> controller? vertex -> junction?
+- dont savestate the queue/intersection state, usually. agents have tickets.
+- dont have so many dependencies on singletons. multiple sims at a time should be fine.
+- https://github.com/scala/pickling
+- consider onewayroad type
 - var lines are so confusing and bug-prone
   when we mod part of a line, line's length AND traversables length gets screwed
   get rid of set_lines
 - traversables should be list of points, to avoid needing to make things meet up
-- 202 var's used. reduce, especially in objects.
-- num of lanes bounded by num of times could LC
-- keep orig GPS coords and only scale around for UI
-  - then obselete set_params
+- reduce vars and publics
+- distance/time types
+- split the map making passes
+- immutable constructs with mutable builders
+- merge headless/gui clients
+
+# Traffic model simplification #
+
+- why end_threshold at all?
+- dont mess with gps coords, and have a more boring dist fxn
+
+# Experiment framework #
+
+- better R templates, or another solution
+- port old experiments
+- even record the parameters of the runs?
+
+# Intersection policies #
+
+- traffic lights shouldnt have long yellow
+- reservation protocol should actually be faster. opportunistic.
+  - michael's refined notion of turn conflict
+- yield policy
+- unprotected left, right turn on red, better stop sign
+- if easy: backpressure lights
 - consider a common case policy, in places like claycut rd
-- measure how long a vehicle spends thrashing about bc original path is congested
-- gridlock nit: dont rechoose same thing when trying again
-- sim speed
-  - turn blocked invariant, really maintain it for efficiency!
-  - do it faster with invariants, look at just the next guy
-    - BUT we can be route-done, but have somebody blocking in front of us
-      initially. so in that case, search forward?
-      - this only happens because we join a queue without demanding invariants of
-        stuff in front of us
-- bugs
-  - agents not stopping at exactly the right dist the first time
+- for better lights, want to defer decision... can we do that now?
+- optimize fixpoints
+
+####################################################################################################
+### Future projects
+
+# Bugs #
+
+- agents not stopping at exactly the right dist the first time
 - savestating
   - bad filenames when saving from a loaded savestate
   - resumable logging doesnt really work if they simulated past the savestate...
 
-# Clever routing #
-
-- reroute when necessary
-  - before we hit a jam (k-lookahead...)
-  - semi-constantly (D*Lite ?)
-- worry about liveness?
-
 # Auctions #
 
-- tune sysbids properly...
-- sys wallet can punish by dividing.. also, doubles
+- sysbids
+  - doubles
+  - tune
+  - divide
 - multiple bids for same item.. handle that
-- define losers generally in code too
-
 - system bid: bonus to reservation if i'll take the same time as somebody else
-- commoncase auctions and system bid
-  - reservation with certain system bid for compatible turns
 
-# Easy Parallelization
-- PARALLEL DETERMINISM INVALID: queue avail_slots
+# Clown Car #
 
-- how to PAR
-  - benchmark carefully
+- take into account time and cost simultaneously
+- regular rerouting
 
-- easy PAR
-  - queue end_step
-  - intersection end_step
-  - intersection reaction
-  - lookahead
+# Hard realism #
 
-- hard PAR: agent steps
-  - dont forget handle_exit
-  - LCing means chunking by road
-  - figure out where everyone ends up, then merge queues in one thread?
+- different agent params
+- tune all params
 
-# Fastpaths / Sparse Execution
+# Tests #
+
+- how?
+- wacky cases of 2 side-by-side agents wanting to swap places?
+
+# Performance: misc #
+
+- .view, .withFilter
+- turn blocked invariant, really maintain it for efficiency!
+  just look at the next guy. BUT we can be route-done, but have somebody blocking in front of us
+  initially. so in that case, search forward?
+  - this only happens because we join a queue without demanding invariants of stuff in front of us
+
+# Performance: fastpaths #
+
 - agents and intersections could wake each other up now
 
-# Map Construction
-- fix new small issues..
-  - floating vertices due to nuking all roads that lead up to it, and choosing
-    the vert to keep poorly
-  - not seeing any geometry is a bit disconcerting... gov st
+# Performance: parallelization #
+
+- PARALLEL DETERMINISM INVALID: queue avail_slots
+
+# Map making #
+
+- not sure: if LC dist is > road dist, super problems
+- min lengths should matter for lanes everywhere, not roads
+- degenerate verts should have same num of lanes
+- num of lanes bounded by num of times could LC
+- floating vertices due to nuking all roads that lead up to it, and choosing
+  the vert to keep poorly
+- not seeing any geometry is a bit disconcerting... gov st
 - handle cul de sacs once and for all... bernwood is example in BR. remove if
   only one other link?
 - dont tie map filename to the serialized thing
 - xml output too for non-aorta clients
-- clean up verts with just 2 roads
-  - pass3, since doomed pruning makes new problems
-  - but keep pass 2 version? seems to prevent some stuff from getting doomed!
-- short roads into longer turns
-  - 50 meters?
-  - dont nix roads connected to vertices with only one road!
-  - bernwood drive and other places where the number blows up
-
-  - fix the geometry stuff later. what stuff?
-    - maybe remove set_lines?
-  - remove ui debugging stuff
 - make turns better, more systematically
   - try to not remove pieces of maps at all
-
 - use http://wiki.openstreetmap.org/wiki/Relation:restriction
-- our pruning of pedestrian ways seems to be a bit too enthusiastic (see Guadalupe St)
-- deterministic construction is still wonky, with lines meeting up
-- cul-de-sac handling in p2... needed?
-  - Claus Circle in BR... has no outgoing turns.
-- connectivity fixpoint algorithm shouldnt be necessary?
-- lots of things break if we have a vertex with a self-loop
-
-# Simulation Realism
-- slow down for turns (a speed limit)
-- diversity... different vehicle lengths, parameters
-- calibration issues... distances totally off
-- give lanes/roads/etc the ability to be closed
-
-# Code Cleanup
-- distance/time types
-- split the passes
-  - pass1 = read osm + normalize
-  - pass2 = pass2
-  - pass3 = (>make edge geometry), make edges, make turns,
-            (>nuke disconnected), (collapse degenerate verts),
-            (small roads to long turns), trim lane lines at vertices
-- sorted sets everywhere for determinism
-- more privates, make abstract members more explicit, delegates
-- make more immutable things / reduce more vars to vals
-- make everything possible immutable, but then have to figure out how to build
-  inter-referential things
-  - Mutable subclasses of everything used during construction..
-  - have more ids and methods that access based on those. that'll break it.
-  - immutable construction is easy... have parent entity create child.
-  - using new ID stuff, make copies of stuff instead of var?
-
-# Intersection Policies
-- backpressure light optimization
-- make new stuff faster, mark when first elgiible or something with very
-  powerful FPs
-  - aka candidate list can be greatly narrowed, or ordered
-
-# Scaling
-- tighten memory usage, although 1GB supports 1 million agents
-- we can do much better with ready agents... max capacity of edges, group them
-  based on where they want to spawn, maybe by generator?
-- gridlock
-  - increase avail slots when we're accepted, not leaving (except route end)
-  - when we accept early and check for blockedness, see if theyre anywhere close
-    to the turn yet! moot point if the turns not blocked when they ask...
-    - aka, make all policies do 'is anyone ahead of you unaccepted'
-  - force different turns?
-- at big timesteps, nobody moves?
-
-# Testing/Experiments
-- standalone programs to make/mod scenarios
-  - specify distribution of rand things, discrete or continuous.
-  - breakdown other categories when describing
-- make scenarios from UI
-- poisson for introducing vehicles
-- things to test
-  - wacky cases of 2 side-by-side agents wanting to swap places?
+- lots of things break in sim logic if we have a vertex with a self-loop
 
 # UI
-- merge headless/gui clients
+
 - step one tick
-- label agents with their number in the GUI
 - visualize red/green lights better
 - cmdline switch to follow stuff or zoom in somewhere
 - visualize lookahead
-- turn off generators
-- color agents from diff generators a certain way
 - right click context menus
 - show 'fps' in viewer
-
-# Lane-changing
-- roads arent shortened enough when conservative lookahead picks too high a speed, then caps itself... two brief passes, to get the right amount of lookahead? :P
-- any missed opportunities?
-- dont let agents start lc that depends on others getting out of way. till then,
-  funky patterns of backup
-- speculative desired_lane
-- road lengthening means we dont have to reduce numbers of lanes for LCing
-- removal approach doesnt handle having to LC many times on one road
-
-# Applications
-- follow dist variable based on speed, so when a light goes green,
-  everyone starts simultaneously
-- contraflow
-- dynamic replanning + hierarchial planning (wards)
-
-# Theoretical
-- is there a way to analytically say "an agent will own this chunk" at some time, and
-  then solve for collisions?
-
-# Administrative
-- rename lanes/intersections/junctions in code too? policy -> controller?
-- repository of detailed cities with demand data?
