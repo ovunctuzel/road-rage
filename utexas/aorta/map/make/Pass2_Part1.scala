@@ -80,18 +80,6 @@ class PreEdge2(var from: Coordinate, var to: Coordinate,
                val points: List[Coordinate], val dat: PreEdge1)
   extends Ordered[PreEdge2]
 {
-  def merge_dat(other: PreEdge2) = new PreEdge1(
-    (if (dat.name == other.dat.name)
-      dat.name
-    else
-      dat.name + " / " + other.dat.name),
-    dat.road_type,    // TODO diff types?
-    dat.oneway,       // TODO cant merge if different
-    dat.orig_id,      // arbitrarily choose one
-    null,              // no points matter now
-    dat.lanes         // TODO diff num of lanes?
-  )
-
   val id = PreEdge2.next_id
   PreEdge2.next_id += 1
   override def compare(other: PreEdge2) = id.compare(other.id)

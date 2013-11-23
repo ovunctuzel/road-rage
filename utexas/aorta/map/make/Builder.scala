@@ -24,13 +24,23 @@ object Builder {
     val output = input.replace("osm/", "maps/").replace(".osm", ".map")
     val bldgs = new BuildingScraper()
 
+    // Pass 1
     val pass1 = new Pass1(input)
     bldgs.scrape(pass1.osm)
     val graph1 = pass1.run()
     bldgs.normalize_coords(graph1.fix _)
     Graph.set_params(graph1.width, graph1.height, graph1.offX, graph1.offY, graph1.scale)
-    val graph2 = new Pass2(graph1).run()
-    val graph3 = new Pass3(graph2).run()
+
+    // Pass 2
+    val graph2 = new PreGraph2(graph1)
+    new Pass2_Part2(graph2).run()
+    new Pass2_Part3(graph2).run()
+
+    // Pass 3
+    val graph3 = new Pass3_Part1(graph2).run()
+    new Pass3_Part2(graph3).run()
+    new Pass3_Part3(graph3).run()
+    new Pass3_Part4(graph3).run()
     bldgs.group(graph3)
 
     val graph = new Graph(

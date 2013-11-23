@@ -49,7 +49,6 @@
 - traversables should be list of points, to avoid needing to make things meet up
 - reduce vars and publics
 - distance/time types
-- split the map making passes
 - immutable constructs with mutable builders
 - merge headless/gui clients
 

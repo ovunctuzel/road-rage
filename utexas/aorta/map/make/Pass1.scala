@@ -11,10 +11,11 @@ import utexas.aorta.map.Coordinate
 import utexas.aorta.common.Util
 
 class Pass1(fn: String) {
-  // How many OSM roads reference a point?
-  val node_uses = new HashMap[OsmNode, Int]()
   val osm = new OsmReader(fn)
-  val graph = new PreGraph1()
+
+  private val graph = new PreGraph1()
+  // How many OSM roads reference a point?
+  private val node_uses = new HashMap[OsmNode, Int]()
 
   osm.listen("pass1", _ match {
     case EV_OSM(node: OsmNode) => node_uses(node) = 0
@@ -116,7 +117,6 @@ class PreGraph1() {
   var offY: Double = 0
   var scale: Double = 5000    // TODO in the future, dont scale.
 
-  // Further evidence in the OSM source suggests these edges are bogus
   def remove_edges(ids: Set[String]) {
     edges = edges.filter(e => !ids.contains(e.orig_id))
   }

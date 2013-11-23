@@ -7,13 +7,46 @@ package utexas.aorta.map.make
 import scala.collection.mutable.HashMap
 import scala.collection.mutable.MutableList
 
-import utexas.aorta.map.{Coordinate, Vertex, Road, Edge, Direction, Turn,
-                         GraphLike}
+import utexas.aorta.map.{Coordinate, Vertex, Road, Edge, Direction, Turn, Line, GraphLike}
 
 import utexas.aorta.common.{Util, cfg, Physics, RoadID, VertexID, EdgeID, DirectedRoadID}
 
-// TODO we should really subclass the real Graph, but not sure yet.
+class Pass3_Part1(old_graph: PreGraph2) {
+  def run(): PreGraph3 = {
+    Util.log("Multiplying and directing " + old_graph.edges.length + " edges")
+    val graph = new PreGraph3(old_graph)
+    for (r <- graph.roads) {
+      // pre-compute lines constituting the edges
+      // the -0.5 lets there be nice lane lines between lanes
+      for (e <- r.pos_lanes) {
+        e.set_lines(for ((from, to) <- r.pairs_of_points)
+                    yield new Line(from, to).perp_shift(e.lane_offset - 0.5))
+      }
+      for (e <- r.neg_lanes) {
+        val ls = for ((from, to) <- r.pairs_of_points)
+                 yield new Line(to, from).perp_shift(e.lane_offset - 0.5)
+        // TODO inefficient just because i wanted a two-liner?
+        e.set_lines(ls.reverse)
+      }
+      
+      // force line segments to meet up on the inside
+      for (e <- r.all_lanes; (l1, l2) <- e.lines.zip(e.lines.tail)) {
+        l1.segment_intersection(l2) match {
+          case Some(pt) => {
+            l1.x2 = pt.x
+            l1.y2 = pt.y
+            l2.x1 = pt.x
+            l2.y1 = pt.y
+          }
+          case _ =>
+        }
+      }
+    }
+    return graph
+  }
+}
 
+// TODO we should really subclass the real Graph, but not sure yet.
 class PreGraph3(old_graph: PreGraph2) extends GraphLike {
   var vertices = new MutableList[Vertex]
 
@@ -105,7 +138,7 @@ class PreGraph3(old_graph: PreGraph2) extends GraphLike {
       v
     }
 
-  private def add_edge(r: Road, dir: Direction.Value, lane_num: Int) = {
+  private def add_edge(r: Road, dir: Direction.Value, lane_num: Int) {
     val e = new Edge(new EdgeID(edges.length), r.id, dir, lane_num)
     e.setup(this)
     edges += e
@@ -127,81 +160,5 @@ class PreGraph3(old_graph: PreGraph2) extends GraphLike {
     case (None, "tertiary_link")  => 1
     case (None, "service")        => 1   // I don't know what these are supposed to be
     case _                        => 2
-  }
-
-  def remove_turns_to_bad_edges(bad_edges: Set[Edge]) = {
-    for (v <- vertices) {
-      v.turns = v.turns.filter(
-        t => !bad_edges.contains(t.from) && !bad_edges.contains(t.to)
-      )
-    }
-  }
-
-  // After eating away at elements from edges/vertices/roads, cleanup references
-  // to those deleted objects elsewhere.
-  def fix_map() = {
-    val good_edges = edges.toSet
-
-    // TODO refactor this: squeeze together lane numbers
-    // This will end up looking weird (gaps in roads)
-    for (r <- roads) {                                              
-      val pos_lanes = r.pos_lanes.filter(e => good_edges.contains(e))
-      val neg_lanes = r.neg_lanes.filter(e => good_edges.contains(e))
-      r.pos_lanes.clear
-      r.pos_lanes ++= pos_lanes
-      r.neg_lanes.clear
-      r.neg_lanes ++= neg_lanes
-      for ((lane, idx) <- r.pos_lanes.zipWithIndex) {
-        lane.lane_num = idx
-      }
-      for ((lane, idx) <- r.neg_lanes.zipWithIndex) {
-        lane.lane_num = idx
-      }
-    }
-
-    // See what vertices now have no turns or lanes left
-    vertices.partition(v => v.turns.isEmpty) match {
-      case (bad, good) => {
-        vertices = good
-        val bad_set = bad.toSet
-        roads = roads.filter(
-          r => !bad_set.contains(r.v1) && !bad_set.contains(r.v2) && r.all_lanes.nonEmpty
-        )
-      }
-    }
-
-    fix_ids
-  }
-
-  // clean up ids of all edges, roads, verts.
-  def fix_ids() = {
-    // TODO a better way, and one without reassigning to 'val' id? if we just
-    // clone each structure and have a mapping from old to new... worth it?
-    for ((e, raw_id) <- edges.zipWithIndex) {
-      val id = new EdgeID(raw_id)
-      e.id = id
-      e.next_turns.foreach(t => t.from_id = id)
-      e.prev_turns.foreach(t => t.to_id = id)
-    }
-    for ((v, id) <- vertices.zipWithIndex) {
-      v.id = new VertexID(id)
-    }
-    // Get rid of directed roads with no lanes.
-    var cnt = 0
-    for ((r, id) <- roads.zipWithIndex) {
-      r.id = new RoadID(id)
-
-      if (r.pos_group.isDefined && r.pos_group.get.edges.isEmpty) {
-        r.pos_group = None
-      }
-      if (r.neg_group.isDefined && r.neg_group.get.edges.isEmpty) {
-        r.neg_group = None
-      }
-      List(r.pos_group, r.neg_group).flatten.foreach(r => {
-        r.id = new DirectedRoadID(cnt)
-        cnt += 1
-      })
-    }
-    Road.num_directed_roads = cnt
   }
 }
