@@ -4,9 +4,8 @@
 
 package utexas.aorta.map.make
 
-import scala.collection.immutable.TreeMap
-import scala.collection.mutable.{TreeSet => MutableSet}
-import scala.collection.mutable.{MutableList, HashMap}
+import scala.collection.immutable
+import scala.collection.mutable
 
 import utexas.aorta.map.Coordinate
 
@@ -16,10 +15,10 @@ class Pass2_Part3(graph: PreGraph2) {
   // Find vertices with exactly two roads involved. They're redundant.
   def run() {
     Util.log("Collapsing degenerate vertices...")
-    var verts = TreeMap.empty[Coordinate, MutableSet[PreEdge2]]
+    var verts = immutable.TreeMap.empty[Coordinate, mutable.TreeSet[PreEdge2]]
     def addBinding(pt: Coordinate, e: PreEdge2) = {
       if (!verts.contains(pt)) {
-        verts += ((pt, new MutableSet[PreEdge2]()))
+        verts += ((pt, new mutable.TreeSet[PreEdge2]()))
       }
       verts(pt) += e
     }

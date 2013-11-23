@@ -4,7 +4,7 @@
 
 package utexas.aorta.map.make
 
-import scala.collection.mutable.{HashMap, MutableList, HashSet}
+import scala.collection.mutable
 
 import utexas.aorta.map.Coordinate
 
@@ -15,7 +15,7 @@ class Pass1(fn: String) {
 
   private val graph = new PreGraph1()
   // How many OSM roads reference a point?
-  private val node_uses = new HashMap[OsmNode, Int]()
+  private val node_uses = new mutable.HashMap[OsmNode, Int]()
 
   osm.listen("pass1", _ match {
     case EV_OSM(node: OsmNode) => node_uses(node) = 0
@@ -108,8 +108,8 @@ object Pass1 {
 }
 
 class PreGraph1() {
-  var edges = new MutableList[PreEdge1]
-  private val vert_lookup = new HashSet[Coordinate]()
+  var edges = new mutable.MutableList[PreEdge1]
+  private val vert_lookup = new mutable.HashSet[Coordinate]()
   // TODO they're vals, but i don't want to set them yet!
   var width: Double = 0
   var height: Double = 0

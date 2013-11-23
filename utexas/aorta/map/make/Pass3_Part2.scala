@@ -4,12 +4,7 @@
 
 package utexas.aorta.map.make
 
-import scala.collection.mutable.HashMap
-import scala.collection.mutable.HashSet
-import scala.collection.mutable.Stack
-import scala.collection.mutable.{Set => MutableSet}
-import scala.collection.mutable.MultiMap
-import scala.collection.mutable.ListBuffer
+import scala.collection.mutable
 
 import utexas.aorta.map.{Road, Edge, Vertex, Turn, Line, Coordinate, Traversable, DirectedRoad,
                          Direction}
@@ -17,7 +12,7 @@ import utexas.aorta.map.{Road, Edge, Vertex, Turn, Line, Coordinate, Traversable
 import utexas.aorta.common.{Util, Common, cfg, TurnID, DirectedRoadID}
 
 class Pass3_Part2(graph: PreGraph3) {
-  val roads_per_vert = new HashMap[Vertex, MutableSet[Road]] with MultiMap[Vertex, Road]
+  val roads_per_vert = new mutable.HashMap[Vertex, mutable.Set[Road]] with mutable.MultiMap[Vertex, Road]
   var turn_cnt = -1
 
   def run() {
@@ -41,7 +36,7 @@ class Pass3_Part2(graph: PreGraph3) {
   }
 
   // fill out an intersection with turns
-  private def connect_vertex(v: Vertex, roads: MutableSet[Road]) = {
+  private def connect_vertex(v: Vertex, roads: mutable.Set[Road]) = {
     // TODO return the turns or something so we can more efficiently set them
     // TODO cfg
     val cross_thresshold = math.Pi / 10 // allow 18 degrees

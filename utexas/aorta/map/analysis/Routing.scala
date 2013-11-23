@@ -4,7 +4,7 @@
 
 package utexas.aorta.map.analysis
 
-import scala.collection.mutable.{PriorityQueue, HashSet, ListBuffer, HashMap}
+import scala.collection.mutable
 import com.graphhopper.storage.{LevelGraphStorage, RAMDirectory}
 import com.graphhopper.routing.ch.PrepareContractionHierarchies
 import com.graphhopper.routing.DijkstraBidirectionRef
@@ -69,8 +69,8 @@ class DijkstraRouter(graph: Graph) extends Router(graph) {
     }
 
     // Edges in the open set don't have their final cost yet
-    val open = new PriorityQueue[Step]()
-    val done = new HashSet[AbstractEdge]()
+    val open = new mutable.PriorityQueue[Step]()
+    val done = new mutable.HashSet[AbstractEdge]()
 
     costs(source.id.int) = 0
     open.enqueue(new Step(source))
@@ -142,7 +142,7 @@ class CHRouter(graph: Graph) extends Router(graph) {
     CHRouter.algo.clear()
     Util.assert_eq(path.found, true)
 
-    val result = new ListBuffer[DirectedRoad]()
+    val result = new mutable.ListBuffer[DirectedRoad]()
     val iter = path.calcNodes.iterator
     while (iter.hasNext) {
       result += graph.directed_roads(iter.next)
@@ -181,11 +181,11 @@ abstract class AbstractPairAstarRouter(graph: Graph) extends Router(graph) {
     }
 
     // Stitch together our path
-    val backrefs = new HashMap[DirectedRoad, DirectedRoad]()
+    val backrefs = new mutable.HashMap[DirectedRoad, DirectedRoad]()
     // We're finished with these
-    val visited = new HashSet[DirectedRoad]()
+    val visited = new mutable.HashSet[DirectedRoad]()
     // Best cost so far
-    val costs = new HashMap[DirectedRoad, (Double, Double)]()
+    val costs = new mutable.HashMap[DirectedRoad, (Double, Double)]()
 
     case class Step(state: DirectedRoad) {
       lazy val heuristic = calc_heuristic(state, to)
@@ -196,9 +196,9 @@ abstract class AbstractPairAstarRouter(graph: Graph) extends Router(graph) {
 
     // Priority queue grabs highest priority first, so reverse to get lowest
     // cost first.
-    val open = new PriorityQueue[Step]()(ordering)
+    val open = new mutable.PriorityQueue[Step]()(ordering)
     // Used to see if we've already added a road to the queue
-    val open_members = new HashSet[DirectedRoad]()
+    val open_members = new mutable.HashSet[DirectedRoad]()
 
     costs(from) = (0, 0)
     open.enqueue(Step(from))

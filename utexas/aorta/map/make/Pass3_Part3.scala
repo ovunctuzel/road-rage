@@ -4,12 +4,7 @@
 
 package utexas.aorta.map.make
 
-import scala.collection.mutable.HashMap
-import scala.collection.mutable.HashSet
-import scala.collection.mutable.Stack
-import scala.collection.mutable.{Set => MutableSet}
-import scala.collection.mutable.MultiMap
-import scala.collection.mutable.ListBuffer
+import scala.collection.mutable
 
 import utexas.aorta.map.{Road, Edge, Vertex, Turn, Line, Coordinate, Traversable, DirectedRoad,
                          Direction}
@@ -18,11 +13,11 @@ import utexas.aorta.common.{Util, Common, cfg, TurnID, DirectedRoadID, EdgeID, V
 
 class Pass3_Part3(graph: PreGraph3) {
   // for tarjan's
-  private val visited = new HashSet[Traversable]
-  private val t_idx = new HashMap[Traversable, Int]
-  private val t_low = new HashMap[Traversable, Int]
-  private val in_stack = new HashSet[Traversable]  // yay linear-time Tarjan's
-  private val t_stack = new Stack[Traversable]
+  private val visited = new mutable.HashSet[Traversable]
+  private val t_idx = new mutable.HashMap[Traversable, Int]
+  private val t_low = new mutable.HashMap[Traversable, Int]
+  private val in_stack = new mutable.HashSet[Traversable]  // yay linear-time Tarjan's
+  private val t_stack = new mutable.Stack[Traversable]
   private var dfs = 0   // counter numbering
 
   def run() {
@@ -95,7 +90,7 @@ class Pass3_Part3(graph: PreGraph3) {
     // have one, but crappy graphs, weird reality, and poor turn heuristics mean
     // we'll have disconnected portions.
     // TODO simplify by flooding DirectedRoads, not turns and lanes
-    val sccs = new ListBuffer[List[Traversable]]
+    val sccs = new mutable.ListBuffer[List[Traversable]]
 
     for (t <- graph.traversables) {
       if (!visited(t)) {
@@ -108,8 +103,8 @@ class Pass3_Part3(graph: PreGraph3) {
     // 2) or removing the associated roads, vertices, edges
 
     // Collect all the bad edges and turns.
-    val bad_edges = new ListBuffer[Edge]
-    val bad_turns = new ListBuffer[Turn]
+    val bad_edges = new mutable.ListBuffer[Edge]
+    val bad_turns = new mutable.ListBuffer[Turn]
 
     sccs.sortBy(scc => scc.size).toList.reverse match {
       // TODO dont return inside here
@@ -157,11 +152,11 @@ class Pass3_Part3(graph: PreGraph3) {
     return t.leads_to
   }
 
-  private def tarjan_body(orig_trav: Traversable, sccs: ListBuffer[List[Traversable]]): Unit =
+  private def tarjan_body(orig_trav: Traversable, sccs: mutable.ListBuffer[List[Traversable]]): Unit =
   {
     // tuple is ('t', our trav 'backref' so we can do t_low, then list of
     // connected travss left to process)
-    val work = new Stack[(Traversable, Traversable, List[Traversable])]
+    val work = new mutable.Stack[(Traversable, Traversable, List[Traversable])]
 
     // seed with original work
     work.push((orig_trav, null, tarjan_head(orig_trav)))
@@ -194,7 +189,7 @@ class Pass3_Part3(graph: PreGraph3) {
           // these all make an scc
           var member: Traversable = null
           // TODO a functional way? :P
-          val scc = new ListBuffer[Traversable]
+          val scc = new mutable.ListBuffer[Traversable]
           do {
             member = t_stack.pop
             in_stack -= member

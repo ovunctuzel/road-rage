@@ -4,8 +4,7 @@
 
 package utexas.aorta.tests
 
-import scala.collection.mutable.Stack
-import scala.collection.mutable.{HashSet => MutableHashSet}
+import scala.collection.mutable
 
 import utexas.aorta.map.{Graph, Traversable}
 import utexas.aorta.common.cfg
@@ -59,8 +58,8 @@ object MapSuite {
     // This is another weak check that just floods from some random edge and
     // sees how many edges it reaches. It doesn't guarantee total connectedness,
     // but we'll trust Tarjan's algorithm in pass 3 of construction for now.
-    val visit_me = new Stack[Traversable]
-    val visited = new MutableHashSet[Traversable]
+    val visit_me = new mutable.Stack[Traversable]
+    val visited = new mutable.HashSet[Traversable]
     val start = g.edges.head
     visit_me.push(start)
     visited += start

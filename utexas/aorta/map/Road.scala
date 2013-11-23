@@ -4,7 +4,7 @@
 
 package utexas.aorta.map
 
-import scala.collection.mutable.MutableList
+import scala.collection.mutable
 import Function.tupled
 
 import utexas.aorta.ui.Renderable
@@ -35,8 +35,8 @@ class Road(
   ))
 
   // + lanes go from v1->v2; - lanes go from v2->v1
-  val pos_lanes = new MutableList[Edge]
-  val neg_lanes = new MutableList[Edge]
+  val pos_lanes = new mutable.MutableList[Edge]
+  val neg_lanes = new mutable.MutableList[Edge]
 
   // TODO move this table. actually, store speed limit
   val speed_limit = Physics.mph_to_si(road_type match {

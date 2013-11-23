@@ -4,8 +4,7 @@
 
 package utexas.aorta.sim.policies
 
-import scala.collection.mutable.{HashSet => MutableSet}
-import scala.collection.mutable.TreeSet
+import scala.collection.mutable
 
 import utexas.aorta.map.{Turn, Edge}
 import utexas.aorta.sim.{Intersection, Policy, Ticket, Agent, IntersectionType}
@@ -34,7 +33,7 @@ class CommonCasePolicy(intersection: Intersection,
     // Because we have to maintain turn invariants as we accept, do a fixpoint
     // approach and accept till there's nobody left that we can.
     // TODO ^ refactor this by making an abstract 'candidates' routine
-    val candidates = new TreeSet[Ticket]()
+    val candidates = new mutable.TreeSet[Ticket]()
     candidates ++= request_queue.filter(
       ticket => common_turns.contains(ticket.turn) && !rare_blocks(ticket.turn)
     )
@@ -99,7 +98,7 @@ class CommonCasePolicy(intersection: Intersection,
     // 1) Turns that don't conflict with many other things are good
     // 2) Turns coming from and going to major roads are good
 
-    val turns = new MutableSet[Turn]()
+    val turns = new mutable.HashSet[Turn]()
 
     // TODO is everything here deterministic?
     intersection.v.turns.sortBy(t => {

@@ -4,7 +4,7 @@
 
 package utexas.aorta.sim
 
-import scala.collection.mutable.{TreeSet => MutableSet}
+import scala.collection.mutable
 
 import utexas.aorta.map.{Edge, Coordinate, Turn, Traversable, Graph, Position}
 import utexas.aorta.sim.market._
@@ -41,7 +41,7 @@ class Agent(
   // how long has our speed been (cfg.epsilon, 0.1)? TODO this is floating pt hack.
   private var almost_idle_since = -1.0
 
-  val tickets = new MutableSet[Ticket]()
+  val tickets = new mutable.TreeSet[Ticket]()
 
   //////////////////////////////////////////////////////////////////////////////
   // Meta

@@ -4,9 +4,7 @@
 
 package utexas.aorta.sim
 
-import scala.collection.mutable.{HashMap => MutableMap}
-import scala.collection.mutable.{HashSet => MutableSet}
-import scala.collection.mutable.{TreeSet, ListBuffer}
+import scala.collection.mutable
 
 import utexas.aorta.map.{Vertex, Turn, Edge, Graph}
 import utexas.aorta.analysis.Turn_Stat
@@ -25,7 +23,7 @@ class Intersection(val v: Vertex, policy_type: IntersectionType.Value,
   // handle collisions. So in fact, we want to track which turns are active...
   // but we have to know how many are on the turn to know when nobody's
   // attempting it.
-  val turns = MutableMap[Turn, Int]() // TODO count type
+  val turns = mutable.HashMap[Turn, Int]() // TODO count type
 
   // For reporting stats
   private var sum_waiting_times = 0.0
@@ -115,7 +113,7 @@ object Intersection {
   // TODO wheres this belong?
   def detect_gridlock(turn: Turn): Boolean = {
     var current = turn.from
-    val seen = new MutableSet[Edge]()
+    val seen = new mutable.HashSet[Edge]()
     while (current != null && !current.queue.slot_avail) {
       // A cycle!
       if (seen(current)) {
@@ -303,11 +301,11 @@ abstract class Policy(val intersection: Intersection) {
 
   // This will have a deterministic order.
   protected var request_queue: List[Ticket] = Nil
-  protected val accepted = new TreeSet[Ticket]()
+  protected val accepted = new mutable.TreeSet[Ticket]()
 
   // Agents could be added to this in any order, but they'll wind up in
   // request_queue in a deterministic order. This is transient state.
-  private val new_requests = new TreeSet[Ticket]()
+  private val new_requests = new mutable.TreeSet[Ticket]()
 
   //////////////////////////////////////////////////////////////////////////////
   // State

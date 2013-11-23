@@ -4,8 +4,6 @@
 
 package utexas.aorta.map
 
-import scala.collection.mutable.HashSet
-
 import utexas.aorta.common.{Common, StateWriter, StateReader, TurnID, EdgeID}
 
 // This constructor eschews geometry, taking a length and two points for

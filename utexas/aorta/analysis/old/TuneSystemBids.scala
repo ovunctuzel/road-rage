@@ -4,7 +4,7 @@
 
 /*package utexas.aorta.analysis
 
-import scala.collection.mutable.{HashMap => MutableMap}
+import scala.collection.mutable
 
 import utexas.aorta.sim.{Scenario, SystemWalletConfig}
 import utexas.aorta.map.Graph
@@ -63,7 +63,7 @@ object TuneSystemBids {
     Nil
   private def bound(i: Int) = math.max(1, math.min(10, i))
 
-  val scores = new MutableMap[State, Int]()
+  val scores = new mutable.HashMap[State, Int]()
   private def score(state: State): Int = {
     if (scores.contains(state)) {
       return scores(state)

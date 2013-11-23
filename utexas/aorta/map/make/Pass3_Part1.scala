@@ -4,8 +4,7 @@
 
 package utexas.aorta.map.make
 
-import scala.collection.mutable.HashMap
-import scala.collection.mutable.MutableList
+import scala.collection.mutable
 
 import utexas.aorta.map.{Coordinate, Vertex, Road, Edge, Direction, Turn, Line, GraphLike}
 
@@ -48,15 +47,15 @@ class Pass3_Part1(old_graph: PreGraph2) {
 
 // TODO we should really subclass the real Graph, but not sure yet.
 class PreGraph3(old_graph: PreGraph2) extends GraphLike {
-  var vertices = new MutableList[Vertex]
+  var vertices = new mutable.MutableList[Vertex]
 
   // create vertices lazily!
-  private val vert_lookup = new HashMap[Coordinate, Vertex]
+  private val vert_lookup = new mutable.HashMap[Coordinate, Vertex]
 
   // TODO i hope this wont be necessary eventually
   var road_id_cnt = 0
 
-  var edges = new MutableList[Edge]           // a directed lane
+  var edges = new mutable.MutableList[Edge]           // a directed lane
   var roads: List[Road] = Nil
 
   for (old <- old_graph.edges) {

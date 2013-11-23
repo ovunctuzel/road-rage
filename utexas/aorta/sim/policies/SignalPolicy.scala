@@ -4,8 +4,7 @@
 
 package utexas.aorta.sim.policies
 
-import scala.collection.mutable.{HashSet => MutableSet}
-import scala.collection.mutable.{ListBuffer, TreeSet}
+import scala.collection.mutable
 
 import utexas.aorta.map.{Turn, Vertex, Edge}
 import utexas.aorta.sim.{Intersection, Policy, Agent, EV_Signal_Change,
@@ -23,7 +22,7 @@ class SignalPolicy(intersection: Intersection,
   // State
 
   // phase_order maintains the list of all possible phases, in order of LRU
-  var phase_order = new ListBuffer[Phase]()
+  var phase_order = new mutable.ListBuffer[Phase]()
   phase_order ++= setup_phases
   private var current_phase = phase_order.head
   phase_order = phase_order.tail ++ List(current_phase)
@@ -78,7 +77,7 @@ class SignalPolicy(intersection: Intersection,
     if (!in_overtime) {
       // Because we have to maintain turn invariants as we accept, do a fixpoint
       // approach and accept till there's nobody left that we can.
-      val candidates_now = new TreeSet[Ticket]()
+      val candidates_now = new mutable.TreeSet[Ticket]()
       candidates_now ++= request_queue.filter(
         ticket => current_phase.has(ticket.turn) && could_make_light(ticket)
       )
@@ -133,7 +132,7 @@ class SignalPolicy(intersection: Intersection,
   private def setup_phases(): List[Phase] = {
     val phase_ls = Phase.phases_for(intersection)
 
-    val turns_seen = new MutableSet[Turn]
+    val turns_seen = new mutable.HashSet[Turn]
     var expect_offset = phase_ls.head.offset
     for (phase <- phase_ls) {
       Util.assert_eq(phase.offset, expect_offset)
@@ -212,7 +211,7 @@ object Phase {
   def maximize_groups(groups: List[Set[Turn]], turns: List[Turn]) =
     groups.map(g => maximize(g, turns))
   private def maximize(group: Set[Turn], turns: List[Turn]): Set[Turn] = {
-    val g = new MutableSet[Turn]()
+    val g = new mutable.HashSet[Turn]()
     g ++= group
     for (turn <- turns) {
       if (!g.exists(t => t.conflicts_with(turn))) {
@@ -225,12 +224,12 @@ object Phase {
   // Least number of phases can be modeled as graph coloring, but we're just
   // going to do a simple greedy approach.
   def arbitrary_phases(vert: Vertex): List[Phase] = {
-    val turns_remaining = new TreeSet[Turn]()
+    val turns_remaining = new mutable.TreeSet[Turn]()
     turns_remaining ++= vert.turns
 
-    val groups = new ListBuffer[Set[Turn]]()
+    val groups = new mutable.ListBuffer[Set[Turn]]()
     while (turns_remaining.nonEmpty) {
-      val this_group = new MutableSet[Turn]()
+      val this_group = new mutable.HashSet[Turn]()
       this_group += turns_remaining.head
       turns_remaining -= this_group.head
 
@@ -251,12 +250,12 @@ object Phase {
   // Try to group turns from the same directed road
   // TODO refactor
   def group_by_roads(vert: Vertex): List[Phase] = {
-    val turns_remaining = new TreeSet[Turn]()
+    val turns_remaining = new mutable.TreeSet[Turn]()
     turns_remaining ++= vert.turns
 
-    val groups = new ListBuffer[Set[Turn]]()
+    val groups = new mutable.ListBuffer[Set[Turn]]()
     while (turns_remaining.nonEmpty) {
-      val this_group = new MutableSet[Turn]()
+      val this_group = new mutable.HashSet[Turn]()
       this_group += turns_remaining.head
       turns_remaining -= this_group.head
 

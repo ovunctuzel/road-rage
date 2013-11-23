@@ -4,7 +4,6 @@
 
 package utexas.aorta.map
 
-import scala.collection.mutable.MutableList
 import Function.tupled
 
 import utexas.aorta.ui.Renderable

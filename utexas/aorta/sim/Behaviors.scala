@@ -4,8 +4,6 @@
 
 package utexas.aorta.sim
 
-import scala.collection.mutable.ListBuffer
-
 import utexas.aorta.map.{Edge, Turn, Traversable}
 
 import utexas.aorta.common.{Util, Common, cfg, Physics}

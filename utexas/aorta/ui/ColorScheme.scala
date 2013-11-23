@@ -9,8 +9,6 @@ import java.awt.Color
 import utexas.aorta.map.Vertex
 import utexas.aorta.sim.AgentMap
 
-import scala.collection.mutable.{HashMap => MutableMap}
-
 import utexas.aorta.common.{cfg, AgentID}
 
 object ColorScheme {

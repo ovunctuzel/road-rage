@@ -6,8 +6,7 @@ package utexas.aorta.sim.market
 
 import utexas.aorta.sim.{Agent, Ticket, Policy, IntersectionType, OrderingType}
 
-import scala.collection.mutable.{HashMap, MultiMap}
-import scala.collection.mutable.{Set => MutableSet}
+import scala.collection.mutable
 
 import utexas.aorta.common.{Util, cfg, VertexID}
 
@@ -48,8 +47,8 @@ class AuctionOrdering[T <: Ordered[T]]() extends IntersectionOrdering[T]() {
     }
 
     // Collect bids, remembering what each agent bids, and group by choice.
-    val bids = new HashMap[T, MutableSet[Bid[T]]] with MultiMap[T, Bid[T]]
-    val multipliers = new HashMap[T, Int]()
+    val bids = new mutable.HashMap[T, mutable.Set[Bid[T]]] with mutable.MultiMap[T, Bid[T]]
+    val multipliers = new mutable.HashMap[T, Int]()
     choices.foreach(item => multipliers(item) = 1)
     participants.foreach(who => {
       for ((ticket, amount) <- who.a.wallet.bid(choices, who, client)) {
@@ -74,7 +73,7 @@ class AuctionOrdering[T <: Ordered[T]]() extends IntersectionOrdering[T]() {
     }
   }
 
-  private def process_auction(debug: Boolean, bids: MultiMap[T, Bid[T]], multipliers: HashMap[T, Int], client: Policy): T =
+  private def process_auction(debug: Boolean, bids: mutable.MultiMap[T, Bid[T]], multipliers: mutable.HashMap[T, Int], client: Policy): T =
   {
     // Break ties arbitrarily but deterministically.
     // The .toList is necessary, since it's a set otherwise... same bids get

@@ -4,12 +4,7 @@
 
 package utexas.aorta.map.make
 
-import scala.collection.mutable.HashMap
-import scala.collection.mutable.HashSet
-import scala.collection.mutable.Stack
-import scala.collection.mutable.{Set => MutableSet}
-import scala.collection.mutable.MultiMap
-import scala.collection.mutable.ListBuffer
+import scala.collection.mutable
 
 import utexas.aorta.map.{Road, Edge, Vertex, Turn, Line, Coordinate, Traversable, DirectedRoad,
                          Direction}
@@ -39,7 +34,7 @@ class Pass3_Part4(graph: PreGraph3) {
   }
 
   private def adjust_lines(v: Vertex) = {
-    val shortest_line = new HashMap[Edge, Line]
+    val shortest_line = new mutable.HashMap[Edge, Line]
     for (in <- v.in_edges) {
       for (out <- v.out_edges) {
         // Correct for shifting the UI does by preventing intersections when

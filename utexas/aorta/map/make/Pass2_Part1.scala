@@ -4,8 +4,7 @@
 
 package utexas.aorta.map.make
 
-import scala.collection.mutable.ListBuffer
-import scala.collection.mutable.HashMap
+import scala.collection.mutable
 
 import utexas.aorta.map.{Coordinate, Road}
 
@@ -13,7 +12,7 @@ import utexas.aorta.common.Util
 
 class PreGraph2(old_graph: PreGraph1) {
   // (v1, v2, road name) to the edge. used for detecting cul-de-sacs easily.
-  private val edge_lookup = new HashMap[(Coordinate, Coordinate, String), PreEdge2]
+  private val edge_lookup = new mutable.HashMap[(Coordinate, Coordinate, String), PreEdge2]
 
   // find true edges between adjacent vertices
   Util.log("Splitting " + old_graph.edges.length + " roads into edges between intersections")
@@ -24,7 +23,7 @@ class PreGraph2(old_graph: PreGraph1) {
     // vertices
 
     // TODO this is essentially a 'split at vertices'
-    val split_edges = new ListBuffer[Option[PreEdge2]]
+    val split_edges = new mutable.ListBuffer[Option[PreEdge2]]
 
     //Util.assert_eq(old_graph.is_vert(road.points.head), true)
     if (!old_graph.is_vert(road.points.head)) {

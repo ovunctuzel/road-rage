@@ -4,8 +4,8 @@
 
 package utexas.aorta.sim
 
-import scala.collection.immutable.TreeMap
-import scala.collection.mutable.{ImmutableMapAdaptor, ListBuffer, HashSet}
+import scala.collection.immutable
+import scala.collection.mutable
 
 import utexas.aorta.map.{Edge, DirectedRoad, Traversable, Turn, Vertex, Graph}
 import utexas.aorta.map.analysis.{Router, DijkstraRouter}
@@ -125,8 +125,8 @@ class PathRoute(goal: DirectedRoad, orig_router: Router, private var rerouter: R
   // Head is the current step. If that step isn't immediately reachable, we have
   // to re-route.
   private var path: List[DirectedRoad] = Nil
-  private val chosen_turns = new ImmutableMapAdaptor(new TreeMap[Edge, Turn]())
-  private val reroutes_requested = new HashSet[Edge]()
+  private val chosen_turns = new mutable.ImmutableMapAdaptor(new immutable.TreeMap[Edge, Turn]())
+  private val reroutes_requested = new mutable.HashSet[Edge]()
 
   //////////////////////////////////////////////////////////////////////////////
   // Meta
@@ -321,7 +321,7 @@ class DrunkenRoute(goal: DirectedRoad, rng: RNG) extends Route(goal, rng) {
 
   // Remember answers we've given for the sake of consistency
   private var desired_lane: Option[Edge] = None
-  private val chosen_turns = new ImmutableMapAdaptor(new TreeMap[Edge, Turn]())
+  private val chosen_turns = new mutable.ImmutableMapAdaptor(new immutable.TreeMap[Edge, Turn]())
 
   //////////////////////////////////////////////////////////////////////////////
   // Meta
@@ -417,7 +417,7 @@ class DrunkenExplorerRoute(goal: DirectedRoad, rng: RNG)
   //////////////////////////////////////////////////////////////////////////////
   // State
 
-  private val past = new ImmutableMapAdaptor(new TreeMap[DirectedRoad, Int]())
+  private val past = new mutable.ImmutableMapAdaptor(new immutable.TreeMap[DirectedRoad, Int]())
 
   //////////////////////////////////////////////////////////////////////////////
   // Meta

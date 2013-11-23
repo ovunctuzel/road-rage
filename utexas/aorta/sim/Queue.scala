@@ -5,9 +5,8 @@
 package utexas.aorta.sim
 
 // I'd love to use scala's treemap, but it doesnt support higher/lowerkey.
-import java.util.TreeMap
 import scala.collection.JavaConversions.collectionAsScalaIterable
-import scala.collection.mutable.{TreeSet => MutableSet}
+import scala.collection.mutable
 
 import utexas.aorta.map.{Edge, Traversable, Position}
 
@@ -22,7 +21,7 @@ class Queue(t: Traversable) {
   val agents = new java.util.TreeMap[Double, Agent]()
   private var last_tick = -1.0              // last observed
   // to verify no collisions occurred in a step
-  private val prev_agents = new MutableSet[Agent]()
+  private val prev_agents = new mutable.TreeSet[Agent]()
 
   // Maintain this to determine if it's safe to LC or turn to a lane. If we
   // over-subscribe, agents may block the intersection. For edges only, not

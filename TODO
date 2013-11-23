@@ -36,8 +36,6 @@
 
 # Easy code cleanup #
 
-- mutable collections explicitly and consistent use of the right one
-  (maybe doc them)
 - rename edges as lanes, and directed roads as links? policy -> controller? vertex -> junction?
 - dont savestate the queue/intersection state, usually. agents have tickets.
 - dont have so many dependencies on singletons. multiple sims at a time should be fine.

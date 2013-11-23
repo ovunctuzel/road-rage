@@ -1,0 +1,2 @@
+'import scala.collection.mutable' and then refer to 'mutable.ListBuffer', 'mutable.HashSet', etc.
+Importing directly makes it unclear that you're using a mutable collection.

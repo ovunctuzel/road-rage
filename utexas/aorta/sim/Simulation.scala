@@ -5,10 +5,8 @@
 package utexas.aorta.sim
 
 import scala.annotation.tailrec
-import scala.collection.immutable.{SortedSet, TreeSet}
-import scala.collection.mutable.{MutableList, PriorityQueue, ListBuffer}
-import scala.collection.mutable.{HashSet => MutableSet}
-import scala.collection.mutable.{HashMap => MutableMap}
+import scala.collection.immutable
+import scala.collection.mutable
 import java.io.FileWriter
 import scala.io.Source
 
@@ -30,9 +28,9 @@ class Simulation(val graph: Graph, val scenario: Scenario)
 
   // Added by a queue that does an in-place check and thinks there could be an
   // issue.
-  val active_queues = new MutableSet[Queue]   // TODO list?
+  val active_queues = new mutable.HashSet[Queue]   // TODO list?
   // All intersections with agents in them.
-  val active_intersections = new MutableSet[Intersection]
+  val active_intersections = new mutable.HashSet[Intersection]
   // this represents total "real seconds"
   var tick: Double = 0
 
@@ -287,9 +285,9 @@ trait AgentManager {
   //////////////////////////////////////////////////////////////////////////////
   // State
 
-  var agents: SortedSet[Agent] = TreeSet.empty[Agent]
-  var ready_to_spawn = new ListBuffer[MkAgent]()
-  val future_spawn = new PriorityQueue[MkAgent]()
+  var agents: immutable.SortedSet[Agent] = immutable.TreeSet.empty[Agent]
+  var ready_to_spawn = new mutable.ListBuffer[MkAgent]()
+  val future_spawn = new mutable.PriorityQueue[MkAgent]()
   var finished_count = 0
 
   //////////////////////////////////////////////////////////////////////////////
@@ -317,7 +315,7 @@ trait AgentManager {
 // A map from agent to something else, which supports defaults and knows when
 // agents are created or destroyed.
 class AgentMap[T](default: T) {
-  private val mapping = new MutableMap[AgentID, T]()
+  private val mapping = new mutable.HashMap[AgentID, T]()
   AgentMap.maps += this
 
   def get(id: AgentID): T = mapping.getOrElse(id, default)
@@ -334,5 +332,5 @@ class AgentMap[T](default: T) {
 }
 
 object AgentMap {
-  val maps = new MutableList[AgentMap[_ <: Any]]()
+  val maps = new mutable.MutableList[AgentMap[_ <: Any]]()
 }

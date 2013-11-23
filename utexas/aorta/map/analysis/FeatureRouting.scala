@@ -4,7 +4,7 @@
 
 package utexas.aorta.map.analysis
 
-import scala.collection.mutable.{PriorityQueue, HashSet, ListBuffer, HashMap}
+import scala.collection.mutable
 
 import utexas.aorta.map.{Graph, DirectedRoad, Coordinate}
 import utexas.aorta.sim.{IntersectionType, Scenario, RouterType}
@@ -100,13 +100,13 @@ class AstarRouter(graph: Graph, val weights: RouteFeatures, demand: Demand) exte
     Common.sim.astar_since_last_time += 1
 
     // Stitch together our path
-    val backrefs = new HashMap[DirectedRoad, DirectedRoad]()
+    val backrefs = new mutable.HashMap[DirectedRoad, DirectedRoad]()
     // We're finished with these
-    val visited = new HashSet[DirectedRoad]()
+    val visited = new mutable.HashSet[DirectedRoad]()
     // Best cost so far
-    val costs = new HashMap[DirectedRoad, RouteFeatures]()
+    val costs = new mutable.HashMap[DirectedRoad, RouteFeatures]()
     // Used to see if we've already added a road to the queue
-    val open_members = new HashSet[DirectedRoad]()
+    val open_members = new mutable.HashSet[DirectedRoad]()
 
     case class Step(state: DirectedRoad) {
       // No heuristics for now
@@ -115,7 +115,7 @@ class AstarRouter(graph: Graph, val weights: RouteFeatures, demand: Demand) exte
     val ordering = Ordering[Double].on((step: Step) => step.cost).reverse
     // Priority queue grabs highest priority first, so reverse to get lowest
     // cost first.
-    val open = new PriorityQueue[Step]()(ordering)
+    val open = new mutable.PriorityQueue[Step]()(ordering)
 
     costs(from) = RouteFeatures.BLANK
     open.enqueue(Step(from))
