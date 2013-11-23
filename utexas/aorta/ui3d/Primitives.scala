@@ -14,7 +14,7 @@ object Primitives {
   def sphere(x: Double, y: Double, z: Double) {
     GL11.glPushMatrix()
     GL11.glTranslated(x.toFloat, y.toFloat, z.toFloat)
-    new Sphere().draw(radius, 4, 4)
+    sphere_template.draw(radius, 4, 4)
     GL11.glPopMatrix()
   }
 }

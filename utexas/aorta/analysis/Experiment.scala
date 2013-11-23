@@ -8,8 +8,8 @@ import scala.collection.mutable
 import java.io.File
 
 import utexas.aorta.map.Graph
-import utexas.aorta.sim.{ScenarioTool, Simulation, Scenario, Sim_Event, EV_Heartbeat,
-                         EV_AgentSpawned, Agent, EV_Stat}
+import utexas.aorta.sim.{ScenarioTool, Simulation, Scenario, EV_Heartbeat, EV_AgentSpawned, Agent,
+                         EV_Stat}
 import utexas.aorta.ui.GUIDebugger
 
 import utexas.aorta.common.{RNG, Util, Flags, Common, AgentID, IO}

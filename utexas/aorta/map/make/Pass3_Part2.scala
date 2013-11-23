@@ -6,8 +6,7 @@ package utexas.aorta.map.make
 
 import scala.collection.mutable
 
-import utexas.aorta.map.{Road, Edge, Vertex, Turn, Line, Coordinate, Traversable, DirectedRoad,
-                         Direction}
+import utexas.aorta.map.{Road, Edge, Vertex, Turn}
 
 import utexas.aorta.common.{Util, Common, cfg, TurnID, DirectedRoadID}
 

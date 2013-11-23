@@ -10,6 +10,9 @@ scalaSource in Compile := baseDirectory.value
 // Don't eat my CPU
 pollInterval := 5000
 
+// Whine about everything?
+//scalacOptions ++= Seq("-unchecked", "-deprecation", "-Xlint")
+
 // TODO aliases that take args
 
 // TODO managed dependencies

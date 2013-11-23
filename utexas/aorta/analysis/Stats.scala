@@ -4,10 +4,9 @@
 
 package utexas.aorta.analysis
 
-import utexas.aorta.sim.{MkIntersection, RouteType, WalletType,
-                         IntersectionType, OrderingType}
+import utexas.aorta.sim.{MkIntersection, RouteType, WalletType}
 
-import utexas.aorta.common.{Util, AgentID, VertexID, EdgeID, DirectedRoadID}
+import utexas.aorta.common.{AgentID, VertexID, DirectedRoadID}
 
 trait Measurement
 
