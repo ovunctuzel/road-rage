@@ -4,10 +4,8 @@
 
 package utexas.aorta.ui3d
 
-import org.lwjgl.LWJGLException
-import org.lwjgl.input.{Keyboard, Mouse}
-import org.lwjgl.opengl.{Display, DisplayMode, GL11}
-import org.lwjgl.util.glu.{GLU, Sphere}
+import org.lwjgl.opengl.GL11
+import org.lwjgl.util.glu.Sphere
 
 object Primitives {
   private val sphere_template = new Sphere()
@@ -19,4 +17,18 @@ object Primitives {
     new Sphere().draw(radius, 4, 4)
     GL11.glPopMatrix()
   }
+}
+
+case class Color(r: Double, g: Double, b: Double) {
+  def use() {
+    GL11.glColor3d(r, g, b)
+  }
+}
+
+object Color {
+  val WHITE = Color(1, 1, 1)
+  val BLACK = Color(0, 0, 0)
+  val RED   = Color(1, 0, 0)
+  val GREEN = Color(0, 1, 0)
+  val BLUE =  Color(0, 0, 1)
 }

@@ -146,7 +146,7 @@ abstract class ScrollingCanvas() extends Controls
       render()
 
       // TODO for debug: Draw the point we're looking at
-      GL11.glColor3d(1, 1, 1)
+      Color.WHITE.use()
       Primitives.sphere(x_off, y_off, 0)
 
       Display.update()

@@ -19,7 +19,7 @@ class GUI(sim: Simulation) extends ScrollingCanvas with PauseToggling {
 
   override def render() {
     // Roads...
-    GL11.glColor3d(0, 0, 0)
+    Color.BLACK.use()
     for (road <- sim.graph.roads) {
       GL11.glLineWidth(3.6f * road.num_lanes)
       GL11.glBegin(GL11.GL_LINE_STRIP)
@@ -30,7 +30,7 @@ class GUI(sim: Simulation) extends ScrollingCanvas with PauseToggling {
     }
 
     // Agents...
-    GL11.glColor3d(0, 0, 1)
+    Color.BLUE.use()
     for (a <- sim.agents) {
       val (line, front_dist) = a.at.on.current_pos(a.at.dist)
       val front_pt = line.point_on(front_dist)
