@@ -55,13 +55,6 @@ for (city in cities$map) {
     " ", filter, " GROUP BY scenario"))))
   bplot(unweighted, "Unweighted normalized trip times", "Time per agent (minute / agent)")
 
-  weighted <- dbGetQuery(db, normalize(concat(c(
-    "SELECT scenario, ",
-    foreach_mode(function(mode) { concat(c("SUM(", mode, " * priority) AS ", mode)) }),
-    " ", filter, " GROUP BY scenario"))))
-  bplot(weighted, "Weighted normalized trip times",
-        "Time * priority per agent (minute * $ / agent)")
-
   savings <- dbGetQuery(db, normalize(concat(c(
     "SELECT scenario, ",
     foreach_mode(function(mode) { concat(c("SUM(baseline - ", mode, ") / 60 AS ", mode)) }),

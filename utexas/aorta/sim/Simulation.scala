@@ -16,7 +16,7 @@ import utexas.aorta.sim.policies.Phase
 import utexas.aorta.ui.ReplayDiffScheme
 import utexas.aorta.common.{Util, Common, cfg, StateWriter, StateReader, Flags, AgentID,
                             ListenerPattern, RoadID, VertexID, EdgeID, DirectedRoadID}
-import utexas.aorta.analysis.{Heartbeat_Stat, Scenario_Stat, ReplayChecker, Measurement}
+import utexas.aorta.analysis.{Heartbeat_Stat, ReplayChecker, Measurement}
 
 // TODO take just a scenario, or graph and scenario?
 class Simulation(val graph: Graph, val scenario: Scenario)
@@ -69,7 +69,6 @@ class Simulation(val graph: Graph, val scenario: Scenario)
 
     // Are we starting for the first time?
     if (tick == 0.0) {
-      Common.record(Scenario_Stat(scenario.map_fn, scenario.intersections))
       future_spawn ++= scenario.agents
     } else {
       future_spawn ++= scenario.agents.filter(_.birth_tick > tick)

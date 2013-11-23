@@ -10,11 +10,6 @@ import utexas.aorta.common.{AgentID, VertexID, DirectedRoadID}
 
 trait Measurement
 
-// Just to record where we're simulating and what the intersections do.
-case class Scenario_Stat(
-  map_fn: String, intersections: Array[MkIntersection]
-) extends Measurement
-
 // Summarizes an agent's lifetime
 case class Agent_Lifetime_Stat(
   id: AgentID, birth_tick: Double, start: DirectedRoadID, end: DirectedRoadID,
