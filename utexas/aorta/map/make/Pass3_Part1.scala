@@ -29,7 +29,7 @@ class Pass3_Part1(old_graph: PreGraph2) {
       }
       
       // force line segments to meet up on the inside
-      for (e <- r.all_lanes; (l1, l2) <- e.lines.zip(e.lines.tail)) {
+      /*for (e <- r.all_lanes; (l1, l2) <- e.lines.zip(e.lines.tail)) {
         l1.segment_intersection(l2) match {
           case Some(pt) => {
             l1.x2 = pt.x
@@ -39,7 +39,7 @@ class Pass3_Part1(old_graph: PreGraph2) {
           }
           case _ =>
         }
-      }
+      }*/
     }
     return graph
   }

@@ -105,8 +105,7 @@ abstract class Traversable() {
   def worst_entry_dist = Physics.worst_entry_dist(speed_limit)
 }
 
-// TODO noooo not var >_<
-class Line(var x1: Double, var y1: Double, var x2: Double, var y2: Double) {
+class Line(val x1: Double, val y1: Double, val x2: Double, val y2: Double) {
   //////////////////////////////////////////////////////////////////////////////
   // Meta
 

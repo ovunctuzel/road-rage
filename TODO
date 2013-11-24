@@ -43,7 +43,6 @@
 - var lines are so confusing and bug-prone
   when we mod part of a line, line's length AND traversables length gets screwed
   get rid of set_lines
-- traversables should be list of points, to avoid needing to make things meet up
 - reduce vars and publics
 - distance/time types
 - immutable constructs with mutable builders

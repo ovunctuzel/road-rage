@@ -79,10 +79,10 @@ class Pass3_Part4(graph: PreGraph3) {
       if (use.length <= cfg.epsilon && l.length > cfg.epsilon) {
         Util.log(s"Don't shorten line of $e to 0!")
       } else {
-        l.x1 = use.x1
+        /*l.x1 = use.x1
         l.y1 = use.y1
         l.x2 = use.x2
-        l.y2 = use.y2
+        l.y2 = use.y2*/
       }
     }
   }
