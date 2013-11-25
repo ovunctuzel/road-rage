@@ -8,13 +8,6 @@
 - poisson, other distributions?
 - repository of detailed cities with demand data?
 
-# 3D GUI: Base #
-
-- port all content things to lwjgl
-- better overhead controls
-- perspective camera
-- 3D buildings
-
 # Website #
 
 - better layout
@@ -137,7 +130,15 @@
 - use http://wiki.openstreetmap.org/wiki/Relation:restriction
 - lots of things break in sim logic if we have a vertex with a self-loop
 
-# UI
+# 3D GUI: Base #
+
+- make a thing to change some constants online...
+- port all content things to lwjgl
+- better overhead controls
+- perspective camera
+- 3D buildings
+
+# UI #
 
 - step one tick
 - visualize red/green lights better
