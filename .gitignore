@@ -20,4 +20,4 @@ final*/*
 # sbt
 target/
 .history
-lib/
+#lib/
