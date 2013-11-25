@@ -5,6 +5,7 @@
 package utexas.aorta.map.make
 
 import scala.collection.mutable
+import Function.tupled
 
 import utexas.aorta.map.{Coordinate, Vertex, Road, Edge, Direction, Turn, Line, GraphLike}
 
@@ -107,10 +108,10 @@ class PreGraph3(old_graph: PreGraph2) extends GraphLike {
     // the -0.5 lets there be nice lane lines between lanes
     val lines = dir match {
       case Direction.POS => r.pairs_of_points.map(
-        pair => new Line(pair._1, pair._2).perp_shift(lane_offset - 0.5)
+        tupled((from, to) => new Line(from, to).perp_shift(lane_offset - 0.5))
       )
       case Direction.NEG => r.pairs_of_points.map(
-        pair => new Line(pair._2, pair._1).perp_shift(lane_offset - 0.5)
+        tupled((from, to) => new Line(to, from).perp_shift(lane_offset - 0.5))
       ).reverse
     }
     // force line segments to meet up on the inside

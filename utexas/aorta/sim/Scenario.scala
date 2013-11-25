@@ -9,6 +9,7 @@ import utexas.aorta.map.analysis._
 import utexas.aorta.sim.policies._
 import utexas.aorta.sim.market._
 
+import Function.tupled
 import scala.collection.mutable
 
 import utexas.aorta.common.{Util, RNG, Common, cfg, StateWriter, StateReader,
@@ -83,8 +84,8 @@ case class Scenario(name: String, map_fn: String, agents: Array[MkAgent],
       Util.log(s"Scenarios are for different maps: $map_fn and ${other.map_fn}")
       return
     }
-    intersections.zip(other.intersections).foreach(pair => pair._1.diff(pair._2))
-    agents.zip(other.agents).foreach(pair => pair._1.diff(pair._2))
+    intersections.zip(other.intersections).foreach(tupled((i1, i2) => i1.diff(i2)))
+    agents.zip(other.agents).foreach(tupled((a1, a2) => a1.diff(a2)))
     if (agents.size != other.agents.size) {
       Util.log(s"Scenarios have different numbers of agents: ${agents.size} and ${other.agents.size}")
     }

@@ -11,6 +11,7 @@ import scala.annotation.elidable.ASSERTION
 import java.awt.Color
 import scala.collection.mutable
 import scala.sys.process._
+import Function.tupled
 
 import utexas.aorta.map.Graph
 import utexas.aorta.sim.{Simulation, Scenario, EV_Stat}
@@ -229,11 +230,11 @@ abstract class MathVector[T <: MathVector[T]](val value: Array[Double]) {
   def size = value.size
   def +(other: MathVector[T]): T = {
     Util.assert_eq(size, other.size)
-    return produce(value.zip(other.value).map(pair => pair._1 + pair._2))
+    return produce(value.zip(other.value).map(tupled((c1, c2) => c1 + c2)))
   }
   def dot(other: MathVector[T]): Double = {
     Util.assert_eq(size, other.size)
-    return value.zip(other.value).map(pair => pair._1 + pair._2).sum
+    return value.zip(other.value).map(tupled((c1, c2) => c1 + c2)).sum
   }
 }
 

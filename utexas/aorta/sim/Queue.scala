@@ -7,6 +7,7 @@ package utexas.aorta.sim
 // I'd love to use scala's treemap, but it doesnt support higher/lowerkey.
 import scala.collection.JavaConversions.collectionAsScalaIterable
 import scala.collection.mutable
+import Function.tupled
 
 import utexas.aorta.map.{Edge, Traversable, Position}
 
@@ -85,7 +86,7 @@ class Queue(t: Traversable) {
     // Since we allow lane-changing, some funny things could happen. So first
     // just check that the order of the distances matches the order of the
     // queue.
-    if (!alist.zip(alist.tail).forall(pair => pair._1.at.dist > pair._2.at.dist)) {
+    if (!alist.zip(alist.tail).forall(tupled((a1, a2) => a1.at.dist > a2.at.dist))) {
       throw new Exception(
         s"Agents out of order on $t: " +
         alist.map(a => "%s at %.2f".format(a.id, a.at.dist))
@@ -111,7 +112,7 @@ class Queue(t: Traversable) {
       // Since we know the ordering of the distances matches the ordering of the
       // queue from the first check, it suffices to check the ordering of the
       // distances in this list.
-      if (!old_crowd.zip(old_crowd.tail).forall(pair => pair._1.at.dist > pair._2.at.dist)) {
+      if (!old_crowd.zip(old_crowd.tail).forall(tupled((a1, a2) => a1.at.dist > a2.at.dist))) {
         throw new Exception(s"Agents swapped positions on $t")
       }
     }

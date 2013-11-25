@@ -4,6 +4,7 @@
 
 package utexas.aorta.sim
 
+import Function.tupled
 import scala.collection.immutable
 import scala.collection.mutable
 
@@ -143,10 +144,10 @@ class PathRoute(goal: DirectedRoad, orig_router: Router, private var rerouter: R
       path.foreach(step => w.int(step.id.int))
     }
     w.int(chosen_turns.size)
-    chosen_turns.foreach(pair => {
-      w.int(pair._1.id.int)
-      w.int(pair._2.id.int)
-    })
+    chosen_turns.foreach(tupled((e, t) => {
+      w.int(e.id.int)
+      w.int(t.id.int)
+    }))
     w.int(reroutes_requested.size)
     reroutes_requested.foreach(e => w.int(e.id.int))
   }
@@ -332,10 +333,10 @@ class DrunkenRoute(goal: DirectedRoad, rng: RNG) extends Route(goal, rng) {
       case Some(e) => w.int(e.id.int)
       case None => w.int(-1)
     }
-    chosen_turns.foreach(pair => {
-      w.int(pair._1.id.int)
-      w.int(pair._2.id.int)
-    })
+    chosen_turns.foreach(tupled((e, t) => {
+      w.int(e.id.int)
+      w.int(t.id.int)
+    }))
   }
 
   override protected def unserialize(r: StateReader, graph: Graph) {
@@ -424,10 +425,10 @@ class DrunkenExplorerRoute(goal: DirectedRoad, rng: RNG)
 
   override def serialize(w: StateWriter) {
     super.serialize(w)
-    past.foreach(pair => {
-      w.int(pair._1.id.int)
-      w.int(pair._2)
-    })
+    past.foreach(tupled((dr, count) => {
+      w.int(dr.id.int)
+      w.int(count)
+    }))
   }
 
   override protected def unserialize(r: StateReader, graph: Graph) {

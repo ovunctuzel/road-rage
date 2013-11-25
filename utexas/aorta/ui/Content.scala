@@ -4,6 +4,7 @@
 
 package utexas.aorta.ui
 
+import Function.tupled
 import java.awt.Color
 import java.awt.geom.{Line2D, Rectangle2D}
 
@@ -99,9 +100,9 @@ class DrawDriver(val agent: Agent, state: GuiState) {
 class DrawRoad(val road: Road, state: GuiState) {
   val edges = road.all_lanes.map(e => new DrawEdge(e, state))
 
-  protected val center_lines = road.pairs_of_points.map(pair => new Line2D.Double(
-    pair._1.x, pair._1.y, pair._2.x, pair._2.y
-  ))
+  protected val center_lines = road.pairs_of_points.map(tupled((pt1, pt2) => new Line2D.Double(
+    pt1.x, pt1.y, pt2.x, pt2.y
+  )))
 
   def hits(bbox: Rectangle2D.Double) = center_lines.exists(l => l.intersects(bbox))
 
