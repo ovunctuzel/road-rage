@@ -16,8 +16,8 @@ import utexas.aorta.common.{cfg, RNG, Util, StateWriter, StateReader, RoadID, Ed
 // TODO var id due to tarjan, var lane num due to fixing IDs. maybe not
 // necessary...
 class Edge(
-  var id: EdgeID, road_id: RoadID, val dir: Direction.Value, var lane_num: Int
-) extends Traversable with Renderable with Ordered[Edge]
+  var id: EdgeID, road_id: RoadID, val dir: Direction.Value, var lane_num: Int, geometry: Array[Line]
+) extends Traversable(geometry) with Renderable with Ordered[Edge]
 {
   //////////////////////////////////////////////////////////////////////////////
   // State
@@ -27,12 +27,13 @@ class Edge(
   //////////////////////////////////////////////////////////////////////////////
   // Meta
 
-  override def serialize(w: StateWriter) {
+  def serialize(w: StateWriter) {
     w.int(id.int)
     w.int(road.id.int)
     w.int(dir.id)
     w.int(lane_num)
-    super.serialize(w)
+    w.int(lines.length)
+    lines.foreach(l => l.serialize(w))
   }
 
   def setup(g: GraphLike) {
@@ -145,8 +146,10 @@ class Edge(
 
 object Edge {
   def unserialize(r: StateReader): Edge = {
-    val e = new Edge(new EdgeID(r.int), new RoadID(r.int), Direction(r.int), r.int)
-    e.unserialize(r)
+    val e = new Edge(
+      new EdgeID(r.int), new RoadID(r.int), Direction(r.int), r.int,
+      Range(0, r.int).map(_ => Line.unserialize(r)).toArray
+    )
     return e
   }
 }

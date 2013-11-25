@@ -28,17 +28,17 @@ class Graph(
   // Meta
 
   def serialize(w: StateWriter) {
+    w.double(width)
+    w.double(height)
+    w.double(offX)
+    w.double(offY)
+    w.double(scale)
     w.int(roads.size)
     roads.foreach(r => r.serialize(w))
     w.int(edges.size)
     edges.foreach(e => e.serialize(w))
     w.int(vertices.size)
     vertices.foreach(v => v.serialize(w))
-    w.double(width)
-    w.double(height)
-    w.double(offX)
-    w.double(offY)
-    w.double(scale)
     w.string(name)
   }
 
@@ -98,13 +98,19 @@ object Graph {
   }
 
   def unserialize(r: StateReader): Graph = {
+    // Set these before loading any traversables, since length'll be computed from em
+    val w = r.double
+    val h = r.double
+    val xo = r.double
+    val yo = r.double
+    val s = r.double
+    set_params(w, h, xo, yo, s)
     val g = new Graph(
       Range(0, r.int).map(_ => Road.unserialize(r)).toArray,
       Range(0, r.int).map(_ => Edge.unserialize(r)).toArray,
       Range(0, r.int).map(_ => Vertex.unserialize(r)).toArray,
-      r.double, r.double, r.double, r.double, r.double, r.string
+      w, h, xo, yo, s, r.string
     )
-    set_params(g.width, g.height, g.offX, g.offY, g.scale)
     g.edges.foreach(e => e.setup(g))
     for (v <- g.vertices; t <- v.turns) {
       t.setup(g)

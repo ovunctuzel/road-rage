@@ -13,50 +13,21 @@ import utexas.aorta.common.{cfg, Util, Physics, StateWriter, StateReader, TurnID
 
 // Something with a sequence of lines forming a path and a way to get to more
 // somethings
-abstract class Traversable() {
-  //////////////////////////////////////////////////////////////////////////////
-  // State
-
-  var lines: Array[Line] = null // till set_lines happens.
-  // Store; it's not free to compute it constantly
-  var length: Double = -1.0
-
+abstract class Traversable(val lines: Array[Line]) {
   //////////////////////////////////////////////////////////////////////////////
   // Deterministic state
 
+  // Store; it's not free to compute it constantly
+  val length: Double = lines.foldLeft(0.0)((a, b) => a + b.length)
+  this match {
+    case e: Edge if length <= cfg.epsilon => {
+      Util.log(s"Lane ${e.id} now has length $length!")
+    }
+    case _ =>
+  }
+
   // TODO temporary perf fix
   var queue: Queue = null
-
-  //////////////////////////////////////////////////////////////////////////////
-  // Meta
-
-  def serialize(w: StateWriter) {
-    w.int(lines.length)
-    lines.foreach(l => l.serialize(w))
-    w.double(length)
-  }
-
-  def unserialize(r: StateReader) {
-    set_lines(Range(0, r.int).map(_ => Line.unserialize(r)).toArray)
-    // set_lines calculates the wrong distance, because we haven't done
-    // set_params yet for graph :(
-    length = r.double
-  }
-
-  //////////////////////////////////////////////////////////////////////////////
-  // Actions
-
-  // TODO dont think this has to stick around that much longer.
-  def set_lines(ls: Array[Line]) = {
-    lines = ls
-    length = lines.foldLeft(0.0)((a, b) => a + b.length)
-    this match {
-      case e: Edge if length <= cfg.epsilon => {
-        Util.log(s"$e now has length $length!")
-      }
-      case _ =>
-    }
-  }
 
   //////////////////////////////////////////////////////////////////////////////
   // Queries

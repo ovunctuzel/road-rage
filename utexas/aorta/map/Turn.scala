@@ -10,15 +10,9 @@ import utexas.aorta.common.{Common, StateWriter, StateReader, TurnID, EdgeID}
 // conflicts.
 // TODO from and to ID are var because we fiddle with IDs during Pass 3
 // construction.
-class Turn(val id: TurnID, var from_id: EdgeID, var to_id: EdgeID)
-  extends Traversable with Ordered[Turn]
+class Turn(val id: TurnID, var from_id: EdgeID, var to_id: EdgeID, val conflict_line: Line)
+  extends Traversable(Array(conflict_line)) with Ordered[Turn]
 {
-  //////////////////////////////////////////////////////////////////////////////
-  // State
-
-  // TODO var because points change
-  var conflict_line: Line = null
-
   //////////////////////////////////////////////////////////////////////////////
   // Deterministic state
 
@@ -28,30 +22,16 @@ class Turn(val id: TurnID, var from_id: EdgeID, var to_id: EdgeID)
   //////////////////////////////////////////////////////////////////////////////
   // Meta
 
-  override def serialize(w: StateWriter) {
+  def serialize(w: StateWriter) {
     w.int(id.int)
     w.int(from_id.int)
     w.int(to_id.int)
-    // Don't serialize our conflict line, since it follows from our state.
-    // TODO if we ever trim it up, then watch out.
+    conflict_line.serialize(w)
   }
 
   def setup(g: GraphLike) {
     from = g.get_e(from_id)
     to = g.get_e(to_id)
-    // When this is called during unserializing, this should've already
-    // happened.
-    conflict_line = new Line(from.end_pt, to.start_pt)
-    set_lines(Array(conflict_line))
-  }
-
-  //////////////////////////////////////////////////////////////////////////////
-  // Actions
-
-  override def set_lines(l: Array[Line]) = {
-    // Ignore the input and just recompute our conflict line.
-    conflict_line = new Line(from.end_pt, to.start_pt)
-    super.set_lines(Array(conflict_line))
   }
 
   //////////////////////////////////////////////////////////////////////////////
@@ -80,6 +60,6 @@ class Turn(val id: TurnID, var from_id: EdgeID, var to_id: EdgeID)
 
 object Turn {
   def unserialize(r: StateReader) = new Turn(
-    new TurnID(r.int), new EdgeID(r.int), new EdgeID(r.int)
+    new TurnID(r.int), new EdgeID(r.int), new EdgeID(r.int), Line.unserialize(r)
   )
 }

@@ -126,8 +126,7 @@ class PreGraph3(old_graph: PreGraph2) extends GraphLike {
       }
     }*/
 
-    val e = new Edge(new EdgeID(edges.length), r.id, dir, lane_num)
-    e.set_lines(lines)
+    val e = new Edge(new EdgeID(edges.length), r.id, dir, lane_num, lines)
     e.setup(this)
     edges += e
   }
