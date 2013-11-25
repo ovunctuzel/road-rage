@@ -10,43 +10,9 @@ import utexas.aorta.map.{Coordinate, Vertex, Road, Edge, Direction, Turn, Line, 
 
 import utexas.aorta.common.{Util, cfg, Physics, RoadID, VertexID, EdgeID, DirectedRoadID}
 
-class Pass3_Part1(old_graph: PreGraph2) {
-  def run(): PreGraph3 = {
-    Util.log("Multiplying and directing " + old_graph.edges.length + " edges")
-    val graph = new PreGraph3(old_graph)
-    for (r <- graph.roads) {
-      // pre-compute lines constituting the edges
-      // the -0.5 lets there be nice lane lines between lanes
-      for (e <- r.pos_lanes) {
-        e.set_lines(for ((from, to) <- r.pairs_of_points)
-                    yield new Line(from, to).perp_shift(e.lane_offset - 0.5))
-      }
-      for (e <- r.neg_lanes) {
-        val ls = for ((from, to) <- r.pairs_of_points)
-                 yield new Line(to, from).perp_shift(e.lane_offset - 0.5)
-        // TODO inefficient just because i wanted a two-liner?
-        e.set_lines(ls.reverse)
-      }
-      
-      // force line segments to meet up on the inside
-      /*for (e <- r.all_lanes; (l1, l2) <- e.lines.zip(e.lines.tail)) {
-        l1.segment_intersection(l2) match {
-          case Some(pt) => {
-            l1.x2 = pt.x
-            l1.y2 = pt.y
-            l2.x1 = pt.x
-            l2.y1 = pt.y
-          }
-          case _ =>
-        }
-      }*/
-    }
-    return graph
-  }
-}
-
 // TODO we should really subclass the real Graph, but not sure yet.
 class PreGraph3(old_graph: PreGraph2) extends GraphLike {
+  Util.log("Multiplying and directing " + old_graph.edges.length + " edges")
   var vertices = new mutable.MutableList[Vertex]
 
   // create vertices lazily!
@@ -84,7 +50,6 @@ class PreGraph3(old_graph: PreGraph2) extends GraphLike {
   def traversables() = edges ++ turns
 
   def add_road(old_edge: PreEdge2) {
-    // do addEdges too, once we decide how many lanes to do
     val r = new Road(
       new RoadID(road_id_cnt), Road.road_len(old_edge.points),
       old_edge.dat.name, old_edge.dat.road_type, old_edge.dat.orig_id,
@@ -104,14 +69,14 @@ class PreGraph3(old_graph: PreGraph2) extends GraphLike {
 
     // v1 -> v2 lanes
     for (l <- 0 until lanes) {
-      add_edge(r, Direction.POS, l)
+      add_edge(r, Direction.POS, l, lanes - l)
     }
 
     // v2 -> v1 lanes unless we're oneway, in which case we keep the original
     // osm order
     if (!old_edge.dat.oneway) {
       for (l <- 0 until lanes) {
-        add_edge(r, Direction.NEG, l)
+        add_edge(r, Direction.NEG, l, lanes - l)
       }
     }
   }
@@ -137,8 +102,32 @@ class PreGraph3(old_graph: PreGraph2) extends GraphLike {
       v
     }
 
-  private def add_edge(r: Road, dir: Direction.Value, lane_num: Int) {
+  private def add_edge(r: Road, dir: Direction.Value, lane_num: Int, lane_offset: Int) {
+    // pre-compute lines constituting the edges
+    // the -0.5 lets there be nice lane lines between lanes
+    val lines = dir match {
+      case Direction.POS => r.pairs_of_points.map(
+        pair => new Line(pair._1, pair._2).perp_shift(lane_offset - 0.5)
+      )
+      case Direction.NEG => r.pairs_of_points.map(
+        pair => new Line(pair._2, pair._1).perp_shift(lane_offset - 0.5)
+      ).reverse
+    }
+    // force line segments to meet up on the inside
+    /*for (e <- r.all_lanes; (l1, l2) <- e.lines.zip(e.lines.tail)) {
+      l1.segment_intersection(l2) match {
+        case Some(pt) => {
+          l1.x2 = pt.x
+          l1.y2 = pt.y
+          l2.x1 = pt.x
+          l2.y1 = pt.y
+        }
+        case _ =>
+      }
+    }*/
+
     val e = new Edge(new EdgeID(edges.length), r.id, dir, lane_num)
+    e.set_lines(lines)
     e.setup(this)
     edges += e
   }

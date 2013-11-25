@@ -37,7 +37,7 @@ object Builder {
     new Pass2_Part3(graph2).run()
 
     // Pass 3
-    val graph3 = new Pass3_Part1(graph2).run()
+    val graph3 = new PreGraph3(graph2)
     new Pass3_Part2(graph3).run()
     new Pass3_Part3(graph3).run()
     new Pass3_Part4(graph3).run()

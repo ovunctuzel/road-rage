@@ -16,9 +16,6 @@ class Pass3_Part4(graph: PreGraph3) {
     // TODO don't! it results in terribly short places.
     //graph.vertices.foreach(v => adjust_lines(v))
 
-    // Recalculate length. TODO temporary approach. set_lines redoes the length.
-    graph.traversables.foreach(t => t.set_lines(t.lines))
-
     // Another hack to restore directed roads, which get set to None when we first create the road
     // before its lanes.
     val dr_id = new DirectedRoadID(-1) // the IDs don't matter
@@ -83,6 +80,7 @@ class Pass3_Part4(graph: PreGraph3) {
         l.y1 = use.y1
         l.x2 = use.x2
         l.y2 = use.y2*/
+        // make sure length is correct when we finally re-enable this.
       }
     }
   }

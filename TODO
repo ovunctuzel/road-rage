@@ -37,12 +37,10 @@
 # Easy code cleanup #
 
 - rename edges as lanes, and directed roads as links? policy -> controller? vertex -> junction?
-- dont have so many dependencies on singletons. multiple sims at a time should be fine.
+- hard to have multiple sims due to objects with state: Common, CHRouter, Graph (norm coords), system
+  wallets, AgentMap, ReplayDiffScheme, GUI
 - https://github.com/scala/pickling
 - consider onewayroad type
-- var lines are so confusing and bug-prone
-  when we mod part of a line, line's length AND traversables length gets screwed
-  get rid of set_lines
 - reduce vars and publics
 - distance/time types
 - immutable constructs with mutable builders
