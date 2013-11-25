@@ -15,4 +15,7 @@ pollInterval := 5000
 
 // TODO aliases that take args
 
-// TODO managed dependencies
+// TODO managed dependencies for everything
+libraryDependencies += "org.scala-lang" % "scala-swing" % "2.11.0-M4"
+
+libraryDependencies += "org.scala-lang.modules" %% "scala-xml" % "1.0-RC3"
