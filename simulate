@@ -1,5 +1,3 @@
 #!/bin/bash
-
 . common
-
-scala -cp $CLASSPATH $JVM_OPTS utexas.aorta.ui.GUI $@
+$SCALA utexas.aorta.ui.GUI $@

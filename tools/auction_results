@@ -1,6 +1,5 @@
 #!/bin/bash
-# Must be run from the base AORTA directory, eg,
-# ./tools/auction_results
+# Run from the base AORTA directory: ./tools/auction_results
 
 Rscript misc/auction_time_report.r $@
 Rscript misc/auction_money_report.r $@

@@ -2,6 +2,10 @@
 // Khandelwal of UT Austin
 // License: GNU GPL v2
 
+// ./experiment maps/synthetic.map --spawn 5000 delay=1800 --all_verts \
+// ordering=Auction policy=Reservation --out scenarios/tune_sys_bid > /dev/null
+
+
 /*package utexas.aorta.analysis
 
 import java.io.{File, PrintWriter, FileWriter}

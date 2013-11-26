@@ -1,7 +1,0 @@
-#!/bin/bash
-# Must be run from the base AORTA directory, eg,
-# ./tools/postproc_externality
-
-. common
-
-scala -cp $CLASSPATH $JVM_OPTS utexas.aorta.analysis.ExternalityPostProc 30000 31000 $@

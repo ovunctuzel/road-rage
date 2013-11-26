@@ -1,5 +1,3 @@
 #!/bin/bash
-
 . common
-
-scala -cp $CLASSPATH $JVM_OPTS utexas.aorta.sim.Headless $@
+$SCALA utexas.aorta.sim.Headless $@

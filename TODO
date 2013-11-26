@@ -12,7 +12,7 @@
 # Website #
 
 - setup instructions
-  - make scripts use deps from sbt.
+  - make scripts use deps from sbt. even scala!
   - eclipse, sbt tutorials
 - better layout
   - contact me

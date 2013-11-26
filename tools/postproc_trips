@@ -1,9 +1,0 @@
-#!/bin/bash
-# Must be run from the base AORTA directory, eg,
-# ./tools/postproc_trips
-
-cp misc/route_features.arff trip_results.arff
-echo '@ATTRIBUTE tripTime NUMERIC' >> trip_results.arff
-echo '' >> trip_results.arff
-echo '@DATA' >> trip_results.arff
-cat $@ >> trip_results.arff

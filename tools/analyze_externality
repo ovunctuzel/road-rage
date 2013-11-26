@@ -1,8 +1,0 @@
-#!/bin/bash
-# Must be run from the base AORTA directory, eg,
-# ./tools/analyze_externality
-
-. common
-
-scala -cp $CLASSPATH $JVM_OPTS utexas.aorta.analysis.ExternalityAnalyzer 30000 1000 $@
-# TODO run the postproc on the cloud too?

@@ -1,5 +1,3 @@
 #!/bin/bash
-
 . common
-
-scala -cp $CLASSPATH $JVM_OPTS utexas.aorta.map.make.Preroute $@
+$SCALA utexas.aorta.map.make.Preroute $@

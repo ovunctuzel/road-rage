@@ -1,5 +1,0 @@
-#!/bin/bash
-
-. common
-
-scala -cp $CLASSPATH $JVM_OPTS utexas.aorta.tests.Debug $@

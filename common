@@ -1,13 +1,9 @@
 #!/bin/bash
 
 GRAPHHOPPER="3rd_party/graphhopper-0.1.jar"
-
-#BUILD=".build"
 BUILD="target/scala-2.11.0-M4/classes/"
-
 CLASSPATH="$BUILD:$GRAPHHOPPER"
-#TEST_MEM="-J-verbosegc"
-TEST_MEM=""
-JVM_OPTS="-J-Xmx1536m $TEST_MEM"
 
-# TODO just make a $SCALA
+JVM_OPTS="-J-Xmx1536m"
+
+SCALA="scala -cp $CLASSPATH $JVM_OPTS"

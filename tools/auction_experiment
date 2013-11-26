@@ -1,7 +1,5 @@
 #!/bin/bash
-# Must be run from the base AORTA directory, eg,
-# ./tools/auction_experiment
+# Run from the base AORTA directory: ./tools/auction_experiment
 
 . common
-
-scala -cp $CLASSPATH $JVM_OPTS utexas.aorta.analysis.AuctionExperiment $@
+$SCALA utexas.aorta.analysis.AuctionExperiment $@
