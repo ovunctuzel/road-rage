@@ -5,27 +5,33 @@
 
 # Trip distribution #
 
-- poisson, other distributions?
+- residence -> house
+- poisson, other distributions for location, time? rename existing stuff to be clear about uniform.
 - repository of detailed cities with demand data?
 
 # Website #
 
+- setup instructions
+  - no lwjgl for now. make scripts use deps from sbt.
+  - eclipse, sbt tutorials
 - better layout
   - contact me
 - screenshots
 - about/features page
-- setup instructions
-  - eclipse, sbt tutorials
 - tutorials for using, experimenting
 - advertise on OSM wiki
+- tutorials for lil experiments
+  - actuator roads before equal mode
+  - braess paradox and adding a road
+- tutorial for v2v
 
-# Debugging, info, etc #
+# Traditional traffic engr #
 
-- different measure of live vs moved agents. cumulative
-- debugging useful: warn when turn not used for a while, and when agent caught in a long loop
-- metrics for how many reroutes necessary (grouped by cause), how many failed LCs
-- is it even valid to consider results from first/last agents? need steady-state.
-- measure how long a vehicle spends thrashing about bc original path is congested
+- record when drivers enter and leave link, then get 'time thru link' at each entry time
+  - blog it!
+  - then do multiple sims, changing some routes using time-dep A* and these records
+  - neglect different turns
+  - if theres no data for a link at some point, assume itll be freeflow (but the intersection...)
 
 # Easy code cleanup #
 
@@ -41,7 +47,6 @@
 
 # Traffic model simplification #
 
-- why end_threshold at all?
 - dont mess with gps coords, and have a more boring dist fxn
 
 # Experiment framework #
@@ -78,13 +83,26 @@
   - doubles
   - tune
   - divide
+  - new one to help people at the end of trip (since theyll leave the system)
 - multiple bids for same item.. handle that
 - system bid: bonus to reservation if i'll take the same time as somebody else
+- better wallet than fair. (but its not only problem, fixed mode is also borked)
 
 # Clown Car #
 
+- D*Lite
+- be very careful with freeflow capacity and cutoffs. (too many people denied from useful roads.)
 - take into account time and cost simultaneously
 - regular rerouting
+- tolls justified thru fundamental diagram
+
+# Debugging, info, etc #
+
+- different measure of live vs moved agents. cumulative
+- debugging useful: warn when turn not used for a while, and when agent caught in a long loop
+- metrics for how many reroutes necessary (grouped by cause), how many failed LCs
+- is it even valid to consider results from first/last agents? need steady-state.
+- measure how long a vehicle spends thrashing about bc original path is congested
 
 # Hard realism #
 
@@ -146,3 +164,4 @@
 - visualize lookahead
 - right click context menus
 - show 'fps' in viewer
+- side by side runs
