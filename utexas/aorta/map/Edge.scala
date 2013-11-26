@@ -5,7 +5,6 @@
 package utexas.aorta.map
 
 import scala.collection.mutable
-import utexas.aorta.map.analysis.AbstractEdge
 import utexas.aorta.ui.Renderable
 
 import utexas.aorta.common.{cfg, RNG, Util, StateWriter, StateReader, RoadID, EdgeID,
@@ -163,7 +162,7 @@ object Direction extends Enumeration {
 // Represent a group of directed edges on one road
 // TODO var id because things get chopped up
 class DirectedRoad(val road: Road, var id: DirectedRoadID, val dir: Direction.Value)
-  extends AbstractEdge with Ordered[DirectedRoad]
+  extends Ordered[DirectedRoad]
 {
   // TODO lets figure out how to build immutable stuff.
   val houses = new mutable.ListBuffer[Coordinate]()
@@ -193,10 +192,10 @@ class DirectedRoad(val road: Road, var id: DirectedRoadID, val dir: Direction.Va
                                from.succs.map(_.directed_road).toSet
 
   def length = road.length
-  def cost(time: Double) = road.length / road.speed_limit
+  def freeflow_time = road.length / road.speed_limit
 
-  def succs = edges.flatMap(e => e.next_turns.map(t => (t.to.directed_road, t.cost)))
-  def preds = edges.flatMap(e => e.prev_turns.map(t => (t.from.directed_road, t.cost)))
+  def succs = edges.flatMap(e => e.next_turns.map(t => t.to.directed_road))
+  def preds = edges.flatMap(e => e.prev_turns.map(t => t.from.directed_road))
 
   def next_roads = edges.flatMap(e => e.next_roads).toSet
 

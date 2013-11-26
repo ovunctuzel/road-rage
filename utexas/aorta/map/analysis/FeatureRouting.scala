@@ -47,7 +47,7 @@ object RouteFeatures {
       Util.bool2binary(step.to.intersection.policy.policy_type == matches)
     return RouteFeatures(
       total_length = step.length,
-      total_freeflow_time = step.cost(0.0),
+      total_freeflow_time = step.freeflow_time,
       congested_road_count = if (step.is_congested) 1 else 0,
       stop_sign_count = one_if(IntersectionType.StopSign),
       signal_count = one_if(IntersectionType.Signal),
@@ -140,8 +140,7 @@ class AstarRouter(graph: Graph, val weights: RouteFeatures, demand: Demand) exte
         // Exclude 'from'
         return (path.tail, costs(current.state))
       } else {
-        for ((next_state_raw, _) <- current.state.succs) {
-          val next_state = next_state_raw.asInstanceOf[DirectedRoad]
+        for (next_state <- current.state.succs) {
           val tentative_cost = costs(current.state) + RouteFeatures.for_step(next_state, demand)
           if (!visited.contains(next_state) && (!open_members.contains(next_state) || tentative_cost.dot(weights) < costs(next_state).dot(weights))) {
             backrefs(next_state) = current.state

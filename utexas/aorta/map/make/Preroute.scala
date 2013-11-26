@@ -25,10 +25,10 @@ object Preroute {
     )
     graph.createNew(map.directed_roads.size)
     for (r1 <- map.directed_roads) {
-      for ((r2, turn_time) <- r1.succs) {
+      for (r2 <- r1.succs) {
         // TODO use incoming edge length, or road length? they wont be much
         // different
-        graph.edge(r1.id.int, r2.id.int, r1.cost(0.0) + turn_time, false)
+        graph.edge(r1.id.int, r2.id.int, r1.freeflow_time, false)
       }
     }
 

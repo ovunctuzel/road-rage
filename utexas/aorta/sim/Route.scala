@@ -90,9 +90,7 @@ class DijkstraRoute(goal: DirectedRoad, rng: RNG) extends Route(goal, rng) {
   //////////////////////////////////////////////////////////////////////////////
   // State
 
-  private val costs = new DijkstraRouter(Common.sim.graph).costs_to(
-    goal, Common.tick
-  )
+  private val costs = new DijkstraRouter(Common.sim.graph).costs_to(goal)
 
   //////////////////////////////////////////////////////////////////////////////
   // Actions

@@ -33,45 +33,28 @@ class FixedRouter(graph: Graph, path: List[DirectedRoad]) extends Router(graph) 
   }
 }
 
-// A convenient abstraction if we ever switch to pathfinding on
-// edges/roads/others.
-abstract class AbstractEdge {
-  // TODO dont tie it to this ID space...
-  var id: DirectedRoadID // TODO var because fix_ids
-  def cost(time: Double): Double
-  // List and not Set means there could be multiple transitions, with possibly
-  // different weights.
-  def succs: Seq[(AbstractEdge, Double)]
-  def preds: Seq[(AbstractEdge, Double)]
-}
-
 class DijkstraRouter(graph: Graph) extends Router(graph) {
   override def router_type = RouterType.TMP
 
-  def costs_to(r: DirectedRoad, time: Double) = dijkstras(
-    graph.directed_roads.size, r, (e: AbstractEdge) => e.preds, time
-  )
+  def costs_to(r: DirectedRoad) = dijkstras(graph.directed_roads.size, r)
 
-  def path(from: DirectedRoad, to: DirectedRoad, time: Double) =
-    hillclimb(costs_to(to, time), from).tail.asInstanceOf[List[DirectedRoad]]
+  override def path(from: DirectedRoad, to: DirectedRoad, time: Double) =
+    hillclimb(costs_to(to), from).tail
 
   // Precomputes a table of the cost from source to everything.
-  def dijkstras(size: Int, source: AbstractEdge,
-                next: AbstractEdge => Seq[(AbstractEdge, Double)],
-                time: Double): Array[Double] =
-  {
+  private def dijkstras(size: Int, source: DirectedRoad): Array[Double] = {
     val costs = Array.fill[Double](size)(Double.PositiveInfinity)
 
     // TODO needs tests!
     // TODO pass in a comparator to the queue instead of having a wrapper class
-    class Step(val edge: AbstractEdge) extends Ordered[Step] {
-      def cost = costs(edge.id.int)
+    class Step(val dr: DirectedRoad) extends Ordered[Step] {
+      def cost = costs(dr.id.int)
       def compare(other: Step) = other.cost.compare(cost)
     }
 
-    // Edges in the open set don't have their final cost yet
+    // Roads in the open set don't have their final cost yet
     val open = new mutable.PriorityQueue[Step]()
-    val done = new mutable.HashSet[AbstractEdge]()
+    val done = new mutable.HashSet[DirectedRoad]()
 
     costs(source.id.int) = 0
     open.enqueue(new Step(source))
@@ -80,11 +63,11 @@ class DijkstraRouter(graph: Graph) extends Router(graph) {
       val step = open.dequeue
       
       // Skip duplicate steps, since we chose option 3 for the problem below.
-      if (!done.contains(step.edge)) {
-        done += step.edge
+      if (!done.contains(step.dr)) {
+        done += step.dr
 
-        for ((next, transition_cost) <- next(step.edge) if !done.contains(next)) {
-          val cost = step.cost + transition_cost + next.cost(time)
+        for (next <- step.dr.preds if !done.contains(next)) {
+          val cost = step.cost + next.freeflow_time
           if (cost < costs(next.id.int)) {
             // Relax!
             costs(next.id.int) = cost
@@ -102,11 +85,11 @@ class DijkstraRouter(graph: Graph) extends Router(graph) {
   }
 
   // Starts at source, hillclimbs to lower costs, and returns the path to 0.
-  def hillclimb(costs: Array[Double], start: AbstractEdge): List[AbstractEdge] =
+  private def hillclimb(costs: Array[Double], start: DirectedRoad): List[DirectedRoad] =
     costs(start.id.int) match {
       case 0 => start :: Nil
       case c => start :: hillclimb(
-        costs, start.succs.minBy(t => costs(t._1.id.int))._1
+        costs, start.succs.minBy(step => costs(step.id.int))
       )
     }
 }
@@ -127,7 +110,7 @@ class CHRouter(graph: Graph) extends Router(graph) {
 
   override def router_type = RouterType.ContractionHierarchy
 
-  def path(from: DirectedRoad, to: DirectedRoad, path: Double): List[DirectedRoad] = {
+  def path(from: DirectedRoad, to: DirectedRoad, time: Double): List[DirectedRoad] = {
     // GraphHopper can't handle loops. For now, empty path; freebie.
     // TODO force a loop by starting on a road directly after 'from'
     if (from == to) {
@@ -172,7 +155,7 @@ class CHRouter(graph: Graph) extends Router(graph) {
 // TODO dont operate on graph particularly, do anything with successor fxn and cost fxn...
 abstract class AbstractPairAstarRouter(graph: Graph) extends Router(graph) {
   def calc_heuristic(state: DirectedRoad, goal: DirectedRoad): (Double, Double)
-  def cost_step(turn_cost: Double, state: DirectedRoad, time: Double): (Double, Double)
+  def cost_step(state: DirectedRoad): (Double, Double)
 
   protected def add_cost(a: (Double, Double), b: (Double, Double)) =
     (a._1 + b._1, a._2 + b._2)
@@ -224,11 +207,8 @@ abstract class AbstractPairAstarRouter(graph: Graph) extends Router(graph) {
         // Exclude 'from'
         return path.tail
       } else {
-        for ((next_state_raw, transition_cost) <- current.state.succs) {
-          val next_state = next_state_raw.asInstanceOf[DirectedRoad]
-          val tentative_cost = add_cost(
-            costs(current.state), cost_step(transition_cost, next_state, time)
-          )
+        for (next_state <- current.state.succs) {
+          val tentative_cost = add_cost(costs(current.state), cost_step(next_state))
           if (!visited.contains(next_state) && (!open_members.contains(next_state) || ordering_tuple.lt(tentative_cost, costs(next_state)))) {
             backrefs(next_state) = current.state
             costs(next_state) = tentative_cost
@@ -261,16 +241,15 @@ trait SimpleHeuristic extends AbstractPairAstarRouter {
 
 // Cost for each step is (dollars, time)
 trait TollAndTimeCost extends AbstractPairAstarRouter {
-  override def cost_step(turn_cost: Double, state: DirectedRoad, time: Double) =
-    (state.toll.dollars, turn_cost + state.cost(time))
+  override def cost_step(state: DirectedRoad) = (state.toll.dollars, state.freeflow_time)
 }
 
 // Score is (number of congested roads, total freeflow time)
 class CongestionRouter(graph: Graph) extends AbstractPairAstarRouter(graph) with SimpleHeuristic {
   override def router_type = RouterType.Congestion
 
-  override def cost_step(turn_cost: Double, state: DirectedRoad, time: Double) =
-    (Util.bool2binary(state.is_congested), turn_cost + state.cost(time))
+  override def cost_step(state: DirectedRoad) =
+    (Util.bool2binary(state.is_congested), state.freeflow_time)
 }
 
 // Score is (max congestion toll, total freeflow time)
@@ -296,8 +275,8 @@ class TollThresholdRouter(graph: Graph) extends AbstractPairAstarRouter(graph)
 
   override def router_type = RouterType.TollThreshold
 
-  override def cost_step(turn_cost: Double, state: DirectedRoad, time: Double) =
-    (Util.bool2binary(state.toll.dollars > max_toll.dollars), turn_cost + state.cost(time))
+  override def cost_step(state: DirectedRoad) =
+    (Util.bool2binary(state.toll.dollars > max_toll.dollars), state.freeflow_time)
 }
 
 // Score is (sum of tolls, total freeflow time). The answer is used as the "free" baseline with the
@@ -307,6 +286,5 @@ class SumTollRouter(graph: Graph) extends AbstractPairAstarRouter(graph)
 {
   override def router_type = RouterType.SumToll
 
-  override def cost_step(turn_cost: Double, state: DirectedRoad, time: Double) =
-    (state.toll.dollars, turn_cost + state.cost(time))
+  override def cost_step(state: DirectedRoad) = (state.toll.dollars, state.freeflow_time)
 }
