@@ -14,6 +14,7 @@ import utexas.aorta.sim.Agent
 import utexas.aorta.sim.make.RouterType
 
 import utexas.aorta.common.{Util, Common, Physics, RNG, DirectedRoadID, Price}
+import utexas.aorta.common.algorithms.AStar
 
 abstract class Router(graph: Graph) {
   def router_type: RouterType.Value
@@ -155,75 +156,14 @@ class CHRouter(graph: Graph) extends Router(graph) {
 // TODO dont operate on graph particularly, do anything with successor fxn and cost fxn...
 abstract class AbstractPairAstarRouter(graph: Graph) extends Router(graph) {
   def calc_heuristic(state: DirectedRoad, goal: DirectedRoad): (Double, Double)
-  def cost_step(state: DirectedRoad): (Double, Double)
+  def cost_step(prev: DirectedRoad, next: DirectedRoad): (Double, Double)
 
   protected def add_cost(a: (Double, Double), b: (Double, Double)) =
     (a._1 + b._1, a._2 + b._2)
 
-  override def path(from: DirectedRoad, to: DirectedRoad, time: Double): List[DirectedRoad] = {
-    if (from == to) {
-      return Nil
-    }
-
-    // Stitch together our path
-    val backrefs = new mutable.HashMap[DirectedRoad, DirectedRoad]()
-    // We're finished with these
-    val visited = new mutable.HashSet[DirectedRoad]()
-    // Best cost so far
-    val costs = new mutable.HashMap[DirectedRoad, (Double, Double)]()
-
-    case class Step(state: DirectedRoad) {
-      lazy val heuristic = calc_heuristic(state, to)
-      def cost = add_cost(costs(state), heuristic)
-    }
-    val ordering = Ordering[(Double, Double)].on((step: Step) => step.cost).reverse
-    val ordering_tuple = Ordering[(Double, Double)].on((pair: (Double, Double)) => pair)
-
-    // Priority queue grabs highest priority first, so reverse to get lowest
-    // cost first.
-    val open = new mutable.PriorityQueue[Step]()(ordering)
-    // Used to see if we've already added a road to the queue
-    val open_members = new mutable.HashSet[DirectedRoad]()
-
-    costs(from) = (0, 0)
-    open.enqueue(Step(from))
-    open_members += from
-    backrefs(from) = null
-
-    while (open.nonEmpty) {
-      val current = open.dequeue()
-      visited += current.state
-      open_members -= current.state
-
-      if (current.state == to) {
-        // Reconstruct the path
-        var path: List[DirectedRoad] = Nil
-        var pointer: Option[DirectedRoad] = Some(current.state)
-        while (pointer.isDefined && pointer.get != null) {
-          path = pointer.get :: path
-          // Clean as we go to break loops
-          pointer = backrefs.remove(pointer.get)
-        }
-        // Exclude 'from'
-        return path.tail
-      } else {
-        for (next_state <- current.state.succs) {
-          val tentative_cost = add_cost(costs(current.state), cost_step(next_state))
-          if (!visited.contains(next_state) && (!open_members.contains(next_state) || ordering_tuple.lt(tentative_cost, costs(next_state)))) {
-            backrefs(next_state) = current.state
-            costs(next_state) = tentative_cost
-            // TODO if they're in open_members, modify weight in the queue? or
-            // new step will clobber it. fine.
-            open.enqueue(Step(next_state))
-            open_members += next_state
-          }
-        }
-      }
-    }
-
-    // We didn't find the way?! The graph is connected!
-    throw new Exception("Couldn't A* from " + from + " to " + to)
-  }
+  override def path(from: DirectedRoad, to: DirectedRoad, time: Double) = AStar.path(
+    from, to, (step: DirectedRoad) => step.succs, cost_step, calc_heuristic, add_cost
+  )
 }
 
 // No guess for cost, straight-line distance at 1m/s for freeflow time
@@ -241,15 +181,16 @@ trait SimpleHeuristic extends AbstractPairAstarRouter {
 
 // Cost for each step is (dollars, time)
 trait TollAndTimeCost extends AbstractPairAstarRouter {
-  override def cost_step(state: DirectedRoad) = (state.toll.dollars, state.freeflow_time)
+  override def cost_step(prev: DirectedRoad, next: DirectedRoad) =
+    (next.toll.dollars, next.freeflow_time)
 }
 
 // Score is (number of congested roads, total freeflow time)
 class CongestionRouter(graph: Graph) extends AbstractPairAstarRouter(graph) with SimpleHeuristic {
   override def router_type = RouterType.Congestion
 
-  override def cost_step(state: DirectedRoad) =
-    (Util.bool2binary(state.is_congested), state.freeflow_time)
+  override def cost_step(prev: DirectedRoad, next: DirectedRoad) =
+    (Util.bool2binary(next.is_congested), next.freeflow_time)
 }
 
 // Score is (max congestion toll, total freeflow time)
@@ -275,8 +216,8 @@ class TollThresholdRouter(graph: Graph) extends AbstractPairAstarRouter(graph)
 
   override def router_type = RouterType.TollThreshold
 
-  override def cost_step(state: DirectedRoad) =
-    (Util.bool2binary(state.toll.dollars > max_toll.dollars), state.freeflow_time)
+  override def cost_step(prev: DirectedRoad, next: DirectedRoad) =
+    (Util.bool2binary(next.toll.dollars > max_toll.dollars), next.freeflow_time)
 }
 
 // Score is (sum of tolls, total freeflow time). The answer is used as the "free" baseline with the
@@ -286,5 +227,6 @@ class SumTollRouter(graph: Graph) extends AbstractPairAstarRouter(graph)
 {
   override def router_type = RouterType.SumToll
 
-  override def cost_step(state: DirectedRoad) = (state.toll.dollars, state.freeflow_time)
+  override def cost_step(prev: DirectedRoad, next: DirectedRoad) =
+    (next.toll.dollars, next.freeflow_time)
 }

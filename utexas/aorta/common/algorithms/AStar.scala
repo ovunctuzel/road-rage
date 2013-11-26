@@ -10,7 +10,7 @@ object AStar {
   // T is the node type
   // TODO All costs are pairs of doubles lexicographically ordered right now. Generalize.
   def path[T](
-    start: T, goal: T, successors: (T) => List[T], calc_cost: (T, T) => (Double, Double),
+    start: T, goal: T, successors: (T) => Seq[T], calc_cost: (T, T) => (Double, Double),
     calc_heuristic: (T, T) => (Double, Double),
     add_cost: ((Double, Double), (Double, Double)) => (Double, Double)
   ): List[T] = {
