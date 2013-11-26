@@ -99,6 +99,7 @@ class Experiment(config: ExpConfig) {
     })
     val optional_gui = new GUIDebugger(sim) // TODO hafta sys.exit at end if used
 
+    // TODO move this to simulation itself.
     while (!sim.done) {
       sim.step()
       if (sim.tick >= config.deadline) {

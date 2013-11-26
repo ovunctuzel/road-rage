@@ -27,11 +27,10 @@
 
 # Traditional traffic engr #
 
-- record when drivers enter and leave link, then get 'time thru link' at each entry time
-  - blog it!
-  - then do multiple sims, changing some routes using time-dep A* and these records
+- blog it!
   - neglect different turns
   - if theres no data for a link at some point, assume itll be freeflow (but the intersection...)
+- do multiple sims, changing some routes using time-dep A* and these records
 
 # Code cleanup #
 

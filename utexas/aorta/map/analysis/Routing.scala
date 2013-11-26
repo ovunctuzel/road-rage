@@ -169,6 +169,7 @@ class CHRouter(graph: Graph) extends Router(graph) {
 }
 
 // Score is a pair of doubles
+// TODO dont operate on graph particularly, do anything with successor fxn and cost fxn...
 abstract class AbstractPairAstarRouter(graph: Graph) extends Router(graph) {
   def calc_heuristic(state: DirectedRoad, goal: DirectedRoad): (Double, Double)
   def cost_step(turn_cost: Double, state: DirectedRoad, time: Double): (Double, Double)
