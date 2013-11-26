@@ -29,23 +29,6 @@ object Util {
   def indent = "  " * indent_log
   def log(msg: String) = println(indent + msg)
 
-  // due to internationalization, printf doesn't have a way of adding commas
-  // after every 3 orders of mag
-  def comma_num(n: Int, pad: Boolean = false): String =
-    if (n < 1000 && pad)
-      "%03d".format(n)
-    else if (n < 1000)
-      "" + n
-    else
-      comma_num(n / 1000, pad) + "," + comma_num(n % 1000, pad = true)
-  def comma_num_big(n: BigInt, pad: Boolean = false): String =
-    if (n < 1000 && pad)
-      "%03d".format(n)
-    else if (n < 1000)
-      "" + n
-    else
-      comma_num_big(n / 1000, pad) + "," + comma_num_big(n % 1000, pad = true)
-
   // print HH:MM:SS
   def time_num(total: Double): String = {
     val hours = math.floor(total / 3600).toInt
