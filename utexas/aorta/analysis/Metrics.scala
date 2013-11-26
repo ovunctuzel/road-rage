@@ -181,8 +181,42 @@ class RouteRecordingMetric(info: MetricInfo) extends Metric(info) {
   })
 
   def apply(a: AgentID) = routes(a).toList
-  def output(ls: List[Metric], scenario: Scenario) {
+  override def output(ls: List[Metric], scenario: Scenario) {
     throw new UnsupportedOperationException("Why save the actual routes?")
+  }
+}
+
+class LinkDelayMetric(info: MetricInfo) extends Metric(info) {
+  override def name = "link_delay"
+
+  // TODO will this eat too much memory?
+  private val delays_per_time = info.sim.graph.directed_roads.map(
+    dr => dr -> new java.util.TreeMap[Double, Double]()
+  ).toMap
+
+  info.sim.listen(name, _ match {
+    case EV_AgentSpawned(a) => {
+      var entry_time = Common.tick // TODO does this work per agent
+      a.route.listen(name, _ match {
+        // Entering a directed road
+        case EV_Transition(from: Turn, to) => entry_time = Common.tick
+        // Exiting a directed road
+        case EV_Transition(from: Edge, to: Turn) =>
+          add_delay(entry_time, Common.tick - entry_time, from.directed_road)
+        case _ =>
+      })
+    }
+    case _ =>
+  })
+
+  private def add_delay(entry_time: Double, delay: Double, at: DirectedRoad) {
+    // Two agents can enter the same DirectedRoad at the same time (on different lanes)
+    // Just arbitrarily overwrite if there's a conflict
+    delays_per_time(at).put(entry_time, delay)
+  }
+
+  override def output(ls: List[Metric], scenario: Scenario) {
+    throw new UnsupportedOperationException("Why save the actual delays?")
   }
 }
 
