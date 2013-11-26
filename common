@@ -1,6 +1,6 @@
 #!/bin/bash
 
-GRAPHHOPPER="3rd_party/graphhopper-0.1.jar"
+GRAPHHOPPER="lib/graphhopper-0.1.jar"
 BUILD="target/scala-2.11.0-M4/classes/"
 CLASSPATH="$BUILD:$GRAPHHOPPER"
 
