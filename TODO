@@ -11,6 +11,7 @@
 
 # Website #
 
+- manifest in code
 - setup instructions
   - make scripts use deps from sbt. even scala!
   - eclipse, sbt tutorials
@@ -31,6 +32,8 @@
   - neglect different turns
   - if theres no data for a link at some point, assume itll be freeflow (but the intersection...)
 - do multiple sims, changing some routes using time-dep A* and these records
+- is TDA* just normal A* with new cost fxn for steps? refactor A* with general succ/cost fxns
+  and move it into an algorithms/ package. and rm abstractedge junk. and time.
 
 # Code cleanup #
 
@@ -90,7 +93,7 @@
 
 # Clown Car #
 
-- D*Lite
+- D*Lite (blog, reddit)
 - be very careful with freeflow capacity and cutoffs. (too many people denied from useful roads.)
 - take into account time and cost simultaneously
 - regular rerouting
