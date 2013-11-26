@@ -13,8 +13,9 @@ import scala.language.implicitConversions
 
 import utexas.aorta.map._  // TODO yeah getting lazy.
 import utexas.aorta.map.analysis.{RouteFeatures, AstarRouter, Demand}
-import utexas.aorta.sim.{Simulation, Agent, EV_Signal_Change, IntersectionType, RouteType,
-                         EV_Transition, EV_Reroute, EV_Heartbeat, AgentMap}
+import utexas.aorta.sim.{Simulation, Agent, EV_Signal_Change, EV_Transition, EV_Reroute,
+                         EV_Heartbeat, AgentMap}
+import utexas.aorta.sim.make.{IntersectionType, RouteType}
 import utexas.aorta.sim.PathRoute
 
 import utexas.aorta.common.{Util, RNG, Common, cfg, EdgeID, RoadID, VertexID}

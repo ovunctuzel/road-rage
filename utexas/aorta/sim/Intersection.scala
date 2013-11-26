@@ -7,6 +7,7 @@ package utexas.aorta.sim
 import scala.collection.mutable
 
 import utexas.aorta.map.{Vertex, Turn, Edge, Graph}
+import utexas.aorta.sim.make.{IntersectionType, OrderingType, Factory}
 import utexas.aorta.analysis.Turn_Stat
 
 import utexas.aorta.common.{Util, Common, cfg, StateWriter, StateReader, TurnID}

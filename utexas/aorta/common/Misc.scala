@@ -14,7 +14,8 @@ import scala.sys.process._
 import Function.tupled
 
 import utexas.aorta.map.Graph
-import utexas.aorta.sim.{Simulation, Scenario, EV_Stat}
+import utexas.aorta.sim.{Simulation, EV_Stat}
+import utexas.aorta.sim.make.Scenario
 import utexas.aorta.analysis.Measurement
 
 object Util {

@@ -8,8 +8,8 @@ import scala.collection.mutable
 import java.io.File
 
 import utexas.aorta.map.Graph
-import utexas.aorta.sim.{ScenarioTool, Simulation, Scenario, EV_Heartbeat, EV_AgentSpawned, Agent,
-                         EV_Stat}
+import utexas.aorta.sim.{Simulation, EV_Heartbeat, EV_AgentSpawned, Agent, EV_Stat}
+import utexas.aorta.sim.make.{ModScenarioTool, Scenario}
 import utexas.aorta.ui.GUIDebugger
 
 import utexas.aorta.common.{RNG, Util, Flags, Common, AgentID, IO}
@@ -76,7 +76,7 @@ class Experiment(config: ExpConfig) {
   protected def get_scenario(): Scenario = {
     val scenario_fn = config.map_fn.replace("maps/", "scenarios/").replace(".map", "_routes")
     io.notify("Generating scenario")
-    ScenarioTool.main(Array(
+    ModScenarioTool.main(Array(
       config.map_fn, "--out", scenario_fn, "--spawn", config.spawn_per_hour.toString,
       "delay=3600", "lifetime=3600", "generations=" + config.generations
     ) ++ scenario_params)

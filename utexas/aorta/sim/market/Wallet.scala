@@ -4,8 +4,8 @@
 
 package utexas.aorta.sim.market
 
-import utexas.aorta.sim.{Agent, Ticket, WalletType, Policy, IntersectionType,
-                         EV_Transition, EV_Reroute, OrderingType, Factory}
+import utexas.aorta.sim.{Agent, Ticket, Policy, EV_Transition, EV_Reroute}
+import utexas.aorta.sim.make.{WalletType, IntersectionType, OrderingType, Factory}
 import utexas.aorta.map.{Turn, Vertex}
 import utexas.aorta.sim.policies.{Phase, ReservationPolicy, SignalPolicy}
 

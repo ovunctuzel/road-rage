@@ -2,4 +2,4 @@
 
 . common
 
-scala -cp $CLASSPATH $JVM_OPTS utexas.aorta.sim.ScenarioTool $@
+scala -cp $CLASSPATH $JVM_OPTS utexas.aorta.sim.make.ModScenarioTool $@

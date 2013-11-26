@@ -7,7 +7,7 @@ package utexas.aorta.map.analysis
 import scala.collection.mutable
 
 import utexas.aorta.map.{Graph, DirectedRoad, Coordinate}
-import utexas.aorta.sim.{IntersectionType, Scenario, RouterType}
+import utexas.aorta.sim.make.{IntersectionType, Scenario, RouterType}
 
 import utexas.aorta.common.{Util, Common, MathVector, VertexID, DirectedRoadID}
 

@@ -7,8 +7,9 @@ package utexas.aorta.sim.policies
 import scala.collection.mutable
 
 import utexas.aorta.map.{Turn, Vertex, Edge}
-import utexas.aorta.sim.{Intersection, Policy, Agent, EV_Signal_Change,
-                         IntersectionType, Ticket, OrderingType, Simulation, EV_IntersectionOutcome}
+import utexas.aorta.sim.{Intersection, Policy, Agent, EV_Signal_Change, Ticket, Simulation,
+                         EV_IntersectionOutcome}
+import utexas.aorta.sim.make.{IntersectionType, OrderingType}
 import utexas.aorta.sim.market.IntersectionOrdering
 
 import utexas.aorta.common.{Util, Common, cfg, StateWriter, StateReader}

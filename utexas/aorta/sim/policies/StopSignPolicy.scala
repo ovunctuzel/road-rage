@@ -4,7 +4,8 @@
 
 package utexas.aorta.sim.policies
 
-import utexas.aorta.sim.{Intersection, Policy, Ticket, IntersectionType, EV_IntersectionOutcome}
+import utexas.aorta.sim.{Intersection, Policy, Ticket, EV_IntersectionOutcome}
+import utexas.aorta.sim.make.IntersectionType
 import utexas.aorta.sim.market.IntersectionOrdering
 
 import utexas.aorta.common.{cfg, Common}

@@ -33,7 +33,7 @@
   - neglect different turns
   - if theres no data for a link at some point, assume itll be freeflow (but the intersection...)
 
-# Easy code cleanup #
+# Code cleanup #
 
 - rename edges as lanes, and directed roads as links? policy -> controller? vertex -> junction?
 - hard to have multiple sims due to objects with state: Common, CHRouter, Graph (norm coords), system
@@ -44,6 +44,7 @@
 - distance/time types
 - immutable constructs with mutable builders
 - merge headless/gui clients
+- group all LC code together, etc, but in individ classes via traits
 
 # Traffic model simplification #
 

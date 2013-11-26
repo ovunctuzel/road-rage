@@ -4,7 +4,8 @@
 
 package utexas.aorta.sim.market
 
-import utexas.aorta.sim.{Agent, Ticket, Policy, IntersectionType, OrderingType}
+import utexas.aorta.sim.{Agent, Ticket, Policy}
+import utexas.aorta.sim.make.{IntersectionType, OrderingType}
 
 import scala.collection.mutable
 

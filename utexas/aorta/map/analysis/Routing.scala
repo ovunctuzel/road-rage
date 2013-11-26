@@ -10,7 +10,8 @@ import com.graphhopper.routing.ch.PrepareContractionHierarchies
 import com.graphhopper.routing.DijkstraBidirectionRef
 
 import utexas.aorta.map.{Graph, DirectedRoad, Coordinate}
-import utexas.aorta.sim.{IntersectionType, Scenario, RouterType, Agent}
+import utexas.aorta.sim.Agent
+import utexas.aorta.sim.make.RouterType
 
 import utexas.aorta.common.{Util, Common, Physics, RNG, DirectedRoadID, Price}
 

@@ -4,7 +4,7 @@
 
 package utexas.aorta.analysis
 
-import utexas.aorta.sim.{Scenario, OrderingType, WalletType, RouterType}
+import utexas.aorta.sim.make.{Scenario, OrderingType, WalletType, RouterType}
 
 object ClownCarExperiment {
   def main(args: Array[String]) {

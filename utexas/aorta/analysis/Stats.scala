@@ -4,7 +4,7 @@
 
 package utexas.aorta.analysis
 
-import utexas.aorta.sim.{MkIntersection, RouteType, WalletType}
+import utexas.aorta.sim.make.{MkIntersection, RouteType, WalletType}
 
 import utexas.aorta.common.{AgentID, VertexID, DirectedRoadID}
 

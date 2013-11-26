@@ -10,6 +10,7 @@ import scala.collection.mutable
 
 import utexas.aorta.map.{Edge, DirectedRoad, Traversable, Turn, Vertex, Graph}
 import utexas.aorta.map.analysis.{Router, DijkstraRouter}
+import utexas.aorta.sim.make.{RouteType, RouterType, Factory}
 
 import utexas.aorta.common.{Util, RNG, Common, cfg, StateWriter, StateReader, TurnID,
                             ListenerPattern}

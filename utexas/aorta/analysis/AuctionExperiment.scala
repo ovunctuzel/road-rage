@@ -4,7 +4,7 @@
 
 package utexas.aorta.analysis
 
-import utexas.aorta.sim.{Scenario, SystemWalletConfig, OrderingType, WalletType}
+import utexas.aorta.sim.make.{Scenario, SystemWalletConfig, OrderingType, WalletType}
 
 // TODO get a macro or something for main, or have a more flexible cmdline tool
 // likewise for the scripts

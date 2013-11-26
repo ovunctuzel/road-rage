@@ -5,8 +5,8 @@
 package utexas.aorta.sim.policies
 
 import utexas.aorta.map.Turn
-import utexas.aorta.sim.{Intersection, Policy, Ticket, IntersectionType, Simulation,
-                         EV_IntersectionOutcome}
+import utexas.aorta.sim.{Intersection, Policy, Ticket, Simulation, EV_IntersectionOutcome}
+import utexas.aorta.sim.make.IntersectionType
 import utexas.aorta.sim.market.IntersectionOrdering
 
 import utexas.aorta.common.{Util, StateWriter, StateReader, TurnID, Common}

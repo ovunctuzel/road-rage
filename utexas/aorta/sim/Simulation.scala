@@ -12,6 +12,7 @@ import scala.io.Source
 
 import utexas.aorta.map.{Graph, Road, Edge, Vertex, Turn}
 import utexas.aorta.sim.policies.Phase
+import utexas.aorta.sim.make.{Scenario, MkAgent, IntersectionType}
 
 import utexas.aorta.ui.ReplayDiffScheme
 import utexas.aorta.common.{Util, Common, cfg, StateWriter, StateReader, Flags, AgentID,
