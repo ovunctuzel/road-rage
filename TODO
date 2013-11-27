@@ -5,14 +5,13 @@
 
 # Trip distribution #
 
-- residence -> house
 - poisson, other distributions for location, time? rename existing stuff to be clear about uniform.
+- residence -> house
 - repository of detailed cities with demand data?
 
 # Website #
 
 - setup instructions
-  - make scripts use deps from sbt. even scala!
   - eclipse, sbt tutorials
 - better layout
   - contact me
@@ -51,6 +50,7 @@
 - better R templates, or another solution
 - port old experiments
 - even record the parameters of the runs?
+- revamp ModScenarioTool
 
 # Intersection policies #
 

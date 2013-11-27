@@ -1,9 +1,11 @@
 #!/bin/bash
 
-GRAPHHOPPER="lib/graphhopper-0.1.jar"
-BUILD="target/scala-2.11.0-M4/classes/"
-CLASSPATH="$BUILD:$GRAPHHOPPER"
+# Use only deps from this directory
+rm -f target/pack/lib/aorta_2.11.0-M4-0.1-SNAPSHOT.jar
+DEPS="target/pack/lib/*"
+AORTA_CLASSES="target/scala-2.11.0-M4/classes/"
+CLASSPATH="$AORTA_CLASSES:$DEPS"
 
-JVM_OPTS="-J-Xmx1536m"
+JVM_OPTS="-Xmx1536m"
 
-SCALA="scala -cp $CLASSPATH $JVM_OPTS"
+SCALA="java -cp $CLASSPATH $JVM_OPTS"

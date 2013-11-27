@@ -19,3 +19,6 @@ pollInterval := 5000
 libraryDependencies += "org.scala-lang" % "scala-swing" % "2.11.0-M4"
 
 libraryDependencies += "org.scala-lang.modules" %% "scala-xml" % "1.0-RC3"
+
+// Be able to collect all dependencies
+packSettings
