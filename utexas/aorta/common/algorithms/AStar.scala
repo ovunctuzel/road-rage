@@ -57,8 +57,8 @@ object AStar {
           // Clean as we go to break loops
           pointer = backrefs.remove(pointer.get)
         }
-        // 'start' is not included
-        return path.toList
+        // Exclude 'start'
+        return path.tail.toList
       } else {
         for (next_state <- successors(current.state)) {
           val tentative_cost = add_cost(costs(current.state), calc_cost(current.state, next_state))
