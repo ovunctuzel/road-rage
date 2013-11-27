@@ -11,7 +11,6 @@
 
 # Website #
 
-- manifest in code
 - setup instructions
   - make scripts use deps from sbt. even scala!
   - eclipse, sbt tutorials
@@ -45,10 +44,6 @@
 - immutable constructs with mutable builders
 - merge headless/gui clients
 - group all LC code together, etc, but in individ classes via traits
-
-# Traffic model simplification #
-
-- dont mess with gps coords, and have a more boring dist fxn
 
 # Experiment framework #
 
@@ -105,6 +100,10 @@
 - metrics for how many reroutes necessary (grouped by cause), how many failed LCs
 - is it even valid to consider results from first/last agents? need steady-state.
 - measure how long a vehicle spends thrashing about bc original path is congested
+
+# Traffic model simplification #
+
+- dont mess with gps coords, and have a more boring dist fxn
 
 # Hard realism #
 
