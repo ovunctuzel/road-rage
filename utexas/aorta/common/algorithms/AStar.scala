@@ -10,7 +10,8 @@ object AStar {
   // T is the node type
   // TODO All costs are pairs of doubles lexicographically ordered right now. Generalize.
   def path[T](
-    start: T, goal: T, successors: (T) => Seq[T], calc_cost: (T, T) => (Double, Double),
+    start: T, goal: T, successors: (T) => Seq[T],
+    calc_cost: (T, T, (Double, Double)) => (Double, Double),
     calc_heuristic: (T, T) => (Double, Double),
     add_cost: ((Double, Double), (Double, Double)) => (Double, Double)
   ): List[T] = {
@@ -61,7 +62,9 @@ object AStar {
         return path.tail.toList
       } else {
         for (next_state <- successors(current.state)) {
-          val tentative_cost = add_cost(costs(current.state), calc_cost(current.state, next_state))
+          val tentative_cost = add_cost(
+            costs(current.state), calc_cost(current.state, next_state, costs(current.state))
+          )
           if (!visited.contains(next_state) && (!open_members.contains(next_state) || ordering_tuple.lt(tentative_cost, costs(next_state)))) {
             backrefs(next_state) = current.state
             costs(next_state) = tentative_cost

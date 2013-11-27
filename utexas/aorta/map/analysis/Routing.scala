@@ -156,7 +156,9 @@ class CHRouter(graph: Graph) extends Router(graph) {
 // TODO dont operate on graph particularly, do anything with successor fxn and cost fxn...
 abstract class AbstractPairAstarRouter(graph: Graph) extends Router(graph) {
   def calc_heuristic(state: DirectedRoad, goal: DirectedRoad): (Double, Double)
-  def cost_step(prev: DirectedRoad, next: DirectedRoad): (Double, Double)
+  def cost_step(
+    prev: DirectedRoad, next: DirectedRoad, cost_sofar: (Double, Double)
+  ): (Double, Double)
 
   protected def add_cost(a: (Double, Double), b: (Double, Double)) =
     (a._1 + b._1, a._2 + b._2)
@@ -181,7 +183,7 @@ trait SimpleHeuristic extends AbstractPairAstarRouter {
 
 // Cost for each step is (dollars, time)
 trait TollAndTimeCost extends AbstractPairAstarRouter {
-  override def cost_step(prev: DirectedRoad, next: DirectedRoad) =
+  override def cost_step(prev: DirectedRoad, next: DirectedRoad, cost_sofar: (Double, Double)) =
     (next.toll.dollars, next.freeflow_time)
 }
 
@@ -189,7 +191,7 @@ trait TollAndTimeCost extends AbstractPairAstarRouter {
 class CongestionRouter(graph: Graph) extends AbstractPairAstarRouter(graph) with SimpleHeuristic {
   override def router_type = RouterType.Congestion
 
-  override def cost_step(prev: DirectedRoad, next: DirectedRoad) =
+  override def cost_step(prev: DirectedRoad, next: DirectedRoad, cost_sofar: (Double, Double)) =
     (Util.bool2binary(next.is_congested), next.freeflow_time)
 }
 
@@ -216,7 +218,7 @@ class TollThresholdRouter(graph: Graph) extends AbstractPairAstarRouter(graph)
 
   override def router_type = RouterType.TollThreshold
 
-  override def cost_step(prev: DirectedRoad, next: DirectedRoad) =
+  override def cost_step(prev: DirectedRoad, next: DirectedRoad, cost_sofar: (Double, Double)) =
     (Util.bool2binary(next.toll.dollars > max_toll.dollars), next.freeflow_time)
 }
 
@@ -227,6 +229,6 @@ class SumTollRouter(graph: Graph) extends AbstractPairAstarRouter(graph)
 {
   override def router_type = RouterType.SumToll
 
-  override def cost_step(prev: DirectedRoad, next: DirectedRoad) =
+  override def cost_step(prev: DirectedRoad, next: DirectedRoad, cost_sofar: (Double, Double)) =
     (next.toll.dollars, next.freeflow_time)
 }
