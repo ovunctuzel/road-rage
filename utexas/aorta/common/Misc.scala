@@ -4,7 +4,6 @@
 
 package utexas.aorta.common
 
-import java.util.Random // TODO use scala one when its serializable in 2.11
 import java.io.{FileWriter, Serializable, File, PrintWriter}
 import scala.annotation.elidable
 import scala.annotation.elidable.ASSERTION
@@ -95,33 +94,6 @@ object Util {
   def output(fn: String) = new PrintWriter(new FileWriter(new File(fn)), true /* autoFlush */)
   def blockingly_run(argv: Seq[String]) = argv.!
   def bool2binary(value: Boolean) = if (value) 1.0 else 0.0
-}
-
-class RNG(seed: Long = System.currentTimeMillis) extends Serializable {
-  private val rng = new Random(seed)
-
-  def serialize(w: StateWriter) {
-    // TODO cant debug with string state RWs...
-    w.obj(this)
-  }
-
-  def double(min: Double, max: Double): Double =
-    if (min > max)
-      throw new Exception("rand(" + min + ", " + max + ") requested")
-    else if (min == max)
-      min
-    else
-      min + rng.nextDouble * (max - min)
-  def int(min: Int, max: Int) = double(min, max).toInt
-  def choose[T](from: Seq[T]): T = from(rng.nextInt(from.length))
-  // return true 'p'% of the time. p is [0.0, 1.0]
-  def percent(p: Double) = double(0.0, 1.0) < p
-  // for making a new RNG
-  def new_seed = rng.nextLong
-}
-
-object RNG {
-  def unserialize(r: StateReader): RNG = r.obj.asInstanceOf[RNG]
 }
 
 // Plumbing some stuff everywhere is hard, so share here sometimes. Plus,
