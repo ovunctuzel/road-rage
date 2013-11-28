@@ -41,7 +41,7 @@ object Coordinate {
 
   // use Graph.world_to_gps to get original GPS coordinates first.
   def gps_dist_in_meters(c1: Coordinate, c2: Coordinate) =
-    Distance.haversine_dist(c1.x, c1.y, c2.x, c2.y)
+    Distance.equirectangular_dist(c1.x, c1.y, c2.x, c2.y)
 
   def unserialize(r: StateReader) = Coordinate(r.double, r.double)
 }
