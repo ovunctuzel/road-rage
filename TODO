@@ -97,8 +97,6 @@
 
 - different measure of live vs moved agents. cumulative
 - debugging useful: warn when turn not used for a while, and when agent caught in a long loop
-- metrics for how many reroutes necessary (grouped by cause), how many failed LCs
-  - some metrics should be live monitors... "since last time, this many"
 - is it even valid to consider results from first/last agents? need steady-state.
 - measure how long a vehicle spends thrashing about bc original path is congested
 

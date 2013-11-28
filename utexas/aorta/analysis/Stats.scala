@@ -44,12 +44,13 @@ case class Turn_Stat(
 // was taken.
 case class Heartbeat_Stat(
   active_agents: Int, live_agents: Int, spawning_agents: Int, done_agents: Int, tick: Double,
-  agent_steps: Int, ch_paths: Int, astar_paths: Int
+  agent_steps: Int, counts: RerouteCountMonitor
 ) extends Measurement {
-  def describe_agents = "%,d moved, %,d live, %,d ready, %,d done".format(
-    active_agents, live_agents, spawning_agents, done_agents
-  )
-  def describe = "At t=%s: %s {%,03d moves, %,d CH, %,d A*}".format(
-    Util.time_num(tick), describe_agents, agent_steps, ch_paths, astar_paths
+  //private val agent_str = "%,d moved, %,d live, %,d ready, %,d done"
+  private val agent_str = "A[%,d] L[%,d] R[%,d] D[%,d]"
+  def describe_agents = agent_str.format(active_agents, live_agents, spawning_agents, done_agents)
+  def describe = "At t=%s: %s {%,03d moves, %,d CH, %,d A* (%,dm + %,df)}".format(
+    Util.time_num(tick), describe_agents, agent_steps, counts.ch_count, counts.astar_count,
+    counts.unrealizable_count, counts.discretionary_count
   )
 }

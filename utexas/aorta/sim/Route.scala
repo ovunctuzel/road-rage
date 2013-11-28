@@ -81,8 +81,10 @@ object Route {
 abstract class Route_Event
 final case class EV_Transition(from: Traversable, to: Traversable) extends Route_Event
 // orig = true when initializing the path. bit of a hack.
-final case class EV_Reroute(path: List[DirectedRoad], orig: Boolean, method: RouterType.Value)
-  extends Route_Event
+// if unrealizable, then couldn't follow path. if not, congestion or gridlock.
+final case class EV_Reroute(
+  path: List[DirectedRoad], orig: Boolean, method: RouterType.Value, unrealizable: Boolean
+) extends Route_Event
 
 // Compute the cost of the path from every source to our single goal, then
 // hillclimb each step.
@@ -231,7 +233,7 @@ class PathRoute(goal: DirectedRoad, orig_router: Router, private var rerouter: R
       // Stitch together the new path into the full thing.
       val new_path = slice.head :: source :: rerouter.path(source, goal, Common.tick)
       path = before ++ new_path
-      tell_listeners(EV_Reroute(path, false, rerouter.router_type))
+      tell_listeners(EV_Reroute(path, false, rerouter.router_type, must_reroute))
       choice
     } else {
       best_turn(e, dest, slice.tail.tail.headOption.getOrElse(null))
@@ -244,7 +246,7 @@ class PathRoute(goal: DirectedRoad, orig_router: Router, private var rerouter: R
     // This method is called first, so do the lazy initialization here.
     if (path.isEmpty) {
       path = from.directed_road :: orig_router.path(from.directed_road, goal, Common.tick)
-      tell_listeners(EV_Reroute(path, true, orig_router.router_type))
+      tell_listeners(EV_Reroute(path, true, orig_router.router_type, false))
     }
 
     // Lookahead could be calling us from anywhere. Figure out where we are in

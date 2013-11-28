@@ -101,7 +101,7 @@ class OriginalRouteMetric(info: MetricInfo) extends SinglePerAgentMetric(info) {
   private val first_reroute_time = new mutable.HashMap[AgentID, Double]()
   info.sim.listen(name, _ match {
     case EV_AgentSpawned(a) => a.route.listen(name, _ match {
-      case EV_Reroute(_, false, _) if !first_reroute_time.contains(a.id) =>
+      case EV_Reroute(_, false, _, _) if !first_reroute_time.contains(a.id) =>
         first_reroute_time(a.id) = Common.tick
       case _ =>
     })
