@@ -205,7 +205,7 @@ class Simulation(val graph: Graph, val scenario: Scenario)
 
   private def record_heartbeat(active_cnt: Int) {
     val measurement = Heartbeat_Stat(
-      active_cnt, agents.size, ready_to_spawn.size, tick, steps_since_last_time,
+      active_cnt, agents.size, ready_to_spawn.size, finished_count, tick, steps_since_last_time,
       routing_monitor.ch_count, routing_monitor.astar_count
     )
     Common.record(measurement)

@@ -91,8 +91,8 @@ class Experiment(config: ExpConfig) {
         val now = System.currentTimeMillis
         if (now - last_time > config.report_every_ms) {
           last_time = now
-          io.notify(s"Round $round at ${Util.time_num(sim.tick)}: ${info.describe}" +
-                    s" / ${sim.finished_count} finished")
+          // TODO counts (active agents, moves, CH, and A*) will be wrong... dont reset yet
+          io.notify(s"Round $round at ${Util.time_num(sim.tick)}: ${info.describe}")
         }
       }
       case _ =>

@@ -19,6 +19,9 @@
 - tutorial for v2v
 - list of concepts
   - map stuff, sim stuff, infrastructure stuff
+- howto
+  - try an optimization
+  - see if your code change keeps the same stuff
 
 # Traditional traffic engr #
 
@@ -92,7 +95,6 @@
 
 # Debugging, info, etc #
 
-- unify headless/experiment framework's reporting
 - different measure of live vs moved agents. cumulative
 - debugging useful: warn when turn not used for a while, and when agent caught in a long loop
 - metrics for how many reroutes necessary (grouped by cause), how many failed LCs

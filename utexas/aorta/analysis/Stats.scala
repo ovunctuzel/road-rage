@@ -6,7 +6,7 @@ package utexas.aorta.analysis
 
 import utexas.aorta.sim.make.{MkIntersection, RouteType, WalletType}
 
-import utexas.aorta.common.{AgentID, VertexID, DirectedRoadID}
+import utexas.aorta.common.{AgentID, VertexID, DirectedRoadID, Util}
 
 trait Measurement
 
@@ -43,8 +43,13 @@ case class Turn_Stat(
 // Active agents is the number that moved the specific tick that this heartbeat
 // was taken.
 case class Heartbeat_Stat(
-  active_agents: Int, live_agents: Int, spawning_agents: Int, tick: Double,
+  active_agents: Int, live_agents: Int, spawning_agents: Int, done_agents: Int, tick: Double,
   agent_steps: Int, ch_paths: Int, astar_paths: Int
 ) extends Measurement {
-  def describe = s"$active_agents moved / $live_agents live / $spawning_agents ready"
+  def describe_agents = "%,d moved, %,d live, %,d ready, %,d done".format(
+    active_agents, live_agents, spawning_agents, done_agents
+  )
+  def describe = "At t=%s: %s {%,03d moves, %,d CH, %,d A*}".format(
+    Util.time_num(tick), describe_agents, agent_steps, ch_paths, astar_paths
+  )
 }
