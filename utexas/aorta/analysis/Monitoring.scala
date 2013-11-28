@@ -4,9 +4,11 @@
 
 package utexas.aorta.analysis
 
-import utexas.aorta.sim.{Simulation, EV_Heartbeat}
+import utexas.aorta.sim.{Simulation, EV_Heartbeat, EV_AgentSpawned, EV_Reroute}
+import utexas.aorta.sim.make.RouterType
 import utexas.aorta.common.IO
 
+// Dump a file showing how fast simulations are running
 class SimSpeedMonitor(sim: Simulation, fn: String) {
   private val freq_ms = 1000
 
@@ -30,5 +32,28 @@ class SimSpeedMonitor(sim: Simulation, fn: String) {
 
   private def record(realtime: Long, tick: Double) {
     file.println(s"$realtime $tick")
+  }
+}
+
+// Count how many times agents are rerouting
+class RerouteCountMonitor(sim: Simulation) {
+  var ch_count = 0
+  var astar_count = 0
+
+  sim.listen("reroute_count", _ match {
+    case EV_AgentSpawned(a) => a.route.listen("reroute_count", _ match {
+      case EV_Reroute(_, _, method) => method match {
+        case RouterType.ContractionHierarchy => ch_count += 1
+        case x if x != RouterType.Fixed && x != RouterType.Unusable => astar_count += 1
+        case _ =>
+      }
+      case _ =>
+    })
+    case _ =>
+  })
+
+  def reset() {
+    ch_count = 0
+    astar_count = 0
   }
 }

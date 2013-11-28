@@ -17,7 +17,7 @@ import utexas.aorta.sim.make.{Scenario, MkAgent, IntersectionType}
 import utexas.aorta.ui.ReplayDiffScheme
 import utexas.aorta.common.{Util, Common, cfg, StateWriter, StateReader, Flags, AgentID,
                             ListenerPattern, RoadID, VertexID, EdgeID, DirectedRoadID}
-import utexas.aorta.analysis.{Heartbeat_Stat, ReplayChecker, Measurement}
+import utexas.aorta.analysis.{Heartbeat_Stat, ReplayChecker, Measurement, RerouteCountMonitor}
 
 // TODO take just a scenario, or graph and scenario?
 class Simulation(val graph: Graph, val scenario: Scenario)
@@ -38,9 +38,7 @@ class Simulation(val graph: Graph, val scenario: Scenario)
   // Track this for stats.
   private var last_real_time = 0.0
   private var steps_since_last_time = 0
-  // Not private because these get incremented elsewhere.
-  var ch_since_last_time = 0
-  var astar_since_last_time = 0
+  private val routing_monitor = new RerouteCountMonitor(this)
 
   private lazy val replay =
     if (Flags.boolean("--replay", false))
@@ -207,15 +205,14 @@ class Simulation(val graph: Graph, val scenario: Scenario)
 
   private def record_heartbeat(active_cnt: Int) {
     val measurement = Heartbeat_Stat(
-      active_cnt, agents.size, ready_to_spawn.size, tick, steps_since_last_time, ch_since_last_time,
-      astar_since_last_time
+      active_cnt, agents.size, ready_to_spawn.size, tick, steps_since_last_time,
+      routing_monitor.ch_count, routing_monitor.astar_count
     )
     Common.record(measurement)
     tell_listeners(EV_Heartbeat(measurement))
     last_real_time = System.currentTimeMillis
     steps_since_last_time = 0
-    ch_since_last_time = 0
-    astar_since_last_time = 0
+    routing_monitor.reset()
   }
 
   //////////////////////////////////////////////////////////////////////////////

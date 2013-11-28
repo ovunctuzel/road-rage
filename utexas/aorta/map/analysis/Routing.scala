@@ -118,10 +118,6 @@ class CHRouter(graph: Graph) extends Router(graph) {
       return Nil
     }
 
-    if (Common.sim != null) {
-      Common.sim.ch_since_last_time += 1
-    }
-
     Util.assert_eq(CHRouter.usable, true)
     val path = CHRouter.algo.calcPath(from.id.int, to.id.int)
     CHRouter.algo.clear()
@@ -141,8 +137,6 @@ class CHRouter(graph: Graph) extends Router(graph) {
     if (from == to) {
       return 0
     }
-
-    Common.sim.ch_since_last_time += 1
 
     Util.assert_eq(CHRouter.usable, true)
     val path = CHRouter.algo.calcPath(from.id.int, to.id.int)

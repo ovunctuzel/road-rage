@@ -17,6 +17,8 @@
   - actuator roads before equal mode
   - braess paradox and adding a road
 - tutorial for v2v
+- list of concepts
+  - map stuff, sim stuff, infrastructure stuff
 
 # Traditional traffic engr #
 
@@ -37,6 +39,7 @@
 - immutable constructs with mutable builders
 - merge headless/gui clients
 - group all LC code together, etc, but in individ classes via traits
+- unify listener system. filter by event type and then subject, or wildcard.
 
 # Experiment framework #
 
@@ -89,11 +92,11 @@
 
 # Debugging, info, etc #
 
-- reroute should incl router type, rather than manual counters
 - unify headless/experiment framework's reporting
 - different measure of live vs moved agents. cumulative
 - debugging useful: warn when turn not used for a while, and when agent caught in a long loop
 - metrics for how many reroutes necessary (grouped by cause), how many failed LCs
+  - some metrics should be live monitors... "since last time, this many"
 - is it even valid to consider results from first/last agents? need steady-state.
 - measure how long a vehicle spends thrashing about bc original path is congested
 
@@ -118,6 +121,7 @@
 
 # Performance: misc #
 
+- possible optimization: store pred/succ for agents directly, dont rely on queue
 - .view, .withFilter
 - turn blocked invariant, really maintain it for efficiency!
   just look at the next guy. BUT we can be route-done, but have somebody blocking in front of us

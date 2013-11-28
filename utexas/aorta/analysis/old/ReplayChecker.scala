@@ -9,6 +9,11 @@ import utexas.aorta.common.{StateReader, StateWriter, Util, Common, AgentID}
 
 import java.io.{File, EOFException}
 
+// TODO two uses of this
+// 1) quick way to see if code change isnt semantic (should be 0 delta everywhere)
+// 2) quick way to gauge if a change makes people faster/slower
+
+
 // TODO better name
 // Record what every agent is doing at every timestep, so that when we
 // re-simulate something with slight tweaks, we can detect exactly who and what

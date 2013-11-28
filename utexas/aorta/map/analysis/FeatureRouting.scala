@@ -97,8 +97,6 @@ class AstarRouter(graph: Graph, val weights: RouteFeatures, demand: Demand) exte
       return (Nil, RouteFeatures.BLANK)
     }
 
-    Common.sim.astar_since_last_time += 1
-
     // Stitch together our path
     val backrefs = new mutable.HashMap[DirectedRoad, DirectedRoad]()
     // We're finished with these
