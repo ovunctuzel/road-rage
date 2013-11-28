@@ -89,6 +89,8 @@
 
 # Debugging, info, etc #
 
+- reroute should incl router type, rather than manual counters
+- unify headless/experiment framework's reporting
 - different measure of live vs moved agents. cumulative
 - debugging useful: warn when turn not used for a while, and when agent caught in a long loop
 - metrics for how many reroutes necessary (grouped by cause), how many failed LCs

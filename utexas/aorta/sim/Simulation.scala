@@ -142,18 +142,8 @@ class Simulation(val graph: Graph, val scenario: Scenario)
     active_queues.clear
 
     // Record a heartbeat every 1.0s
-    val now = System.currentTimeMillis
-    if (now - last_real_time >= 1000.0) {
-      val measurement = Heartbeat_Stat(
-        active_cnt, agents.size, ready_to_spawn.size, tick,
-        steps_since_last_time, ch_since_last_time, astar_since_last_time
-      )
-      Common.record(measurement)
-      tell_listeners(EV_Heartbeat(measurement))
-      last_real_time = now
-      steps_since_last_time = 0
-      ch_since_last_time = 0
-      astar_since_last_time = 0
+    if (System.currentTimeMillis - last_real_time >= 1000.0) {
+      record_heartbeat(active_cnt)
     }
 
     if (should_savestate && (tick / cfg.autosave_every).isValidInt && tick > 0.0) {
@@ -175,6 +165,8 @@ class Simulation(val graph: Graph, val scenario: Scenario)
   }
 
   def terminate() {
+    // Record this so any monitors always know about the end
+    record_heartbeat(0)
     agents.foreach(a => a.terminate(interrupted = true))
     if (replay != null) {
       replay.done()
@@ -211,6 +203,19 @@ class Simulation(val graph: Graph, val scenario: Scenario)
     } else {
       return false
     }
+  }
+
+  private def record_heartbeat(active_cnt: Int) {
+    val measurement = Heartbeat_Stat(
+      active_cnt, agents.size, ready_to_spawn.size, tick, steps_since_last_time, ch_since_last_time,
+      astar_since_last_time
+    )
+    Common.record(measurement)
+    tell_listeners(EV_Heartbeat(measurement))
+    last_real_time = System.currentTimeMillis
+    steps_since_last_time = 0
+    ch_since_last_time = 0
+    astar_since_last_time = 0
   }
 
   //////////////////////////////////////////////////////////////////////////////
