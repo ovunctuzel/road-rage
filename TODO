@@ -20,10 +20,10 @@
 
 # Traditional traffic engr #
 
+- try it out, compare it to original times
 - blog it!
   - neglect different turns
   - if theres no data for a link at some point, assume itll be freeflow (but the intersection...)
-- do multiple sims, changing some routes using time-dep A* and these records
 
 # Code cleanup #
 

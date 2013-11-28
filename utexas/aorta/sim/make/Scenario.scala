@@ -21,7 +21,8 @@ case class Scenario(name: String, map_fn: String, agents: Array[MkAgent],
                     intersections: Array[MkIntersection],
                     system_wallet: SystemWalletConfig)
 {
-  def make_sim() = new Simulation(Graph.load(map_fn), this)
+  def graph = Graph.load(map_fn)
+  def make_sim() = new Simulation(graph, this)
   def save() {
     val w = Util.writer(name)
     serialize(w)
@@ -300,8 +301,8 @@ object RouteType extends Enumeration {
 
 object RouterType extends Enumeration {
   type RouterType = Value
-  // TODO and rm TMP
-  val ContractionHierarchy, Congestion, Fixed, TMP, DumbToll, TollThreshold, SumToll = Value
+  // Agents don't use Unusable; it's just for manually-invoked routers.
+  val ContractionHierarchy, Congestion, Fixed, Unusable, DumbToll, TollThreshold, SumToll = Value
 }
 
 object OrderingType extends Enumeration {

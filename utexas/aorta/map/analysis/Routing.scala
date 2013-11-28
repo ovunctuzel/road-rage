@@ -35,7 +35,7 @@ class FixedRouter(graph: Graph, path: List[DirectedRoad]) extends Router(graph) 
 }
 
 class DijkstraRouter(graph: Graph) extends Router(graph) {
-  override def router_type = RouterType.TMP
+  override def router_type = RouterType.Unusable
 
   def costs_to(r: DirectedRoad) = dijkstras(graph.directed_roads.size, r)
 

@@ -88,7 +88,7 @@ object Demand {
 
 // A* is a misnomer; there's no heuristic right now.
 class AstarRouter(graph: Graph, val weights: RouteFeatures, demand: Demand) extends Router(graph) {
-  override def router_type = RouterType.TMP
+  override def router_type = RouterType.Unusable
   override def path(from: DirectedRoad, to: DirectedRoad, time: Double) = scored_path(from, to)._1
 
   // Return the weight of the final path too

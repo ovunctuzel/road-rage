@@ -218,6 +218,18 @@ class LinkDelayMetric(info: MetricInfo) extends Metric(info) {
   override def output(ls: List[Metric], scenario: Scenario) {
     throw new UnsupportedOperationException("Why save the actual delays?")
   }
+
+  // Many possible interpolations for this...
+  def delay(on: DirectedRoad, at: Double) = delays_per_time(on).lowerKey(at) match {
+    // 'at' is before all entries here? then the road's clear
+    case 0.0 => on.freeflow_time  // TODO 0.0 is how failure gets encoded by java treemap...
+    case entry_time => delays_per_time(on).get(entry_time) match {
+      // 'at' happens after the most recent entry finishes
+      case delay if at > entry_time + delay => on.freeflow_time
+      // This instance overlaps 'at', so just use the same delay.
+      case delay => delay
+    }
+  }
 }
 
 // TODO delay on roads vs at intersections?
