@@ -121,6 +121,8 @@
   just look at the next guy. BUT we can be route-done, but have somebody blocking in front of us
   initially. so in that case, search forward?
   - this only happens because we join a queue without demanding invariants of stuff in front of us
+- faster congestion rerouting idea: flood from current point, avoiding congestion, till we each a
+  road in our old path
 
 # Performance: fastpaths #
 
