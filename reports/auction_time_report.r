@@ -1,5 +1,5 @@
 # This script is just for trip times
-source("misc/common.r")
+source("reports/common.r")
 pdf("time_report.pdf")
 
 # Definitions

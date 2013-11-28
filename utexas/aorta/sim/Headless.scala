@@ -5,12 +5,18 @@
 package utexas.aorta.sim
 
 import utexas.aorta.ui.GUIDebugger
+import utexas.aorta.analysis.SimSpeedMonitor
 
-import utexas.aorta.common.{Util, Common, cfg}
+import utexas.aorta.common.{Util, Common, cfg, Flags}
 
 object Headless {
   def main(args: Array[String]): Unit = {
     val sim = Util.process_args(args)
+    // TODO move elsewhere?
+    Flags.string("--benchmark") match {
+      case Some(fn) => new SimSpeedMonitor(sim, fn)
+      case None =>
+    }
     val gui = new GUIDebugger(sim)
 
     // Print an update every second

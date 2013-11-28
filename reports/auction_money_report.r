@@ -1,5 +1,5 @@
 # This script is just for trip times
-source("misc/common.r")
+source("reports/common.r")
 pdf("money_report.pdf")
 dbfn <- "auction_money.db"
 

@@ -1,5 +1,5 @@
 # This script is just for road congestion
-source("misc/common.r")
+source("reports/common.r")
 pdf("congestion_report.pdf")
 
 # Definitions

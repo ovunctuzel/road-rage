@@ -27,6 +27,6 @@ scenarios/    Generated scenarios
 # Other code (not Scala) #
 ##########################
 
-misc/         R scripts for processing raw data
+reports/      R scripts for processing raw data
 tools/        Less important scripts
 tools/cloud   Deploy AORTA to Google Compute Engine
