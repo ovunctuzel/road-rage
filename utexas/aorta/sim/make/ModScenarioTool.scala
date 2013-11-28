@@ -219,7 +219,7 @@ object ModScenarioTool {
           Util.log(s"Adding $number * $generations new agents")
           for (generation <- Range(0, generations)) {
             val time = (generation * lifetime, generation * lifetime + delay)
-            val new_agents = AgentDistribution.uniform(
+            val new_agents = AgentDistribution.uniform_times(
               Range(s.agents.size, s.agents.size + number), starts, ends, time,
               route, wallet, budget
             )

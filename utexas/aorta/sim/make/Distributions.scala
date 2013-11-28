@@ -5,7 +5,9 @@
 package utexas.aorta.sim.make
 
 import utexas.aorta.map.{Graph, DirectedRoad}
-import utexas.aorta.common.{RNG, cfg,  AgentID}
+import utexas.aorta.common.{RNG, cfg,  AgentID, Poisson}
+
+import scala.collection.mutable
 
 object IntersectionDistribution {
   private val rng = new RNG()
@@ -56,7 +58,7 @@ object AgentDistribution {
   def filter_candidates(starts: Array[DirectedRoad]) = starts.filter(_.rightmost.ok_to_spawn)
 
   // TODO specify "80% x, 20% y" for stuff...
-  def uniform(ids: Range, starts: Array[DirectedRoad], ends: Array[DirectedRoad],
+  def uniform_times(ids: Range, starts: Array[DirectedRoad], ends: Array[DirectedRoad],
               times: (Double, Double), routes: Array[RouteType.Value],
               wallets: Array[WalletType.Value],
               budgets: (Int, Int)): Array[MkAgent] =
@@ -78,7 +80,34 @@ object AgentDistribution {
     }).toArray
   }
 
-  def default(graph: Graph) = uniform(
+  // TODO unify with uniform_times, and figure out how to split up factors a little.
+  def poisson_times(
+    first_id: AgentID, starts: Array[DirectedRoad], ends: Array[DirectedRoad], start_time: Double,
+    end_time: Double, vehicles_per_hour: Int, routes: Array[RouteType.Value],
+    wallets: Array[WalletType.Value], budgets: (Int, Int)
+  ): Array[MkAgent] = {
+    val actual_starts = filter_candidates(starts)
+    val n = (vehicles_per_hour * ((end_time - start_time) / 3600.0)).toInt
+    var id = first_id.int
+    val result = new mutable.ArrayBuffer[MkAgent]()
+    for (raw_spawn_time <- new Poisson(rng, n, start_time, end_time)) {
+      val start = rng.choose(actual_starts)
+      val budget = rng.int(budgets._1, budgets._2)
+      val time = raw_spawn_time - (raw_spawn_time % cfg.dt_s) // TODO may still have fp issue
+      id += 1
+      result += MkAgent(
+        new AgentID(id), time, rng.new_seed, start.id, start.rightmost.safe_spawn_dist(rng),
+        MkRoute(rng.choose(routes), RouterType.ContractionHierarchy, RouterType.Congestion,
+                Nil, rng.choose(ends).id, rng.new_seed),
+        // For now, force the same budget and priority here, and clean it up
+        // later.
+        MkWallet(rng.choose(wallets), budget, budget, false /* bid_ahead */)
+      )
+    }
+    return result.toArray
+  }
+
+  def default(graph: Graph) = uniform_times(
     Range(0, cfg.army_size), graph.directed_roads, graph.directed_roads, (0.0, 60.0),
     Array(default_route), Array(default_wallet), (100, 200)
   )

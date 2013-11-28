@@ -3,12 +3,6 @@
 ####################################################################################################
 ### Current projects
 
-# Trip distribution #
-
-- poisson, other distributions for location, time? rename existing stuff to be clear about uniform.
-- residence -> house
-- repository of detailed cities with demand data?
-
 # Website #
 
 - setup instructions
@@ -100,6 +94,11 @@
 - metrics for how many reroutes necessary (grouped by cause), how many failed LCs
 - is it even valid to consider results from first/last agents? need steady-state.
 - measure how long a vehicle spends thrashing about bc original path is congested
+
+# Trip distribution #
+
+- residence -> house
+- repository of detailed cities with demand data?
 
 # Traffic model simplification #
 
