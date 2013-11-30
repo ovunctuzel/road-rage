@@ -7,25 +7,42 @@ package utexas.aorta.analysis
 import utexas.aorta.map.{Graph, DirectedRoad}
 import utexas.aorta.map.analysis.{AbstractPairAstarRouter, SimpleHeuristic}
 import utexas.aorta.sim.make.{Scenario, RouterType}
-import utexas.aorta.common.{Util, IO, RNG}
+import utexas.aorta.common.{Util, RNG}
+
+import scala.collection.mutable
+
+object DTAExperiment {
+  def main(args: Array[String]) {
+    new DTAExperiment(ExpConfig.from_args(args)).run_experiment()
+  }
+}
 
 // Dynamic traffic assignment
 // TODO use more of the experiment framework, once i figure out what i want
-class DTA() {
+class DTAExperiment(config: ExpConfig) extends SmartExperiment(config) {
+  private val iterations = 5  // TODO put in ExpConfig
   private val rng = new RNG()
 
-  def run(base_scenario: Scenario, iterations: Int) {
-    var current_scenario = base_scenario
+  // TODO indicate which agents had routes shifted in each round.
+  override def get_metrics(info: MetricInfo) = List(
+    new TripTimeMetric(info), new OriginalRouteMetric(info), new LinkDelayMetric(info)
+  )
+
+  override def run() {
+    val results = new mutable.ListBuffer[List[Metric]]()
+
+    var current_scenario = scenario
     for (round <- Range(0, iterations)) {
-      val sim = current_scenario.make_sim().setup()
-      val delay = new LinkDelayMetric(MetricInfo(sim, s"dta_$round", new IO(None), Util.unique_id))
-      // TODO use experiment's simulate()
-      while (!sim.done) {
-        sim.step()
+      val metrics = run_trial(current_scenario, "dta_$round")
+      results += metrics
+      if (round != iterations - 1) {
+        val delay = metrics.last.asInstanceOf[LinkDelayMetric]  // TODO bit of a hack.
+        // Min round value is 2
+        current_scenario = change_paths(current_scenario, delay, 1.0 / (round + 2))
       }
-      // Min round value is 2
-      current_scenario = change_paths(current_scenario, delay, 1.0 / (round + 2))
     }
+
+    output_data(results.toList, scenario)
   }
 
   // Reroute some drivers using actual delays

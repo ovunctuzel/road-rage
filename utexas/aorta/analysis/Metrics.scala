@@ -216,7 +216,7 @@ class LinkDelayMetric(info: MetricInfo) extends Metric(info) {
   }
 
   override def output(ls: List[Metric], scenario: Scenario) {
-    throw new UnsupportedOperationException("Why save the actual delays?")
+    // Don't actually save anything!
   }
 
   // Many possible interpolations for this...

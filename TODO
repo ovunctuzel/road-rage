@@ -47,7 +47,7 @@
 # Experiment framework #
 
 - mode to run many things locally, in parallel
-- better R templates, or another solution
+- better R templates, or another solution (gnuplot?)
 - port old experiments
 - even record the parameters of the runs?
 - revamp ModScenarioTool
