@@ -5,23 +5,24 @@
 
 # Website #
 
-- setup instructions
-  - eclipse, sbt tutorials
+- how to use
+  - eclipse tutorial
+  - gui controls
+  - how to run experiments
+    - ex: actuator roads before equal mode
+    - ex: braess paradox and adding a road
+  - bigger tasks
+    - tutorial for v2v
+    - howto try an optimization
+    - howto see if your code change keeps the same stuff
+
 - better layout
   - contact me
 - screenshots
 - about/features page
-- tutorials for using, experimenting
 - advertise on OSM wiki
-- tutorials for lil experiments
-  - actuator roads before equal mode
-  - braess paradox and adding a road
-- tutorial for v2v
 - list of concepts
   - map stuff, sim stuff, infrastructure stuff
-- howto
-  - try an optimization
-  - see if your code change keeps the same stuff
 
 # Traditional traffic engr #
 
@@ -86,7 +87,7 @@
 
 # Clown Car #
 
-- D*Lite (blog, reddit)
+- faster rerouting... RRTs?
 - be very careful with freeflow capacity and cutoffs. (too many people denied from useful roads.)
 - take into account time and cost simultaneously
 - regular rerouting

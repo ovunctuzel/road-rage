@@ -7,12 +7,11 @@ package utexas.aorta.common.algorithms
 import scala.collection.mutable
 
 // T is the node type
-// TODO All costs are pairs of doubles lexicographically ordered right now. Generalize.
+// TODO generalize cost passed in
+// This is unused and untested right now
 class DStarLite[T](
-  start: T, goal: T, successors: (T) => Seq[T],
-  calc_cost: (T, T, (Double, Double)) => (Double, Double),
-  calc_heuristic: (T, T) => (Double, Double),
-  add_cost: ((Double, Double), (Double, Double)) => (Double, Double)
+  start: T, goal: T, successors: (T) => Seq[T], predecessors: (T) => Seq[T],
+  c: (T, T) => Double, h: (T, T) => Double
 ) {
   /*private var last_state = start
   private var at = start
@@ -20,13 +19,13 @@ class DStarLite[T](
   private val g = new mutable.HashMap[T, Double]().withDefaultValue(Double.PositiveInfinity)
   private val rhs = new mutable.HashMap[T, Double]().withDefaultValue(Double.PositiveInfinity)
   rhs(goal) = 0
-  // TODO empty u, i think its the priority queue
-  // TODO add to open... goal with score (calc_heuristic(start, goal)._2, 0)
+  private val open = new PQ[T]()
+  open.insert(goal, (h(start, goal), 0))
   // Do this to serve the first query.
   compute_path()
 
   private def calculate_key(state: T) = (
-    math.min(g(state), rhs(state)) + calc_heuristic(at, state)._2 + k_m,
+    math.min(g(state), rhs(state)) + h(at, state) + k_m,
     math.min(g(state), rhs(state))
   )
 
@@ -46,7 +45,7 @@ class DStarLite[T](
 
   private def compute_path() {
     while (open.top_score() < calculate_key(at) || rhs(at) > g(at)) {
-      val u = open.top()
+      val u = open.peek_top()
       val k_old = u.top_score()
       val k_new = calculate_key(u)
       if (k_old < k_new) {
@@ -56,7 +55,7 @@ class DStarLite[T](
         open.remove(u)
         for (s <- predecessors(u)) {
           if (s != goal) {
-            rhs(s) = math.min(rhs(s), calc_cost(s, u)._2 + g(u))
+            rhs(s) = math.min(rhs(s), c(s, u) + g(u))
           }
           update_vertex(s)
         }
@@ -64,9 +63,9 @@ class DStarLite[T](
         val g_old = g(u)
         g(u) = Double.PositiveInfinity
         for (s <- predecessors(u) ++ List(u)) {
-          if (rhs(s) == calc_cost(s, u)._2 + g_old) {
+          if (rhs(s) == c(s, u) + g_old) {
             if (s != goal) {
-              rhs(s) = successors(s).map(s_prime => calc_cost(s, s_prime)._2 + g(s_prime)).min
+              rhs(s) = successors(s).map(sp => c(s, sp) + g(sp)).min
             }
           }
           update_vertex(s)
@@ -76,19 +75,29 @@ class DStarLite[T](
   }
 
   def next_step(from: T): T = {
+    if (rhs(at) == Double.PositiveInfinity) {
+      throw new Exception("No path!")
+    }
     at = successors(from).minBy(s => c(from, s) + g(s))
     return at
   }
 
-  // cost is on the t in s->t, so just one T. mmm I shouldn't try to parse pseudocode this late.
-  def update_world(changed_costs: List[(T, Double)]) {
-    // TODO assume at is fresh.
-    k_m = k_m + calc_heuristic(last_state, at)
+  // the c() function should always return the latest cost.
+  def update_world(current: T, changed_edges: List[(T, T, Double)]) {
+    at = current
+    k_m = k_m + h(last_state, at)
     last_state = at
-    for ((v, new_cost) <- changed_costs) {
-      val c_old = c(v)
-      c(v) = new_cost
-      // TODO finish the rest of this. it refers to u directly, so this could be tricky.
+    for ((u, v, c_old) <- changed_edges) {
+      val new_cost = c(u, v)
+      if (u != goal) {
+        if (c_old > new_cost) {
+          rhs(u) = math.min(rhs(u), c(u, v) + g(v))
+        } else if (rhs(u) == c_old + g(v)) {
+          rhs(u) = successors(u).map(sp => c(u, sp) + g(sp)).min
+        }
+      }
+      update_vertex(u)
     }
+    compute_path()
   }*/
 }
