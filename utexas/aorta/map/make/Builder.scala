@@ -69,27 +69,20 @@ object Builder {
     val vertices = (for ((v, id) <- graph.vertices.zipWithIndex)
       yield v.id -> new VertexID(id)
     ).toMap
+    val roads = (for ((r, id) <- graph.roads.zipWithIndex)
+      yield r.id -> new RoadID(id)
+    ).toMap
 
-    var dr_cnt = 0
-    val roads = new mutable.HashMap[RoadID, RoadID]
-    val directed_roads = new mutable.HashMap[DirectedRoadID, DirectedRoadID]
-
-    for ((r, id) <- graph.roads.zipWithIndex) {
-      roads(r.id) = new RoadID(id)
-
-      // Get rid of directed roads with no lanes.
+    // Get rid of directed roads with no lanes.
+    for (r <- graph.roads) {
       if (r.pos_group.isDefined && r.pos_group.get.edges.isEmpty) {
         r.pos_group = None
       }
       if (r.neg_group.isDefined && r.neg_group.get.edges.isEmpty) {
         r.neg_group = None
       }
-      for (dr <- List(r.pos_group, r.neg_group).flatten) {
-        directed_roads(dr.id) = new DirectedRoadID(dr_cnt)
-        dr_cnt += 1
-      }
     }
-    return new MapStateWriter(fn, edges, vertices, roads.toMap, directed_roads.toMap)
+    return new MapStateWriter(fn, edges, vertices, roads)
   }
 }
 
@@ -98,6 +91,6 @@ object Builder {
 // TODO ideally, have methods for each type of id, and override them.
 class MapStateWriter(
   fn: String, val edges: Map[EdgeID, EdgeID], val vertices: Map[VertexID, VertexID],
-  val roads: Map[RoadID, RoadID], val directed_roads: Map[DirectedRoadID, DirectedRoadID]
+  val roads: Map[RoadID, RoadID]
 ) extends BinaryStateWriter(fn)
 // TODO make turn IDs contig too
