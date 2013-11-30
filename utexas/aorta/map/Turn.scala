@@ -4,13 +4,10 @@
 
 package utexas.aorta.map
 
-import utexas.aorta.common.{Common, StateWriter, StateReader, TurnID, EdgeID}
+import utexas.aorta.map.make.MapStateWriter
+import utexas.aorta.common.{Common, StateReader, TurnID, EdgeID}
 
-// This constructor eschews geometry, taking a length and two points for
-// conflicts.
-// TODO from and to ID are var because we fiddle with IDs during Pass 3
-// construction.
-class Turn(val id: TurnID, var from_id: EdgeID, var to_id: EdgeID, val conflict_line: Line)
+class Turn(val id: TurnID, from_id: EdgeID, to_id: EdgeID, val conflict_line: Line)
   extends Traversable(Array(conflict_line)) with Ordered[Turn]
 {
   //////////////////////////////////////////////////////////////////////////////
@@ -22,10 +19,10 @@ class Turn(val id: TurnID, var from_id: EdgeID, var to_id: EdgeID, val conflict_
   //////////////////////////////////////////////////////////////////////////////
   // Meta
 
-  def serialize(w: StateWriter) {
+  def serialize(w: MapStateWriter) {
     w.int(id.int)
-    w.int(from_id.int)
-    w.int(to_id.int)
+    w.int(w.edges(from_id).int)
+    w.int(w.edges(to_id).int)
     conflict_line.serialize(w)
   }
 

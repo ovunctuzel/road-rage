@@ -60,7 +60,7 @@ class Queue(t: Traversable) {
   // Called lazily.
   def start_step() = {
     if (last_tick != Common.tick) {
-      prev_agents.clear
+      prev_agents.clear()
       prev_agents ++= all_agents
       last_tick = Common.tick
     }

@@ -8,14 +8,12 @@ import scala.collection.mutable
 import Function.tupled
 
 import utexas.aorta.ui.Renderable
-
-import utexas.aorta.common.{Util, StateWriter, StateReader, Physics, RoadID,
-                            VertexID, DirectedRoadID}
+import utexas.aorta.map.make.MapStateWriter
+import utexas.aorta.common.{Util, StateReader, Physics, RoadID, VertexID, DirectedRoadID}
 
 // TODO speed limit stored directly. forget road type.
-// TODO var id due to tarjan's
 class Road(
-  var id: RoadID, val length: Double, val name: String, val road_type: String,
+  val id: RoadID, val length: Double, val name: String, val road_type: String,
   val osm_id: String, v1_id: VertexID, v2_id: VertexID, val points: Array[Coordinate]
 ) extends Renderable
 {
@@ -70,14 +68,14 @@ class Road(
   //////////////////////////////////////////////////////////////////////////////
   // Meta
 
-  def serialize(w: StateWriter) {
-    w.int(id.int)
+  def serialize(w: MapStateWriter) {
+    w.int(w.roads(id).int)
     w.double(length)
     w.string(name)
     w.string(road_type)
     w.string(osm_id)
-    w.int(v1.id.int)
-    w.int(v2.id.int)
+    w.int(w.vertices(v1.id).int)
+    w.int(w.vertices(v2.id).int)
     w.int(points.size)
     points.foreach(pt => pt.serialize(w))
     for (group <- List(pos_group, neg_group)) {

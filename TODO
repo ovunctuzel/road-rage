@@ -39,7 +39,6 @@
 - consider onewayroad type
 - reduce vars and publics
 - distance/time types
-- immutable constructs with mutable builders
 - merge headless/gui clients
 - group all LC code together, etc, but in individ classes via traits
 - unify listener system. filter by event type and then subject, or wildcard.

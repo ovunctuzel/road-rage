@@ -5,8 +5,10 @@
 package utexas.aorta.map.make
 
 import utexas.aorta.map.Graph
+import utexas.aorta.common.{Util, EdgeID, RoadID, VertexID, TurnID, DirectedRoadID,
+                            BinaryStateWriter}
 
-import utexas.aorta.common.Util
+import scala.collection.mutable
 
 object Builder {
   def main(args: Array[String]) {
@@ -53,10 +55,49 @@ object Builder {
       s" edges, and ${graph3.vertices.length} vertices"
     )
     Util.mkdir("maps")
-    val w = Util.writer(output)
+    val w = fix_ids(graph, output)
     graph.serialize(w)
     w.done()
 
     return output
   }
+
+  private def fix_ids(graph: Graph, fn: String): MapStateWriter = {
+    val edges = (for ((e, raw_id) <- graph.edges.zipWithIndex)
+      yield e.id -> new EdgeID(raw_id)
+    ).toMap
+    val vertices = (for ((v, id) <- graph.vertices.zipWithIndex)
+      yield v.id -> new VertexID(id)
+    ).toMap
+
+    var dr_cnt = 0
+    val roads = new mutable.HashMap[RoadID, RoadID]
+    val directed_roads = new mutable.HashMap[DirectedRoadID, DirectedRoadID]
+
+    for ((r, id) <- graph.roads.zipWithIndex) {
+      roads(r.id) = new RoadID(id)
+
+      // Get rid of directed roads with no lanes.
+      if (r.pos_group.isDefined && r.pos_group.get.edges.isEmpty) {
+        r.pos_group = None
+      }
+      if (r.neg_group.isDefined && r.neg_group.get.edges.isEmpty) {
+        r.neg_group = None
+      }
+      for (dr <- List(r.pos_group, r.neg_group).flatten) {
+        directed_roads(dr.id) = new DirectedRoadID(dr_cnt)
+        dr_cnt += 1
+      }
+    }
+    return new MapStateWriter(fn, edges, vertices, roads.toMap, directed_roads.toMap)
+  }
 }
+
+// Since we propagate a StateWriter to serialize maps anyway, push the re-mapping of IDs with it.
+// TODO dont extend a BinaryStateWriter specifically.
+// TODO ideally, have methods for each type of id, and override them.
+class MapStateWriter(
+  fn: String, val edges: Map[EdgeID, EdgeID], val vertices: Map[VertexID, VertexID],
+  val roads: Map[RoadID, RoadID], val directed_roads: Map[DirectedRoadID, DirectedRoadID]
+) extends BinaryStateWriter(fn)
+// TODO make turn IDs contig too

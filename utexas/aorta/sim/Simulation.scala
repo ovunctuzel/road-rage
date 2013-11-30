@@ -137,7 +137,7 @@ class Simulation(val graph: Graph, val scenario: Scenario)
     })
     
     // reset queues that need to be checked
-    active_queues.clear
+    active_queues.clear()
 
     // Record a heartbeat every 1.0s
     if (System.currentTimeMillis - last_real_time >= 1000.0) {

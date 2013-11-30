@@ -34,11 +34,11 @@ class Pass3_Part3(graph: PreGraph3) {
       changed = change1 || change2
 
       // reset state for tarjan's
-      visited.clear
-      t_idx.clear
-      t_low.clear
-      in_stack.clear
-      t_stack.clear
+      visited.clear()
+      t_idx.clear()
+      t_low.clear()
+      in_stack.clear()
+      t_stack.clear()
       dfs = 0
     }
     Util.log_pop
@@ -227,9 +227,9 @@ class Pass3_Part3(graph: PreGraph3) {
     for (r <- graph.roads) {                                              
       val pos_lanes = r.pos_lanes.filter(e => good_edges.contains(e))
       val neg_lanes = r.neg_lanes.filter(e => good_edges.contains(e))
-      r.pos_lanes.clear
+      r.pos_lanes.clear()
       r.pos_lanes ++= pos_lanes
-      r.neg_lanes.clear
+      r.neg_lanes.clear()
       r.neg_lanes ++= neg_lanes
       for ((lane, idx) <- r.pos_lanes.zipWithIndex) {
         lane.lane_num = idx
@@ -249,39 +249,5 @@ class Pass3_Part3(graph: PreGraph3) {
         )
       }
     }
-
-    fix_ids()
-  }
-
-  // clean up ids of all edges, roads, verts.
-  private def fix_ids() {
-    // TODO a better way, and one without reassigning to 'val' id? if we just
-    // clone each structure and have a mapping from old to new... worth it?
-    for ((e, raw_id) <- graph.edges.zipWithIndex) {
-      val id = new EdgeID(raw_id)
-      e.id = id
-      e.next_turns.foreach(t => t.from_id = id)
-      e.prev_turns.foreach(t => t.to_id = id)
-    }
-    for ((v, id) <- graph.vertices.zipWithIndex) {
-      v.id = new VertexID(id)
-    }
-    // Get rid of directed roads with no lanes.
-    var cnt = 0
-    for ((r, id) <- graph.roads.zipWithIndex) {
-      r.id = new RoadID(id)
-
-      if (r.pos_group.isDefined && r.pos_group.get.edges.isEmpty) {
-        r.pos_group = None
-      }
-      if (r.neg_group.isDefined && r.neg_group.get.edges.isEmpty) {
-        r.neg_group = None
-      }
-      List(r.pos_group, r.neg_group).flatten.foreach(dr => {
-        dr.id = new DirectedRoadID(cnt)
-        cnt += 1
-      })
-    }
-    Road.num_directed_roads = cnt
   }
 }

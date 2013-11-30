@@ -6,16 +6,13 @@ package utexas.aorta.map
 
 import scala.collection.mutable
 import utexas.aorta.ui.Renderable
-
-import utexas.aorta.common.{cfg, RNG, Util, StateWriter, StateReader, RoadID, EdgeID,
-                            DirectedRoadID, Price}
+import utexas.aorta.map.make.MapStateWriter
+import utexas.aorta.common.{cfg, RNG, Util, StateReader, RoadID, EdgeID, DirectedRoadID, Price}
 
 // TODO subclass Edge for pos/neg.. seems easier for lots of things
-
-// TODO var id due to tarjan, var lane num due to fixing IDs. maybe not
-// necessary...
+// TODO var lane num due to fixing IDs. necessary?
 class Edge(
-  var id: EdgeID, road_id: RoadID, val dir: Direction.Value, var lane_num: Int, geometry: Array[Line]
+  val id: EdgeID, road_id: RoadID, val dir: Direction.Value, var lane_num: Int, geometry: Array[Line]
 ) extends Traversable(geometry) with Renderable with Ordered[Edge]
 {
   //////////////////////////////////////////////////////////////////////////////
@@ -26,9 +23,9 @@ class Edge(
   //////////////////////////////////////////////////////////////////////////////
   // Meta
 
-  def serialize(w: StateWriter) {
-    w.int(id.int)
-    w.int(road.id.int)
+  def serialize(w: MapStateWriter) {
+    w.int(w.edges(id).int)
+    w.int(w.roads(road.id).int)
     w.int(dir.id)
     w.int(lane_num)
     w.int(lines.length)

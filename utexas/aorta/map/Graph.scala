@@ -6,8 +6,8 @@ package utexas.aorta.map
 
 import scala.collection.mutable
 
-import utexas.aorta.common.{Util, Common, StateWriter, StateReader, RoadID,
-                            VertexID, EdgeID, DirectedRoadID}
+import utexas.aorta.map.make.MapStateWriter
+import utexas.aorta.common.{Util, Common, StateReader, RoadID, VertexID, EdgeID, DirectedRoadID}
 
 class Graph(
   val roads: Array[Road], val edges: Array[Edge], val vertices: Array[Vertex],
@@ -27,7 +27,7 @@ class Graph(
   //////////////////////////////////////////////////////////////////////////////
   // Meta
 
-  def serialize(w: StateWriter) {
+  def serialize(w: MapStateWriter) {
     w.double(width)
     w.double(height)
     w.double(offX)

@@ -7,16 +7,14 @@ package utexas.aorta.map
 import Function.tupled
 
 import utexas.aorta.ui.Renderable
-
-import utexas.aorta.common.{Util, StateWriter, StateReader, VertexID}
+import utexas.aorta.map.make.MapStateWriter
+import utexas.aorta.common.{Util, StateReader, VertexID}
 
 // TODO I don't want this dependency, but at the moment, it leads to a great
 // perf boost due to dropping a pricy hash lookup
 import utexas.aorta.sim.Intersection
 
-// TODO var id due to tarjan
-class Vertex(val location: Coordinate, var id: VertexID) extends Renderable
-{
+class Vertex(val location: Coordinate, val id: VertexID) extends Renderable {
   //////////////////////////////////////////////////////////////////////////////
   // State
 
@@ -32,9 +30,9 @@ class Vertex(val location: Coordinate, var id: VertexID) extends Renderable
   //////////////////////////////////////////////////////////////////////////////
   // Meta
 
-  def serialize(w: StateWriter) {
+  def serialize(w: MapStateWriter) {
     location.serialize(w)
-    w.int(id.int)
+    w.int(w.vertices(id).int)
     w.int(turns.length)
     turns.foreach(t => t.serialize(w))
   }
