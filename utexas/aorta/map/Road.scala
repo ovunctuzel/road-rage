@@ -12,12 +12,11 @@ import utexas.aorta.ui.Renderable
 import utexas.aorta.common.{Util, StateWriter, StateReader, Physics, RoadID,
                             VertexID, DirectedRoadID}
 
-// TODO enum for type. also, it's var because of tarjan's...
-// TODO var id due to tarjan
-// TODO speed limit stored directly.
+// TODO speed limit stored directly. forget road type.
+// TODO var id due to tarjan's
 class Road(
-  var id: RoadID, val length: Double, val name: String, var road_type: String,
-  val osm_id: String, v1_id: VertexID, v2_id: VertexID, var points: Array[Coordinate]
+  var id: RoadID, val length: Double, val name: String, val road_type: String,
+  val osm_id: String, v1_id: VertexID, v2_id: VertexID, val points: Array[Coordinate]
 ) extends Renderable
 {
   //////////////////////////////////////////////////////////////////////////////

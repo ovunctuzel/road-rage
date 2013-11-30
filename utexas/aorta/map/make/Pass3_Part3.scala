@@ -277,8 +277,8 @@ class Pass3_Part3(graph: PreGraph3) {
       if (r.neg_group.isDefined && r.neg_group.get.edges.isEmpty) {
         r.neg_group = None
       }
-      List(r.pos_group, r.neg_group).flatten.foreach(r => {
-        r.id = new DirectedRoadID(cnt)
+      List(r.pos_group, r.neg_group).flatten.foreach(dr => {
+        dr.id = new DirectedRoadID(cnt)
         cnt += 1
       })
     }
