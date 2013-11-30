@@ -28,9 +28,14 @@ abstract class Router(graph: Graph) {
 class FixedRouter(graph: Graph, path: List[DirectedRoad]) extends Router(graph) {
   override def router_type = RouterType.Fixed
   override def path(from: DirectedRoad, to: DirectedRoad, time: Double): List[DirectedRoad] = {
-    // remember, paths don't include from as the first step.
-    Util.assert_eq(from.succs.contains(path.head), true)
-    Util.assert_eq(to, path.last)
+    if (path.nonEmpty) {
+      // remember, paths don't include from as the first step.
+      Util.assert_eq(from.succs.contains(path.head), true)
+      Util.assert_eq(to, path.last)
+    } else {
+      // This is the only time when empty paths should be acceptable
+      Util.assert_eq(from, to)
+    }
     return path
   }
 }

@@ -33,7 +33,7 @@ class DTAExperiment(config: ExpConfig) extends SmartExperiment(config) {
 
     var current_scenario = scenario
     for (round <- Range(0, iterations)) {
-      val metrics = run_trial(current_scenario, "dta_$round")
+      val metrics = run_trial(current_scenario, s"dta_$round")
       results += metrics
       if (round != iterations - 1) {
         val delay = metrics.last.asInstanceOf[LinkDelayMetric]  // TODO bit of a hack.
