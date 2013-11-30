@@ -28,7 +28,8 @@ abstract class Router(graph: Graph) {
 class FixedRouter(graph: Graph, path: List[DirectedRoad]) extends Router(graph) {
   override def router_type = RouterType.Fixed
   override def path(from: DirectedRoad, to: DirectedRoad, time: Double): List[DirectedRoad] = {
-    Util.assert_eq(from, path.head)
+    // remember, paths don't include from as the first step.
+    Util.assert_eq(from.succs.contains(path.head), true)
     Util.assert_eq(to, path.last)
     return path
   }
