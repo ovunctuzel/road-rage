@@ -18,7 +18,6 @@ object Debug {
     serialize_sanity(sim)
     find_crazy_signals(sim)
     calc_capacity(sim)
-    stress_test_pathfind(sim)
   }
 
   private def get_optimal_times(fn: String) {
@@ -77,29 +76,5 @@ object Debug {
       )
     }
     Util.log(s"Lower bound on total capacity: $capacity")
-  }
-
-  private def stress_test_pathfind(sim: Simulation) = {
-    /*val rng = new utexas.aorta.common.RNG()
-    // CH (if available), or Dijkstra's
-    val router = sim.graph.router
-    val t = Common.timer("routing")
-
-    for (i <- 1 until 500000) {
-      if (i % 1000 == 0) {
-        println(s"round $i")
-      }
-      val from = rng.choose(sim.graph.directed_roads)
-      val to = rng.choose(sim.graph.directed_roads)
-      try {
-        router.path(from, to, 0.0)
-      } catch {
-        case e: Throwable => {
-          println(s"Problem on round $i going $from -> $to: $e")
-        }
-      }
-      // TODO verify path
-    }
-    t.stop*/
   }
 }

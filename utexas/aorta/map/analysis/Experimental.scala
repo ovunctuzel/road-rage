@@ -7,6 +7,7 @@ package utexas.aorta.map.analysis
 import scala.collection.mutable
 
 import utexas.aorta.map.{Graph, DirectedRoad}
+import utexas.aorta.sim.make.RouterType
 import utexas.aorta.common.Util
 import utexas.aorta.common.algorithms.AStar
 
@@ -48,7 +49,8 @@ object CompressedGraph {
   }
 }
 
-class CompressedGraph(strands: List[Strand]) {
+class CompressedGraph(graph: Graph) extends Router(graph) {
+  private val strands = CompressedGraph.form_strands(graph)
   private val dr_to_strand = strands.flatMap(strand => strand.members.map(dr => dr -> strand)).toMap
   private val connections: Map[Strand, Set[Strand]] =
     (for (strand <- strands)
@@ -57,12 +59,16 @@ class CompressedGraph(strands: List[Strand]) {
 
   private def add_pairs(a: (Double, Double), b: (Double, Double)) = (a._1 + b._1, a._2 + b._2)
 
-  def path(from: DirectedRoad, to: DirectedRoad) = AStar.path(
-    dr_to_strand(from), dr_to_strand(to), (step: Strand) => connections(step),
-    // Uniform cost search
-    (prev: Strand, next: Strand, cost_sofar: (Double, Double)) => (1, 0),
-    // No heuristic
-    (from: Strand, goal: Strand) => (0, 0),
-    add_pairs
-  )
+  override def router_type = RouterType.Unusable
+  override def path(from: DirectedRoad, to: DirectedRoad, time: Double): List[DirectedRoad] = {
+    val route = AStar.path(
+      dr_to_strand(from), dr_to_strand(to), (step: Strand) => connections(step),
+      // Uniform cost search
+      (prev: Strand, next: Strand, cost_sofar: (Double, Double)) => (1, 0),
+      // No heuristic
+      (from: Strand, goal: Strand) => (0, 0),
+      add_pairs
+    )
+    return Nil  // TODO don't transform strands to real path yet, just timing this strand idea
+  }
 }
