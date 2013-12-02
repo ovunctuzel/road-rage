@@ -136,20 +136,6 @@ class CHRouter(graph: Graph) extends Router(graph) {
     }
     return result.tail.toList
   }
-
-  // Other analyses can use this as a pretty quick oracle to answer distance
-  // queries. Useful for heuristics.
-  def dist(from: DirectedRoad, to: DirectedRoad): Double = {
-    if (from == to) {
-      return 0
-    }
-
-    Util.assert_eq(CHRouter.usable, true)
-    val path = CHRouter.algo.calcPath(from.id.int, to.id.int)
-    CHRouter.algo.clear()
-    Util.assert_eq(path.found, true)
-    return path.distance
-  }
 }
 
 // Score is a pair of doubles
@@ -173,12 +159,7 @@ trait SimpleHeuristic extends AbstractPairAstarRouter {
   override def calc_heuristic(state: DirectedRoad, goal: DirectedRoad) =
     (0.0, state.end_pt.dist_to(goal.end_pt))  // TODO divided by some speed limit?
   // Alternate heuristics explore MUCH less states, but the oracles are too
-  // pricy.
-  /*def calc_heuristic(state: DirectedRoad) =
-    (0.0, graph.ch_router.dist(state, to))*/
-  /*val table = graph.dijkstra_router.costs_to(to)
-  def calc_heuristic(state: DirectedRoad) =
-    (0.0, table(state.id))*/
+  // pricy. (CH, Dijkstra table of distances)
 }
 
 // Cost for each step is (dollars, time)
