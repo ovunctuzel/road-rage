@@ -146,8 +146,7 @@ abstract class AbstractPairAstarRouter(graph: Graph) extends Router(graph) {
     prev: DirectedRoad, next: DirectedRoad, cost_sofar: (Double, Double)
   ): (Double, Double)
 
-  protected def add_cost(a: (Double, Double), b: (Double, Double)) =
-    (a._1 + b._1, a._2 + b._2)
+  protected def add_cost(a: (Double, Double), b: (Double, Double)) = (a._1 + b._1, a._2 + b._2)
 
   override def path(from: DirectedRoad, to: DirectedRoad, time: Double) = AStar.path(
     from, to, (step: DirectedRoad) => step.succs, cost_step, calc_heuristic, add_cost
