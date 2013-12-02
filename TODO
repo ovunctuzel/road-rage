@@ -26,10 +26,8 @@
 
 # Traditional traffic engr #
 
-- try it out, compare it to original times
 - blog it!
-  - neglect different turns
-  - if theres no data for a link at some point, assume itll be freeflow (but the intersection...)
+  - neglect different turns / all intersection effects
 
 # Code cleanup #
 
@@ -87,8 +85,9 @@
 
 # Clown Car #
 
+- change limit of never-toll from 3 to 5
+- sticky congested/clear state.
 - faster rerouting... RRTs?
-- be very careful with freeflow capacity and cutoffs. (too many people denied from useful roads.)
 - take into account time and cost simultaneously
 - regular rerouting
 - tolls justified thru fundamental diagram
@@ -107,7 +106,7 @@
 
 # Traffic model simplification #
 
-- dont mess with gps coords, and have a more boring dist fxn
+- dont mess with gps coords
 
 # Hard realism #
 
@@ -127,7 +126,7 @@
   just look at the next guy. BUT we can be route-done, but have somebody blocking in front of us
   initially. so in that case, search forward?
   - this only happens because we join a queue without demanding invariants of stuff in front of us
-- faster congestion rerouting idea: flood from current point, avoiding congestion, till we each a
+- faster congestion rerouting idea: flood from current point, avoiding congestion, till we reach a
   road in our old path
 
 # Performance: fastpaths #

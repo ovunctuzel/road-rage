@@ -14,10 +14,9 @@ import utexas.aorta.map.{Graph, Road, Edge, Vertex, Turn}
 import utexas.aorta.sim.policies.Phase
 import utexas.aorta.sim.make.{Scenario, MkAgent, IntersectionType}
 
-import utexas.aorta.ui.ReplayDiffScheme
 import utexas.aorta.common.{Util, Common, cfg, StateWriter, StateReader, Flags, AgentID,
                             ListenerPattern, RoadID, VertexID, EdgeID, DirectedRoadID}
-import utexas.aorta.analysis.{Heartbeat_Stat, ReplayChecker, Measurement, RerouteCountMonitor}
+import utexas.aorta.analysis.{Heartbeat_Stat, Measurement, RerouteCountMonitor}
 
 // TODO take just a scenario, or graph and scenario?
 class Simulation(val graph: Graph, val scenario: Scenario)
@@ -39,17 +38,6 @@ class Simulation(val graph: Graph, val scenario: Scenario)
   private var last_real_time = 0.0
   private var steps_since_last_time = 0
   private val routing_monitor = new RerouteCountMonitor(this)
-
-  private lazy val replay =
-    if (Flags.boolean("--replay", false))
-      new ReplayChecker(this, List(Flags.int("--focus")).flatten.map(new AgentID(_)).toSet) {
-        override def difference(id: AgentID, expected: Double, actual: Double) {
-          // TODO this is a bit messy, reaching over to the UI... bcast an event.
-          ReplayDiffScheme.add_delta(id, actual - expected)
-        }
-      }
-    else
-      null
 
   private lazy val time_limit = Flags.double("--time_limit", Double.MaxValue)
   private lazy val omit = new AgentID(Flags.int("--omit", -1))
@@ -147,9 +135,6 @@ class Simulation(val graph: Graph, val scenario: Scenario)
     if (should_savestate && (tick / cfg.autosave_every).isValidInt && tick > 0.0) {
       savestate()
     }
-    if (replay != null && (tick / cfg.replay_freq).isValidInt && tick > 0.0) {
-      replay.handle_tick()
-    }
 
     tell_listeners(EV_Step(tick))
   }
@@ -166,9 +151,6 @@ class Simulation(val graph: Graph, val scenario: Scenario)
     // Record this so any monitors always know about the end
     record_heartbeat(0)
     agents.foreach(a => a.terminate(interrupted = true))
-    if (replay != null) {
-      replay.done()
-    }
   }
 
   // True if we've correctly promoted into real agents. Does the work of

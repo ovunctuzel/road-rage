@@ -5,7 +5,7 @@
 package utexas.aorta.sim
 
 import utexas.aorta.ui.GUIDebugger
-import utexas.aorta.analysis.SimSpeedMonitor
+import utexas.aorta.analysis.{SimSpeedMonitor, ReplayReader, ReplayWriter}
 
 import utexas.aorta.common.{Util, Common, cfg, Flags}
 
@@ -15,6 +15,14 @@ object Headless {
     // TODO move elsewhere?
     Flags.string("--benchmark") match {
       case Some(fn) => new SimSpeedMonitor(sim, fn)
+      case None =>
+    }
+    Flags.string("--record") match {
+      case Some(fn) => new ReplayWriter(sim, Util.writer(fn))
+      case None =>
+    }
+    Flags.string("--replay") match {
+      case Some(fn) => new ReplayReader(sim, Util.reader(fn))
       case None =>
     }
     val gui = new GUIDebugger(sim)

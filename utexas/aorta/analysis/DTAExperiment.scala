@@ -18,7 +18,6 @@ object DTAExperiment {
 }
 
 // Dynamic traffic assignment
-// TODO use more of the experiment framework, once i figure out what i want
 class DTAExperiment(config: ExpConfig) extends SmartExperiment(config) {
   private val iterations = 5  // TODO put in ExpConfig
   private val rng = new RNG()
@@ -59,6 +58,8 @@ class DTAExperiment(config: ExpConfig) extends SmartExperiment(config) {
           .path(graph.get_dr(a.start), graph.get_dr(a.route.goal), 0 /* this time doesnt matter */)
           .map(_.id)
         a.copy(route = a.route.copy(orig_router = RouterType.Fixed, initial_path = new_path))
+        // TODO make these delays available to all/some drivers, for rerouting? could introduce bad
+        // biases towards regions that should be clear but arent, though.
       } else {
         a
       }

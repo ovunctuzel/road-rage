@@ -18,7 +18,7 @@ object ColorScheme {
 }
 
 // Reveal who's acting differently from their past life
-// TODO disable sometimes
+// TODO disable sometimes. also, revive this?
 object ReplayDiffScheme {
   private val deltas = new AgentMap[Double](0.0)
 
