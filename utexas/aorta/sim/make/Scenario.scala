@@ -302,7 +302,7 @@ object RouteType extends Enumeration {
 object RouterType extends Enumeration {
   type RouterType = Value
   // Agents don't use Unusable; it's just for manually-invoked routers.
-  val ContractionHierarchy, Congestion, Fixed, Unusable, DumbToll, TollThreshold, SumToll = Value
+  val Congestion, Fixed, Unusable, DumbToll, TollThreshold, SumToll = Value
 }
 
 object OrderingType extends Enumeration {
@@ -346,8 +346,6 @@ object Factory {
 
   def make_router(enum: RouterType.Value, graph: Graph, initial_path: List[DirectedRoad])
   = enum match {
-    // TODO fall back on dijkstra if unusable?
-    case RouterType.ContractionHierarchy => new CHRouter(graph)
     case RouterType.Congestion => new CongestionRouter(graph)
     case RouterType.Fixed => new FixedRouter(graph, initial_path)
     case RouterType.DumbToll => new DumbTollRouter(graph)

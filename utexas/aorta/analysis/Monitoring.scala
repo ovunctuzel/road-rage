@@ -37,7 +37,6 @@ class SimSpeedMonitor(sim: Simulation, fn: String) {
 
 // Count how many times agents are rerouting
 class RerouteCountMonitor(sim: Simulation) {
-  var ch_count = 0
   var astar_count = 0
   var unrealizable_count = 0
   def discretionary_count = astar_count - unrealizable_count
@@ -45,7 +44,6 @@ class RerouteCountMonitor(sim: Simulation) {
   sim.listen("reroute_count", _ match {
     case EV_AgentSpawned(a) => a.route.listen("reroute_count", _ match {
       case EV_Reroute(_, _, method, unrealizable) => method match {
-        case RouterType.ContractionHierarchy => ch_count += 1
         case x if x != RouterType.Fixed && x != RouterType.Unusable => {
           astar_count += 1
           if (unrealizable) {
@@ -60,7 +58,6 @@ class RerouteCountMonitor(sim: Simulation) {
   })
 
   def reset() {
-    ch_count = 0
     astar_count = 0
     unrealizable_count = 0
   }

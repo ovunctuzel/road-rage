@@ -49,8 +49,8 @@ case class Heartbeat_Stat(
   //private val agent_str = "%,d moved, %,d live, %,d ready, %,d done"
   private val agent_str = "A[%,d] L[%,d] R[%,d] D[%,d]"
   def describe_agents = agent_str.format(active_agents, live_agents, spawning_agents, done_agents)
-  def describe = "At t=%s: %s {%,03d moves, %,d CH, %,d A* (%,dm + %,df)}".format(
-    Util.time_num(tick), describe_agents, agent_steps, counts.ch_count, counts.astar_count,
+  def describe = "At t=%s: %s {%,03d moves, %,d A* (%,dm + %,df)}".format(
+    Util.time_num(tick), describe_agents, agent_steps, counts.astar_count,
     counts.unrealizable_count, counts.discretionary_count
   )
 }

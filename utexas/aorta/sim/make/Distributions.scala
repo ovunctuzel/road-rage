@@ -71,7 +71,7 @@ object AgentDistribution {
       val time = raw_time - (raw_time % cfg.dt_s) // TODO may still have fp issue
       MkAgent(
         new AgentID(id), time, rng.new_seed, start.id, start.rightmost.safe_spawn_dist(rng),
-        MkRoute(rng.choose(routes), RouterType.ContractionHierarchy, RouterType.Congestion,
+        MkRoute(rng.choose(routes), RouterType.Congestion, RouterType.Congestion,
                 Nil, rng.choose(ends).id, rng.new_seed),
         // For now, force the same budget and priority here, and clean it up
         // later.
@@ -97,7 +97,7 @@ object AgentDistribution {
       id += 1
       result += MkAgent(
         new AgentID(id), time, rng.new_seed, start.id, start.rightmost.safe_spawn_dist(rng),
-        MkRoute(rng.choose(routes), RouterType.ContractionHierarchy, RouterType.Congestion,
+        MkRoute(rng.choose(routes), RouterType.Congestion, RouterType.Congestion,
                 Nil, rng.choose(ends).id, rng.new_seed),
         // For now, force the same budget and priority here, and clean it up
         // later.

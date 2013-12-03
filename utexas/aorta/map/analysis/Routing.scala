@@ -5,9 +5,6 @@
 package utexas.aorta.map.analysis
 
 import scala.collection.mutable
-import com.graphhopper.storage.{LevelGraphStorage, RAMDirectory}
-import com.graphhopper.routing.ch.PrepareContractionHierarchies
-import com.graphhopper.routing.DijkstraBidirectionRef
 
 import utexas.aorta.map.{Graph, DirectedRoad, Coordinate}
 import utexas.aorta.sim.Agent
@@ -99,43 +96,6 @@ class DijkstraRouter(graph: Graph) extends Router(graph) {
         costs, start.succs.minBy(step => costs(step.id.int))
       )
     }
-}
-
-// One of these in memory per graph, please
-object CHRouter {
-  var gh: LevelGraphStorage = null
-  var usable = false
-  var algo: DijkstraBidirectionRef = null
-}
-
-class CHRouter(graph: Graph) extends Router(graph) {
-  if (CHRouter.gh == null) {
-    CHRouter.gh = new LevelGraphStorage(new RAMDirectory(s"maps/route_${graph.name}", true))
-    CHRouter.usable = CHRouter.gh.loadExisting
-    CHRouter.algo = new PrepareContractionHierarchies().graph(CHRouter.gh).createAlgo
-  }
-
-  override def router_type = RouterType.ContractionHierarchy
-
-  def path(from: DirectedRoad, to: DirectedRoad, time: Double): List[DirectedRoad] = {
-    // GraphHopper can't handle loops. For now, empty path; freebie.
-    // TODO force a loop by starting on a road directly after 'from'
-    if (from == to) {
-      return Nil
-    }
-
-    Util.assert_eq(CHRouter.usable, true)
-    val path = CHRouter.algo.calcPath(from.id.int, to.id.int)
-    CHRouter.algo.clear()
-    Util.assert_eq(path.found, true)
-
-    val result = new mutable.ListBuffer[DirectedRoad]()
-    val iter = path.calcNodes.iterator
-    while (iter.hasNext) {
-      result += graph.directed_roads(iter.next)
-    }
-    return result.tail.toList
-  }
 }
 
 // Score is a pair of doubles
