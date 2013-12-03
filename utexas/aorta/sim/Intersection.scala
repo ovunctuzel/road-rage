@@ -173,7 +173,7 @@ class Ticket(val a: Agent, val turn: Turn) extends Ordered[Ticket] {
   //////////////////////////////////////////////////////////////////////////////
   // Actions
 
-  def approve() = {
+  def approve() {
     stat = stat.copy(accept_tick = Common.tick)
     // Allocate a spot for them. This must be called when the turn isn't
     // blocked.

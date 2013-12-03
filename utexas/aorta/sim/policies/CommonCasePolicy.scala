@@ -27,7 +27,7 @@ class CommonCasePolicy(intersection: Intersection,
   //////////////////////////////////////////////////////////////////////////////
   // Actions
 
-  def react() = {
+  def react() {
     // First admit everybody trying to do a common turn, unless somebody rare
     // and conflicting has been approved.
 

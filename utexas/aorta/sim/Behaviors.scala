@@ -35,7 +35,7 @@ class IdleBehavior(a: Agent) extends Behavior(a) {
 
   def transition(from: Traversable, to: Traversable) = {}
 
-  def dump_info() = {
+  def dump_info() {
     Util.log("Idle behavior")
   }
 }
@@ -84,7 +84,7 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
     }
   }
 
-  def dump_info() = {
+  def dump_info() {
     Util.log("Route-following behavior")
     Util.log(s"Target lane: $target_lane")
     route.dump_info

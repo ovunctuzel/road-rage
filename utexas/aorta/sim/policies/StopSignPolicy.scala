@@ -15,7 +15,7 @@ class StopSignPolicy(intersection: Intersection,
                      ordering: IntersectionOrdering[Ticket])
   extends Policy(intersection)
 {
-  def react() = {
+  def react() {
     if (accepted.isEmpty) {
       approve_next()
     }

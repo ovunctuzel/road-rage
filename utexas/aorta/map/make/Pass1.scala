@@ -131,7 +131,7 @@ class PreGraph1() {
   // confusing after this!
   def fix(pt: Coordinate) = Coordinate((pt.x + offX) * scale, height - ((pt.y + offY) * scale))
 
-  def normalize() = {
+  def normalize() {
     var minX = Double.MaxValue
     var minY = Double.MaxValue
     var maxX = Double.MinValue

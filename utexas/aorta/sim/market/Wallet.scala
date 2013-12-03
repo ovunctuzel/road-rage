@@ -55,7 +55,7 @@ abstract class Wallet(initial_budget: Int, val priority: Int) {
     ticket.stat = ticket.stat.copy(cost_paid = amount + ticket.stat.cost_paid)
   }
 
-  def reset_tooltip() = {
+  def reset_tooltip() {
     tooltip = Nil
     dark_tooltip = false
   }

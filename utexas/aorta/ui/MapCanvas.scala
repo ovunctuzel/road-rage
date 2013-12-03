@@ -742,7 +742,7 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
     mode = m
   }
 
-  def show_pathfinding() = {
+  def show_pathfinding() {
     // contract: must be called when current_edge1 and 2 are set
     val from = state.chosen_edge1.get.directed_road
     val to = state.chosen_edge2.get.directed_road

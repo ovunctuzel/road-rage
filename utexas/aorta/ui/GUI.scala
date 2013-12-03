@@ -122,7 +122,7 @@ object GUI extends SimpleSwingApplication {
     preferredSize = new Dimension(800, 600)
     peer.setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE)
 
-    override def closeOperation() = {
+    override def closeOperation() {
       if (headless) {
         println("Closing GUI...")
         close
@@ -207,7 +207,7 @@ object GUI extends SimpleSwingApplication {
     }
   }
 
-  def popup_config() = {
+  def popup_config() {
     // TODO tabbed pane by category?
   }
 }

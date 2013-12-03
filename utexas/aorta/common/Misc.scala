@@ -175,7 +175,7 @@ class Stopwatch(val name: String) {
     }
   }
 
-  def describe() = {
+  def describe() {
     Util.log(s"$name took $seconds seconds")
   }
 }

@@ -44,7 +44,7 @@ class Queue(t: Traversable) {
   //////////////////////////////////////////////////////////////////////////////
   // Actions
 
-  def allocate_slot() = {
+  def allocate_slot() {
     Util.assert_gt(avail_slots, 0)
     avail_slots -= 1
   }
@@ -52,13 +52,13 @@ class Queue(t: Traversable) {
   // It's the client's responsability to call this. Agents could skip short
   // lanes entirely with big time-steps, sometimes, so calling only in exit()
   // isn't sufficient.
-  def free_slot() = {
+  def free_slot() {
     Util.assert_lt(avail_slots, capacity)
     avail_slots += 1
   }
 
   // Called lazily.
-  def start_step() = {
+  def start_step() {
     if (last_tick != Common.tick) {
       prev_agents.clear()
       prev_agents ++= all_agents

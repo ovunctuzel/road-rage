@@ -21,7 +21,7 @@ object ModScenarioTool {
      "Or pass two scenarios to get a diff")
      // TODO removing all existing agents, or something
 
-  private def dump_usage() = {
+  private def dump_usage() {
     Util.log(usage)
     sys.exit
   }

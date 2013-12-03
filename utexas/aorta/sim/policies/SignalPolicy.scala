@@ -52,7 +52,7 @@ class SignalPolicy(intersection: Intersection,
   //////////////////////////////////////////////////////////////////////////////
   // Actions
 
-  def react() = {
+  def react() {
     // Switch to the next phase
     if (Common.tick >= end_at && accepted.isEmpty) {
       // In auctions, we may not have a viable next phase at all...
@@ -100,7 +100,7 @@ class SignalPolicy(intersection: Intersection,
   // Queries
 
   def policy_type = IntersectionType.Signal
-  override def dump_info() = {
+  override def dump_info() {
     super.dump_info()
     Util.log(s"Current phase: $current_phase")
     Util.log(s"${phase_order.size} phases total")

@@ -100,7 +100,7 @@ class ReservationPolicy(intersection: Intersection,
     }
   }
 
-  override def dump_info() = {
+  override def dump_info() {
     super.dump_info()
     Util.log(s"Interruption by $interruption")
   }

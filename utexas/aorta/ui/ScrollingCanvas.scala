@@ -198,21 +198,21 @@ abstract class ScrollingCanvas extends Component {
     }
   }
 
-  protected def grab_focus() = {
+  protected def grab_focus() {
     if (!hasFocus) {
       requestFocus
     }
   }
 
   // begin in the center
-  def reset_window() = {
+  def reset_window() {
     x_off = canvas_width / 2
     y_off = canvas_height / 2
     zoom = 1.0
   }
 
   // prevent coordinates from leaving the canvas
-  private def fix_oob() = {
+  private def fix_oob() {
     // upper logical bounds of the current screen
     val x2 = screen_to_map_x(size.width)
     val y2 = screen_to_map_y(size.height)
