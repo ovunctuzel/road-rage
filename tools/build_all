@@ -5,5 +5,4 @@ do
   tmp=${osm/osm\//}
   map=${tmp/.osm/}
   ./build_map osm/${map}.osm
-  ./preroute maps/${map}.map
 done
