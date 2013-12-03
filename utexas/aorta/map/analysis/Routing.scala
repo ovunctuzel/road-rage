@@ -10,7 +10,7 @@ import utexas.aorta.map.{Graph, DirectedRoad, Coordinate}
 import utexas.aorta.sim.Agent
 import utexas.aorta.sim.make.RouterType
 
-import utexas.aorta.common.{Util, Common, Physics, RNG, DirectedRoadID, Price}
+import utexas.aorta.common.{Util, Physics, RNG, DirectedRoadID, Price}
 import utexas.aorta.common.algorithms.AStar
 
 abstract class Router(graph: Graph) {

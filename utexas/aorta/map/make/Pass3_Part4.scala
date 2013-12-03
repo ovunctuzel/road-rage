@@ -8,7 +8,7 @@ import scala.collection.mutable
 
 import utexas.aorta.map.{Road, Edge, Vertex, Turn, Line, DirectedRoad, Direction}
 
-import utexas.aorta.common.{Util, Common, cfg, TurnID, DirectedRoadID}
+import utexas.aorta.common.{Util, cfg, TurnID, DirectedRoadID}
 
 class Pass3_Part4(graph: PreGraph3) {
   def run() {

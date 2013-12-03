@@ -5,7 +5,7 @@
 package utexas.aorta.map
 
 import utexas.aorta.map.make.MapStateWriter
-import utexas.aorta.common.{Common, StateReader, TurnID, EdgeID}
+import utexas.aorta.common.{StateReader, TurnID, EdgeID}
 
 class Turn(val id: TurnID, from_id: EdgeID, to_id: EdgeID, val conflict_line: Line)
   extends Traversable(Array(conflict_line)) with Ordered[Turn]

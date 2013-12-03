@@ -8,7 +8,7 @@ import scala.collection.mutable
 
 import utexas.aorta.map.{Road, Edge, Vertex, Turn, Line}
 
-import utexas.aorta.common.{Util, Common, cfg, TurnID, DirectedRoadID}
+import utexas.aorta.common.{Util, cfg, TurnID, DirectedRoadID}
 
 class Pass3_Part2(graph: PreGraph3) {
   val roads_per_vert = new mutable.HashMap[Vertex, mutable.Set[Road]] with mutable.MultiMap[Vertex, Road]

@@ -9,7 +9,7 @@ import scala.collection.mutable
 import utexas.aorta.map.{Graph, DirectedRoad, Coordinate}
 import utexas.aorta.sim.make.{IntersectionType, Scenario, RouterType}
 
-import utexas.aorta.common.{Util, Common, MathVector, VertexID, DirectedRoadID}
+import utexas.aorta.common.{Util, MathVector, VertexID, DirectedRoadID}
 
 // Encodes all factors describing the quality of a path
 case class RouteFeatures(
