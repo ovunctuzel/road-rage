@@ -104,9 +104,9 @@ abstract class Wallet(initial_budget: Int, val priority: Int) {
 
 object Wallet {
   def unserialize(r: StateReader): Wallet = {
-    val wallet = Factory.make_wallet(WalletType(r.int), r.int, r.int, r.bool)
-    val num_tooltips = r.int
-    wallet.tooltip = Range(0, num_tooltips).map(_ => r.string).toList
+    // Subclasses that care about bid_ahead will unserialize it.
+    val wallet = Factory.make_wallet(WalletType(r.int), r.int, r.int, false)
+    wallet.tooltip = Range(0, r.int).map(_ => r.string).toList
     wallet.dark_tooltip = r.bool
     wallet.unserialize(r)
     return wallet
@@ -159,13 +159,14 @@ class FreeriderWallet(p: Int) extends Wallet(0, p) {
 }
 
 // Bid once per intersection some amount proportional to the rest of the trip.
-class FairWallet(initial_budget: Int, p: Int, bid_ahead: Boolean)
+class FairWallet(initial_budget: Int, p: Int, initial_bid_ahead: Boolean)
   extends Wallet(initial_budget, p)
 {
   //////////////////////////////////////////////////////////////////////////////
   // State
 
   private var total_weight = 0.0
+  private var bid_ahead = initial_bid_ahead
 
   //////////////////////////////////////////////////////////////////////////////
   // Meta
@@ -173,10 +174,12 @@ class FairWallet(initial_budget: Int, p: Int, bid_ahead: Boolean)
   override def serialize(w: StateWriter) {
     super.serialize(w)
     w.double(total_weight)
+    w.bool(bid_ahead)
   }
 
   override protected def unserialize(r: StateReader) {
     total_weight = r.double
+    bid_ahead = r.bool
   }
 
   override def setup(agent: Agent) {
