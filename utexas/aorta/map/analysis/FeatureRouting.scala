@@ -48,7 +48,7 @@ object RouteFeatures {
     return RouteFeatures(
       total_length = step.length,
       total_freeflow_time = step.freeflow_time,
-      congested_road_count = if (step.is_congested) 1 else 0,
+      congested_road_count = if (step.auditor.congested) 1 else 0,
       stop_sign_count = one_if(IntersectionType.StopSign),
       signal_count = one_if(IntersectionType.Signal),
       reservation_count = one_if(IntersectionType.Reservation),

@@ -140,7 +140,8 @@ class RoadCongestionMetric(info: MetricInfo) extends HistogramMetric(info, 10.0)
 
   info.sim.listen(name, _ match {
     case EV_AgentSpawned(a) => a.route.listen(name, _ match {
-      case EV_Transition(_, to: Edge) => histogram.add(to.directed_road.freeflow_percent_full)
+      case EV_Transition(_, to: Edge) =>
+        histogram.add(to.directed_road.auditor.freeflow_percent_full)
       case _ =>
     })
     case _ =>

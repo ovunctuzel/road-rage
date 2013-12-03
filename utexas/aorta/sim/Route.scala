@@ -216,7 +216,7 @@ class PathRoute(goal: DirectedRoad, orig_router: Router, private var rerouter: R
     val must_reroute =
       e.next_turns.filter(t => t.to.directed_road == dest).isEmpty
     // This variant only considers long roads capable of being congested, which is risky...
-    val should_reroute = dest.is_congested
+    val should_reroute = dest.auditor.congested
     // Since short roads can gridlock too, have the client detect that and explicitly force us to
     // handle it
     val asked_to_reroute = reroutes_requested.contains(e)

@@ -124,7 +124,7 @@ trait SimpleHeuristic extends AbstractPairAstarRouter {
 // Cost for each step is (dollars, time)
 trait TollAndTimeCost extends AbstractPairAstarRouter {
   override def cost_step(prev: DirectedRoad, next: DirectedRoad, cost_sofar: (Double, Double)) =
-    (next.toll.dollars, next.freeflow_time)
+    (next.auditor.toll.dollars, next.freeflow_time)
 }
 
 // Score is (number of congested roads, total freeflow time)
@@ -132,7 +132,7 @@ class CongestionRouter(graph: Graph) extends AbstractPairAstarRouter(graph) with
   override def router_type = RouterType.Congestion
 
   override def cost_step(prev: DirectedRoad, next: DirectedRoad, cost_sofar: (Double, Double)) =
-    (Util.bool2binary(next.is_congested), next.freeflow_time)
+    (Util.bool2binary(next.auditor.congested), next.freeflow_time)
 }
 
 // Score is (max congestion toll, total freeflow time)
@@ -159,7 +159,7 @@ class TollThresholdRouter(graph: Graph) extends AbstractPairAstarRouter(graph)
   override def router_type = RouterType.TollThreshold
 
   override def cost_step(prev: DirectedRoad, next: DirectedRoad, cost_sofar: (Double, Double)) =
-    (Util.bool2binary(next.toll.dollars > max_toll.dollars), next.freeflow_time)
+    (Util.bool2binary(next.auditor.toll.dollars > max_toll.dollars), next.freeflow_time)
 }
 
 // Score is (sum of tolls, total freeflow time). The answer is used as the "free" baseline with the
@@ -170,5 +170,5 @@ class SumTollRouter(graph: Graph) extends AbstractPairAstarRouter(graph)
   override def router_type = RouterType.SumToll
 
   override def cost_step(prev: DirectedRoad, next: DirectedRoad, cost_sofar: (Double, Double)) =
-    (next.toll.dollars, next.freeflow_time)
+    (next.auditor.toll.dollars, next.freeflow_time)
 }
