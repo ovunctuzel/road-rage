@@ -143,8 +143,6 @@ class Road(
   // TODO better heuristic, based on how much this extended road touches other
   // roads
   def is_major = road_type != "residential"
-
-  def congestion_rating = all_lanes.map(_.congestion_rating).max
 }
 
 object Road {

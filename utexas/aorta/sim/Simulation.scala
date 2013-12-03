@@ -93,24 +93,24 @@ class Simulation(val graph: Graph, val scenario: Scenario)
 
     // Move agents.
     var active_cnt = 0
-    agents.foreach(a => {
+    for (a <- agents) {
       if (a.step) {
         active_cnt += 1
       }
       steps_since_last_time += 1
       //println(s"$tick: $a @ ${a.at} doing ${a.speed} due to ${a.target_accel}. ${a.old_lane} and ${a.lanechange_dist_left}, ${a.behavior.target_lane} LC")
       //println(s"  tickets: ${a.tickets}")
-    })
+    }
 
     // Just check the ones we need to.
     active_queues.foreach(q => q.end_step)
+    active_queues.clear()
 
     active_intersections.foreach(i => i.end_step)
 
     // Let agents react to the new world.
 
     val reap = agents.filter(a => a.react).toSet
-
     if (reap.nonEmpty) {
       // TODO batch GC.
       reap.foreach(a => a.terminate())
@@ -120,12 +120,7 @@ class Simulation(val graph: Graph, val scenario: Scenario)
 
     // Let intersections react to the new world. By doing this after agent
     // steps, we ensure the intersections' temporary state becomes firm.
-    graph.vertices.foreach(v => {
-      v.intersection.policy.react_tick
-    })
-    
-    // reset queues that need to be checked
-    active_queues.clear()
+    graph.vertices.foreach(v => v.intersection.policy.react_tick())
 
     // Record a heartbeat every 1.0s
     if (System.currentTimeMillis - last_real_time >= 1000.0) {
