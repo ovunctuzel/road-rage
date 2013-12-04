@@ -43,9 +43,6 @@ class Turn(val id: TurnID, from_id: EdgeID, to_id: EdgeID, val conflict_line: Li
   def leads_to = List(to)
   def speed_limit = to.speed_limit
 
-  def involves_road(r: Road) = (from.road == r || to.road == r)
-  def other_road(r: Road) = if (from.road == r) to.road else from.road
-
   def vert = from.to
 
   def conflicts_with(t: Turn) =

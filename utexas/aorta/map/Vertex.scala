@@ -50,15 +50,11 @@ class Vertex(val location: Coordinate, val id: VertexID) extends Renderable {
   // what verts does this one lead to?
   def out_verts = turns.map(t => t.to.to).toSet
 
-  def roads = turns.flatMap(t => List(t.from.road, t.to.road)).toSet
   def directed_roads_in = turns.map(_.from.directed_road).toSet
   def edges = turns.flatMap(t => List(t.from, t.to))
   def directed_roads = edges.map(_.directed_road).toSet
   def in_edges = turns.map(t => t.from).toSet
   def out_edges = turns.map(t => t.to).toSet
-
-  // Priority of a vertex is the sum of speed limits of roads surrounding it
-  def get_priority = roads.foldLeft(0.0)((a,b) => a + b.speed_limit)
 
   override def toString = "[V" + id + "]"
 
@@ -82,7 +78,7 @@ class Vertex(val location: Coordinate, val id: VertexID) extends Renderable {
     i.turns.foreach(tupled((turn, count) => Util.log(s"$count doing $turn")))
     Util.log_pop
 
-    Util.log("Roads: " + roads)
+    Util.log("Roads: " + directed_roads)
 
     // anything else
     i.policy.dump_info
