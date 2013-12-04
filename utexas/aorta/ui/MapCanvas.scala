@@ -64,7 +64,8 @@ class GuiState(val canvas: MapCanvas) {
   var polygon_roads2: Set[Road] = Set()
   var chosen_edge1: Option[Edge] = None
   var chosen_edge2: Option[Edge] = None
-  var show_zones = false
+  var show_zone_colors = false
+  var show_zone_centers = false
 
   // Actions
   def reset(g: Graphics2D) {
@@ -246,84 +247,92 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
   def render_canvas(g2d: Graphics2D, window: Rectangle2D.Double): List[Tooltip] = {
     state.reset(g2d)
 
-    val roads_seen = road_renderers.filter(r => {
-      val hit = r.hits(window)
-      if (hit) {
-        r.render_road()
+    if (state.show_zone_centers) {
+      for (zone <- sim.graph.zones.zones) {
+        g2d.setColor(ZoneColor.color(zone))
+        g2d.draw(state.bubble(zone.center))
       }
-      hit
-    })
-
-    // don't show tiny details when it doesn't matter (and when it's expensive
-    // to render them all)
-    if (zoomed_in) {
-      for (r <- roads_seen) {
-        r.render_center_line()
-        r.render_edges()
-        r.render_buildings()
-      }
-
-      state.current_obj match {
-        case Some(pos: Position) => {
-          val e = pos.on.asInstanceOf[Edge]
-          draw_intersection(g2d, e)
-          highlight_buildings(g2d, e.directed_road)
+      return Nil
+    } else {
+      val roads_seen = road_renderers.filter(r => {
+        val hit = r.hits(window)
+        if (hit) {
+          r.render_road()
         }
-        case Some(v: Vertex) => {
-          for (t <- v.intersection.policy.current_greens) {
-            state.draw_turn(t, cfg.turn_color)
+        hit
+      })
+
+      // don't show tiny details when it doesn't matter (and when it's expensive
+      // to render them all)
+      if (zoomed_in) {
+        for (r <- roads_seen) {
+          r.render_center_line()
+          r.render_edges()
+          r.render_buildings()
+        }
+
+        state.current_obj match {
+          case Some(pos: Position) => {
+            val e = pos.on.asInstanceOf[Edge]
+            draw_intersection(g2d, e)
+            highlight_buildings(g2d, e.directed_road)
           }
-        }
-        case _ =>
-      }
-
-      // Show traffic signal stuff
-      if (show_green) {
-        g2d.setStroke(GeomFactory.center_stroke)
-        g2d.setColor(Color.GREEN)
-        green_turns.foreach(t => if (t._2.intersects(window)) {
-          g2d.fill(t._2)
-          // TODO draw the tip too?
-        })
-      }
-
-      // Illustrate the intersection policies
-      for (v <- sim.graph.vertices) {
-        val bub = state.bubble(v.location)
-        if (bub.intersects(window)) {
-          g2d.setColor(policy_colors(v.intersection.policy.policy_type))
-          g2d.draw(bub)
-        }
-      }
-    }
-
-    for (driver <- driver_renderers.values) {
-      if (driver.hits(window)) {
-        driver.render()
-      }
-    }
-
-    // Finally, if the user is free-handing a region, show their work.
-    g2d.setColor(cfg.polygon_color)
-    g2d.setStroke(drawing_stroke)
-    g2d.draw(polygon)
-
-    // What tooltips do we want?
-    state.current_obj match {
-      case Some(thing) => {
-        state.tooltips += Tooltip(
-          screen_to_map_x(mouse_at_x), screen_to_map_y(mouse_at_y),
-          thing.tooltip, false
-        )
-        thing match {
-          // TODO make all the moused over things be renderables with this method
-          case a: Agent => driver_renderers.get(a).moused_over()
+          case Some(v: Vertex) => {
+            for (t <- v.intersection.policy.current_greens) {
+              state.draw_turn(t, cfg.turn_color)
+            }
+          }
           case _ =>
         }
+
+        // Show traffic signal stuff
+        if (show_green) {
+          g2d.setStroke(GeomFactory.center_stroke)
+          g2d.setColor(Color.GREEN)
+          green_turns.foreach(t => if (t._2.intersects(window)) {
+            g2d.fill(t._2)
+            // TODO draw the tip too?
+          })
+        }
+
+        // Illustrate the intersection policies
+        for (v <- sim.graph.vertices) {
+          val bub = state.bubble(v.location)
+          if (bub.intersects(window)) {
+            g2d.setColor(policy_colors(v.intersection.policy.policy_type))
+            g2d.draw(bub)
+          }
+        }
       }
-      case None =>
+
+      for (driver <- driver_renderers.values) {
+        if (driver.hits(window)) {
+          driver.render()
+        }
+      }
+
+      // Finally, if the user is free-handing a region, show their work.
+      g2d.setColor(cfg.polygon_color)
+      g2d.setStroke(drawing_stroke)
+      g2d.draw(polygon)
+
+      // What tooltips do we want?
+      state.current_obj match {
+        case Some(thing) => {
+          state.tooltips += Tooltip(
+            screen_to_map_x(mouse_at_x), screen_to_map_y(mouse_at_y),
+            thing.tooltip, false
+          )
+          thing match {
+            // TODO make all the moused over things be renderables with this method
+            case a: Agent => driver_renderers.get(a).moused_over()
+            case _ =>
+          }
+        }
+        case None =>
+      }
+      return state.tooltips.toList
     }
-    return state.tooltips.toList
   }
 
   def draw_intersection(g2d: Graphics2D, e: Edge) = {
@@ -688,7 +697,10 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
       state.show_tooltips = !state.show_tooltips
     }
     case Key.Z => {
-      state.show_zones = !state.show_zones
+      state.show_zone_colors = !state.show_zone_colors
+    }
+    case Key.W => {
+      state.show_zone_centers = !state.show_zone_centers
     }
     case _ => // Ignore the rest
   }

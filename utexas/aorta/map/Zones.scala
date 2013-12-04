@@ -11,12 +11,22 @@ import utexas.aorta.common.Util
 
 class ZoneMap(graph: Graph) {
   private val mapping = ZoneMap.partition(graph)
-  Util.log(s"${graph.directed_roads.size} DRs partitioned into ${mapping.values.toSet.size} zones")
+  val zones = mapping.values.toSet
+  Util.log(s"${graph.directed_roads.size} DRs partitioned into ${zones.size} zones")
 
   def apply(dr: DirectedRoad) = mapping(dr)
 }
 
-case class Zone(roads: Set[DirectedRoad])
+case class Zone(roads: Set[DirectedRoad]) {
+  val center = compute_center
+
+  private def compute_center(): Coordinate = {
+    val pts = roads.map(dr => dr.edges.head.approx_midpt)
+    val avg_x = pts.map(_.x).sum / roads.size
+    val avg_y = pts.map(_.y).sum / roads.size
+    return new Coordinate(avg_x, avg_y)
+  }
+}
 
 object ZoneMap {
   private val max_size = 50
