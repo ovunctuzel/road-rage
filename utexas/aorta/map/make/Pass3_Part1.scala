@@ -7,7 +7,8 @@ package utexas.aorta.map.make
 import scala.collection.mutable
 import Function.tupled
 
-import utexas.aorta.map.{Coordinate, Vertex, Road, Edge, Direction, Turn, Line, GraphLike}
+import utexas.aorta.map.{Coordinate, Vertex, Road, Edge, Direction, Turn, Line, GraphLike,
+                         DirectedRoad}
 
 import utexas.aorta.common.{Util, cfg, Physics, RoadID, VertexID, EdgeID, DirectedRoadID}
 
@@ -44,6 +45,11 @@ class PreGraph3(old_graph: PreGraph2) extends GraphLike {
     val e = edges(id.int)
     Util.assert_eq(e.id, id)
     return e
+  }
+  override def get_dr(id: DirectedRoadID): DirectedRoad = {
+    // TODO this one is horrible! :P
+    val dr = roads.flatMap(r => r.directed_roads).find(dr => dr.id == id).get
+    return dr
   }
 
   // support Tarjan's. Each of these expensive things should only be called once
@@ -126,8 +132,12 @@ class PreGraph3(old_graph: PreGraph2) extends GraphLike {
         case _ =>
       }
     }*/
+    val dr = dir match {
+      case Direction.POS => r.pos_group.get
+      case Direction.NEG => r.neg_group.get
+    }
 
-    val e = new Edge(new EdgeID(edges.length), r.id, dir, lane_num, lines)
+    val e = new Edge(new EdgeID(edges.length), dr.id, lane_num, lines)
     e.setup(this)
     edges += e
   }

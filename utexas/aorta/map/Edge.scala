@@ -7,58 +7,50 @@ package utexas.aorta.map
 import scala.collection.mutable
 import utexas.aorta.ui.Renderable
 import utexas.aorta.map.make.MapStateWriter
-import utexas.aorta.common.{cfg, RNG, Util, StateReader, RoadID, EdgeID, DirectedRoadID, Price}
+import utexas.aorta.common.{cfg, RNG, Util, StateReader, EdgeID, DirectedRoadID, Price}
 
-// TODO subclass Edge for pos/neg.. seems easier for lots of things
 // TODO var lane num due to fixing IDs. necessary?
 class Edge(
-  val id: EdgeID, road_id: RoadID, val dir: Direction.Value, var lane_num: Int, geometry: Array[Line]
+  val id: EdgeID, directed_road_id: DirectedRoadID, var lane_num: Int, geometry: Array[Line]
 ) extends Traversable(geometry) with Renderable with Ordered[Edge]
 {
   //////////////////////////////////////////////////////////////////////////////
   // State
 
-  var road: Road = null
+  var directed_road: DirectedRoad = null
 
   //////////////////////////////////////////////////////////////////////////////
   // Meta
 
   def serialize(w: MapStateWriter) {
     w.int(w.edges(id).int)
-    w.int(w.roads(road.id).int)
-    w.int(dir.id)
+    w.int(directed_road.id.int) // TODO fix IDs here too
     w.int(lane_num)
     w.int(lines.length)
     lines.foreach(l => l.serialize(w))
   }
 
   def setup(g: GraphLike) {
-    road = g.get_r(road_id)
-    other_lanes += this
+    directed_road = g.get_dr(directed_road_id)
+    directed_road.edges += this
   }
 
   //////////////////////////////////////////////////////////////////////////////
   // Queries
 
   override def compare(other: Edge) = id.int.compare(other.id.int)
-  override def toString = "Lane %s%d of %s (%s)".format(dir, lane_num, road.name, id)
+  override def toString = "Lane %s%d of %s (%s)".format(directed_road.dir, lane_num, directed_road.name, id)
 
   // no lane-changing
   //def leads_to = next_turns
   // with lane-changing
   def leads_to = next_turns ++ List(shift_left, shift_right).flatten
-  def speed_limit = road.speed_limit
+  def speed_limit = directed_road.speed_limit
 
-  def directed_road = if (dir == Direction.POS)
-                        road.pos_group.get
-                      else
-                        road.neg_group.get
   def turns_leading_to(group: DirectedRoad) =
     next_turns.filter(t => t.to.directed_road == group)
 
-  def other_lanes = if (dir == Direction.POS) road.pos_lanes else road.neg_lanes
-  def other_vert(v: Vertex) = road.other_vert(v)
-  def opposite_lanes = if (dir == Direction.POS) road.neg_lanes else road.pos_lanes
+  def other_lanes = directed_road.edges
   def rightmost_lane = other_lanes.head
   def leftmost_lane  = other_lanes.last
 
@@ -81,22 +73,16 @@ class Edge(
   // not for one-ways right now. but TODO it'd be cool to put that here.
   def lane_offset = other_lanes.length - lane_num
 
-  def from: Vertex = if (dir == Direction.POS) road.v1 else road.v2
-  def to: Vertex   = if (dir == Direction.POS) road.v2 else road.v1
+  def from = directed_road.from
+  def to = directed_road.to
 
   //////// Geometry. TODO separate somewhere?
 
   // recall + means v1->v2, and that road's points are stored in that order
   // what's the first line segment we traverse following this lane?
-  def first_road_line = if (dir == Direction.POS)
-                          new Line(road.points.head, road.points.tail.head) // 0 -> 1
-                        else
-                          new Line(road.points.last, road.points.dropRight(1).last) // -1 -> -2
+  def first_road_line = directed_road.lines.head
   // what's the last line segment we traverse following this lane?
-  def last_road_line = if (dir == Direction.POS)
-                         new Line(road.points.dropRight(1).last, road.points.last) // -2 -> -1
-                       else
-                         new Line(road.points.tail.head, road.points.head) // 1 -> 0
+  def last_road_line = directed_road.lines.last
 
   def debug = {
     Util.log(this + " has length " + length + " m, min entry dist " +
@@ -135,7 +121,7 @@ class Edge(
 object Edge {
   def unserialize(r: StateReader): Edge = {
     val e = new Edge(
-      new EdgeID(r.int), new RoadID(r.int), Direction(r.int), r.int,
+      new EdgeID(r.int), new DirectedRoadID(r.int), r.int,
       Range(0, r.int).map(_ => Line.unserialize(r)).toArray
     )
     return e

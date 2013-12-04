@@ -33,8 +33,14 @@ class DirectedRoad(val road: Road, var id: DirectedRoadID, val dir: Direction.Va
                 road.neg_lanes
   def rightmost = edges.head
 
-  def from: Vertex = edges.head.from
-  def to: Vertex = edges.head.to
+  def from: Vertex = dir match {
+    case Direction.POS => road.v1
+    case Direction.NEG => road.v2
+  }
+  def to: Vertex = dir match {
+    case Direction.POS => road.v2
+    case Direction.NEG => road.v1
+  }
 
   def start_pt = edges.head.from.location
   def end_pt = edges.head.to.location
@@ -78,4 +84,6 @@ class DirectedRoad(val road: Road, var id: DirectedRoadID, val dir: Direction.Va
   // TODO better heuristic, based on how much this extended road touches other
   // roads
   def is_major = road_type != "residential"
+  def name = road.name
+  def speed_limit = road.speed_limit
 }

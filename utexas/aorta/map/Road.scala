@@ -113,7 +113,6 @@ class Road(
   // Queries
 
   def all_lanes() = pos_lanes ++ neg_lanes
-  def other_vert(v: Vertex) = if (v == v1) v2 else v1
   def directed_roads = List(pos_group, neg_group).flatten
 
   def is_oneway = pos_lanes.length == 0 || neg_lanes.length == 0
