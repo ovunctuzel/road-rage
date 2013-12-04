@@ -296,7 +296,7 @@ object IntersectionType extends Enumeration {
 
 object RouteType extends Enumeration {
   type RouteType = Value
-  val Dijkstra, Path, Drunken, DirectionalDrunk, DrunkenExplorer = Value
+  val Path = Value
 }
 
 object RouterType extends Enumeration {
@@ -335,13 +335,9 @@ object Factory {
     enum: RouteType.Value, graph: Graph, orig_router: RouterType.Value, rerouter: RouterType.Value,
     goal: DirectedRoad, rng: RNG, initial_path: List[DirectedRoad]
   ) = enum match {
-    case RouteType.Dijkstra => new DijkstraRoute(goal, rng)
     case RouteType.Path => new PathRoute(
       goal, make_router(orig_router, graph, initial_path), make_router(rerouter, graph, Nil), rng
     )
-    case RouteType.Drunken => new DrunkenRoute(goal, rng)
-    case RouteType.DirectionalDrunk => new DirectionalDrunkRoute(goal, rng)
-    case RouteType.DrunkenExplorer => new DrunkenExplorerRoute(goal, rng)
   }
 
   def make_router(enum: RouterType.Value, graph: Graph, initial_path: List[DirectedRoad])

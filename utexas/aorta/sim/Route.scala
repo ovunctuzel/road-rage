@@ -9,11 +9,13 @@ import scala.collection.immutable
 import scala.collection.mutable
 
 import utexas.aorta.map.{Edge, DirectedRoad, Traversable, Turn, Vertex, Graph}
-import utexas.aorta.map.analysis.{Router, DijkstraRouter}
+import utexas.aorta.map.analysis.Router
 import utexas.aorta.sim.make.{RouteType, RouterType, Factory}
 
 import utexas.aorta.common.{Util, RNG, Common, cfg, StateWriter, StateReader, TurnID,
                             ListenerPattern}
+
+// TODO maybe unify the one class with the interface, or something. other routes were useless.
 
 // Get a client to their goal by any means possible.
 abstract class Route(val goal: DirectedRoad, rng: RNG) extends ListenerPattern[Route_Event] {
@@ -86,37 +88,6 @@ final case class EV_Reroute(
   path: List[DirectedRoad], orig: Boolean, method: RouterType.Value, unrealizable: Boolean
 ) extends Route_Event
 
-// Compute the cost of the path from every source to our single goal, then
-// hillclimb each step.
-// TODO rename 'cost' router? hillclimber?
-class DijkstraRoute(goal: DirectedRoad, rng: RNG) extends Route(goal, rng) {
-  //////////////////////////////////////////////////////////////////////////////
-  // State
-
-  private val costs = new DijkstraRouter(Common.sim.graph).costs_to(goal)
-
-  //////////////////////////////////////////////////////////////////////////////
-  // Actions
-
-  // We don't care.
-  def transition(from: Traversable, to: Traversable) = {}
-
-  def pick_turn(e: Edge) = e.next_turns.minBy(t => costs(t.to.directed_road.id.int))
-  // Break ties for the best lane overall by picking the lane closest to the
-  // current.
-  def pick_final_lane(from: Edge) = from.other_lanes.minBy(
-    e => (costs(pick_turn(e).to.directed_road.id.int), math.abs(from.lane_num - e.lane_num))
-  )
-
-  //////////////////////////////////////////////////////////////////////////////
-  // Queries
-
-  def route_type = RouteType.Dijkstra
-  def dump_info() {
-    Util.log(s"Static route to $goal")
-  }
-}
-
 // Follow routes prescribed by routers. Only reroute when forced or encouraged to.
 // TODO rerouter only var due to serialization
 class PathRoute(goal: DirectedRoad, orig_router: Router, private var rerouter: Router, rng: RNG)
@@ -154,7 +125,7 @@ class PathRoute(goal: DirectedRoad, orig_router: Router, private var rerouter: R
     reroutes_requested.foreach(e => w.int(e.id.int))
   }
 
-  override protected def unserialize(r: StateReader, graph: Graph) {
+  override def unserialize(r: StateReader, graph: Graph) {
     rerouter = Factory.make_router(RouterType(r.int), graph, Nil)
     val path_size = r.int
     // Leave null otherwise
@@ -315,147 +286,4 @@ class PathRoute(goal: DirectedRoad, orig_router: Router, private var rerouter: R
 
   private def candidate_lanes(from: Edge, dest: DirectedRoad) =
     from.other_lanes.filter(f => f.succs.exists(t => t.directed_road == dest)).toList
-}
-
-// DOOMED TO WALK FOREVER (until we happen to reach our goal)
-class DrunkenRoute(goal: DirectedRoad, rng: RNG) extends Route(goal, rng) {
-  //////////////////////////////////////////////////////////////////////////////
-  // State
-
-  // Remember answers we've given for the sake of consistency
-  private var desired_lane: Option[Edge] = None
-  private val chosen_turns = new mutable.ImmutableMapAdaptor(new immutable.TreeMap[Edge, Turn]())
-
-  //////////////////////////////////////////////////////////////////////////////
-  // Meta
-
-  override def serialize(w: StateWriter) {
-    super.serialize(w)
-    desired_lane match {
-      case Some(e) => w.int(e.id.int)
-      case None => w.int(-1)
-    }
-    chosen_turns.foreach(tupled((e, t) => {
-      w.int(e.id.int)
-      w.int(t.id.int)
-    }))
-  }
-
-  override protected def unserialize(r: StateReader, graph: Graph) {
-    r.int match {
-      case x if x != -1 => desired_lane = Some(graph.edges(x))
-      case _ =>
-    }
-    val chosen_size = r.int
-    for (i <- Range(0, chosen_size)) {
-      chosen_turns(graph.edges(r.int)) = graph.turns(new TurnID(r.int))
-    }
-  }
-
-  //////////////////////////////////////////////////////////////////////////////
-  // Actions
-
-  // Forget what we've remembered
-  def transition(from: Traversable, to: Traversable) = {
-    (from, to) match {
-      case (t: Turn, e: Edge) => {
-        desired_lane = None
-      }
-      case (e: Edge, t: Turn) => {
-        chosen_turns.remove(e)
-      }
-      case _ =>
-    }
-  }
-
-  def pick_turn(e: Edge) = chosen_turns.getOrElseUpdate(e, choose_turn(e))
-
-  def pick_final_lane(e: Edge): Edge = {
-    if (!desired_lane.isDefined) {
-      desired_lane = Some(rng.choose(e.other_lanes))
-    }
-    return desired_lane.get
-  }
-
-  //////////////////////////////////////////////////////////////////////////////
-  // Queries
-
-  def route_type = RouteType.Drunken
-  def dump_info() {
-    Util.log(s"Drunken route to $goal")
-    Util.log(s"  Desired lane: $desired_lane")
-    Util.log(s"  Chosen turns: $chosen_turns")
-  }
-
-  // With the right amount of alcohol, a drunk can choose uniformly at random
-  protected def choose_turn(e: Edge) = rng.choose(e.next_turns)
-}
-
-// Wanders around slightly less aimlessly by picking directions
-class DirectionalDrunkRoute(goal: DirectedRoad, rng: RNG)
-  extends DrunkenRoute(goal, rng)
-{
-  //////////////////////////////////////////////////////////////////////////////
-  // Actions
-
-  // pick the most direct path 75% of the time
-  override def choose_turn(e: Edge) =
-    if (rng.percent(.75))
-      e.next_turns.minBy(heuristic)
-    else
-      super.choose_turn(e)
-
-  //////////////////////////////////////////////////////////////////////////////
-  // Queries
-
-  override def route_type = RouteType.DirectionalDrunk
-
-  protected def heuristic(t: Turn) = t.to.to.location.dist_to(goal.start_pt)
-}
-
-// Don't keep making the same choices for roads
-class DrunkenExplorerRoute(goal: DirectedRoad, rng: RNG)
-  extends DirectionalDrunkRoute(goal, rng)
-{
-  //////////////////////////////////////////////////////////////////////////////
-  // State
-
-  private val past = new mutable.ImmutableMapAdaptor(new immutable.TreeMap[DirectedRoad, Int]())
-
-  //////////////////////////////////////////////////////////////////////////////
-  // Meta
-
-  override def serialize(w: StateWriter) {
-    super.serialize(w)
-    past.foreach(tupled((dr, count) => {
-      w.int(dr.id.int)
-      w.int(count)
-    }))
-  }
-
-  override protected def unserialize(r: StateReader, graph: Graph) {
-    val past_size = r.int
-    for (i <- Range(0, past_size)) {
-      past(graph.directed_roads(r.int)) = r.int
-    }
-  }
-
-  //////////////////////////////////////////////////////////////////////////////
-  // Actions
-
-  override def choose_turn(e: Edge): Turn = {
-    // break ties by the heuristic of distance to goal
-    val choice = e.next_turns.minBy(turn => (
-      past.getOrElse(turn.to.directed_road, -1) + rng.int(0, 5),
-      heuristic(turn)
-    ))
-    val road = choice.to.directed_road
-    past(road) = past.getOrElse(road, 0) + 1
-    return choice
-  }
-
-  //////////////////////////////////////////////////////////////////////////////
-  // Queries
-
-  override def route_type = RouteType.DrunkenExplorer
 }

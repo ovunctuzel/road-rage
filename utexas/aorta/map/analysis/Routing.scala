@@ -37,67 +37,6 @@ class FixedRouter(graph: Graph, path: List[DirectedRoad]) extends Router(graph) 
   }
 }
 
-class DijkstraRouter(graph: Graph) extends Router(graph) {
-  override def router_type = RouterType.Unusable
-
-  def costs_to(r: DirectedRoad) = dijkstras(graph.directed_roads.size, r)
-
-  override def path(from: DirectedRoad, to: DirectedRoad, time: Double) =
-    hillclimb(costs_to(to), from).tail
-
-  // Precomputes a table of the cost from source to everything.
-  private def dijkstras(size: Int, source: DirectedRoad): Array[Double] = {
-    val costs = Array.fill[Double](size)(Double.PositiveInfinity)
-
-    // TODO needs tests!
-    // TODO pass in a comparator to the queue instead of having a wrapper class
-    class Step(val dr: DirectedRoad) extends Ordered[Step] {
-      def cost = costs(dr.id.int)
-      def compare(other: Step) = other.cost.compare(cost)
-    }
-
-    // Roads in the open set don't have their final cost yet
-    val open = new mutable.PriorityQueue[Step]()
-    val done = new mutable.HashSet[DirectedRoad]()
-
-    costs(source.id.int) = 0
-    open.enqueue(new Step(source))
-
-    while (open.nonEmpty) {
-      val step = open.dequeue
-      
-      // Skip duplicate steps, since we chose option 3 for the problem below.
-      if (!done.contains(step.dr)) {
-        done += step.dr
-
-        for (next <- step.dr.preds if !done.contains(next)) {
-          val cost = step.cost + next.freeflow_time
-          if (cost < costs(next.id.int)) {
-            // Relax!
-            costs(next.id.int) = cost
-            // TODO ideally, decrease-key
-            // 1) get a PQ that uses a fibonacci heap
-            // 2) remove, re-insert again
-            // 3) just insert a dupe, then skip the duplicates when we get to them
-            // Opting for 3, for now.
-            open.enqueue(new Step(next))
-          }
-        }
-      }
-    }
-    return costs
-  }
-
-  // Starts at source, hillclimbs to lower costs, and returns the path to 0.
-  private def hillclimb(costs: Array[Double], start: DirectedRoad): List[DirectedRoad] =
-    costs(start.id.int) match {
-      case 0 => start :: Nil
-      case c => start :: hillclimb(
-        costs, start.succs.minBy(step => costs(step.id.int))
-      )
-    }
-}
-
 // Score is a pair of doubles
 // TODO dont operate on graph particularly, do anything with successor fxn and cost fxn...
 abstract class AbstractPairAstarRouter(graph: Graph) extends Router(graph) {
