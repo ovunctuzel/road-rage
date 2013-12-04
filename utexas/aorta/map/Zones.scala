@@ -13,12 +13,16 @@ class ZoneMap(graph: Graph) {
   private val mapping = ZoneMap.partition(graph)
   val zones = mapping.values.toSet
   Util.log(s"${graph.directed_roads.size} DRs partitioned into ${zones.size} zones")
+  val links = zones.map(zone => zone -> (zone.ports.map(dr => mapping(dr)).toSet - zone)).toMap
 
   def apply(dr: DirectedRoad) = mapping(dr)
 }
 
 case class Zone(roads: Set[DirectedRoad]) {
   val center = compute_center
+  // Member roads that have successors outside the set
+  // TODO since partition isnt disjoint, misses some connections
+  val ports = roads.filter(dr => dr.succs.exists(succ => !roads.contains(succ)))
 
   private def compute_center(): Coordinate = {
     val pts = roads.map(dr => dr.edges.head.approx_midpt)
@@ -63,6 +67,7 @@ object ZoneMap {
         }
       }
       val zone = Zone(new_zone.toSet)
+      // TODO overwrites. make the partitioning disjt.
       zone.roads.foreach(dr => mapping(dr) = zone)
     }
     return mapping.toMap

@@ -250,7 +250,13 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
     if (state.show_zone_centers) {
       for (zone <- sim.graph.zones.zones) {
         g2d.setColor(ZoneColor.color(zone))
-        g2d.draw(state.bubble(zone.center))
+        g2d.fill(state.bubble(zone.center))
+        // Draw connections
+        g2d.setColor(Color.BLACK)
+        g2d.setStroke(GeomFactory.center_stroke)
+        for (link <- sim.graph.zones.links(zone)) {
+          g2d.draw(new Line2D.Double(zone.center.x, zone.center.y, link.center.x, link.center.y))
+        }
       }
       return Nil
     } else {
