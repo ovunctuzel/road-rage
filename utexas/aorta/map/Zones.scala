@@ -11,6 +11,7 @@ import utexas.aorta.common.Util
 
 class ZoneMap(graph: Graph) {
   private val mapping = ZoneMap.partition(graph)
+  Util.log(s"${graph.directed_roads.size} DRs partitioned into ${mapping.values.toSet.size} zones")
 
   def apply(dr: DirectedRoad) = mapping(dr)
 }
@@ -18,6 +19,8 @@ class ZoneMap(graph: Graph) {
 case class Zone(roads: Set[DirectedRoad])
 
 object ZoneMap {
+  private val max_size = 50
+
   def partition(graph: Graph): Map[DirectedRoad, Zone] = {
     Util.log("Partitioning the map into zones...")
     val mapping = new mutable.HashMap[DirectedRoad, Zone]()
@@ -33,14 +36,23 @@ object ZoneMap {
         (state: DirectedRoad, goal: DirectedRoad) => (state.end_pt.dist_to(goal.end_pt), 0),
         (a: (Double, Double), b: (Double, Double)) => (a._1 + b._1, a._2 + b._2),
         allow_cycles = true
-      ).toSet
-      open --= path
-      
-      // Merge zones if any directed road overlaps a previously used road
-      //val common_roads = path.intersect(mapping.keys.toSet)
-      val common_roads = Set[DirectedRoad]()  // TODO limit merging! until then, do this...
-      Util.log("  Merging zone with " + common_roads.map(dr => mapping(dr)).toSet.size + " others")
-      val zone = Zone(path ++ common_roads.flatMap(dr => mapping(dr).roads))
+      )
+      val new_zone = new mutable.HashSet[DirectedRoad]()
+      new_zone ++= path
+      open --= new_zone
+
+      // Merge zones by finding common overlap
+      // TODO dont cross different road types?
+      val common_roads = new_zone.intersect(mapping.keys.toSet)
+      while (new_zone.size < max_size && common_roads.nonEmpty) {
+        // TODO should keep common_roads up-to-date as we merge
+        val candidate = common_roads.head
+        common_roads -= candidate
+        if ((new_zone ++ mapping(candidate).roads).size < max_size) {
+          new_zone ++= mapping(candidate).roads
+        }
+      }
+      val zone = Zone(new_zone.toSet)
       zone.roads.foreach(dr => mapping(dr) = zone)
     }
     return mapping.toMap
