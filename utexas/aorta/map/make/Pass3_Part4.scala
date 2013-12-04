@@ -21,10 +21,16 @@ class Pass3_Part4(graph: PreGraph3) {
     val dr_id = new DirectedRoadID(-1) // the IDs don't matter
     for (r <- graph.roads) {
       if (r.pos_lanes.nonEmpty) {
-        r.pos_group = Some(new DirectedRoad(r, dr_id, Direction.POS))
+        r.pos_group = Some(new DirectedRoad(
+          r, dr_id, Direction.POS, r.length, r.name, r.road_type, r.osm_id, r.v1.id, r.v2.id,
+          r.points
+        ))
       }
       if (r.neg_lanes.nonEmpty) {
-        r.neg_group = Some(new DirectedRoad(r, dr_id, Direction.NEG))
+        r.neg_group = Some(new DirectedRoad(
+          r, dr_id, Direction.NEG, r.length, r.name, r.road_type, r.osm_id, r.v1.id, r.v2.id,
+          r.points
+        ))
       }
     }
   }
