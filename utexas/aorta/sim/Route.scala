@@ -257,7 +257,7 @@ class PathRoute(goal: DirectedRoad, orig_router: Router, private var rerouter: R
     Util.log(s"Static route to $goal using $path")
   }
 
-  def roads = path.map(_.road).toSet
+  def directed_roads = path.toSet
 
   // Prefer the one that's emptiest now and try to get close to a lane that
   // we'll want to LC to anyway. Only call when we haven't chosen something yet.

@@ -9,7 +9,7 @@ import java.awt.Color
 import java.awt.geom.{Line2D, Rectangle2D}
 import scala.collection.mutable
 
-import utexas.aorta.map.{Coordinate, Edge, Line, Road, Vertex, Zone}
+import utexas.aorta.map.{Coordinate, Edge, Line, Road, Vertex, Zone, DirectedRoad}
 import utexas.aorta.sim.Agent
 
 import utexas.aorta.common.{cfg, RNG, Common}
@@ -116,22 +116,33 @@ class DrawRoad(val road: Road, state: GuiState) {
   protected val center_lines = road.pairs_of_points.map(tupled((pt1, pt2) => new Line2D.Double(
     pt1.x, pt1.y, pt2.x, pt2.y
   )))
+  private val pos_lines = road.pairs_of_points.map(p => shift_line(p, 1))
+  private val neg_lines = road.pairs_of_points.map(p => shift_line(p, -1))
+  private def shift_line(pair: (Coordinate, Coordinate), side: Int): Line2D.Double = {
+    val l = new Line(pair._1, pair._2).perp_shift(side * road.num_lanes / 4.0)
+    return new Line2D.Double(l.x1, l.y1, l.x2, l.y2)
+  }
 
   def hits(bbox: Rectangle2D.Double) = center_lines.exists(l => l.intersects(bbox))
 
   def render_road() {
-    state.g2d.setColor(color)
-    if (state.route_members.contains(road) && !state.canvas.zoomed_in) {
-      state.g2d.setStroke(GeomFactory.strokes(road.num_lanes * 2))
-    } else {
-      state.g2d.setStroke(GeomFactory.strokes(road.num_lanes))
+    // TODO still fatten roads in route_members when we're zoomed out?
+    state.g2d.setStroke(GeomFactory.strokes(road.num_lanes / 2))
+
+    road.pos_group match {
+      case Some(dr) => {
+        state.g2d.setColor(color(dr))
+        pos_lines.foreach(l => state.g2d.draw(l))
+      }
+      case None =>
     }
-
-    render_bg_line()
-  }
-
-  protected def render_bg_line() {
-    center_lines.foreach(l => state.g2d.draw(l))
+    road.neg_group match {
+      case Some(dr) => {
+        state.g2d.setColor(color(dr))
+        neg_lines.foreach(l => state.g2d.draw(l))
+      }
+      case None =>
+    }
   }
 
   def render_center_line() {
@@ -158,11 +169,11 @@ class DrawRoad(val road: Road, state: GuiState) {
     }
   }
 
-  private def color(): Color =
+  private def color(dr: DirectedRoad): Color =
     if (state.chosen_road.getOrElse(null) == road)
       cfg.chosen_road_color
-    else if (state.route_members.contains(road))
-      state.route_members.color(road).get
+    else if (state.route_members.contains(dr))
+      state.route_members.color(dr).get
     else if (state.polygon_roads1(road))
       cfg.src_polygon_color
     else if (state.polygon_roads2(road))
@@ -172,21 +183,8 @@ class DrawRoad(val road: Road, state: GuiState) {
     else
       state.highlight_type match {
         case (Some(x)) if x == road.road_type => Color.GREEN
-        case _ => ZoneColor.color(Common.sim.graph.zones(road.pos_group.get)) //Color.BLACK
+        case _ => ZoneColor.color(Common.sim.graph.zones(dr)) // Color.BLACK
       }
-}
-
-class DrawOneWayRoad(r: Road, state: GuiState) extends DrawRoad(r, state) {
-  private val bg_lines = road.pairs_of_points.map(shift_line)
-
-  override def render_bg_line() {
-    bg_lines.foreach(l => state.g2d.draw(l))
-  }
-
-  private def shift_line(pair: (Coordinate, Coordinate)): Line2D.Double = {
-    val l = new Line(pair._1, pair._2).perp_shift(road.num_lanes / 2.0)
-    return new Line2D.Double(l.x1, l.y1, l.x2, l.y2)
-  }
 }
 
 class DrawEdge(val edge: Edge, state: GuiState) {

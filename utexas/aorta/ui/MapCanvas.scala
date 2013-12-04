@@ -28,20 +28,20 @@ object Mode extends Enumeration {
 }
 
 class ColorMap() {
-  private val route_members = new mutable.HashMap[Color, Set[Road]]()
+  private val route_members = new mutable.HashMap[Color, Set[DirectedRoad]]()
 
   def clear() {
     route_members.clear()
   }
-  def set(color: Color, roads: Set[Road]) {
+  def set(color: Color, roads: Set[DirectedRoad]) {
     route_members(color) = roads
   }
-  def remove(color: Color, road: Road) {
+  def remove(color: Color, road: DirectedRoad) {
     route_members(color) -= road
   }
-  def color(road: Road): Option[Color] =
+  def color(road: DirectedRoad): Option[Color] =
     route_members.keys.find(color => route_members(color).contains(road))
-  def contains(road: Road) = color(road).isDefined
+  def contains(road: DirectedRoad) = color(road).isDefined
 }
 
 // Cleanly separates GUI state from users of it
@@ -113,12 +113,7 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
     driver_renderers.put(a.id, new DrawDriver(a, state))
   }
 
-  private val road_renderers = sim.graph.roads.map(r =>
-    if (!r.is_oneway)
-      new DrawRoad(r, state)
-    else
-      new DrawOneWayRoad(r, state)
-  )
+  private val road_renderers = sim.graph.roads.map(r => new DrawRoad(r, state))
 
   // TODO eventually, GUI should listen to this and manage the gui, not
   // mapcanvas.
@@ -605,7 +600,7 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
         case Mode.PICK_2nd => {
           state.chosen_edge2 = state.current_edge
           // TODO later, let this inform any client
-          show_pathfinding
+          show_pathfinding()
           switch_mode(Mode.EXPLORE)
         }
         case _ =>
@@ -654,14 +649,14 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
       state.camera_agent match {
         case Some(a) => a.route match {
           case r: PathRoute => {
-            state.route_members.set(cfg.route_member_color, r.roads)
+            state.route_members.set(cfg.route_member_color, r.directed_roads)
             r.listen("UI", _ match {
               case EV_Reroute(path, _, _, _) => {
-                state.route_members.set(cfg.route_member_color, path.map(_.road).toSet)
+                state.route_members.set(cfg.route_member_color, path.toSet)
               }
               case EV_Transition(from, to) => from match {
                 case e: Edge => {
-                  state.route_members.remove(cfg.route_member_color, e.road)
+                  state.route_members.remove(cfg.route_member_color, e.directed_road)
                 }
                 case _ =>
               }
@@ -759,9 +754,7 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
 
       // Filter and just remember the edges; the UI doesn't want to highlight
       // turns.
-      // TODO pathfinding is by directed road now, not edge. just pick some edge
-      // in each group.
-      state.route_members.set(color, route.map(_.road).toSet)
+      state.route_members.set(color, route.toSet)
     }
     timer.stop()
     repaint
