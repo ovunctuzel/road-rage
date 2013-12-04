@@ -116,6 +116,7 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
   }
 
   private val road_renderers = sim.graph.roads.map(r => new DrawRoad(r, state))
+  private val road_lookup = road_renderers.map(r => r.road -> r).toMap
 
   // TODO eventually, GUI should listen to this and manage the gui, not
   // mapcanvas.
@@ -258,6 +259,14 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
           g2d.draw(new Line2D.Double(zone.center.x, zone.center.y, link.center.x, link.center.y))
         }
       }
+      state.current_obj match {
+        case Some(zone: Zone) => {
+          for (r <- zone.roads.map(r => road_lookup(r.road))) {
+            r.render_road()
+          }
+        }
+        case _ =>
+      }
       return Nil
     } else {
       val roads_seen = road_renderers.filter(r => {
@@ -379,22 +388,26 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
       x - state.eps, y - state.eps, state.eps * 2, state.eps * 2
     )
 
-    // Order of search: agents, vertices, edges, roads
-    // TODO ideally, center agent bubble where the vehicle center is drawn.
+    if (state.show_zone_centers) {
+      state.current_obj = sim.graph.zones.zones.find(z => state.bubble(z.center).intersects(cursor))
+    } else {
+      // Order of search: agents, vertices, edges, roads
+      // TODO ideally, center agent bubble where the vehicle center is drawn.
 
-    // TODO this is _kind_ of ugly.
-    state.current_obj = driver_renderers.values.find(a => a.hits(cursor)) match {
-      case None => sim.graph.vertices.find(v => state.bubble(v.location).intersects(cursor)) match {
-        case None => road_renderers.flatMap(r => r.edges).find(e => e.hits(cursor)) match {
-          case None => road_renderers.find(r => r.hits(cursor)) match {
-            case None => None
-            case Some(r) => Some(r.road)
+      // TODO this is _kind_ of ugly.
+      state.current_obj = driver_renderers.values.find(a => a.hits(cursor)) match {
+        case None => sim.graph.vertices.find(v => state.bubble(v.location).intersects(cursor)) match {
+          case None => road_renderers.flatMap(r => r.edges).find(e => e.hits(cursor)) match {
+            case None => road_renderers.find(r => r.hits(cursor)) match {
+              case None => None
+              case Some(r) => Some(r.road)
+            }
+            case Some(e) => Some(Position(e.edge, e.edge.approx_dist(Coordinate(x, y), 1.0)))
           }
-          case Some(e) => Some(Position(e.edge, e.edge.approx_dist(Coordinate(x, y), 1.0)))
+          case Some(v) => Some(v)
         }
-        case Some(v) => Some(v)
+        case Some(a) => Some(a.agent)
       }
-      case Some(a) => Some(a.agent)
     }
   }
 

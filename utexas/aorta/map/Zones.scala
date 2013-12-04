@@ -6,6 +6,7 @@ package utexas.aorta.map
 
 import scala.collection.mutable
 
+import utexas.aorta.ui.Renderable
 import utexas.aorta.common.algorithms.AStar
 import utexas.aorta.common.Util
 
@@ -18,7 +19,7 @@ class ZoneMap(graph: Graph) {
   def apply(dr: DirectedRoad) = mapping(dr)
 }
 
-case class Zone(roads: Set[DirectedRoad]) {
+case class Zone(roads: Set[DirectedRoad]) extends Renderable {
   val center = compute_center
   // Member roads that have successors outside the set
   // TODO since partition isnt disjoint, misses some connections
@@ -29,6 +30,10 @@ case class Zone(roads: Set[DirectedRoad]) {
     val avg_x = pts.map(_.x).sum / roads.size
     val avg_y = pts.map(_.y).sum / roads.size
     return new Coordinate(avg_x, avg_y)
+  }
+
+  override def debug() {
+    Util.log(s"Zone with ${roads.size} roads and ${ports.size} ports")
   }
 }
 
