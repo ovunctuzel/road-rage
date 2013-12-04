@@ -23,6 +23,8 @@ class Graph(
     (l, v) => v.turns.toList ++ l
   ).map(t => t.id -> t).toMap
   var directed_roads: Array[DirectedRoad] = Array()
+  // TODO if this idea pans out, make it a precomputed and serialized property of DRs
+  var zones: ZoneMap = null
 
   //////////////////////////////////////////////////////////////////////////////
   // Meta
@@ -47,6 +49,7 @@ class Graph(
     for ((dr, id) <- directed_roads.zipWithIndex) {
       dr.id = new DirectedRoadID(id)
     }
+    zones = new ZoneMap(this)
   }
 
   //////////////////////////////////////////////////////////////////////////////

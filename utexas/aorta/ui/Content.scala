@@ -7,11 +7,12 @@ package utexas.aorta.ui
 import Function.tupled
 import java.awt.Color
 import java.awt.geom.{Line2D, Rectangle2D}
+import scala.collection.mutable
 
-import utexas.aorta.map.{Coordinate, Edge, Line, Road, Vertex}
+import utexas.aorta.map.{Coordinate, Edge, Line, Road, Vertex, Zone}
 import utexas.aorta.sim.Agent
 
-import utexas.aorta.common.cfg
+import utexas.aorta.common.{cfg, RNG, Common}
 
 trait Renderable {
   def debug(): Unit
@@ -97,6 +98,18 @@ class DrawDriver(val agent: Agent, state: GuiState) {
   }
 }
 
+// TODO tmp way of doing this.
+object ZoneColor {
+  private val rng = new RNG()
+  private val colors = new mutable.HashMap[Zone, Color]()
+  def color(zone: Zone): Color = {
+    if (!colors.contains(zone)) {
+      colors(zone) = new Color(rng.int(0, 255), rng.int(0, 255), rng.int(0, 255))
+    }
+    return colors(zone)
+  }
+}
+
 class DrawRoad(val road: Road, state: GuiState) {
   val edges = road.all_lanes.map(e => new DrawEdge(e, state))
 
@@ -159,7 +172,7 @@ class DrawRoad(val road: Road, state: GuiState) {
     else
       state.highlight_type match {
         case (Some(x)) if x == road.road_type => Color.GREEN
-        case _                             => Color.BLACK
+        case _ => ZoneColor.color(Common.sim.graph.zones(road.pos_group.get)) //Color.BLACK
       }
 }
 

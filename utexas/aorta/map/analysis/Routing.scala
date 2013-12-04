@@ -60,6 +60,13 @@ trait SimpleHeuristic extends AbstractPairAstarRouter {
   // pricy. (CH, Dijkstra table of distances)
 }
 
+class FreeflowRouter(graph: Graph) extends AbstractPairAstarRouter(graph) with SimpleHeuristic {
+  override def router_type = RouterType.Unusable
+
+  override def cost_step(prev: DirectedRoad, next: DirectedRoad, cost_sofar: (Double, Double)) =
+    (next.freeflow_time, 0)
+}
+
 // Cost for each step is (dollars, time)
 trait TollAndTimeCost extends AbstractPairAstarRouter {
   override def cost_step(prev: DirectedRoad, next: DirectedRoad, cost_sofar: (Double, Double)) =
