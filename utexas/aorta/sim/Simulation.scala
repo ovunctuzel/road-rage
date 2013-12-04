@@ -195,12 +195,6 @@ class Simulation(val graph: Graph, val scenario: Scenario)
   //////////////////////////////////////////////////////////////////////////////
   // Queries
 
-  // Provide convenient shortcut to graph stuff
-  def get_r(r: RoadID) = graph.get_r(r)
-  def get_v(v: VertexID) = graph.get_v(v)
-  def get_e(e: EdgeID) = graph.get_e(e)
-  def get_dr(dr: DirectedRoadID) = graph.get_dr(dr)
-
   // TODO move time limit to scenarios?
   def done =
     (agents.isEmpty && ready_to_spawn.isEmpty && future_spawn.isEmpty) ||

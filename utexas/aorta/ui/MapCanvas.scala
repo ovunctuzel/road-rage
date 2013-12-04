@@ -528,7 +528,7 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
       prompt_int("What edge ID do you seek?") match {
         case Some(id) => {
           try {
-            val e = sim.get_e(new EdgeID(id.toInt))
+            val e = sim.graph.get_e(new EdgeID(id.toInt))
             // TODO center on some part of the edge and zoom in, rather than
             // just vaguely moving that way
             Util.log("Here's " + e)
@@ -547,7 +547,7 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
       prompt_int("What road ID do you seek?") match {
         case Some(id) => {
           try {
-            val r = sim.get_r(new RoadID(id.toInt))
+            val r = sim.graph.get_r(new RoadID(id.toInt))
             // TODO center on some part of the road and zoom in, rather than
             // just vaguely moving that way
             Util.log("Here's " + r)
@@ -587,7 +587,7 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
       prompt_int("What vertex ID do you seek?") match {
         case Some(id) => {
           try {
-            val v = sim.get_v(new VertexID(id.toInt))
+            val v = sim.graph.get_v(new VertexID(id.toInt))
             Util.log("Here's " + v)
             center_on(v.location)
             repaint

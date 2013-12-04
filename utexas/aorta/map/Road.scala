@@ -161,8 +161,7 @@ object Road {
   def road_len(pts: Iterable[Coordinate]) =
     pts.zip(pts.tail).map(tupled((p1, p2) => new Line(p1, p2).length)).sum
 
-  // PreGraph3's fix_ids also mods us.
-  var num_directed_roads = 0
+  private var num_directed_roads = 0
   def next_directed_id(): Int = {
     val id = num_directed_roads
     num_directed_roads += 1

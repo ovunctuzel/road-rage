@@ -191,7 +191,7 @@ case class MkRoute(
   initial_path: List[DirectedRoadID], goal: DirectedRoadID, seed: Long
 ) {
   def make(sim: Simulation) = Factory.make_route(
-    strategy, sim.graph, orig_router, rerouter, sim.get_dr(goal), new RNG(seed),
+    strategy, sim.graph, orig_router, rerouter, sim.graph.get_dr(goal), new RNG(seed),
     initial_path.map(id => sim.graph.get_dr(id))
   )
 
