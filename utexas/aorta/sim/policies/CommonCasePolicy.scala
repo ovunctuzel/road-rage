@@ -13,6 +13,7 @@ import utexas.aorta.sim.market.IntersectionOrdering
 
 import utexas.aorta.common.{Util, cfg}
 
+/*
 // Automatically admit agents requesting common turns, and make the others queue
 // and go when they can.
 class CommonCasePolicy(intersection: Intersection,
@@ -114,3 +115,4 @@ class CommonCasePolicy(intersection: Intersection,
     return turns.toSet
   }
 }
+*/

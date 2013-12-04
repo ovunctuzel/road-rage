@@ -15,6 +15,8 @@ import utexas.aorta.common.{Util, DirectedRoadID}
 class DirectedRoad(val road: Road, var id: DirectedRoadID, val dir: Direction.Value)
   extends Ordered[DirectedRoad] with Renderable
 {
+  // TODO in the future, it may be useful for us to know about our "partner"
+
   // TODO lets figure out how to build immutable stuff.
   val houses = new mutable.ListBuffer[Coordinate]()
   val shops = new mutable.ListBuffer[Coordinate]()
@@ -72,4 +74,8 @@ class DirectedRoad(val road: Road, var id: DirectedRoadID, val dir: Direction.Va
 
   private def shift_line(pair: (Coordinate, Coordinate), side: Int) =
     new Line(pair._1, pair._2).perp_shift(side * road.num_lanes / 4.0)
+
+  // TODO better heuristic, based on how much this extended road touches other
+  // roads
+  def is_major = road_type != "residential"
 }

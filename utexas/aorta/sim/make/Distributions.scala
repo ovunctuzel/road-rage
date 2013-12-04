@@ -33,7 +33,7 @@ object IntersectionDistribution {
   // Put stop signs at crossings of all small roads, signals or reservations at
   // crossings of all big roads, and common case hybrids at mixtures
   def realistic(graph: Graph) = graph.vertices.map(v => {
-    val (big, small) = v.roads.partition(_.is_major)
+    val (big, small) = v.directed_roads.partition(_.is_major)
     val policy =
       if (big.isEmpty)
         IntersectionType.StopSign

@@ -416,7 +416,7 @@ class Agent(
   private def safe_to_lc(target: Edge): Boolean = {
     at.on match {
       case e: Edge => {
-        if (e.road != target.road) {
+        if (e.directed_road != target.directed_road) {
           throw new Exception(this + " wants to lane-change across roads")
         }
         if (math.abs(target.lane_num - e.lane_num) != 1) {

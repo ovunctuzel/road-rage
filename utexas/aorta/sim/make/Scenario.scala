@@ -327,8 +327,8 @@ object Factory {
       new SignalPolicy(i, make_intersection_ordering[Phase](ordering))
     case IntersectionType.Reservation =>
       new ReservationPolicy(i, make_intersection_ordering[Ticket](ordering))
-    case IntersectionType.CommonCase =>
-      new CommonCasePolicy(i, make_intersection_ordering[Ticket](ordering))
+    /*case IntersectionType.CommonCase =>
+      new CommonCasePolicy(i, make_intersection_ordering[Ticket](ordering))*/
   }
 
   def make_route(

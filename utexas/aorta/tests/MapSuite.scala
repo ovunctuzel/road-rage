@@ -28,8 +28,8 @@ object MapSuite {
 
   // Make sure things aren't empty
   def check_emptiness(g: Graph) {
-    for (r <- g.roads) {
-      if (r.all_lanes.isEmpty) {
+    for (r <- g.directed_roads) {
+      if (r.edges.isEmpty) {
         oops(s"$r has no lanes")
       }
     }
@@ -100,7 +100,7 @@ object MapSuite {
     for (e <- g.edges) {
       // TODO cul-de-sacs? edges might be a bit shorter than roads?
       if (e.length <= cfg.min_road_len || e.length.isNaN) {
-        oops(s"$e has length ${e.length}. The road has length ${e.road.length}")
+        oops(s"$e has length ${e.length}. The road has length ${e.directed_road.length}")
       }
     }
 
@@ -115,9 +115,10 @@ object MapSuite {
 
   // These shouldn't exist
   def check_degenerate_verts(g: Graph) {
-    val silly = g.vertices.filter(v => v.roads.size == 2)
+    // TODO how to reformulate for directed roads?
+    /*val silly = g.vertices.filter(v => v.roads.size == 2)
     if (silly.nonEmpty) {
       oops("Degenerate vertices: " + silly.toList)
-    }
+    }*/
   }
 }

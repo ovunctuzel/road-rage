@@ -129,13 +129,6 @@ class Road(
   def outgoing_lanes(v: Vertex) = if (v == v1) pos_lanes else neg_lanes
 
   def pairs_of_points = points.zip(points.tail)
-
-  // For debug only
-  def doomed = all_lanes.exists(e => e.doomed)
-
-  // TODO better heuristic, based on how much this extended road touches other
-  // roads
-  def is_major = road_type != "residential"
 }
 
 object Road {

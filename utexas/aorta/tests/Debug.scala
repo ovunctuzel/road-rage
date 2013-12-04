@@ -70,10 +70,10 @@ object Debug {
 
   private def calc_capacity(sim: Simulation) = {
     var capacity = 0
-    for (r <- sim.graph.roads) {
-      List(r.pos_lanes.headOption, r.neg_lanes.headOption).flatten.foreach(
-        e => capacity += e.queue.capacity
-      )
+    for (r <- sim.graph.directed_roads) {
+      for (e <- r.edges) {
+        capacity += e.queue.capacity
+      }
     }
     Util.log(s"Lower bound on total capacity: $capacity")
   }

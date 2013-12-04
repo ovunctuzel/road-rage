@@ -10,7 +10,7 @@ import scala.collection.mutable
 import java.io.FileWriter
 import scala.io.Source
 
-import utexas.aorta.map.{Graph, Road, Edge, Vertex, Turn}
+import utexas.aorta.map.{Graph, Edge, Vertex, Turn}
 import utexas.aorta.sim.policies.Phase
 import utexas.aorta.sim.make.{Scenario, MkAgent, IntersectionType}
 
