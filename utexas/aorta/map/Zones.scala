@@ -6,6 +6,8 @@ package utexas.aorta.map
 
 import scala.collection.mutable
 
+import utexas.aorta.map.analysis.Router
+import utexas.aorta.sim.make.RouterType
 import utexas.aorta.ui.Renderable
 import utexas.aorta.common.algorithms.AStar
 import utexas.aorta.common.Util
@@ -17,6 +19,22 @@ class ZoneMap(graph: Graph) {
   val links = zones.map(zone => zone -> (zone.ports.map(dr => mapping(dr)).toSet - zone)).toMap
 
   def apply(dr: DirectedRoad) = mapping(dr)
+
+  def zone_path(start: Zone, goal: Zone) = AStar.path(
+    start, goal, (step: Zone) => links(step),
+    (_: Zone, next: Zone, _: (Double, Double)) => (next.freeflow_time, 0),
+    (state: Zone, goal: Zone) => (state.center.dist_to(goal.center), 0),
+    (a: (Double, Double), b: (Double, Double)) => (a._1 + b._1, a._2 + b._2)
+  )
+
+  def router = new Router(graph) {
+    override def router_type = RouterType.Unusable
+    override def path(from: DirectedRoad, to: DirectedRoad, time: Double): List[DirectedRoad] = {
+      // TODO this router should lazily expand intra-zone steps
+      zone_path(mapping(from), mapping(to))
+      return Nil
+    }
+  }
 }
 
 case class Zone(roads: Set[DirectedRoad]) extends Renderable {
@@ -35,6 +53,8 @@ case class Zone(roads: Set[DirectedRoad]) extends Renderable {
   override def debug() {
     Util.log(s"Zone with ${roads.size} roads and ${ports.size} ports")
   }
+
+  def freeflow_time = 1.0 // TODO how to define the approx time to cross this zone?
 }
 
 object ZoneMap {

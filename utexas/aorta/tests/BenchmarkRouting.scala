@@ -16,7 +16,8 @@ object BenchmarkRouting {
     val rng = new utexas.aorta.common.RNG()
 
     val routers = List(
-      (new CongestionRouter(sim.graph), "congestion_a*")
+      (new CongestionRouter(sim.graph), "congestion_a*"),
+      (sim.graph.zones.router, "zone")
     )
     val sum_times = Array.fill[Double](routers.size)(0.0)
 
