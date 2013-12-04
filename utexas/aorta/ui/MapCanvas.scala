@@ -64,6 +64,7 @@ class GuiState(val canvas: MapCanvas) {
   var polygon_roads2: Set[Road] = Set()
   var chosen_edge1: Option[Edge] = None
   var chosen_edge2: Option[Edge] = None
+  var show_zones = false
 
   // Actions
   def reset(g: Graphics2D) {
@@ -685,6 +686,9 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
     }
     case Key.T => {
       state.show_tooltips = !state.show_tooltips
+    }
+    case Key.Z => {
+      state.show_zones = !state.show_zones
     }
     case _ => // Ignore the rest
   }

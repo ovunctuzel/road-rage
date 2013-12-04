@@ -183,7 +183,8 @@ class DrawRoad(val road: Road, state: GuiState) {
     else
       state.highlight_type match {
         case (Some(x)) if x == road.road_type => Color.GREEN
-        case _ => ZoneColor.color(Common.sim.graph.zones(dr)) // Color.BLACK
+        case _ if state.show_zones => ZoneColor.color(Common.sim.graph.zones(dr))
+        case _ => Color.BLACK
       }
 }
 
