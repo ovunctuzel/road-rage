@@ -9,7 +9,7 @@ import java.awt.Color
 import java.awt.geom.{Line2D, Rectangle2D}
 import scala.collection.mutable
 
-import utexas.aorta.map.{Coordinate, Edge, Line, Road, Vertex, Zone, DirectedRoad}
+import utexas.aorta.map.{Coordinate, Edge, Line, Vertex, Zone, DirectedRoad}
 import utexas.aorta.sim.Agent
 
 import utexas.aorta.common.{cfg, RNG, Common}
@@ -110,45 +110,29 @@ object ZoneColor {
   }
 }
 
-class DrawRoad(val road: Road, state: GuiState) {
-  val edges = road.all_lanes.map(e => new DrawEdge(e, state))
+class DrawDirectedRoad(val dr: DirectedRoad, state: GuiState) {
+  val edges = dr.edges.map(e => new DrawEdge(e, state))
 
-  protected val center_lines = road.pairs_of_points.map(tupled((pt1, pt2) => new Line2D.Double(
+  val lines = dr.lines.map(l => new Line2D.Double(l.x1, l.y1, l.x2, l.y2))
+
+  // TODO do center lines on the positive side, arbitrarilyish.
+  /*val center_lines = road.pairs_of_points.map(tupled((pt1, pt2) => new Line2D.Double(
     pt1.x, pt1.y, pt2.x, pt2.y
-  )))
-  private val pos_lines = road.pairs_of_points.map(p => shift_line(p, 1))
-  private val neg_lines = road.pairs_of_points.map(p => shift_line(p, -1))
-  private def shift_line(pair: (Coordinate, Coordinate), side: Int): Line2D.Double = {
-    val l = new Line(pair._1, pair._2).perp_shift(side * road.num_lanes / 4.0)
-    return new Line2D.Double(l.x1, l.y1, l.x2, l.y2)
-  }
+  )))*/
 
-  def hits(bbox: Rectangle2D.Double) = center_lines.exists(l => l.intersects(bbox))
+  def hits(bbox: Rectangle2D.Double) = lines.exists(l => l.intersects(bbox))
 
   def render_road() {
     // TODO still fatten roads in route_members when we're zoomed out?
-    state.g2d.setStroke(GeomFactory.strokes(road.num_lanes / 2))
-
-    road.pos_group match {
-      case Some(dr) => {
-        state.g2d.setColor(color(dr))
-        pos_lines.foreach(l => state.g2d.draw(l))
-      }
-      case None =>
-    }
-    road.neg_group match {
-      case Some(dr) => {
-        state.g2d.setColor(color(dr))
-        neg_lines.foreach(l => state.g2d.draw(l))
-      }
-      case None =>
-    }
+    state.g2d.setStroke(GeomFactory.strokes(dr.num_lanes))
+    state.g2d.setColor(color)
+    lines.foreach(l => state.g2d.draw(l))
   }
 
   def render_center_line() {
-    state.g2d.setColor(Color.YELLOW)
+    /*state.g2d.setColor(Color.YELLOW)
     state.g2d.setStroke(GeomFactory.center_stroke)
-    center_lines.foreach(l => state.g2d.draw(l))
+    center_lines.foreach(l => state.g2d.draw(l))*/
   }
 
   def render_edges() {
@@ -156,33 +140,31 @@ class DrawRoad(val road: Road, state: GuiState) {
   }
 
   def render_buildings() {
-    for (dr <- road.directed_roads) {
-      state.g2d.setColor(Color.GREEN)
-      for (bldg <- dr.shops) {
-        state.g2d.draw(state.bubble(bldg))
-      }
-      // TODO rectangles? triangles?
-      state.g2d.setColor(Color.BLACK)
-      for (bldg <- dr.houses) {
-        state.g2d.draw(state.bubble(bldg))
-      }
+    state.g2d.setColor(Color.GREEN)
+    for (bldg <- dr.shops) {
+      state.g2d.draw(state.bubble(bldg))
+    }
+    // TODO rectangles? triangles?
+    state.g2d.setColor(Color.BLACK)
+    for (bldg <- dr.houses) {
+      state.g2d.draw(state.bubble(bldg))
     }
   }
 
-  private def color(dr: DirectedRoad): Color =
-    if (state.chosen_road.getOrElse(null) == road)
+  private def color(): Color =
+    if (state.chosen_road.getOrElse(null) == dr)
       cfg.chosen_road_color
     else if (state.route_members.contains(dr))
       state.route_members.color(dr).get
-    else if (state.polygon_roads1(road))
+    else if (state.polygon_roads1(dr))
       cfg.src_polygon_color
-    else if (state.polygon_roads2(road))
+    else if (state.polygon_roads2(dr))
       cfg.dst_polygon_color
-    else if (road.doomed)
+    else if (dr.doomed)
       Color.RED
     else
       state.highlight_type match {
-        case (Some(x)) if x == road.road_type => Color.GREEN
+        case (Some(x)) if x == dr.road_type => Color.GREEN
         case _ if state.show_zone_colors => ZoneColor.color(Common.sim.graph.zones(dr))
         case _ => Color.BLACK
       }

@@ -6,13 +6,14 @@ package utexas.aorta.map
 
 import scala.collection.mutable
 
+import utexas.aorta.ui.Renderable
 import utexas.aorta.sim.LinkAuditor
-import utexas.aorta.common.DirectedRoadID
+import utexas.aorta.common.{Util, DirectedRoadID}
 
 // Represent a group of directed edges on one road
 // TODO var id because things get chopped up
 class DirectedRoad(val road: Road, var id: DirectedRoadID, val dir: Direction.Value)
-  extends Ordered[DirectedRoad]
+  extends Ordered[DirectedRoad] with Renderable
 {
   // TODO lets figure out how to build immutable stuff.
   val houses = new mutable.ListBuffer[Coordinate]()
@@ -51,4 +52,24 @@ class DirectedRoad(val road: Road, var id: DirectedRoadID, val dir: Direction.Va
   def preds = edges.flatMap(e => e.prev_turns.map(t => t.from.directed_road))
 
   def next_roads = edges.flatMap(e => e.next_roads).toSet
+
+  /////////// TODO tmpish stuff that'll get moved for real from Road to here.
+  def lines = dir match {
+    case Direction.POS => road.points.zip(road.points.tail).map(p => shift_line(p, 1))
+    case Direction.NEG => road.points.zip(road.points.tail).map(p => shift_line(p, -1))
+  }
+
+  // For debug only
+  def doomed = edges.exists(e => e.doomed)
+
+  def num_lanes = edges.size
+  def road_type = road.road_type
+
+  override def debug() {
+    Util.log(this + " is a " + road_type + " of length " + road.length + " meters")
+    Util.log(s"  Originally OSM id = ${road.osm_id}")
+  }
+
+  private def shift_line(pair: (Coordinate, Coordinate), side: Int) =
+    new Line(pair._1, pair._2).perp_shift(side * road.num_lanes / 4.0)
 }

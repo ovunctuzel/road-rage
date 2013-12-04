@@ -7,7 +7,6 @@ package utexas.aorta.map
 import scala.collection.mutable
 import Function.tupled
 
-import utexas.aorta.ui.Renderable
 import utexas.aorta.map.make.MapStateWriter
 import utexas.aorta.common.{Util, StateReader, Physics, RoadID, VertexID, DirectedRoadID}
 
@@ -15,8 +14,7 @@ import utexas.aorta.common.{Util, StateReader, Physics, RoadID, VertexID, Direct
 class Road(
   val id: RoadID, val length: Double, val name: String, val road_type: String,
   val osm_id: String, v1_id: VertexID, v2_id: VertexID, val points: Array[Coordinate]
-) extends Renderable
-{
+) {
   //////////////////////////////////////////////////////////////////////////////
   // Deterministic state
 
@@ -131,11 +129,6 @@ class Road(
   def outgoing_lanes(v: Vertex) = if (v == v1) pos_lanes else neg_lanes
 
   def pairs_of_points = points.zip(points.tail)
-
-  def debug() {
-    Util.log(this + " is a " + road_type + " of length " + length + " meters")
-    Util.log(s"  Originally OSM id = $osm_id")
-  }
 
   // For debug only
   def doomed = all_lanes.exists(e => e.doomed)

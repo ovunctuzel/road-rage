@@ -18,7 +18,7 @@ import utexas.aorta.sim.{Simulation, Agent, EV_Signal_Change, EV_Transition, EV_
 import utexas.aorta.sim.make.{IntersectionType, RouteType}
 import utexas.aorta.sim.PathRoute
 
-import utexas.aorta.common.{Util, RNG, Common, cfg, EdgeID, RoadID, VertexID}
+import utexas.aorta.common.{Util, RNG, Common, cfg, EdgeID, VertexID, DirectedRoadID}
 
 object Mode extends Enumeration {
   type Mode = Value
@@ -58,10 +58,10 @@ class GuiState(val canvas: MapCanvas) {
   var current_obj: Option[Renderable] = None
   var camera_agent: Option[Agent] = None
   val route_members = new ColorMap()
-  var chosen_road: Option[Road] = None
+  var chosen_road: Option[DirectedRoad] = None
   var highlight_type: Option[String] = None
-  var polygon_roads1: Set[Road] = Set()
-  var polygon_roads2: Set[Road] = Set()
+  var polygon_roads1: Set[DirectedRoad] = Set()
+  var polygon_roads2: Set[DirectedRoad] = Set()
   var chosen_edge1: Option[Edge] = None
   var chosen_edge2: Option[Edge] = None
   var show_zone_colors = false
@@ -115,8 +115,8 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
     driver_renderers.put(a.id, new DrawDriver(a, state))
   }
 
-  private val road_renderers = sim.graph.roads.map(r => new DrawRoad(r, state))
-  private val road_lookup = road_renderers.map(r => r.road -> r).toMap
+  private val road_renderers = sim.graph.directed_roads.map(r => new DrawDirectedRoad(r, state))
+  private val road_lookup = road_renderers.map(r => r.dr -> r).toMap
 
   // TODO eventually, GUI should listen to this and manage the gui, not
   // mapcanvas.
@@ -261,7 +261,7 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
       }
       state.current_obj match {
         case Some(zone: Zone) => {
-          for (r <- zone.roads.map(r => road_lookup(r.road))) {
+          for (r <- zone.roads.map(r => road_lookup(r))) {
             r.render_road()
           }
         }
@@ -400,7 +400,7 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
           case None => road_renderers.flatMap(r => r.edges).find(e => e.hits(cursor)) match {
             case None => road_renderers.find(r => r.hits(cursor)) match {
               case None => None
-              case Some(r) => Some(r.road)
+              case Some(r) => Some(r.dr)
             }
             case Some(e) => Some(Position(e.edge, e.edge.approx_dist(Coordinate(x, y), 1.0)))
           }
@@ -430,7 +430,7 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
 
       // Let's find all vertices inside the polygon.
       val rds = sim.graph.vertices.filter(
-        v => polygon.contains(v.location.x, v.location.y)).flatMap(v => v.roads
+        v => polygon.contains(v.location.x, v.location.y)).flatMap(v => v.directed_roads
       ).toSet
       Util.log("Matched " + rds.size + " roads")
       if (rds.isEmpty) {
@@ -443,8 +443,8 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
           state.polygon_roads2 = rds
 
           prompt_generator(
-            state.polygon_roads1.toList.flatMap(_.all_lanes),
-            state.polygon_roads2.toList.flatMap(_.all_lanes)
+            state.polygon_roads1.toList.flatMap(_.edges),
+            state.polygon_roads2.toList.flatMap(_.edges)
           )
 
           // Make the keyboard work again
@@ -544,14 +544,14 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
       grab_focus
     }
     case "teleport-road" => {
-      prompt_int("What road ID do you seek?") match {
+      prompt_int("What directed road ID do you seek?") match {
         case Some(id) => {
           try {
-            val r = sim.graph.get_r(new RoadID(id.toInt))
+            val r = sim.graph.get_dr(new DirectedRoadID(id.toInt))
             // TODO center on some part of the road and zoom in, rather than
             // just vaguely moving that way
             Util.log("Here's " + r)
-            center_on(r.all_lanes.head.lines.head.start)
+            center_on(r.edges.head.approx_midpt)
             state.chosen_road = Some(r)
             repaint
           } catch {
