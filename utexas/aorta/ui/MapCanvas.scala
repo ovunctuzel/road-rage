@@ -12,7 +12,7 @@ import swing.Dialog
 import scala.language.implicitConversions
 
 import utexas.aorta.map._  // TODO yeah getting lazy.
-import utexas.aorta.map.analysis.{RouteFeatures, AstarRouter, Demand}
+import utexas.aorta.map.analysis.CongestionRouter
 import utexas.aorta.sim.{Simulation, Agent, EV_Signal_Change, EV_Transition, EV_Reroute,
                          EV_Heartbeat, AgentMap}
 import utexas.aorta.sim.make.{IntersectionType, RouteType}
@@ -750,20 +750,18 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
     val timer = Common.timer("Pathfinding")
     // Show each type of route in a different color...
     val colors = List(Color.RED, Color.BLUE, Color.CYAN, Color.GREEN, Color.YELLOW)
-    val routers = List(
-      new AstarRouter(sim.graph, RouteFeatures.JUST_FREEFLOW_TIME, Demand.blank_for(sim.scenario, sim.graph))
-    )
+    val routers = List(new CongestionRouter(sim.graph))
 
     for ((router, color) <- routers.zip(colors)) {
-      val route = router.scored_path(from, to)
+      val route = router.path(from, to, sim.tick)
       //route.foreach(step => println("  - " + step))
-      println(s"for $color, we have ${route._2}")
+      println(s"for $color, we have $route")
 
       // Filter and just remember the edges; the UI doesn't want to highlight
       // turns.
       // TODO pathfinding is by directed road now, not edge. just pick some edge
       // in each group.
-      state.route_members.set(color, route._1.map(_.road).toSet)
+      state.route_members.set(color, route.map(_.road).toSet)
     }
     timer.stop()
     repaint

@@ -13,9 +13,10 @@ object AStar {
     start: T, goal: T, successors: (T) => Iterable[T],
     calc_cost: (T, T, (Double, Double)) => (Double, Double),
     calc_heuristic: (T, T) => (Double, Double),
-    add_cost: ((Double, Double), (Double, Double)) => (Double, Double)
+    add_cost: ((Double, Double), (Double, Double)) => (Double, Double),
+    allow_cycles: Boolean = false
   ): List[T] = {
-    if (start == goal) {
+    if (start == goal && !allow_cycles) {
       return Nil
     }
 
@@ -35,9 +36,12 @@ object AStar {
 
     while (open.nonEmpty) {
       val current = open.shift()
+      if (!allow_cycles || current != start) {
       visited += current
+      }
 
-      if (current == goal) {
+      // If backrefs doesn't have goal, allow_cycles is true and we just started
+      if (current == goal && backrefs.contains(goal)) {
         // Reconstruct the path
         val path = new mutable.ListBuffer[T]()
         var pointer: Option[T] = Some(current)
