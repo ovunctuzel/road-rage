@@ -9,7 +9,7 @@ import java.awt.Color
 import java.awt.geom.{Line2D, Rectangle2D}
 import scala.collection.mutable
 
-import utexas.aorta.map.{Coordinate, Edge, Line, Vertex, Zone, DirectedRoad}
+import utexas.aorta.map.{Coordinate, Edge, Line, Vertex, Zone, DirectedRoad, Direction}
 import utexas.aorta.sim.Agent
 
 import utexas.aorta.common.{cfg, RNG, Common}
@@ -114,11 +114,13 @@ class DrawDirectedRoad(val dr: DirectedRoad, state: GuiState) {
   val edges = dr.edges.map(e => new DrawEdge(e, state))
 
   val lines = dr.lines.map(l => new Line2D.Double(l.x1, l.y1, l.x2, l.y2))
-
-  // TODO do center lines on the positive side, arbitrarilyish.
-  /*val center_lines = road.pairs_of_points.map(tupled((pt1, pt2) => new Line2D.Double(
-    pt1.x, pt1.y, pt2.x, pt2.y
-  )))*/
+  // Use the positive direction to render the yellow center line
+  val center_lines = if (dr.dir == Direction.POS)
+    dr.points.zip(dr.points.tail).map(
+      pair => new Line2D.Double(pair._1.x, pair._1.y, pair._2.x, pair._2.y)
+    )
+  else
+    Array[Line2D.Double]()
 
   def hits(bbox: Rectangle2D.Double) = lines.exists(l => l.intersects(bbox))
 
@@ -129,14 +131,11 @@ class DrawDirectedRoad(val dr: DirectedRoad, state: GuiState) {
     lines.foreach(l => state.g2d.draw(l))
   }
 
-  def render_center_line() {
-    /*state.g2d.setColor(Color.YELLOW)
-    state.g2d.setStroke(GeomFactory.center_stroke)
-    center_lines.foreach(l => state.g2d.draw(l))*/
-  }
-
   def render_edges() {
     edges.foreach(e => e.render())
+    state.g2d.setColor(Color.YELLOW)
+    state.g2d.setStroke(GeomFactory.center_stroke)
+    center_lines.foreach(l => state.g2d.draw(l))
   }
 
   def render_buildings() {

@@ -281,7 +281,6 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
       // to render them all)
       if (zoomed_in) {
         for (r <- roads_seen) {
-          r.render_center_line()
           r.render_edges()
           r.render_buildings()
         }
