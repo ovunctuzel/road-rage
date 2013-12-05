@@ -48,23 +48,21 @@ class Pass3_Part2(graph: PreGraph3) {
       return t
     }
 
-    // if all edges belong to the same road, this is a dead-end
-    if (roads.size == 1) {
-      // link corresponding lane numbers
-      val r = roads.head
-      for ((from, to) <- r.incoming_lanes(v) zip r.outgoing_lanes(v)) {
-        v.turns = make_turn((from, to)) :: v.turns
-      }
-    }
-
     // To account for one-ways, we actually want to reason about roads that are
     // incoming to or outgoing from this vert.
     // Sorting is for determinism.
     val incoming_roads = roads.filter(_.incoming_lanes(v).nonEmpty).toList.sortBy(_.id.int)
     val outgoing_roads = roads.filter(_.outgoing_lanes(v).nonEmpty).toList.sortBy(_.id.int)
 
+    // Only have to test one side
+    def bad_uturn(r1: DirectedRoad, r2: DirectedRoad) = r1.other_side match {
+      // Only allow this if this intersection only has these two roads
+      case Some(other) if other == r2 => !(incoming_roads.size == 1 && outgoing_roads.size == 1)
+      case _ => false
+    }
+
     // this is a Cartesian product.
-    for (r1 <- incoming_roads; r2 <- outgoing_roads if r1 != r2) {
+    for (r1 <- incoming_roads; r2 <- outgoing_roads if r1 != r2 && !bad_uturn(r1, r2)) {
       val from_edges = r1.incoming_lanes(v)
       val to_edges = r2.outgoing_lanes(v)
 

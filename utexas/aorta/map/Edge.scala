@@ -24,7 +24,7 @@ class Edge(
 
   def serialize(w: MapStateWriter) {
     w.int(w.edges(id).int)
-    w.int(directed_road.id.int) // TODO fix IDs here too
+    w.int(w.roads(directed_road.id).int)
     w.int(lane_num)
     w.int(lines.length)
     lines.foreach(l => l.serialize(w))
@@ -128,8 +128,9 @@ object Edge {
   }
 }
 
+// This is completely arbitrary, it doesn't really mean anything
 object Direction extends Enumeration {
   type Direction = Value
-  val POS = Value("+")  // v1 -> v2
-  val NEG = Value("-")  // v2 -> v1
+  val POS = Value("+")
+  val NEG = Value("-")
 }

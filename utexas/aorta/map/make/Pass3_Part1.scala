@@ -75,7 +75,7 @@ class PreGraph3(old_graph: PreGraph2) extends GraphLike {
       val dr_neg = new DirectedRoad(
         new DirectedRoadID(road_id_cnt), Direction.NEG, DirectedRoad.road_len(old_edge.points),
         old_edge.dat.name, old_edge.dat.road_type, old_edge.dat.orig_id,
-        get_vert(old_edge.from).id, get_vert(old_edge.to).id, old_edge.points.toArray
+        get_vert(old_edge.to).id, get_vert(old_edge.from).id, old_edge.points.reverse.toArray
       )
       dr_neg.setup(this)
       directed_roads :+= dr_neg
@@ -113,14 +113,9 @@ class PreGraph3(old_graph: PreGraph2) extends GraphLike {
   private def add_edge(dr: DirectedRoad, lane_num: Int, lane_offset: Int) {
     // pre-compute lines constituting the edges
     // the -0.5 lets there be nice lane lines between lanes
-    val lines = dr.dir match {
-      case Direction.POS => dr.points.zip(dr.points.tail).map(
-        tupled((from, to) => new Line(from, to).perp_shift(lane_offset - 0.5))
-      )
-      case Direction.NEG => dr.points.zip(dr.points.tail).map(
-        tupled((from, to) => new Line(to, from).perp_shift(lane_offset - 0.5))
-      ).reverse
-    }
+    val lines = dr.points.zip(dr.points.tail).map(
+      tupled((from, to) => new Line(from, to).perp_shift(lane_offset - 0.5))
+    )
     // force line segments to meet up on the inside
     /*for (e <- r.all_lanes; (l1, l2) <- e.lines.zip(e.lines.tail)) {
       l1.segment_intersection(l2) match {

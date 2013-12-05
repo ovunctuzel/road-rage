@@ -224,7 +224,7 @@ class Pass3_Part3(graph: PreGraph3) {
 
     // TODO refactor this: squeeze together lane numbers
     // This will end up looking weird (gaps in roads)
-    for (dr <- graph.directed_roads) {                                              
+    for (dr <- graph.directed_roads) {
       val lanes = dr.lanes.filter(e => good_edges.contains(e))
       dr.lanes.clear()
       dr.lanes ++= lanes

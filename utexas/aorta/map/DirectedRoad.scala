@@ -27,8 +27,9 @@ class DirectedRoad(
   val lanes = new mutable.ListBuffer[Edge]()
 
   var other_side: Option[DirectedRoad] = None
-  def incoming_lanes(v: Vertex) = if (v == v2) lanes else other_side.map(_.lanes).getOrElse(Nil)
-  def outgoing_lanes(v: Vertex) = if (v == v1) lanes else other_side.map(_.lanes).getOrElse(Nil)
+  // Nil if there aren't any
+  def incoming_lanes(v: Vertex) = if (v == v2) lanes else Nil
+  def outgoing_lanes(v: Vertex) = if (v == v1) lanes else Nil
 
   // TODO lets figure out how to build immutable stuff.
   val houses = new mutable.ListBuffer[Coordinate]()
@@ -69,7 +70,7 @@ class DirectedRoad(
 
 
   def serialize(w: MapStateWriter) {
-    w.int(id.int)
+    w.int(w.roads(id).int)
     w.int(dir.id)
     w.double(length)
     w.string(name)
@@ -124,10 +125,7 @@ class DirectedRoad(
   def next_roads = edges.flatMap(e => e.next_roads).toSet
 
   /////////// TODO tmpish stuff that'll get moved for real from Road to here.
-  def lines = dir match {
-    case Direction.POS => points.zip(points.tail).map(p => shift_line(p, 1))
-    case Direction.NEG => points.zip(points.tail).map(p => shift_line(p, -1))
-  }
+  def lines = points.zip(points.tail).map(p => shift_line(p))
 
   // For debug only
   def doomed = edges.exists(e => e.doomed)
@@ -139,8 +137,8 @@ class DirectedRoad(
     Util.log(s"  Originally OSM id = $osm_id")
   }
 
-  private def shift_line(pair: (Coordinate, Coordinate), side: Int) =
-    new Line(pair._1, pair._2).perp_shift(side * num_lanes / 4.0)
+  private def shift_line(pair: (Coordinate, Coordinate)) =
+    new Line(pair._1, pair._2).perp_shift(num_lanes / 2.0)
 
   // TODO better heuristic, based on how much this extended road touches other
   // roads
