@@ -226,9 +226,6 @@ class BinnedHistogram(width: Double) {
 class AgentID(val int: Int) extends AnyVal {
   override def toString = int.toString
 }
-class RoadID(val int: Int) extends AnyVal {
-  override def toString = int.toString
-}
 class VertexID(val int: Int) extends AnyVal {
   override def toString = int.toString
 }

@@ -9,7 +9,7 @@ import Function.tupled
 
 import utexas.aorta.map.{Coordinate, Vertex, Edge, Direction, Turn, Line, GraphLike, DirectedRoad}
 
-import utexas.aorta.common.{Util, cfg, Physics, RoadID, VertexID, EdgeID, DirectedRoadID}
+import utexas.aorta.common.{Util, cfg, Physics, VertexID, EdgeID, DirectedRoadID}
 
 // TODO we should really subclass the real Graph, but not sure yet.
 class PreGraph3(old_graph: PreGraph2) extends GraphLike {

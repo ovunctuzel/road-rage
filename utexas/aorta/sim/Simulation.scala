@@ -15,7 +15,7 @@ import utexas.aorta.sim.policies.Phase
 import utexas.aorta.sim.make.{Scenario, MkAgent, IntersectionType}
 
 import utexas.aorta.common.{Util, Common, cfg, StateWriter, StateReader, Flags, AgentID,
-                            ListenerPattern, RoadID, VertexID, EdgeID, DirectedRoadID}
+                            ListenerPattern, VertexID, EdgeID, DirectedRoadID}
 import utexas.aorta.analysis.{Heartbeat_Stat, Measurement, RerouteCountMonitor}
 
 // TODO take just a scenario, or graph and scenario?
