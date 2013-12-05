@@ -7,8 +7,7 @@ package utexas.aorta.map.make
 import scala.collection.mutable
 import Function.tupled
 
-import utexas.aorta.map.{Coordinate, Vertex, Road, Edge, Direction, Turn, Line, GraphLike,
-                         DirectedRoad}
+import utexas.aorta.map.{Coordinate, Vertex, Edge, Direction, Turn, Line, GraphLike, DirectedRoad}
 
 import utexas.aorta.common.{Util, cfg, Physics, RoadID, VertexID, EdgeID, DirectedRoadID}
 
@@ -24,18 +23,12 @@ class PreGraph3(old_graph: PreGraph2) extends GraphLike {
   var road_id_cnt = 0
 
   var edges = new mutable.MutableList[Edge]           // a directed lane
-  var roads: List[Road] = Nil
+  var directed_roads: List[DirectedRoad] = Nil
 
   for (old <- old_graph.edges) {
     add_road(old)
   }
 
-  // TODO binary search or direct lookup possible?
-  override def get_r(id: RoadID): Road = {
-    val r = roads(id.int)
-    Util.assert_eq(r.id, id)
-    return r
-  }
   override def get_v(id: VertexID): Vertex = {
     val v = vertices(id.int)
     Util.assert_eq(v.id, id)
@@ -47,8 +40,8 @@ class PreGraph3(old_graph: PreGraph2) extends GraphLike {
     return e
   }
   override def get_dr(id: DirectedRoadID): DirectedRoad = {
-    // TODO this one is horrible! :P
-    val dr = roads.flatMap(r => r.directed_roads).find(dr => dr.id == id).get
+    val dr = directed_roads(id.int)
+    Util.assert_eq(dr.id, id)
     return dr
   }
 
@@ -57,42 +50,50 @@ class PreGraph3(old_graph: PreGraph2) extends GraphLike {
   def traversables() = edges ++ turns
 
   def add_road(old_edge: PreEdge2) {
-    val r = new Road(
-      new RoadID(road_id_cnt), Road.road_len(old_edge.points),
+    // Always make the positive direction
+    val dr_pos = new DirectedRoad(
+      new DirectedRoadID(road_id_cnt), Direction.POS, DirectedRoad.road_len(old_edge.points),
       old_edge.dat.name, old_edge.dat.road_type, old_edge.dat.orig_id,
-      get_vert(old_edge.from).id, get_vert(old_edge.to).id,
-      old_edge.points.toArray
+      get_vert(old_edge.from).id, get_vert(old_edge.to).id, old_edge.points.toArray
     )
-    r.setup(this)
-    roads :+= r
+    dr_pos.setup(this)
+    directed_roads :+= dr_pos
     road_id_cnt += 1
 
-    // now make the directed edges too
+    // Make lanes
     val lanes = 
-      if (ok_to_lc_multi_lanes(r))
+      if (ok_to_lc_multi_lanes(dr_pos))
         how_many_lanes(old_edge.dat)
       else
         1
-
-    // v1 -> v2 lanes
     for (l <- 0 until lanes) {
-      add_edge(r, Direction.POS, l, lanes - l)
+      add_edge(dr_pos, l, lanes - l)
     }
 
-    // v2 -> v1 lanes unless we're oneway, in which case we keep the original
-    // osm order
+    // Negative direction too
     if (!old_edge.dat.oneway) {
+      val dr_neg = new DirectedRoad(
+        new DirectedRoadID(road_id_cnt), Direction.NEG, DirectedRoad.road_len(old_edge.points),
+        old_edge.dat.name, old_edge.dat.road_type, old_edge.dat.orig_id,
+        get_vert(old_edge.from).id, get_vert(old_edge.to).id, old_edge.points.toArray
+      )
+      dr_neg.setup(this)
+      directed_roads :+= dr_neg
+      road_id_cnt += 1
+      dr_neg.other_side = Some(dr_pos)
+      dr_pos.other_side = Some(dr_neg)
+
       for (l <- 0 until lanes) {
-        add_edge(r, Direction.NEG, l, lanes - l)
+        add_edge(dr_neg, l, lanes - l)
       }
     }
   }
 
-  private def ok_to_lc_multi_lanes(r: Road): Boolean = {
+  private def ok_to_lc_multi_lanes(r: DirectedRoad): Boolean = {
     // A driver should be able to enter at the speed limit and still have room
     // to finish the lane-change before the end.
     val min_len =
-      cfg.lanechange_dist + cfg.end_threshold + Physics.worst_entry_dist(r.pos_group.get.speed_limit)
+      cfg.lanechange_dist + cfg.end_threshold + Physics.worst_entry_dist(r.speed_limit)
     // TODO this length gets trimmed later when we clean up geometry. cant
     // really get that this early, so just conservatively over-estimate. it's
     // always safe to reduce things to 1 lane.
@@ -109,14 +110,14 @@ class PreGraph3(old_graph: PreGraph2) extends GraphLike {
       v
     }
 
-  private def add_edge(r: Road, dir: Direction.Value, lane_num: Int, lane_offset: Int) {
+  private def add_edge(dr: DirectedRoad, lane_num: Int, lane_offset: Int) {
     // pre-compute lines constituting the edges
     // the -0.5 lets there be nice lane lines between lanes
-    val lines = dir match {
-      case Direction.POS => r.pairs_of_points.map(
+    val lines = dr.dir match {
+      case Direction.POS => dr.points.zip(dr.points.tail).map(
         tupled((from, to) => new Line(from, to).perp_shift(lane_offset - 0.5))
       )
-      case Direction.NEG => r.pairs_of_points.map(
+      case Direction.NEG => dr.points.zip(dr.points.tail).map(
         tupled((from, to) => new Line(to, from).perp_shift(lane_offset - 0.5))
       ).reverse
     }
@@ -132,11 +133,6 @@ class PreGraph3(old_graph: PreGraph2) extends GraphLike {
         case _ =>
       }
     }*/
-    val dr = dir match {
-      case Direction.POS => r.pos_group.get
-      case Direction.NEG => r.neg_group.get
-    }
-
     val e = new Edge(new EdgeID(edges.length), dr.id, lane_num, lines)
     e.setup(this)
     edges += e

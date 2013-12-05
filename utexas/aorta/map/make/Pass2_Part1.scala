@@ -6,7 +6,7 @@ package utexas.aorta.map.make
 
 import scala.collection.mutable
 
-import utexas.aorta.map.{Coordinate, Road}
+import utexas.aorta.map.{Coordinate, DirectedRoad}
 
 import utexas.aorta.common.Util
 
@@ -84,7 +84,7 @@ class PreEdge2(var from: Coordinate, var to: Coordinate,
   override def compare(other: PreEdge2) = id.compare(other.id)
   override def toString = s"Road ${dat.name} btwn $from and $to"
 
-  def length = Road.road_len(points)
+  def length = DirectedRoad.road_len(points)
   def is_culdesac = from == to
 }
 

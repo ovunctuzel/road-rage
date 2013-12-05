@@ -6,33 +6,15 @@ package utexas.aorta.map.make
 
 import scala.collection.mutable
 
-import utexas.aorta.map.{Road, Edge, Vertex, Turn, Line, DirectedRoad, Direction}
+import utexas.aorta.map.{Edge, Vertex, Turn, Line, Direction}
 
-import utexas.aorta.common.{Util, cfg, TurnID, DirectedRoadID}
+import utexas.aorta.common.{Util, cfg, TurnID}
 
 class Pass3_Part4(graph: PreGraph3) {
   def run() {
     Util.log("Tidying up geometry...")
     // TODO don't! it results in terribly short places.
     //graph.vertices.foreach(v => adjust_lines(v))
-
-    // Another hack to restore directed roads, which get set to None when we first create the road
-    // before its lanes.
-    val dr_id = new DirectedRoadID(-1) // the IDs don't matter
-    for (r <- graph.roads) {
-      if (r.pos_lanes.nonEmpty) {
-        r.pos_group = Some(new DirectedRoad(
-          r, dr_id, Direction.POS, r.length, r.name, r.road_type, r.osm_id, r.v1.id, r.v2.id,
-          r.points
-        ))
-      }
-      if (r.neg_lanes.nonEmpty) {
-        r.neg_group = Some(new DirectedRoad(
-          r, dr_id, Direction.NEG, r.length, r.name, r.road_type, r.osm_id, r.v1.id, r.v2.id,
-          r.points
-        ))
-      }
-    }
   }
 
   private def adjust_lines(v: Vertex) = {

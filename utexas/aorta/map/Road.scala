@@ -22,11 +22,11 @@ class Road(
 
   // TODO move the lanes to be part of the D.R.
   var pos_group: Option[DirectedRoad] = Some(new DirectedRoad(
-    this, new DirectedRoadID(Road.next_directed_id), Direction.POS,
+    new DirectedRoadID(Road.next_directed_id), Direction.POS,
     length, name, road_type, osm_id, v1_id, v2_id, points
   ))
   var neg_group: Option[DirectedRoad] = Some(new DirectedRoad(
-    this, new DirectedRoadID(Road.next_directed_id), Direction.NEG,
+    new DirectedRoadID(Road.next_directed_id), Direction.NEG,
     length, name, road_type, osm_id, v1_id, v2_id, points
   ))
 

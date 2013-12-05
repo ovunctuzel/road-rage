@@ -17,15 +17,18 @@ import utexas.aorta.common.{Util, DirectedRoadID, VertexID, Physics, StateReader
 // Represent a group of directed edges on one road
 // TODO var id because things get chopped up
 class DirectedRoad(
-  val road: Road, var id: DirectedRoadID, val dir: Direction.Value,
-  val length: Double, val name: String, val road_type: String,
-  val osm_id: String, v1_id: VertexID, v2_id: VertexID, val points: Array[Coordinate]
+  var id: DirectedRoadID, val dir: Direction.Value, val length: Double, val name: String,
+  val road_type: String, val osm_id: String, v1_id: VertexID, v2_id: VertexID,
+  val points: Array[Coordinate]
 ) extends Ordered[DirectedRoad] with Renderable
 {
   var v1: Vertex = null
   var v2: Vertex = null
+  val lanes = new mutable.ListBuffer[Edge]()
 
-  // TODO in the future, it may be useful for us to know about our "partner" DR
+  var other_side: Option[DirectedRoad] = None
+  def incoming_lanes(v: Vertex) = if (v == v2) lanes else other_side.map(_.lanes).getOrElse(Nil)
+  def outgoing_lanes(v: Vertex) = if (v == v1) lanes else other_side.map(_.lanes).getOrElse(Nil)
 
   // TODO lets figure out how to build immutable stuff.
   val houses = new mutable.ListBuffer[Coordinate]()
@@ -92,23 +95,15 @@ class DirectedRoad(
     //Util.assert_eq(v2.location, points.last)
   }
 
-  override def toString = "%s's %s lanes (DR %s)".format(road, dir, id)
+  override def toString = "%s's %s lanes (DR %s)".format(name, dir, id)
   override def compare(other: DirectedRoad) = id.int.compare(other.id.int)
 
-  def edges = if (dir == Direction.POS)
-                road.pos_lanes
-              else
-                road.neg_lanes
+  def edges = lanes
   def rightmost = edges.head
 
-  def from: Vertex = dir match {
-    case Direction.POS => road.v1
-    case Direction.NEG => road.v2
-  }
-  def to: Vertex = dir match {
-    case Direction.POS => road.v2
-    case Direction.NEG => road.v1
-  }
+  // TODO just rename em?
+  def from = v1
+  def to = v2
 
   def start_pt = edges.head.from.location
   def end_pt = edges.head.to.location
@@ -153,7 +148,7 @@ class DirectedRoad(
 }
 
 object DirectedRoad {
-  /*def unserialize(r: StateReader): DirectedRoad = {
+  def unserialize(r: StateReader): DirectedRoad = {
     val road = new DirectedRoad(
       new DirectedRoadID(r.int), Direction(r.int), r.double, r.string, r.string, r.string,
       new VertexID(r.int), new VertexID(r.int),
@@ -162,7 +157,7 @@ object DirectedRoad {
     Range(0, r.int).foreach(_ => road.shops += Coordinate.unserialize(r))
     Range(0, r.int).foreach(_ => road.houses += Coordinate.unserialize(r))
     return road
-  }*/
+  }
 
   def road_len(pts: Iterable[Coordinate]) =
     pts.zip(pts.tail).map(tupled((p1, p2) => new Line(p1, p2).length)).sum

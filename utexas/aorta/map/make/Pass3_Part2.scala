@@ -6,27 +6,27 @@ package utexas.aorta.map.make
 
 import scala.collection.mutable
 
-import utexas.aorta.map.{Road, Edge, Vertex, Turn, Line}
+import utexas.aorta.map.{Edge, Vertex, Turn, Line, DirectedRoad}
 
 import utexas.aorta.common.{Util, cfg, TurnID, DirectedRoadID}
 
 class Pass3_Part2(graph: PreGraph3) {
-  val roads_per_vert = new mutable.HashMap[Vertex, mutable.Set[Road]] with mutable.MultiMap[Vertex, Road]
+  val roads_per_vert = new mutable.HashMap[Vertex, mutable.Set[DirectedRoad]] with mutable.MultiMap[Vertex, DirectedRoad]
   var turn_cnt = -1
 
   def run() {
     Util.log("Connecting the dots...")
-    for (r <- graph.roads) {
-      roads_per_vert.addBinding(r.v1, r)
-      roads_per_vert.addBinding(r.v2, r)
+    for (dr <- graph.directed_roads) {
+      roads_per_vert.addBinding(dr.v1, dr)
+      roads_per_vert.addBinding(dr.v2, dr)
     }
-    Util.log_push
+    Util.log_push()
     // TODO return the mapping in the future?
     for (v <- graph.vertices) {
       assert(roads_per_vert.contains(v))
       connect_vertex(v, roads_per_vert(v))
     }
-    Util.log_pop
+    Util.log_pop()
   }
 
   private def next_id(): Int = {
@@ -35,7 +35,7 @@ class Pass3_Part2(graph: PreGraph3) {
   }
 
   // fill out an intersection with turns
-  private def connect_vertex(v: Vertex, roads: mutable.Set[Road]) = {
+  private def connect_vertex(v: Vertex, roads: mutable.Set[DirectedRoad]) = {
     // TODO return the turns or something so we can more efficiently set them
     // TODO cfg
     val cross_thresshold = math.Pi / 10 // allow 18 degrees

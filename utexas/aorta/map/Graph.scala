@@ -7,10 +7,10 @@ package utexas.aorta.map
 import scala.collection.mutable
 
 import utexas.aorta.map.make.MapStateWriter
-import utexas.aorta.common.{Util, StateReader, RoadID, VertexID, EdgeID, DirectedRoadID}
+import utexas.aorta.common.{Util, StateReader, VertexID, EdgeID, DirectedRoadID}
 
 class Graph(
-  val roads: Array[Road], val edges: Array[Edge], val vertices: Array[Vertex],
+  val directed_roads: Array[DirectedRoad], val edges: Array[Edge], val vertices: Array[Vertex],
   val width: Double, val height: Double, val offX: Double, val offY: Double,
   val scale: Double, val name: String
 ) extends GraphLike
@@ -22,7 +22,6 @@ class Graph(
   val turns = vertices.foldLeft(List[Turn]())(
     (l, v) => v.turns.toList ++ l
   ).map(t => t.id -> t).toMap
-  var directed_roads: Array[DirectedRoad] = Array()
   // TODO if this idea pans out, make it a precomputed and serialized property of DRs
   var zones: ZoneMap = null
 
@@ -35,8 +34,8 @@ class Graph(
     w.double(offX)
     w.double(offY)
     w.double(scale)
-    w.int(roads.size)
-    roads.foreach(r => r.serialize(w))
+    w.int(directed_roads.size)
+    directed_roads.foreach(r => r.serialize(w))
     w.int(edges.size)
     edges.foreach(e => e.serialize(w))
     w.int(vertices.size)
@@ -45,10 +44,6 @@ class Graph(
   }
 
   def setup() {
-    directed_roads = roads.flatMap(r => List(r.pos_group, r.neg_group).flatten).toArray
-    for ((dr, id) <- directed_roads.zipWithIndex) {
-      dr.id = new DirectedRoadID(id)
-    }
     zones = new ZoneMap(this)
   }
 
@@ -57,7 +52,6 @@ class Graph(
 
   def traversables() = edges ++ turns.values
 
-  override def get_r(id: RoadID) = roads(id.int)
   override def get_v(id: VertexID) = vertices(id.int)
   override def get_e(id: EdgeID) = edges(id.int)
   override def get_dr(id: DirectedRoadID) = directed_roads(id.int)
@@ -108,7 +102,7 @@ object Graph {
     val s = r.double
     set_params(w, h, xo, yo, s)
     val g = new Graph(
-      Range(0, r.int).map(_ => Road.unserialize(r)).toArray,
+      Range(0, r.int).map(_ => DirectedRoad.unserialize(r)).toArray,
       Range(0, r.int).map(_ => Edge.unserialize(r)).toArray,
       Range(0, r.int).map(_ => Vertex.unserialize(r)).toArray,
       w, h, xo, yo, s, r.string
@@ -117,8 +111,8 @@ object Graph {
     for (v <- g.vertices; t <- v.turns) {
       t.setup(g)
     }
-    // Do roads last; they depend on edges.
-    g.roads.foreach(r => r.setup(g))
+    // Do roads last; they depend on edges. TODO no, just vertices. important?
+    g.directed_roads.foreach(r => r.setup(g))
     g.setup()
     return g
   }
@@ -126,7 +120,6 @@ object Graph {
 
 // This is only so setup routines can reference Graph or PreGraph3.
 abstract class GraphLike {
-  def get_r(id: RoadID): Road
   def get_v(id: VertexID): Vertex
   def get_e(id: EdgeID): Edge
   def get_dr(id: DirectedRoadID): DirectedRoad
