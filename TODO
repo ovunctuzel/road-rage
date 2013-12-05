@@ -35,7 +35,6 @@
 - hard to have multiple sims due to objects with state: Common, CHRouter, Graph (norm coords), system
   wallets, AgentMap, ReplayDiffScheme, GUI
 - https://github.com/scala/pickling
-- consider onewayroad type
 - reduce vars and publics
 - distance/time types
 - merge headless/gui clients

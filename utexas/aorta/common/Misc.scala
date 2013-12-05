@@ -190,7 +190,7 @@ abstract class MathVector[T <: MathVector[T]](val value: Array[Double]) {
   }
   def dot(other: MathVector[T]): Double = {
     Util.assert_eq(size, other.size)
-    return value.zip(other.value).map(tupled((c1, c2) => c1 + c2)).sum
+    return value.zip(other.value).map(tupled((c1, c2) => c1 * c2)).sum
   }
 }
 

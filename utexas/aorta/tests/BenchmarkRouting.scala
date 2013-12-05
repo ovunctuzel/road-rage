@@ -10,7 +10,7 @@ import utexas.aorta.common.{Util, Common, cfg}
 
 object BenchmarkRouting {
   def main(args: Array[String]) = {
-    val rounds = 1000
+    val rounds = 100000
 
     val sim = Util.process_args(args)
     val rng = new utexas.aorta.common.RNG()
@@ -26,7 +26,7 @@ object BenchmarkRouting {
       val to = rng.choose(sim.graph.roads)
 
       if (i % (rounds / 100) == 0) {
-        Util.log(s"round $i / $rounds")
+        Util.log("round %,d / %,d".format(i, rounds))
       }
       for (((router, name), idx) <- routers.zipWithIndex) {
         val t = Common.timer(name)

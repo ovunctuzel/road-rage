@@ -120,9 +120,6 @@ class Line(val x1: Double, val y1: Double, val x2: Double, val y2: Double) {
 
   override def toString = "(%f, %f) ---> (%f, %f)".format(x1, y1, x2, y2)
 
-  // assuming the two lines share an origin
-  def dot(l2: Line) = (x2 - x1) * (l2.x2 - l2.x1) + (y2 - y1) * (l2.y2 - l2.y1)
-
   def segment_intersection(other: Line): Option[Coordinate] = {
     // Ripped from http://paulbourke.net/geometry/pointlineplane/
     // and http://www.java-gaming.org/index.php?topic=22590.0

@@ -6,6 +6,7 @@ package utexas.aorta.common.algorithms
 
 import scala.collection.mutable
 
+// TODO perf bug: I think one of the sets calls toString! test with a slow toString
 object AStar {
   // T is the node type
   // TODO All costs are pairs of doubles lexicographically ordered right now. Generalize.

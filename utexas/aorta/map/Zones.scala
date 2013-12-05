@@ -37,7 +37,7 @@ class ZoneMap(graph: Graph) {
   }
 }
 
-case class Zone(roads: Set[Road]) extends Renderable {
+class Zone(val roads: Set[Road]) extends Renderable {
   val center = compute_center
   // Member roads that have successors outside the set
   // TODO since partition isnt disjoint, misses some connections
@@ -91,7 +91,7 @@ object ZoneMap {
           new_zone ++= mapping(candidate).roads
         }
       }
-      val zone = Zone(new_zone.toSet)
+      val zone = new Zone(new_zone.toSet)
       // TODO overwrites. make the partitioning disjt.
       zone.roads.foreach(r => mapping(r) = zone)
     }
