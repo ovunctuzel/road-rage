@@ -47,17 +47,17 @@ class BuildingScraper() {
   def group(graph: PreGraph3) {
     Util.log(s"Matching ${bldgs.size} buildings to roads...")
     // First group roads by their name for fast pruning
-    val roads_by_name = graph.directed_roads.groupBy(_.name)
+    val roads_by_name = graph.roads.groupBy(_.name)
     var skipped = 0
     for (bldg <- bldgs) {
       // for now, ignore roads without a name, or with a name we don't know
       if (bldg.road.isDefined && roads_by_name.contains(bldg.road.get)) {
         val candidates = roads_by_name(bldg.road.get)
-        val dr = candidates.minBy(dr => dr.edges.last.approx_midpt.dist_to(bldg.point))
+        val r = candidates.minBy(r => r.edges.last.approx_midpt.dist_to(bldg.point))
         if (bldg.residential) {
-          dr.houses += bldg.point
+          r.houses += bldg.point
         } else {
-          dr.shops += bldg.point
+          r.shops += bldg.point
         }
       } else {
         skipped += 1

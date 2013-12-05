@@ -22,8 +22,8 @@ object BenchmarkRouting {
     val sum_times = Array.fill[Double](routers.size)(0.0)
 
     for (i <- 1 until rounds) {
-      val from = rng.choose(sim.graph.directed_roads)
-      val to = rng.choose(sim.graph.directed_roads)
+      val from = rng.choose(sim.graph.roads)
+      val to = rng.choose(sim.graph.roads)
 
       if (i % (rounds / 100) == 0) {
         Util.log(s"round $i / $rounds")

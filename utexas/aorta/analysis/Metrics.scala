@@ -7,7 +7,7 @@ package utexas.aorta.analysis
 import utexas.aorta.sim.{Simulation, EV_AgentSpawned, EV_AgentQuit, EV_Reroute,
                          EV_Stat, EV_IntersectionOutcome, EV_Transition}
 import utexas.aorta.sim.make.Scenario
-import utexas.aorta.map.{Edge, DirectedRoad, Turn}
+import utexas.aorta.map.{Edge, Road, Turn}
 import utexas.aorta.common.{Common, AgentID, IO, Util, BinnedHistogram}
 
 import scala.collection.mutable
@@ -141,7 +141,7 @@ class RoadCongestionMetric(info: MetricInfo) extends HistogramMetric(info, 10.0)
   info.sim.listen(name, _ match {
     case EV_AgentSpawned(a) => a.route.listen(name, _ match {
       case EV_Transition(_, to: Edge) =>
-        histogram.add(to.directed_road.auditor.freeflow_percent_full)
+        histogram.add(to.road.auditor.freeflow_percent_full)
       case _ =>
     })
     case _ =>
@@ -162,18 +162,18 @@ class TurnCompetitionMetric(info: MetricInfo) extends HistogramMetric(info, 1.0)
 class RouteRecordingMetric(info: MetricInfo) extends Metric(info) {
   override def name = "route_recording"
 
-  private val routes = new mutable.HashMap[AgentID, mutable.ListBuffer[DirectedRoad]]()
+  private val routes = new mutable.HashMap[AgentID, mutable.ListBuffer[Road]]()
 
   info.sim.listen(name, _ match {
     case EV_AgentSpawned(a) => {
-      routes(a.id) = new mutable.ListBuffer[DirectedRoad]()
+      routes(a.id) = new mutable.ListBuffer[Road]()
       a.route.listen(name, _ match {
         case EV_Transition(from, to: Turn) => {
           val path = routes(a.id)
           if (path.isEmpty) {
-            path += to.from.directed_road
+            path += to.from.road
           }
-          path += to.to.directed_road
+          path += to.to.road
         }
         case _ =>
       })
@@ -191,27 +191,27 @@ class LinkDelayMetric(info: MetricInfo) extends Metric(info) {
   override def name = "link_delay"
 
   // TODO will this eat too much memory?
-  private val delays_per_time = info.sim.graph.directed_roads.map(
-    dr => dr -> new java.util.TreeMap[Double, Double]()
+  private val delays_per_time = info.sim.graph.roads.map(
+    r => r -> new java.util.TreeMap[Double, Double]()
   ).toMap
 
   info.sim.listen(name, _ match {
     case EV_AgentSpawned(a) => {
       var entry_time = Common.tick // TODO does this work per agent
       a.route.listen(name, _ match {
-        // Entering a directed road
+        // Entering a road
         case EV_Transition(from: Turn, to) => entry_time = Common.tick
-        // Exiting a directed road
+        // Exiting a road
         case EV_Transition(from: Edge, to: Turn) =>
-          add_delay(entry_time, Common.tick - entry_time, from.directed_road)
+          add_delay(entry_time, Common.tick - entry_time, from.road)
         case _ =>
       })
     }
     case _ =>
   })
 
-  private def add_delay(entry_time: Double, delay: Double, at: DirectedRoad) {
-    // Two agents can enter the same DirectedRoad at the same time (on different lanes)
+  private def add_delay(entry_time: Double, delay: Double, at: Road) {
+    // Two agents can enter the same Road at the same time (on different lanes)
     // Just arbitrarily overwrite if there's a conflict
     delays_per_time(at).put(entry_time, delay)
   }
@@ -221,7 +221,7 @@ class LinkDelayMetric(info: MetricInfo) extends Metric(info) {
   }
 
   // Many possible interpolations for this...
-  def delay(on: DirectedRoad, at: Double) = delays_per_time(on).lowerKey(at) match {
+  def delay(on: Road, at: Double) = delays_per_time(on).lowerKey(at) match {
     // 'at' is before all entries here? then the road's clear
     case 0.0 => on.freeflow_time  // TODO 0.0 is how failure gets encoded by java treemap...
     case entry_time => delays_per_time(on).get(entry_time) match {

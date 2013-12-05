@@ -4,7 +4,7 @@
 
 package utexas.aorta.sim.make
 
-import utexas.aorta.map.{Graph, DirectedRoad}
+import utexas.aorta.map.{Graph, Road}
 import utexas.aorta.common.{RNG, cfg,  AgentID, Poisson}
 
 import scala.collection.mutable
@@ -33,7 +33,7 @@ object IntersectionDistribution {
   // Put stop signs at crossings of all small roads, signals or reservations at
   // crossings of all big roads, and common case hybrids at mixtures
   def realistic(graph: Graph) = graph.vertices.map(v => {
-    val (big, small) = v.directed_roads.partition(_.is_major)
+    val (big, small) = v.roads.partition(_.is_major)
     val policy =
       if (big.isEmpty)
         IntersectionType.StopSign
@@ -55,10 +55,10 @@ object AgentDistribution {
   lazy val default_route = RouteType.withName(cfg.route)
   lazy val default_wallet = WalletType.withName(cfg.wallet)
 
-  def filter_candidates(starts: Array[DirectedRoad]) = starts.filter(_.rightmost.ok_to_spawn)
+  def filter_candidates(starts: Array[Road]) = starts.filter(_.rightmost.ok_to_spawn)
 
   // TODO specify "80% x, 20% y" for stuff...
-  def uniform_times(ids: Range, starts: Array[DirectedRoad], ends: Array[DirectedRoad],
+  def uniform_times(ids: Range, starts: Array[Road], ends: Array[Road],
               times: (Double, Double), routes: Array[RouteType.Value],
               wallets: Array[WalletType.Value],
               budgets: (Int, Int)): Array[MkAgent] =
@@ -82,7 +82,7 @@ object AgentDistribution {
 
   // TODO unify with uniform_times, and figure out how to split up factors a little.
   def poisson_times(
-    first_id: AgentID, starts: Array[DirectedRoad], ends: Array[DirectedRoad], start_time: Double,
+    first_id: AgentID, starts: Array[Road], ends: Array[Road], start_time: Double,
     end_time: Double, vehicles_per_hour: Int, routes: Array[RouteType.Value],
     wallets: Array[WalletType.Value], budgets: (Int, Int)
   ): Array[MkAgent] = {
@@ -108,7 +108,7 @@ object AgentDistribution {
   }
 
   def default(graph: Graph) = uniform_times(
-    Range(0, cfg.army_size), graph.directed_roads, graph.directed_roads, (0.0, 60.0),
+    Range(0, cfg.army_size), graph.roads, graph.roads, (0.0, 60.0),
     Array(default_route), Array(default_wallet), (100, 200)
   )
 }

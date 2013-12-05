@@ -6,9 +6,9 @@ package utexas.aorta.map.make
 
 import scala.collection.mutable
 
-import utexas.aorta.map.{Edge, Turn, Traversable, DirectedRoad}
+import utexas.aorta.map.{Edge, Turn, Traversable, Road}
 
-import utexas.aorta.common.{Util, cfg, TurnID, DirectedRoadID, EdgeID, VertexID}
+import utexas.aorta.common.{Util, cfg, TurnID, RoadID, EdgeID, VertexID}
 
 class Pass3_Part3(graph: PreGraph3) {
   // for tarjan's
@@ -48,7 +48,7 @@ class Pass3_Part3(graph: PreGraph3) {
   private def clean_half_edges(): Boolean = {
     val orig_edges = graph.edges.size
     val orig_verts = graph.vertices.size
-    val orig_roads = graph.directed_roads.size
+    val orig_roads = graph.roads.size
 
     Util.log("Using fixpoint algorithm to prune half-edges")
 
@@ -77,7 +77,7 @@ class Pass3_Part3(graph: PreGraph3) {
       Util.log(
         s"$orig_edges -> ${graph.edges.size} edges, $orig_verts -> " +
         s"${graph.vertices.size} vertices, $orig_roads -> " + 
-        s"${graph.directed_roads.size} roads"
+        s"${graph.roads.size} roads"
       )
     }
     return any_changes
@@ -88,7 +88,7 @@ class Pass3_Part3(graph: PreGraph3) {
     // use Tarjan's to locate all SCC's in the graph. ideally we'd just
     // have one, but crappy graphs, weird reality, and poor turn heuristics mean
     // we'll have disconnected portions.
-    // TODO simplify by flooding DirectedRoads, not turns and lanes
+    // TODO simplify by flooding Roads, not turns and lanes
     val sccs = new mutable.ListBuffer[List[Traversable]]
 
     for (t <- graph.traversables) {
@@ -224,11 +224,11 @@ class Pass3_Part3(graph: PreGraph3) {
 
     // TODO refactor this: squeeze together lane numbers
     // This will end up looking weird (gaps in roads)
-    for (dr <- graph.directed_roads) {
-      val lanes = dr.lanes.filter(e => good_edges.contains(e))
-      dr.lanes.clear()
-      dr.lanes ++= lanes
-      for ((lane, idx) <- dr.lanes.zipWithIndex) {
+    for (r <- graph.roads) {
+      val lanes = r.lanes.filter(e => good_edges.contains(e))
+      r.lanes.clear()
+      r.lanes ++= lanes
+      for ((lane, idx) <- r.lanes.zipWithIndex) {
         lane.lane_num = idx
       }
     }
@@ -238,7 +238,7 @@ class Pass3_Part3(graph: PreGraph3) {
       case (bad, good) => {
         graph.vertices = good
         val bad_set = bad.toSet
-        graph.directed_roads = graph.directed_roads.filter(
+        graph.roads = graph.roads.filter(
           r => !bad_set.contains(r.v1) && !bad_set.contains(r.v2) && r.lanes.nonEmpty
         )
       }

@@ -248,7 +248,7 @@ object Phase {
     return turn_groups_to_phases(maximize_groups(groups.toList, vert.turns))
   }
 
-  // Try to group turns from the same directed road
+  // Try to group turns from the same road
   // TODO refactor
   def group_by_roads(vert: Vertex): List[Phase] = {
     val turns_remaining = new mutable.TreeSet[Turn]()
@@ -260,10 +260,10 @@ object Phase {
       this_group += turns_remaining.head
       turns_remaining -= this_group.head
 
-      // Try to add remaining turns in the same directed road first
+      // Try to add remaining turns in the same road first
       // Then do the rest, normally
-      val road = this_group.head.from.directed_road
-      val consider_order = turns_remaining.partition(t => t.from.directed_road == road)
+      val road = this_group.head.from.road
+      val consider_order = turns_remaining.partition(t => t.from.road == road)
       for (candidate <- consider_order._1.toList ++ consider_order._2.toList) {
         if (!this_group.exists(t => t.conflicts_with(candidate))) {
           this_group += candidate

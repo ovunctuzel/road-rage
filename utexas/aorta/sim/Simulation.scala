@@ -15,7 +15,7 @@ import utexas.aorta.sim.policies.Phase
 import utexas.aorta.sim.make.{Scenario, MkAgent, IntersectionType}
 
 import utexas.aorta.common.{Util, Common, cfg, StateWriter, StateReader, Flags, AgentID,
-                            ListenerPattern, VertexID, EdgeID, DirectedRoadID}
+                            ListenerPattern, VertexID, EdgeID, RoadID}
 import utexas.aorta.analysis.{Heartbeat_Stat, Measurement, RerouteCountMonitor}
 
 // TODO take just a scenario, or graph and scenario?
@@ -151,13 +151,13 @@ class Simulation(val graph: Graph, val scenario: Scenario)
   // True if we've correctly promoted into real agents. Does the work of
   // spawning as well.
   private def try_spawn(spawn: MkAgent): Boolean = {
-    val dr = graph.directed_roads(spawn.start.int)
-    val e = dr.rightmost
+    val r = graph.roads(spawn.start.int)
+    val e = r.rightmost
     if (e.queue.can_spawn_now(spawn.start_dist)) {
       // Will we block anybody that's ready?
       val intersection = e.to.intersection
       val will_block =
-        if (spawn.route.goal != dr.id)
+        if (spawn.route.goal != r.id)
           e.queue.all_agents.find(
             a => a.at.dist < spawn.start_dist && a.wont_block(intersection)
           ).isDefined || e.dont_block

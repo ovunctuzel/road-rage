@@ -4,7 +4,7 @@
 
 /*package utexas.aorta.sim.meep
 
-import utexas.aorta.map.{Graph, DirectedRoad}
+import utexas.aorta.map.{Graph, Road}
 import utexas.aorta.map.analysis.{AstarRouter, Demand, RouteFeatures}
 import utexas.aorta.sim.Agent
 import utexas.aorta.common.{Common, AgentID, ValueOfTime}
@@ -23,14 +23,14 @@ case class Predictor(time_model: LinearModel, externality_model: LinearModel) {
 }
 
 case class RouteChoice(
-  path: List[DirectedRoad], score: RouteFeatures, predicted_time: Double,
+  path: List[Road], score: RouteFeatures, predicted_time: Double,
   predicted_externality: Double
 ) {
   override def toString = s"Route Choice[time ~ $predicted_time, cost ~ $predicted_externality]"
 }
 
 class RouteChooser(graph: Graph, demand: Demand, predictor: Predictor) {
-  def discover_routes(start: DirectedRoad, end: DirectedRoad, num_routes: Int): List[RouteChoice] = {
+  def discover_routes(start: Road, end: Road, num_routes: Int): List[RouteChoice] = {
     val scores_seen = new mutable.HashSet[RouteFeatures]()
     val result = new mutable.ListBuffer[RouteChoice]()
     // Don't block completely
@@ -67,7 +67,7 @@ class RouteChooser(graph: Graph, demand: Demand, predictor: Predictor) {
     return result.toList
   }
 
-  def cost(route: List[DirectedRoad]) =
+  def cost(route: List[Road]) =
     if (route.nonEmpty)
       route.map(_.toll.dollars).max
     else
@@ -122,7 +122,7 @@ object AgentAdaptor {
     max_paid.clear()
   }
 
-  def path(from: DirectedRoad, to: DirectedRoad, a: Agent): List[DirectedRoad] = {
+  def path(from: Road, to: Road, a: Agent): List[Road] = {
     val choices = Graph.route_chooser.discover_routes(from, to, Graph.num_routes)
     val choice = Graph.route_chooser.choose_route(choices, a.value_of_time)
     max_paid(a.id) = math.max(max_paid(a.id), choice.predicted_externality)

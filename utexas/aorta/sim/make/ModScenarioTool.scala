@@ -6,7 +6,7 @@ package utexas.aorta.sim.make
 
 import utexas.aorta.map.Graph
 
-import utexas.aorta.common.{Util, RNG, cfg, DirectedRoadID}
+import utexas.aorta.common.{Util, RNG, cfg, RoadID}
 
 // Command-line interface
 object ModScenarioTool {
@@ -129,14 +129,14 @@ object ModScenarioTool {
           // new one
           val start_dist = params.get("start") match {
             case Some(r) if r.toInt == old_a.start.int => old_a.start_dist
-            case Some(r) => graph.directed_roads(r.toInt).rightmost.safe_spawn_dist(rng)
+            case Some(r) => graph.roads(r.toInt).rightmost.safe_spawn_dist(rng)
             case None => old_a.start_dist
           }
 
           val new_a = old_a.copy(
             // TODO fix all the orElse patterns here
             start =
-              params.get("start").map(e => new DirectedRoadID(e.toInt)).getOrElse(old_a.start),
+              params.get("start").map(e => new RoadID(e.toInt)).getOrElse(old_a.start),
             start_dist = start_dist,
             birth_tick = params.getOrElse(
               "time", old_a.birth_tick.toString
@@ -145,7 +145,7 @@ object ModScenarioTool {
               strategy = RouteType.withName(
                 params.getOrElse("route", old_a.route.strategy.toString)
               ),
-              goal = params.get("end").map(r => new DirectedRoadID(r.toInt))
+              goal = params.get("end").map(r => new RoadID(r.toInt))
                 .getOrElse(old_a.route.goal)
             ),
             wallet = old_a.wallet.copy(
@@ -178,16 +178,16 @@ object ModScenarioTool {
           val starts = params.get("starts") match {
             case Some(fn) => {
               val r = Util.reader(fn)
-              Range(0, r.int).map(_ => graph.directed_roads(r.int)).toArray
+              Range(0, r.int).map(_ => graph.roads(r.int)).toArray
             }
-            case None => graph.directed_roads
+            case None => graph.roads
           }
           val ends = params.get("ends") match {
             case Some(fn) => {
               val r = Util.reader(fn)
-              Range(0, r.int).map(_ => graph.directed_roads(r.int)).toArray
+              Range(0, r.int).map(_ => graph.roads(r.int)).toArray
             }
-            case None => graph.directed_roads
+            case None => graph.roads
           }
           val delay = params.get("delay") match {
             case Some(t) => t.toDouble

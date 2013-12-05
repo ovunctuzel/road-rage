@@ -8,7 +8,7 @@ import Function.tupled
 import scala.collection.immutable
 import scala.collection.mutable
 
-import utexas.aorta.map.{Edge, DirectedRoad, Traversable, Turn, Vertex, Graph}
+import utexas.aorta.map.{Edge, Road, Traversable, Turn, Vertex, Graph}
 import utexas.aorta.map.analysis.Router
 import utexas.aorta.sim.make.{RouteType, RouterType, Factory}
 
@@ -18,7 +18,7 @@ import utexas.aorta.common.{Util, RNG, Common, cfg, StateWriter, StateReader, Tu
 // TODO maybe unify the one class with the interface, or something. other routes were useless.
 
 // Get a client to their goal by any means possible.
-abstract class Route(val goal: DirectedRoad, rng: RNG) extends ListenerPattern[Route_Event] {
+abstract class Route(val goal: Road, rng: RNG) extends ListenerPattern[Route_Event] {
   //////////////////////////////////////////////////////////////////////////////
   // State
 
@@ -54,7 +54,7 @@ abstract class Route(val goal: DirectedRoad, rng: RNG) extends ListenerPattern[R
   // The client is being forced to pick a turn. If they ask us repeatedly, we
   // have to always return the same answer.
   def pick_turn(e: Edge): Turn
-  // Prescribe the final lane on this directed road to aim for. We should be able to spazz around in
+  // Prescribe the final lane on this road to aim for. We should be able to spazz around in
   // our answer here.
   def pick_final_lane(e: Edge): Edge
   // Just mark that we don't have to take the old turn prescribed
@@ -64,7 +64,7 @@ abstract class Route(val goal: DirectedRoad, rng: RNG) extends ListenerPattern[R
   // Queries
 
   def route_type(): RouteType.Value
-  def done(at: Edge) = at.directed_road == goal
+  def done(at: Edge) = at.road == goal
   def dump_info()
 }
 
@@ -72,7 +72,7 @@ object Route {
   def unserialize(r: StateReader, graph: Graph): Route = {
     // Original router will never be used again, and rerouter will have to be reset by PathRoute.
     val route = Factory.make_route(
-      RouteType(r.int), graph, RouterType.Fixed, RouterType.Fixed, graph.directed_roads(r.int),
+      RouteType(r.int), graph, RouterType.Fixed, RouterType.Fixed, graph.roads(r.int),
       RNG.unserialize(r), Nil
     )
     route.unserialize(r, graph)
@@ -85,12 +85,12 @@ final case class EV_Transition(from: Traversable, to: Traversable) extends Route
 // orig = true when initializing the path. bit of a hack.
 // if unrealizable, then couldn't follow path. if not, congestion or gridlock.
 final case class EV_Reroute(
-  path: List[DirectedRoad], orig: Boolean, method: RouterType.Value, unrealizable: Boolean
+  path: List[Road], orig: Boolean, method: RouterType.Value, unrealizable: Boolean
 ) extends Route_Event
 
 // Follow routes prescribed by routers. Only reroute when forced or encouraged to.
 // TODO rerouter only var due to serialization
-class PathRoute(goal: DirectedRoad, orig_router: Router, private var rerouter: Router, rng: RNG)
+class PathRoute(goal: Road, orig_router: Router, private var rerouter: Router, rng: RNG)
   extends Route(goal, rng)
 {
   //////////////////////////////////////////////////////////////////////////////
@@ -98,7 +98,7 @@ class PathRoute(goal: DirectedRoad, orig_router: Router, private var rerouter: R
 
   // Head is the current step. If that step isn't immediately reachable, we have
   // to re-route.
-  private var path: List[DirectedRoad] = Nil
+  private var path: List[Road] = Nil
   private val chosen_turns = new mutable.ImmutableMapAdaptor(new immutable.TreeMap[Edge, Turn]())
   private val reroutes_requested = new mutable.HashSet[Edge]()
 
@@ -130,7 +130,7 @@ class PathRoute(goal: DirectedRoad, orig_router: Router, private var rerouter: R
     val path_size = r.int
     // Leave null otherwise
     if (path_size > 0) {
-      path = Range(0, path_size).map(_ => graph.directed_roads(r.int)).toList
+      path = Range(0, path_size).map(_ => graph.roads(r.int)).toList
     }
     val chosen_size = r.int
     for (i <- Range(0, chosen_size)) {
@@ -146,7 +146,7 @@ class PathRoute(goal: DirectedRoad, orig_router: Router, private var rerouter: R
     (from, to) match {
       case (e: Edge, _: Turn) => {
         chosen_turns -= e
-        if (e.directed_road == path.head) {
+        if (e.road == path.head) {
           path = path.tail
         } else {
           throw new Exception(
@@ -177,7 +177,7 @@ class PathRoute(goal: DirectedRoad, orig_router: Router, private var rerouter: R
 
     // Lookahead could be calling us from anywhere. Figure out where we are in
     // the path.
-    val pair = path.span(r => r != e.directed_road)
+    val pair = path.span(r => r != e.road)
     val before = pair._1
     val slice = pair._2
     Util.assert_eq(slice.nonEmpty, true)
@@ -185,7 +185,7 @@ class PathRoute(goal: DirectedRoad, orig_router: Router, private var rerouter: R
 
     // Is the next step reachable?
     val must_reroute =
-      e.next_turns.filter(t => t.to.directed_road == dest).isEmpty
+      e.next_turns.filter(t => t.to.road == dest).isEmpty
     // This variant only considers long roads capable of being congested, which is risky...
     val should_reroute = dest.auditor.congested
     // Since short roads can gridlock too, have the client detect that and explicitly force us to
@@ -197,7 +197,7 @@ class PathRoute(goal: DirectedRoad, orig_router: Router, private var rerouter: R
       // Re-route, but start from a source we can definitely reach without
       // lane-changing.
       val choice = e.next_turns.maxBy(t => t.to.queue.percent_avail)
-      val source = choice.to.directed_road
+      val source = choice.to.road
 
       // TODO Erase all turn choices AFTER source, if we've made any?
 
@@ -216,19 +216,19 @@ class PathRoute(goal: DirectedRoad, orig_router: Router, private var rerouter: R
   def pick_final_lane(from: Edge): Edge = {
     // This method is called first, so do the lazy initialization here.
     if (path.isEmpty) {
-      path = from.directed_road :: orig_router.path(from.directed_road, goal, Common.tick)
+      path = from.road :: orig_router.path(from.road, goal, Common.tick)
       tell_listeners(EV_Reroute(path, true, orig_router.router_type, false))
     }
 
     // Lookahead could be calling us from anywhere. Figure out where we are in
     // the path.
-    val pair = path.span(r => r != from.directed_road)
+    val pair = path.span(r => r != from.road)
     val slice = pair._2
     Util.assert_eq(slice.nonEmpty, true)
 
     // We could be done!
     if (slice.tail.isEmpty) {
-      Util.assert_eq(from.directed_road, goal)
+      Util.assert_eq(from.road, goal)
       return from
     }
 
@@ -257,11 +257,11 @@ class PathRoute(goal: DirectedRoad, orig_router: Router, private var rerouter: R
     Util.log(s"Static route to $goal using $path")
   }
 
-  def directed_roads = path.toSet
+  def roads = path.toSet
 
   // Prefer the one that's emptiest now and try to get close to a lane that
   // we'll want to LC to anyway. Only call when we haven't chosen something yet.
-  private def best_turn(e: Edge, dest: DirectedRoad, next_dest: DirectedRoad): Turn = {
+  private def best_turn(e: Edge, dest: Road, next_dest: Road): Turn = {
     val ideal_lanes =
       if (next_dest != null)
         candidate_lanes(dest.edges.head, next_dest)
@@ -271,7 +271,7 @@ class PathRoute(goal: DirectedRoad, orig_router: Router, private var rerouter: R
       ideal_lanes.map(ideal => math.abs(e.lane_num - ideal.lane_num)).min
     val total = dest.edges.size
     def ranking(t: Turn) =
-      if (t.to.directed_road != dest)
+      if (t.to.road != dest)
         -1
       else
         // How far is this lane from an ideal lane?
@@ -284,6 +284,6 @@ class PathRoute(goal: DirectedRoad, orig_router: Router, private var rerouter: R
     )
   }
 
-  private def candidate_lanes(from: Edge, dest: DirectedRoad) =
-    from.other_lanes.filter(f => f.succs.exists(t => t.directed_road == dest)).toList
+  private def candidate_lanes(from: Edge, dest: Road) =
+    from.other_lanes.filter(f => f.succs.exists(t => t.road == dest)).toList
 }

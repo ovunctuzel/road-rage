@@ -6,25 +6,25 @@ package utexas.aorta.map.analysis
 
 import scala.collection.mutable
 
-import utexas.aorta.map.{Graph, DirectedRoad, Coordinate}
+import utexas.aorta.map.{Graph, Road, Coordinate}
 import utexas.aorta.sim.Agent
 import utexas.aorta.sim.make.RouterType
 
-import utexas.aorta.common.{Util, Physics, RNG, DirectedRoadID, Price}
+import utexas.aorta.common.{Util, Physics, RNG, RoadID, Price}
 import utexas.aorta.common.algorithms.AStar
 
 abstract class Router(graph: Graph) {
   def router_type: RouterType.Value
   // Doesn't include 'from' as the first step
-  def path(from: DirectedRoad, to: DirectedRoad, time: Double): List[DirectedRoad]
+  def path(from: Road, to: Road, time: Double): List[Road]
 
   // TODO messy to include this jump, but hard to pipe in specific params...
   def setup(a: Agent) {}
 }
 
-class FixedRouter(graph: Graph, path: List[DirectedRoad]) extends Router(graph) {
+class FixedRouter(graph: Graph, path: List[Road]) extends Router(graph) {
   override def router_type = RouterType.Fixed
-  override def path(from: DirectedRoad, to: DirectedRoad, time: Double): List[DirectedRoad] = {
+  override def path(from: Road, to: Road, time: Double): List[Road] = {
     if (path.nonEmpty) {
       // remember, paths don't include from as the first step.
       Util.assert_eq(from.succs.contains(path.head), true)
@@ -40,21 +40,21 @@ class FixedRouter(graph: Graph, path: List[DirectedRoad]) extends Router(graph) 
 // Score is a pair of doubles
 // TODO dont operate on graph particularly, do anything with successor fxn and cost fxn...
 abstract class AbstractPairAstarRouter(graph: Graph) extends Router(graph) {
-  def calc_heuristic(state: DirectedRoad, goal: DirectedRoad): (Double, Double)
+  def calc_heuristic(state: Road, goal: Road): (Double, Double)
   def cost_step(
-    prev: DirectedRoad, next: DirectedRoad, cost_sofar: (Double, Double)
+    prev: Road, next: Road, cost_sofar: (Double, Double)
   ): (Double, Double)
 
   protected def add_cost(a: (Double, Double), b: (Double, Double)) = (a._1 + b._1, a._2 + b._2)
 
-  override def path(from: DirectedRoad, to: DirectedRoad, time: Double) = AStar.path(
-    from, to, (step: DirectedRoad) => step.succs, cost_step, calc_heuristic, add_cost
+  override def path(from: Road, to: Road, time: Double) = AStar.path(
+    from, to, (step: Road) => step.succs, cost_step, calc_heuristic, add_cost
   )
 }
 
 // No guess for cost, straight-line distance at 1m/s for freeflow time
 trait SimpleHeuristic extends AbstractPairAstarRouter {
-  override def calc_heuristic(state: DirectedRoad, goal: DirectedRoad) =
+  override def calc_heuristic(state: Road, goal: Road) =
     (0.0, state.end_pt.dist_to(goal.end_pt))  // TODO divided by some speed limit?
   // Alternate heuristics explore MUCH less states, but the oracles are too
   // pricy. (CH, Dijkstra table of distances)
@@ -63,13 +63,13 @@ trait SimpleHeuristic extends AbstractPairAstarRouter {
 class FreeflowRouter(graph: Graph) extends AbstractPairAstarRouter(graph) with SimpleHeuristic {
   override def router_type = RouterType.Unusable
 
-  override def cost_step(prev: DirectedRoad, next: DirectedRoad, cost_sofar: (Double, Double)) =
+  override def cost_step(prev: Road, next: Road, cost_sofar: (Double, Double)) =
     (next.freeflow_time, 0)
 }
 
 // Cost for each step is (dollars, time)
 trait TollAndTimeCost extends AbstractPairAstarRouter {
-  override def cost_step(prev: DirectedRoad, next: DirectedRoad, cost_sofar: (Double, Double)) =
+  override def cost_step(prev: Road, next: Road, cost_sofar: (Double, Double)) =
     (next.auditor.toll.dollars, next.freeflow_time)
 }
 
@@ -77,7 +77,7 @@ trait TollAndTimeCost extends AbstractPairAstarRouter {
 class CongestionRouter(graph: Graph) extends AbstractPairAstarRouter(graph) with SimpleHeuristic {
   override def router_type = RouterType.Congestion
 
-  override def cost_step(prev: DirectedRoad, next: DirectedRoad, cost_sofar: (Double, Double)) =
+  override def cost_step(prev: Road, next: Road, cost_sofar: (Double, Double)) =
     (Util.bool2binary(next.auditor.congested), next.freeflow_time)
 }
 
@@ -104,7 +104,7 @@ class TollThresholdRouter(graph: Graph) extends AbstractPairAstarRouter(graph)
 
   override def router_type = RouterType.TollThreshold
 
-  override def cost_step(prev: DirectedRoad, next: DirectedRoad, cost_sofar: (Double, Double)) =
+  override def cost_step(prev: Road, next: Road, cost_sofar: (Double, Double)) =
     (Util.bool2binary(next.auditor.toll.dollars > max_toll.dollars), next.freeflow_time)
 }
 
@@ -115,6 +115,6 @@ class SumTollRouter(graph: Graph) extends AbstractPairAstarRouter(graph)
 {
   override def router_type = RouterType.SumToll
 
-  override def cost_step(prev: DirectedRoad, next: DirectedRoad, cost_sofar: (Double, Double)) =
+  override def cost_step(prev: Road, next: Road, cost_sofar: (Double, Double)) =
     (next.auditor.toll.dollars, next.freeflow_time)
 }

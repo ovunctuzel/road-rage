@@ -4,7 +4,7 @@
 
 package utexas.aorta.analysis
 
-import utexas.aorta.map.{Graph, DirectedRoad}
+import utexas.aorta.map.{Graph, Road}
 import utexas.aorta.map.analysis.{AbstractPairAstarRouter, SimpleHeuristic}
 import utexas.aorta.sim.make.{Scenario, RouterType}
 import utexas.aorta.common.{Util, RNG}
@@ -55,7 +55,7 @@ class DTAExperiment(config: ExpConfig) extends SmartExperiment(config) {
         // Replan!
         // TODO spawn vs start time...
         val new_path = new TimeDependentAStar(graph, delay, a.birth_tick)
-          .path(graph.get_dr(a.start), graph.get_dr(a.route.goal), 0 /* this time doesnt matter */)
+          .path(graph.get_r(a.start), graph.get_r(a.route.goal), 0 /* this time doesnt matter */)
           .map(_.id)
         a.copy(route = a.route.copy(orig_router = RouterType.Fixed, initial_path = new_path))
         // TODO make these delays available to all/some drivers, for rerouting? could introduce bad
@@ -74,6 +74,6 @@ class TimeDependentAStar(graph: Graph, delays: LinkDelayMetric, start_time: Doub
 
   // cost_sofar._2 is the time spent in the route so far
   override def cost_step(
-    prev: DirectedRoad, next: DirectedRoad, cost_sofar: (Double, Double)
+    prev: Road, next: Road, cost_sofar: (Double, Double)
   ) = (Util.bool2binary(next.auditor.congested), delays.delay(next, start_time + cost_sofar._2))
 }

@@ -42,17 +42,17 @@ class Vertex(val location: Coordinate, val id: VertexID) extends Renderable {
 
   def turns_from(from: Edge): List[Turn] = turns.filter(_.from == from)
   def turns_to(to: Edge): List[Turn] = turns.filter(_.to == to)
-  def edges_to(to: DirectedRoad): List[Edge] =
-    turns.filter(_.to.directed_road == to).map(_.from)
+  def edges_to(to: Road): List[Edge] =
+    turns.filter(_.to.road == to).map(_.from)
 
   // what verts lead to this one?
   def in_verts = turns.map(t => t.from.from).toSet
   // what verts does this one lead to?
   def out_verts = turns.map(t => t.to.to).toSet
 
-  def directed_roads_in = turns.map(_.from.directed_road).toSet
+  def roads_in = turns.map(_.from.road).toSet
   def edges = turns.flatMap(t => List(t.from, t.to))
-  def directed_roads = edges.map(_.directed_road).toSet
+  def roads = edges.map(_.road).toSet
   def in_edges = turns.map(t => t.from).toSet
   def out_edges = turns.map(t => t.to).toSet
 
@@ -78,7 +78,7 @@ class Vertex(val location: Coordinate, val id: VertexID) extends Renderable {
     i.turns.foreach(tupled((turn, count) => Util.log(s"$count doing $turn")))
     Util.log_pop
 
-    Util.log("Roads: " + directed_roads)
+    Util.log("Roads: " + roads)
 
     // anything else
     i.policy.dump_info

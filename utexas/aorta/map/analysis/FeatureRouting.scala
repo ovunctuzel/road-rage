@@ -6,10 +6,10 @@ package utexas.aorta.map.analysis
 
 import scala.collection.mutable
 
-import utexas.aorta.map.{Graph, DirectedRoad, Coordinate}
+import utexas.aorta.map.{Graph, Road, Coordinate}
 import utexas.aorta.sim.make.{IntersectionType, Scenario, RouterType}
 
-import utexas.aorta.common.{Util, MathVector, VertexID, DirectedRoadID}
+import utexas.aorta.common.{Util, MathVector, VertexID, RoadID}
 
 // Encodes all factors describing the quality of a path
 case class RouteFeatures(
@@ -42,7 +42,7 @@ object RouteFeatures {
   val BLANK = RouteFeatures(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
   val JUST_FREEFLOW_TIME = BLANK.copy(total_freeflow_time = 1)
 
-  def for_step(step: DirectedRoad, demand: Demand): RouteFeatures = {
+  def for_step(step: Road, demand: Demand): RouteFeatures = {
     def one_if(matches: IntersectionType.Value) =
       Util.bool2binary(step.to.intersection.policy.policy_type == matches)
     return RouteFeatures(
@@ -54,7 +54,7 @@ object RouteFeatures {
       reservation_count = one_if(IntersectionType.Reservation),
       queued_turn_count = step.to.intersection.policy.queued_count,
       total_avg_waiting_time = step.to.intersection.average_waiting_time,
-      road_demand = demand.directed_road(step.id).toDouble,
+      road_demand = demand.road(step.id).toDouble,
       intersection_demand = demand.intersection(step.to.id).toDouble,
       agents_enroute = step.edges.map(_.queue.agents.size).sum
     )
@@ -63,22 +63,22 @@ object RouteFeatures {
 
 // Magically knows where everybody wants to go ahead of time. Think of this as representing a
 // historical average, though.
-class Demand(directed_road_counts: Array[Integer], intersection_counts: Array[Integer]) {
-  def directed_road(id: DirectedRoadID) = directed_road_counts(id.int)
+class Demand(road_counts: Array[Integer], intersection_counts: Array[Integer]) {
+  def road(id: RoadID) = road_counts(id.int)
   def intersection(id: VertexID) = intersection_counts(id.int)
 }
 
 object Demand {
   def blank_for(scenario: Scenario, graph: Graph) =
-    new Demand(Array.fill(graph.directed_roads.size)(0), Array.fill(graph.vertices.size)(0))
+    new Demand(Array.fill(graph.roads.size)(0), Array.fill(graph.vertices.size)(0))
 
   def demand_for(scenario: Scenario, graph: Graph): Demand = {
     val demand = blank_for(scenario, graph)
     /*for (a <- scenario.agents) {
-      val from = graph.edges(a.start_edge.int).directed_road
-      val to = graph.edges(a.route.goal.int).directed_road
+      val from = graph.edges(a.start_edge.int).road
+      val to = graph.edges(a.route.goal.int).road
       for (step <- graph.router.path(from, to, 0)) {
-        demand.directed_roads(step.id.int) += 1
+        demand.roads(step.id.int) += 1
         demand.intersections(step.to.id.int) += 1
       }
     }*/
@@ -89,24 +89,24 @@ object Demand {
 // A* is a misnomer; there's no heuristic right now.
 class AstarRouter(graph: Graph, val weights: RouteFeatures, demand: Demand) extends Router(graph) {
   override def router_type = RouterType.Unusable
-  override def path(from: DirectedRoad, to: DirectedRoad, time: Double) = scored_path(from, to)._1
+  override def path(from: Road, to: Road, time: Double) = scored_path(from, to)._1
 
   // Return the weight of the final path too
-  def scored_path(from: DirectedRoad, to: DirectedRoad): (List[DirectedRoad], RouteFeatures) = {
+  def scored_path(from: Road, to: Road): (List[Road], RouteFeatures) = {
     if (from == to) {
       return (Nil, RouteFeatures.BLANK)
     }
 
     // Stitch together our path
-    val backrefs = new mutable.HashMap[DirectedRoad, DirectedRoad]()
+    val backrefs = new mutable.HashMap[Road, Road]()
     // We're finished with these
-    val visited = new mutable.HashSet[DirectedRoad]()
+    val visited = new mutable.HashSet[Road]()
     // Best cost so far
-    val costs = new mutable.HashMap[DirectedRoad, RouteFeatures]()
+    val costs = new mutable.HashMap[Road, RouteFeatures]()
     // Used to see if we've already added a road to the queue
-    val open_members = new mutable.HashSet[DirectedRoad]()
+    val open_members = new mutable.HashSet[Road]()
 
-    case class Step(state: DirectedRoad) {
+    case class Step(state: Road) {
       // No heuristics for now
       def cost = costs(state).dot(weights)
     }
@@ -128,8 +128,8 @@ class AstarRouter(graph: Graph, val weights: RouteFeatures, demand: Demand) exte
 
       if (current.state == to) {
         // Reconstruct the path
-        var path: List[DirectedRoad] = Nil
-        var pointer: Option[DirectedRoad] = Some(current.state)
+        var path: List[Road] = Nil
+        var pointer: Option[Road] = Some(current.state)
         while (pointer.isDefined && pointer.get != null) {
           path = pointer.get :: path
           // Clean as we go to break loops

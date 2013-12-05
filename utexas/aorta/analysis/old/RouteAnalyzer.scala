@@ -7,7 +7,7 @@
 import scala.collection.mutable
 import java.io.{File, PrintWriter, FileWriter}
 
-import utexas.aorta.map.DirectedRoad
+import utexas.aorta.map.Road
 import utexas.aorta.map.analysis.{RouteFeatures, Demand}
 import utexas.aorta.sim.{EV_AgentSpawned, Agent}
 
@@ -55,7 +55,7 @@ class RouteAnalyzer(config: ExpConfig) extends Experiment(config) {
     output.println((score.toList ++ List(scenario.agents.size, trip_time)).mkString(","))
   }
 
-  private def score_path(path: List[DirectedRoad], demand: Demand) =
+  private def score_path(path: List[Road], demand: Demand) =
     path
       .map(step => RouteFeatures.for_step(step, demand))
       .fold(RouteFeatures.BLANK)((a, b) => a + b)

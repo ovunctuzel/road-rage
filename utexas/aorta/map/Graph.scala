@@ -7,10 +7,10 @@ package utexas.aorta.map
 import scala.collection.mutable
 
 import utexas.aorta.map.make.MapStateWriter
-import utexas.aorta.common.{Util, StateReader, VertexID, EdgeID, DirectedRoadID}
+import utexas.aorta.common.{Util, StateReader, VertexID, EdgeID, RoadID}
 
 class Graph(
-  val directed_roads: Array[DirectedRoad], val edges: Array[Edge], val vertices: Array[Vertex],
+  val roads: Array[Road], val edges: Array[Edge], val vertices: Array[Vertex],
   val width: Double, val height: Double, val offX: Double, val offY: Double,
   val scale: Double, val name: String
 ) extends GraphLike
@@ -34,8 +34,8 @@ class Graph(
     w.double(offX)
     w.double(offY)
     w.double(scale)
-    w.int(directed_roads.size)
-    directed_roads.foreach(r => r.serialize(w))
+    w.int(roads.size)
+    roads.foreach(r => r.serialize(w))
     w.int(edges.size)
     edges.foreach(e => e.serialize(w))
     w.int(vertices.size)
@@ -54,7 +54,7 @@ class Graph(
 
   override def get_v(id: VertexID) = vertices(id.int)
   override def get_e(id: EdgeID) = edges(id.int)
-  override def get_dr(id: DirectedRoadID) = directed_roads(id.int)
+  override def get_r(id: RoadID) = roads(id.int)
 
   // TODO file library
   def basename = name.replace("maps/", "").replace(".map", "")
@@ -102,7 +102,7 @@ object Graph {
     val s = r.double
     set_params(w, h, xo, yo, s)
     val g = new Graph(
-      Range(0, r.int).map(_ => DirectedRoad.unserialize(r)).toArray,
+      Range(0, r.int).map(_ => Road.unserialize(r)).toArray,
       Range(0, r.int).map(_ => Edge.unserialize(r)).toArray,
       Range(0, r.int).map(_ => Vertex.unserialize(r)).toArray,
       w, h, xo, yo, s, r.string
@@ -112,7 +112,7 @@ object Graph {
       t.setup(g)
     }
     // Do roads last; they depend on edges. TODO no, just vertices. important?
-    g.directed_roads.foreach(r => r.setup(g))
+    g.roads.foreach(r => r.setup(g))
     g.setup()
     return g
   }
@@ -122,5 +122,5 @@ object Graph {
 abstract class GraphLike {
   def get_v(id: VertexID): Vertex
   def get_e(id: EdgeID): Edge
-  def get_dr(id: DirectedRoadID): DirectedRoad
+  def get_r(id: RoadID): Road
 }

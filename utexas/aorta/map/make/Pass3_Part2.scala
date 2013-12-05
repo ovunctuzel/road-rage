@@ -6,19 +6,19 @@ package utexas.aorta.map.make
 
 import scala.collection.mutable
 
-import utexas.aorta.map.{Edge, Vertex, Turn, Line, DirectedRoad}
+import utexas.aorta.map.{Edge, Vertex, Turn, Line, Road}
 
-import utexas.aorta.common.{Util, cfg, TurnID, DirectedRoadID}
+import utexas.aorta.common.{Util, cfg, TurnID, RoadID}
 
 class Pass3_Part2(graph: PreGraph3) {
-  val roads_per_vert = new mutable.HashMap[Vertex, mutable.Set[DirectedRoad]] with mutable.MultiMap[Vertex, DirectedRoad]
+  val roads_per_vert = new mutable.HashMap[Vertex, mutable.Set[Road]] with mutable.MultiMap[Vertex, Road]
   var turn_cnt = -1
 
   def run() {
     Util.log("Connecting the dots...")
-    for (dr <- graph.directed_roads) {
-      roads_per_vert.addBinding(dr.v1, dr)
-      roads_per_vert.addBinding(dr.v2, dr)
+    for (r <- graph.roads) {
+      roads_per_vert.addBinding(r.v1, r)
+      roads_per_vert.addBinding(r.v2, r)
     }
     Util.log_push()
     // TODO return the mapping in the future?
@@ -35,7 +35,7 @@ class Pass3_Part2(graph: PreGraph3) {
   }
 
   // fill out an intersection with turns
-  private def connect_vertex(v: Vertex, roads: mutable.Set[DirectedRoad]) = {
+  private def connect_vertex(v: Vertex, roads: mutable.Set[Road]) = {
     // TODO return the turns or something so we can more efficiently set them
     // TODO cfg
     val cross_thresshold = math.Pi / 10 // allow 18 degrees
@@ -55,7 +55,7 @@ class Pass3_Part2(graph: PreGraph3) {
     val outgoing_roads = roads.filter(_.outgoing_lanes(v).nonEmpty).toList.sortBy(_.id.int)
 
     // Only have to test one side
-    def bad_uturn(r1: DirectedRoad, r2: DirectedRoad) = r1.other_side match {
+    def bad_uturn(r1: Road, r2: Road) = r1.other_side match {
       // Only allow this if this intersection only has these two roads
       case Some(other) if other == r2 => !(incoming_roads.size == 1 && outgoing_roads.size == 1)
       case _ => false

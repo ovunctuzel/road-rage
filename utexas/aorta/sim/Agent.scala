@@ -245,7 +245,7 @@ class Agent(
             ticket.intersection.exit(ticket)
           }
         }
-        //Util.assert_eq(at.on.asInstanceOf[Edge].directed_road, route.goal)
+        //Util.assert_eq(at.on.asInstanceOf[Edge].road, route.goal)
         // Trust behavior, don't abuse this.
         // (Plus, it doesn't hold for RouteAnalyzer vehicles...)
         Util.assert_eq(speed, 0.0)
@@ -416,7 +416,7 @@ class Agent(
   private def safe_to_lc(target: Edge): Boolean = {
     at.on match {
       case e: Edge => {
-        if (e.directed_road != target.directed_road) {
+        if (e.road != target.road) {
           throw new Exception(this + " wants to lane-change across roads")
         }
         if (math.abs(target.lane_num - e.lane_num) != 1) {

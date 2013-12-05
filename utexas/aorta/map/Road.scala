@@ -10,23 +10,23 @@ import Function.tupled
 import utexas.aorta.map.make.MapStateWriter
 import utexas.aorta.ui.Renderable
 import utexas.aorta.sim.LinkAuditor
-import utexas.aorta.common.{Util, DirectedRoadID, VertexID, Physics, StateReader}
+import utexas.aorta.common.{Util, RoadID, VertexID, Physics, StateReader}
 
 // TODO cleanup everything here after the port to road-less...
 
 // Represent a group of directed edges on one road
 // TODO var id because things get chopped up
-class DirectedRoad(
-  var id: DirectedRoadID, val dir: Direction.Value, val length: Double, val name: String,
+class Road(
+  var id: RoadID, val dir: Direction.Value, val length: Double, val name: String,
   val road_type: String, val osm_id: String, v1_id: VertexID, v2_id: VertexID,
   val points: Array[Coordinate]
-) extends Ordered[DirectedRoad] with Renderable
+) extends Ordered[Road] with Renderable
 {
   var v1: Vertex = null
   var v2: Vertex = null
   val lanes = new mutable.ListBuffer[Edge]()
 
-  var other_side: Option[DirectedRoad] = None
+  var other_side: Option[Road] = None
   // Nil if there aren't any
   def incoming_lanes(v: Vertex) = if (v == v2) lanes else Nil
   def outgoing_lanes(v: Vertex) = if (v == v1) lanes else Nil
@@ -97,7 +97,7 @@ class DirectedRoad(
   }
 
   override def toString = "%s's %s lanes (DR %s)".format(name, dir, id)
-  override def compare(other: DirectedRoad) = id.int.compare(other.id.int)
+  override def compare(other: Road) = id.int.compare(other.id.int)
 
   def edges = lanes
   def rightmost = edges.head
@@ -111,16 +111,16 @@ class DirectedRoad(
   // TODO dont assume some edge being lane-changeable means others are too
   // TODO could even predict/take into account the current distance to see if
   // there's room left
-  def naive_leads_to = edges.flatMap(_.succs).map(_.directed_road).toSet
+  def naive_leads_to = edges.flatMap(_.succs).map(_.road).toSet
   def leads_to(from: Edge) = if (from.ok_to_lanechange)
                                naive_leads_to
                              else
-                               from.succs.map(_.directed_road).toSet
+                               from.succs.map(_.road).toSet
 
   def freeflow_time = length / speed_limit
 
-  def succs = edges.flatMap(e => e.next_turns.map(t => t.to.directed_road))
-  def preds = edges.flatMap(e => e.prev_turns.map(t => t.from.directed_road))
+  def succs = edges.flatMap(e => e.next_turns.map(t => t.to.road))
+  def preds = edges.flatMap(e => e.prev_turns.map(t => t.from.road))
 
   def next_roads = edges.flatMap(e => e.next_roads).toSet
 
@@ -145,10 +145,10 @@ class DirectedRoad(
   def is_major = road_type != "residential"
 }
 
-object DirectedRoad {
-  def unserialize(r: StateReader): DirectedRoad = {
-    val road = new DirectedRoad(
-      new DirectedRoadID(r.int), Direction(r.int), r.double, r.string, r.string, r.string,
+object Road {
+  def unserialize(r: StateReader): Road = {
+    val road = new Road(
+      new RoadID(r.int), Direction(r.int), r.double, r.string, r.string, r.string,
       new VertexID(r.int), new VertexID(r.int),
       Range(0, r.int).map(_ => Coordinate.unserialize(r)).toArray
     )

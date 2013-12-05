@@ -28,7 +28,7 @@ object MapSuite {
 
   // Make sure things aren't empty
   def check_emptiness(g: Graph) {
-    for (r <- g.directed_roads) {
+    for (r <- g.roads) {
       if (r.edges.isEmpty) {
         oops(s"$r has no lanes")
       }
@@ -100,7 +100,7 @@ object MapSuite {
     for (e <- g.edges) {
       // TODO cul-de-sacs? edges might be a bit shorter than roads?
       if (e.length <= cfg.min_road_len || e.length.isNaN) {
-        oops(s"$e has length ${e.length}. The road has length ${e.directed_road.length}")
+        oops(s"$e has length ${e.length}. The road has length ${e.road.length}")
       }
     }
 

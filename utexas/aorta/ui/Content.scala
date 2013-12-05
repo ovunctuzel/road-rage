@@ -9,7 +9,7 @@ import java.awt.Color
 import java.awt.geom.{Line2D, Rectangle2D}
 import scala.collection.mutable
 
-import utexas.aorta.map.{Coordinate, Edge, Line, Vertex, Zone, DirectedRoad, Direction}
+import utexas.aorta.map.{Coordinate, Edge, Line, Vertex, Zone, Road, Direction}
 import utexas.aorta.sim.Agent
 
 import utexas.aorta.common.{cfg, RNG, Common}
@@ -110,13 +110,13 @@ object ZoneColor {
   }
 }
 
-class DrawDirectedRoad(val dr: DirectedRoad, state: GuiState) {
-  val edges = dr.edges.map(e => new DrawEdge(e, state))
+class DrawRoad(val r: Road, state: GuiState) {
+  val edges = r.edges.map(e => new DrawEdge(e, state))
 
-  val lines = dr.lines.map(l => new Line2D.Double(l.x1, l.y1, l.x2, l.y2))
+  val lines = r.lines.map(l => new Line2D.Double(l.x1, l.y1, l.x2, l.y2))
   // Use the positive direction to render the yellow center line
-  val center_lines = if (dr.dir == Direction.POS)
-    dr.points.zip(dr.points.tail).map(
+  val center_lines = if (r.dir == Direction.POS)
+    r.points.zip(r.points.tail).map(
       pair => new Line2D.Double(pair._1.x, pair._1.y, pair._2.x, pair._2.y)
     )
   else
@@ -126,7 +126,7 @@ class DrawDirectedRoad(val dr: DirectedRoad, state: GuiState) {
 
   def render_road() {
     // TODO still fatten roads in route_members when we're zoomed out?
-    state.g2d.setStroke(GeomFactory.strokes(dr.num_lanes))
+    state.g2d.setStroke(GeomFactory.strokes(r.num_lanes))
     state.g2d.setColor(color)
     lines.foreach(l => state.g2d.draw(l))
   }
@@ -140,31 +140,31 @@ class DrawDirectedRoad(val dr: DirectedRoad, state: GuiState) {
 
   def render_buildings() {
     state.g2d.setColor(Color.GREEN)
-    for (bldg <- dr.shops) {
+    for (bldg <- r.shops) {
       state.g2d.draw(state.bubble(bldg))
     }
     // TODO rectangles? triangles?
     state.g2d.setColor(Color.BLACK)
-    for (bldg <- dr.houses) {
+    for (bldg <- r.houses) {
       state.g2d.draw(state.bubble(bldg))
     }
   }
 
   private def color(): Color =
-    if (state.chosen_road.getOrElse(null) == dr)
+    if (state.chosen_road.getOrElse(null) == r)
       cfg.chosen_road_color
-    else if (state.route_members.contains(dr))
-      state.route_members.color(dr).get
-    else if (state.polygon_roads1(dr))
+    else if (state.route_members.contains(r))
+      state.route_members.color(r).get
+    else if (state.polygon_roads1(r))
       cfg.src_polygon_color
-    else if (state.polygon_roads2(dr))
+    else if (state.polygon_roads2(r))
       cfg.dst_polygon_color
-    else if (dr.doomed)
+    else if (r.doomed)
       Color.RED
     else
       state.highlight_type match {
-        case (Some(x)) if x == dr.road_type => Color.GREEN
-        case _ if state.show_zone_colors => ZoneColor.color(Common.sim.graph.zones(dr))
+        case (Some(x)) if x == r.road_type => Color.GREEN
+        case _ if state.show_zone_colors => ZoneColor.color(Common.sim.graph.zones(r))
         case _ => Color.BLACK
       }
 }

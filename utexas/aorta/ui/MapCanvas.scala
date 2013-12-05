@@ -18,7 +18,7 @@ import utexas.aorta.sim.{Simulation, Agent, EV_Signal_Change, EV_Transition, EV_
 import utexas.aorta.sim.make.{IntersectionType, RouteType}
 import utexas.aorta.sim.PathRoute
 
-import utexas.aorta.common.{Util, RNG, Common, cfg, EdgeID, VertexID, DirectedRoadID}
+import utexas.aorta.common.{Util, RNG, Common, cfg, EdgeID, VertexID, RoadID}
 
 object Mode extends Enumeration {
   type Mode = Value
@@ -28,20 +28,20 @@ object Mode extends Enumeration {
 }
 
 class ColorMap() {
-  private val route_members = new mutable.HashMap[Color, Set[DirectedRoad]]()
+  private val route_members = new mutable.HashMap[Color, Set[Road]]()
 
   def clear() {
     route_members.clear()
   }
-  def set(color: Color, roads: Set[DirectedRoad]) {
+  def set(color: Color, roads: Set[Road]) {
     route_members(color) = roads
   }
-  def remove(color: Color, road: DirectedRoad) {
+  def remove(color: Color, road: Road) {
     route_members(color) -= road
   }
-  def color(road: DirectedRoad): Option[Color] =
+  def color(road: Road): Option[Color] =
     route_members.keys.find(color => route_members(color).contains(road))
-  def contains(road: DirectedRoad) = color(road).isDefined
+  def contains(road: Road) = color(road).isDefined
 }
 
 // Cleanly separates GUI state from users of it
@@ -58,10 +58,10 @@ class GuiState(val canvas: MapCanvas) {
   var current_obj: Option[Renderable] = None
   var camera_agent: Option[Agent] = None
   val route_members = new ColorMap()
-  var chosen_road: Option[DirectedRoad] = None
+  var chosen_road: Option[Road] = None
   var highlight_type: Option[String] = None
-  var polygon_roads1: Set[DirectedRoad] = Set()
-  var polygon_roads2: Set[DirectedRoad] = Set()
+  var polygon_roads1: Set[Road] = Set()
+  var polygon_roads2: Set[Road] = Set()
   var chosen_edge1: Option[Edge] = None
   var chosen_edge2: Option[Edge] = None
   var show_zone_colors = false
@@ -115,8 +115,8 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
     driver_renderers.put(a.id, new DrawDriver(a, state))
   }
 
-  private val road_renderers = sim.graph.directed_roads.map(r => new DrawDirectedRoad(r, state))
-  private val road_lookup = road_renderers.map(r => r.dr -> r).toMap
+  private val road_renderers = sim.graph.roads.map(r => new DrawRoad(r, state))
+  private val road_lookup = road_renderers.map(r => r.r -> r).toMap
 
   // TODO eventually, GUI should listen to this and manage the gui, not
   // mapcanvas.
@@ -289,7 +289,7 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
           case Some(pos: Position) => {
             val e = pos.on.asInstanceOf[Edge]
             draw_intersection(g2d, e)
-            highlight_buildings(g2d, e.directed_road)
+            highlight_buildings(g2d, e.road)
           }
           case Some(v: Vertex) => {
             for (t <- v.intersection.policy.current_greens) {
@@ -366,7 +366,7 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
     }
   }
 
-  def highlight_buildings(g2d: Graphics2D, r: DirectedRoad) {
+  def highlight_buildings(g2d: Graphics2D, r: Road) {
     g2d.setColor(Color.RED)
     for (bldg <- r.shops ++ r.houses) {
       g2d.draw(state.bubble(bldg))
@@ -399,7 +399,7 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
           case None => road_renderers.flatMap(r => r.edges).find(e => e.hits(cursor)) match {
             case None => road_renderers.find(r => r.hits(cursor)) match {
               case None => None
-              case Some(r) => Some(r.dr)
+              case Some(r) => Some(r.r)
             }
             case Some(e) => Some(Position(e.edge, e.edge.approx_dist(Coordinate(x, y), 1.0)))
           }
@@ -429,7 +429,7 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
 
       // Let's find all vertices inside the polygon.
       val rds = sim.graph.vertices.filter(
-        v => polygon.contains(v.location.x, v.location.y)).flatMap(v => v.directed_roads
+        v => polygon.contains(v.location.x, v.location.y)).flatMap(v => v.roads
       ).toSet
       Util.log("Matched " + rds.size + " roads")
       if (rds.isEmpty) {
@@ -543,10 +543,10 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
       grab_focus
     }
     case "teleport-road" => {
-      prompt_int("What directed road ID do you seek?") match {
+      prompt_int("What road ID do you seek?") match {
         case Some(id) => {
           try {
-            val r = sim.graph.get_dr(new DirectedRoadID(id.toInt))
+            val r = sim.graph.get_r(new RoadID(id.toInt))
             // TODO center on some part of the road and zoom in, rather than
             // just vaguely moving that way
             Util.log("Here's " + r)
@@ -677,14 +677,14 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
       state.camera_agent match {
         case Some(a) => a.route match {
           case r: PathRoute => {
-            state.route_members.set(cfg.route_member_color, r.directed_roads)
+            state.route_members.set(cfg.route_member_color, r.roads)
             r.listen("UI", _ match {
               case EV_Reroute(path, _, _, _) => {
                 state.route_members.set(cfg.route_member_color, path.toSet)
               }
               case EV_Transition(from, to) => from match {
                 case e: Edge => {
-                  state.route_members.remove(cfg.route_member_color, e.directed_road)
+                  state.route_members.remove(cfg.route_member_color, e.road)
                 }
                 case _ =>
               }
@@ -773,8 +773,8 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
 
   def show_pathfinding() {
     // contract: must be called when current_edge1 and 2 are set
-    val from = state.chosen_edge1.get.directed_road
-    val to = state.chosen_edge2.get.directed_road
+    val from = state.chosen_edge1.get.road
+    val to = state.chosen_edge2.get.road
 
     val timer = Common.timer("Pathfinding")
     // Show each type of route in a different color...

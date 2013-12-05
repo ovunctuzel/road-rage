@@ -4,7 +4,7 @@
 
 package utexas.aorta.sim.make
 
-import utexas.aorta.map.{Graph, Vertex, DirectedRoad}
+import utexas.aorta.map.{Graph, Vertex, Road}
 import utexas.aorta.map.analysis._
 import utexas.aorta.sim._
 import utexas.aorta.sim.policies._
@@ -13,7 +13,7 @@ import utexas.aorta.sim.market._
 import Function.tupled
 import scala.collection.mutable
 
-import utexas.aorta.common.{Util, RNG, StateWriter, StateReader, AgentID, VertexID, DirectedRoadID}
+import utexas.aorta.common.{Util, RNG, StateWriter, StateReader, AgentID, VertexID, RoadID}
 
 // Array index and agent/intersection ID must correspond. Creator's
 // responsibility.
@@ -138,7 +138,7 @@ object Scenario {
 // TODO associate directly with their corresponding class?
 
 case class MkAgent(id: AgentID, birth_tick: Double, seed: Long,
-                   start: DirectedRoadID, start_dist: Double, route: MkRoute,
+                   start: RoadID, start_dist: Double, route: MkRoute,
                    wallet: MkWallet) extends Ordered[MkAgent]
 {
   // break ties by ID
@@ -180,7 +180,7 @@ case class MkAgent(id: AgentID, birth_tick: Double, seed: Long,
 
 object MkAgent {
   def unserialize(r: StateReader) = MkAgent(
-    new AgentID(r.int), r.double, r.long, new DirectedRoadID(r.int), r.double,
+    new AgentID(r.int), r.double, r.long, new RoadID(r.int), r.double,
     MkRoute.unserialize(r), MkWallet.unserialize(r)
   )
 }
@@ -188,11 +188,11 @@ object MkAgent {
 // orig_router, rerouter, and initial_path are only for strategy = Path
 case class MkRoute(
   strategy: RouteType.Value, orig_router: RouterType.Value, rerouter: RouterType.Value,
-  initial_path: List[DirectedRoadID], goal: DirectedRoadID, seed: Long
+  initial_path: List[RoadID], goal: RoadID, seed: Long
 ) {
   def make(sim: Simulation) = Factory.make_route(
-    strategy, sim.graph, orig_router, rerouter, sim.graph.get_dr(goal), new RNG(seed),
-    initial_path.map(id => sim.graph.get_dr(id))
+    strategy, sim.graph, orig_router, rerouter, sim.graph.get_r(goal), new RNG(seed),
+    initial_path.map(id => sim.graph.get_r(id))
   )
 
   def serialize(w: StateWriter) {
@@ -209,7 +209,7 @@ case class MkRoute(
 object MkRoute {
   def unserialize(r: StateReader) = MkRoute(
     RouteType(r.int), RouterType(r.int), RouterType(r.int),
-    Range(0, r.int).map(_ => new DirectedRoadID(r.int)).toList, new DirectedRoadID(r.int), r.long
+    Range(0, r.int).map(_ => new RoadID(r.int)).toList, new RoadID(r.int), r.long
   )
 }
 
@@ -333,14 +333,14 @@ object Factory {
 
   def make_route(
     enum: RouteType.Value, graph: Graph, orig_router: RouterType.Value, rerouter: RouterType.Value,
-    goal: DirectedRoad, rng: RNG, initial_path: List[DirectedRoad]
+    goal: Road, rng: RNG, initial_path: List[Road]
   ) = enum match {
     case RouteType.Path => new PathRoute(
       goal, make_router(orig_router, graph, initial_path), make_router(rerouter, graph, Nil), rng
     )
   }
 
-  def make_router(enum: RouterType.Value, graph: Graph, initial_path: List[DirectedRoad])
+  def make_router(enum: RouterType.Value, graph: Graph, initial_path: List[Road])
   = enum match {
     case RouterType.Congestion => new CongestionRouter(graph)
     case RouterType.Fixed => new FixedRouter(graph, initial_path)

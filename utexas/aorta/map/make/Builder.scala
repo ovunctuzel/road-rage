@@ -5,7 +5,7 @@
 package utexas.aorta.map.make
 
 import utexas.aorta.map.Graph
-import utexas.aorta.common.{Util, EdgeID, VertexID, TurnID, DirectedRoadID, BinaryStateWriter}
+import utexas.aorta.common.{Util, EdgeID, VertexID, TurnID, RoadID, BinaryStateWriter}
 
 import scala.collection.mutable
 
@@ -45,12 +45,12 @@ object Builder {
     bldgs.group(graph3)
 
     val graph = new Graph(
-      graph3.directed_roads.toArray, graph3.edges.toArray, graph3.vertices.toArray,
+      graph3.roads.toArray, graph3.edges.toArray, graph3.vertices.toArray,
       graph1.width, graph1.height, graph1.offX, graph1.offY, graph1.scale,
       input.replace(".osm", "").replace("osm/", "")
     )
     Util.log(
-      s"Dumping map with ${graph3.directed_roads.length} roads, ${graph3.edges.length}" +
+      s"Dumping map with ${graph3.roads.length} roads, ${graph3.edges.length}" +
       s" edges, and ${graph3.vertices.length} vertices"
     )
     Util.mkdir("maps")
@@ -68,8 +68,8 @@ object Builder {
     val vertices = (for ((v, id) <- graph.vertices.zipWithIndex)
       yield v.id -> new VertexID(id)
     ).toMap
-    val roads = (for ((r, id) <- graph.directed_roads.zipWithIndex)
-      yield r.id -> new DirectedRoadID(id)
+    val roads = (for ((r, id) <- graph.roads.zipWithIndex)
+      yield r.id -> new RoadID(id)
     ).toMap
 
     return new MapStateWriter(fn, edges, vertices, roads)
@@ -81,6 +81,6 @@ object Builder {
 // TODO ideally, have methods for each type of id, and override them.
 class MapStateWriter(
   fn: String, val edges: Map[EdgeID, EdgeID], val vertices: Map[VertexID, VertexID],
-  val roads: Map[DirectedRoadID, DirectedRoadID]
+  val roads: Map[RoadID, RoadID]
 ) extends BinaryStateWriter(fn)
 // TODO make turn IDs contig too

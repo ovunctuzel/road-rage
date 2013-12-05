@@ -6,13 +6,13 @@ package utexas.aorta.analysis
 
 import utexas.aorta.sim.make.{MkIntersection, RouteType, WalletType}
 
-import utexas.aorta.common.{AgentID, VertexID, DirectedRoadID, Util}
+import utexas.aorta.common.{AgentID, VertexID, RoadID, Util}
 
 trait Measurement
 
 // Summarizes an agent's lifetime
 case class Agent_Lifetime_Stat(
-  id: AgentID, birth_tick: Double, start: DirectedRoadID, end: DirectedRoadID,
+  id: AgentID, birth_tick: Double, start: RoadID, end: RoadID,
   route: RouteType.Value, wallet: WalletType.Value, start_budget: Int,
   end_tick: Double, end_budget: Int, priority: Int, finished: Boolean
 ) extends Measurement
