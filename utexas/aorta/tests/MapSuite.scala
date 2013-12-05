@@ -29,7 +29,7 @@ object MapSuite {
   // Make sure things aren't empty
   def check_emptiness(g: Graph) {
     for (r <- g.roads) {
-      if (r.edges.isEmpty) {
+      if (r.lanes.isEmpty) {
         oops(s"$r has no lanes")
       }
     }

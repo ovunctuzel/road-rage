@@ -12,28 +12,27 @@ import utexas.aorta.ui.Renderable
 import utexas.aorta.sim.LinkAuditor
 import utexas.aorta.common.{Util, RoadID, VertexID, Physics, StateReader}
 
-// TODO cleanup everything here after the port to road-less...
-
-// Represent a group of directed edges on one road
-// TODO var id because things get chopped up
+// An oriented bundle of lanes
 class Road(
-  var id: RoadID, val dir: Direction.Value, val length: Double, val name: String,
+  val id: RoadID, val dir: Direction.Value, val length: Double, val name: String,
   val road_type: String, val osm_id: String, v1_id: VertexID, v2_id: VertexID,
   val points: Array[Coordinate]
 ) extends Ordered[Road] with Renderable
 {
+  //////////////////////////////////////////////////////////////////////////////
+  // State
+
   var v1: Vertex = null
   var v2: Vertex = null
   val lanes = new mutable.ListBuffer[Edge]()
-
   var other_side: Option[Road] = None
-  // Nil if there aren't any
-  def incoming_lanes(v: Vertex) = if (v == v2) lanes else Nil
-  def outgoing_lanes(v: Vertex) = if (v == v1) lanes else Nil
 
   // TODO lets figure out how to build immutable stuff.
   val houses = new mutable.ListBuffer[Coordinate]()
   val shops = new mutable.ListBuffer[Coordinate]()
+
+  //////////////////////////////////////////////////////////////////////////////
+  // Deterministic state
 
   // TODO like queues for traversables and intersections for vertices... bad dependency to have.
   val auditor = new LinkAuditor(this)
@@ -68,6 +67,8 @@ class Road(
     case _                => 35 // Generally a safe speed, right?
   })
 
+  //////////////////////////////////////////////////////////////////////////////
+  // Meta
 
   def serialize(w: MapStateWriter) {
     w.int(w.roads(id).int)
@@ -96,22 +97,26 @@ class Road(
     //Util.assert_eq(v2.location, points.last)
   }
 
+  //////////////////////////////////////////////////////////////////////////////
+  // Queries
+
   override def toString = "%s's %s lanes (DR %s)".format(name, dir, id)
   override def compare(other: Road) = id.int.compare(other.id.int)
 
-  def edges = lanes
-  def rightmost = edges.head
+  def incoming_lanes(v: Vertex) = if (v == v2) lanes else Nil
+  def outgoing_lanes(v: Vertex) = if (v == v1) lanes else Nil
 
-  // TODO just rename em?
+  def rightmost = lanes.head
+
   def from = v1
   def to = v2
 
-  def start_pt = edges.head.from.location
-  def end_pt = edges.head.to.location
+  def start_pt = rightmost.from.location
+  def end_pt = rightmost.to.location
   // TODO dont assume some edge being lane-changeable means others are too
   // TODO could even predict/take into account the current distance to see if
   // there's room left
-  def naive_leads_to = edges.flatMap(_.succs).map(_.road).toSet
+  def naive_leads_to = lanes.flatMap(_.succs).map(_.road).toSet
   def leads_to(from: Edge) = if (from.ok_to_lanechange)
                                naive_leads_to
                              else
@@ -119,18 +124,16 @@ class Road(
 
   def freeflow_time = length / speed_limit
 
-  def succs = edges.flatMap(e => e.next_turns.map(t => t.to.road))
-  def preds = edges.flatMap(e => e.prev_turns.map(t => t.from.road))
+  def succs = lanes.flatMap(e => e.next_turns.map(t => t.to.road))
+  def preds = lanes.flatMap(e => e.prev_turns.map(t => t.from.road))
+  def next_roads = lanes.flatMap(e => e.next_roads).toSet
 
-  def next_roads = edges.flatMap(e => e.next_roads).toSet
-
-  /////////// TODO tmpish stuff that'll get moved for real from Road to here.
   def lines = points.zip(points.tail).map(p => shift_line(p))
 
   // For debug only
-  def doomed = edges.exists(e => e.doomed)
+  def doomed = lanes.exists(e => e.doomed)
 
-  def num_lanes = edges.size
+  def num_lanes = lanes.size
 
   override def debug() {
     Util.log(this + " is a " + road_type + " of length " + length + " meters")

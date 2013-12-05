@@ -44,7 +44,7 @@ case class Zone(roads: Set[Road]) extends Renderable {
   val ports = roads.filter(r => r.succs.exists(succ => !roads.contains(succ)))
 
   private def compute_center(): Coordinate = {
-    val pts = roads.map(r => r.edges.head.approx_midpt)
+    val pts = roads.map(r => r.rightmost.approx_midpt)
     val avg_x = pts.map(_.x).sum / roads.size
     val avg_y = pts.map(_.y).sum / roads.size
     return new Coordinate(avg_x, avg_y)

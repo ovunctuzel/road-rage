@@ -56,7 +56,7 @@ object RouteFeatures {
       total_avg_waiting_time = step.to.intersection.average_waiting_time,
       road_demand = demand.road(step.id).toDouble,
       intersection_demand = demand.intersection(step.to.id).toDouble,
-      agents_enroute = step.edges.map(_.queue.agents.size).sum
+      agents_enroute = step.lanes.map(_.queue.agents.size).sum
     )
   }
 }

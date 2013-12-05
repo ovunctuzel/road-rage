@@ -13,11 +13,11 @@ import utexas.aorta.common.{cfg, Common, Util, Price}
 class LinkAuditor(val r: Road) extends CongestionMeasure with CurrentCongestion {
   // TODO need to savestate.
   // TODO do different congestion policies based on scenarios, or cfg
-  override def congested_now = r.edges.exists(e => e.queue.is_congested)
+  override def congested_now = r.lanes.exists(e => e.queue.is_congested)
 
   // Worst-case of any constituent lanes
-  def freeflow_capacity = r.edges.map(_.queue.freeflow_capacity).min
-  def freeflow_percent_full = r.edges.map(_.queue.percent_freeflow_full).max
+  def freeflow_capacity = r.lanes.map(_.queue.freeflow_capacity).min
+  def freeflow_percent_full = r.lanes.map(_.queue.percent_freeflow_full).max
 
   // Free until 50% freeflow capacity, then $1 per % full. Should range from $0-$50 until
   // congestion.

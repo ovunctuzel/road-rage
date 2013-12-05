@@ -111,7 +111,7 @@ object ZoneColor {
 }
 
 class DrawRoad(val r: Road, state: GuiState) {
-  val edges = r.edges.map(e => new DrawEdge(e, state))
+  val edges = r.lanes.map(e => new DrawEdge(e, state))
 
   val lines = r.lines.map(l => new Line2D.Double(l.x1, l.y1, l.x2, l.y2))
   // Use the positive direction to render the yellow center line

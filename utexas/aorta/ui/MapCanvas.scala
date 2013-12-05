@@ -442,8 +442,8 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
           state.polygon_roads2 = rds
 
           prompt_generator(
-            state.polygon_roads1.toList.flatMap(_.edges),
-            state.polygon_roads2.toList.flatMap(_.edges)
+            state.polygon_roads1.toList.flatMap(_.lanes),
+            state.polygon_roads2.toList.flatMap(_.lanes)
           )
 
           // Make the keyboard work again
@@ -550,7 +550,7 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
             // TODO center on some part of the road and zoom in, rather than
             // just vaguely moving that way
             Util.log("Here's " + r)
-            center_on(r.edges.head.approx_midpt)
+            center_on(r.rightmost.approx_midpt)
             state.chosen_road = Some(r)
             repaint
           } catch {

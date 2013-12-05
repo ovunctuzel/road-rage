@@ -264,12 +264,12 @@ class PathRoute(goal: Road, orig_router: Router, private var rerouter: Router, r
   private def best_turn(e: Edge, dest: Road, next_dest: Road): Turn = {
     val ideal_lanes =
       if (next_dest != null)
-        candidate_lanes(dest.edges.head, next_dest)
+        candidate_lanes(dest.rightmost, next_dest)
       else
-        dest.edges.toList
+        dest.lanes.toList
     def ideal_dist(e: Edge) =
       ideal_lanes.map(ideal => math.abs(e.lane_num - ideal.lane_num)).min
-    val total = dest.edges.size
+    val total = dest.lanes.size
     def ranking(t: Turn) =
       if (t.to.road != dest)
         -1

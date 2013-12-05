@@ -71,7 +71,7 @@ object Debug {
   private def calc_capacity(sim: Simulation) = {
     var capacity = 0
     for (r <- sim.graph.roads) {
-      for (e <- r.edges) {
+      for (e <- r.lanes) {
         capacity += e.queue.capacity
       }
     }

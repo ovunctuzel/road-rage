@@ -32,7 +32,7 @@ class Edge(
 
   def setup(g: GraphLike) {
     road = g.get_r(road_id)
-    road.edges += this
+    road.lanes += this
   }
 
   //////////////////////////////////////////////////////////////////////////////
@@ -50,7 +50,7 @@ class Edge(
   def turns_leading_to(group: Road) =
     next_turns.filter(t => t.to.road == group)
 
-  def other_lanes = road.edges
+  def other_lanes = road.lanes
   def rightmost_lane = other_lanes.head
   def leftmost_lane  = other_lanes.last
 
