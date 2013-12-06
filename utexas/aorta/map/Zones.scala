@@ -29,8 +29,7 @@ class ZoneMap(graph: Graph) {
   def zone_path(start: Zone, goal: Zone) = AStar.path(
     start, goal, (step: Zone) => links(step),
     (_: Zone, next: Zone, _: (Double, Double)) => (next.freeflow_time, 0),
-    (state: Zone, goal: Zone) => (state.center.dist_to(goal.center), 0),
-    (a: (Double, Double), b: (Double, Double)) => (a._1 + b._1, a._2 + b._2)
+    (state: Zone, goal: Zone) => (state.center.dist_to(goal.center), 0)
   )
 
   def router = new Router(graph) {
@@ -46,11 +45,14 @@ class ZoneMap(graph: Graph) {
 
 class Zone(val id: ZoneID, val roads: Set[Road]) extends Renderable {
   val center = compute_center
-  // Member roads that have successors outside the set. Members shared with other zones aren't
-  // included.
-  val ports: Set[Road] = roads.filter(r => r.succs.exists(succ => !roads.contains(succ)))
 
   override def toString = s"Z$id"
+
+  // Member roads that have successors outside the set. Members shared with other zones aren't
+  // included.
+  def ports: Set[Road] = roads.filter(r => r.succs.exists(succ => !roads.contains(succ)))
+
+  def freeflow_time = 1.0 // TODO how to define the approx time to cross this zone?
 
   private def compute_center(): Coordinate = {
     val pts = roads.map(r => r.rightmost.approx_midpt)
@@ -62,8 +64,6 @@ class Zone(val id: ZoneID, val roads: Set[Road]) extends Renderable {
   override def debug() {
     Util.log(s"Zone with ${roads.size} roads and ${ports.size} ports")
   }
-
-  def freeflow_time = 1.0 // TODO how to define the approx time to cross this zone?
 }
 
 object ZoneMap {
@@ -85,13 +85,10 @@ object ZoneMap {
     while (open.nonEmpty) {
       Util.log(s"  ${open.size} roads left to process")
       val base = open.head
-      // TODO need an easier way to call this beast!
       val path = AStar.path(
         base, base, (step: Road) => step.succs,
-        // TODO still try to discourage overlap here? try it out!
         (_: Road, next: Road, _: (Double, Double)) => (next.freeflow_time, 0),
         (state: Road, goal: Road) => (state.end_pt.dist_to(goal.end_pt), 0),
-        (a: (Double, Double), b: (Double, Double)) => (a._1 + b._1, a._2 + b._2),
         allow_cycles = true
       )
       val new_zone = new mutable.HashSet[Road]()

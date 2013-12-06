@@ -14,7 +14,8 @@ object AStar {
     start: T, goal: T, successors: (T) => Iterable[T],
     calc_cost: (T, T, (Double, Double)) => (Double, Double),
     calc_heuristic: (T, T) => (Double, Double),
-    add_cost: ((Double, Double), (Double, Double)) => (Double, Double),
+    add_cost: ((Double, Double), (Double, Double)) => (Double, Double) =
+      (a: (Double, Double), b: (Double, Double)) => (a._1 + b._1, a._2 + b._2),
     allow_cycles: Boolean = false
   ): List[T] = {
     if (start == goal && !allow_cycles) {
