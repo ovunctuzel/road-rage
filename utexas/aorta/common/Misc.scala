@@ -238,6 +238,9 @@ class EdgeID(val int: Int) extends AnyVal {
 class RoadID(val int: Int) extends AnyVal {
   override def toString = int.toString
 }
+class ZoneID(val int: Int) extends AnyVal {
+  override def toString = int.toString
+}
 class ValueOfTime(val time_per_cost: Double) extends AnyVal {
   override def toString = time_per_cost.toString
   // TODO return Time type
