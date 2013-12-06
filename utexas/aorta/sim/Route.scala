@@ -20,21 +20,12 @@ import utexas.aorta.common.{Util, RNG, Common, cfg, StateWriter, StateReader, Tu
 // Get a client to their goal by any means possible.
 abstract class Route(val goal: Road, rng: RNG) extends ListenerPattern[Route_Event] {
   //////////////////////////////////////////////////////////////////////////////
-  // State
-
-  protected var agent: Agent = null
-
-  //////////////////////////////////////////////////////////////////////////////
   // Meta
 
   def serialize(w: StateWriter) {
     w.int(route_type.id)
     w.int(goal.id.int)
     rng.serialize(w)
-  }
-
-  def setup(a: Agent) {
-    agent = a
   }
 
   protected def unserialize(r: StateReader, graph: Graph) {}
@@ -96,6 +87,7 @@ class PathRoute(goal: Road, orig_router: Router, private var rerouter: Router, r
   //////////////////////////////////////////////////////////////////////////////
   // State
 
+  private var first_time = true
   // Head is the current step. If that step isn't immediately reachable, we have
   // to re-route.
   private var path: List[Road] = Nil
@@ -107,15 +99,12 @@ class PathRoute(goal: Road, orig_router: Router, private var rerouter: Router, r
 
   override def serialize(w: StateWriter) {
     super.serialize(w)
+    w.bool(first_time)
     w.int(rerouter.router_type.id)
     // We can't tell when we last rerouted given less state; store the full
     // path.
-    if (path == null) {
-      w.int(0)
-    } else {
-      w.int(path.size)
-      path.foreach(step => w.int(step.id.int))
-    }
+    w.int(path.size)
+    path.foreach(step => w.int(step.id.int))
     w.int(chosen_turns.size)
     chosen_turns.foreach(tupled((e, t) => {
       w.int(e.id.int)
@@ -126,12 +115,9 @@ class PathRoute(goal: Road, orig_router: Router, private var rerouter: Router, r
   }
 
   override def unserialize(r: StateReader, graph: Graph) {
+    first_time = r.bool
     rerouter = Factory.make_router(RouterType(r.int), graph, Nil)
-    val path_size = r.int
-    // Leave null otherwise
-    if (path_size > 0) {
-      path = Range(0, path_size).map(_ => graph.roads(r.int)).toList
-    }
+    path = Range(0, r.int).map(_ => graph.roads(r.int)).toList
     val chosen_size = r.int
     for (i <- Range(0, chosen_size)) {
       chosen_turns(graph.edges(r.int)) = graph.turns(new TurnID(r.int))
@@ -215,7 +201,9 @@ class PathRoute(goal: Road, orig_router: Router, private var rerouter: Router, r
 
   def pick_final_lane(from: Edge): Edge = {
     // This method is called first, so do the lazy initialization here.
-    if (path.isEmpty) {
+    if (first_time) {
+      Util.assert_eq(path.isEmpty, true)
+      first_time = false
       path = from.road :: orig_router.path(from.road, goal, Common.tick)
       tell_listeners(EV_Reroute(path, true, orig_router.router_type, false))
     }
