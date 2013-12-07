@@ -13,7 +13,7 @@ import utexas.aorta.ui.Renderable
 import utexas.aorta.common.algorithms.AStar
 import utexas.aorta.common.{Util, ZoneID}
 
-class ZoneMap(graph: Graph) {
+class ZoneMap(val graph: Graph) {
   private val mapping: Map[Road, Set[Zone]] = ZoneMap.partition(graph)
   val zones: Set[Zone] = mapping.values.flatten.toSet
   val links: Map[Zone, Set[Zone]] = zones.map(zone => zone -> zone_succs(zone)).toMap
@@ -25,22 +25,6 @@ class ZoneMap(graph: Graph) {
     zone.roads.flatMap(r => mapping(r)) - zone
 
   def apply(r: Road): Set[Zone] = mapping(r)
-
-  def zone_path(start: Zone, goal: Zone) = AStar.path(
-    start, goal, (step: Zone) => links(step),
-    (_: Zone, next: Zone, _: (Double, Double)) => (next.freeflow_time, 0),
-    (state: Zone, goal: Zone) => (state.center.dist_to(goal.center), 0)
-  )
-
-  def router = new Router(graph) {
-    // TODO this router should lazily expand intra-zone steps
-    override def router_type = RouterType.Unusable
-    override def path(from: Road, to: Road, time: Double): List[Road] = {
-      // TODO ooh, how to tell which zone we "start" in?
-      zone_path(mapping(from).head, mapping(to).head)
-      return Nil
-    }
-  }
 }
 
 class Zone(val id: ZoneID, val roads: Set[Road]) extends Renderable {
@@ -114,5 +98,43 @@ object ZoneMap {
       tupled((id, idx) => id -> new Zone(new ZoneID(idx), zone_members(id).toSet))
     ).toMap
     return graph.roads.map(r => r -> road_mapping(r).map(id => zones(id)).toSet).toMap
+  }
+}
+
+// Lazily computes an actual path to get through each zone
+class ZoneRouter(zone_map: ZoneMap) extends Router(zone_map.graph) {
+  override def router_type = RouterType.Unusable
+
+  override def path(from: Road, to: Road, time: Double): List[Road] = {
+    if (mapping(from).intersects(mapping(to))) {
+      // In the same zone! Be normal now.
+      return AStar.path(
+        from, to, (step: Road) => step.succs,
+        // TODO heuristics? congestion?
+        (_: Road, next: Road, _: (Double, Double)) => (next.freeflow_time, 0),
+        (state: Road, goal: Road) => (state.end_pt.dist_to(goal.end_pt), 0)
+      )
+    } else {
+      // TODO ooh, how to tell which zone we "start" in? if we get diff answers on multiple calls,
+      // something bad could happen...
+      // TODO cache zpath?
+      val zpath = zone_path(mapping(from).head, mapping(to).head)
+      // The "next" zone might not be straightforward since roads overlap
+      val target_zone = zpath.find(z => !z.roads.contains(from)).get
+      return intra_zone_path(from, mapping(from).head, target_zone)
+    }
+  }
+
+  // Doesn't include start as the first zone
+  private def zone_path(start: Zone, goal: Zone) = AStar.path(
+    start, goal, (step: Zone) => zone_map.links(step),
+    // TODO some notion of congestion within a zone
+    (_: Zone, next: Zone, _: (Double, Double)) => (next.freeflow_time, 0),
+    (state: Zone, goal: Zone) => (state.center.dist_to(goal.center), 0)
+  )
+
+  private def intra_zone_path(start: Road, from: Zone, to: Zone): List[Road] = {
+    // TODO could be A* if many goal states fine, AND can ban roads outside the zone (with a
+    // penalty, sure...)
   }
 }

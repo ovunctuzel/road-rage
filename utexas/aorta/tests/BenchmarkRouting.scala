@@ -4,6 +4,7 @@
 
 package utexas.aorta.tests
 
+import utexas.aorta.map.ZoneRouter
 import utexas.aorta.map.analysis._
 
 import utexas.aorta.common.{Util, Common, cfg}
@@ -17,7 +18,7 @@ object BenchmarkRouting {
 
     val routers = List(
       (new CongestionRouter(sim.graph), "congestion_a*"),
-      (sim.graph.zones.router, "zone")
+      (new ZoneRouter(sim.graph.zones, "zone_a*"))
     )
     val sum_times = Array.fill[Double](routers.size)(0.0)
 
