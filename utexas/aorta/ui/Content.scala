@@ -125,8 +125,11 @@ class DrawRoad(val r: Road, state: GuiState) {
   def hits(bbox: Rectangle2D.Double) = lines.exists(l => l.intersects(bbox))
 
   def render_road() {
-    // TODO still fatten roads in route_members when we're zoomed out?
-    state.g2d.setStroke(GeomFactory.strokes(r.num_lanes))
+    if (!state.canvas.zoomed_in && state.route_members.contains(r)) {
+      state.g2d.setStroke(GeomFactory.strokes(2 * r.num_lanes))
+    } else {
+      state.g2d.setStroke(GeomFactory.strokes(r.num_lanes))
+    }
     state.g2d.setColor(color)
     lines.foreach(l => state.g2d.draw(l))
   }
