@@ -70,9 +70,9 @@ object ZoneMap {
       Util.log(s"  ${open.size} roads left to process")
       val base = open.head
       val path = AStar.path(
-        base, base, (step: Road) => step.succs,
+        base, Set(base), (step: Road) => step.succs,
         (_: Road, next: Road, _: (Double, Double)) => (next.freeflow_time, 0),
-        (state: Road, goal: Road) => (state.end_pt.dist_to(goal.end_pt), 0),
+        (state: Road) => (state.end_pt.dist_to(base.end_pt), 0),
         allow_cycles = true
       )
       val new_zone = new mutable.HashSet[Road]()
@@ -106,35 +106,38 @@ class ZoneRouter(zone_map: ZoneMap) extends Router(zone_map.graph) {
   override def router_type = RouterType.Unusable
 
   override def path(from: Road, to: Road, time: Double): List[Road] = {
-    if (mapping(from).intersects(mapping(to))) {
+    if (zone_map(from).intersect(zone_map(to)).nonEmpty) {
       // In the same zone! Be normal now.
       return AStar.path(
-        from, to, (step: Road) => step.succs,
+        from, Set(to), (step: Road) => step.succs,
         // TODO heuristics? congestion?
         (_: Road, next: Road, _: (Double, Double)) => (next.freeflow_time, 0),
-        (state: Road, goal: Road) => (state.end_pt.dist_to(goal.end_pt), 0)
+        (state: Road) => (state.end_pt.dist_to(to.end_pt), 0)
       )
     } else {
       // TODO ooh, how to tell which zone we "start" in? if we get diff answers on multiple calls,
       // something bad could happen...
+      val current_zone = zone_map(from).head
       // TODO cache zpath?
-      val zpath = zone_path(mapping(from).head, mapping(to).head)
+      val zpath = zone_path(current_zone, zone_map(to).head)
       // The "next" zone might not be straightforward since roads overlap
       val target_zone = zpath.find(z => !z.roads.contains(from)).get
-      return intra_zone_path(from, mapping(from).head, target_zone)
+      // Route to anywhere in the target zone, but stay in the current zone
+      return AStar.path(
+        from, target_zone.roads, (step: Road) => step.succs,
+        // TODO heuristics? congestion?
+        (_: Road, next: Road, _: (Double, Double)) =>
+          (Util.bool2binary(!current_zone.roads.contains(next)), next.freeflow_time),
+        (state: Road) => (0, state.end_pt.dist_to(target_zone.center))
+      )
     }
   }
 
   // Doesn't include start as the first zone
   private def zone_path(start: Zone, goal: Zone) = AStar.path(
-    start, goal, (step: Zone) => zone_map.links(step),
+    start, Set(goal), (step: Zone) => zone_map.links(step),
     // TODO some notion of congestion within a zone
     (_: Zone, next: Zone, _: (Double, Double)) => (next.freeflow_time, 0),
-    (state: Zone, goal: Zone) => (state.center.dist_to(goal.center), 0)
+    (state: Zone) => (state.center.dist_to(goal.center), 0)
   )
-
-  private def intra_zone_path(start: Road, from: Zone, to: Zone): List[Road] = {
-    // TODO could be A* if many goal states fine, AND can ban roads outside the zone (with a
-    // penalty, sure...)
-  }
 }

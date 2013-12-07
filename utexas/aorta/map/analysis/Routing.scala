@@ -40,7 +40,7 @@ class FixedRouter(graph: Graph, path: List[Road]) extends Router(graph) {
 // Score is a pair of doubles
 // TODO dont operate on graph particularly, do anything with successor fxn and cost fxn...
 abstract class AbstractPairAstarRouter(graph: Graph) extends Router(graph) {
-  def calc_heuristic(state: Road, goal: Road): (Double, Double)
+  def heuristic_factory(goal: Road): (Road) => (Double, Double)
   def cost_step(
     prev: Road, next: Road, cost_sofar: (Double, Double)
   ): (Double, Double)
@@ -48,14 +48,14 @@ abstract class AbstractPairAstarRouter(graph: Graph) extends Router(graph) {
   protected def add_cost(a: (Double, Double), b: (Double, Double)) = (a._1 + b._1, a._2 + b._2)
 
   override def path(from: Road, to: Road, time: Double) = AStar.path(
-    from, to, (step: Road) => step.succs, cost_step, calc_heuristic, add_cost
+    from, Set(to), (step: Road) => step.succs, cost_step, heuristic_factory(to), add_cost
   )
 }
 
 // No guess for cost, straight-line distance at 1m/s for freeflow time
 trait SimpleHeuristic extends AbstractPairAstarRouter {
-  override def calc_heuristic(state: Road, goal: Road) =
-    (0.0, state.end_pt.dist_to(goal.end_pt))  // TODO divided by some speed limit?
+  override def heuristic_factory(goal: Road) =
+    (state: Road) => (0.0, state.end_pt.dist_to(goal.end_pt))  // TODO divided by some speed limit?
   // Alternate heuristics explore MUCH less states, but the oracles are too
   // pricy. (CH, Dijkstra table of distances)
 }

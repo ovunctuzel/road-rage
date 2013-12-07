@@ -18,7 +18,7 @@ object BenchmarkRouting {
 
     val routers = List(
       (new CongestionRouter(sim.graph), "congestion_a*"),
-      (new ZoneRouter(sim.graph.zones, "zone_a*"))
+      (new ZoneRouter(sim.graph.zones), "zone_a*")
     )
     val sum_times = Array.fill[Double](routers.size)(0.0)
 

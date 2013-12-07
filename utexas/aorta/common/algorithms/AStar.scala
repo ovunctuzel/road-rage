@@ -11,14 +11,14 @@ object AStar {
   // T is the node type
   // TODO All costs are pairs of doubles lexicographically ordered right now. Generalize.
   def path[T](
-    start: T, goal: T, successors: (T) => Iterable[T],
+    start: T, goals: Set[T], successors: (T) => Iterable[T],
     calc_cost: (T, T, (Double, Double)) => (Double, Double),
-    calc_heuristic: (T, T) => (Double, Double),
+    calc_heuristic: (T) => (Double, Double),
     add_cost: ((Double, Double), (Double, Double)) => (Double, Double) =
       (a: (Double, Double), b: (Double, Double)) => (a._1 + b._1, a._2 + b._2),
     allow_cycles: Boolean = false
   ): List[T] = {
-    if (start == goal && !allow_cycles) {
+    if (goals.contains(start) && !allow_cycles) {
       return Nil
     }
 
@@ -33,17 +33,17 @@ object AStar {
     val ordering_tuple = Ordering[(Double, Double)].on((pair: (Double, Double)) => pair)
 
     costs(start) = (0, 0)
-    open.insert(start, calc_heuristic(start, goal))
+    open.insert(start, calc_heuristic(start))
     // Indicate start in backrefs by not including it
 
     while (open.nonEmpty) {
       val current = open.shift()
       if (!allow_cycles || current != start) {
-      visited += current
+        visited += current
       }
 
       // If backrefs doesn't have goal, allow_cycles is true and we just started
-      if (current == goal && backrefs.contains(goal)) {
+      if (goals.contains(current) && goals.intersect(backrefs.keys.toSet).nonEmpty) {
         // Reconstruct the path
         val path = new mutable.ListBuffer[T]()
         var pointer: Option[T] = Some(current)
@@ -64,14 +64,16 @@ object AStar {
             costs(next_state) = tentative_cost
             // TODO if they're in open_members, modify weight in the queue? or
             // new step will clobber it. fine.
-            open.insert(next_state, add_cost(tentative_cost, calc_heuristic(next_state, goal)))
+            open.insert(next_state, add_cost(tentative_cost, calc_heuristic(next_state)))
           }
         }
       }
     }
 
-    throw new Exception("Couldn't A* from " + start + " to " + goal)
+    throw new Exception("Couldn't A* from " + start + " to " + goals)
   }
+
+  // TODO make a way to build calls to these easily
 }
 
 // TODO generalize score.
