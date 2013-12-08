@@ -13,6 +13,9 @@ import utexas.aorta.ui.Renderable
 import utexas.aorta.common.algorithms.AStar
 import utexas.aorta.common.{Util, ZoneID}
 
+// TODO consider dropping the requirement that zones have to be connected. allows for more flexible
+// shapes, and for disjoint partitioning.
+
 class ZoneMap(val graph: Graph) {
   private val mapping: Map[Road, Set[Zone]] = ZoneMap.partition(graph)
   val zones: Set[Zone] = mapping.values.flatten.toSet
@@ -25,6 +28,7 @@ class ZoneMap(val graph: Graph) {
     zone.roads.flatMap(r => mapping(r)) - zone
 
   def apply(r: Road): Set[Zone] = mapping(r)
+  def canonical(r: Road) = mapping(r).minBy(z => z.id.int)
 }
 
 class Zone(val id: ZoneID, val roads: Set[Road]) extends Renderable {
@@ -103,6 +107,10 @@ object ZoneMap {
 
 // Lazily computes an actual path to get through each zone
 class ZoneRouter(zone_map: ZoneMap) extends Router(zone_map.graph) {
+  // TODO savestate
+  // Caching saves some time, and it also avoids bouncing between local maxima
+  private var zpath: List[Zone] = Nil
+
   override def router_type = RouterType.Zone
 
   override def path(from: Road, to: Road, time: Double): List[Road] = {
@@ -115,13 +123,14 @@ class ZoneRouter(zone_map: ZoneMap) extends Router(zone_map.graph) {
         (state: Road) => (state.end_pt.dist_to(to.end_pt), 0)
       )
     } else {
-      // TODO ooh, how to tell which zone we "start" in? if we get diff answers on multiple calls,
-      // something bad could happen...
-      val current_zone = zone_map(from).head
-      // TODO cache zpath?
-      val zpath = zone_path(current_zone, zone_map(to).head)
+      val current_zone = zone_map.canonical(from)
+      var path_tail = zpath.span(z => z != current_zone)._2
+      if (path_tail.headOption.getOrElse(null) != current_zone) {
+        zpath = current_zone :: zone_path(current_zone, zone_map.canonical(to))
+        path_tail = zpath
+      }
       // The "next" zone might not be straightforward since roads overlap
-      val target_zone = zpath.find(z => !z.roads.contains(from)).get
+      val target_zone = path_tail.find(z => !z.roads.contains(from)).get
       // Route to anywhere in the target zone, but stay in the current zone
       return AStar.path(
         from, target_zone.roads, (step: Road) => step.succs,
