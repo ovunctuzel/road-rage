@@ -4,7 +4,7 @@
 
 package utexas.aorta.sim.make
 
-import utexas.aorta.map.{Graph, Vertex, Road}
+import utexas.aorta.map.{Graph, Vertex, Road, ZoneRouter}
 import utexas.aorta.map.analysis._
 import utexas.aorta.sim._
 import utexas.aorta.sim.policies._
@@ -302,7 +302,7 @@ object RouteType extends Enumeration {
 object RouterType extends Enumeration {
   type RouterType = Value
   // Agents don't use Unusable; it's just for manually-invoked routers.
-  val Congestion, Fixed, Unusable, DumbToll, TollThreshold, SumToll = Value
+  val Congestion, Zone, Fixed, Unusable, DumbToll, TollThreshold, SumToll = Value
 }
 
 object OrderingType extends Enumeration {
@@ -343,6 +343,7 @@ object Factory {
   def make_router(enum: RouterType.Value, graph: Graph, initial_path: List[Road])
   = enum match {
     case RouterType.Congestion => new CongestionRouter(graph)
+    case RouterType.Zone => new ZoneRouter(graph.zones)
     case RouterType.Fixed => new FixedRouter(graph, initial_path)
     case RouterType.DumbToll => new DumbTollRouter(graph)
     case RouterType.TollThreshold => new TollThresholdRouter(graph)

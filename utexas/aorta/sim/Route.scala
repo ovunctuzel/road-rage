@@ -167,39 +167,35 @@ class PathRoute(goal: Road, orig_router: Router, private var rerouter: Router, r
     val before = pair._1
     val slice = pair._2
     Util.assert_eq(slice.nonEmpty, true)
-    val dest = slice.tail.head
+    val dest = slice.tail.headOption
 
     // Is the next step reachable?
-    val must_reroute =
-      e.next_turns.filter(t => t.to.road == dest).isEmpty
+    val must_reroute = dest match {
+      case Some(d) => e.next_turns.filter(t => t.to.road == d).isEmpty
+      // Our router has only given us a piece of the path
+      case None => true
+    }
     // This variant only considers long roads capable of being congested, which is risky...
-    val should_reroute = dest.auditor.congested
+    val should_reroute = dest.map(_.auditor.congested).getOrElse(false)
     // Since short roads can gridlock too, have the client detect that and explicitly force us to
     // handle it
     val asked_to_reroute = reroutes_requested.contains(e)
 
-    val best = if (must_reroute || should_reroute || asked_to_reroute) {
-      reroutes_requested -= e
-      // Re-route, but start from a source we can definitely reach without
-      // lane-changing.
-      val choice = e.next_turns.maxBy(t => t.to.queue.percent_avail)
-      val source = choice.to.road
-
-      // TODO Erase all turn choices AFTER source, if we've made any?
-
-      // Stitch together the new path into the full thing.
-      val new_path = slice.head :: source :: rerouter.path(source, goal, Common.tick)
-      path = before ++ new_path
-      tell_listeners(EV_Reroute(path, false, rerouter.router_type, must_reroute))
-      choice
-    } else {
-      best_turn(e, dest, slice.tail.tail.headOption.getOrElse(null))
-    }
+    val best =
+      if (must_reroute || should_reroute || asked_to_reroute)
+        perform_reroute(e, before, must_reroute)
+      else
+        best_turn(e, dest.get, slice.tail.tail.headOption.getOrElse(null))
     chosen_turns(e) = best
     return best
   }
 
   def pick_final_lane(from: Edge): Edge = {
+    // We could be done!
+    if (from.road == goal) {
+      return from
+    }
+
     // This method is called first, so do the lazy initialization here.
     if (first_time) {
       Util.assert_eq(path.isEmpty, true)
@@ -214,17 +210,17 @@ class PathRoute(goal: Road, orig_router: Router, private var rerouter: Router, r
     val slice = pair._2
     Util.assert_eq(slice.nonEmpty, true)
 
-    // We could be done!
-    if (slice.tail.isEmpty) {
-      Util.assert_eq(from.road, goal)
-      return from
+    val next_step = slice.tail.headOption match {
+      case Some(r) => r
+      // Our router hasn't told us everything yet
+      case None => perform_reroute(from, pair._1, true).to.road
     }
 
     // Find all lanes going to the next step.
-    val candidates = candidate_lanes(from, slice.tail.head) match {
+    val candidates = candidate_lanes(from, next_step) match {
       case Nil => {
         throw new Exception(
-          s"Other lanes around $from don't lead to ${slice.tail.head}!"
+          s"Other lanes around $from don't lead to $next_step!"
         )
       }
       case lanes => lanes
@@ -235,6 +231,23 @@ class PathRoute(goal: Road, orig_router: Router, private var rerouter: Router, r
 
     // Discretionary lane-changing: pick the lane with the least congestion
     return candidates.minBy(e => e.queue.percent_full)
+  }
+
+  // Returns the turn we must make from at to continue down the new route
+  private def perform_reroute(at: Edge, slice_before: List[Road], must_reroute: Boolean): Turn = {
+    reroutes_requested -= at
+    // Re-route, but start from a source we can definitely reach without
+    // lane-changing.
+    val choice = at.next_turns.maxBy(t => t.to.queue.percent_avail)
+    val source = choice.to.road
+
+    // TODO Erase all turn choices AFTER source, if we've made any?
+
+    // Stitch together the new path into the full thing.
+    val new_path = at.road :: source :: rerouter.path(source, goal, Common.tick)
+    path = slice_before ++ new_path
+    tell_listeners(EV_Reroute(path, false, rerouter.router_type, must_reroute))
+    return choice
   }
 
   //////////////////////////////////////////////////////////////////////////////

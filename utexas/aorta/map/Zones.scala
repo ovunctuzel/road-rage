@@ -103,7 +103,7 @@ object ZoneMap {
 
 // Lazily computes an actual path to get through each zone
 class ZoneRouter(zone_map: ZoneMap) extends Router(zone_map.graph) {
-  override def router_type = RouterType.Unusable
+  override def router_type = RouterType.Zone
 
   override def path(from: Road, to: Road, time: Double): List[Road] = {
     if (zone_map(from).intersect(zone_map(to)).nonEmpty) {
