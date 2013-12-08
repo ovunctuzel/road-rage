@@ -14,12 +14,18 @@ import utexas.aorta.common.{Util, Physics, RNG, RoadID, Price}
 import utexas.aorta.common.algorithms.AStar
 
 abstract class Router(graph: Graph) {
+  protected var debug_me = false
+
   def router_type: RouterType.Value
   // Doesn't include 'from' as the first step
   def path(from: Road, to: Road, time: Double): List[Road]
 
   // TODO messy to include this jump, but hard to pipe in specific params...
   def setup(a: Agent) {}
+
+  def set_debug(value: Boolean) {
+    debug_me = value
+  }
 }
 
 class FixedRouter(graph: Graph, path: List[Road]) extends Router(graph) {

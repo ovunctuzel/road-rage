@@ -19,6 +19,11 @@ class Agent(
 ) extends Ordered[Agent] with Renderable
 {
   //////////////////////////////////////////////////////////////////////////////
+  // Transient state
+
+  private var debug_me = false
+
+  //////////////////////////////////////////////////////////////////////////////
   // State
 
   var at: Position = null
@@ -287,6 +292,13 @@ class Agent(
     ))
     Common.sim.tell_listeners(EV_AgentQuit(this))
     AgentMap.maps.foreach(m => m.destroy(this))
+  }
+
+  def set_debug(value: Boolean) {
+    debug_me = value
+    behavior.set_debug(value)
+    route.set_debug(value)
+    wallet.set_debug(value)
   }
 
   //////////////////////////////////////////////////////////////////////////////

@@ -15,6 +15,11 @@ import utexas.aorta.common.{Util, Common, cfg, StateReader, StateWriter}
 // TODO dont require an agent, ultimately
 abstract class Wallet(initial_budget: Int, val priority: Int) {
   //////////////////////////////////////////////////////////////////////////////
+  // Transient state
+
+  protected var debug_me = false
+
+  //////////////////////////////////////////////////////////////////////////////
   // State
 
   protected var a: Agent = null
@@ -58,6 +63,10 @@ abstract class Wallet(initial_budget: Int, val priority: Int) {
   def reset_tooltip() {
     tooltip = Nil
     dark_tooltip = false
+  }
+
+  def set_debug(value: Boolean) {
+    debug_me = value
   }
 
   //////////////////////////////////////////////////////////////////////////////

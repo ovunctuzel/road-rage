@@ -16,6 +16,8 @@ abstract class Behavior(a: Agent) {
   // not be ready to answer us.
   var target_lane: Option[Edge] = null
 
+  protected var debug_me = false
+
   // asked every tick after everybody has moved
   def choose_action(): Action
   // only queried when the agent reaches a vertex
@@ -25,6 +27,10 @@ abstract class Behavior(a: Agent) {
   // just for debugging
   def dump_info()
   def wants_to_lc(): Boolean = target_lane != null && target_lane.isDefined
+
+  def set_debug(value: Boolean) {
+    debug_me = value
+  }
 }
 
 // Never speeds up from rest, so effectively never does anything

@@ -20,6 +20,11 @@ import utexas.aorta.common.{Util, RNG, Common, cfg, StateWriter, StateReader, Tu
 // Get a client to their goal by any means possible.
 abstract class Route(val goal: Road, rng: RNG) extends ListenerPattern[Route_Event] {
   //////////////////////////////////////////////////////////////////////////////
+  // Transient state
+
+  protected var debug_me = false
+
+  //////////////////////////////////////////////////////////////////////////////
   // Meta
 
   def serialize(w: StateWriter) {
@@ -50,6 +55,10 @@ abstract class Route(val goal: Road, rng: RNG) extends ListenerPattern[Route_Eve
   def pick_final_lane(e: Edge): Edge
   // Just mark that we don't have to take the old turn prescribed
   def reroute(at: Edge) {}
+
+  def set_debug(value: Boolean) {
+    debug_me = value
+  }
 
   //////////////////////////////////////////////////////////////////////////////
   // Queries
@@ -248,6 +257,12 @@ class PathRoute(goal: Road, orig_router: Router, private var rerouter: Router, r
     path = slice_before ++ new_path
     tell_listeners(EV_Reroute(path, false, rerouter.router_type, must_reroute))
     return choice
+  }
+
+  override def set_debug(value: Boolean) {
+    debug_me = value
+    orig_router.set_debug(value)
+    rerouter.set_debug(value)
   }
 
   //////////////////////////////////////////////////////////////////////////////
