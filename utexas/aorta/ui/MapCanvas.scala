@@ -669,28 +669,34 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
     case Key.F => {
       // Unregister old listener
       state.camera_agent match {
-        case Some(a) => a.route.unlisten("UI")
+        case Some(a) => {
+          a.route.unlisten("UI")
+          a.set_debug(false)
+        }
         case None =>
       }
 
       state.camera_agent = state.current_agent
       state.camera_agent match {
-        case Some(a) => a.route match {
-          case r: PathRoute => {
-            state.route_members.set(cfg.route_member_color, r.roads)
-            r.listen("UI", _ match {
-              case EV_Reroute(path, _, _, _) => {
-                state.route_members.set(cfg.route_member_color, path.toSet)
-              }
-              case EV_Transition(from, to) => from match {
-                case e: Edge => {
-                  state.route_members.remove(cfg.route_member_color, e.road)
+        case Some(a) => {
+          a.set_debug(true)
+          a.route match {
+            case r: PathRoute => {
+              state.route_members.set(cfg.route_member_color, r.roads)
+              r.listen("UI", _ match {
+                case EV_Reroute(path, _, _, _) => {
+                  state.route_members.set(cfg.route_member_color, path.toSet)
                 }
-                case _ =>
-              }
-            })
+                case EV_Transition(from, to) => from match {
+                  case e: Edge => {
+                    state.route_members.remove(cfg.route_member_color, e.road)
+                  }
+                  case _ =>
+                }
+              })
+            }
+            case _ =>
           }
-          case _ =>
         }
         case None => {
           state.route_members.clear()
