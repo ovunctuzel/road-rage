@@ -343,7 +343,7 @@ object Factory {
   def make_router(enum: RouterType.Value, graph: Graph, initial_path: List[Road])
   = enum match {
     case RouterType.Congestion => new CongestionRouter(graph)
-    case RouterType.Zone => new ZoneRouter(graph.zones)
+    case RouterType.Zone => new ZoneRouter(graph)
     case RouterType.Fixed => new FixedRouter(graph, initial_path)
     case RouterType.DumbToll => new DumbTollRouter(graph)
     case RouterType.TollThreshold => new TollThresholdRouter(graph)

@@ -4,7 +4,7 @@
 
 package utexas.aorta.map
 
-import scala.collection.mutable
+import scala.collection.{mutable, immutable}
 import Function.tupled
 
 import utexas.aorta.map.analysis.Router
@@ -16,50 +16,55 @@ import utexas.aorta.common.{Util, ZoneID}
 // TODO consider dropping the requirement that zones have to be connected. allows for more flexible
 // shapes, and for disjoint partitioning.
 
-class ZoneMap(val graph: Graph) {
-  private val mapping: Map[Road, Set[Zone]] = ZoneMap.partition(graph)
-  val zones: Set[Zone] = mapping.values.flatten.toSet
-  val links: Map[Zone, Set[Zone]] = zones.map(zone => zone -> zone_succs(zone)).toMap
-  Util.log("%,d DRs partitioned into %,d zones with %,d connections".format(
-    graph.roads.size, zones.size, links.values.map(_.size).sum
-  ))
-  // Roads lead to different zones via ports, and some roads are in many zones. No self-cycles.
-  private def zone_succs(zone: Zone) = zone.ports.flatMap(_.succs).flatMap(r => mapping(r)).toSet ++
-    zone.roads.flatMap(r => mapping(r)) - zone
-
-  def apply(r: Road): Set[Zone] = mapping(r)
-  def canonical(r: Road) = mapping(r).minBy(z => z.id.int)
+class ZoneMap(
+  val zones: Array[Zone], mapping: Map[Road, immutable.SortedSet[Zone]],
+  val links: Map[Zone, immutable.SortedSet[Zone]]
+) {
+  def apply(r: Road): immutable.SortedSet[Zone] = mapping(r)
+  // Since the sets are sorted by ID, this'll be deterministic
+  def canonical(r: Road) = mapping(r).head
 }
 
-class Zone(val id: ZoneID, val roads: Set[Road]) extends Renderable {
-  val center = compute_center
-
+class Zone(val id: ZoneID, val roads: immutable.SortedSet[Road], val center: Coordinate)
+  extends Ordered[Zone] with Renderable
+{
   override def toString = s"Z$id"
-
-  // Member roads that have successors outside the set. Members shared with other zones aren't
-  // included.
-  def ports: Set[Road] = roads.filter(r => r.succs.exists(succ => !roads.contains(succ)))
+  override def compare(other: Zone) = id.int.compare(other.id.int)
 
   def freeflow_time = 1.0 // TODO how to define the approx time to cross this zone?
 
-  private def compute_center(): Coordinate = {
-    val pts = roads.map(r => r.rightmost.approx_midpt)
-    val avg_x = pts.map(_.x).sum / roads.size
-    val avg_y = pts.map(_.y).sum / roads.size
-    return new Coordinate(avg_x, avg_y)
-  }
-
   override def debug() {
-    Util.log(s"Zone with ${roads.size} roads and ${ports.size} ports")
+    Util.log(s"Zone with ${roads.size}")
   }
 }
 
 object ZoneMap {
   private val max_size = 350
 
+  def create(graph: Graph): ZoneMap = {
+    val mapping = partition(graph)
+
+    // Roads lead to different zones via ports, and some roads are in many zones. No self-cycles.
+    def zone_succs(zone: Zone) = Util.sorted_set(
+      ports(zone).flatMap(_.succs).flatMap(r => mapping(r)) ++ zone.roads.flatMap(r => mapping(r))
+      - zone
+    )
+    // Member roads that have successors outside the set. Members shared with other zones aren't
+    // included.
+    def ports(zone: Zone)
+      = zone.roads.filter(r => r.succs.exists(succ => !zone.roads.contains(succ)))
+
+    val zones = mapping.values.flatten.toSet.toArray.sortBy(_.id.int)
+    val links = zones.map(zone => zone -> zone_succs(zone)).toMap
+    Util.log("%,d DRs partitioned into %,d zones with %,d connections".format(
+      graph.roads.size, zones.size, links.values.map(_.size).sum
+    ))
+    return new ZoneMap(zones, mapping, links)
+  }
+
   // TODO dont cross different road types?
   // TODO possibly nondeterministic, use trees?
-  def partition(graph: Graph): Map[Road, Set[Zone]] = {
+  private def partition(graph: Graph): Map[Road, immutable.SortedSet[Zone]] = {
     Util.log("Partitioning the map into zones...")
 
     // Since "zones" are mutable during the building process, introduce a layer of introduction via
@@ -99,14 +104,24 @@ object ZoneMap {
       new_zone.foreach(r => road_mapping(r) += new_id)
     }
     val zones = zone_members.keys.zipWithIndex.map(
-      tupled((id, idx) => id -> new Zone(new ZoneID(idx), zone_members(id).toSet))
+      tupled((id, idx) => id -> new Zone(
+        new ZoneID(idx), Util.sorted_set(zone_members(id)), compute_center(zone_members(id))
+      ))
     ).toMap
-    return graph.roads.map(r => r -> road_mapping(r).map(id => zones(id)).toSet).toMap
+    return graph.roads.map(r => r -> Util.sorted_set(road_mapping(r).map(id => zones(id)))).toMap
+  }
+
+  private def compute_center(roads: Iterable[Road]): Coordinate = {
+    val pts = roads.map(r => r.rightmost.approx_midpt)
+    val avg_x = pts.map(_.x).sum / roads.size
+    val avg_y = pts.map(_.y).sum / roads.size
+    return new Coordinate(avg_x, avg_y)
   }
 }
 
 // Lazily computes an actual path to get through each zone
-class ZoneRouter(zone_map: ZoneMap) extends Router(zone_map.graph) {
+class ZoneRouter(graph: Graph) extends Router(graph) {
+  private val zone_map = graph.zones
   // TODO savestate
   // Caching saves some time, and it also avoids bouncing between local maxima
   private var zpath: List[Zone] = Nil

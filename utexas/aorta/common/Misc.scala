@@ -8,7 +8,7 @@ import java.io.{FileWriter, Serializable, File, PrintWriter}
 import scala.annotation.elidable
 import scala.annotation.elidable.ASSERTION
 import java.awt.Color
-import scala.collection.mutable
+import scala.collection.{mutable, immutable}
 import scala.sys.process._
 import Function.tupled
 
@@ -94,6 +94,8 @@ object Util {
   def output(fn: String) = new PrintWriter(new FileWriter(new File(fn)), true /* autoFlush */)
   def blockingly_run(argv: Seq[String]) = argv.!
   def bool2binary(value: Boolean) = if (value) 1.0 else 0.0
+
+  def sorted_set[T <: Ordered[T]](stuff: Iterable[T]) = immutable.SortedSet.empty[T] ++ stuff
 }
 
 // Plumbing some stuff everywhere is hard, so share here sometimes. Plus,

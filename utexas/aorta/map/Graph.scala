@@ -43,7 +43,7 @@ class Graph(
   }
 
   def setup() {
-    zones = new ZoneMap(this)
+    zones = ZoneMap.create(this)
   }
 
   //////////////////////////////////////////////////////////////////////////////
