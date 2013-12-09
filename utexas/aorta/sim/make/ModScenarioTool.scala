@@ -91,23 +91,7 @@ object ModScenarioTool {
         case "--vert" => {
           val id = shift_args.toInt
           val old_v = s.intersections(id)
-          Util.assert_eq(old_v.id, id)
-          val params = slurp_params
-          val bad_params = params.keys.toSet.diff(Set("policy", "ordering"))
-          if (!bad_params.isEmpty) {
-            Util.log(s"$bad_params aren't valid params for --vert")
-            sys.exit
-          }
-
-          val new_v = old_v.copy(
-            policy = IntersectionType.withName(
-              params.getOrElse("policy", old_v.policy.toString)
-            ),
-            ordering = OrderingType.withName(
-              params.getOrElse("ordering", old_v.ordering.toString)
-            )
-          )
-
+          val new_v = mod_vert(old_v, slurp_params)
           old_v.diff(new_v)
           s.intersections(id) = new_v
         }
@@ -115,49 +99,7 @@ object ModScenarioTool {
         case "--agent" => {
           val id = shift_args.toInt
           val old_a = s.agents(id)
-          Util.assert_eq(old_a.id, id)
-          val params = slurp_params
-          val bad_params = params.keys.toSet.diff(Set(
-            "start", "time", "route", "end", "wallet", "budget"
-          ))
-          if (!bad_params.isEmpty) {
-            Util.log(s"$bad_params aren't valid params for --agent")
-            sys.exit
-          }
-
-          // Preserve the original spawning distance, or choose an appropriate
-          // new one
-          val start_dist = params.get("start") match {
-            case Some(r) if r.toInt == old_a.start.int => old_a.start_dist
-            case Some(r) => graph.roads(r.toInt).rightmost.safe_spawn_dist(rng)
-            case None => old_a.start_dist
-          }
-
-          val new_a = old_a.copy(
-            // TODO fix all the orElse patterns here
-            start =
-              params.get("start").map(e => new RoadID(e.toInt)).getOrElse(old_a.start),
-            start_dist = start_dist,
-            birth_tick = params.getOrElse(
-              "time", old_a.birth_tick.toString
-            ).toDouble,
-            route = old_a.route.copy(
-              strategy = RouteType.withName(
-                params.getOrElse("route", old_a.route.strategy.toString)
-              ),
-              goal = params.get("end").map(r => new RoadID(r.toInt))
-                .getOrElse(old_a.route.goal)
-            ),
-            wallet = old_a.wallet.copy(
-              policy = WalletType.withName(
-                params.getOrElse("wallet", old_a.wallet.policy.toString)
-              ),
-              budget = params.getOrElse(
-                "budget", old_a.wallet.budget.toString
-              ).toInt
-            )
-          )
-
+          val new_a = mod_agent(old_a, slurp_params, graph, rng)
           old_a.diff(new_a)
           s.agents(id) = new_a
         }
@@ -229,58 +171,12 @@ object ModScenarioTool {
         // --all_verts policy=StopSign ordering=FIFO
         case "--all_verts" => {
           val params = slurp_params
-          val bad_params = params.keys.toSet.diff(Set("policy", "ordering"))
-          if (!bad_params.isEmpty) {
-            Util.log(s"$bad_params aren't valid params for --all_verts")
-            sys.exit
-          }
-
-          params.get("policy") match {
-            case Some(name) => {
-              val p = IntersectionType.withName(name)
-              Util.log(s"Changing all intersections to $p")
-              s = s.copy(intersections = s.intersections.map(_.copy(policy = p)))
-            }
-            case None =>
-          }
-
-          params.get("ordering") match {
-            case Some(name) => {
-              val o = OrderingType.withName(name)
-              Util.log(s"Changing all intersections to use $o ordering")
-              s = s.copy(intersections = s.intersections.map(_.copy(ordering = o)))
-            }
-            case None =>
-          }
+          s = s.copy(intersections = s.intersections.map(old => mod_vert(old, params)))
         }
         // --all_agents wallet=Random budget=1
         case "--all_agents" => {
           val params = slurp_params
-          val bad_params = params.keys.toSet.diff(Set("wallet", "budget"))
-          // TODO priority controls in all these tools!
-          if (!bad_params.isEmpty) {
-            Util.log(s"$bad_params aren't valid params for --all_agents")
-            sys.exit
-          }
-
-          val budget_factory = params.get("budget") match {
-            case Some(t) => {
-              val Array(a, b) = t.split("-")
-              (_: Int) => rng.int(a.toInt, b.toInt)
-            }
-            case None => (old: Int) => old
-          }
-
-          // TODO support all options. for now, these are the ones I need.
-          Util.log(s"Changing all agents: $params")
-          s = s.copy(agents = s.agents.map(a => a.copy(
-            wallet = a.wallet.copy(
-              policy = WalletType.withName(
-                params.getOrElse("wallet", a.wallet.policy.toString)
-              ),
-              budget = budget_factory(a.wallet.budget)
-            )
-          )))
+          s = s.copy(agents = s.agents.map(old => mod_agent(old, params, graph, rng)))
         }
         case "--cfg_wallets" => {
           val params = slurp_params
@@ -318,5 +214,54 @@ object ModScenarioTool {
       Util.log(s"\nSaved scenario to ${s.name}")
       // TODO warn if overwriting? prompt?
     }
+  }
+
+  private def mod_vert(old: MkIntersection, params: Map[String, String]): MkIntersection = {
+    val bad_params = params.keys.toSet.diff(Set("policy", "ordering"))
+    if (!bad_params.isEmpty) {
+      Util.log(s"$bad_params aren't valid params for --vert or --all_verts")
+      sys.exit()
+    }
+    return old.copy(
+      policy = IntersectionType.withName(
+        params.getOrElse("policy", old.policy.toString)
+      ),
+      ordering = OrderingType.withName(
+        params.getOrElse("ordering", old.ordering.toString)
+      )
+    )
+  }
+
+  private def mod_agent(old: MkAgent, params: Map[String, String], graph: Graph, rng: RNG): MkAgent = {
+    val bad_params = params.keys.toSet.diff(Set(
+      "start", "time", "route", "end", "wallet", "budget"
+    ))
+    if (!bad_params.isEmpty) {
+      Util.log(s"$bad_params aren't valid params for --agent or --all_agents")
+      sys.exit()
+    }
+
+    // Preserve the original spawning distance, or choose an appropriate
+    // new one
+    val start_dist = params.get("start") match {
+      case Some(r) if r.toInt == old.start.int => old.start_dist
+      case Some(r) => graph.roads(r.toInt).rightmost.safe_spawn_dist(rng)
+      case None => old.start_dist
+    }
+
+    return old.copy(
+      // TODO fix all the orElse patterns here
+      start = params.get("start").map(e => new RoadID(e.toInt)).getOrElse(old.start),
+      start_dist = start_dist,
+      birth_tick = params.getOrElse("time", old.birth_tick.toString).toDouble,
+      route = old.route.copy(
+        strategy = RouteType.withName(params.getOrElse("route", old.route.strategy.toString)),
+        goal = params.get("end").map(r => new RoadID(r.toInt)).getOrElse(old.route.goal)
+      ),
+      wallet = old.wallet.copy(
+        policy = WalletType.withName(params.getOrElse("wallet", old.wallet.policy.toString)),
+        budget = params.getOrElse("budget", old.wallet.budget.toString).toInt
+      )
+    )
   }
 }
