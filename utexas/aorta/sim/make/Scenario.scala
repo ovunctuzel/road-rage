@@ -50,6 +50,10 @@ case class Scenario(name: String, map_fn: String, agents: Array[MkAgent],
       Util.log("Spawning time (s): " + basic_stats(agents.map(_.birth_tick)))
       Util.log("Routes:")
       percentages(agents.map(_.route.strategy))
+      Util.log("Orig routers:")
+      percentages(agents.map(_.route.orig_router))
+      Util.log("Rerouters:")
+      percentages(agents.map(_.route.rerouter))
       Util.log("Wallets:")
       percentages(agents.map(_.wallet.policy))
       Util.log("Budget ($): " + basic_stats_int(agents.map(_.wallet.budget)))
@@ -168,6 +172,8 @@ case class MkAgent(id: AgentID, birth_tick: Double, seed: Long,
       Util.diff(start_dist, other.start_dist, "start distance"),
       Util.diff(route.goal, other.route.goal, "end"),
       Util.diff(route.strategy, other.route.strategy, "route"),
+      Util.diff(route.orig_router, other.route.orig_router, "orig_router"),
+      Util.diff(route.rerouter, other.route.rerouter, "rerouter"),
       Util.diff(wallet.policy, other.wallet.policy, "wallet"),
       Util.diff(wallet.budget, other.wallet.budget, "budget"),
       Util.diff(wallet.priority, other.wallet.priority, "priority")

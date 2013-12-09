@@ -207,7 +207,7 @@ object ModScenarioTool {
     }
     Util.log("")
 
-    s.summarize
+    s.summarize()
 
     if (changed_output) {
       s.save()
@@ -234,7 +234,7 @@ object ModScenarioTool {
 
   private def mod_agent(old: MkAgent, params: Map[String, String], graph: Graph, rng: RNG): MkAgent = {
     val bad_params = params.keys.toSet.diff(Set(
-      "start", "time", "route", "end", "wallet", "budget"
+      "start", "time", "route", "end", "wallet", "budget", "orig_router", "rerouter"
     ))
     if (!bad_params.isEmpty) {
       Util.log(s"$bad_params aren't valid params for --agent or --all_agents")
@@ -256,6 +256,10 @@ object ModScenarioTool {
       birth_tick = params.getOrElse("time", old.birth_tick.toString).toDouble,
       route = old.route.copy(
         strategy = RouteType.withName(params.getOrElse("route", old.route.strategy.toString)),
+        orig_router = RouterType.withName(
+          params.getOrElse("orig_router", old.route.orig_router.toString)
+        ),
+        rerouter = RouterType.withName(params.getOrElse("rerouter", old.route.rerouter.toString)),
         goal = params.get("end").map(r => new RoadID(r.toInt)).getOrElse(old.route.goal)
       ),
       wallet = old.wallet.copy(
