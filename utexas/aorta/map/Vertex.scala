@@ -86,9 +86,9 @@ class Vertex(val location: Coordinate, val id: VertexID) extends Renderable {
 }
 
 object Vertex {
-  def unserialize(r: StateReader): Vertex = {
+  def unserialize(r: StateReader, edges: Array[Edge]): Vertex = {
     val v = new Vertex(Coordinate.unserialize(r), new VertexID(r.int))
-    v.turns ++= Range(0, r.int).map(_ => Turn.unserialize(r))
+    v.turns ++= Range(0, r.int).map(_ => Turn.unserialize(r, edges: Array[Edge]))
     return v
   }
 }

@@ -13,8 +13,7 @@ class Graph(
   val roads: Array[Road], val edges: Array[Edge], val vertices: Array[Vertex],
   val width: Double, val height: Double, val offX: Double, val offY: Double,
   val scale: Double, val name: String
-) extends GraphLike
-{
+) {
   //////////////////////////////////////////////////////////////////////////////
   // Deterministic state
 
@@ -52,9 +51,9 @@ class Graph(
 
   def traversables() = edges ++ turns.values
 
-  override def get_v(id: VertexID) = vertices(id.int)
-  override def get_e(id: EdgeID) = edges(id.int)
-  override def get_r(id: RoadID) = roads(id.int)
+  def get_v(id: VertexID) = vertices(id.int)
+  def get_e(id: EdgeID) = edges(id.int)
+  def get_r(id: RoadID) = roads(id.int)
 
   // TODO file library
   def basename = name.replace("maps/", "").replace(".map", "")
@@ -101,26 +100,13 @@ object Graph {
     val yo = r.double
     val s = r.double
     set_params(w, h, xo, yo, s)
-    val g = new Graph(
-      Range(0, r.int).map(_ => Road.unserialize(r)).toArray,
-      Range(0, r.int).map(_ => Edge.unserialize(r)).toArray,
-      Range(0, r.int).map(_ => Vertex.unserialize(r)).toArray,
-      w, h, xo, yo, s, r.string
-    )
-    g.edges.foreach(e => e.setup(g))
-    for (v <- g.vertices; t <- v.turns) {
-      t.setup(g)
-    }
-    // Do roads last; they depend on edges. TODO no, just vertices. important?
-    g.roads.foreach(r => r.setup(g))
+    val roads = Range(0, r.int).map(_ => Road.unserialize(r)).toArray
+    val edges = Range(0, r.int).map(_ => Edge.unserialize(r, roads)).toArray
+    val vertices = Range(0, r.int).map(_ => Vertex.unserialize(r, edges)).toArray
+    val g = new Graph(roads, edges, vertices, w, h, xo, yo, s, r.string)
+    // Dependency between roads, edges, and vertices is cyclic, so have to set up one of these.
+    g.roads.foreach(r => r.setup(vertices))
     g.setup()
     return g
   }
-}
-
-// This is only so setup routines can reference Graph or PreGraph3.
-abstract class GraphLike {
-  def get_v(id: VertexID): Vertex
-  def get_e(id: EdgeID): Edge
-  def get_r(id: RoadID): Road
 }

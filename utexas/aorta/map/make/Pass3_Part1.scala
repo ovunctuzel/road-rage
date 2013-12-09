@@ -7,14 +7,13 @@ package utexas.aorta.map.make
 import scala.collection.mutable
 import Function.tupled
 
-import utexas.aorta.map.{Coordinate, Vertex, Edge, Direction, Turn, Line, GraphLike, Road}
+import utexas.aorta.map.{Coordinate, Vertex, Edge, Direction, Turn, Line, Road}
 
 import utexas.aorta.common.{Util, cfg, Physics, VertexID, EdgeID, RoadID}
 
-// TODO we should really subclass the real Graph, but not sure yet.
-class PreGraph3(old_graph: PreGraph2) extends GraphLike {
+class PreGraph3(old_graph: PreGraph2) {
   Util.log("Multiplying and directing " + old_graph.edges.length + " edges")
-  var vertices = new mutable.MutableList[Vertex]
+  var vertices = new mutable.ArrayBuffer[Vertex]
 
   // create vertices lazily!
   private val vert_lookup = new mutable.HashMap[Coordinate, Vertex]
@@ -29,22 +28,6 @@ class PreGraph3(old_graph: PreGraph2) extends GraphLike {
     add_road(old)
   }
 
-  override def get_v(id: VertexID): Vertex = {
-    val v = vertices(id.int)
-    Util.assert_eq(v.id, id)
-    return v
-  }
-  override def get_e(id: EdgeID): Edge = {
-    val e = edges(id.int)
-    Util.assert_eq(e.id, id)
-    return e
-  }
-  override def get_r(id: RoadID): Road = {
-    val r = roads(id.int)
-    Util.assert_eq(r.id, id)
-    return r
-  }
-
   // support Tarjan's. Each of these expensive things should only be called once
   def turns() = vertices.foldLeft(List[Turn]())((l, v) => v.turns ++ l)
   def traversables() = edges ++ turns
@@ -56,7 +39,7 @@ class PreGraph3(old_graph: PreGraph2) extends GraphLike {
       old_edge.dat.name, old_edge.dat.road_type, old_edge.dat.orig_id,
       get_vert(old_edge.from).id, get_vert(old_edge.to).id, old_edge.points.toArray
     )
-    r_pos.setup(this)
+    r_pos.setup(vertices.toArray)
     roads :+= r_pos
     road_id_cnt += 1
 
@@ -77,7 +60,7 @@ class PreGraph3(old_graph: PreGraph2) extends GraphLike {
         old_edge.dat.name, old_edge.dat.road_type, old_edge.dat.orig_id,
         get_vert(old_edge.to).id, get_vert(old_edge.from).id, old_edge.points.reverse.toArray
       )
-      r_neg.setup(this)
+      r_neg.setup(vertices.toArray)
       roads :+= r_neg
       road_id_cnt += 1
       r_neg.other_side = Some(r_pos)
@@ -128,8 +111,7 @@ class PreGraph3(old_graph: PreGraph2) extends GraphLike {
         case _ =>
       }
     }*/
-    val e = new Edge(new EdgeID(edges.length), r.id, lane_num, lines)
-    e.setup(this)
+    val e = new Edge(new EdgeID(edges.length), r, lane_num, lines)
     edges += e
   }
 

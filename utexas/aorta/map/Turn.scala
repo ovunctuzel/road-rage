@@ -7,28 +7,17 @@ package utexas.aorta.map
 import utexas.aorta.map.make.MapStateWriter
 import utexas.aorta.common.{StateReader, TurnID, EdgeID}
 
-class Turn(val id: TurnID, from_id: EdgeID, to_id: EdgeID, val conflict_line: Line)
+class Turn(val id: TurnID, val from: Edge, val to: Edge, val conflict_line: Line)
   extends Traversable(Array(conflict_line)) with Ordered[Turn]
 {
-  //////////////////////////////////////////////////////////////////////////////
-  // Deterministic state
-
-  var from: Edge = null
-  var to: Edge = null
-
   //////////////////////////////////////////////////////////////////////////////
   // Meta
 
   def serialize(w: MapStateWriter) {
     w.int(id.int)
-    w.int(w.edges(from_id).int)
-    w.int(w.edges(to_id).int)
+    w.int(w.edges(from.id).int)
+    w.int(w.edges(to.id).int)
     conflict_line.serialize(w)
-  }
-
-  def setup(g: GraphLike) {
-    from = g.get_e(from_id)
-    to = g.get_e(to_id)
   }
 
   //////////////////////////////////////////////////////////////////////////////
@@ -53,7 +42,7 @@ class Turn(val id: TurnID, from_id: EdgeID, to_id: EdgeID, val conflict_line: Li
 }
 
 object Turn {
-  def unserialize(r: StateReader) = new Turn(
-    new TurnID(r.int), new EdgeID(r.int), new EdgeID(r.int), Line.unserialize(r)
+  def unserialize(r: StateReader, edges: Array[Edge]) = new Turn(
+    new TurnID(r.int), edges(r.int), edges(r.int), Line.unserialize(r)
   )
 }

@@ -87,9 +87,9 @@ class Road(
     houses.foreach(pt => pt.serialize(w))
   }
 
-  def setup(g: GraphLike) {
-    v1 = g.get_v(v1_id)
-    v2 = g.get_v(v2_id)
+  def setup(vertices: Array[Vertex]) {
+    v1 = vertices(v1_id.int)
+    v2 = vertices(v2_id.int)
 
     // check invariants of points -- oops, not true anymore since we merge short
     // roads
