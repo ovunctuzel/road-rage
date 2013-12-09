@@ -8,21 +8,41 @@ import scala.collection.{mutable, immutable}
 import Function.tupled
 
 import utexas.aorta.map.analysis.Router
+import utexas.aorta.map.make.MapStateWriter
 import utexas.aorta.sim.make.RouterType
 import utexas.aorta.ui.Renderable
 import utexas.aorta.common.algorithms.AStar
-import utexas.aorta.common.{Util, ZoneID}
+import utexas.aorta.common.{Util, ZoneID, StateReader}
 
 // TODO consider dropping the requirement that zones have to be connected. allows for more flexible
 // shapes, and for disjoint partitioning.
 
+// TODO something with zones isnt deterministic.
+
 class ZoneMap(
-  val zones: Array[Zone], mapping: Map[Road, immutable.SortedSet[Zone]],
-  val links: Map[Zone, immutable.SortedSet[Zone]]
+  val zones: Array[Zone], mapping: immutable.SortedMap[Road, immutable.SortedSet[Zone]],
+  val links: immutable.SortedMap[Zone, immutable.SortedSet[Zone]]
 ) {
   def apply(r: Road): immutable.SortedSet[Zone] = mapping(r)
   // Since the sets are sorted by ID, this'll be deterministic
   def canonical(r: Road) = mapping(r).head
+
+  def serialize(w: MapStateWriter) {
+    w.int(zones.size)
+    zones.foreach(z => z.serialize(w))
+    w.int(mapping.size)
+    for ((r, zlist) <- mapping) {
+      w.int(w.roads(r.id).int)
+      w.int(zlist.size)
+      zlist.foreach(z => w.int(z.id.int))
+    }
+    w.int(links.size)
+    for ((z, zlist) <- links) {
+      w.int(z.id.int)
+      w.int(zlist.size)
+      zlist.foreach(z => w.int(z.id.int))
+    }
+  }
 }
 
 class Zone(val id: ZoneID, val roads: immutable.SortedSet[Road], val center: Coordinate)
@@ -36,13 +56,27 @@ class Zone(val id: ZoneID, val roads: immutable.SortedSet[Road], val center: Coo
   override def debug() {
     Util.log(s"Zone with ${roads.size}")
   }
+
+  def serialize(w: MapStateWriter) {
+    w.int(id.int)
+    w.int(roads.size)
+    roads.foreach(r => w.int(w.roads(r.id).int))
+    center.serialize(w)
+  }
+}
+
+object Zone {
+  def unserialize(r: StateReader, roads: Array[Road]) = new Zone(
+    new ZoneID(r.int), Util.sorted_set(Range(0, r.int).map(_ => roads(r.int))),
+    Coordinate.unserialize(r)
+  )
 }
 
 object ZoneMap {
   private val max_size = 350
 
-  def create(graph: Graph): ZoneMap = {
-    val mapping = partition(graph)
+  def create(roads: Array[Road]): ZoneMap = {
+    val mapping = partition(roads)
 
     // Roads lead to different zones via ports, and some roads are in many zones. No self-cycles.
     def zone_succs(zone: Zone) = Util.sorted_set(
@@ -55,28 +89,29 @@ object ZoneMap {
       = zone.roads.filter(r => r.succs.exists(succ => !zone.roads.contains(succ)))
 
     val zones = mapping.values.flatten.toSet.toArray.sortBy(_.id.int)
-    val links = zones.map(zone => zone -> zone_succs(zone)).toMap
+    val links = Util.sorted_map(zones.map(zone => zone -> zone_succs(zone)))
     Util.log("%,d DRs partitioned into %,d zones with %,d connections".format(
-      graph.roads.size, zones.size, links.values.map(_.size).sum
+      roads.size, zones.size, links.values.map(_.size).sum
     ))
     return new ZoneMap(zones, mapping, links)
   }
 
   // TODO dont cross different road types?
   // TODO possibly nondeterministic, use trees?
-  private def partition(graph: Graph): Map[Road, immutable.SortedSet[Zone]] = {
+  private def partition(roads: Array[Road]): immutable.SortedMap[Road, immutable.SortedSet[Zone]] =
+  {
     Util.log("Partitioning the map into zones...")
 
     // Since "zones" are mutable during the building process, introduce a layer of introduction via
     // temporary zone ID ints.
     var next_id = 0
     val zone_members = new mutable.HashMap[ZoneID, mutable.Set[Road]]()
-    val road_mapping = graph.roads.map(r => r -> new mutable.HashSet[ZoneID]()).toMap
+    val road_mapping = roads.map(r => r -> new mutable.HashSet[ZoneID]()).toMap
 
     val open = new mutable.TreeSet[Road]()  // TODO queue?
-    open ++= graph.roads
+    open ++= roads
     while (open.nonEmpty) {
-      Util.log(s"  ${open.size} roads left to process")
+      print(s"\r  ${open.size} roads left to process")
       val base = open.head
       val path = AStar.path(
         base, Set(base), (step: Road) => step.succs,
@@ -89,7 +124,7 @@ object ZoneMap {
       open --= new_zone
 
       // Merge zones by finding common overlap
-      val overlapping_zones = path.flatMap(r => road_mapping(r)).toSet
+      val overlapping_zones = Util.sorted_set(path.flatMap(r => road_mapping(r)))
       for (candidate <- overlapping_zones) {
         if ((new_zone ++ zone_members(candidate)).size < max_size) {
           new_zone ++= zone_members(candidate)
@@ -103,12 +138,15 @@ object ZoneMap {
       zone_members(new_id) = new_zone
       new_zone.foreach(r => road_mapping(r) += new_id)
     }
+    println("")
     val zones = zone_members.keys.zipWithIndex.map(
       tupled((id, idx) => id -> new Zone(
         new ZoneID(idx), Util.sorted_set(zone_members(id)), compute_center(zone_members(id))
       ))
     ).toMap
-    return graph.roads.map(r => r -> Util.sorted_set(road_mapping(r).map(id => zones(id)))).toMap
+    return Util.sorted_map(roads.map(
+      r => r -> Util.sorted_set(road_mapping(r).map(id => zones(id)))
+    ))
   }
 
   private def compute_center(roads: Iterable[Road]): Coordinate = {
@@ -116,6 +154,17 @@ object ZoneMap {
     val avg_x = pts.map(_.x).sum / roads.size
     val avg_y = pts.map(_.y).sum / roads.size
     return new Coordinate(avg_x, avg_y)
+  }
+
+  def unserialize(r: StateReader, roads: Array[Road]): ZoneMap = {
+    val zones = Range(0, r.int).map(_ => Zone.unserialize(r, roads)).toArray
+    val mapping = Range(0, r.int).map(_ => {
+      roads(r.int) -> Util.sorted_set(Range(0, r.int).map(_ => zones(r.int)))
+    })
+    val links = Range(0, r.int).map(_ => {
+      zones(r.int) -> Util.sorted_set(Range(0, r.int).map(_ => zones(r.int)))
+    })
+    return new ZoneMap(zones, Util.sorted_map(mapping), Util.sorted_map(links))
   }
 }
 

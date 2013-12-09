@@ -10,9 +10,9 @@ import utexas.aorta.map.make.MapStateWriter
 import utexas.aorta.common.{Util, StateReader, VertexID, EdgeID, RoadID}
 
 class Graph(
-  val roads: Array[Road], val edges: Array[Edge], val vertices: Array[Vertex],
-  val width: Double, val height: Double, val offX: Double, val offY: Double,
-  val scale: Double, val name: String
+  val roads: Array[Road], val edges: Array[Edge], val vertices: Array[Vertex], val zones: ZoneMap,
+  val width: Double, val height: Double, val offX: Double, val offY: Double, val scale: Double,
+  val name: String
 ) {
   //////////////////////////////////////////////////////////////////////////////
   // Deterministic state
@@ -21,8 +21,6 @@ class Graph(
   val turns = vertices.foldLeft(List[Turn]())(
     (l, v) => v.turns.toList ++ l
   ).map(t => t.id -> t).toMap
-  // TODO if this idea pans out, make it a precomputed and serialized property of DRs
-  var zones: ZoneMap = null
 
   //////////////////////////////////////////////////////////////////////////////
   // Meta
@@ -40,10 +38,7 @@ class Graph(
     w.int(vertices.size)
     vertices.foreach(v => v.serialize(w))
     w.string(name)
-  }
-
-  def setup() {
-    zones = ZoneMap.create(this)
+    zones.serialize(w)
   }
 
   //////////////////////////////////////////////////////////////////////////////
@@ -86,8 +81,9 @@ object Graph {
 
   def load(fn: String): Graph = {
     if (!cached_graphs.contains(fn)) {
-      Util.log(s"Loading $fn...")
+      print(s"Loading $fn...")
       cached_graphs(fn) = unserialize(Util.reader(fn))
+      println(s"\rLoaded $fn.     ")
     }
     return cached_graphs(fn)
   }
@@ -103,10 +99,11 @@ object Graph {
     val roads = Range(0, r.int).map(_ => Road.unserialize(r)).toArray
     val edges = Range(0, r.int).map(_ => Edge.unserialize(r, roads)).toArray
     val vertices = Range(0, r.int).map(_ => Vertex.unserialize(r, edges)).toArray
-    val g = new Graph(roads, edges, vertices, w, h, xo, yo, s, r.string)
+    val name = r.string
+    val zones = ZoneMap.unserialize(r, roads)
+    val g = new Graph(roads, edges, vertices, zones, w, h, xo, yo, s, name)
     // Dependency between roads, edges, and vertices is cyclic, so have to set up one of these.
     g.roads.foreach(r => r.setup(vertices))
-    g.setup()
     return g
   }
 }

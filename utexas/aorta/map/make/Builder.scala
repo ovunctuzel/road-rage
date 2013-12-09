@@ -4,7 +4,7 @@
 
 package utexas.aorta.map.make
 
-import utexas.aorta.map.Graph
+import utexas.aorta.map.{Graph, ZoneMap}
 import utexas.aorta.common.{Util, EdgeID, VertexID, TurnID, RoadID, BinaryStateWriter}
 
 import scala.collection.mutable
@@ -44,8 +44,9 @@ object Builder {
     new Pass3_Part4(graph3).run()
     bldgs.group(graph3)
 
+    val roads = graph3.roads.toArray
     val graph = new Graph(
-      graph3.roads.toArray, graph3.edges.toArray, graph3.vertices.toArray,
+      roads, graph3.edges.toArray, graph3.vertices.toArray, ZoneMap.create(roads),
       graph1.width, graph1.height, graph1.offX, graph1.offY, graph1.scale,
       input.replace(".osm", "").replace("osm/", "")
     )

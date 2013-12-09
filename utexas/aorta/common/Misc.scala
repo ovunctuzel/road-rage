@@ -96,6 +96,7 @@ object Util {
   def bool2binary(value: Boolean) = if (value) 1.0 else 0.0
 
   def sorted_set[T <: Ordered[T]](stuff: Iterable[T]) = immutable.SortedSet.empty[T] ++ stuff
+  def sorted_map[K <: Ordered[K], V](stuff: Iterable[(K, V)]) = immutable.SortedMap.empty[K, V] ++ stuff
 }
 
 // Plumbing some stuff everywhere is hard, so share here sometimes. Plus,
@@ -240,8 +241,9 @@ class EdgeID(val int: Int) extends AnyVal {
 class RoadID(val int: Int) extends AnyVal {
   override def toString = int.toString
 }
-class ZoneID(val int: Int) extends AnyVal {
+class ZoneID(val int: Int) extends AnyVal with Ordered[ZoneID] {
   override def toString = int.toString
+  override def compare(other: ZoneID) = int.compare(other.int)
 }
 class ValueOfTime(val time_per_cost: Double) extends AnyVal {
   override def toString = time_per_cost.toString
