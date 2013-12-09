@@ -25,7 +25,6 @@ class Road(
   var v1: Vertex = null
   var v2: Vertex = null
   val lanes = new mutable.ListBuffer[Edge]()
-  var other_side: Option[Road] = None
 
   // TODO lets figure out how to build immutable stuff.
   val houses = new mutable.ListBuffer[Coordinate]()

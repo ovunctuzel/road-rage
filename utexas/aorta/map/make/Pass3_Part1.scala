@@ -23,6 +23,7 @@ class PreGraph3(old_graph: PreGraph2) {
 
   var edges = new mutable.MutableList[Edge]           // a directed lane
   var roads: List[Road] = Nil
+  val other_side = new mutable.HashMap[Road, Road]()
 
   for (old <- old_graph.edges) {
     add_road(old)
@@ -63,8 +64,8 @@ class PreGraph3(old_graph: PreGraph2) {
       r_neg.setup(vertices.toArray)
       roads :+= r_neg
       road_id_cnt += 1
-      r_neg.other_side = Some(r_pos)
-      r_pos.other_side = Some(r_neg)
+      other_side(r_neg) = r_pos
+      other_side(r_pos) = r_neg
 
       for (l <- 0 until lanes) {
         add_edge(r_neg, l, lanes - l)

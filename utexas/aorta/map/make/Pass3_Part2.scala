@@ -51,7 +51,7 @@ class Pass3_Part2(graph: PreGraph3) {
     val outgoing_roads = roads.filter(_.outgoing_lanes(v).nonEmpty).toList.sortBy(_.id.int)
 
     // Only have to test one side
-    def bad_uturn(r1: Road, r2: Road) = r1.other_side match {
+    def bad_uturn(r1: Road, r2: Road) = graph.other_side.get(r1) match {
       // Only allow this if this intersection only has these two roads
       case Some(other) if other == r2 => !(incoming_roads.size == 1 && outgoing_roads.size == 1)
       case _ => false
