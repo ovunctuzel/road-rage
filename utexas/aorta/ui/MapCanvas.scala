@@ -66,6 +66,7 @@ class GuiState(val canvas: MapCanvas) {
   var chosen_edge2: Option[Edge] = None
   var show_zone_colors = false
   var show_zone_centers = false
+  var snow_effect: Option[SnowEffect] = None
 
   // Actions
   def reset(g: Graphics2D) {
@@ -176,7 +177,7 @@ class MapCanvas(val sim: Simulation, headless: Boolean = false) extends Scrollin
   if (!headless) {
     // fire steps every now and then
     new Thread {
-      override def run(): Unit = {
+      override def run() {
         while (true) {
           if (running && speed_cap > 0) {
             val start_time = System.currentTimeMillis
@@ -201,7 +202,23 @@ class MapCanvas(val sim: Simulation, headless: Boolean = false) extends Scrollin
           }
         }
       }
-    }.start
+    }.start()
+
+    // TODO messy to do this just for snow, and could repeat work...
+    new Thread {
+      override def run() {
+        while (true) {
+          state.snow_effect match {
+            case Some(fx) => {
+              fx.move()
+              repaint()
+            }
+            case None =>
+          }
+          Thread.sleep(50)
+        }
+      }
+    }.start()
   }
 
   def update_status() {
@@ -345,6 +362,7 @@ class MapCanvas(val sim: Simulation, headless: Boolean = false) extends Scrollin
         }
         case None =>
       }
+      state.snow_effect.foreach(fx => fx.render(state))
       return state.tooltips.toList
     }
   }
@@ -415,11 +433,11 @@ class MapCanvas(val sim: Simulation, headless: Boolean = false) extends Scrollin
     case EV_Key_Press(key) => handle_ev_keypress(key)
     case EV_Mouse_Moved(x, y) => {
       redo_mouseover(x, y)
-      repaint
+      repaint()
     }
     case EV_Param_Set("highlight", value) => {
       state.highlight_type = value
-      repaint
+      repaint()
     }
     case EV_Select_Polygon_For_Army() => {
       // TODO continuation style would make this reasonable:
@@ -497,9 +515,7 @@ class MapCanvas(val sim: Simulation, headless: Boolean = false) extends Scrollin
     case "spawn-army" => {
       prompt_generator(sim.graph.edges, sim.graph.edges)
     }
-    case "step" => {
-      repaint
-    }
+    case "step" => repaint()
     case "toggle-running" => {
       if (running) {
         running = false
@@ -513,14 +529,14 @@ class MapCanvas(val sim: Simulation, headless: Boolean = false) extends Scrollin
       state.chosen_edge1 = None
       state.chosen_edge2 = None
       state.route_members.clear()
-      repaint
+      repaint()
     }
     case "clear-route" => {
       switch_mode(Mode.EXPLORE)
       state.chosen_edge1 = None
       state.chosen_edge2 = None
       state.route_members.clear()
-      repaint
+      repaint()
     }
     // TODO refactor the 4 teleports?
     case "teleport-edge" => {
@@ -533,7 +549,7 @@ class MapCanvas(val sim: Simulation, headless: Boolean = false) extends Scrollin
             Util.log("Here's " + e)
             center_on(e.lines.head.start)
             state.chosen_edge2 = Some(e)  // just kind of use this to highlight it
-            repaint
+            repaint()
           } catch {
             case _: NumberFormatException => Util.log("Bad edge ID " + id)
           }
@@ -552,14 +568,14 @@ class MapCanvas(val sim: Simulation, headless: Boolean = false) extends Scrollin
             Util.log("Here's " + r)
             center_on(r.rightmost.approx_midpt)
             state.chosen_road = Some(r)
-            repaint
+            repaint()
           } catch {
             case _: NumberFormatException => Util.log("Bad edge ID " + id)
           }
         }
         case _ =>
       }
-      grab_focus
+      grab_focus()
     }
     case "teleport-agent" => {
       prompt_int("What agent ID do you seek?") match {
@@ -570,7 +586,7 @@ class MapCanvas(val sim: Simulation, headless: Boolean = false) extends Scrollin
                 Util.log("Here's " + a)
                 state.current_obj = Some(a)
                 handle_ev_keypress(Key.F)
-                repaint
+                repaint()
               }
               case _ => Util.log("Didn't find " + id)
             }
@@ -589,14 +605,14 @@ class MapCanvas(val sim: Simulation, headless: Boolean = false) extends Scrollin
             val v = sim.graph.get_v(new VertexID(id.toInt))
             Util.log("Here's " + v)
             center_on(v.location)
-            repaint
+            repaint()
           } catch {
             case _: NumberFormatException => Util.log("Bad vertex ID " + id)
           }
         }
         case _ =>
       }
-      grab_focus
+      grab_focus()
     }
   }
 
@@ -610,7 +626,7 @@ class MapCanvas(val sim: Simulation, headless: Boolean = false) extends Scrollin
           if (current_turn >= e.next_turns.size) {
             current_turn = 0
           }
-          repaint
+          repaint()
         }
         case None =>
       }
@@ -623,7 +639,7 @@ class MapCanvas(val sim: Simulation, headless: Boolean = false) extends Scrollin
         case Mode.PICK_1st => {
           state.chosen_edge1 = state.current_edge
           switch_mode(Mode.PICK_2nd)
-          repaint
+          repaint()
         }
         case Mode.PICK_2nd => {
           state.chosen_edge2 = state.current_edge
@@ -640,7 +656,7 @@ class MapCanvas(val sim: Simulation, headless: Boolean = false) extends Scrollin
           state.chosen_edge1 = state.current_edge
           chosen_pos = state.current_obj.asInstanceOf[Option[Position]]
           switch_mode(Mode.PICK_2nd)
-          repaint
+          repaint()
         }
         case Mode.PICK_2nd => {
           state.chosen_edge2 = state.current_edge
@@ -649,7 +665,7 @@ class MapCanvas(val sim: Simulation, headless: Boolean = false) extends Scrollin
           state.chosen_edge2 = None
           chosen_pos = None
           switch_mode(Mode.EXPLORE)
-          repaint
+          repaint()
         }
         case _ =>
       }
@@ -704,16 +720,9 @@ class MapCanvas(val sim: Simulation, headless: Boolean = false) extends Scrollin
         }
       }
     }
-    case Key.X if state.current_agent.isDefined => {
-      if (running) {
-        Util.log("Cannot nuke agents while simulation is running!")
-      } else {
-        val a = state.current_agent.get
-        state.current_obj = None
-        Util.log("WARNING: Nuking " + a)
-        //a.terminate
-        // TODO remove the agent from the list
-      }
+    case Key.X => state.snow_effect match {
+      case Some(effect) => state.snow_effect = None
+      case None => state.snow_effect = Some(new SnowEffect(this))
     }
     case Key.G => {
       show_green = !show_green
@@ -798,7 +807,7 @@ class MapCanvas(val sim: Simulation, headless: Boolean = false) extends Scrollin
       state.route_members.set(color, route.toSet)
     }
     timer.stop()
-    repaint
+    repaint()
   }
 }
 
