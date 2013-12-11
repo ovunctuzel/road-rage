@@ -4,8 +4,8 @@
 
 package utexas.aorta.sim
 
-import utexas.aorta.map.{Turn, Vertex, Road}
-import utexas.aorta.sim.make.{MkIntersection, RouteType, IntersectionType, WalletType}
+import utexas.aorta.map.{Turn, Vertex, Road, Traversable}
+import utexas.aorta.sim.make.{MkIntersection, RouteType, IntersectionType, WalletType, RouterType}
 import utexas.aorta.analysis.RerouteCountMonitor
 import utexas.aorta.common.Util
 
@@ -56,3 +56,10 @@ final case class EV_AgentQuit(
   def weight = priority + 1
   def weighted_value = weight * trip_time
 }
+
+final case class EV_Transition(a: Agent, from: Traversable, to: Traversable) extends Sim_Event
+// orig = true when initializing the path. bit of a hack.
+// if unrealizable, then couldn't follow path. if not, congestion or gridlock.
+final case class EV_Reroute(
+  a: Agent, path: List[Road], orig: Boolean, method: RouterType.Value, unrealizable: Boolean
+) extends Sim_Event

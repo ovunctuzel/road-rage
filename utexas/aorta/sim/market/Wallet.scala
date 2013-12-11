@@ -22,7 +22,7 @@ abstract class Wallet(initial_budget: Int, val priority: Int) {
   //////////////////////////////////////////////////////////////////////////////
   // State
 
-  protected var a: Agent = null
+  protected var owner: Agent = null
 
   // How much the agent may spend during its one-trip lifetime
   var budget = initial_budget
@@ -45,8 +45,8 @@ abstract class Wallet(initial_budget: Int, val priority: Int) {
     w.bool(dark_tooltip)
   }
 
-  def setup(agent: Agent) {
-    a = agent
+  def setup(a: Agent) {
+    owner = a
   }
 
   protected def unserialize(r: StateReader) {}
@@ -193,16 +193,17 @@ class FairWallet(initial_budget: Int, p: Int, initial_bid_ahead: Boolean)
 
   override def setup(agent: Agent) {
     super.setup(agent)
-    a.route.listen("fair_wallet", _ match {
-      case EV_Reroute(path, _, _, _) => {
+    Common.sim.listen("fair_wallet", _ match {
+      case EV_Reroute(a, path, _, _, _) if a == owner => {
         total_weight = path.map(r => weight(r.to)).sum
       }
-      case EV_Transition(from, to) => to match {
+      case EV_Transition(a, from, to) if a == owner => to match {
         case t: Turn => {
           total_weight -= weight(t.vert)
         }
         case _ =>
       }
+      case _ =>
     })
   }
 

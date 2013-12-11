@@ -52,6 +52,7 @@ class Agent(
 
   def setup(spawn: Edge, dist: Double) {
     wallet.setup(this)
+    route.setup(this)
     at = enter(spawn, dist)
     spawn.queue.allocate_slot
     Common.sim.insert_agent(this)

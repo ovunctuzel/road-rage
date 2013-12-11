@@ -670,7 +670,7 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
       // Unregister old listener
       state.camera_agent match {
         case Some(a) => {
-          a.route.unlisten("UI")
+          sim.unlisten("ui-routing")
           a.set_debug(false)
         }
         case None =>
@@ -683,11 +683,11 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
           a.route match {
             case r: PathRoute => {
               state.route_members.set(cfg.route_member_color, r.roads)
-              r.listen("UI", _ match {
-                case EV_Reroute(path, _, _, _) => {
+              sim.listen("ui-routing", _ match {
+                case EV_Reroute(agent, path, _, _, _) if agent == a => {
                   state.route_members.set(cfg.route_member_color, path.toSet)
                 }
-                case EV_Transition(from, to) => from match {
+                case EV_Transition(agent, from, to) if agent == a => from match {
                   case e: Edge => {
                     state.route_members.remove(cfg.route_member_color, e.road)
                   }

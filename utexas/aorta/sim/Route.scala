@@ -12,16 +12,17 @@ import utexas.aorta.map.{Edge, Road, Traversable, Turn, Vertex, Graph}
 import utexas.aorta.map.analysis.Router
 import utexas.aorta.sim.make.{RouteType, RouterType, Factory}
 
-import utexas.aorta.common.{Util, RNG, Common, cfg, StateWriter, StateReader, TurnID, Publisher}
+import utexas.aorta.common.{Util, RNG, Common, cfg, StateWriter, StateReader, TurnID}
 
 // TODO maybe unify the one class with the interface, or something. other routes were useless.
 
 // Get a client to their goal by any means possible.
-abstract class Route(val goal: Road, rng: RNG) extends Publisher[Route_Event] {
+abstract class Route(val goal: Road, rng: RNG) {
   //////////////////////////////////////////////////////////////////////////////
   // Transient state
 
-  protected var debug_me = false
+  protected var owner: Agent = null
+  protected var debug_me = false  // TODO just grab from owner?
 
   //////////////////////////////////////////////////////////////////////////////
   // Meta
@@ -33,6 +34,10 @@ abstract class Route(val goal: Road, rng: RNG) extends Publisher[Route_Event] {
   }
 
   protected def unserialize(r: StateReader, graph: Graph) {}
+
+  def setup(a: Agent) {
+    owner = a
+  }
 
   //////////////////////////////////////////////////////////////////////////////
   // Actions
@@ -78,14 +83,6 @@ object Route {
     return route
   }
 }
-
-abstract class Route_Event
-final case class EV_Transition(from: Traversable, to: Traversable) extends Route_Event
-// orig = true when initializing the path. bit of a hack.
-// if unrealizable, then couldn't follow path. if not, congestion or gridlock.
-final case class EV_Reroute(
-  path: List[Road], orig: Boolean, method: RouterType.Value, unrealizable: Boolean
-) extends Route_Event
 
 // Follow routes prescribed by routers. Only reroute when forced or encouraged to.
 // TODO rerouter only var due to serialization
@@ -153,7 +150,7 @@ class PathRoute(goal: Road, orig_router: Router, private var rerouter: Router, r
       }
       case _ =>
     }
-    publish(EV_Transition(from, to))
+    Common.sim.publish(EV_Transition(owner, from, to))
   }
 
   override def reroute(at: Edge) {
@@ -209,7 +206,7 @@ class PathRoute(goal: Road, orig_router: Router, private var rerouter: Router, r
       Util.assert_eq(path.isEmpty, true)
       first_time = false
       path = from.road :: orig_router.path(from.road, goal, Common.tick)
-      publish(EV_Reroute(path, true, orig_router.router_type, false))
+      Common.sim.publish(EV_Reroute(owner, path, true, orig_router.router_type, false))
     }
 
     // Lookahead could be calling us from anywhere. Figure out where we are in
@@ -254,7 +251,7 @@ class PathRoute(goal: Road, orig_router: Router, private var rerouter: Router, r
     // Stitch together the new path into the full thing.
     val new_path = at.road :: source :: rerouter.path(source, goal, Common.tick)
     path = slice_before ++ new_path
-    publish(EV_Reroute(path, false, rerouter.router_type, must_reroute))
+    Common.sim.publish(EV_Reroute(owner, path, false, rerouter.router_type, must_reroute))
     return choice
   }
 

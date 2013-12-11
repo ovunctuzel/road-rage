@@ -40,7 +40,6 @@
 - distance/time types
 - merge headless/gui clients
 - group all LC code together, etc, but in individ classes via traits
-- unify listener system. filter by event type and then subject, or wildcard.
 
 # Experiment framework #
 
