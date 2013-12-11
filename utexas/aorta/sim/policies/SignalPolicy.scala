@@ -7,17 +7,17 @@ package utexas.aorta.sim.policies
 import scala.collection.mutable
 
 import utexas.aorta.map.{Turn, Vertex, Edge}
-import utexas.aorta.sim.{Intersection, Policy, Agent, EV_Signal_Change, Ticket, Simulation,
+import utexas.aorta.sim.{Intersection, Policy, EV_Signal_Change, Ticket, Simulation,
                          EV_IntersectionOutcome}
 import utexas.aorta.sim.make.{IntersectionType, OrderingType}
 import utexas.aorta.sim.market.IntersectionOrdering
 
-import utexas.aorta.common.{Util, Common, cfg, StateWriter, StateReader}
+import utexas.aorta.common.{Util, cfg, StateWriter, StateReader}
 
 // A phase-based light.
-class SignalPolicy(intersection: Intersection,
-                   ordering: IntersectionOrdering[Phase])
-  extends Policy(intersection)
+class SignalPolicy(
+  intersection: Intersection, ordering: IntersectionOrdering[Phase], sim: Simulation
+) extends Policy(intersection)
 {
   //////////////////////////////////////////////////////////////////////////////
   // State
@@ -29,7 +29,7 @@ class SignalPolicy(intersection: Intersection,
   phase_order = phase_order.tail ++ List(current_phase)
 
   // Tracks when the current phase began
-  private var started_at = Common.tick
+  private var started_at = sim.tick
 
   //////////////////////////////////////////////////////////////////////////////
   // Meta
@@ -54,20 +54,20 @@ class SignalPolicy(intersection: Intersection,
 
   def react() {
     // Switch to the next phase
-    if (Common.tick >= end_at && accepted.isEmpty) {
+    if (sim.tick >= end_at && accepted.isEmpty) {
       // In auctions, we may not have a viable next phase at all...
       ordering.choose(candidates, request_queue, this) match {
         case Some(p) => {
-          Common.sim.publish(
+          sim.publish(
             EV_IntersectionOutcome(policy_type, request_queue.filter(t => !p.has(t.turn)))
           )
           current_phase = p
           phase_order = phase_order.filter(phase => phase != p)
           phase_order += p
 
-          started_at = Common.tick
+          started_at = sim.tick
 
-          Common.sim.publish(EV_Signal_Change(current_phase.turns.toSet))
+          sim.publish(EV_Signal_Change(current_phase.turns.toSet))
         }
         case None =>  // shouldn't happen...
       }
@@ -126,8 +126,8 @@ class SignalPolicy(intersection: Intersection,
   // Ideally, ignoring overtime for slow agents.
   private def end_at = started_at + current_phase.duration
   // May be negative if we're in overtime
-  private def time_left = end_at - Common.tick
-  private def in_overtime = Common.tick > end_at
+  private def time_left = end_at - sim.tick
+  private def in_overtime = sim.tick > end_at
 
   private def setup_phases(): List[Phase] = {
     val phase_ls = Phase.phases_for(intersection)

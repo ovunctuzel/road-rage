@@ -12,10 +12,11 @@ import scala.io.Source
 
 import utexas.aorta.map.{Graph, Edge, Vertex, Turn}
 import utexas.aorta.sim.policies.Phase
+import utexas.aorta.sim.market.SystemWallets
 import utexas.aorta.sim.make.{Scenario, MkAgent, IntersectionType}
 
-import utexas.aorta.common.{Util, Common, cfg, StateWriter, StateReader, Flags, AgentID,
-                            Publisher, VertexID, EdgeID, RoadID}
+import utexas.aorta.common.{Util, cfg, StateWriter, StateReader, Flags, AgentID, Publisher,
+                            VertexID, EdgeID, RoadID, Timer}
 import utexas.aorta.analysis.RerouteCountMonitor
 
 // TODO take just a scenario, or graph and scenario?
@@ -47,12 +48,13 @@ class Simulation(val graph: Graph, val scenario: Scenario)
   // Meta
 
   def setup(): Simulation = {
-    Common.sim = this
+    SystemWallets.rates = scenario.system_wallet
     Phase.id = 0
 
     // TODO always do this, and forget this map/sim separation?
     graph.traversables.foreach(t => t.queue = new Queue(t))
-    graph.vertices.foreach(v => v.intersection = scenario.make_intersection(v))
+    graph.vertices.foreach(v => v.intersection = scenario.make_intersection(v, this))
+    graph.roads.foreach(r => r.auditor = new LinkAuditor(r, this))
 
     // Are we starting for the first time?
     if (tick == 0.0) {
@@ -60,6 +62,12 @@ class Simulation(val graph: Graph, val scenario: Scenario)
     } else {
       future_spawn ++= scenario.agents.filter(_.birth_tick > tick)
     }
+
+    // TODO exactly when do we need this?
+    sys.ShutdownHookThread({
+      terminate()
+    })
+
     return this
   }
 
@@ -199,7 +207,7 @@ class Simulation(val graph: Graph, val scenario: Scenario)
     (tick > time_limit)
 
   def savestate(fn: String): String = {
-    val t = Common.timer("savestating")
+    val t = Timer("savestating")
     val w = Util.writer(fn)
     serialize(w)
     w.done()
@@ -226,7 +234,7 @@ object Simulation {
     sim.setup()
     val num_agents = r.int
     for (i <- Range(0, num_agents)) {
-      sim.insert_agent(Agent.unserialize(r, sim.graph))
+      sim.insert_agent(Agent.unserialize(r, sim))
     }
     val num_ready = r.int
     val ready_ids = Range(0, num_ready).map(_ => new AgentID(r.int)).toSet

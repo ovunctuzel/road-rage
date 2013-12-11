@@ -98,23 +98,6 @@ object Util {
   def sorted_map[K <: Ordered[K], V](stuff: Iterable[(K, V)]) = immutable.SortedMap.empty[K, V] ++ stuff
 }
 
-// Plumbing some stuff everywhere is hard, so share here sometimes. Plus,
-// convenience methods.
-object Common {
-  // TODO make it easier to set the current active sim.
-  var sim: utexas.aorta.sim.Simulation = null
-
-  def scenario = sim.scenario
-  def tick = sim.tick
-  def timer(name: String) = new Timer(name)
-
-  sys.ShutdownHookThread({
-    if (sim != null) {
-      sim.terminate()
-    }
-  })
-}
-
 object Flags {
   val values = new mutable.HashMap[String, String]()
 
@@ -146,6 +129,10 @@ class Timer(val msg: String = "") {
   def stop() {
     Util.log("\"" + msg + "\": " + so_far + "s")
   }
+}
+
+object Timer {
+  def apply(name: String) = new Timer(name)
 }
 
 // Multi-use

@@ -9,7 +9,7 @@ import utexas.aorta.sim.{Intersection, Policy, Ticket, Simulation, EV_Intersecti
 import utexas.aorta.sim.make.IntersectionType
 import utexas.aorta.sim.market.IntersectionOrdering
 
-import utexas.aorta.common.{Util, StateWriter, StateReader, TurnID, Common}
+import utexas.aorta.common.{Util, StateWriter, StateReader, TurnID}
 
 // Accept as many compatible turns as possible, until an interruption occurs.
 // (To get the old greedy behavior, add the constraint back to candidates, or
@@ -71,7 +71,7 @@ class ReservationPolicy(intersection: Intersection,
     while (!interruption.isDefined) {
       ordering.choose(candidates, request_queue, this) match {
         case Some(ticket) => {
-          Common.sim.publish(EV_IntersectionOutcome(
+          ticket.a.sim.publish(EV_IntersectionOutcome(
             policy_type, request_queue.filter(t => t.turn.conflicts(ticket.turn))
           ))
           // Admit them immediately and continue, or reserve an interruption?

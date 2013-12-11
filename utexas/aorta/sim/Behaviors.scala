@@ -6,7 +6,7 @@ package utexas.aorta.sim
 
 import utexas.aorta.map.{Edge, Turn, Traversable}
 
-import utexas.aorta.common.{Util, Common, cfg, Physics}
+import utexas.aorta.common.{Util, cfg, Physics}
 
 abstract class Behavior(a: Agent) {
   // As an optimization and to keep some stats on how successful lane-changing
@@ -179,7 +179,7 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
       }
     }
 
-    //println(s"${Common.tick}: $a has $accel_for_stop, $accel_for_agent, $accel_for_lc_agent, $min_speed_limit")
+    //println(s"${a.sim.tick}: $a has $accel_for_stop, $accel_for_agent, $accel_for_lc_agent, $min_speed_limit")
 
     // TODO consider moving this first case to choose_action and not doing
     // lookahead when these premises hold true.

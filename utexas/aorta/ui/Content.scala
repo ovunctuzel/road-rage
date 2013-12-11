@@ -12,7 +12,7 @@ import scala.collection.mutable
 import utexas.aorta.map.{Coordinate, Edge, Line, Vertex, Zone, Road, Direction}
 import utexas.aorta.sim.Agent
 
-import utexas.aorta.common.{cfg, RNG, Common}
+import utexas.aorta.common.{cfg, RNG}
 
 trait Renderable {
   def debug(): Unit
@@ -168,7 +168,7 @@ class DrawRoad(val r: Road, state: GuiState) {
       state.highlight_type match {
         case (Some(x)) if x == r.road_type => Color.GREEN
         // just show one zone arbitrarily
-        case _ if state.show_zone_colors => ZoneColor.color(Common.sim.graph.zones(r).head)
+        case _ if state.show_zone_colors => ZoneColor.color(state.canvas.sim.graph.zones(r).head)
         case _ => Color.BLACK
       }
 }

@@ -10,11 +10,11 @@ import utexas.aorta.map.{Edge, Coordinate, Turn, Traversable, Graph, Position}
 import utexas.aorta.sim.market._
 import utexas.aorta.ui.Renderable
 
-import utexas.aorta.common.{Util, RNG, Common, cfg, Physics, StateWriter, StateReader, AgentID,
-                            EdgeID, ValueOfTime}
+import utexas.aorta.common.{Util, RNG, cfg, Physics, StateWriter, StateReader, AgentID, EdgeID,
+                            ValueOfTime}
 
 class Agent(
-  val id: AgentID, val route: Route, val rng: RNG, val wallet: Wallet
+  val id: AgentID, val route: Route, val rng: RNG, val wallet: Wallet, val sim: Simulation
 ) extends Ordered[Agent] with Renderable
 {
   //////////////////////////////////////////////////////////////////////////////
@@ -55,7 +55,7 @@ class Agent(
     route.setup(this)
     at = enter(spawn, dist)
     spawn.queue.allocate_slot
-    Common.sim.insert_agent(this)
+    sim.insert_agent(this)
     AgentMap.maps.foreach(m => m.when_created(this))
   }
 
@@ -132,7 +132,7 @@ class Agent(
 
     if (!is_stopped && speed < 0.1) {
       if (almost_idle_since == -1.0) {
-        almost_idle_since = Common.tick
+        almost_idle_since = sim.tick
       }
     }
     if (speed >= 0.1) {
@@ -141,7 +141,7 @@ class Agent(
 
     if (is_stopped && target_accel <= 0.0) {
       if (idle_since == -1.0) {
-        idle_since = Common.tick
+        idle_since = sim.tick
       }
       // We shouldn't ever stall during a turn! Leave a little slack time-wise
       // since the agents in front might not be packed together yet...
@@ -160,7 +160,7 @@ class Agent(
     val old_dist = at.dist
 
     idle_since = if (is_stopped && idle_since == -1.0)
-                   Common.tick   // we've started idling
+                   sim.tick   // we've started idling
                  else if (is_stopped)
                    idle_since   // keep same
                  else
@@ -199,8 +199,8 @@ class Agent(
           val ticket = get_ticket(t).get
           tickets.remove(ticket)
           ticket.intersection.exit(ticket)
-          ticket.stat = ticket.stat.copy(done_tick = Common.tick)
-          Common.sim.publish(ticket.stat)
+          ticket.stat = ticket.stat.copy(done_tick = sim.tick)
+          sim.publish(ticket.stat)
         }
       }
 
@@ -285,10 +285,10 @@ class Agent(
       }
       Util.assert_eq(tickets.isEmpty, true)
     }
-    val maker = Common.sim.scenario.agents(id.int)
-    Common.sim.publish(EV_AgentQuit(
-      this, maker.birth_tick, Common.sim.graph.get_r(maker.start), route.goal, route.route_type,
-      wallet.wallet_type, maker.wallet.budget, Common.tick, wallet.budget, wallet.priority,
+    val maker = sim.scenario.agents(id.int)
+    sim.publish(EV_AgentQuit(
+      this, maker.birth_tick, sim.graph.get_r(maker.start), route.goal, route.route_type,
+      wallet.wallet_type, maker.wallet.budget, sim.tick, wallet.budget, wallet.priority,
       !interrupted
     ))
     AgentMap.maps.foreach(m => m.destroy(this))
@@ -334,11 +334,11 @@ class Agent(
   def how_long_idle = if (idle_since == -1.0)
                         0
                       else
-                        Common.tick - idle_since
+                        sim.tick - idle_since
   def how_long_almost_idle = if (almost_idle_since == -1.0)
                         0
                       else
-                        Common.tick - almost_idle_since
+                        sim.tick - almost_idle_since
   def is_stopped = speed <= cfg.epsilon
 
   def involved_with(i: Intersection) = all_tickets(i).nonEmpty
@@ -506,27 +506,27 @@ class Agent(
 }
 
 object Agent {
-  def unserialize(r: StateReader, graph: Graph): Agent = {
+  def unserialize(r: StateReader, sim: Simulation): Agent = {
     val a = new Agent(
-      new AgentID(r.int), Route.unserialize(r, graph), RNG.unserialize(r),
-      Wallet.unserialize(r)
+      new AgentID(r.int), Route.unserialize(r, sim.graph), RNG.unserialize(r),
+      Wallet.unserialize(r), sim
     )
-    a.at = Position.unserialize(r, graph)
+    a.at = Position.unserialize(r, sim.graph)
     a.speed = r.double
     a.target_accel = r.double
     a.behavior.target_lane = r.int match {
       case -1 => None
-      case x => Some(graph.edges(x))
+      case x => Some(sim.graph.edges(x))
     }
     a.old_lane = r.int match {
       case -1 => None
-      case x => Some(graph.edges(x))
+      case x => Some(sim.graph.edges(x))
     }
     a.lanechange_dist_left = r.double
     a.idle_since = r.double
     a.almost_idle_since = r.double
     val num_tickets = r.int
-    a.tickets ++= Range(0, num_tickets).map(_ => Ticket.unserialize(r, a, graph))
+    a.tickets ++= Range(0, num_tickets).map(_ => Ticket.unserialize(r, a, sim.graph))
     // Add ourselves back to a queue
     a.at.on.queue.enter(a, a.at.dist)
     a.old_lane match {

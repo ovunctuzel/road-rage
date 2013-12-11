@@ -11,7 +11,7 @@ import Function.tupled
 
 import utexas.aorta.map.{Edge, Traversable, Position}
 
-import utexas.aorta.common.{Util, Common, cfg, Physics, StateWriter, StateReader}
+import utexas.aorta.common.{Util, cfg, Physics, StateWriter, StateReader}
 
 // Reason about collisions on edges and within individual turns.
 class Queue(t: Traversable) {
@@ -58,11 +58,11 @@ class Queue(t: Traversable) {
   }
 
   // Called lazily.
-  def start_step() {
-    if (last_tick != Common.tick) {
+  def start_step(a: Agent) {
+    if (last_tick != a.sim.tick) {
       prev_agents.clear()
       prev_agents ++= all_agents
-      last_tick = Common.tick
+      last_tick = a.sim.tick
     }
   }
 
@@ -96,7 +96,7 @@ class Queue(t: Traversable) {
     // Make sure nobody's crowding anybody else.
     for ((a1, a2) <- alist.zip(alist.tail)) {
       if (a1.at.dist < a2.at.dist + cfg.follow_dist) {
-        Util.log(s"It's ${Common.tick}")
+        Util.log(s"It's ${a1.sim.tick}")
         Util.log(s"LCing? ${a1.old_lane} (${a1.lanechange_dist_left}), ${a2.old_lane} (${a2.lanechange_dist_left})")
         throw new Exception(
           s"$a2 too close to $a1 on $t (" + (a1.at.dist - a2.at.dist) + ")"
@@ -121,7 +121,7 @@ class Queue(t: Traversable) {
   def enter(a: Agent, dist: Double): Position = {
     // Just find our spot.
 
-    start_step  // lazily, if needed
+    start_step(a)  // lazily, if needed
 
     Util.assert_eq(agents.get(-dist), null)
 
@@ -131,14 +131,14 @@ class Queue(t: Traversable) {
     // If we're not entering at the end of the queue, something _could_ be odd,
     // so check it.
     if (closest_behind(dist).isDefined) {
-      Common.sim.active_queues += this
+      a.sim.active_queues += this
     }
 
     return Position(t, dist)
   }
 
   def exit(a: Agent, old_dist: Double) = {
-    start_step  // lazily, if needed
+    start_step(a)  // lazily, if needed
 
     Util.assert_eq(agents.get(-old_dist), a)
 
@@ -148,7 +148,7 @@ class Queue(t: Traversable) {
     // We should leave from the front of the queue generally, unless
     // lane-changing
     if (agents.firstEntry.getValue != a) {
-      Common.sim.active_queues += this
+      a.sim.active_queues += this
     }
 
     agents.remove(-old_dist)

@@ -8,7 +8,7 @@ import utexas.aorta.sim.{Simulation, EV_AgentSpawned, EV_Reroute, EV_AgentQuit, 
                          EV_IntersectionOutcome, EV_Transition, Agent}
 import utexas.aorta.sim.make.Scenario
 import utexas.aorta.map.{Edge, Road, Turn}
-import utexas.aorta.common.{Common, AgentID, IO, Util, BinnedHistogram}
+import utexas.aorta.common.{AgentID, IO, Util, BinnedHistogram}
 
 import scala.collection.mutable
 
@@ -101,7 +101,7 @@ class OriginalRouteMetric(info: MetricInfo) extends SinglePerAgentMetric(info) {
   private val first_reroute_time = new mutable.HashMap[AgentID, Double]()
   info.sim.listen(name, _ match {
     case EV_Reroute(a, _, false, _, _) if !first_reroute_time.contains(a.id) =>
-      first_reroute_time(a.id) = Common.tick
+      first_reroute_time(a.id) = a.sim.tick
     // [0, 100]
     case e: EV_AgentQuit => per_agent(e.agent.id) =
       100.0 * ((first_reroute_time.getOrElse(e.agent.id, e.end_tick) - e.birth_tick) / e.trip_time)
@@ -184,12 +184,12 @@ class LinkDelayMetric(info: MetricInfo) extends Metric(info) {
   private val entry_time = new mutable.HashMap[Agent, Double]()
 
   info.sim.listen(name, _ match {
-    case EV_AgentSpawned(a) => entry_time(a) = Common.tick
+    case EV_AgentSpawned(a) => entry_time(a) = a.sim.tick
     // Entering a road
-    case EV_Transition(a, from: Turn, to) => entry_time(a) = Common.tick
+    case EV_Transition(a, from: Turn, to) => entry_time(a) = a.sim.tick
     // Exiting a road
     case EV_Transition(a, from: Edge, to: Turn) =>
-      add_delay(entry_time(a), Common.tick - entry_time(a), from.road)
+      add_delay(entry_time(a), a.sim.tick - entry_time(a), from.road)
     case _ =>
   })
 

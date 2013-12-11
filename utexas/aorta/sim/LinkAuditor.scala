@@ -7,10 +7,10 @@ package utexas.aorta.sim
 import scala.collection.mutable
 
 import utexas.aorta.map.Road
-import utexas.aorta.common.{cfg, Common, Util, Price}
+import utexas.aorta.common.{cfg, Util, Price}
 
 // Manage information at the road level
-class LinkAuditor(val r: Road) extends CongestionMeasure with CurrentCongestion {
+class LinkAuditor(val r: Road, sim: Simulation) extends CongestionMeasure(sim) with CurrentCongestion {
   // TODO need to savestate.
   // TODO do different congestion policies based on scenarios, or cfg
   override def congested_now = r.lanes.exists(e => e.queue.is_congested)
@@ -29,7 +29,7 @@ class LinkAuditor(val r: Road) extends CongestionMeasure with CurrentCongestion 
       new Price(0)
 }
 
-abstract trait CongestionMeasure {
+abstract class CongestionMeasure(val sim: Simulation) {
   protected def congested_now(): Boolean
   // The more permanent notion that clients should use
   def congested(): Boolean
@@ -60,13 +60,13 @@ trait StickyCongestion extends CongestionMeasure {
     } else {
       // We're different! How long has it been?
       opposite_since match {
-        case Some(start_time) if Common.tick - start_time >= threshold => {
+        case Some(start_time) if sim.tick - start_time >= threshold => {
           // State change!
           congested_state = congested_now
           opposite_since = None
         }
         // Start the timer
-        case None => opposite_since = Some(Common.tick)
+        case None => opposite_since = Some(sim.tick)
         case Some(start_time) =>  // Haven't stayed this way long enough yet
       }
     }

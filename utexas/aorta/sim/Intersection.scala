@@ -9,15 +9,15 @@ import scala.collection.mutable
 import utexas.aorta.map.{Vertex, Turn, Edge, Graph}
 import utexas.aorta.sim.make.{IntersectionType, OrderingType, Factory}
 
-import utexas.aorta.common.{Util, Common, cfg, StateWriter, StateReader, TurnID}
+import utexas.aorta.common.{Util, cfg, StateWriter, StateReader, TurnID}
 
 // Common stuff goes here, particular implementations are in utexas.aorta.sim.policies
 
 // Reason about collisions from conflicting simultaneous turns.
 class Intersection(val v: Vertex, policy_type: IntersectionType.Value,
-                   val ordering_type: OrderingType.Value)
+                   val ordering_type: OrderingType.Value, sim: Simulation)
 {
-  val policy = Factory.make_policy(this, policy_type, ordering_type)
+  val policy = Factory.make_policy(this, policy_type, ordering_type, sim)
 
   // Multiple agents can be on the same turn; the corresponding queue will
   // handle collisions. So in fact, we want to track which turns are active...
@@ -68,7 +68,7 @@ class Intersection(val v: Vertex, policy_type: IntersectionType.Value,
       // It's not really that much better to do the checking in-place and only
       // atomic-check when there could be a problem.
       if (turns.size == 1) {
-        Common.sim.active_intersections += this
+        ticket.a.sim.active_intersections += this
       }
 
       turns(t) = 0
@@ -79,11 +79,10 @@ class Intersection(val v: Vertex, policy_type: IntersectionType.Value,
       // code hasn't finished moving them.
       Util.log(s"!!! ${ticket.a} illegally entered $this, going ${ticket.a.speed} m/s")
       Util.log("  Illegal entry was near " + t.from + " and " + t + " (vert " + t.from.to.id + ")")
-      Util.log("  Origin lane length: " + t.from.length + "; time " + Common.tick)
-      Util.log("  Happened at " + Common.tick)
-      ticket.a.debug
-      policy.dump_info
-      sys.exit
+      Util.log("  Origin lane length: " + t.from.length + "; time " + ticket.a.sim.tick)
+      ticket.a.debug()
+      policy.dump_info()
+      sys.exit()
     }
   }
 
@@ -94,7 +93,7 @@ class Intersection(val v: Vertex, policy_type: IntersectionType.Value,
       turns -= t
       // Potentially we now don't care...
       if (turns.size == 1) {
-        Common.sim.active_intersections -= this
+        ticket.a.sim.active_intersections -= this
       }
     }
     policy.handle_exit(ticket)
@@ -146,7 +145,7 @@ class Ticket(val a: Agent, val turn: Turn) extends Ordered[Ticket] {
   
   // Don't initially know: accept_tick, done_tick, cost_paid.
   // TODO keep state properly, dont shuffle it into this >_<
-  var stat = EV_Turn(a, turn.vert, Common.tick, -1.0, -1.0, 0.0)
+  var stat = EV_Turn(a, turn.vert, a.sim.tick, -1.0, -1.0, 0.0)
 
   // If we interrupt a reservation successfully, don't let people block us.
   var is_interruption = false
@@ -173,7 +172,7 @@ class Ticket(val a: Agent, val turn: Turn) extends Ordered[Ticket] {
   // Actions
 
   def approve() {
-    stat = stat.copy(accept_tick = Common.tick)
+    stat = stat.copy(accept_tick = a.sim.tick)
     // Allocate a spot for them. This must be called when the turn isn't
     // blocked.
     // TODO this messes up parallelism again...
@@ -228,7 +227,7 @@ class Ticket(val a: Agent, val turn: Turn) extends Ordered[Ticket] {
 
     // We're clear!
     if (waiting_since == -1.0 && a.is_stopped) {
-      waiting_since = Common.tick
+      waiting_since = a.sim.tick
     }
     return false
   }
@@ -252,7 +251,7 @@ class Ticket(val a: Agent, val turn: Turn) extends Ordered[Ticket] {
     if (waiting_since == -1.0)
       0.0
     else
-      Common.tick - waiting_since
+      a.sim.tick - waiting_since
 
   def eta_earliest() =
     a.how_far_away(turn.vert.intersection) / a.at.on.speed_limit

@@ -8,7 +8,7 @@ import utexas.aorta.sim.{Intersection, Policy, Ticket, EV_IntersectionOutcome}
 import utexas.aorta.sim.make.IntersectionType
 import utexas.aorta.sim.market.IntersectionOrdering
 
-import utexas.aorta.common.{cfg, Common}
+import utexas.aorta.common.cfg
 
 // Always stop, then FIFO. Totally unoptimized.
 class StopSignPolicy(intersection: Intersection,
@@ -37,7 +37,7 @@ class StopSignPolicy(intersection: Intersection,
   private def approve_next() {
     ordering.choose(candidates, request_queue, this) match {
       case Some(ticket) => {
-        Common.sim.publish(EV_IntersectionOutcome(
+        ticket.a.sim.publish(EV_IntersectionOutcome(
           policy_type, request_queue.filter(t => t.turn.from != ticket.turn.from)
         ))
         accept(ticket)

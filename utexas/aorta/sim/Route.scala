@@ -12,7 +12,7 @@ import utexas.aorta.map.{Edge, Road, Traversable, Turn, Vertex, Graph}
 import utexas.aorta.map.analysis.Router
 import utexas.aorta.sim.make.{RouteType, RouterType, Factory}
 
-import utexas.aorta.common.{Util, RNG, Common, cfg, StateWriter, StateReader, TurnID}
+import utexas.aorta.common.{Util, RNG, cfg, StateWriter, StateReader, TurnID}
 
 // TODO maybe unify the one class with the interface, or something. other routes were useless.
 
@@ -150,7 +150,7 @@ class PathRoute(goal: Road, orig_router: Router, private var rerouter: Router, r
       }
       case _ =>
     }
-    Common.sim.publish(EV_Transition(owner, from, to))
+    owner.sim.publish(EV_Transition(owner, from, to))
   }
 
   override def reroute(at: Edge) {
@@ -205,8 +205,8 @@ class PathRoute(goal: Road, orig_router: Router, private var rerouter: Router, r
     if (first_time) {
       Util.assert_eq(path.isEmpty, true)
       first_time = false
-      path = from.road :: orig_router.path(from.road, goal, Common.tick)
-      Common.sim.publish(EV_Reroute(owner, path, true, orig_router.router_type, false))
+      path = from.road :: orig_router.path(from.road, goal, owner.sim.tick)
+      owner.sim.publish(EV_Reroute(owner, path, true, orig_router.router_type, false))
     }
 
     // Lookahead could be calling us from anywhere. Figure out where we are in
@@ -249,9 +249,9 @@ class PathRoute(goal: Road, orig_router: Router, private var rerouter: Router, r
     // TODO Erase all turn choices AFTER source, if we've made any?
 
     // Stitch together the new path into the full thing.
-    val new_path = at.road :: source :: rerouter.path(source, goal, Common.tick)
+    val new_path = at.road :: source :: rerouter.path(source, goal, owner.sim.tick)
     path = slice_before ++ new_path
-    Common.sim.publish(EV_Reroute(owner, path, false, rerouter.router_type, must_reroute))
+    owner.sim.publish(EV_Reroute(owner, path, false, rerouter.router_type, must_reroute))
     return choice
   }
 

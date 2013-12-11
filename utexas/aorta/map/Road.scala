@@ -34,7 +34,7 @@ class Road(
   // Deterministic state
 
   // TODO like queues for traversables and intersections for vertices... bad dependency to have.
-  val auditor = new LinkAuditor(this)
+  var auditor: LinkAuditor = null
 
   // TODO move this table. actually, store speed limit
   val speed_limit = Physics.mph_to_si(road_type match {

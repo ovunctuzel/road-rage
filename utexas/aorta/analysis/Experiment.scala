@@ -12,7 +12,7 @@ import utexas.aorta.sim.{Simulation, EV_Heartbeat, EV_AgentSpawned, Agent}
 import utexas.aorta.sim.make.{ModScenarioTool, Scenario}
 import utexas.aorta.ui.GUIDebugger
 
-import utexas.aorta.common.{RNG, Util, Flags, Common, AgentID, IO}
+import utexas.aorta.common.{RNG, Util, Flags, AgentID, IO}
 
 // TODO divorce scenario generation from the rest?
 case class ExpConfig(

@@ -29,7 +29,7 @@ case class Scenario(name: String, map_fn: String, agents: Array[MkAgent],
     w.done()
   }
 
-  def make_intersection(v: Vertex) = intersections(v.id.int).make(v)
+  def make_intersection(v: Vertex, sim: Simulation) = intersections(v.id.int).make(v, sim)
 
   // Although the massive numbers of agents were probably created with a
   // distribution function originally, we just see the individual list in the
@@ -151,7 +151,7 @@ case class MkAgent(id: AgentID, birth_tick: Double, seed: Long,
       (other.birth_tick, other.id.int), (birth_tick, id.int)
     )
 
-  def make(sim: Simulation) = new Agent(id, route.make(sim), new RNG(seed), wallet.make)
+  def make(sim: Simulation) = new Agent(id, route.make(sim), new RNG(seed), wallet.make, sim)
 
   def serialize(w: StateWriter) {
     w.int(id.int)
@@ -237,7 +237,7 @@ object MkWallet {
 case class MkIntersection(id: VertexID, policy: IntersectionType.Value,
                           ordering: OrderingType.Value)
 {
-  def make(v: Vertex) = new Intersection(v, policy, ordering)
+  def make(v: Vertex, sim: Simulation) = new Intersection(v, policy, ordering, sim)
 
   def diff(other: MkIntersection) = {
     Util.assert_eq(id, other.id)
@@ -323,14 +323,14 @@ object WalletType extends Enumeration {
 
 object Factory {
   def make_policy(i: Intersection, policy: IntersectionType.Value,
-                  ordering: OrderingType.Value) = policy match
+                  ordering: OrderingType.Value, sim: Simulation) = policy match
   {
     case IntersectionType.NeverGo =>
       new NeverGoPolicy(i)
     case IntersectionType.StopSign =>
       new StopSignPolicy(i, make_intersection_ordering[Ticket](ordering))
     case IntersectionType.Signal =>
-      new SignalPolicy(i, make_intersection_ordering[Phase](ordering))
+      new SignalPolicy(i, make_intersection_ordering[Phase](ordering), sim)
     case IntersectionType.Reservation =>
       new ReservationPolicy(i, make_intersection_ordering[Ticket](ordering))
     /*case IntersectionType.CommonCase =>

@@ -33,8 +33,8 @@
 # Code cleanup #
 
 - rename edges as lanes? policy -> controller? vertex -> junction?
-- hard to have multiple sims due to objects with state: Common, CHRouter, Graph (norm coords), system
-  wallets, AgentMap, ReplayDiffScheme, GUI
+- hard to have multiple sims due to objects with state: Graph (norm coords), system wallets,
+  AgentMap, ReplayDiffScheme, GUI
 - https://github.com/scala/pickling
 - reduce vars and publics and mutable collections
 - distance/time types

@@ -7,7 +7,7 @@ package utexas.aorta.sim
 import utexas.aorta.ui.GUIDebugger
 import utexas.aorta.analysis.{SimSpeedMonitor, ReplayReader, ReplayWriter}
 
-import utexas.aorta.common.{Util, Common, cfg, Flags}
+import utexas.aorta.common.{Util, Timer, cfg, Flags}
 
 object Headless {
   def main(args: Array[String]): Unit = {
@@ -38,7 +38,7 @@ object Headless {
     })
 
     Util.log("Starting simulation with time-steps of " + cfg.dt_s + "s")
-    val t = Common.timer("headless simulation")
+    val t = Timer("headless simulation")
     while (!sim.done) {
       sim.step()
     }

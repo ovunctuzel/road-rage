@@ -18,7 +18,7 @@ import utexas.aorta.sim.{Simulation, Agent, EV_Signal_Change, EV_Transition, EV_
 import utexas.aorta.sim.make.{IntersectionType, RouteType}
 import utexas.aorta.sim.PathRoute
 
-import utexas.aorta.common.{Util, RNG, Common, cfg, EdgeID, VertexID, RoadID}
+import utexas.aorta.common.{Util, RNG, Timer, cfg, EdgeID, VertexID, RoadID}
 
 object Mode extends Enumeration {
   type Mode = Value
@@ -97,7 +97,7 @@ class GuiState(val canvas: MapCanvas) {
   )
 }
 
-class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCanvas {
+class MapCanvas(val sim: Simulation, headless: Boolean = false) extends ScrollingCanvas {
   ///////////////////////
   // TODO organize better. new magic here.
 
@@ -693,6 +693,7 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
                   }
                   case _ =>
                 }
+                case _ =>
               })
             }
             case _ =>
@@ -782,7 +783,7 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
     val from = state.chosen_edge1.get.road
     val to = state.chosen_edge2.get.road
 
-    val timer = Common.timer("Pathfinding")
+    val timer = Timer("Pathfinding")
     // Show each type of route in a different color...
     val colors = List(Color.RED, Color.BLUE, Color.CYAN, Color.GREEN, Color.YELLOW)
     val routers = List(new CongestionRouter(sim.graph))

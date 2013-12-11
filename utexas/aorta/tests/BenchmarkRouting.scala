@@ -7,14 +7,14 @@ package utexas.aorta.tests
 import utexas.aorta.map.ZoneRouter
 import utexas.aorta.map.analysis._
 
-import utexas.aorta.common.{Util, Common, cfg}
+import utexas.aorta.common.{Util, RNG, Timer, cfg}
 
 object BenchmarkRouting {
   def main(args: Array[String]) = {
     val rounds = 100000
 
     val sim = Util.process_args(args)
-    val rng = new utexas.aorta.common.RNG()
+    val rng = new RNG()
 
     val routers = List(
       (new CongestionRouter(sim.graph), "congestion_a*"),
@@ -30,7 +30,7 @@ object BenchmarkRouting {
         Util.log("round %,d / %,d".format(i, rounds))
       }
       for (((router, name), idx) <- routers.zipWithIndex) {
-        val t = Common.timer(name)
+        val t = Timer(name)
         router.path(from, to, 0.0)
         sum_times(idx) += t.so_far
       }

@@ -5,11 +5,12 @@
 package utexas.aorta.sim.market
 
 import utexas.aorta.sim.{Agent, Ticket, Policy, EV_Transition, EV_Reroute}
-import utexas.aorta.sim.make.{WalletType, IntersectionType, OrderingType, Factory}
+import utexas.aorta.sim.make.{WalletType, IntersectionType, OrderingType, Factory,
+                              SystemWalletConfig}
 import utexas.aorta.map.{Turn, Vertex}
 import utexas.aorta.sim.policies.{Phase, ReservationPolicy, SignalPolicy}
 
-import utexas.aorta.common.{Util, Common, cfg, StateReader, StateWriter}
+import utexas.aorta.common.{Util, cfg, StateReader, StateWriter}
 
 // Express an agent's preferences of trading between time and cost.
 // TODO dont require an agent, ultimately
@@ -193,7 +194,7 @@ class FairWallet(initial_budget: Int, p: Int, initial_bid_ahead: Boolean)
 
   override def setup(agent: Agent) {
     super.setup(agent)
-    Common.sim.listen("fair_wallet", _ match {
+    agent.sim.listen("fair_wallet", _ match {
       case EV_Reroute(a, path, _, _, _) if a == owner => {
         total_weight = path.map(r => weight(r.to)).sum
       }
@@ -271,7 +272,7 @@ object SystemWallets {
   val dependency = new SystemWallet()
   val waiting = new SystemWallet()
   val ready = new SystemWallet()
-  private def rates = Common.scenario.system_wallet
+  var rates: SystemWalletConfig = null  // TODO hackish, but then, this whole singleton is.
 
   def meta_bid[T](items: List[T], policy: Policy): List[Bid[T]] =
     (bid_thruput(items, policy) ++ bid_pointless_impatience(items, policy) ++
