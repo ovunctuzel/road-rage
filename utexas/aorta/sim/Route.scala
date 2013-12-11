@@ -12,13 +12,12 @@ import utexas.aorta.map.{Edge, Road, Traversable, Turn, Vertex, Graph}
 import utexas.aorta.map.analysis.Router
 import utexas.aorta.sim.make.{RouteType, RouterType, Factory}
 
-import utexas.aorta.common.{Util, RNG, Common, cfg, StateWriter, StateReader, TurnID,
-                            ListenerPattern}
+import utexas.aorta.common.{Util, RNG, Common, cfg, StateWriter, StateReader, TurnID, Publisher}
 
 // TODO maybe unify the one class with the interface, or something. other routes were useless.
 
 // Get a client to their goal by any means possible.
-abstract class Route(val goal: Road, rng: RNG) extends ListenerPattern[Route_Event] {
+abstract class Route(val goal: Road, rng: RNG) extends Publisher[Route_Event] {
   //////////////////////////////////////////////////////////////////////////////
   // Transient state
 
@@ -154,7 +153,7 @@ class PathRoute(goal: Road, orig_router: Router, private var rerouter: Router, r
       }
       case _ =>
     }
-    tell_listeners(EV_Transition(from, to))
+    publish(EV_Transition(from, to))
   }
 
   override def reroute(at: Edge) {
@@ -210,7 +209,7 @@ class PathRoute(goal: Road, orig_router: Router, private var rerouter: Router, r
       Util.assert_eq(path.isEmpty, true)
       first_time = false
       path = from.road :: orig_router.path(from.road, goal, Common.tick)
-      tell_listeners(EV_Reroute(path, true, orig_router.router_type, false))
+      publish(EV_Reroute(path, true, orig_router.router_type, false))
     }
 
     // Lookahead could be calling us from anywhere. Figure out where we are in
@@ -255,7 +254,7 @@ class PathRoute(goal: Road, orig_router: Router, private var rerouter: Router, r
     // Stitch together the new path into the full thing.
     val new_path = at.road :: source :: rerouter.path(source, goal, Common.tick)
     path = slice_before ++ new_path
-    tell_listeners(EV_Reroute(path, false, rerouter.router_type, must_reroute))
+    publish(EV_Reroute(path, false, rerouter.router_type, must_reroute))
     return choice
   }
 

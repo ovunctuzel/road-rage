@@ -58,7 +58,7 @@ class SignalPolicy(intersection: Intersection,
       // In auctions, we may not have a viable next phase at all...
       ordering.choose(candidates, request_queue, this) match {
         case Some(p) => {
-          Common.sim.tell_listeners(
+          Common.sim.publish(
             EV_IntersectionOutcome(policy_type, request_queue.filter(t => !p.has(t.turn)))
           )
           current_phase = p
@@ -67,8 +67,7 @@ class SignalPolicy(intersection: Intersection,
 
           started_at = Common.tick
 
-          // callback for UI usually
-          Common.sim.tell_listeners(EV_Signal_Change(current_phase.turns.toSet))
+          Common.sim.publish(EV_Signal_Change(current_phase.turns.toSet))
         }
         case None =>  // shouldn't happen...
       }

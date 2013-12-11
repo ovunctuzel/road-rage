@@ -37,7 +37,7 @@ class StopSignPolicy(intersection: Intersection,
   private def approve_next() {
     ordering.choose(candidates, request_queue, this) match {
       case Some(ticket) => {
-        Common.sim.tell_listeners(EV_IntersectionOutcome(
+        Common.sim.publish(EV_IntersectionOutcome(
           policy_type, request_queue.filter(t => t.turn.from != ticket.turn.from)
         ))
         accept(ticket)

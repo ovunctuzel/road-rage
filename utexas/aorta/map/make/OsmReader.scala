@@ -11,7 +11,7 @@ import scala.collection.mutable
 import java.util.NoSuchElementException
 
 import utexas.aorta.map.Coordinate
-import utexas.aorta.common.ListenerPattern
+import utexas.aorta.common.Publisher
 
 trait OsmElement {
   val tags: Map[String, String]
@@ -45,7 +45,7 @@ case class OsmRelation(
   override def points = member_ways.flatMap(_.points) ++ member_nodes.map(_.coordinate)
 }
 
-class OsmReader(fn: String) extends ListenerPattern[EV_OSM] {
+class OsmReader(fn: String) extends Publisher[EV_OSM] {
   val id_to_node = new mutable.HashMap[String, OsmNode]()
   val id_to_way = new mutable.HashMap[String, OsmWay]()
 
@@ -55,13 +55,13 @@ class OsmReader(fn: String) extends ListenerPattern[EV_OSM] {
     while (xml.hasNext) {
       xml.next match {
         case EvElemStart(_, "node", attribs, _) => read_node(attribs, xml).foreach(node => {
-          tell_listeners(EV_OSM(node))
+          publish(EV_OSM(node))
         })
         case EvElemStart(_, "way", attribs, _) => read_way(attribs, xml).foreach(way => {
-          tell_listeners(EV_OSM(way))
+          publish(EV_OSM(way))
         })
         case EvElemStart(_, "relation", attribs, _) => read_relation(attribs, xml).foreach(rel => {
-          tell_listeners(EV_OSM(rel))
+          publish(EV_OSM(rel))
         })
         case _ =>
       }

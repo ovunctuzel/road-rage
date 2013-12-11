@@ -15,12 +15,12 @@ import utexas.aorta.sim.policies.Phase
 import utexas.aorta.sim.make.{Scenario, MkAgent, IntersectionType}
 
 import utexas.aorta.common.{Util, Common, cfg, StateWriter, StateReader, Flags, AgentID,
-                            ListenerPattern, VertexID, EdgeID, RoadID}
+                            Publisher, VertexID, EdgeID, RoadID}
 import utexas.aorta.analysis.{Heartbeat_Stat, Measurement, RerouteCountMonitor}
 
 // TODO take just a scenario, or graph and scenario?
 class Simulation(val graph: Graph, val scenario: Scenario)
-  extends ListenerPattern[Sim_Event] with AgentManager
+  extends Publisher[Sim_Event] with AgentManager
 {
   //////////////////////////////////////////////////////////////////////////////
   // State
@@ -131,7 +131,7 @@ class Simulation(val graph: Graph, val scenario: Scenario)
       savestate()
     }
 
-    tell_listeners(EV_Step(tick))
+    publish(EV_Step(tick))
   }
 
   def multi_step(total_dt: Double) {
@@ -172,7 +172,7 @@ class Simulation(val graph: Graph, val scenario: Scenario)
         } else {
           a.setup(e, spawn.start_dist)
         }
-        tell_listeners(EV_AgentSpawned(a))
+        publish(EV_AgentSpawned(a))
         return true
       }
     } else {
@@ -186,7 +186,7 @@ class Simulation(val graph: Graph, val scenario: Scenario)
       routing_monitor
     )
     Common.record(measurement)
-    tell_listeners(EV_Heartbeat(measurement))
+    publish(EV_Heartbeat(measurement))
     last_real_time = System.currentTimeMillis
     steps_since_last_time = 0
     routing_monitor.reset()
@@ -243,16 +243,6 @@ object Simulation {
     return sim
   }
 }
-
-abstract class Sim_Event
-final case class EV_Signal_Change(greens: Set[Turn]) extends Sim_Event
-final case class EV_Heartbeat(heartbeat: Heartbeat_Stat) extends Sim_Event
-final case class EV_AgentSpawned(a: Agent) extends Sim_Event
-final case class EV_AgentQuit(a: Agent) extends Sim_Event
-final case class EV_Step(tick: Double) extends Sim_Event
-final case class EV_Stat(stat: Measurement) extends Sim_Event
-final case class EV_IntersectionOutcome(intersection: IntersectionType.Value, losers: List[Ticket])
-  extends Sim_Event
 
 trait AgentManager {
   //////////////////////////////////////////////////////////////////////////////

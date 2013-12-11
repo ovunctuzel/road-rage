@@ -36,7 +36,7 @@
 - hard to have multiple sims due to objects with state: Common, CHRouter, Graph (norm coords), system
   wallets, AgentMap, ReplayDiffScheme, GUI
 - https://github.com/scala/pickling
-- reduce vars and publics
+- reduce vars and publics and mutable collections
 - distance/time types
 - merge headless/gui clients
 - group all LC code together, etc, but in individ classes via traits
@@ -87,7 +87,6 @@
 
 - change limit of never-toll from 3 to 5
 - sticky congested/clear state.
-- faster rerouting... RRTs?
 - take into account time and cost simultaneously
 - regular rerouting
 - tolls justified thru fundamental diagram

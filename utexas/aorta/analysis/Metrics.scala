@@ -4,8 +4,8 @@
 
 package utexas.aorta.analysis
 
-import utexas.aorta.sim.{Simulation, EV_AgentSpawned, EV_AgentQuit, EV_Reroute,
-                         EV_Stat, EV_IntersectionOutcome, EV_Transition}
+import utexas.aorta.sim.{Simulation, EV_AgentSpawned, EV_Reroute, EV_Stat, EV_IntersectionOutcome,
+                         EV_Transition}
 import utexas.aorta.sim.make.Scenario
 import utexas.aorta.map.{Edge, Road, Turn}
 import utexas.aorta.common.{Common, AgentID, IO, Util, BinnedHistogram}

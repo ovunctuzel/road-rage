@@ -290,7 +290,6 @@ class Agent(
       id, maker.birth_tick, maker.start, route.goal.id, route.route_type, wallet.wallet_type,
       maker.wallet.budget, Common.tick, wallet.budget, wallet.priority, !interrupted
     ))
-    Common.sim.tell_listeners(EV_AgentQuit(this))
     AgentMap.maps.foreach(m => m.destroy(this))
   }
 

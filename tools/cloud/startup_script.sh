@@ -3,6 +3,8 @@
 
 GS=gs://aorta/`hostname`
 
+# TODO update to use sbt
+
 # Install java and scala
 sudo apt-get update
 sudo apt-get install -y openjdk-6-jre libjansi-java less

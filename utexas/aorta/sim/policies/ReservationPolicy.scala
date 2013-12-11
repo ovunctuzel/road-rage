@@ -71,7 +71,7 @@ class ReservationPolicy(intersection: Intersection,
     while (!interruption.isDefined) {
       ordering.choose(candidates, request_queue, this) match {
         case Some(ticket) => {
-          Common.sim.tell_listeners(EV_IntersectionOutcome(
+          Common.sim.publish(EV_IntersectionOutcome(
             policy_type, request_queue.filter(t => t.turn.conflicts(ticket.turn))
           ))
           // Admit them immediately and continue, or reserve an interruption?

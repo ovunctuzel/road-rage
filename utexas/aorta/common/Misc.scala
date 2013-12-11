@@ -110,7 +110,7 @@ object Common {
   def timer(name: String) = new Timer(name)
 
   def record(item: Measurement) {
-    sim.tell_listeners(EV_Stat(item))
+    sim.publish(EV_Stat(item))
   }
 
   sys.ShutdownHookThread({
@@ -197,7 +197,7 @@ abstract class MathVector[T <: MathVector[T]](val value: Array[Double]) {
   }
 }
 
-trait ListenerPattern[T] {
+trait Publisher[T] {
   //////////////////////////////////////////////////////////////////////////////
   // State
 
@@ -206,7 +206,7 @@ trait ListenerPattern[T] {
   //////////////////////////////////////////////////////////////////////////////
   // Actions
 
-  def tell_listeners(ev: T) = listeners.foreach(l => l._2(ev))
+  def publish(ev: T) = listeners.foreach(l => l._2(ev))
   def listen(tag: String, subscriber: T => Any) = {
     listeners += ((tag, subscriber))
   }
