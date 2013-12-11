@@ -123,11 +123,11 @@ class MapCanvas(sim: Simulation, headless: Boolean = false) extends ScrollingCan
   // Register to hear events
   private var last_tick = 0.0
   sim.listen("ui", _ match {
-    case EV_Heartbeat(info) => {
+    case e: EV_Heartbeat => {
       update_status()
-      status.agents.text = info.describe
-      status.time.text = Util.time_num(info.tick)
-      last_tick = info.tick
+      status.agents.text = e.describe
+      status.time.text = Util.time_num(e.tick)
+      last_tick = e.tick
     }
     case EV_Signal_Change(greens) => {
       green_turns.clear()

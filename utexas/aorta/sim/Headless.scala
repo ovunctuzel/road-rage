@@ -30,9 +30,9 @@ object Headless {
     // Print an update every second
     var last_tick = sim.tick
     sim.listen("headless", _ match {
-      case EV_Heartbeat(info) => {
-        Util.log("[%.0fx] %s".format(info.tick - last_tick, info.describe))
-        last_tick = info.tick
+      case e: EV_Heartbeat => {
+        Util.log("[%.0fx] %s".format(e.tick - last_tick, e.describe))
+        last_tick = e.tick
       }
       case _ =>
     })

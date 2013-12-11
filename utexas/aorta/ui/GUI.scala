@@ -219,7 +219,7 @@ class GUIDebugger(sim: Simulation) {
   private var gui: Option[MapCanvas] = None
 
   sim.listen("gui-debugger", _ match {
-    case EV_Heartbeat(info) => {
+    case e: EV_Heartbeat => {
       if (gui_signal.exists) {
         gui_signal.delete()
         gui match {

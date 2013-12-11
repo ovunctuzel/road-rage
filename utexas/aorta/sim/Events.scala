@@ -4,15 +4,55 @@
 
 package utexas.aorta.sim
 
-import utexas.aorta.map.Turn
-import utexas.aorta.sim.make.IntersectionType
-import utexas.aorta.analysis.{Measurement, Heartbeat_Stat}
+import utexas.aorta.map.{Turn, Vertex, Road}
+import utexas.aorta.sim.make.{MkIntersection, RouteType, IntersectionType, WalletType}
+import utexas.aorta.analysis.RerouteCountMonitor
+import utexas.aorta.common.Util
 
 sealed trait Sim_Event
-final case class EV_Signal_Change(greens: Set[Turn]) extends Sim_Event
-final case class EV_Heartbeat(heartbeat: Heartbeat_Stat) extends Sim_Event
-final case class EV_AgentSpawned(a: Agent) extends Sim_Event
+
 final case class EV_Step(tick: Double) extends Sim_Event
-final case class EV_Stat(stat: Measurement) extends Sim_Event
+// Logged every 1.0 real-time seconds. Number of agent_steps and paths found are since the last
+// heartbeat; this is one of the few things tracked online.  Active agents is the number that moved
+// the specific tick that this heartbeat was taken.
+final case class EV_Heartbeat(
+  active_agents: Int, live_agents: Int, spawning_agents: Int, done_agents: Int, tick: Double,
+  agent_steps: Int, counts: RerouteCountMonitor
+) extends Sim_Event {
+  //private val agent_str = "%,d moved, %,d live, %,d ready, %,d done"
+  private val agent_str = "A[%,d] L[%,d] R[%,d] D[%,d]"
+  def describe_agents = agent_str.format(active_agents, live_agents, spawning_agents, done_agents)
+  def describe = "At t=%s: %s {%,03d moves, %,d A* (%,dm + %,df)}".format(
+    Util.time_num(tick), describe_agents, agent_steps, counts.astar_count,
+    counts.unrealizable_count, counts.discretionary_count
+  )
+}
+
+final case class EV_Signal_Change(greens: Set[Turn]) extends Sim_Event
 final case class EV_IntersectionOutcome(intersection: IntersectionType.Value, losers: List[Ticket])
   extends Sim_Event
+final case class EV_Turn(
+  agent: Agent, vert: Vertex, req_tick: Double, accept_tick: Double, done_tick: Double,
+  cost_paid: Double
+) extends Sim_Event {
+  // Total delay means turn length factors in.
+  def total_delay = done_tick - req_tick
+  def accept_delay = accept_tick - req_tick
+}
+
+final case class EV_AgentSpawned(a: Agent) extends Sim_Event
+final case class EV_AgentQuit(
+  agent: Agent, birth_tick: Double, start: Road, end: Road,
+  route: RouteType.Value, wallet: WalletType.Value, start_budget: Int,
+  end_tick: Double, end_budget: Int, priority: Int, finished: Boolean
+) extends Sim_Event
+{
+  // Note this includes waiting to actually spawn on the first lane
+  def trip_time = end_tick - birth_tick
+  def total_spent = start_budget - end_budget
+  // High priority and long trip time is bad; low priority or low trip time is
+  // good.
+  // Don't neglect freeriders, ever.
+  def weight = priority + 1
+  def weighted_value = weight * trip_time
+}

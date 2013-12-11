@@ -8,7 +8,6 @@ import scala.collection.mutable
 
 import utexas.aorta.map.{Vertex, Turn, Edge, Graph}
 import utexas.aorta.sim.make.{IntersectionType, OrderingType, Factory}
-import utexas.aorta.analysis.Turn_Stat
 
 import utexas.aorta.common.{Util, Common, cfg, StateWriter, StateReader, TurnID}
 
@@ -147,7 +146,7 @@ class Ticket(val a: Agent, val turn: Turn) extends Ordered[Ticket] {
   
   // Don't initially know: accept_tick, done_tick, cost_paid.
   // TODO keep state properly, dont shuffle it into this >_<
-  var stat = Turn_Stat(a.id, turn.vert.id, Common.tick, -1.0, -1.0, 0.0)
+  var stat = EV_Turn(a, turn.vert, Common.tick, -1.0, -1.0, 0.0)
 
   // If we interrupt a reservation successfully, don't let people block us.
   var is_interruption = false

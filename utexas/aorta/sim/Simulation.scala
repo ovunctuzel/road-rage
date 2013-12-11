@@ -16,7 +16,7 @@ import utexas.aorta.sim.make.{Scenario, MkAgent, IntersectionType}
 
 import utexas.aorta.common.{Util, Common, cfg, StateWriter, StateReader, Flags, AgentID,
                             Publisher, VertexID, EdgeID, RoadID}
-import utexas.aorta.analysis.{Heartbeat_Stat, Measurement, RerouteCountMonitor}
+import utexas.aorta.analysis.RerouteCountMonitor
 
 // TODO take just a scenario, or graph and scenario?
 class Simulation(val graph: Graph, val scenario: Scenario)
@@ -181,12 +181,10 @@ class Simulation(val graph: Graph, val scenario: Scenario)
   }
 
   private def record_heartbeat(active_cnt: Int) {
-    val measurement = Heartbeat_Stat(
+    publish(EV_Heartbeat(
       active_cnt, agents.size, ready_to_spawn.size, finished_count, tick, steps_since_last_time,
       routing_monitor
-    )
-    Common.record(measurement)
-    publish(EV_Heartbeat(measurement))
+    ))
     last_real_time = System.currentTimeMillis
     steps_since_last_time = 0
     routing_monitor.reset()

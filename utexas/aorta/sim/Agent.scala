@@ -9,7 +9,6 @@ import scala.collection.mutable
 import utexas.aorta.map.{Edge, Coordinate, Turn, Traversable, Graph, Position}
 import utexas.aorta.sim.market._
 import utexas.aorta.ui.Renderable
-import utexas.aorta.analysis.Agent_Lifetime_Stat
 
 import utexas.aorta.common.{Util, RNG, Common, cfg, Physics, StateWriter, StateReader, AgentID,
                             EdgeID, ValueOfTime}
@@ -200,7 +199,7 @@ class Agent(
           tickets.remove(ticket)
           ticket.intersection.exit(ticket)
           ticket.stat = ticket.stat.copy(done_tick = Common.tick)
-          Common.record(ticket.stat)
+          Common.sim.publish(ticket.stat)
         }
       }
 
@@ -286,9 +285,10 @@ class Agent(
       Util.assert_eq(tickets.isEmpty, true)
     }
     val maker = Common.sim.scenario.agents(id.int)
-    Common.record(Agent_Lifetime_Stat(
-      id, maker.birth_tick, maker.start, route.goal.id, route.route_type, wallet.wallet_type,
-      maker.wallet.budget, Common.tick, wallet.budget, wallet.priority, !interrupted
+    Common.sim.publish(EV_AgentQuit(
+      this, maker.birth_tick, Common.sim.graph.get_r(maker.start), route.goal, route.route_type,
+      wallet.wallet_type, maker.wallet.budget, Common.tick, wallet.budget, wallet.priority,
+      !interrupted
     ))
     AgentMap.maps.foreach(m => m.destroy(this))
   }

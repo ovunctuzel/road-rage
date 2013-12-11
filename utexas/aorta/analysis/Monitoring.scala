@@ -20,10 +20,10 @@ class SimSpeedMonitor(sim: Simulation, fn: String) {
   private var last_record = start
 
   sim.listen("sim_speed", _ match {
-    case EV_Heartbeat(info) => {
+    case e: EV_Heartbeat => {
       val now = System.currentTimeMillis
       if (now - last_record >= freq_ms) {
-        record((now - start) / 1000, info.tick)
+        record((now - start) / 1000, e.tick)
         last_record = now
       }
     }

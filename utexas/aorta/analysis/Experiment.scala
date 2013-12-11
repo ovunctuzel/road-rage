@@ -8,7 +8,7 @@ import scala.collection.mutable
 import java.io.File
 
 import utexas.aorta.map.Graph
-import utexas.aorta.sim.{Simulation, EV_Heartbeat, EV_AgentSpawned, Agent, EV_Stat}
+import utexas.aorta.sim.{Simulation, EV_Heartbeat, EV_AgentSpawned, Agent}
 import utexas.aorta.sim.make.{ModScenarioTool, Scenario}
 import utexas.aorta.ui.GUIDebugger
 
@@ -87,12 +87,12 @@ class Experiment(config: ExpConfig) {
   protected def simulate(sim: Simulation) = {
     var last_time = 0L
     sim.listen("experiment-framework", _ match {
-      case EV_Heartbeat(info) => {
+      case e: EV_Heartbeat => {
         val now = System.currentTimeMillis
         if (now - last_time > config.report_every_ms) {
           last_time = now
           // TODO counts (active agents, moves, CH, and A*) will be wrong... dont reset yet
-          io.notify(s"Round $round at ${Util.time_num(sim.tick)}: ${info.describe}")
+          io.notify(s"Round $round at ${Util.time_num(sim.tick)}: ${e.describe}")
         }
       }
       case _ =>

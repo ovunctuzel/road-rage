@@ -4,8 +4,8 @@
 
 package utexas.aorta.analysis
 
-import utexas.aorta.sim.{Simulation, EV_AgentSpawned, EV_Reroute, EV_Stat, EV_IntersectionOutcome,
-                         EV_Transition}
+import utexas.aorta.sim.{Simulation, EV_AgentSpawned, EV_Reroute, EV_AgentQuit, EV_Turn,
+                         EV_IntersectionOutcome, EV_Transition}
 import utexas.aorta.sim.make.Scenario
 import utexas.aorta.map.{Edge, Road, Turn}
 import utexas.aorta.common.{Common, AgentID, IO, Util, BinnedHistogram}
@@ -89,7 +89,7 @@ class TripTimeMetric(info: MetricInfo) extends SinglePerAgentMetric(info) {
   override def name = "trip_time"
 
   info.sim.listen(name, _ match {
-    case EV_Stat(s: Agent_Lifetime_Stat) => per_agent(s.id) = s.trip_time
+    case e: EV_AgentQuit => per_agent(e.agent.id) = e.trip_time
     case _ =>
   })
 }
@@ -106,8 +106,8 @@ class OriginalRouteMetric(info: MetricInfo) extends SinglePerAgentMetric(info) {
       case _ =>
     })
     // [0, 100]
-    case EV_Stat(s: Agent_Lifetime_Stat) => per_agent(s.id) =
-      100.0 * ((first_reroute_time.getOrElse(s.id, s.end_tick) - s.birth_tick) / s.trip_time)
+    case e: EV_AgentQuit => per_agent(e.agent.id) =
+      100.0 * ((first_reroute_time.getOrElse(e.agent.id, e.end_tick) - e.birth_tick) / e.trip_time)
     case _ =>
   })
 }
@@ -117,7 +117,7 @@ class MoneySpentMetric(info: MetricInfo) extends SinglePerAgentMetric(info) {
   override def name = "money_spent"
 
   info.sim.listen(name, _ match {
-    case EV_Stat(s: Agent_Lifetime_Stat) => per_agent(s.id) = s.total_spent
+    case e: EV_AgentQuit => per_agent(e.agent.id) = e.total_spent
     case _ =>
   })
 }
@@ -129,7 +129,7 @@ class TurnDelayMetric(info: MetricInfo) extends HistogramMetric(info, 5.0) {
 
   info.sim.listen(name, _ match {
     // could be accept_delay
-    case EV_Stat(s: Turn_Stat) => histogram.add(s.total_delay)
+    case e: EV_Turn => histogram.add(e.total_delay)
     case _ =>
   })
 }
