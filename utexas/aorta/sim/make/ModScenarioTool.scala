@@ -70,7 +70,7 @@ object ModScenarioTool {
         Util.log(s"Initializing empty scenario on $input...")
         s = Scenario(
           s"scenarios/empty_${input}", input, Array(), Array(),
-          SystemWalletConfig()
+          SystemWalletConfig(), CongestionType.withName(cfg.auditor)
         )
         s = s.copy(
           intersections = IntersectionDistribution.default(graph)
@@ -201,6 +201,11 @@ object ModScenarioTool {
 
           Util.log(s"Changing system wallet configuration: $wallet")
           s = s.copy(system_wallet = wallet)
+        }
+        case "--auditor" => {
+          val auditor = CongestionType.withName(shift_args)
+          Util.log("Changing link auditor: $auditor")
+          s = s.copy(auditor = auditor)
         }
         case _ => dump_usage
       }

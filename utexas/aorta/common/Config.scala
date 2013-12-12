@@ -61,6 +61,7 @@ object cfg {
   val min_road_len = params("min_road_len").toDouble
   val ordering = params("ordering")
   val policy = params("policy")
+  val auditor = params("auditor")
   val polygon_color = color(params("polygon_color"))
   val reservation_color = color(params("reservation_color"))
   val route = params("route")

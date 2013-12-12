@@ -13,14 +13,14 @@ import utexas.aorta.sim.market._
 import Function.tupled
 import scala.collection.mutable
 
-import utexas.aorta.common.{Util, RNG, StateWriter, StateReader, AgentID, VertexID, RoadID}
+import utexas.aorta.common.{Util, RNG, StateWriter, StateReader, AgentID, VertexID, RoadID, cfg}
 
 // Array index and agent/intersection ID must correspond. Creator's
 // responsibility.
-case class Scenario(name: String, map_fn: String, agents: Array[MkAgent],
-                    intersections: Array[MkIntersection],
-                    system_wallet: SystemWalletConfig)
-{
+case class Scenario(
+  name: String, map_fn: String, agents: Array[MkAgent], intersections: Array[MkIntersection],
+  system_wallet: SystemWalletConfig, auditor: CongestionType.Value
+) {
   def graph = Graph.load(map_fn)
   def make_sim() = new Simulation(graph, this)
   def save() {
@@ -30,6 +30,7 @@ case class Scenario(name: String, map_fn: String, agents: Array[MkAgent],
   }
 
   def make_intersection(v: Vertex, sim: Simulation) = intersections(v.id.int).make(v, sim)
+  def make_auditor(r: Road, sim: Simulation) = Factory.make_auditor(auditor, r, sim)
 
   // Although the massive numbers of agents were probably created with a
   // distribution function originally, we just see the individual list in the
@@ -41,6 +42,7 @@ case class Scenario(name: String, map_fn: String, agents: Array[MkAgent],
     percentages(intersections.map(_.policy))
     Util.log("Intersection orderings:")
     percentages(intersections.map(_.ordering))
+    Util.log(s"Link auditor: $auditor")
     Util.log("")
 
     Util.log(s"${agents.size} agents total")
@@ -89,6 +91,7 @@ case class Scenario(name: String, map_fn: String, agents: Array[MkAgent],
       Util.log(s"Scenarios are for different maps: $map_fn and ${other.map_fn}")
       return
     }
+    Util.diff(auditor, other.auditor, "link auditor")
     intersections.zip(other.intersections).foreach(tupled((i1, i2) => i1.diff(i2)))
     agents.zip(other.agents).foreach(tupled((a1, a2) => a1.diff(a2)))
     if (agents.size != other.agents.size) {
@@ -106,6 +109,7 @@ case class Scenario(name: String, map_fn: String, agents: Array[MkAgent],
     w.int(intersections.size)
     intersections.foreach(i => i.serialize(w))
     system_wallet.serialize(w)
+    w.int(auditor.id)
   }
 
   def num_agents = agents.size
@@ -116,7 +120,7 @@ object Scenario {
     r.string, r.string,
     Range(0, r.int).map(_ => MkAgent.unserialize(r)).toArray,
     Range(0, r.int).map(_ => MkIntersection.unserialize(r)).toArray,
-    SystemWalletConfig.unserialize(r)
+    SystemWalletConfig.unserialize(r), CongestionType(r.int)
   )
 
   def load(fn: String) = unserialize(Util.reader(fn))
@@ -128,7 +132,8 @@ object Scenario {
       map_fn,
       AgentDistribution.default(graph),
       IntersectionDistribution.default(graph),
-      SystemWalletConfig()
+      SystemWalletConfig(),
+      CongestionType.withName(cfg.auditor)
     )
     // Always save it, so resimulation is easy.
     Util.mkdir("scenarios")
@@ -321,6 +326,11 @@ object WalletType extends Enumeration {
   val Static, Freerider, Fair, System = Value
 }
 
+object CongestionType extends Enumeration {
+  type CongestionType = Value
+  val Current, Sticky, MovingWindow = Value
+}
+
 object Factory {
   def make_policy(i: Intersection, policy: IntersectionType.Value,
                   ordering: OrderingType.Value, sim: Simulation) = policy match
@@ -367,6 +377,12 @@ object Factory {
     case WalletType.Static => new StaticWallet(budget, priority)
     case WalletType.Freerider => new FreeriderWallet(priority)
     case WalletType.Fair => new FairWallet(budget, priority, bid_ahead)
+  }
+
+  def make_auditor(enum: CongestionType.Value, r: Road, sim: Simulation) = enum match {
+    case CongestionType.Current => new CurrentCongestion(r, sim)
+    case CongestionType.Sticky => new StickyCongestion(r, sim)
+    case CongestionType.MovingWindow => new MovingWindowCongestion(r, sim)
   }
 }
 

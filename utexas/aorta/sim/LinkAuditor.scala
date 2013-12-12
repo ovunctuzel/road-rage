@@ -10,10 +10,14 @@ import utexas.aorta.map.Road
 import utexas.aorta.common.{cfg, Util, Price}
 
 // Manage information at the road level
-class LinkAuditor(val r: Road, sim: Simulation) extends CongestionMeasure(sim) with CurrentCongestion {
+abstract class LinkAuditor(val r: Road, sim: Simulation) {
   // TODO need to savestate.
-  // TODO do different congestion policies based on scenarios, or cfg
-  override def congested_now = r.lanes.exists(e => e.queue.is_congested)
+
+  def congested(): Boolean
+  // TODO how often must this be called?
+  def react()
+
+  def congested_now = r.lanes.exists(e => e.queue.is_congested)
 
   // Worst-case of any constituent lanes
   def freeflow_capacity = r.lanes.map(_.queue.freeflow_capacity).min
@@ -29,23 +33,15 @@ class LinkAuditor(val r: Road, sim: Simulation) extends CongestionMeasure(sim) w
       new Price(0)
 }
 
-abstract class CongestionMeasure(val sim: Simulation) {
-  protected def congested_now(): Boolean
-  // The more permanent notion that clients should use
-  def congested(): Boolean
-  // TODO how often must this be called?
-  def react()
-}
-
 // Just report the current state of congestion. Subject to oscillation.
-trait CurrentCongestion extends CongestionMeasure {
+class CurrentCongestion(r: Road, sim: Simulation) extends LinkAuditor(r, sim) {
   override def congested = congested_now
   override def react() {}
 }
 
 // Only flip states congested<->not if the state persists for >= 30s. Has a bias for whatever state
 // starts.
-trait StickyCongestion extends CongestionMeasure {
+class StickyCongestion(r: Road, sim: Simulation) extends LinkAuditor(r, sim) {
   private val threshold = 30.0  // seconds
   private var congested_state = false
   private var opposite_since: Option[Double] = None
@@ -74,7 +70,7 @@ trait StickyCongestion extends CongestionMeasure {
 }
 
 // Report the most popular state of the last 30s
-trait MovingWindowCongestion extends CongestionMeasure {
+class MovingWindowCongestion(r: Road, sim: Simulation) extends LinkAuditor(r, sim) {
   private val duration = 31.0  // seconds
   private def num_observations = (cfg.dt_s / duration).toInt
   Util.assert_eq(num_observations % 2, 1) // must be odd

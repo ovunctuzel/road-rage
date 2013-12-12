@@ -13,7 +13,7 @@ import scala.io.Source
 import utexas.aorta.map.{Graph, Edge, Vertex, Turn}
 import utexas.aorta.sim.policies.Phase
 import utexas.aorta.sim.market.SystemWallets
-import utexas.aorta.sim.make.{Scenario, MkAgent, IntersectionType}
+import utexas.aorta.sim.make.{Scenario, MkAgent, Factory}
 
 import utexas.aorta.common.{Util, cfg, StateWriter, StateReader, Flags, AgentID, Publisher,
                             VertexID, EdgeID, RoadID, Timer}
@@ -54,7 +54,7 @@ class Simulation(val graph: Graph, val scenario: Scenario)
     // TODO always do this, and forget this map/sim separation?
     graph.traversables.foreach(t => t.queue = new Queue(t))
     graph.vertices.foreach(v => v.intersection = scenario.make_intersection(v, this))
-    graph.roads.foreach(r => r.auditor = new LinkAuditor(r, this))
+    graph.roads.foreach(r => r.auditor = scenario.make_auditor(r, this))
 
     // Are we starting for the first time?
     if (tick == 0.0) {
