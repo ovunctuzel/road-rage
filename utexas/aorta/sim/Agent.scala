@@ -252,7 +252,7 @@ class Agent(
         //Util.assert_eq(at.on.asInstanceOf[Edge].road, route.goal)
         // Trust behavior, don't abuse this.
         // (Plus, it doesn't hold for RouteAnalyzer vehicles...)
-        Util.assert_eq(speed, 0.0)
+        Util.assert_eq(speed <= cfg.epsilon, true)
         true
       }
     }

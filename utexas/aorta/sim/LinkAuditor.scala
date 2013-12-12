@@ -81,7 +81,7 @@ class StickyCongestion(r: Road, sim: Simulation) extends LinkAuditor(r, sim) {
 // Report the most popular state of the last 30s
 class MovingWindowCongestion(r: Road, sim: Simulation) extends LinkAuditor(r, sim) {
   private val duration = 31.0  // seconds
-  private def num_observations = (cfg.dt_s / duration).toInt
+  private def num_observations = (duration / cfg.dt_s).toInt
   Util.assert_eq(num_observations % 2, 1) // must be odd
   private val last_observations = new mutable.Queue[Boolean]()
   Range(0, num_observations).foreach(_ => last_observations += false)
