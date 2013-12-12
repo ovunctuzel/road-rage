@@ -42,7 +42,7 @@ class RerouteCountMonitor(sim: Simulation) {
   def discretionary_count = astar_count - unrealizable_count
 
   sim.listen("reroute_count", _ match {
-    case EV_Reroute(_, _, _, method, unrealizable) => method match {
+    case EV_Reroute(_, _, _, method, unrealizable, _) => method match {
       case x if x != RouterType.Fixed && x != RouterType.Unusable => {
         astar_count += 1
         if (unrealizable) {

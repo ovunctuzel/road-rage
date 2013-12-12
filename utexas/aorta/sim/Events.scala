@@ -61,5 +61,6 @@ final case class EV_Transition(a: Agent, from: Traversable, to: Traversable) ext
 // orig = true when initializing the path. bit of a hack.
 // if unrealizable, then couldn't follow path. if not, congestion or gridlock.
 final case class EV_Reroute(
-  a: Agent, path: List[Road], orig: Boolean, method: RouterType.Value, unrealizable: Boolean
+  a: Agent, path: List[Road], orig: Boolean, method: RouterType.Value, unrealizable: Boolean,
+  old_path: List[Road]
 ) extends Sim_Event

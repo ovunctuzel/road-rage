@@ -700,7 +700,7 @@ class MapCanvas(val sim: Simulation, headless: Boolean = false) extends Scrollin
             case r: PathRoute => {
               state.route_members.set(cfg.route_member_color, r.roads)
               sim.listen("ui-routing", _ match {
-                case EV_Reroute(agent, path, _, _, _) if agent == a => {
+                case EV_Reroute(agent, path, _, _, _, _) if agent == a => {
                   state.route_members.set(cfg.route_member_color, path.toSet)
                 }
                 case EV_Transition(agent, from, to) if agent == a => from match {
