@@ -10,8 +10,9 @@ import utexas.aorta.map.Road
 import utexas.aorta.common.{cfg, Util, Price}
 
 // Manage information at the road level
+// TODO maybe also at the zone level?
 abstract class LinkAuditor(val r: Road, sim: Simulation) {
-  // TODO need to savestate.
+  // TODO need to savestate, once we decide what state we really have
 
   def congested(): Boolean
   // TODO how often must this be called?

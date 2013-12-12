@@ -130,6 +130,8 @@ class Simulation(val graph: Graph, val scenario: Scenario)
     // steps, we ensure the intersections' temporary state becomes firm.
     graph.vertices.foreach(v => v.intersection.policy.react_tick())
 
+    graph.roads.foreach(r => r.auditor.react())
+
     // Record a heartbeat every 1.0s
     if (System.currentTimeMillis - last_real_time >= 1000.0) {
       record_heartbeat(active_cnt)
