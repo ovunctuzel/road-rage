@@ -64,3 +64,4 @@ final case class EV_Reroute(
   a: Agent, path: List[Road], orig: Boolean, method: RouterType.Value, unrealizable: Boolean,
   old_path: List[Road]
 ) extends Sim_Event
+final case class EV_LinkChanged(r: Road, congested: Boolean) extends Sim_Event

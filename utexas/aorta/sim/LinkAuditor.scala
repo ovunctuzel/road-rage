@@ -6,7 +6,7 @@ package utexas.aorta.sim
 
 import scala.collection.mutable
 
-import utexas.aorta.map.Road
+import utexas.aorta.map.{Road, Turn}
 import utexas.aorta.common.{cfg, Util, Price}
 
 // Manage information at the road level
@@ -36,8 +36,15 @@ abstract class LinkAuditor(val r: Road, sim: Simulation) {
 
 // Just report the current state of congestion. Subject to oscillation.
 class CurrentCongestion(r: Road, sim: Simulation) extends LinkAuditor(r, sim) {
+  private var last_state = false
+
   override def congested = congested_now
-  override def react() {}
+  override def react() {
+    if (congested != last_state) {
+      sim.publish(EV_LinkChanged(r, congested))
+      last_state = congested
+    }
+  }
 }
 
 // Only flip states congested<->not if the state persists for >= 30s. Has a bias for whatever state
@@ -61,6 +68,7 @@ class StickyCongestion(r: Road, sim: Simulation) extends LinkAuditor(r, sim) {
           // State change!
           congested_state = congested_now
           opposite_since = None
+          sim.publish(EV_LinkChanged(r, congested_state))
         }
         // Start the timer
         case None => opposite_since = Some(sim.tick)
@@ -79,6 +87,7 @@ class MovingWindowCongestion(r: Road, sim: Simulation) extends LinkAuditor(r, si
   Range(0, num_observations).foreach(_ => last_observations += false)
   private var true_cnt = 0
   private var false_cnt = 30
+  private var last_state = false
 
   override def congested = true_cnt > false_cnt  // == never happens because duration is odd
 
@@ -94,5 +103,49 @@ class MovingWindowCongestion(r: Road, sim: Simulation) extends LinkAuditor(r, si
       case true => true_cnt += 1
       case false => false_cnt += 1
     }
+    if (congested != last_state) {
+      sim.publish(EV_LinkChanged(r, congested))
+      last_state = congested
+    }
   }
+}
+
+// TODO this really doesn't belong here.
+// When any link in an agent's path changes state, inform them.
+// TODO consider updating at the zone granularity
+class RouteChangeWatcher(sim: Simulation) {
+  // Subscribed when the road was congested
+  private val subscribers_congested
+    = sim.graph.roads.map(r => r -> new mutable.HashSet[Agent]()).toMap
+  // Subscribed when the road was clear
+  private val subscribers_clear = sim.graph.roads.map(r => r -> new mutable.HashSet[Agent]()).toMap
+
+  sim.listen("route-change-watcher", _ match {
+    case EV_Reroute(a, path, _, _, _, old_path) => {
+      for (r <- old_path) {
+        subscribers_congested(r) -= a
+        subscribers_clear(r) -= a
+      }
+      for (r <- path) {
+        if (r.auditor.congested) {
+          subscribers_congested(r) += a
+        } else {
+          subscribers_clear(r) += a
+        }
+      }
+    }
+    case EV_Transition(a, _, to: Turn) => {
+      subscribers_congested(to.from.road) -= a
+      subscribers_clear(to.from.road) -= a
+    }
+    case EV_LinkChanged(r, congested) => {
+      if (congested) {
+        //subscribers_clear(r).foreach(a => ...)
+      } else {
+        // Maybe don't tell these guys?
+        //subscribers_congested(r).foreach(a => ...)
+      }
+    }
+    case _ =>
+  })
 }
