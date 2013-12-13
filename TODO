@@ -3,32 +3,39 @@
 ####################################################################################################
 ### Current projects
 
-# Website #
+# Intersection policies #
 
-- how to use
-  - make sure git repo isnt too huge
-  - eclipse tutorial
-  - gui controls
-  - how to run experiments
-    - ex: actuator roads before equal mode
-    - ex: braess paradox and adding a road
-  - bigger tasks
-    - tutorial for v2v
-    - howto try an optimization
-    - howto see if your code change keeps the same stuff
+- traffic lights shouldnt have long yellow
+- reservation protocol should actually be faster. opportunistic.
+  - michael's refined notion of turn conflict
+- yield policy
+- unprotected left, right turn on red, better stop sign
+- if easy: backpressure lights
+- for better lights, want to defer decision... can we do that now?
+- optimize fixpoints
 
-- better layout
-  - contact me
-- screenshots
-- about/features page
-- advertise on OSM wiki
-- list of concepts
-  - map stuff, sim stuff, infrastructure stuff
+# Zones #
 
-# Traditional traffic engr #
+- fix nondeterminism
+- pathfinding totally breaks for some: perform_reroute's choice should be from router?
+- benchmark
 
-- blog it!
-  - neglect different turns / all intersection effects
+# Nouveau Congestion #
+
+- test freq of updating / current router with 3 auditors
+- reroute when something in route changes
+- diffused/zone-based congestion metric
+- live DTA... use latest link delays all the time, and dont bother with 2-tuple score.
+  - put it in link auditor, just use normal a*, not even time dep.
+  - how long does it take to cross a zone?
+- mathvector as score for A* and related?
+
+- tradeoffs and combos of things to do...
+  - when to reroute?
+  - base congestion: 80% of static, 50% of freeflow, ???
+  - use real link delay or time/congestion system?
+  - 3 types of congestion reporting
+  - later: zones...
 
 # Code cleanup #
 
@@ -48,18 +55,6 @@
 - port old experiments
 - even record the parameters of the runs?
 - revamp ModScenarioTool
-
-# Intersection policies #
-
-- traffic lights shouldnt have long yellow
-- reservation protocol should actually be faster. opportunistic.
-  - michael's refined notion of turn conflict
-- yield policy
-- unprotected left, right turn on red, better stop sign
-- if easy: backpressure lights
-- consider a common case policy, in places like claycut rd
-- for better lights, want to defer decision... can we do that now?
-- optimize fixpoints
 
 ####################################################################################################
 ### Future projects
@@ -171,3 +166,25 @@
 - right click context menus
 - show 'fps' in viewer
 - side by side runs
+
+# Website #
+
+- how to use
+  - make sure git repo isnt too huge
+  - eclipse tutorial
+  - gui controls
+  - how to run experiments
+    - ex: actuator roads before equal mode
+    - ex: braess paradox and adding a road
+  - bigger tasks
+    - tutorial for v2v, dta
+    - howto try an optimization
+    - howto see if your code change keeps the same stuff
+
+- better layout
+  - contact me
+- screenshots
+- about/features page
+- advertise on OSM wiki
+- list of concepts
+  - map stuff, sim stuff, infrastructure stuff
