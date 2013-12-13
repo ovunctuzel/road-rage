@@ -2,7 +2,7 @@
 // Khandelwal of UT Austin
 // License: GNU GPL v2
 
-package utexas.aorta.map.analysis
+/*package utexas.aorta.map.analysis
 
 import scala.collection.mutable
 
@@ -74,14 +74,14 @@ object Demand {
 
   def demand_for(scenario: Scenario, graph: Graph): Demand = {
     val demand = blank_for(scenario, graph)
-    /*for (a <- scenario.agents) {
+    for (a <- scenario.agents) {
       val from = graph.edges(a.start_edge.int).road
       val to = graph.edges(a.route.goal.int).road
       for (step <- graph.router.path(from, to, 0)) {
         demand.roads(step.id.int) += 1
         demand.intersections(step.to.id.int) += 1
       }
-    }*/
+    }
     return demand
   }
 }
@@ -155,4 +155,4 @@ class AstarRouter(graph: Graph, val weights: RouteFeatures, demand: Demand) exte
     // We didn't find the way?! The graph is connected!
     throw new Exception("Couldn't A* from " + from + " to " + to)
   }
-}
+}*/

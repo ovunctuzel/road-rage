@@ -5,7 +5,7 @@
 package utexas.aorta.tests
 
 import utexas.aorta.map.ZoneRouter
-import utexas.aorta.map.analysis._
+import utexas.aorta.sim.routes.CongestionRouter
 
 import utexas.aorta.common.{Util, RNG, Timer, cfg}
 

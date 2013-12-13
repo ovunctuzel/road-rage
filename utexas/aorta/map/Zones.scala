@@ -7,7 +7,6 @@ package utexas.aorta.map
 import scala.collection.{mutable, immutable}
 import Function.tupled
 
-import utexas.aorta.map.analysis.Router
 import utexas.aorta.map.make.MapStateWriter
 import utexas.aorta.sim.make.RouterType
 import utexas.aorta.ui.Renderable

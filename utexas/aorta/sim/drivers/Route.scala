@@ -8,8 +8,7 @@ import Function.tupled
 import scala.collection.immutable
 import scala.collection.mutable
 
-import utexas.aorta.map.{Edge, Road, Traversable, Turn, Vertex, Graph}
-import utexas.aorta.map.analysis.Router
+import utexas.aorta.map.{Edge, Road, Traversable, Turn, Vertex, Graph, Router}
 import utexas.aorta.sim.{EV_Transition, EV_Reroute}
 import utexas.aorta.sim.make.{RouteType, RouterType, Factory}
 

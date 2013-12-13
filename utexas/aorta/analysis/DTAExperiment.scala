@@ -4,8 +4,8 @@
 
 package utexas.aorta.analysis
 
-import utexas.aorta.map.{Graph, Road}
-import utexas.aorta.map.analysis.{AbstractPairAstarRouter, SimpleHeuristic}
+import utexas.aorta.map.{Graph, Road, AbstractPairAstarRouter}
+import utexas.aorta.sim.routes.SimpleHeuristic
 import utexas.aorta.sim.make.{Scenario, RouterType}
 import utexas.aorta.common.{Util, RNG}
 

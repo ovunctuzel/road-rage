@@ -4,10 +4,10 @@
 
 package utexas.aorta.sim.make
 
-import utexas.aorta.map.{Graph, Vertex, Road, ZoneRouter}
-import utexas.aorta.map.analysis._
+import utexas.aorta.map._
 import utexas.aorta.sim._
 import utexas.aorta.sim.drivers._
+import utexas.aorta.sim.routes._
 import utexas.aorta.sim.intersections._
 
 import Function.tupled
