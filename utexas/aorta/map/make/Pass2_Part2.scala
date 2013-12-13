@@ -12,8 +12,6 @@ import utexas.aorta.common.{Util, cfg}
 
 class Pass2_Part2(graph: PreGraph2) {
   def run() {
-    Util.log("Merging short roads...")
-
     // This temporary map lets us avoid tons of repeated scans
     val edges_from_vert = new mutable.HashMap[Coordinate, mutable.MutableList[PreEdge2]]()
     edges_from_vert ++= graph.edges.groupBy(_.from)
@@ -24,6 +22,7 @@ class Pass2_Part2(graph: PreGraph2) {
     // Length of roads doesn't actually change by this process, but non-cul-de-sacs could become
     // cul-de-sacs, so make one pass, but be careful.
     val shorties = graph.edges.filter(r => r.length < cfg.min_road_len && !r.is_culdesac)
+    Util.log(s"Merging ${shorties.size} short roads...")
     for (shorty <- shorties) {
       // Make sure this shorty is still not a cul-de-sac
       if (!shorty.is_culdesac) {

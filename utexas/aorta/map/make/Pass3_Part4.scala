@@ -11,28 +11,35 @@ import utexas.aorta.map.{Edge, Vertex, Turn, Line, Direction}
 import utexas.aorta.common.{Util, cfg, TurnID}
 
 class Pass3_Part4(graph: PreGraph3) {
-  def run() {
+  private val shortest_first_line = new mutable.HashMap[Edge, Line]
+  private val shortest_last_line = new mutable.HashMap[Edge, Line]
+
+  def run(): (Map[Edge, Line], Map[Edge, Line]) = {
     Util.log("Tidying up geometry...")
-    // TODO don't! it results in terribly short places.
-    //graph.vertices.foreach(v => adjust_lines(v))
+    var cnt = graph.vertices.size
+    for (v <- graph.vertices) {
+      adjust_lines(v)
+      cnt -= 1
+      if (cnt % 100 == 0) {
+        print(f"\r  $cnt%,d vertices left to clean up")
+      }
+    }
+    println("")
+    return (shortest_first_line.toMap, shortest_last_line.toMap)
   }
 
+  // TODO the rightmost lanes seem to still overlap a bit
   private def adjust_lines(v: Vertex) = {
-    val shortest_line = new mutable.HashMap[Edge, Line]
     for (in <- v.in_edges) {
       for (out <- v.out_edges) {
-        // Correct for shifting the UI does by preventing intersections when
-        // shifted over. Has a side effect of making cars stop a bit far back,
-        // which is fine.
-        val l1 = in.lines.last.perp_shift(0.5)
-        val l2 = out.lines.head.perp_shift(0.5)
+        val l1 = in.lines.last
+        val l2 = out.lines.head
 
-        // Just to be safe, don't allow ourselves to ever extend a line
-        if (!shortest_line.contains(in)) {
-          shortest_line(in) = l1
+        if (!shortest_last_line.contains(in)) {
+          shortest_last_line(in) = l1
         }
-        if (!shortest_line.contains(out)) {
-          shortest_line(out) = l2
+        if (!shortest_first_line.contains(out)) {
+          shortest_first_line(out) = l2
         }
 
         l1.segment_intersection(l2) match {
@@ -42,11 +49,15 @@ class Pass3_Part4(graph: PreGraph3) {
 
             // This line will intersect many -- store the one that gets
             // trimmed the most.
-            if (!shortest_line.contains(in) || possible1.length < shortest_line(in).length) {
-              shortest_line(in) = possible1
+            if (!shortest_last_line.contains(in) || possible1.length < shortest_last_line(in).length) {
+              if (ok_mod(possible1)) {
+                shortest_last_line(in) = possible1
+              }
             }
-            if (!shortest_line.contains(out) || possible2.length < shortest_line(out).length) {
-              shortest_line(out) = possible2
+            if (!shortest_first_line.contains(out) || possible2.length < shortest_first_line(out).length) {
+              if (ok_mod(possible2)) {
+                shortest_first_line(out) = possible2
+              }
             }
           }
           case _ =>
@@ -54,22 +65,21 @@ class Pass3_Part4(graph: PreGraph3) {
       }
     }
 
-    // Go back and mod the line to its shortest length.
-    for ((e, best_line) <- shortest_line) {
-      val l = if (e.from == v)
-                e.lines.head
-              else
-                e.lines.last
-      val use = best_line.perp_shift(-0.5)
-      if (use.length <= cfg.epsilon && l.length > cfg.epsilon) {
-        Util.log(s"Don't shorten line of $e to 0!")
-      } else {
-        /*l.x1 = use.x1
-        l.y1 = use.y1
-        l.x2 = use.x2
-        l.y2 = use.y2*/
-        // make sure length is correct when we finally re-enable this.
+    // Handle edges with only one line
+    for (e <- graph.edges if e.lines.size == 1) {
+      (shortest_first_line.get(e), shortest_last_line.get(e)) match {
+        case (Some(l1), Some(l2)) => {
+          // shortest_first_line will be the one that overrides
+          val candidate = new Line(l1.x1, l1.y1, l2.x2, l2.y2)
+          if (ok_mod(candidate)) {
+            shortest_first_line(e) = candidate
+          }
+        }
+        case _ =>
       }
     }
   }
+
+  // TODO to maybe trim lines a little but not too much, check the total length of the edge
+  private def ok_mod(l: Line) = l.length > cfg.end_threshold
 }

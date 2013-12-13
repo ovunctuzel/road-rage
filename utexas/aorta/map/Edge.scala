@@ -24,14 +24,18 @@ class Edge(
     w.int(w.roads(road.id).int)
     w.int(lane_num)
     w.int(lines.length)
-    lines.foreach(l => l.serialize(w))
+    w.first_lines.getOrElse(this, lines.head).serialize(w)
+    lines.tail.dropRight(1).foreach(l => l.serialize(w))
+    if (lines.size > 1) {
+      w.last_lines.getOrElse(this, lines.last).serialize(w)
+    }
   }
 
   //////////////////////////////////////////////////////////////////////////////
   // Queries
 
   override def compare(other: Edge) = id.int.compare(other.id.int)
-  override def toString = s"Lane ${road.dir}${lane_num} of ${road.name} ($id)"
+  override def toString = s"Lane ${road.dir}${lane_num} of ${road.name} (E$id, R${road.id})"
 
   // no lane-changing
   //def leads_to = next_turns

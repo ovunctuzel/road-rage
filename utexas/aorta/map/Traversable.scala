@@ -21,7 +21,8 @@ abstract class Traversable(val lines: Array[Line]) {
   val length: Double = lines.foldLeft(0.0)((a, b) => a + b.length)
   this match {
     case e: Edge if length <= cfg.epsilon => {
-      Util.log(s"Lane ${e.id} now has length $length!")
+      // Really the limit should be end_threshold, but a few crop up from time to time...
+      Util.log(s"Lane ${e.id} has short length $length!")
     }
     case _ =>
   }

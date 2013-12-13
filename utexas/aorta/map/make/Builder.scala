@@ -4,7 +4,7 @@
 
 package utexas.aorta.map.make
 
-import utexas.aorta.map.{Graph, ZoneMap}
+import utexas.aorta.map.{Graph, ZoneMap, Edge, Line}
 import utexas.aorta.common.{Util, EdgeID, VertexID, TurnID, RoadID, BinaryStateWriter}
 
 import scala.collection.mutable
@@ -41,7 +41,7 @@ object Builder {
     val graph3 = new PreGraph3(graph2)
     new Pass3_Part2(graph3).run()
     new Pass3_Part3(graph3).run()
-    new Pass3_Part4(graph3).run()
+    val remap_lines = new Pass3_Part4(graph3).run()
     bldgs.group(graph3)
 
     val roads = graph3.roads.toArray
@@ -55,14 +55,14 @@ object Builder {
       s" edges, and ${graph3.vertices.length} vertices"
     )
     Util.mkdir("maps")
-    val w = fix_ids(graph, output)
+    val w = fix_ids(graph, output, remap_lines._1, remap_lines._2)
     graph.serialize(w)
     w.done()
 
     return output
   }
 
-  private def fix_ids(graph: Graph, fn: String): MapStateWriter = {
+  private def fix_ids(graph: Graph, fn: String, first: Map[Edge, Line], last: Map[Edge, Line]): MapStateWriter = {
     val edges = (for ((e, raw_id) <- graph.edges.zipWithIndex)
       yield e.id -> new EdgeID(raw_id)
     ).toMap
@@ -73,7 +73,7 @@ object Builder {
       yield r.id -> new RoadID(id)
     ).toMap
 
-    return new MapStateWriter(fn, edges, vertices, roads)
+    return new MapStateWriter(fn, edges, vertices, roads, first, last)
   }
 }
 
@@ -82,6 +82,6 @@ object Builder {
 // TODO ideally, have methods for each type of id, and override them.
 class MapStateWriter(
   fn: String, val edges: Map[EdgeID, EdgeID], val vertices: Map[VertexID, VertexID],
-  val roads: Map[RoadID, RoadID]
+  val roads: Map[RoadID, RoadID], val first_lines: Map[Edge, Line], val last_lines: Map[Edge, Line]
 ) extends BinaryStateWriter(fn)
 // TODO make turn IDs contig too
