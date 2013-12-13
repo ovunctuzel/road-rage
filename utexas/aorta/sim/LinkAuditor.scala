@@ -6,6 +6,7 @@ package utexas.aorta.sim
 
 import scala.collection.mutable
 
+import utexas.aorta.sim.drivers.Agent
 import utexas.aorta.map.{Road, Turn}
 import utexas.aorta.common.{cfg, Util, Price}
 

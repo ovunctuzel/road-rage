@@ -5,6 +5,8 @@
 package utexas.aorta.sim
 
 import utexas.aorta.map.{Turn, Vertex, Road, Traversable}
+import utexas.aorta.sim.drivers.Agent
+import utexas.aorta.sim.intersections.Ticket
 import utexas.aorta.sim.make.{MkIntersection, RouteType, IntersectionType, WalletType, RouterType}
 import utexas.aorta.analysis.RerouteCountMonitor
 import utexas.aorta.common.Util

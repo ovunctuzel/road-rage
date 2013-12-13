@@ -2,14 +2,13 @@
 // Khandelwal of UT Austin
 // License: GNU GPL v2
 
-package utexas.aorta.sim.policies
+package utexas.aorta.sim.intersections
 
 import scala.collection.mutable
 
 import utexas.aorta.map.{Turn, Edge}
-import utexas.aorta.sim.{Intersection, Policy, Ticket, Agent}
+import utexas.aorta.sim.drivers.Agent
 import utexas.aorta.sim.make.IntersectionType
-import utexas.aorta.sim.market.IntersectionOrdering
 
 import utexas.aorta.common.{Util, cfg}
 

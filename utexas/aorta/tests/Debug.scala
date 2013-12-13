@@ -5,7 +5,7 @@
 package utexas.aorta.tests
 
 import utexas.aorta.sim.Simulation
-import utexas.aorta.sim.policies.SignalPolicy
+import utexas.aorta.sim.intersections.SignalPolicy
 
 import utexas.aorta.common.{Util, Timer, cfg, BinaryStateWriter, BinaryStateReader}
 

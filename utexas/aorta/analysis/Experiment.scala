@@ -8,7 +8,8 @@ import scala.collection.mutable
 import java.io.File
 
 import utexas.aorta.map.Graph
-import utexas.aorta.sim.{Simulation, EV_Heartbeat, EV_AgentSpawned, Agent}
+import utexas.aorta.sim.{Simulation, EV_Heartbeat, EV_AgentSpawned}
+import utexas.aorta.sim.drivers.Agent
 import utexas.aorta.sim.make.{ModScenarioTool, Scenario}
 import utexas.aorta.ui.GUIDebugger
 

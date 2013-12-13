@@ -2,12 +2,11 @@
 // Khandelwal of UT Austin
 // License: GNU GPL v2
 
-package utexas.aorta.sim.policies
+package utexas.aorta.sim.intersections
 
 import utexas.aorta.map.Turn
-import utexas.aorta.sim.{Intersection, Policy, Ticket, Simulation, EV_IntersectionOutcome}
+import utexas.aorta.sim.{Simulation, EV_IntersectionOutcome}
 import utexas.aorta.sim.make.IntersectionType
-import utexas.aorta.sim.market.IntersectionOrdering
 
 import utexas.aorta.common.{Util, StateWriter, StateReader, TurnID}
 

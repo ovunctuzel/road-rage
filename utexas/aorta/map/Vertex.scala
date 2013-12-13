@@ -12,7 +12,7 @@ import utexas.aorta.common.{Util, StateReader, VertexID}
 
 // TODO I don't want this dependency, but at the moment, it leads to a great
 // perf boost due to dropping a pricy hash lookup
-import utexas.aorta.sim.Intersection
+import utexas.aorta.sim.intersections.Intersection
 
 class Vertex(val location: Coordinate, val id: VertexID) extends Renderable {
   //////////////////////////////////////////////////////////////////////////////

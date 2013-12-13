@@ -2,9 +2,10 @@
 // Khandelwal of UT Austin
 // License: GNU GPL v2
 
-package utexas.aorta.sim
+package utexas.aorta.sim.drivers
 
 import utexas.aorta.map.{Edge, Turn, Traversable}
+import utexas.aorta.sim.intersections.Ticket
 
 import utexas.aorta.common.{Util, cfg, Physics}
 

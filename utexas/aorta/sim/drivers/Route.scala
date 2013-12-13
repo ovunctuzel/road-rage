@@ -2,7 +2,7 @@
 // Khandelwal of UT Austin
 // License: GNU GPL v2
 
-package utexas.aorta.sim
+package utexas.aorta.sim.drivers
 
 import Function.tupled
 import scala.collection.immutable
@@ -10,6 +10,7 @@ import scala.collection.mutable
 
 import utexas.aorta.map.{Edge, Road, Traversable, Turn, Vertex, Graph}
 import utexas.aorta.map.analysis.Router
+import utexas.aorta.sim.{EV_Transition, EV_Reroute}
 import utexas.aorta.sim.make.{RouteType, RouterType, Factory}
 
 import utexas.aorta.common.{Util, RNG, cfg, StateWriter, StateReader, TurnID}

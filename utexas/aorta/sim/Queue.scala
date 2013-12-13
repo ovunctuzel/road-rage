@@ -10,6 +10,7 @@ import scala.collection.mutable
 import Function.tupled
 
 import utexas.aorta.map.{Edge, Traversable, Position}
+import utexas.aorta.sim.drivers.Agent
 
 import utexas.aorta.common.{Util, cfg, Physics, StateWriter, StateReader}
 

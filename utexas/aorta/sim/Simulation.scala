@@ -11,9 +11,9 @@ import java.io.FileWriter
 import scala.io.Source
 
 import utexas.aorta.map.{Graph, Edge, Vertex, Turn}
-import utexas.aorta.sim.policies.Phase
-import utexas.aorta.sim.market.SystemWallets
+import utexas.aorta.sim.intersections.{Intersection, Phase, SystemWallets, Policy}
 import utexas.aorta.sim.make.{Scenario, MkAgent, Factory}
+import utexas.aorta.sim.drivers.Agent
 
 import utexas.aorta.common.{Util, cfg, StateWriter, StateReader, Flags, AgentID, Publisher,
                             VertexID, EdgeID, RoadID, Timer}

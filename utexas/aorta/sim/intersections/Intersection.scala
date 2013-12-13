@@ -2,11 +2,13 @@
 // Khandelwal of UT Austin
 // License: GNU GPL v2
 
-package utexas.aorta.sim
+package utexas.aorta.sim.intersections
 
 import scala.collection.mutable
 
 import utexas.aorta.map.{Vertex, Turn, Edge, Graph}
+import utexas.aorta.sim.{EV_Turn, Simulation}
+import utexas.aorta.sim.drivers.Agent
 import utexas.aorta.sim.make.{IntersectionType, OrderingType, Factory}
 
 import utexas.aorta.common.{Util, cfg, StateWriter, StateReader, TurnID}

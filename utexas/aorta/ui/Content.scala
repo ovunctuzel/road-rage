@@ -10,7 +10,7 @@ import java.awt.geom.{Line2D, Rectangle2D}
 import scala.collection.mutable
 
 import utexas.aorta.map.{Coordinate, Edge, Line, Vertex, Zone, Road, Direction}
-import utexas.aorta.sim.Agent
+import utexas.aorta.sim.drivers.Agent
 
 import utexas.aorta.common.{cfg, RNG}
 

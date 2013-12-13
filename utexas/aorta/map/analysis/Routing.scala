@@ -7,7 +7,7 @@ package utexas.aorta.map.analysis
 import scala.collection.mutable
 
 import utexas.aorta.map.{Graph, Road, Coordinate}
-import utexas.aorta.sim.Agent
+import utexas.aorta.sim.drivers.Agent
 import utexas.aorta.sim.make.RouterType
 
 import utexas.aorta.common.{Util, Physics, RNG, RoadID, Price}

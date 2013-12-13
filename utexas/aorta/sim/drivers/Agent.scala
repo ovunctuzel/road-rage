@@ -2,12 +2,13 @@
 // Khandelwal of UT Austin
 // License: GNU GPL v2
 
-package utexas.aorta.sim
+package utexas.aorta.sim.drivers
 
 import scala.collection.mutable
 
 import utexas.aorta.map.{Edge, Coordinate, Turn, Traversable, Graph, Position}
-import utexas.aorta.sim.market._
+import utexas.aorta.sim.{Simulation, EV_AgentQuit, AgentMap}
+import utexas.aorta.sim.intersections.{Intersection, Ticket}
 import utexas.aorta.ui.Renderable
 
 import utexas.aorta.common.{Util, RNG, cfg, Physics, StateWriter, StateReader, AgentID, EdgeID,
