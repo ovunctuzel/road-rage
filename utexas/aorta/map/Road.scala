@@ -99,7 +99,7 @@ class Road(
   //////////////////////////////////////////////////////////////////////////////
   // Queries
 
-  override def toString = "%s's %s lanes (DR %s)".format(name, dir, id)
+  override def toString = s"$name's $dir lanes ($id)"
   override def compare(other: Road) = id.int.compare(other.id.int)
 
   def incoming_lanes(v: Vertex) = if (v == v2) lanes else Nil

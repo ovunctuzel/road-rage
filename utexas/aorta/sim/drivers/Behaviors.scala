@@ -381,7 +381,7 @@ class LookaheadStep(
   // this_dist = how much distance from 'at' we'll consider. it would just be
   // length, except for the very first step of a lookahead, since the agent
   // doesnt start at the beginning of the step.
-  override def toString = "Lookahead to %s with %.2f m left".format(at, predict_dist)
+  override def toString = f"Lookahead to $at with $predict_dist%.2f m left"
 
   // TODO iterator syntax
 

@@ -68,7 +68,7 @@ class OsmReader(fn: String) extends Publisher[EV_OSM] {
       toplevel_count += 1
       if (toplevel_count % 1000 == 0) {
         // it's expensive to spam System.out, believe it or not :P
-        print(s"\rProcessed %,d top-level XML objects".format(toplevel_count))
+        print(f"\rProcessed $toplevel_count%,d top-level XML objects")
       }
     }
     println("")

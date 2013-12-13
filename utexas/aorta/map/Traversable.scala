@@ -118,7 +118,7 @@ class Line(val x1: Double, val y1: Double, val x2: Double, val y2: Double) {
   def start = Coordinate(x1, y1)
   def end = Coordinate(x2, y2)
 
-  override def toString = "(%f, %f) ---> (%f, %f)".format(x1, y1, x2, y2)
+  override def toString = s"($x1, $y1) ---> ($x2, $y2)"
 
   def segment_intersection(other: Line): Option[Coordinate] = {
     // Ripped from http://paulbourke.net/geometry/pointlineplane/

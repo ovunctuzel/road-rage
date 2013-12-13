@@ -22,7 +22,7 @@ case class Coordinate(x: Double, y: Double) extends Ordered[Coordinate] {
                                             else
                                               x.compare(other.x)
   // pretty printer
-  override def toString = "(%f, %f)".format(x, y)
+  override def toString = s"($x, $y)"
 
   def +(other: Coordinate) = Coordinate(x + other.x, y + other.y)
   def dist_to(o: Coordinate) = Coordinate.gps_dist_in_meters(

@@ -27,7 +27,7 @@ object BenchmarkRouting {
       val to = rng.choose(sim.graph.roads)
 
       if (i % (rounds / 100) == 0) {
-        Util.log("round %,d / %,d".format(i, rounds))
+        Util.log(f"round $i%,d / $rounds%,d")
       }
       for (((router, name), idx) <- routers.zipWithIndex) {
         val t = Timer(name)

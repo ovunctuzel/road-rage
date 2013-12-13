@@ -142,7 +142,7 @@ class PreGraph1() {
       maxX = math.max(maxX, pt.x)
       maxY = math.max(maxY, pt.y)
     }
-    Util.log("Bounds: %f .. %f, %f .. %f".format(minX, maxX, minY, maxY))
+    Util.log(s"Bounds: $minX .. $maxX, $minY .. $maxY")
 
     // so to make (minX, minY) the new origin...
     offX = 0 - minX

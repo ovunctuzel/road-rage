@@ -31,7 +31,7 @@ class Edge(
   // Queries
 
   override def compare(other: Edge) = id.int.compare(other.id.int)
-  override def toString = "Lane %s%d of %s (%s)".format(road.dir, lane_num, road.name, id)
+  override def toString = s"Lane ${road.dir}${lane_num} of ${road.name} ($id)"
 
   // no lane-changing
   //def leads_to = next_turns
