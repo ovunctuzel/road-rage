@@ -7,8 +7,8 @@ package utexas.aorta.map
 import utexas.aorta.map.make.MapStateWriter
 import utexas.aorta.common.{StateReader, TurnID, EdgeID}
 
-class Turn(val id: TurnID, val from: Edge, val to: Edge, val conflict_line: Line)
-  extends Traversable(Array(conflict_line)) with Ordered[Turn]
+class Turn(val id: TurnID, val from: Edge, val to: Edge)
+  extends Traversable(Array(new Line(from.end_pt, to.start_pt))) with Ordered[Turn]
 {
   //////////////////////////////////////////////////////////////////////////////
   // Meta
@@ -17,7 +17,6 @@ class Turn(val id: TurnID, val from: Edge, val to: Edge, val conflict_line: Line
     w.int(id.int)
     w.int(w.edges(from.id).int)
     w.int(w.edges(to.id).int)
-    conflict_line.serialize(w)
   }
 
   //////////////////////////////////////////////////////////////////////////////
@@ -34,6 +33,7 @@ class Turn(val id: TurnID, val from: Edge, val to: Edge, val conflict_line: Line
 
   def vert = from.to
 
+  private def conflict_line = lines.head
   def conflicts_with(t: Turn) =
     (from != t.from) && (to == t.to || conflict_line.segment_intersection(t.conflict_line).isDefined)
 
@@ -43,6 +43,6 @@ class Turn(val id: TurnID, val from: Edge, val to: Edge, val conflict_line: Line
 
 object Turn {
   def unserialize(r: StateReader, edges: Array[Edge]) = new Turn(
-    new TurnID(r.int), edges(r.int), edges(r.int), Line.unserialize(r)
+    new TurnID(r.int), edges(r.int), edges(r.int)
   )
 }

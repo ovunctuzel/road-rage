@@ -6,7 +6,7 @@ package utexas.aorta.map.make
 
 import scala.collection.mutable
 
-import utexas.aorta.map.{Edge, Vertex, Turn, Line, Road}
+import utexas.aorta.map.{Edge, Vertex, Turn, Road}
 
 import utexas.aorta.common.{Util, cfg, TurnID, RoadID}
 
@@ -40,9 +40,7 @@ class Pass3_Part2(graph: PreGraph3) {
     // TODO cfg
     val cross_thresshold = math.Pi / 10 // allow 18 degrees
 
-    def make_turn(pair: (Edge, Edge)) = new Turn(
-      new TurnID(next_id), pair._1, pair._2, new Line(pair._1.end_pt, pair._2.start_pt)
-    )
+    def make_turn(pair: (Edge, Edge)) = new Turn(new TurnID(next_id), pair._1, pair._2)
 
     // To account for one-ways, we actually want to reason about roads that are
     // incoming to or outgoing from this vert.
