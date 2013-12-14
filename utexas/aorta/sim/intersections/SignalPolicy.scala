@@ -145,17 +145,19 @@ class SignalPolicy(
   // If we admit agents that run up overtime, that's safe but adds to our delay
   // and makes the light unfair.
   private def could_make_light(ticket: Ticket): Boolean = {
-    // TODO choose a policy. tend to accept and let delay creep in, or ban
-    // people who could've made it in order to stay on schedule?
-
-    // No control, admit everyone?
-    //return true
-
-    // Simple heuristic: can we make it in time at the speed limit?
-    return ticket.eta_earliest < time_left
-
-    // if our worst-case speeding-up distance still lets us back out and stop,
-    // then fine, allow it. <-- the old policy
+    // TODO account for time to do turn, and the min speed limit
+    if (ticket.a.is_stopped) {
+      if (ticket.a.our_lead.isDefined) {
+        // Wait till they start moving.
+        return false
+      } else {
+        // (almost) always let first go
+        return ticket.eta_earliest < time_left
+      }
+    } else {
+      // TODO account for speed of leader vehicle, and speed limits?
+      return ticket.eta_at_cur_speed < time_left
+    }
   }
 }
 
