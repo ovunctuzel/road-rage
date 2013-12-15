@@ -4,7 +4,9 @@
 
 package utexas.aorta.sim.intersections
 
+import scala.annotation.tailrec
 import scala.collection.mutable
+import Function.tupled
 
 import utexas.aorta.map.{Turn, Vertex, Edge}
 import utexas.aorta.sim.{EV_Signal_Change, Simulation, EV_IntersectionOutcome}
@@ -177,12 +179,9 @@ class SignalPolicy(
   }
 }
 
-class Phase(val turns: Set[Turn], val offset: Double, val duration: Double)
+class Phase(val id: Int, val turns: Set[Turn], val offset: Double, val duration: Double)
   extends Ordered[Phase]
 {
-  val id = Phase.id
-  Phase.id += 1
-
   // Can only order phases at one intersection! Offsets must be unique!
   override def compare(other: Phase) = offset.compare(other.offset)
   //override def toString = s"Phase($id, $turns, offset $offset, duration $duration)"
@@ -204,37 +203,26 @@ class Phase(val turns: Set[Turn], val offset: Double, val duration: Double)
 }
 
 object Phase {
-  var id = 0
-
   def phases_for(i: Intersection): List[Phase] = {
     return arbitrary_phases(i.v)
     //return group_by_roads(i.v)
   }
   
   // Assign the same arbitrary duration to everything
-  def turn_groups_to_phases(groups: List[Set[Turn]]): List[Phase] = {
+  def turn_groups_to_phases(groups: List[Set[Turn]]) =
     // TODO duration has to let agents have time to cross the intersection at a
     // reasonable speed
-    var offset = 0
-    return groups.map(group => {
-      val phase = new Phase(group, offset, cfg.signal_duration)
-      offset += cfg.signal_duration
-      phase
-    })
-  }
+    groups.zipWithIndex.map(
+      tupled((turns, idx) => new Phase(idx, turns, idx * cfg.signal_duration, cfg.signal_duration))
+    )
 
   // Add turns to every group that don't conflict
   def maximize_groups(groups: List[Set[Turn]], turns: List[Turn]) =
     groups.map(g => maximize(g, turns))
-  private def maximize(group: Set[Turn], turns: List[Turn]): Set[Turn] = {
-    val g = new mutable.HashSet[Turn]()
-    g ++= group
-    for (turn <- turns) {
-      if (!g.exists(t => t.conflicts_with(turn))) {
-        g += turn
-      }
-    }
-    return g.toSet
+  @tailrec private def maximize(group: Set[Turn], turns: List[Turn]): Set[Turn] = turns match {
+    case Nil => group
+    case turn :: rest if !group.exists(t => t.conflicts_with(turn)) => maximize(group + turn, rest)
+    case turn :: rest => maximize(group, rest)
   }
 
   // Least number of phases can be modeled as graph coloring, but we're just

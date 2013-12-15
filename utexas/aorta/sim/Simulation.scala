@@ -49,7 +49,6 @@ class Simulation(val graph: Graph, val scenario: Scenario)
 
   def setup(): Simulation = {
     SystemWallets.rates = scenario.system_wallet
-    Phase.id = 0
 
     // TODO always do this, and forget this map/sim separation?
     graph.traversables.foreach(t => t.queue = new Queue(t))
