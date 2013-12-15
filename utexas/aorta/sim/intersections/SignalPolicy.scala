@@ -204,12 +204,18 @@ class Phase(val id: Int, val turns: Set[Turn], val offset: Double, val duration:
 
 object Phase {
   def phases_for(i: Intersection): List[Phase] = {
-    return arbitrary_phases(i.v)
-    //return group_by_roads(i.v)
+    // Arbitrary grouping
+    //return phase_maker(i.v, (remaining: Iterable[Turn], start: Turn) => remaining)
+
+    // Try to have turns in the same and opposite (antiparallel) direction grouped
+    return phase_maker(i.v, (remaining: Iterable[Turn], start: Turn) => {
+      val pair = remaining.partition(t => parallel(t, start))
+      pair._1.toList ++ pair._2.toList
+    })
   }
   
   // Assign the same arbitrary duration to everything
-  def turn_groups_to_phases(groups: List[Set[Turn]]) =
+  private def turn_groups_to_phases(groups: List[Set[Turn]]) =
     // TODO duration has to let agents have time to cross the intersection at a
     // reasonable speed
     groups.zipWithIndex.map(
@@ -217,7 +223,7 @@ object Phase {
     )
 
   // Add turns to every group that don't conflict
-  def maximize_groups(groups: List[Set[Turn]], turns: List[Turn]) =
+  private def maximize_groups(groups: List[Set[Turn]], turns: List[Turn]) =
     groups.map(g => maximize(g, turns))
   @tailrec private def maximize(group: Set[Turn], turns: List[Turn]): Set[Turn] = turns match {
     case Nil => group
@@ -227,7 +233,7 @@ object Phase {
 
   // Least number of phases can be modeled as graph coloring, but we're just
   // going to do a simple greedy approach.
-  def arbitrary_phases(vert: Vertex): List[Phase] = {
+  private def phase_maker(vert: Vertex, order: (Iterable[Turn], Turn) => Iterable[Turn]): List[Phase] = {
     val turns_remaining = new mutable.TreeSet[Turn]()
     turns_remaining ++= vert.turns
 
@@ -239,7 +245,7 @@ object Phase {
 
       // conflict relation is symmetric, but not transitive... so do quadratic
       // conflict checking
-      for (candidate <- turns_remaining) {
+      for (candidate <- order(turns_remaining, this_group.head)) {
         if (!this_group.exists(t => t.conflicts_with(candidate))) {
           this_group += candidate
           turns_remaining -= candidate
@@ -251,33 +257,12 @@ object Phase {
     return turn_groups_to_phases(maximize_groups(groups.toList, vert.turns))
   }
 
-  // Try to group turns from the same road
-  // TODO refactor
-  def group_by_roads(vert: Vertex): List[Phase] = {
-    val turns_remaining = new mutable.TreeSet[Turn]()
-    turns_remaining ++= vert.turns
-
-    val groups = new mutable.ListBuffer[Set[Turn]]()
-    while (turns_remaining.nonEmpty) {
-      val this_group = new mutable.HashSet[Turn]()
-      this_group += turns_remaining.head
-      turns_remaining -= this_group.head
-
-      // Try to add remaining turns in the same road first
-      // Then do the rest, normally
-      val road = this_group.head.from.road
-      val consider_order = turns_remaining.partition(t => t.from.road == road)
-      for (candidate <- consider_order._1.toList ++ consider_order._2.toList) {
-        if (!this_group.exists(t => t.conflicts_with(candidate))) {
-          this_group += candidate
-          turns_remaining -= candidate
-        }
-      }
-
-      groups += this_group.toSet
-    }
-    return turn_groups_to_phases(maximize_groups(groups.toList, vert.turns))
-  }
-
-  // TODO other groupings for standard 3/4 phase lights
+  // Threshold of 10 degrees
+  private def parallel(t1: Turn, t2: Turn) =
+    math.abs(canonicalize_angle(t1.angle_deg) - canonicalize_angle(t2.angle_deg)) <= 10.0
+  private def canonicalize_angle(degrees: Double) =
+    if (degrees < 180)
+      degrees
+    else
+      degrees - 180
 }

@@ -39,6 +39,8 @@ class Turn(val id: TurnID, val from: Edge, val to: Edge)
 
   // TODO more efficiently?
   def conflicts = vert.turns.filter(conflicts_with).toSet
+
+  def angle_deg = math.toDegrees(conflict_line.angle)
 }
 
 object Turn {
