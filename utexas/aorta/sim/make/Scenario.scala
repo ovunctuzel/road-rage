@@ -305,7 +305,7 @@ object SystemWalletConfig {
 
 object IntersectionType extends Enumeration {
   type IntersectionType = Value
-  val NeverGo, StopSign, Signal, Reservation, CommonCase = Value
+  val NeverGo, StopSign, Signal, Reservation, Yield = Value
 }
 
 object RouteType extends Enumeration {
@@ -346,8 +346,8 @@ object Factory {
       new SignalPolicy(i, make_intersection_ordering[Phase](ordering), sim)
     case IntersectionType.Reservation =>
       new ReservationPolicy(i, make_intersection_ordering[Ticket](ordering))
-    /*case IntersectionType.CommonCase =>
-      new CommonCasePolicy(i, make_intersection_ordering[Ticket](ordering))*/
+    case IntersectionType.Yield =>
+      new YieldPolicy(i, make_intersection_ordering[Ticket](ordering))
   }
 
   def make_route(

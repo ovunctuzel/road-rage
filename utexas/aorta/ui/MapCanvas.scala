@@ -238,7 +238,7 @@ class MapCanvas(val sim: Simulation, headless: Boolean = false) extends Scrollin
     IntersectionType.StopSign -> cfg.stopsign_color,
     IntersectionType.Signal -> cfg.signal_color,
     IntersectionType.Reservation -> cfg.reservation_color,
-    IntersectionType.CommonCase -> cfg.commoncase_color
+    IntersectionType.Yield -> cfg.yield_color
   )
 
   def canvas_width = sim.graph.width.toInt
