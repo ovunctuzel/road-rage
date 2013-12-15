@@ -159,8 +159,20 @@ class SignalPolicy(
         return ticket.earliest_finish < time_left
       }
     } else {
-      // TODO account for speed of leader vehicle, and speed limits?
-      return ticket.finish_at_cur_speed < time_left
+      // Defer decision till we're close and have to choose.
+      // TODO this might be over-conservative (tends to minimize overtime but stagger agents
+      // starting from rest)
+      if (ticket.a.max_lookahead_dist >= ticket.a.how_far_away(intersection) - cfg.end_threshold) {
+        val dist_left = ticket.a.how_far_away(intersection) + ticket.turn.length
+        return ticket.a.our_lead match {
+          // We're bounded by them either way, so...
+          case Some(other) => dist_left / other.speed < time_left
+          // We can speed up soon
+          case None => dist_left / ticket.a.max_next_speed < time_left
+        }
+      } else {
+        return false
+      }
     }
   }
 }

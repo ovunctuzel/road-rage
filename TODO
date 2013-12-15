@@ -5,13 +5,11 @@
 
 # Intersection policies #
 
-- traffic lights shouldnt have long yellow
+- yield policy
 - reservation protocol should actually be faster. opportunistic.
   - michael's refined notion of turn conflict
-- yield policy
 - unprotected left, right turn on red, better stop sign
 - if easy: backpressure lights
-- for better lights, want to defer decision... can we do that now?
 - optimize fixpoints
 
 # Zones #
