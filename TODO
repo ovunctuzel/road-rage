@@ -50,6 +50,7 @@
 
 # Experiment framework #
 
+- lightweight experiments... cmdline flag to record trip time, then compare multiple files
 - mode to run many things locally, in parallel
 - better R templates, or another solution (gnuplot?)
 - port old experiments
@@ -104,6 +105,7 @@
 # Hard realism #
 
 - different agent params
+  - modular agent behavior, like give up on LC vs slow down for it
 - tune all params
 
 # Tests #

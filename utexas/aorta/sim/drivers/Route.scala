@@ -55,8 +55,8 @@ abstract class Route(val goal: Road, rng: RNG) {
   // have to always return the same answer.
   def pick_turn(e: Edge): Turn
   // Prescribe the final lane on this road to aim for. We should be able to spazz around in
-  // our answer here.
-  def pick_final_lane(e: Edge): Edge
+  // our answer here. True if e doesn't lead to next road.
+  def pick_final_lane(e: Edge): (Edge, Boolean)
   // Just mark that we don't have to take the old turn prescribed
   def reroute(at: Edge) {}
 
@@ -195,10 +195,10 @@ class PathRoute(goal: Road, orig_router: Router, private var rerouter: Router, r
     return best
   }
 
-  def pick_final_lane(from: Edge): Edge = {
+  def pick_final_lane(from: Edge): (Edge, Boolean) = {
     // We could be done!
     if (from.road == goal) {
-      return from
+      return (from, false)
     }
 
     // This method is called first, so do the lazy initialization here.
@@ -236,7 +236,7 @@ class PathRoute(goal: Road, orig_router: Router, private var rerouter: Router, r
     //return candidates.minBy(e => math.abs(from.lane_num - e.lane_num))
 
     // Discretionary lane-changing: pick the lane with the fewest people ahead of us
-    return candidates.minBy(e => owner.num_ahead(e))
+    return (candidates.minBy(e => owner.num_ahead(e)), !candidates.contains(from))
   }
 
   // Returns the turn we must make from at to continue down the new route

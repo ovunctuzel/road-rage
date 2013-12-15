@@ -58,7 +58,7 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
     if (!a.involved_with(i)) {
       base match {
         case e: Edge => {
-          val goal = route.pick_final_lane(e)
+          val goal = route.pick_final_lane(e)._1
           val target = e.adjacent_lanes.minBy(choice => math.abs(choice.lane_num - goal.lane_num))
           // Tough liveness guarantees... give up early.
           // TODO move this check to give up to react()
@@ -164,9 +164,12 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
       // How many LCs do we anticipate here? Slown down to increase chances of doing multi-LCs
       // TODO (This is a bit ad-hoc)
       step.at match {
-        case e: Edge => {
-          val num_lcs = math.abs(e.lane_num - route.pick_final_lane(e).lane_num)
-          min_speed_limit = math.min(min_speed_limit, step.at.speed_limit / math.max(1, num_lcs))
+        case e: Edge => route.pick_final_lane(e) match {
+          case (target, true) => {
+            val num_lcs = math.abs(e.lane_num - target.lane_num)
+            min_speed_limit = math.min(min_speed_limit, step.at.speed_limit / math.max(1, num_lcs))
+          }
+          case _ => // Don't slow down for unnecessary LCs
         }
         case _ =>
       }
