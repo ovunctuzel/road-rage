@@ -235,8 +235,8 @@ class PathRoute(goal: Road, orig_router: Router, private var rerouter: Router, r
     // Pick the lane closest to the current
     //return candidates.minBy(e => math.abs(from.lane_num - e.lane_num))
 
-    // Discretionary lane-changing: pick the lane with the least congestion
-    return candidates.minBy(e => e.queue.percent_full)
+    // Discretionary lane-changing: pick the lane with the fewest people ahead of us
+    return candidates.minBy(e => owner.num_ahead(e))
   }
 
   // Returns the turn we must make from at to continue down the new route

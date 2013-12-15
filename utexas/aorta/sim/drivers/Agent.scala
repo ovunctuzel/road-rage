@@ -308,7 +308,7 @@ class Agent(
   override def toString = "Agent " + id
   override def compare(other: Agent) = id.int.compare(other.id.int)
   override def tooltip = List(toString, wallet.toString) ++ wallet.tooltip
-  def debug = {
+  def debug() {
     Util.log("" + this)
     Util.log_push
     Util.log("At: " + at)
@@ -318,6 +318,12 @@ class Agent(
     Util.log("Stopping distance next: " + Physics.stopping_distance(max_next_speed))
     Util.log("Lookahead dist: " + max_lookahead_dist)
     Util.log("Dist left here: " + at.dist_left)
+    at.on match {
+      case e: Edge => {
+        Util.log(s"${num_ahead(e)} agents ahead of us in this lane, ${num_ahead(e.leftmost_lane)} in the leftmost lane")
+      }
+      case _ =>
+    }
     Util.log("Tickets:")
     for (ticket <- tickets) {
       Util.log(s"  $ticket waiting for ${ticket.how_long_waiting}")
@@ -474,6 +480,8 @@ class Agent(
   }
 
   def cur_queue = at.on.queue
+  // Meaningless unless e is in the same road as the agent
+  def num_ahead(e: Edge) = e.queue.all_in_range(at.dist + cfg.epsilon, e.length).size
   def on(t: Traversable) = (at.on, old_lane) match {
     case (ours, _) if ours == t => true
     case (_, Some(l)) if l == t => true
