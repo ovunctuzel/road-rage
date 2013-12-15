@@ -124,13 +124,17 @@ class Ticket(val a: Agent, val turn: Turn) extends Ordered[Ticket] {
     else
       a.sim.tick - waiting_since
 
-  def eta_earliest() =
+  def earliest_start() =
     a.how_far_away(turn.vert.intersection) / a.at.on.speed_limit
+  def earliest_finish() =
+    (a.how_far_away(turn.vert.intersection) + turn.length) / math.min(a.at.on.speed_limit, turn.speed_limit)
 
   // This isn't really optimistic or pessimistic; we could be going the speed
   // limit or not
-  def eta_at_cur_speed() =
+  def start_at_cur_speed() =
     a.how_far_away(turn.vert.intersection) / math.max(a.speed, cfg.epsilon)
+  def finish_at_cur_speed() =
+    (a.how_far_away(turn.vert.intersection) + turn.length) / math.max(a.speed, cfg.epsilon)
 
   def close_to_start =
     if (a.at.on == turn.from) {
@@ -139,12 +143,12 @@ class Ticket(val a: Agent, val turn: Turn) extends Ordered[Ticket] {
         // TODO better math to account for following at speed
         case Some(other) => other.at.dist - a.at.dist <= cfg.follow_dist * 10.0
         // If we're the head, just be close to starting
-        case None => eta_earliest <= 5.0
+        case None => earliest_start <= 5.0
       }
     } else {
       // When we register early or lookahead over small steps, just demand we'll
       // arrive at the turn soon
-      eta_earliest <= 10.0
+      earliest_start <= 10.0
     }
 
   // If we're part of gridlock and we have a choice, bail out.
