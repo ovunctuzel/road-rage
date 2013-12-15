@@ -29,6 +29,9 @@ class SignalPolicy(
   // Tracks when the current phase began
   private var started_at = sim.tick
 
+  // TODO maybe get rid of this after I'm done improving it
+  private var overtime_total = 0.0
+
   //////////////////////////////////////////////////////////////////////////////
   // Meta
 
@@ -53,6 +56,7 @@ class SignalPolicy(
   def react() {
     // Switch to the next phase
     if (sim.tick >= end_at && accepted.isEmpty) {
+      overtime_total += sim.tick - end_at
       // In auctions, we may not have a viable next phase at all...
       ordering.choose(candidates, request_queue, this) match {
         case Some(p) => {
@@ -103,6 +107,7 @@ class SignalPolicy(
     Util.log(s"${phase_order.size} phases total")
     Util.log("Time left: " + time_left)
     Util.log("Viable phases right now: " + candidates)
+    Util.log(s"Overtime: $overtime_total")
   }
 
   // If we're holding auctions, we risk agents repeatedly bidding for and
