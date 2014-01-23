@@ -12,7 +12,7 @@ import utexas.aorta.sim.intersections.{Intersection, Ticket}
 import utexas.aorta.ui.Renderable
 
 import utexas.aorta.common.{Util, RNG, cfg, Physics, StateWriter, StateReader, AgentID, EdgeID,
-                            ValueOfTime}
+                            ValueOfTime, Flags}
 
 class Agent(
   val id: AgentID, val route: Route, val rng: RNG, val wallet: Wallet, val sim: Simulation
@@ -58,6 +58,7 @@ class Agent(
     spawn.queue.allocate_slot
     sim.insert_agent(this)
     AgentMap.maps.foreach(m => m.when_created(this))
+    set_debug(Flags.int("--track", -1) == id.int)
   }
 
   def serialize(w: StateWriter) {
