@@ -7,7 +7,7 @@ package utexas.aorta.sim.drivers
 import scala.collection.mutable
 
 import utexas.aorta.map.{Edge, Coordinate, Turn, Traversable, Graph, Position}
-import utexas.aorta.sim.{Simulation, EV_AgentQuit, AgentMap}
+import utexas.aorta.sim.{Simulation, EV_AgentQuit, AgentMap, EV_Breakpoint}
 import utexas.aorta.sim.intersections.{Intersection, Ticket}
 import utexas.aorta.ui.Renderable
 
@@ -59,6 +59,9 @@ class Agent(
     sim.insert_agent(this)
     AgentMap.maps.foreach(m => m.when_created(this))
     set_debug(Flags.int("--track", -1) == id.int)
+    if (debug_me) {
+      sim.publish(EV_Breakpoint(this))
+    }
   }
 
   def serialize(w: StateWriter) {

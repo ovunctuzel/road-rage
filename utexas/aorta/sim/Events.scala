@@ -29,6 +29,8 @@ final case class EV_Heartbeat(
     counts.unrealizable_count, counts.discretionary_count
   )
 }
+// The GUI should pause
+final case class EV_Breakpoint(focus: Agent) extends Sim_Event
 
 final case class EV_Signal_Change(greens: Set[Turn]) extends Sim_Event
 final case class EV_IntersectionOutcome(intersection: IntersectionType.Value, losers: List[Ticket])

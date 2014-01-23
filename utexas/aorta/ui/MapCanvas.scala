@@ -12,7 +12,7 @@ import swing.Dialog
 import scala.language.implicitConversions
 
 import utexas.aorta.map._  // TODO yeah getting lazy.
-import utexas.aorta.sim.{Simulation, EV_Signal_Change, EV_Transition, EV_Reroute,
+import utexas.aorta.sim.{Simulation, EV_Signal_Change, EV_Transition, EV_Reroute, EV_Breakpoint,
                          EV_Heartbeat, AgentMap}
 import utexas.aorta.sim.make.{IntersectionType, RouteType}
 import utexas.aorta.sim.drivers.{Agent, PathRoute}
@@ -135,6 +135,11 @@ class MapCanvas(val sim: Simulation, headless: Boolean = false) extends Scrollin
       for (t <- greens) {
         green_turns(t) = GeomFactory.line2awt(GeomFactory.turn_body(t))
       }
+    }
+    case EV_Breakpoint(a) => {
+      println(s"Pausing to target $a")
+      state.camera_agent = Some(a)
+      pause()
     }
     case _ =>
   })
@@ -509,6 +514,11 @@ class MapCanvas(val sim: Simulation, headless: Boolean = false) extends Scrollin
       }
     }
     case _ =>
+  }
+
+  def pause() {
+    running = true
+    handle_ev_action("toggle-running")
   }
 
   def handle_ev_action(ev: String): Unit = ev match {
