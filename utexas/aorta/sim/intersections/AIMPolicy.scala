@@ -6,6 +6,7 @@ package utexas.aorta.sim.intersections
 
 import utexas.aorta.map.{Turn, Line}
 import utexas.aorta.sim.make.IntersectionType
+import utexas.aorta.common.Physics
 
 import scala.collection.mutable
 
@@ -14,7 +15,13 @@ class AIMPolicy(intersection: Intersection, ordering: IntersectionOrdering[Ticke
 {
   override def policy_type = IntersectionType.Reservation
 
-  case class Conflict(turn1: Turn, collision_dist1: Double, turn2: Turn, collision_dist2: Double)
+  case class Conflict(turn1: Turn, collision_dist1: Double, turn2: Turn, collision_dist2: Double) {
+    // TODO awkward that all methods are duped for 1,2
+    def time1(initial_speed: Double) =
+      Physics.simulate_steps(collision_dist1, initial_speed, turn1.speed_limit)
+    def time2(initial_speed: Double) =
+      Physics.simulate_steps(collision_dist2, initial_speed, turn2.speed_limit)
+  }
   private val conflict_map = find_conflicts()
 
   private def find_conflicts(): mutable.MultiMap[Turn, Conflict] = {
