@@ -33,7 +33,7 @@ class Turn(val id: TurnID, val from: Edge, val to: Edge)
 
   def vert = from.to
 
-  private def conflict_line = lines.head
+  def conflict_line = lines.head
   def conflicts_with(t: Turn) =
     (from != t.from) && (to == t.to || conflict_line.segment_intersection(t.conflict_line).isDefined)
 
