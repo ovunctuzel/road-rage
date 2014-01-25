@@ -107,9 +107,10 @@ class AIMPolicy(intersection: Intersection, ordering: IntersectionOrdering[Ticke
       case _ => throw new IllegalArgumentException("$turn doesn't belong to $this")
     }
 
+    // Includes end_threshold, so assumes we're starting right at that mark...
     def time(turn: Turn, initial_speed: Double) = turn match {
-      case `turn1` => Physics.simulate_steps(collision_dist1, initial_speed, turn1.speed_limit)
-      case `turn2` => Physics.simulate_steps(collision_dist2, initial_speed, turn2.speed_limit)
+      case `turn1` => Physics.simulate_steps(collision_dist1 + cfg.end_threshold, initial_speed, turn1.speed_limit)
+      case `turn2` => Physics.simulate_steps(collision_dist2 + cfg.end_threshold, initial_speed, turn2.speed_limit)
       case _ => throw new IllegalArgumentException("$turn doesn't belong to $this")
     }
   }
