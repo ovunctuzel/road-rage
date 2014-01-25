@@ -303,8 +303,7 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
     }
 
     // Are we completely done?
-    // TODO should be totally within end_threshold, but math problems. :(
-    val maybe_done = dist_from_agent_to_end <= (1.5 * cfg.end_threshold) && a.is_stopped
+    val maybe_done = dist_from_agent_to_end <= cfg.end_threshold && a.is_stopped
     return a.at.on match {
       case e: Edge if route.done(e) && maybe_done => {
         Right(true)
@@ -341,27 +340,30 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
 
   // Find an accel to travel want_dist and wind up with speed 0.
   private def accel_to_end(want_dist: Double): Double = {
-    // TODO dist > epsilon too? test totally with whatever i go with
-    if (want_dist > 0.0) {
-      if (a.speed > cfg.epsilon && a.how_long_almost_idle < 10.0) {
-        // d = (v_1)(t) + (1/2)(a)(t^2)
-        // 0 = (v_1) + (a)(t)
-        // Eliminating time yields the formula for accel below.
+    Util.assert_ge(want_dist, 0)
 
-        // If this accel puts us past speed 0, it's fine, we just idle for the
-        // remainder of the timestep.
-        return (-1 * a.speed * a.speed) / (2 * want_dist)
-      } else {
-        // We have to accelerate so that we can get going, but not enough so
-        // that we can't stop. Do one tick of acceleration, one tick of
-        // deacceleration at that same rate. 
-        // Want (1/2)(a)(dt^2) + (a dt)dt - (1/2)(a)(dt^2) = want_dist
-        return want_dist / (cfg.dt_s * cfg.dt_s)
-      }
-    } else {
-      // Special case for distance of 0: avoid a NaN, just stop.
+    if (want_dist == 0.0) {
+      // Just stop.
       return Physics.accel_to_stop(a.speed)
     }
+
+    // d = (v_1)(t) + (1/2)(a)(t^2)
+    // 0 = (v_1) + (a)(t)
+    // Eliminating time yields the formula for accel below. This same accel should be applied for
+    // t = -v_1 / a, which is possible even if that's not a multiple of dt_s since we're
+    // decelerating to rest.
+    val normal_case = (-1 * a.speed * a.speed) / (2 * want_dist)
+    val required_time = -a.speed / normal_case
+    if (!required_time.isNaN) {
+      return normal_case
+    }
+
+    // We have to accelerate so that we can get going, but not enough so
+    // that we can't stop. Do one tick of acceleration, one tick of
+    // deacceleration at that same rate. If the required acceleration is then too high, we'll cap
+    // off and trigger a normal case next tick.
+    // Want (1/2)(a)(dt^2) + (a dt)dt - (1/2)(a)(dt^2) = want_dist
+    return want_dist / (cfg.dt_s * cfg.dt_s)
   }
 }
 

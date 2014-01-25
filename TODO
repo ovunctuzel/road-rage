@@ -47,7 +47,6 @@
 - reduce vars and publics and mutable collections
 - distance/time types
 - merge headless/gui clients
-- group all LC code together, etc, but in individ classes via traits
 
 # Experiment framework #
 
@@ -63,7 +62,6 @@
 
 # Bugs #
 
-- agents not stopping at exactly the right dist the first time
 - savestating
   - bad filenames when saving from a loaded savestate
   - resumable logging doesnt really work if they simulated past the savestate...

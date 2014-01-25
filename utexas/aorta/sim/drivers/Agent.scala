@@ -157,8 +157,10 @@ class Agent(
         }
       }*/
 
-      // short-circuit... we're not going anywhere.
-      return false
+      // TODO get rid of this short circuit entirely?
+      if (new_dist == 0.0) {
+        return false
+      }
     }
 
     val start_on = at.on
@@ -267,10 +269,9 @@ class Agent(
   private def update_kinematics(dt_sec: Double): Double = {
     // Travel at the target constant acceleration for the duration of the
     // timestep, capping off when speed hits zero.
-    val initial_speed = speed
-    speed = math.max(0.0, initial_speed + (target_accel * dt_sec))
-    val dist = Physics.dist_at_constant_accel(target_accel, dt_sec, initial_speed)
+    val dist = Physics.dist_at_constant_accel(target_accel, dt_sec, speed)
     Util.assert_ge(dist, 0.0)
+    speed = math.max(0.0, speed + (target_accel * dt_sec))
     return dist
   }
 

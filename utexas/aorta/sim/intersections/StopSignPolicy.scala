@@ -28,8 +28,7 @@ class StopSignPolicy(intersection: Intersection,
     request_queue.filter(ticket =>
       (ticket.a.is_stopped &&
        ticket.a.cur_queue.head.get == ticket.a &&
-       // TODO * 1.5 is a tmp hack
-       ticket.a.how_far_away(intersection) <= 1.5 * cfg.end_threshold &&
+       ticket.a.how_far_away(intersection) <= cfg.end_threshold &&
        !ticket.turn_blocked)
     )
 
