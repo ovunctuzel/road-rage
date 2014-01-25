@@ -13,7 +13,7 @@ import scala.collection.mutable
 class AIMPolicy(intersection: Intersection, ordering: IntersectionOrdering[Ticket])
   extends Policy(intersection)
 {
-  private val conflict_map = find_conflicts()
+  private val conflict_map: Map[Turn, Map[Turn, Conflict]] = find_conflicts()
 
   // TODO serialization
 
@@ -39,13 +39,32 @@ class AIMPolicy(intersection: Intersection, ordering: IntersectionOrdering[Ticke
        !ticket.turn_blocked)
     )
 
-  // Don't check for any collisions?!
+  // Check for collisions by seeing how close agents are to pre-defined collision point
   override def end_step() {
+    val in_intersection = accepted.filter(t => t.a.at.on == t.turn)
+    // O(n^2 / 2), n = agents doing turns
+    for (t1 <- in_intersection; t2 <- in_intersection if t1.a.id.int < t2.a.id.int) {
+      if (t1.turn.conflicts_with(t2.turn)) {
+        val conflict = conflict_map(t1.turn)(t2.turn)
+        // Are the agents near the collision point? Negative means before point, positive means
+        // after it
+        val delta1 = t1.a.at.dist - conflict.dist(t1.turn)
+        val delta2 = t2.a.at.dist - conflict.dist(t2.turn)
+        println(s"Possible conflict between ${t1.a} ($delta1 away from danger) and ${t2.a} ($delta2 away)")
+      }
+    }
   }
 
   override def policy_type = IntersectionType.AIM
 
   case class Conflict(turn1: Turn, collision_dist1: Double, turn2: Turn, collision_dist2: Double) {
+    // Assumes turn is turn1 or turn2.
+    def dist(turn: Turn) =
+      if (turn == turn1)
+        collision_dist1
+      else
+        collision_dist2
+
     // TODO awkward that all methods are duped for 1,2
     def time1(initial_speed: Double) =
       Physics.simulate_steps(collision_dist1, initial_speed, turn1.speed_limit)
@@ -53,16 +72,16 @@ class AIMPolicy(intersection: Intersection, ordering: IntersectionOrdering[Ticke
       Physics.simulate_steps(collision_dist2, initial_speed, turn2.speed_limit)
   }
 
-  private def find_conflicts(): mutable.MultiMap[Turn, Conflict] = {
+  private def find_conflicts(): Map[Turn, Map[Turn, Conflict]] = {
     val all_conflicts =
       for (t1 <- intersection.v.turns; t2 <- intersection.v.turns if t1 != t2)
         yield make_conflict(t1, t2)
-    val map = new mutable.HashMap[Turn, mutable.Set[Conflict]] with mutable.MultiMap[Turn, Conflict]
+    val map = intersection.v.turns.map(t => t -> new mutable.HashMap[Turn, Conflict]).toMap
     for (c <- all_conflicts.flatten) {
-      map.addBinding(c.turn1, c)
-      map.addBinding(c.turn2, c)
+      map(c.turn1)(c.turn2) = c
+      map(c.turn2)(c.turn1) = c
     }
-    return map
+    return intersection.v.turns.map(t => t -> map(t).toMap).toMap
   }
 
   // TODO other types of conflict... same destination lane. would that cause intersection? is it
