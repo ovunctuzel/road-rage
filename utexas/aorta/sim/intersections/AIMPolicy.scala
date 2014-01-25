@@ -6,14 +6,40 @@ package utexas.aorta.sim.intersections
 
 import utexas.aorta.map.{Turn, Line}
 import utexas.aorta.sim.make.IntersectionType
-import utexas.aorta.common.Physics
+import utexas.aorta.common.{Physics, cfg}
 
 import scala.collection.mutable
 
 class AIMPolicy(intersection: Intersection, ordering: IntersectionOrdering[Ticket])
-  extends ReservationPolicy(intersection, ordering)
+  extends Policy(intersection)
 {
-  override def policy_type = IntersectionType.Reservation
+  private val conflict_map = find_conflicts()
+
+  // TODO serialization
+
+  override def react() {
+    while (true) {
+      ordering.choose(candidates, request_queue, this) match {
+        case Some(ticket) => {
+          // TODO publish a EV_IntersectionOutcome
+          accept(ticket)
+        }
+        case None => return
+      }
+    }
+  }
+  // Agents must pause a moment, be the head of their queue, and be close enough
+  // to us (in case they looked ahead over small edges).
+  private def candidates =
+    request_queue.filter(ticket =>
+      (ticket.a.is_stopped &&
+       ticket.a.cur_queue.head.get == ticket.a &&
+       // TODO * 1.5 is a tmp hack
+       ticket.a.how_far_away(intersection) <= 1.5 * cfg.end_threshold &&
+       !ticket.turn_blocked)
+    )
+
+  override def policy_type = IntersectionType.AIM
 
   case class Conflict(turn1: Turn, collision_dist1: Double, turn2: Turn, collision_dist2: Double) {
     // TODO awkward that all methods are duped for 1,2
@@ -22,7 +48,6 @@ class AIMPolicy(intersection: Intersection, ordering: IntersectionOrdering[Ticke
     def time2(initial_speed: Double) =
       Physics.simulate_steps(collision_dist2, initial_speed, turn2.speed_limit)
   }
-  private val conflict_map = find_conflicts()
 
   private def find_conflicts(): mutable.MultiMap[Turn, Conflict] = {
     val all_conflicts =
