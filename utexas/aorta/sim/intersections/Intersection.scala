@@ -41,24 +41,6 @@ class Intersection(val v: Vertex, policy_type: IntersectionType.Value,
     policy.cancel_turn(ticket)
   }
 
-  // Check for collisions
-  def end_step(): Unit = {
-    if (turns.size < 2) {
-      return
-    }
-
-    // The naive way is quadratic (a Cartesian product), with a slight
-    // optimization by observing that the conflicts-with relation is symmetric.
-    for (t1 <- turns.keys; t2 <- turns.keys if t1.id.int < t2.id.int) {
-      if (t1.conflicts_with(t2)) {
-        throw new Exception(s"Intersection collision: $t1 and $t2 conflict")
-      }
-    }
-
-    // TODO something more clever with equivalence sets, even though this isn't
-    // a transitive relation?
-  }
-
   def enter(ticket: Ticket) = {
     val t = ticket.turn
     if (!turns.contains(t)) {
@@ -211,6 +193,20 @@ abstract class Policy(val intersection: Intersection) {
 
   def unserialize_accepted(ticket: Ticket) {
     accepted += ticket
+  }
+
+  // Check for collisions
+  def end_step(): Unit = {
+    if (intersection.turns.size < 2) {
+      return
+    }
+
+    // O(n^2 / 2)
+    for (t1 <- intersection.turns.keys; t2 <- intersection.turns.keys if t1.id.int < t2.id.int) {
+      if (t1.conflicts_with(t2)) {
+        throw new Exception(s"Intersection collision: $t1 and $t2 conflict")
+      }
+    }
   }
 
   //////////////////////////////////////////////////////////////////////////////

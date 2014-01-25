@@ -39,6 +39,10 @@ class AIMPolicy(intersection: Intersection, ordering: IntersectionOrdering[Ticke
        !ticket.turn_blocked)
     )
 
+  // Don't check for any collisions?!
+  override def end_step() {
+  }
+
   override def policy_type = IntersectionType.AIM
 
   case class Conflict(turn1: Turn, collision_dist1: Double, turn2: Turn, collision_dist2: Double) {

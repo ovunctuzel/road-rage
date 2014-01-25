@@ -113,7 +113,7 @@ class Simulation(val graph: Graph, val scenario: Scenario)
     active_queues.foreach(q => q.end_step)
     active_queues.clear()
 
-    active_intersections.foreach(i => i.end_step)
+    active_intersections.foreach(i => i.policy.end_step())
 
     // Let agents react to the new world.
 
