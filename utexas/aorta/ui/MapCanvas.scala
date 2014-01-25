@@ -747,6 +747,11 @@ class MapCanvas(val sim: Simulation, headless: Boolean = false) extends Scrollin
     case Key.W => {
       state.show_zone_centers = !state.show_zone_centers
     }
+    case Key.S => {
+      if (!running) {
+        step_sim()
+      }
+    }
     case _ => // Ignore the rest
   }
 
