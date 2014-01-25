@@ -11,10 +11,15 @@ import utexas.aorta.common.{Physics, cfg}
 
 import scala.collection.mutable
 
+// TODO refactor with reservation policy.
 class AIMPolicy(intersection: Intersection, ordering: IntersectionOrdering[Ticket])
   extends Policy(intersection)
 {
   private val conflict_map: Map[Turn, Map[Turn, Conflict]] = find_conflicts()
+
+  private var interruption: Option[Ticket] = None
+
+  // These're for conflict detection
   // How far along their turn each agent was during last tick
   private val dist_last_tick = new mutable.HashMap[Agent, Double]()
   private val exited_this_tick = new mutable.HashSet[Ticket]()
@@ -22,11 +27,34 @@ class AIMPolicy(intersection: Intersection, ordering: IntersectionOrdering[Ticke
   // TODO serialization
 
   override def react() {
-    while (true) {
+    // TODO interruptions or not? ideally, keep accepting people that have no conflict with the
+    // interruption.
+    interruption match {
+      case Some(ticket) => {
+        if (can_accept(ticket)) {
+          ticket.approve()
+          interruption = None
+        } else {
+          return
+        }
+      }
+      case None =>
+    }
+
+    while (!interruption.isDefined) {
       ordering.choose(candidates, request_queue, this) match {
         case Some(ticket) => {
           // TODO publish a EV_IntersectionOutcome
-          accept(ticket)
+          if (can_accept(ticket)) {
+            accept(ticket)
+          } else {
+            interruption = Some(ticket)
+            ticket.is_interruption = true
+            unqueue(ticket)
+            // Furthermore, grab a spot for them and keep it!
+            ticket.turn.to.queue.allocate_slot
+            return
+          }
         }
         case None => return
       }
@@ -42,6 +70,25 @@ class AIMPolicy(intersection: Intersection, ordering: IntersectionOrdering[Ticke
        ticket.a.how_far_away(intersection) <= 1.5 * cfg.end_threshold &&
        !ticket.turn_blocked)
     )
+  private def can_accept(ticket: Ticket): Boolean = {
+    // See if there's a predicted conflict with any agent that's been accepted
+    for (t <- accepted if t.turn.conflicts_with(ticket.turn)) {
+      val our_time = ticket.a.sim.tick + conflict_map(t.turn)(ticket.turn).time(ticket.turn, 0)
+      val their_time = t.accept_tick + conflict_map(t.turn)(ticket.turn).time(t.turn, 0)
+      println(s"${ticket.a} @ $our_time vs ${t.a} @ $their_time")
+      if (our_time == their_time) {
+        println(s"... oh shit, ${ticket.a} and ${t.a} gonna clash at $our_time")
+      }
+    }
+    return true
+  }
+
+  override def cancel_turn(ticket: Ticket) {
+    interruption match {
+      case Some(t) if t == ticket => interruption = None
+      case _ => super.cancel_turn(ticket)
+    }
+  }
 
   // Check for collisions by seeing how close agents are to pre-defined collision point
   override def end_step() {
@@ -71,7 +118,7 @@ class AIMPolicy(intersection: Intersection, ordering: IntersectionOrdering[Ticke
         val old_dist2: Double = dist_last_tick.getOrElse(t2.a, 0)
         val old_delta2 = old_dist2 - conflict.dist(t2.turn)
         if ((old_delta1 < 0 && delta1 > 0) && (old_delta2 < 0 && delta2 > 0)) {
-          throw new Exception(s"${t1.a} and ${t2.a} crossed at an AIM intersection!")
+          throw new Exception(s"${t1.a} and ${t2.a} crossed at an AIM intersection at ${t1.a.sim.tick}!")
         }
       }
 
@@ -97,18 +144,19 @@ class AIMPolicy(intersection: Intersection, ordering: IntersectionOrdering[Ticke
   override def policy_type = IntersectionType.AIM
 
   case class Conflict(turn1: Turn, collision_dist1: Double, turn2: Turn, collision_dist2: Double) {
-    // Assumes turn is turn1 or turn2.
+    // TODO awkward that all methods are duped for 1,2
+
     def dist(turn: Turn) = turn match {
       case `turn1` => collision_dist1
       case `turn2` => collision_dist2
       case _ => throw new IllegalArgumentException("$turn doesn't belong to $this")
     }
 
-    // TODO awkward that all methods are duped for 1,2
-    def time1(initial_speed: Double) =
-      Physics.simulate_steps(collision_dist1, initial_speed, turn1.speed_limit)
-    def time2(initial_speed: Double) =
-      Physics.simulate_steps(collision_dist2, initial_speed, turn2.speed_limit)
+    def time(turn: Turn, initial_speed: Double) = turn match {
+      case `turn1` => Physics.simulate_steps(collision_dist1, initial_speed, turn1.speed_limit)
+      case `turn2` => Physics.simulate_steps(collision_dist2, initial_speed, turn2.speed_limit)
+      case _ => throw new IllegalArgumentException("$turn doesn't belong to $this")
+    }
   }
 
   private def find_conflicts(): Map[Turn, Map[Turn, Conflict]] = {

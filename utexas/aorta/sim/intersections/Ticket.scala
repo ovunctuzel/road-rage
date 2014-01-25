@@ -154,6 +154,8 @@ class Ticket(val a: Agent, val turn: Turn) extends Ordered[Ticket] {
   // If we're part of gridlock and we have a choice, bail out.
   def should_cancel() =
     turn.from.next_turns.size > 1 && Intersection.detect_gridlock(turn)
+
+  def accept_tick = stat.accept_tick
 }
 
 object Ticket {
