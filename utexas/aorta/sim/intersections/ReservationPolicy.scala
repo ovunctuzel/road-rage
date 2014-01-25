@@ -42,25 +42,25 @@ class ReservationPolicy(intersection: Intersection,
     }
   }
 
-  def accepted_conflicts(turn: Turn) = accepted.exists(t => t.turn.conflicts_with(turn))
-
   // TODO and are reasonably close? otherwise somebody who looks ahead a tick
   // earlier than another gets an advantage, even if theyre really far away
   // TODO thats why waiting a bit to accept turns makes sense.. get more people involved.
-  private def candidates = request_queue.filter(ticket => !ticket.turn_blocked)
+  protected def candidates = request_queue.filter(ticket => !ticket.turn_blocked)
+  def can_accept(ticket: Ticket) = accepted.exists(t => t.turn.conflicts_with(ticket.turn))
 
   def react(): Unit = {
+    // TODO keep accepting people that dont conflict with interruption?
     interruption match {
       case Some(ticket) => {
         // Can we admit them now?
-        if (accepted_conflicts(ticket.turn)) {
-          // Not yet, and don't let anyone else in either.
-          return
-        } else {
+        if (can_accept(ticket)) {
           // Yes! Resume admitting others now, too.
           ticket.approve()
           accepted += ticket
           interruption = None
+        } else {
+          // Not yet, and don't let anyone else in either.
+          return
         }
       }
       case None =>
@@ -74,15 +74,15 @@ class ReservationPolicy(intersection: Intersection,
             policy_type, request_queue.filter(t => t.turn.conflicts(ticket.turn))
           ))
           // Admit them immediately and continue, or reserve an interruption?
-          if (accepted_conflicts(ticket.turn)) {
+          if (can_accept(ticket)) {
+            accept(ticket)
+          } else {
             interruption = Some(ticket)
             ticket.is_interruption = true
             unqueue(ticket)
             // Furthermore, grab a spot for them and keep it!
             ticket.turn.to.queue.allocate_slot
             return
-          } else {
-            accept(ticket)
           }
         }
         case None => return

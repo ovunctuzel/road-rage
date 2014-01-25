@@ -41,7 +41,7 @@ object SystemWallets {
   // Promote bids that don't conflict
   def bid_thruput[T](items: List[T], policy: Policy) = policy match {
     case p: ReservationPolicy =>
-      for (ticket <- items if !p.accepted_conflicts(ticket.asInstanceOf[Ticket].turn))
+      for (ticket <- items if p.can_accept(ticket.asInstanceOf[Ticket]))
         yield Bid(thruput, ticket, rates.thruput_bonus, null)
 
     case _ => Nil

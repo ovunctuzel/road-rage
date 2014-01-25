@@ -11,13 +11,10 @@ import utexas.aorta.common.{Physics, cfg}
 
 import scala.collection.mutable
 
-// TODO refactor with reservation policy.
 class AIMPolicy(intersection: Intersection, ordering: IntersectionOrdering[Ticket])
-  extends Policy(intersection)
+  extends ReservationPolicy(intersection, ordering)
 {
   private val conflict_map: Map[Turn, Map[Turn, Conflict]] = find_conflicts()
-
-  private var interruption: Option[Ticket] = None
 
   // These're for conflict detection
   // How far along their turn each agent was during last tick
@@ -26,43 +23,9 @@ class AIMPolicy(intersection: Intersection, ordering: IntersectionOrdering[Ticke
 
   // TODO serialization
 
-  override def react() {
-    // TODO interruptions or not? ideally, keep accepting people that have no conflict with the
-    // interruption.
-    interruption match {
-      case Some(ticket) => {
-        if (can_accept(ticket)) {
-          ticket.approve()
-          interruption = None
-        } else {
-          return
-        }
-      }
-      case None =>
-    }
-
-    while (!interruption.isDefined) {
-      ordering.choose(candidates, request_queue, this) match {
-        case Some(ticket) => {
-          // TODO publish a EV_IntersectionOutcome
-          if (can_accept(ticket)) {
-            accept(ticket)
-          } else {
-            interruption = Some(ticket)
-            ticket.is_interruption = true
-            unqueue(ticket)
-            // Furthermore, grab a spot for them and keep it!
-            ticket.turn.to.queue.allocate_slot
-            return
-          }
-        }
-        case None => return
-      }
-    }
-  }
   // Agents must pause a moment, be the head of their queue, and be close enough
   // to us (in case they looked ahead over small edges).
-  private def candidates =
+  override def candidates =
     request_queue.filter(ticket =>
       (ticket.a.is_stopped &&
        ticket.a.cur_queue.head.get == ticket.a &&
@@ -70,7 +33,7 @@ class AIMPolicy(intersection: Intersection, ordering: IntersectionOrdering[Ticke
        ticket.a.how_far_away(intersection) <= 1.5 * cfg.end_threshold &&
        !ticket.turn_blocked)
     )
-  private def can_accept(ticket: Ticket): Boolean = {
+  override def can_accept(ticket: Ticket): Boolean = {
     // See if there's a predicted conflict with any agent that's been accepted
     for (t <- accepted if t.turn.conflicts_with(ticket.turn)) {
       val our_time = ticket.a.sim.tick + conflict_map(t.turn)(ticket.turn).time(ticket.turn, 0)
@@ -81,13 +44,6 @@ class AIMPolicy(intersection: Intersection, ordering: IntersectionOrdering[Ticke
       }
     }
     return true
-  }
-
-  override def cancel_turn(ticket: Ticket) {
-    interruption match {
-      case Some(t) if t == ticket => interruption = None
-      case _ => super.cancel_turn(ticket)
-    }
   }
 
   // Check for collisions by seeing how close agents are to pre-defined collision point
