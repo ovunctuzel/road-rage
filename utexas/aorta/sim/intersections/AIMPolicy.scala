@@ -5,6 +5,7 @@
 package utexas.aorta.sim.intersections
 
 import utexas.aorta.map.{Turn, Line}
+import utexas.aorta.sim.drivers.Agent
 import utexas.aorta.sim.make.IntersectionType
 import utexas.aorta.common.{Physics, cfg}
 
@@ -14,6 +15,8 @@ class AIMPolicy(intersection: Intersection, ordering: IntersectionOrdering[Ticke
   extends Policy(intersection)
 {
   private val conflict_map: Map[Turn, Map[Turn, Conflict]] = find_conflicts()
+  // How far along their turn each agent was during last tick
+  private val dist_last_tick = new mutable.HashMap[Agent, Double]()
 
   // TODO serialization
 
@@ -46,24 +49,51 @@ class AIMPolicy(intersection: Intersection, ordering: IntersectionOrdering[Ticke
     for (t1 <- in_intersection; t2 <- in_intersection if t1.a.id.int < t2.a.id.int) {
       if (t1.turn.conflicts_with(t2.turn)) {
         val conflict = conflict_map(t1.turn)(t2.turn)
+
         // Are the agents near the collision point? Negative means before point, positive means
         // after it
         val delta1 = t1.a.at.dist - conflict.dist(t1.turn)
         val delta2 = t2.a.at.dist - conflict.dist(t2.turn)
         println(s"Possible conflict between ${t1.a} ($delta1 away from danger) and ${t2.a} ($delta2 away)")
+
+        // If the agents cross the point (neg -> pos) the same tick, then they definitely hit!
+        // If they're not in dist_last_tick, then this is their first tick in the intersection. If
+        // they're already positive (past the point), then they crossed it! Hence default value of
+        // 0.
+        // TODO weird type inference issues here, hence intermediates
+        //val old_delta1 = dist_last_tick.getOrElse(t1.a, 0) - conflict.dist(t1.turn)
+        //val old_delta2 = dist_last_tick.getOrElse(t2.a, 0) - conflict.dist(t2.turn)
+        val old_dist1: Double = dist_last_tick.getOrElse(t1.a, 0)
+        val old_delta1 = old_dist1 - conflict.dist(t1.turn)
+        val old_dist2: Double = dist_last_tick.getOrElse(t2.a, 0)
+        val old_delta2 = old_dist2 - conflict.dist(t2.turn)
+        if ((old_delta1 < 0 && delta1 > 0) && (old_delta2 < 0 && delta2 > 0)) {
+          throw new Exception(s"${t1.a} and ${t2.a} crossed at an AIM intersection!")
+        }
+      }
+
+      // Update distances
+      for (t <- in_intersection) {
+        dist_last_tick(t.a) = t.a.at.dist
       }
     }
+  }
+
+  override def handle_exit(t: Ticket) {
+    super.handle_exit(t)
+    // Clean up
+    dist_last_tick.remove(t.a)
   }
 
   override def policy_type = IntersectionType.AIM
 
   case class Conflict(turn1: Turn, collision_dist1: Double, turn2: Turn, collision_dist2: Double) {
     // Assumes turn is turn1 or turn2.
-    def dist(turn: Turn) =
-      if (turn == turn1)
-        collision_dist1
-      else
-        collision_dist2
+    def dist(turn: Turn) = turn match {
+      case `turn1` => collision_dist1
+      case `turn2` => collision_dist2
+      case _ => throw new IllegalArgumentException("$turn doesn't belong to $this")
+    }
 
     // TODO awkward that all methods are duped for 1,2
     def time1(initial_speed: Double) =
