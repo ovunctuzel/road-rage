@@ -17,6 +17,7 @@ class AIMPolicy(intersection: Intersection, ordering: IntersectionOrdering[Ticke
   private val conflict_map: Map[Turn, Map[Turn, Conflict]] = find_conflicts()
   // How far along their turn each agent was during last tick
   private val dist_last_tick = new mutable.HashMap[Agent, Double]()
+  private val exited_this_tick = new mutable.HashSet[Ticket]()
 
   // TODO serialization
 
@@ -44,7 +45,7 @@ class AIMPolicy(intersection: Intersection, ordering: IntersectionOrdering[Ticke
 
   // Check for collisions by seeing how close agents are to pre-defined collision point
   override def end_step() {
-    val in_intersection = accepted.filter(t => t.a.at.on == t.turn)
+    val in_intersection = accepted.filter(t => t.a.at.on == t.turn) ++ exited_this_tick
     // O(n^2 / 2), n = agents doing turns
     for (t1 <- in_intersection; t2 <- in_intersection if t1.a.id.int < t2.a.id.int) {
       if (t1.turn.conflicts_with(t2.turn)) {
@@ -52,8 +53,10 @@ class AIMPolicy(intersection: Intersection, ordering: IntersectionOrdering[Ticke
 
         // Are the agents near the collision point? Negative means before point, positive means
         // after it
-        val delta1 = t1.a.at.dist - conflict.dist(t1.turn)
-        val delta2 = t2.a.at.dist - conflict.dist(t2.turn)
+        val delta1 =
+          if (exited_this_tick.contains(t1)) t1.turn.length else t1.a.at.dist - conflict.dist(t1.turn)
+        val delta2 =
+          if (exited_this_tick.contains(t2)) t2.turn.length else t2.a.at.dist - conflict.dist(t2.turn)
         println(s"Possible conflict between ${t1.a} ($delta1 away from danger) and ${t2.a} ($delta2 away)")
 
         // If the agents cross the point (neg -> pos) the same tick, then they definitely hit!
@@ -77,12 +80,18 @@ class AIMPolicy(intersection: Intersection, ordering: IntersectionOrdering[Ticke
         dist_last_tick(t.a) = t.a.at.dist
       }
     }
+
+    // Cleanup
+    dist_last_tick --= exited_this_tick.map(_.a)
+    exited_this_tick.clear()
   }
 
   override def handle_exit(t: Ticket) {
     super.handle_exit(t)
-    // Clean up
-    dist_last_tick.remove(t.a)
+    exited_this_tick += t
+    // We want to run end_step the tick agents leave, even if none are left in the intersection,
+    // since there's a case where exiting agents collide.
+    t.a.sim.active_intersections += intersection
   }
 
   override def policy_type = IntersectionType.AIM
@@ -114,8 +123,8 @@ class AIMPolicy(intersection: Intersection, ordering: IntersectionOrdering[Ticke
     return intersection.v.turns.map(t => t -> map(t).toMap).toMap
   }
 
-  // TODO other types of conflict... same destination lane. would that cause intersection? is it
-  // redundant? check.
+  // TODO if same destination lane and doesnt conflict normally by the line, is weird. force
+  // intersection at end.
   private def make_conflict(turn1: Turn, turn2: Turn): Option[Conflict] =
     turn1.conflict_line.segment_intersection(turn2.conflict_line) match {
       case Some(pt) => Some(Conflict(

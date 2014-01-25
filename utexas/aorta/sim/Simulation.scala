@@ -109,11 +109,12 @@ class Simulation(val graph: Graph, val scenario: Scenario)
       //println(s"  tickets: ${a.tickets}")
     }
 
-    // Just check the ones we need to.
+    // Just check the ones we need to. Intersections before queues since intersections better
+    // account for weird turn conflict cases than winding up with two drivers in the same target
+    // lane.
+    active_intersections.foreach(i => i.policy.end_step())
     active_queues.foreach(q => q.end_step)
     active_queues.clear()
-
-    active_intersections.foreach(i => i.policy.end_step())
 
     // Let agents react to the new world.
 
