@@ -7,13 +7,15 @@ package utexas.aorta.sim.intersections
 import utexas.aorta.map.{Turn, Line}
 import utexas.aorta.sim.drivers.Agent
 import utexas.aorta.sim.make.IntersectionType
-import utexas.aorta.common.{Physics, cfg}
+import utexas.aorta.common.{Physics, cfg, Util}
 
 import scala.collection.mutable
 
 class AIMPolicy(intersection: Intersection, ordering: IntersectionOrdering[Ticket])
   extends ReservationPolicy(intersection, ordering)
 {
+  // We can't model when drivers will cross conflict points exactly
+  private val slack = 3 * cfg.dt_s
   private val conflict_map: Map[Turn, Map[Turn, Conflict]] = find_conflicts()
 
   // These're for conflict detection
@@ -35,11 +37,14 @@ class AIMPolicy(intersection: Intersection, ordering: IntersectionOrdering[Ticke
   override def can_accept(ticket: Ticket): Boolean = {
     // See if there's a predicted conflict with any agent that's been accepted
     for (t <- accepted if t.turn.conflicts_with(ticket.turn)) {
+      // Factor in slack. These times are the earliest possible.
       val our_time = ticket.a.sim.tick + conflict_map(t.turn)(ticket.turn).time(ticket.turn, 0)
       val their_time = t.accept_tick + conflict_map(t.turn)(ticket.turn).time(t.turn, 0)
-      println(s"${ticket.a} @ $our_time vs ${t.a} @ $their_time")
-      if (our_time == their_time) {
-        println(s"... oh shit, ${ticket.a} and ${t.a} gonna clash at $our_time")
+      val range1 = our_time to our_time + slack by cfg.dt_s
+      val range2 = their_time to their_time + slack by cfg.dt_s
+      if (range1.intersect(range2).nonEmpty) {
+        //println(s"clash (slack=$slack): ${ticket.a} @ $our_time vs ${t.a} @ $their_time")
+        return false
       }
     }
     return true
@@ -94,6 +99,11 @@ class AIMPolicy(intersection: Intersection, ordering: IntersectionOrdering[Ticke
     // We want to run end_step the tick agents leave, even if none are left in the intersection,
     // since there's a case where exiting agents collide.
     t.a.sim.active_intersections += intersection
+
+    // Also check that our slack value is sufficient.
+    val projected = Physics.simulate_steps(t.turn.length + cfg.end_threshold, 0, t.turn.speed_limit)
+    Util.assert_ge(t.duration, projected)
+    Util.assert_le(t.duration, projected + slack)
   }
 
   override def policy_type = IntersectionType.AIM

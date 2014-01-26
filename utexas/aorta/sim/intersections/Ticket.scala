@@ -156,6 +156,7 @@ class Ticket(val a: Agent, val turn: Turn) extends Ordered[Ticket] {
     turn.from.next_turns.size > 1 && Intersection.detect_gridlock(turn)
 
   def accept_tick = stat.accept_tick
+  def duration = stat.done_tick - stat.accept_tick
 }
 
 object Ticket {
