@@ -46,7 +46,7 @@ class ReservationPolicy(intersection: Intersection,
   // earlier than another gets an advantage, even if theyre really far away
   // TODO thats why waiting a bit to accept turns makes sense.. get more people involved.
   protected def candidates = request_queue.filter(ticket => !ticket.turn_blocked)
-  def can_accept(ticket: Ticket) = accepted.exists(t => t.turn.conflicts_with(ticket.turn))
+  def can_accept(ticket: Ticket) = !accepted.exists(t => t.turn.conflicts_with(ticket.turn))
 
   def react(): Unit = {
     // TODO keep accepting people that dont conflict with interruption?
