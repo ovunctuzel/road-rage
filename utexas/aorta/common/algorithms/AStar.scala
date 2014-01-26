@@ -62,7 +62,7 @@ object AStar {
           if (!visited.contains(next_state) && (!open.contains(next_state) || ordering_tuple.lt(tentative_cost, costs(next_state)))) {
             backrefs(next_state) = current
             costs(next_state) = tentative_cost
-            // TODO if they're in open_members, modify weight in the queue? or
+            // if they're in open_members, modify weight in the queue? or
             // new step will clobber it. fine.
             open.insert(next_state, add_cost(tentative_cost, calc_heuristic(next_state)))
           }

@@ -19,17 +19,17 @@ import utexas.aorta.common.{Util, cfg, StateWriter, StateReader, Flags, AgentID,
                             VertexID, EdgeID, RoadID, Timer}
 import utexas.aorta.analysis.RerouteCountMonitor
 
-// TODO take just a scenario, or graph and scenario?
-class Simulation(val graph: Graph, val scenario: Scenario)
+class Simulation(val scenario: Scenario)
   extends Publisher[Sim_Event] with AgentManager
 {
   //////////////////////////////////////////////////////////////////////////////
   // State
   // (All transient, important state is in our constituent traits)
 
+  val graph = scenario.graph
   // Added by a queue that does an in-place check and thinks there could be an
   // issue.
-  val active_queues = new mutable.HashSet[Queue]   // TODO list?
+  val active_queues = new mutable.HashSet[Queue]
   // All intersections with agents in them.
   val active_intersections = new mutable.HashSet[Intersection]
   // this represents total "real seconds"

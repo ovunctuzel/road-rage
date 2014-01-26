@@ -45,7 +45,6 @@ class BinaryStateWriter(fn: String) extends StateWriter(fn) {
     out.writeLong(x)
   }
   def obj(x: Any) {
-    // TODO dont use this.
     out.writeObject(x)
   }
 }
@@ -72,7 +71,6 @@ class StringStateWriter(fn: String) extends StateWriter(fn) {
     out.println(x)
   }
   def obj(x: Any) {
-    // TODO dont use this.
     out.println(x)
   }
 }
@@ -83,7 +81,7 @@ abstract class StateReader(fn: String) {
   def string: String
   def bool: Boolean
   def long: Long
-  def obj: Any    // TODO remove
+  def obj: Any
 }
 
 class BinaryStateReader(fn: String) extends StateReader(fn) {
@@ -93,7 +91,7 @@ class BinaryStateReader(fn: String) extends StateReader(fn) {
   def string = in.readUTF
   def bool = in.readBoolean
   def long = in.readLong
-  def obj = in.readObject   // TODO dont use this.
+  def obj = in.readObject
 }
 
 class StringStateReader(fn: String) extends StateReader(fn) {
@@ -105,6 +103,6 @@ class StringStateReader(fn: String) extends StateReader(fn) {
   def long = in.readLine.toLong
   def obj: Any = {
     in.readLine
-    return null   // TODO dont use this.
+    return null
   }
 }

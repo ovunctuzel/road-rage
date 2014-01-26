@@ -22,7 +22,7 @@ case class Scenario(
   system_wallet: SystemWalletConfig, auditor: CongestionType.Value
 ) {
   def graph = Graph.load(map_fn)
-  def make_sim() = new Simulation(graph, this)
+  def make_sim() = new Simulation(this)
   def save() {
     val w = Util.writer(name)
     serialize(w)

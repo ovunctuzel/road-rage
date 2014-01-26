@@ -4,7 +4,7 @@
 
 package utexas.aorta.common
 
-import java.util.Random // TODO use scala one when its serializable in 2.11
+import scala.util.Random
 import java.io.Serializable
 import scala.collection.mutable
 

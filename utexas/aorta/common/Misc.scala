@@ -150,7 +150,6 @@ class Stopwatch(val name: String) {
     seconds += (now - from) / 1000000000.0
   }
 
-  // TODO replace with what?
   def time[A](thunk: () => A): A = {
     try {
       start

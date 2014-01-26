@@ -7,8 +7,6 @@ package utexas.aorta.common
 import java.awt.Color
 import scala.io.Source
 
-// TODO override with cmdline too
-// TODO grab alt cfg file from cmdline
 object cfg {
   private val cfg_fn = "aorta.cfg"
   private val color = Map(
