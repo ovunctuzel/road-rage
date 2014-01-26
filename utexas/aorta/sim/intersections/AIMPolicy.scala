@@ -15,7 +15,7 @@ class AIMPolicy(intersection: Intersection, ordering: IntersectionOrdering[Ticke
   extends ReservationPolicy(intersection, ordering)
 {
   // We can't model when drivers will cross conflict points exactly
-  private val slack = 3 * cfg.dt_s
+  private val slack = 15 * cfg.dt_s
   private val conflict_map: Map[Turn, Map[Turn, Conflict]] = find_conflicts()
 
   // These're for conflict detection
@@ -64,7 +64,6 @@ class AIMPolicy(intersection: Intersection, ordering: IntersectionOrdering[Ticke
           if (exited_this_tick.contains(t1)) t1.turn.length else t1.a.at.dist - conflict.dist(t1.turn)
         val delta2 =
           if (exited_this_tick.contains(t2)) t2.turn.length else t2.a.at.dist - conflict.dist(t2.turn)
-        //println(s"Possible conflict between ${t1.a} ($delta1 away from danger) and ${t2.a} ($delta2 away)")
 
         // If the agents cross the point (neg -> pos) the same tick, then they definitely hit!
         // If they're not in dist_last_tick, then this is their first tick in the intersection. If
@@ -82,8 +81,8 @@ class AIMPolicy(intersection: Intersection, ordering: IntersectionOrdering[Ticke
         }
       }
 
-      // Update distances
-      for (t <- in_intersection) {
+      // Update distances, just for people actually still in the intersection
+      for (t <- accepted.filter(t => t.a.at.on == t.turn)) {
         dist_last_tick(t.a) = t.a.at.dist
       }
     }
@@ -102,8 +101,9 @@ class AIMPolicy(intersection: Intersection, ordering: IntersectionOrdering[Ticke
 
     // Also check that our slack value is sufficient.
     val projected = Physics.simulate_steps(t.turn.length + cfg.end_threshold, 0, t.turn.speed_limit)
-    Util.assert_ge(t.duration, projected)
-    Util.assert_le(t.duration, projected + slack)
+    if (t.duration < projected || t.duration > projected + slack) {
+      throw new Exception(s"Actual duration ${t.duration} isn't in [$projected, ${projected + slack}]")
+    }
   }
 
   override def policy_type = IntersectionType.AIM

@@ -37,7 +37,9 @@ class ColorMap() {
     route_members(color) = roads
   }
   def remove(color: Color, road: Road) {
-    route_members(color) -= road
+    if (route_members.contains(color)) {
+      route_members(color) -= road
+    }
   }
   def color(road: Road): Option[Color] =
     route_members.keys.find(color => route_members(color).contains(road))
