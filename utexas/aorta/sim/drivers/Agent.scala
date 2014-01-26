@@ -490,7 +490,8 @@ class Agent(
     case edge: Edge if edge.road == e.road =>
       // min() handles when lanes in same road are very different in length
       e.queue.all_in_range(math.min(at.dist, e.length), false, e.length, true).size
-    case _ => throw new IllegalArgumentException(s"Can't ask num_ahead($e) when we're at ${at.on}")
+    // If we're not there yet, then all of them are ahead!
+    case _ => e.queue.agents.size
   }
   def on(t: Traversable) = (at.on, old_lane) match {
     case (ours, _) if ours == t => true
