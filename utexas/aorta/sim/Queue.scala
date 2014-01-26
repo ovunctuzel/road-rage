@@ -209,7 +209,8 @@ class Queue(t: Traversable) {
   def behind(a: Agent) = closest_behind(a.at.dist)
   def closest_behind(dist: Double) = wrap_option(agents.higherEntry(-dist))
   def closest_ahead(dist: Double) = wrap_option(agents.lowerEntry(-dist))
-  def all_in_range(from: Double, to: Double) = agents.subMap(-to, true, -from, true)
+  def all_in_range(from: Double, from_inclusive: Boolean, to: Double, to_inclusive: Boolean) =
+    agents.subMap(-to, to_inclusive, -from, from_inclusive)
 
   // The real-time spawning magic is really quite simple if worst_entry_dist and
   // lookahead work.

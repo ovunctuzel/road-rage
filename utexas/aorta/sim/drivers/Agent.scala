@@ -431,7 +431,7 @@ class Agent(
     // TODO +dist for behind as well, but hey, overconservative doesnt hurt for
     // now...
     val nearby = target.queue.all_in_range(
-      at.dist - behind_dist, at.dist + this_dist + ahead_dist
+      at.dist - behind_dist, true, at.dist + this_dist + ahead_dist, true
     )
     return nearby.isEmpty
   }
@@ -486,7 +486,12 @@ class Agent(
 
   def cur_queue = at.on.queue
   // Meaningless unless e is in the same road as the agent
-  def num_ahead(e: Edge) = e.queue.all_in_range(at.dist + cfg.epsilon, e.length).size
+  def num_ahead(e: Edge) = at.on match {
+    case edge: Edge if edge.road == e.road =>
+      // min() handles when lanes in same road are very different in length
+      e.queue.all_in_range(math.min(at.dist, e.length), false, e.length, true).size
+    case _ => throw new IllegalArgumentException(s"Can't ask num_ahead($e) when we're at ${at.on}")
+  }
   def on(t: Traversable) = (at.on, old_lane) match {
     case (ours, _) if ours == t => true
     case (_, Some(l)) if l == t => true
