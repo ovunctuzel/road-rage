@@ -58,7 +58,7 @@ abstract class Wallet(initial_budget: Int, val priority: Int) {
   def spend(amount: Int, ticket: Ticket) = {
     Util.assert_ge(budget, amount)
     budget -= amount
-    ticket.stat = ticket.stat.copy(cost_paid = amount + ticket.stat.cost_paid)
+    ticket.cost_paid += amount
   }
 
   def reset_tooltip() {
@@ -132,7 +132,7 @@ class StaticWallet(initial_budget: Int, p: Int)
 
   override def spend(amount: Int, ticket: Ticket) = {
     Util.assert_ge(budget, amount)
-    ticket.stat = ticket.stat.copy(cost_paid = amount)
+    ticket.cost_paid = amount
   }
 
   //////////////////////////////////////////////////////////////////////////////

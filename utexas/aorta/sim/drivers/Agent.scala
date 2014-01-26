@@ -204,7 +204,7 @@ class Agent(
         }
         case (t: Turn, e: Edge) => {
           val ticket = get_ticket(t).get
-          ticket.stat = ticket.stat.copy(done_tick = sim.tick)
+          ticket.done_tick = sim.tick
           tickets.remove(ticket)
           ticket.intersection.exit(ticket)
           sim.publish(ticket.stat)

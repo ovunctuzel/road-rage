@@ -14,9 +14,12 @@ class Ticket(val a: Agent, val turn: Turn) extends Ordered[Ticket] {
   //////////////////////////////////////////////////////////////////////////////
   // State
   
-  // Don't initially know: accept_tick, done_tick, cost_paid.
-  // TODO keep state properly, dont shuffle it into this >_<
-  var stat = EV_Turn(a, turn.vert, a.sim.tick, -1.0, -1.0, 0.0)
+  // This one is fixed, but unserialization has to set it.
+  private var req_tick = a.sim.tick
+  // Don't initially know these
+  var accept_tick = -1.0
+  var done_tick = -1.0
+  var cost_paid = 0.0
 
   // If we interrupt a reservation successfully, don't let people block us.
   var is_interruption = false
@@ -31,10 +34,10 @@ class Ticket(val a: Agent, val turn: Turn) extends Ordered[Ticket] {
   def serialize(w: StateWriter) {
     // Agent is implied, since we belong to them
     w.int(turn.id.int)
-    w.double(stat.req_tick)
-    w.double(stat.accept_tick)
-    w.double(stat.done_tick)
-    w.double(stat.cost_paid)
+    w.double(req_tick)
+    w.double(accept_tick)
+    w.double(done_tick)
+    w.double(cost_paid)
     w.bool(is_interruption)
     w.double(waiting_since)
   }
@@ -43,7 +46,7 @@ class Ticket(val a: Agent, val turn: Turn) extends Ordered[Ticket] {
   // Actions
 
   def approve() {
-    stat = stat.copy(accept_tick = a.sim.tick)
+    accept_tick = a.sim.tick
     // Allocate a spot for them. This must be called when the turn isn't
     // blocked.
     // TODO this messes up parallelism again...
@@ -116,7 +119,7 @@ class Ticket(val a: Agent, val turn: Turn) extends Ordered[Ticket] {
 
   def intersection = turn.vert.intersection
 
-  def is_approved = stat.accept_tick != -1.0
+  def is_approved = accept_tick != -1.0
 
   def how_long_waiting =
     if (waiting_since == -1.0)
@@ -155,17 +158,17 @@ class Ticket(val a: Agent, val turn: Turn) extends Ordered[Ticket] {
   def should_cancel() =
     turn.from.next_turns.size > 1 && Intersection.detect_gridlock(turn)
 
-  def accept_tick = stat.accept_tick
-  def duration = stat.done_tick - stat.accept_tick
+  def duration = done_tick - accept_tick
+  def stat = EV_Turn(a, turn.vert, req_tick, accept_tick, done_tick, cost_paid)
 }
 
 object Ticket {
   def unserialize(r: StateReader, a: Agent, graph: Graph): Ticket = {
     val ticket = new Ticket(a, graph.turns(new TurnID(r.int)))
-    ticket.stat = ticket.stat.copy(
-      req_tick = r.double, accept_tick = r.double, done_tick = r.double,
-      cost_paid = r.double
-    )
+    ticket.req_tick = r.double
+    ticket.accept_tick = r.double
+    ticket.done_tick = r.double
+    ticket.cost_paid = r.double
     ticket.is_interruption = r.bool
     ticket.waiting_since = r.double
     return ticket
