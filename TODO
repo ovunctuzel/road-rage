@@ -139,7 +139,8 @@
 - num of lanes bounded by num of times could LC
 - floating vertices due to nuking all roads that lead up to it, and choosing
   the vert to keep poorly
-- not seeing any geometry is a bit disconcerting... gov st
+- road artifacts should match number of lanes, visually capture entire area where agents turn
+  - and not be there when orig road is removed
 - handle cul de sacs once and for all... bernwood is example in BR. remove if
   only one other link?
 - dont tie map filename to the serialized thing

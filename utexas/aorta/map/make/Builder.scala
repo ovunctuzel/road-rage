@@ -34,7 +34,7 @@ object Builder {
 
     // Pass 2
     val graph2 = new PreGraph2(graph1)
-    new Pass2_Part2(graph2).run()
+    val artifacts = new Pass2_Part2(graph2).run()
     new Pass2_Part3(graph2).run()
 
     // Pass 3
@@ -46,7 +46,7 @@ object Builder {
 
     val roads = graph3.roads.toArray
     val graph = new Graph(
-      roads, graph3.edges.toArray, graph3.vertices.toArray, ZoneMap.create(roads),
+      roads, graph3.edges.toArray, graph3.vertices.toArray, ZoneMap.create(roads), artifacts,
       graph1.width, graph1.height, graph1.offX, graph1.offY, graph1.scale,
       input.replace(".osm", "").replace("osm/", "")
     )

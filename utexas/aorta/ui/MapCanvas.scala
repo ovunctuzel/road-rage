@@ -120,6 +120,7 @@ class MapCanvas(val sim: Simulation, headless: Boolean = false) extends Scrollin
 
   private val road_renderers = sim.graph.roads.map(r => new DrawRoad(r, state))
   private val road_lookup = road_renderers.map(r => r.r -> r).toMap
+  private val artifact_renderers = sim.graph.artifacts.map(a => new DrawRoadArtifact(a, state))
 
   // TODO eventually, GUI should listen to this and manage the gui, not
   // mapcanvas.
@@ -294,6 +295,10 @@ class MapCanvas(val sim: Simulation, headless: Boolean = false) extends Scrollin
       }
       return Nil
     } else {
+      for (a <- artifact_renderers if a.hits(window)) {
+        a.render_road()
+      }
+
       val roads_seen = road_renderers.filter(r => {
         val hit = r.hits(window)
         if (hit) {

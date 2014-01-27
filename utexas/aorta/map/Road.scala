@@ -162,3 +162,23 @@ object Road {
   def road_len(pts: Iterable[Coordinate]) =
     pts.zip(pts.tail).map(tupled((p1, p2) => new Line(p1, p2).length)).sum
 }
+
+// When we merge short roads, we get rid of geometry. Preserve it here for the GUI's sake in
+// absolutely minimal form.
+case class RoadArtifact(points: Array[Coordinate]) {
+  def serialize(w: MapStateWriter) {
+    w.int(points.size)
+    points.foreach(pt => pt.serialize(w))
+  }
+
+  def lines = points.zip(points.tail).map(p => shift_line(p))
+  private def shift_line(pair: (Coordinate, Coordinate)) =
+    // this shift helps center the drawn artifact
+    new Line(pair._1, pair._2).perp_shift(-0.25)
+}
+
+object RoadArtifact {
+  def unserialize(r: StateReader) = RoadArtifact(
+    Range(0, r.int).map(_ => Coordinate.unserialize(r)).toArray
+  )
+}

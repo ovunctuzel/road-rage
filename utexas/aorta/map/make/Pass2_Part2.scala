@@ -6,12 +6,14 @@ package utexas.aorta.map.make
 
 import scala.collection.mutable
 
-import utexas.aorta.map.Coordinate
+import utexas.aorta.map.{Coordinate, RoadArtifact}
 
 import utexas.aorta.common.{Util, cfg}
 
 class Pass2_Part2(graph: PreGraph2) {
-  def run() {
+  def run(): Array[RoadArtifact] = {
+    val artifacts = new mutable.ArrayBuffer[RoadArtifact]()
+
     // This temporary map lets us avoid tons of repeated scans
     val edges_from_vert = new mutable.HashMap[Coordinate, mutable.MutableList[PreEdge2]]()
     edges_from_vert ++= graph.edges.groupBy(_.from)
@@ -26,8 +28,9 @@ class Pass2_Part2(graph: PreGraph2) {
     for (shorty <- shorties) {
       // Make sure this shorty is still not a cul-de-sac
       if (!shorty.is_culdesac) {
-        // TODO throw away the metadata on shorty. :(
+        // TODO we throw away the metadata on shorty. :(
         graph.edges = graph.edges.filter(e => e != shorty)
+        artifacts += RoadArtifact(shorty.points.toArray)
         // A weird approach that seems to work: delete the road, but magically
         // make other roads connected to shorty.from instead connect to
         // shorty.to. aka, delete the vertex shorty.from.
@@ -50,5 +53,6 @@ class Pass2_Part2(graph: PreGraph2) {
         }
       }
     }
+    return artifacts.toArray
   }
 }

@@ -9,7 +9,7 @@ import java.awt.Color
 import java.awt.geom.{Line2D, Rectangle2D}
 import scala.collection.mutable
 
-import utexas.aorta.map.{Coordinate, Edge, Line, Vertex, Zone, Road, Direction}
+import utexas.aorta.map.{Coordinate, Edge, Line, Vertex, Zone, Road, Direction, RoadArtifact}
 import utexas.aorta.sim.drivers.Agent
 
 import utexas.aorta.common.{cfg, RNG}
@@ -171,6 +171,21 @@ class DrawRoad(val r: Road, state: GuiState) {
         case _ if state.show_zone_colors => ZoneColor.color(state.canvas.sim.graph.zones(r).head)
         case _ => Color.BLACK
       }
+}
+
+class DrawRoadArtifact(val a: RoadArtifact, state: GuiState) {
+  val lines = a.lines.map(l => new Line2D.Double(l.x1, l.y1, l.x2, l.y2))
+
+  def hits(bbox: Rectangle2D.Double) = lines.exists(l => l.intersects(bbox))
+
+  def render_road() {
+    // 2 lanes to make the artifact cover both sides of the road
+    state.g2d.setStroke(GeomFactory.strokes(2))
+    state.g2d.setColor(color)
+    lines.foreach(l => state.g2d.draw(l))
+  }
+
+  private def color() = new Color(14, 14, 14) // dark gray to blend with the road's black
 }
 
 class DrawEdge(val edge: Edge, state: GuiState) {
