@@ -74,11 +74,9 @@ class Pass3_Part3(graph: PreGraph3) {
     if (any_changes) {
       fix_map()
 
-      Util.log(
-        s"$orig_edges -> ${graph.edges.size} edges, $orig_verts -> " +
-        s"${graph.vertices.size} vertices, $orig_roads -> " + 
-        s"${graph.roads.size} roads"
-      )
+      Util.log("%,d -> %,d edges, %,d -> %,d vertices, %,d -> %,d roads".format(
+        orig_edges, graph.edges.size, orig_verts, graph.vertices.size, orig_roads, graph.roads.size
+      ))
     }
     return any_changes
   }
@@ -120,7 +118,7 @@ class Pass3_Part3(graph: PreGraph3) {
     }
 
     Util.log(
-      s"${bad_edges.size} edges, ${bad_turns.size} turns belonging to small SCC"
+      "%,d edges, %,d turns belonging to small SCC".format(bad_edges.size, bad_turns.size)
     )
     val doomed_edges = bad_edges.toSet
     // As a note, all of these steps that completely delete a structure are

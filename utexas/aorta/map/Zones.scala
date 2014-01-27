@@ -95,6 +95,9 @@ object ZoneMap {
     return new ZoneMap(zones, mapping, links)
   }
 
+  def create_blank(roads: Array[Road]) =
+    new ZoneMap(Array(), Util.sorted_map(Nil), Util.sorted_map(Nil))
+
   // TODO dont cross different road types?
   // TODO possibly nondeterministic, use trees?
   private def partition(roads: Array[Road]): immutable.SortedMap[Road, immutable.SortedSet[Zone]] =
