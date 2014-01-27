@@ -32,7 +32,7 @@ class Agent(
   // duration of timesteps.
   val max_accel = cfg.max_accel
   // TODO max_deaccel too
-  var speed: Double = 0.0   // meters/sec, I believe
+  var speed: Double = 0.0   // meters/sec
   private var target_accel: Double = 0  // m/s^2
   private val behavior = new LookaheadBehavior(this, route)
 
@@ -43,8 +43,6 @@ class Agent(
 
   // how long has our speed been 0?
   private var idle_since = -1.0
-  // how long has our speed been (cfg.epsilon, 0.1)? TODO this is floating pt hack.
-  private var almost_idle_since = -1.0
 
   val tickets = new mutable.TreeSet[Ticket]()
 
@@ -85,7 +83,6 @@ class Agent(
     }
     w.double(lanechange_dist_left)
     w.double(idle_since)
-    w.double(almost_idle_since)
     w.int(tickets.size)
     tickets.foreach(ticket => ticket.serialize(w))
   }
@@ -133,15 +130,6 @@ class Agent(
         }
       }
       case None =>
-    }
-
-    if (!is_stopped && speed < 0.1) {
-      if (almost_idle_since == -1.0) {
-        almost_idle_since = sim.tick
-      }
-    }
-    if (speed >= 0.1) {
-      almost_idle_since = -1.0
     }
 
     if (is_stopped && target_accel <= 0.0) {
@@ -347,10 +335,6 @@ class Agent(
                         0
                       else
                         sim.tick - idle_since
-  def how_long_almost_idle = if (almost_idle_since == -1.0)
-                        0
-                      else
-                        sim.tick - almost_idle_since
   def is_stopped = speed <= cfg.epsilon
 
   def involved_with(i: Intersection) = all_tickets(i).nonEmpty
@@ -544,7 +528,6 @@ object Agent {
     }
     a.lanechange_dist_left = r.double
     a.idle_since = r.double
-    a.almost_idle_since = r.double
     val num_tickets = r.int
     a.tickets ++= Range(0, num_tickets).map(_ => Ticket.unserialize(r, a, sim.graph))
     // Add ourselves back to a queue
