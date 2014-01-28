@@ -11,11 +11,11 @@ import utexas.aorta.sim.{Simulation, EV_AgentQuit, AgentMap, EV_Breakpoint}
 import utexas.aorta.sim.intersections.{Intersection, Ticket}
 import utexas.aorta.ui.Renderable
 
-import utexas.aorta.common.{Util, RNG, cfg, Physics, StateWriter, StateReader, AgentID, EdgeID,
+import utexas.aorta.common.{Util, cfg, Physics, StateWriter, StateReader, AgentID, EdgeID,
                             ValueOfTime, Flags}
 
 class Agent(
-  val id: AgentID, val route: Route, val rng: RNG, val wallet: Wallet, val sim: Simulation
+  val id: AgentID, val route: Route, val wallet: Wallet, val sim: Simulation
 ) extends Ordered[Agent] with Renderable
 {
   //////////////////////////////////////////////////////////////////////////////
@@ -66,7 +66,6 @@ class Agent(
     // First do parameters
     w.int(id.int)
     route.serialize(w)
-    rng.serialize(w)
     wallet.serialize(w)
 
     // Then the rest of our state
@@ -512,8 +511,7 @@ class Agent(
 object Agent {
   def unserialize(r: StateReader, sim: Simulation): Agent = {
     val a = new Agent(
-      new AgentID(r.int), Route.unserialize(r, sim.graph), RNG.unserialize(r),
-      Wallet.unserialize(r), sim
+      new AgentID(r.int), Route.unserialize(r, sim.graph), Wallet.unserialize(r), sim
     )
     a.at = Position.unserialize(r, sim.graph)
     a.speed = r.double

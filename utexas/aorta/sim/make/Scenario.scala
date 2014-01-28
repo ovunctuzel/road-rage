@@ -13,7 +13,7 @@ import utexas.aorta.sim.intersections._
 import Function.tupled
 import scala.collection.mutable
 
-import utexas.aorta.common.{Util, RNG, StateWriter, StateReader, AgentID, VertexID, RoadID, cfg}
+import utexas.aorta.common.{Util, StateWriter, StateReader, AgentID, VertexID, RoadID, cfg}
 
 // Array index and agent/intersection ID must correspond. Creator's
 // responsibility.
@@ -149,9 +149,8 @@ object Scenario {
 // agents/intersections/etc.
 // TODO associate directly with their corresponding class?
 
-case class MkAgent(id: AgentID, birth_tick: Double, seed: Long,
-                   start: RoadID, start_dist: Double, route: MkRoute,
-                   wallet: MkWallet) extends Ordered[MkAgent]
+case class MkAgent(id: AgentID, birth_tick: Double, start: RoadID, start_dist: Double,
+                   route: MkRoute, wallet: MkWallet) extends Ordered[MkAgent]
 {
   // break ties by ID
   def compare(other: MkAgent) =
@@ -159,12 +158,11 @@ case class MkAgent(id: AgentID, birth_tick: Double, seed: Long,
       (other.birth_tick, other.id.int), (birth_tick, id.int)
     )
 
-  def make(sim: Simulation) = new Agent(id, route.make(sim), new RNG(seed), wallet.make, sim)
+  def make(sim: Simulation) = new Agent(id, route.make(sim), wallet.make, sim)
 
   def serialize(w: StateWriter) {
     w.int(id.int)
     w.double(birth_tick)
-    w.long(seed)
     w.int(start.int)
     w.double(start_dist)
     route.serialize(w)
@@ -175,7 +173,6 @@ case class MkAgent(id: AgentID, birth_tick: Double, seed: Long,
     Util.assert_eq(id, other.id)
     val d = List(
       Util.diff(birth_tick, other.birth_tick, "spawn time"),
-      Util.diff(seed, other.seed, "RNG seed"),
       Util.diff(start, other.start, "start"),
       Util.diff(start_dist, other.start_dist, "start distance"),
       Util.diff(route.goal, other.route.goal, "end"),
@@ -194,7 +191,7 @@ case class MkAgent(id: AgentID, birth_tick: Double, seed: Long,
 
 object MkAgent {
   def unserialize(r: StateReader) = MkAgent(
-    new AgentID(r.int), r.double, r.long, new RoadID(r.int), r.double,
+    new AgentID(r.int), r.double, new RoadID(r.int), r.double,
     MkRoute.unserialize(r), MkWallet.unserialize(r)
   )
 }
@@ -202,10 +199,10 @@ object MkAgent {
 // orig_router, rerouter, and initial_path are only for strategy = Path
 case class MkRoute(
   strategy: RouteType.Value, orig_router: RouterType.Value, rerouter: RouterType.Value,
-  initial_path: List[RoadID], goal: RoadID, seed: Long
+  initial_path: List[RoadID], goal: RoadID
 ) {
   def make(sim: Simulation) = Factory.make_route(
-    strategy, sim.graph, orig_router, rerouter, sim.graph.get_r(goal), new RNG(seed),
+    strategy, sim.graph, orig_router, rerouter, sim.graph.get_r(goal),
     initial_path.map(id => sim.graph.get_r(id))
   )
 
@@ -216,14 +213,13 @@ case class MkRoute(
     w.int(initial_path.size)
     initial_path.foreach(id => w.int(id.int))
     w.int(goal.int)
-    w.long(seed)
   }
 }
 
 object MkRoute {
   def unserialize(r: StateReader) = MkRoute(
     RouteType(r.int), RouterType(r.int), RouterType(r.int),
-    Range(0, r.int).map(_ => new RoadID(r.int)).toList, new RoadID(r.int), r.long
+    Range(0, r.int).map(_ => new RoadID(r.int)).toList, new RoadID(r.int)
   )
 }
 
@@ -354,10 +350,10 @@ object Factory {
 
   def make_route(
     enum: RouteType.Value, graph: Graph, orig_router: RouterType.Value, rerouter: RouterType.Value,
-    goal: Road, rng: RNG, initial_path: List[Road]
+    goal: Road, initial_path: List[Road]
   ) = enum match {
     case RouteType.Path => new PathRoute(
-      goal, make_router(orig_router, graph, initial_path), make_router(rerouter, graph, Nil), rng
+      goal, make_router(orig_router, graph, initial_path), make_router(rerouter, graph, Nil)
     )
   }
 

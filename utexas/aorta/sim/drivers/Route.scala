@@ -12,12 +12,12 @@ import utexas.aorta.map.{Edge, Road, Traversable, Turn, Vertex, Graph, Router}
 import utexas.aorta.sim.{EV_Transition, EV_Reroute}
 import utexas.aorta.sim.make.{RouteType, RouterType, Factory}
 
-import utexas.aorta.common.{Util, RNG, cfg, StateWriter, StateReader, TurnID}
+import utexas.aorta.common.{Util, cfg, StateWriter, StateReader, TurnID}
 
 // TODO maybe unify the one class with the interface, or something. other routes were useless.
 
 // Get a client to their goal by any means possible.
-abstract class Route(val goal: Road, rng: RNG) {
+abstract class Route(val goal: Road) {
   //////////////////////////////////////////////////////////////////////////////
   // Transient state
 
@@ -30,7 +30,6 @@ abstract class Route(val goal: Road, rng: RNG) {
   def serialize(w: StateWriter) {
     w.int(route_type.id)
     w.int(goal.id.int)
-    rng.serialize(w)
   }
 
   protected def unserialize(r: StateReader, graph: Graph) {}
@@ -76,8 +75,7 @@ object Route {
   def unserialize(r: StateReader, graph: Graph): Route = {
     // Original router will never be used again, and rerouter will have to be reset by PathRoute.
     val route = Factory.make_route(
-      RouteType(r.int), graph, RouterType.Fixed, RouterType.Fixed, graph.roads(r.int),
-      RNG.unserialize(r), Nil
+      RouteType(r.int), graph, RouterType.Fixed, RouterType.Fixed, graph.roads(r.int), Nil
     )
     route.unserialize(r, graph)
     return route
@@ -86,9 +84,7 @@ object Route {
 
 // Follow routes prescribed by routers. Only reroute when forced or encouraged to.
 // TODO rerouter only var due to serialization
-class PathRoute(goal: Road, orig_router: Router, private var rerouter: Router, rng: RNG)
-  extends Route(goal, rng)
-{
+class PathRoute(goal: Road, orig_router: Router, private var rerouter: Router) extends Route(goal) {
   //////////////////////////////////////////////////////////////////////////////
   // State
 

@@ -70,9 +70,9 @@ object AgentDistribution {
       val raw_time = rng.double(times._1, times._2)
       val time = raw_time - (raw_time % cfg.dt_s) // TODO may still have fp issue
       MkAgent(
-        new AgentID(id), time, rng.new_seed, start.id, start.rightmost.safe_spawn_dist(rng),
+        new AgentID(id), time, start.id, start.rightmost.safe_spawn_dist(rng),
         MkRoute(rng.choose(routes), RouterType.Congestion, RouterType.Congestion,
-                Nil, rng.choose(ends).id, rng.new_seed),
+                Nil, rng.choose(ends).id),
         // For now, force the same budget and priority here, and clean it up
         // later.
         MkWallet(rng.choose(wallets), budget, budget, false /* bid_ahead */)
@@ -96,9 +96,9 @@ object AgentDistribution {
       val time = raw_spawn_time - (raw_spawn_time % cfg.dt_s) // TODO may still have fp issue
       id += 1
       result += MkAgent(
-        new AgentID(id), time, rng.new_seed, start.id, start.rightmost.safe_spawn_dist(rng),
+        new AgentID(id), time, start.id, start.rightmost.safe_spawn_dist(rng),
         MkRoute(rng.choose(routes), RouterType.Congestion, RouterType.Congestion,
-                Nil, rng.choose(ends).id, rng.new_seed),
+                Nil, rng.choose(ends).id),
         // For now, force the same budget and priority here, and clean it up
         // later.
         MkWallet(rng.choose(wallets), budget, budget, false /* bid_ahead */)
