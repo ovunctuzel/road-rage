@@ -759,6 +759,9 @@ class MapCanvas(val sim: Simulation, headless: Boolean = false) extends Scrollin
         step_sim()
       }
     }
+    case Key.I => {
+      AccelerationScheme.enabled = !AccelerationScheme.enabled
+    }
     case _ => // Ignore the rest
   }
 

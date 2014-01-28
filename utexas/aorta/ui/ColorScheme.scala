@@ -13,7 +13,8 @@ import utexas.aorta.common.{cfg, AgentID}
 
 object ColorScheme {
   def color(d: DrawDriver, state: GuiState) = Stream(
-    FocusVertexScheme.color _, CameraScheme.color _, StalledScheme.color _, PersonalScheme.color _
+    AccelerationScheme.color _, FocusVertexScheme.color _, CameraScheme.color _,
+    StalledScheme.color _, PersonalScheme.color _
   ).flatMap(fxn => fxn(d, state)).head
 }
 
@@ -34,6 +35,20 @@ object ReplayDiffScheme {
       case x if x < 0.0 => Color.RED
       case _ => Color.GREEN
     }
+}
+
+object AccelerationScheme {
+  var enabled = false
+
+  def color(d: DrawDriver, state: GuiState) =
+    if (!enabled)
+      None
+    else if (d.agent.target_accel > 0)
+      Some(Color.GREEN)
+    else if (d.agent.target_accel == 0)
+      Some(Color.BLUE)
+    else
+      Some(Color.RED)
 }
 
 // Focus on tickets at one intersection
