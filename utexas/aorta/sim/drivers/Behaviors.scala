@@ -141,7 +141,7 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
     var done_with_route = false
 
     var step = new LookaheadStep(
-      a.at.on, a.max_lookahead_dist, 0, a.at.dist_left, route
+      a.at.on, a.kinematic.max_lookahead_dist, 0, a.at.dist_left, route
     )
 
     accel_for_lc_agent = constraint_lc_agent
@@ -183,8 +183,6 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
       }
     }
 
-    //println(s"${a.sim.tick}: $a has $accel_for_stop, $accel_for_agent, $accel_for_lc_agent, $min_speed_limit")
-
     // TODO consider moving this first case to choose_action and not doing
     // lookahead when these premises hold true.
     return if (done_with_route) {
@@ -192,10 +190,13 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
     } else {
       val conservative_accel = List(
         accel_for_stop, accel_for_agent, accel_for_lc_agent,
-        Some(a.accel_to_achieve(min_speed_limit)),
+        Some(a.kinematic.accel_to_achieve(min_speed_limit)),
         // Don't forget physical limits
         Some(a.max_accel)
       ).flatten.min
+      //if (debug_me) {
+      //  println(s"@ ${a.sim.tick}, ${a.id}'s at ${a.at.dist} with speed ${a.speed} and next accel $conservative_accel")
+      //}
 
       // As the very last step, clamp based on our physical capabilities.
       Act_Set_Accel(math.max(conservative_accel, -a.max_accel))
@@ -219,7 +220,7 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
                           other.at.dist - a.at.dist
                         else
                           step.dist_ahead + other.at.dist
-        Some(accel_to_follow(other, dist_away))
+        Some(a.kinematic.accel_to_follow(other.kinematic, dist_away))
       }
       case None => None
     }
@@ -232,7 +233,7 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
     case Some(e) => e.queue.ahead_of(a) match {
       case Some(other) => {
         val dist_away = other.at.dist - a.at.dist
-        Some(accel_to_follow(other, dist_away))
+        Some(a.kinematic.accel_to_follow(other.kinematic, dist_away))
       }
       case None => None
     }
@@ -316,54 +317,9 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
         val want_dist = math.max(
           step.dist_ahead, dist_from_agent_to_end - cfg.end_threshold
         )
-        Left(Some(accel_to_end(want_dist)))
+        Left(Some(a.kinematic.accel_to_end(want_dist)))
       }
     }
-  }
-
-  private def accel_to_follow(follow: Agent, dist_from_them_now: Double): Double = {
-    val us_worst_dist = a.max_next_dist_plus_stopping
-    val most_we_could_go = a.max_next_dist
-    val least_they_could_go = follow.min_next_dist
-
-    // TODO this optimizes for next tick, so we're playing it really
-    // conservative here... will that make us fluctuate more?
-    val projected_dist_from_them = dist_from_them_now - most_we_could_go + least_they_could_go
-    val desired_dist_btwn = us_worst_dist + cfg.follow_dist
-
-    // Positive = speed up, zero = go their speed, negative = slow down
-    val delta_dist = projected_dist_from_them - desired_dist_btwn
-
-    // Try to cover whatever the distance is
-    return Physics.accel_to_cover(delta_dist, a.speed)
-  }
-
-  // Find an accel to travel want_dist and wind up with speed 0.
-  private def accel_to_end(want_dist: Double): Double = {
-    Util.assert_ge(want_dist, 0)
-
-    if (want_dist == 0.0) {
-      // Just stop.
-      return Physics.accel_to_stop(a.speed)
-    }
-
-    // d = (v_1)(t) + (1/2)(a)(t^2)
-    // 0 = (v_1) + (a)(t)
-    // Eliminating time yields the formula for accel below. This same accel should be applied for
-    // t = -v_1 / a, which is possible even if that's not a multiple of dt_s since we're
-    // decelerating to rest.
-    val normal_case = (-1 * a.speed * a.speed) / (2 * want_dist)
-    val required_time = -a.speed / normal_case
-    if (!required_time.isNaN) {
-      return normal_case
-    }
-
-    // We have to accelerate so that we can get going, but not enough so
-    // that we can't stop. Do one tick of acceleration, one tick of
-    // deacceleration at that same rate. If the required acceleration is then too high, we'll cap
-    // off and trigger a normal case next tick.
-    // Want (1/2)(a)(dt^2) + (a dt)dt - (1/2)(a)(dt^2) = want_dist
-    return want_dist / (cfg.dt_s * cfg.dt_s)
   }
 }
 

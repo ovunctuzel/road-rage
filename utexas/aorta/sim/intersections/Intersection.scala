@@ -7,7 +7,7 @@ package utexas.aorta.sim.intersections
 import scala.collection.mutable
 
 import utexas.aorta.map.{Vertex, Turn, Edge}
-import utexas.aorta.sim.Simulation
+import utexas.aorta.sim.{Simulation, EV_TurnApproved}
 import utexas.aorta.sim.make.{IntersectionType, OrderingType, Factory}
 
 import utexas.aorta.common.{Util, StateWriter, StateReader, TurnID}
@@ -176,6 +176,7 @@ abstract class Policy(val intersection: Intersection) {
     ticket.approve()
     accepted += ticket
     unqueue(ticket)
+    ticket.a.sim.publish(EV_TurnApproved(ticket))
   }
 
   protected def unqueue(ticket: Ticket) {

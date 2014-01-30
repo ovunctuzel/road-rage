@@ -42,7 +42,7 @@ class YieldPolicy(intersection: Intersection, ordering: IntersectionOrdering[Tic
       for (ticket <- candidates) {
         if (!ticket.turn_blocked) {
           // TODO refactor this "last chance before they'll slow down" predicate
-          if (ticket.a.max_lookahead_dist >= ticket.a.how_far_away(intersection) - cfg.end_threshold) {
+          if (ticket.a.kinematic.max_lookahead_dist >= ticket.a.how_far_away(intersection) - cfg.end_threshold) {
             accept(ticket)
             candidates -= ticket
             changed = true

@@ -43,6 +43,7 @@ final case class EV_Turn(
   def total_delay = done_tick - req_tick
   def accept_delay = accept_tick - req_tick
 }
+final case class EV_TurnApproved(ticket: Ticket) extends Sim_Event
 
 final case class EV_AgentSpawned(a: Agent) extends Sim_Event
 final case class EV_AgentQuit(

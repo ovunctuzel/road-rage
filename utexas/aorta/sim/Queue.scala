@@ -204,11 +204,12 @@ class Queue(t: Traversable) {
 
   def all_agents = agents.values.toSet
 
-  // TODO all_ahead_of(dist)
   def ahead_of(a: Agent) = closest_ahead(a.at.dist)
   def behind(a: Agent) = closest_behind(a.at.dist)
   def closest_behind(dist: Double) = wrap_option(agents.higherEntry(-dist))
   def closest_ahead(dist: Double) = wrap_option(agents.lowerEntry(-dist))
+  // Gives farthest agent first
+  def all_ahead_of(dist: Double) = all_in_range(dist, true, t.length, true).values.toList
   def all_in_range(from: Double, from_inclusive: Boolean, to: Double, to_inclusive: Boolean) =
     agents.subMap(-to, to_inclusive, -from, from_inclusive)
 
@@ -225,7 +226,7 @@ class Queue(t: Traversable) {
     agents.descendingMap.values.find(a => {
       if (dist > a.at.dist) {
         // don't spawn in front of somebody who can't stop
-        val bad_dist = cfg.follow_dist + a.max_next_dist_plus_stopping
+        val bad_dist = cfg.follow_dist + a.kinematic.max_next_dist_plus_stopping
         if (dist - a.at.dist <= bad_dist) {
           safe = false
           true

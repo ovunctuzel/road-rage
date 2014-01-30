@@ -21,7 +21,7 @@ class Agent(
   //////////////////////////////////////////////////////////////////////////////
   // Transient state
 
-  private var debug_me = false
+  var debug_me = false  // TODO public read, private write
 
   //////////////////////////////////////////////////////////////////////////////
   // State
@@ -306,9 +306,9 @@ class Agent(
     Util.log("At: " + at)
     Util.log("Speed: " + speed)
     Util.log("How long idle? " + how_long_idle)
-    Util.log("Max next speed: " + max_next_speed)
-    Util.log("Stopping distance next: " + Physics.stopping_distance(max_next_speed))
-    Util.log("Lookahead dist: " + max_lookahead_dist)
+    Util.log("Max next speed: " + kinematic.max_next_speed)
+    Util.log("Stopping distance next: " + Physics.stopping_distance(kinematic.max_next_speed))
+    Util.log("Lookahead dist: " + kinematic.max_lookahead_dist)
     Util.log("Dist left here: " + at.dist_left)
     at.on match {
       case e: Edge => {
@@ -329,6 +329,8 @@ class Agent(
     behavior.dump_info
     Util.log_pop
   }
+
+  def kinematic = Kinematic(at.dist, speed, max_accel, at.on.speed_limit)
 
   def how_long_idle = if (idle_since == -1.0)
                         0
@@ -487,22 +489,11 @@ class Agent(
   }
   def our_lead = at.on.queue.ahead_of(this)
   def our_tail = at.on.queue.behind(this)
-  def how_far_away(i: Intersection) =
-    route.steps_to(at.on, i.v).map(_.length).sum - (at.on.length - at.dist_left)
+  def how_far_away(i: Intersection) = route.steps_to(at.on, i.v).map(_.length).sum - at.dist
   // Report some number that fully encodes our current choice
   // TODO should be getting turns chosen and LCs done too, to distinguish a few
   // rare cases thatd we'll otherwise blur.
   def characterize_choice = target_accel
-
-  // Math shortcuts
-  def max_lookahead_dist = Physics.max_lookahead_dist(speed, at.on.speed_limit)
-  def accel_to_achieve(target: Double) =
-    Physics.accel_to_achieve(target, speed)
-  def max_next_dist_plus_stopping =
-    Physics.max_next_dist_plus_stopping(speed, at.on.speed_limit)
-  def max_next_dist = Physics.max_next_dist(speed, at.on.speed_limit)
-  def min_next_dist = Physics.min_next_dist(speed)
-  def max_next_speed = Physics.max_next_speed(speed, at.on.speed_limit)
 
   // Seconds saved per dollar. Just use priority for now.
   def value_of_time = new ValueOfTime(wallet.priority)

@@ -68,7 +68,6 @@ class Ticket(val a: Agent, val turn: Turn) extends Ordered[Ticket] {
   // This is an action because it touches the waiting_since state.
   def turn_blocked(): Boolean = {
     val target = turn.to
-    val intersection = turn.vert.intersection
 
     // They might not finish LCing before an agent in the new or old lane
     // stalls.
@@ -127,17 +126,12 @@ class Ticket(val a: Agent, val turn: Turn) extends Ordered[Ticket] {
     else
       a.sim.tick - waiting_since
 
-  def earliest_start() =
-    a.how_far_away(turn.vert.intersection) / a.at.on.speed_limit
-  def earliest_finish() =
-    (a.how_far_away(turn.vert.intersection) + turn.length) / math.min(a.at.on.speed_limit, turn.speed_limit)
+  def dist_away = a.how_far_away(intersection)
+  def speed_lim = math.min(turn.from.speed_limit, turn.to.speed_limit)
 
-  // This isn't really optimistic or pessimistic; we could be going the speed
-  // limit or not
-  def start_at_cur_speed() =
-    a.how_far_away(turn.vert.intersection) / math.max(a.speed, cfg.epsilon)
-  def finish_at_cur_speed() =
-    (a.how_far_away(turn.vert.intersection) + turn.length) / math.max(a.speed, cfg.epsilon)
+  def earliest_start() = dist_away / a.at.on.speed_limit
+  def earliest_finish() =
+    (dist_away + turn.length) / math.min(a.at.on.speed_limit, turn.speed_limit)
 
   def close_to_start =
     if (a.at.on == turn.from) {

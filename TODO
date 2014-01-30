@@ -161,9 +161,7 @@
 # UI #
 
 - color intersections neutrally
-- step one tick
 - visualize red/green lights better
-- cmdline switch to follow stuff or zoom in somewhere
 - visualize lookahead
 - right click context menus
 - show 'fps' in viewer
