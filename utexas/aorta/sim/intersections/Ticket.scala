@@ -5,7 +5,7 @@
 package utexas.aorta.sim.intersections
 
 import utexas.aorta.map.{Turn, Graph}
-import utexas.aorta.sim.EV_Turn
+import utexas.aorta.sim.EV_TurnFinished
 import utexas.aorta.sim.drivers.Agent
 
 import utexas.aorta.common.{Util, cfg, StateWriter, StateReader, TurnID}
@@ -153,7 +153,7 @@ class Ticket(val a: Agent, val turn: Turn) extends Ordered[Ticket] {
     turn.from.next_turns.size > 1 && Intersection.detect_gridlock(turn)
 
   def duration = done_tick - accept_tick
-  def stat = EV_Turn(a, turn.vert, req_tick, accept_tick, done_tick, cost_paid)
+  def stat = EV_TurnFinished(a, turn.vert, req_tick, accept_tick, done_tick, cost_paid)
 }
 
 object Ticket {

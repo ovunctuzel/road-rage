@@ -35,7 +35,7 @@ final case class EV_Breakpoint(focus: Agent) extends Sim_Event
 final case class EV_Signal_Change(greens: Set[Turn]) extends Sim_Event
 final case class EV_IntersectionOutcome(intersection: IntersectionType.Value, losers: List[Ticket])
   extends Sim_Event
-final case class EV_Turn(
+final case class EV_TurnFinished(
   agent: Agent, vert: Vertex, req_tick: Double, accept_tick: Double, done_tick: Double,
   cost_paid: Double
 ) extends Sim_Event {
@@ -44,6 +44,7 @@ final case class EV_Turn(
   def accept_delay = accept_tick - req_tick
 }
 final case class EV_TurnApproved(ticket: Ticket) extends Sim_Event
+final case class EV_TurnStarted(ticket: Ticket) extends Sim_Event
 
 final case class EV_AgentSpawned(a: Agent) extends Sim_Event
 final case class EV_AgentQuit(

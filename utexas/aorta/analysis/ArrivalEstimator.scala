@@ -4,7 +4,7 @@
 
 package utexas.aorta.analysis
 
-import utexas.aorta.sim.{Simulation, EV_Turn, EV_TurnApproved}
+import utexas.aorta.sim.{Simulation, EV_TurnStarted, EV_TurnApproved}
 import utexas.aorta.sim.drivers.{Agent, Kinematic}
 import utexas.aorta.map.Vertex
 import utexas.aorta.common.{Util, AgentID, Physics, cfg}
@@ -29,9 +29,9 @@ class ArrivalEstimator(sim: Simulation) {
         models, lane.length, ticket.a.debug_me, ticket.a.sim.tick
       )
     }
-    case ev: EV_Turn => {
-      val a = ev.agent
-      val estimate = estimates.remove((a, ev.vert)).get
+    case EV_TurnStarted(ticket) => {
+      val a = ticket.a
+      val estimate = estimates.remove((a, ticket.intersection.v)).get
       val predict_time = estimate.arrival_time
       val predict_speed = estimate.arrival_speed
       val actual_time = a.sim.tick

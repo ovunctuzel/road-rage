@@ -17,7 +17,7 @@ import utexas.aorta.sim.drivers.Agent
 
 import utexas.aorta.common.{Util, cfg, StateWriter, StateReader, Flags, AgentID, Publisher,
                             VertexID, EdgeID, RoadID, Timer}
-import utexas.aorta.analysis.RerouteCountMonitor
+import utexas.aorta.analysis.{RerouteCountMonitor, ArrivalEstimator}
 
 class Simulation(val scenario: Scenario)
   extends Publisher[Sim_Event] with AgentManager
@@ -66,6 +66,8 @@ class Simulation(val scenario: Scenario)
     sys.ShutdownHookThread({
       terminate()
     })
+
+    //new ArrivalEstimator(this)  // TODO enable this once it's stable
 
     return this
   }

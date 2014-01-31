@@ -4,7 +4,7 @@
 
 package utexas.aorta.analysis
 
-import utexas.aorta.sim.{Simulation, EV_AgentSpawned, EV_Reroute, EV_AgentQuit, EV_Turn,
+import utexas.aorta.sim.{Simulation, EV_AgentSpawned, EV_Reroute, EV_AgentQuit, EV_TurnFinished,
                          EV_IntersectionOutcome, EV_Transition}
 import utexas.aorta.sim.drivers.Agent
 import utexas.aorta.sim.make.Scenario
@@ -127,7 +127,7 @@ class TurnDelayMetric(info: MetricInfo) extends HistogramMetric(info, 5.0) {
 
   info.sim.listen(name, _ match {
     // could be accept_delay
-    case e: EV_Turn => histogram.add(e.total_delay)
+    case e: EV_TurnFinished => histogram.add(e.total_delay)
     case _ =>
   })
 }

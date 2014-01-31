@@ -7,7 +7,7 @@ package utexas.aorta.sim.intersections
 import scala.collection.mutable
 
 import utexas.aorta.map.{Vertex, Turn, Edge}
-import utexas.aorta.sim.{Simulation, EV_TurnApproved}
+import utexas.aorta.sim.{Simulation, EV_TurnApproved, EV_TurnStarted}
 import utexas.aorta.sim.make.{IntersectionType, OrderingType, Factory}
 
 import utexas.aorta.common.{Util, StateWriter, StateReader, TurnID}
@@ -65,6 +65,7 @@ class Intersection(val v: Vertex, policy_type: IntersectionType.Value,
       policy.dump_info()
       sys.exit()
     }
+    ticket.a.sim.publish(EV_TurnStarted(ticket))
   }
 
   def exit(ticket: Ticket) = {

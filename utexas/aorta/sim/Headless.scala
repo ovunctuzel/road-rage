@@ -5,7 +5,7 @@
 package utexas.aorta.sim
 
 import utexas.aorta.ui.GUIDebugger
-import utexas.aorta.analysis.{SimSpeedMonitor, ReplayReader, ReplayWriter, ArrivalEstimator}
+import utexas.aorta.analysis.{SimSpeedMonitor, ReplayReader, ReplayWriter}
 
 import utexas.aorta.common.{Util, Timer, cfg, Flags}
 
@@ -25,7 +25,6 @@ object Headless {
       case Some(fn) => new ReplayReader(sim, Util.reader(fn))
       case None =>
     }
-    //new ArrivalEstimator(sim) // TODO always? not always?
     val gui = new GUIDebugger(sim)
 
     // Print an update every second
