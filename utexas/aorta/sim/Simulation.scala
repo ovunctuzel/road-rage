@@ -48,12 +48,12 @@ class Simulation(val scenario: Scenario)
   // Meta
 
   def setup(): Simulation = {
-    SystemWallets.rates = scenario.system_wallet
+    SystemWallets.init_rates(scenario.system_wallet)
 
     // TODO always do this, and forget this map/sim separation?
-    graph.traversables.foreach(t => t.queue = new Queue(t))
-    graph.vertices.foreach(v => v.intersection = scenario.make_intersection(v, this))
-    graph.roads.foreach(r => r.auditor = scenario.make_auditor(r, this))
+    graph.traversables.foreach(t => t.init_queue(new Queue(t)))
+    graph.vertices.foreach(v => v.init_intersection(scenario.make_intersection(v, this)))
+    graph.roads.foreach(r => r.init_auditor(scenario.make_auditor(r, this)))
 
     // Are we starting for the first time?
     if (tick == 0.0) {

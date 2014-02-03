@@ -8,7 +8,7 @@ import utexas.aorta.map.{AbstractPairAstarRouter, Road, Graph}
 import utexas.aorta.sim.drivers.Agent
 import utexas.aorta.sim.make.RouterType
 
-import utexas.aorta.common.{Util, Price}
+import utexas.aorta.common.{Util, Price, SetOnce}
 
 // No guess for cost, straight-line distance at 1m/s for freeflow time
 trait SimpleHeuristic extends AbstractPairAstarRouter {
@@ -54,10 +54,11 @@ class DumbTollRouter(graph: Graph) extends AbstractPairAstarRouter(graph)
 class TollThresholdRouter(graph: Graph) extends AbstractPairAstarRouter(graph)
   with SimpleHeuristic
 {
-  private var max_toll: Price = new Price(-1)
+  private val init_max_toll = new SetOnce[Price]
+  private lazy val max_toll = init_max_toll.get
 
   override def setup(a: Agent) {
-    max_toll = new Price(a.wallet.priority)
+    init_max_toll(new Price(a.wallet.priority))
   }
 
   override def router_type = RouterType.TollThreshold

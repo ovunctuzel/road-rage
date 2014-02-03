@@ -10,7 +10,7 @@ import utexas.aorta.sim.make.{WalletType, IntersectionType, OrderingType, Factor
 import utexas.aorta.map.{Turn, Vertex}
 import utexas.aorta.sim.intersections.{Ticket, Policy, Phase, ReservationPolicy, SignalPolicy}
 
-import utexas.aorta.common.{Util, cfg, StateReader, StateWriter}
+import utexas.aorta.common.{Util, cfg, StateReader, StateWriter, SetOnce}
 
 // Express an agent's preferences of trading between time and cost.
 // TODO dont require an agent, ultimately
@@ -23,7 +23,8 @@ abstract class Wallet(initial_budget: Int, val priority: Int) {
   //////////////////////////////////////////////////////////////////////////////
   // State
 
-  protected var owner: Agent = null
+  private val init_owner = new SetOnce[Agent]
+  protected lazy val owner = init_owner.get
 
   // How much the agent may spend during its one-trip lifetime
   var budget = initial_budget
@@ -47,7 +48,7 @@ abstract class Wallet(initial_budget: Int, val priority: Int) {
   }
 
   def setup(a: Agent) {
-    owner = a
+    init_owner(a)
   }
 
   protected def unserialize(r: StateReader) {}

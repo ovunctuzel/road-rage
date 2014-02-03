@@ -12,7 +12,7 @@ import utexas.aorta.map.{Edge, Road, Traversable, Turn, Vertex, Graph, Router}
 import utexas.aorta.sim.{EV_Transition, EV_Reroute}
 import utexas.aorta.sim.make.{RouteType, RouterType, Factory}
 
-import utexas.aorta.common.{Util, cfg, StateWriter, StateReader, TurnID}
+import utexas.aorta.common.{Util, cfg, StateWriter, StateReader, TurnID, SetOnce}
 
 // TODO maybe unify the one class with the interface, or something. other routes were useless.
 
@@ -21,7 +21,9 @@ abstract class Route(val goal: Road) {
   //////////////////////////////////////////////////////////////////////////////
   // Transient state
 
-  protected var owner: Agent = null
+  private val init_owner = new SetOnce[Agent]
+  protected lazy val owner = init_owner.get
+
   protected var debug_me = false  // TODO just grab from owner?
 
   //////////////////////////////////////////////////////////////////////////////
@@ -35,7 +37,7 @@ abstract class Route(val goal: Road) {
   protected def unserialize(r: StateReader, graph: Graph) {}
 
   def setup(a: Agent) {
-    owner = a
+    init_owner(a)
   }
 
   //////////////////////////////////////////////////////////////////////////////

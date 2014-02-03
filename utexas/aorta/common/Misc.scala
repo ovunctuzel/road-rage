@@ -207,6 +207,30 @@ class BinnedHistogram(width: Double) {
   def apply(bin: Int) = bin_counts(bin)
 }
 
+class SetOnce[T]() {
+  private var set_latch = false
+  private var get_latch = false
+  private var value: T = _
+
+  def apply(v: T) {
+    if (set_latch) {
+      throw new IllegalStateException()
+    }
+    value = v
+    set_latch = true
+  }
+
+  def get(): T = {
+    if (get_latch)
+      throw new IllegalStateException()
+    get_latch = true
+    if (set_latch)
+      value
+    else
+      throw new IllegalStateException()
+  }
+}
+
 class AgentID(val int: Int) extends AnyVal {
   override def toString = int.toString
 }

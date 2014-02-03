@@ -8,7 +8,7 @@ import Function.tupled
 
 import utexas.aorta.ui.Renderable
 import utexas.aorta.map.make.MapStateWriter
-import utexas.aorta.common.{Util, StateReader, VertexID}
+import utexas.aorta.common.{Util, StateReader, VertexID, SetOnce}
 
 // TODO I don't want this dependency, but at the moment, it leads to a great
 // perf boost due to dropping a pricy hash lookup
@@ -25,7 +25,8 @@ class Vertex(val location: Coordinate, val id: VertexID) extends Renderable {
   // Deterministic state
 
   // TODO messy to have this dependency here.
-  var intersection: Intersection = null
+  val init_intersection = new SetOnce[Intersection]
+  lazy val intersection = init_intersection.get
 
   //////////////////////////////////////////////////////////////////////////////
   // Meta

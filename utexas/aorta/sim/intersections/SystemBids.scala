@@ -6,6 +6,7 @@ package utexas.aorta.sim.intersections
 
 import utexas.aorta.sim.drivers.Wallet
 import utexas.aorta.sim.make.{WalletType, SystemWalletConfig}
+import utexas.aorta.common.SetOnce
 
 // Just used for bookkeeping... how much is some system bid affecting things?
 class SystemWallet() extends Wallet(0, 0) {
@@ -31,7 +32,8 @@ object SystemWallets {
   val dependency = new SystemWallet()
   val waiting = new SystemWallet()
   val ready = new SystemWallet()
-  var rates: SystemWalletConfig = null  // TODO hackish, but then, this whole singleton is.
+  val init_rates = new SetOnce[SystemWalletConfig]
+  lazy val rates = init_rates.get
 
   def meta_bid[T](items: List[T], policy: Policy): List[Bid[T]] =
     (bid_thruput(items, policy) ++ bid_pointless_impatience(items, policy) ++

@@ -9,7 +9,7 @@ package utexas.aorta.map
 import utexas.aorta.sim.Queue
 import utexas.aorta.ui.Renderable
 
-import utexas.aorta.common.{cfg, Util, Physics, StateWriter, StateReader, TurnID}
+import utexas.aorta.common.{cfg, Util, Physics, StateWriter, StateReader, TurnID, SetOnce}
 
 // Something with a sequence of lines forming a path and a way to get to more
 // somethings
@@ -28,7 +28,8 @@ abstract class Traversable(val lines: Array[Line]) {
   }
 
   // TODO temporary perf fix
-  var queue: Queue = null
+  val init_queue = new SetOnce[Queue]
+  lazy val queue = init_queue.get
 
   //////////////////////////////////////////////////////////////////////////////
   // Queries

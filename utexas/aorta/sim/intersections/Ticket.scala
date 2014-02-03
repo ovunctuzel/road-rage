@@ -8,7 +8,7 @@ import utexas.aorta.map.{Turn, Graph}
 import utexas.aorta.sim.EV_TurnFinished
 import utexas.aorta.sim.drivers.Agent
 
-import utexas.aorta.common.{Util, cfg, StateWriter, StateReader, TurnID}
+import utexas.aorta.common.{Util, cfg, StateWriter, StateReader, TurnID, SetOnce}
 
 class Ticket(val a: Agent, val turn: Turn) extends Ordered[Ticket] {
   //////////////////////////////////////////////////////////////////////////////
@@ -16,9 +16,10 @@ class Ticket(val a: Agent, val turn: Turn) extends Ordered[Ticket] {
   
   // This one is fixed, but unserialization has to set it.
   private var req_tick = a.sim.tick
-  // Don't initially know these
+
+  val init_done_tick = new SetOnce[Double]
+  lazy val done_tick = init_done_tick.get
   var accept_tick = -1.0
-  var done_tick = -1.0
   var cost_paid = 0.0
 
   // If we interrupt a reservation successfully, don't let people block us.
@@ -156,7 +157,7 @@ object Ticket {
     val ticket = new Ticket(a, graph.turns(new TurnID(r.int)))
     ticket.req_tick = r.double
     ticket.accept_tick = r.double
-    ticket.done_tick = r.double
+    ticket.init_done_tick(r.double)
     ticket.cost_paid = r.double
     ticket.is_interruption = r.bool
     ticket.waiting_since = r.double

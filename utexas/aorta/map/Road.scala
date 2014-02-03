@@ -10,7 +10,7 @@ import Function.tupled
 import utexas.aorta.map.make.MapStateWriter
 import utexas.aorta.ui.Renderable
 import utexas.aorta.sim.LinkAuditor
-import utexas.aorta.common.{Util, RoadID, VertexID, Physics, StateReader}
+import utexas.aorta.common.{Util, RoadID, VertexID, Physics, StateReader, SetOnce}
 
 // An oriented bundle of lanes
 class Road(
@@ -22,9 +22,11 @@ class Road(
   //////////////////////////////////////////////////////////////////////////////
   // State
 
-  var v1: Vertex = null
-  var v2: Vertex = null
   val lanes = new mutable.ListBuffer[Edge]()
+  private val init_v1 = new SetOnce[Vertex]
+  private val init_v2 = new SetOnce[Vertex]
+  lazy val v1 = init_v1.get
+  lazy val v2 = init_v2.get
 
   // TODO lets figure out how to build immutable stuff.
   val houses = new mutable.ListBuffer[Coordinate]()
@@ -34,7 +36,8 @@ class Road(
   // Deterministic state
 
   // TODO like queues for traversables and intersections for vertices... bad dependency to have.
-  var auditor: LinkAuditor = null
+  val init_auditor = new SetOnce[LinkAuditor]
+  lazy val auditor = init_auditor.get
 
   // TODO move this table. actually, store speed limit
   val speed_limit = Physics.mph_to_si(road_type match {
@@ -87,8 +90,8 @@ class Road(
   }
 
   def setup(vertices: Array[Vertex]) {
-    v1 = vertices(v1_id.int)
-    v2 = vertices(v2_id.int)
+    init_v1(vertices(v1_id.int))
+    init_v2(vertices(v2_id.int))
 
     // check invariants of points -- oops, not true anymore since we merge short
     // roads
