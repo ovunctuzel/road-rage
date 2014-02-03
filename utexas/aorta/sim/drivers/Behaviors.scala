@@ -4,8 +4,9 @@
 
 package utexas.aorta.sim.drivers
 
-import utexas.aorta.map.{Edge, Turn, Traversable}
+import utexas.aorta.map.{Edge, Road, Turn, Traversable}
 import utexas.aorta.sim.intersections.Ticket
+import scala.collection.mutable
 
 import utexas.aorta.common.{Util, cfg, Physics}
 
@@ -146,10 +147,24 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
 
     accel_for_lc_agent = constraint_lc_agent
 
+    // Verify lookahead doesn't cycle to the same road twice; if it does, the route should pick the
+    // second turn during the first choice!
+    val visited = new mutable.HashSet[Road]()
+
     // If we don't have to stop for an intersection, keep caring about staying
     // far enough behind an agent. Once we have to stop somewhere, don't worry
     // about agents beyond that point.
     while (step != null && !accel_for_stop.isDefined) {
+      step.at match {
+        case e: Edge => {
+          if (visited.contains(e.road)) {
+            throw new Exception(s"Lookahead visited ${e.road} twice!")
+          }
+          visited += e.road
+        }
+        case _ =>
+      }
+
       if (!accel_for_agent.isDefined) {
         accel_for_agent = constraint_agent(step)
       }
