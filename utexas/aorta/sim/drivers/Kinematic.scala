@@ -6,7 +6,7 @@ package utexas.aorta.sim.drivers
 
 import utexas.aorta.common.{Util, cfg, Physics}
 
-case class Kinematic(dist: Double, speed: Double, max_accel: Double, speed_limit: Double) {
+case class Kinematic(dist: Double, speed: Double, speed_limit: Double) {
   // Math shortcuts
   def max_lookahead_dist = Physics.max_lookahead_dist(speed, speed_limit)
   def accel_to_achieve(target: Double) = Physics.accel_to_achieve(target, speed)

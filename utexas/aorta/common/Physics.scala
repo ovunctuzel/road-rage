@@ -16,6 +16,9 @@ object Physics {
     return (initial_speed * actual_time) + (0.5 * accel * (actual_time * actual_time))
   }
 
+  def update_speed(speed: Double, accel: Double, time: Double) =
+    math.max(0.0, speed + (accel * time))
+
   // TODO this gets a bit more conservative when cars have different
   // accelerations. This is hinged on the fact that lookahead works. Agents
   // can't enter e faster than its speed limit, so we have to reason about how

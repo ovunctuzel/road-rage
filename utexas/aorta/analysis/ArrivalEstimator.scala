@@ -95,9 +95,9 @@ object DelayModel {
       }
       target_accel = List(
         accel_to_end, accel_for_agent, Some(kinematic.accel_to_achieve(limit)),
-        Some(kinematic.max_accel)
+        Some(cfg.max_accel)
       ).flatten.min
-      target_accel = math.max(target_accel, -kinematic.max_accel)
+      target_accel = math.max(target_accel, -cfg.max_accel)
       return true
     }
   }

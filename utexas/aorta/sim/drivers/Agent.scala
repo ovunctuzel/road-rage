@@ -251,7 +251,7 @@ class Agent(
     // timestep, capping off when speed hits zero.
     val dist = Physics.dist_at_constant_accel(target_accel, dt_sec, speed)
     Util.assert_ge(dist, 0.0)
-    speed = math.max(0.0, speed + (target_accel * dt_sec))
+    speed = Physics.update_speed(speed, target_accel, dt_sec)
     return dist
   }
 
@@ -325,7 +325,7 @@ class Agent(
     Util.log_pop
   }
 
-  def kinematic = Kinematic(at.dist, speed, max_accel, at.on.speed_limit)
+  def kinematic = Kinematic(at.dist, speed, at.on.speed_limit)
 
   def how_long_idle = if (idle_since == -1.0)
                         0

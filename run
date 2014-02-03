@@ -1,0 +1,5 @@
+#!/bin/bash
+. common
+# TODO arguments too
+cmd=$1
+$SCALA ${cmd/.scala/}
