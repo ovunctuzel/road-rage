@@ -55,19 +55,14 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
     target_lane = None
     // Did lookahead previously schedule a turn for this road? We can't
     // lane-change, then! Already committed.
-    val i = base.to.intersection
-    if (!a.involved_with(i)) {
-      base match {
-        case e: Edge => {
-          val goal = route.pick_final_lane(e)._1
-          val target = e.adjacent_lanes.minBy(choice => math.abs(choice.lane_num - goal.lane_num))
-          // Tough liveness guarantees... give up early.
-          // TODO move this check to give up to react()
-          if (target != base && a.can_lc_without_blocking(target)) {
-            target_lane = Some(target)
-          }
-        }
-        case _ =>
+    if (!a.get_ticket(base).isDefined) {
+      val goal = route.pick_final_lane(base)._1
+      val target = base.adjacent_lanes.minBy(choice => math.abs(choice.lane_num - goal.lane_num))
+      // Tough liveness guarantees... give up early.
+      // TODO move this check to give up to react()
+      if (target != base && a.can_lc_without_blocking(target)) {
+        target_lane = Some(target)
+        Util.assert_eq(a.get_ticket(base).isDefined, false)
       }
     }
   }
@@ -261,14 +256,11 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
     // Request a turn early?
     step.at match {
       case e: Edge if !route.done(e) => {
-        val i = e.to.intersection
-        // TODO for multiple tickets at the same intersection... technically
-        // should see if the specific ticket exists yet.
-        if (!a.involved_with(i) && committed_to_lane(step)) {
+        if (!a.get_ticket(e).isDefined && committed_to_lane(step)) {
           val next_turn = route.pick_turn(e)
           val ticket = new Ticket(a, next_turn)
-          a.tickets += ticket
-          i.request_turn(ticket)
+          a.add_ticket(ticket)
+          e.to.intersection.request_turn(ticket)
         }
       }
       case _ =>
@@ -305,7 +297,7 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
               val next_turn = route.pick_turn(e)
 
               val replacement = new Ticket(a, next_turn)
-              a.tickets += replacement
+              a.add_ticket(replacement)
               e.to.intersection.request_turn(replacement)
             }
             false

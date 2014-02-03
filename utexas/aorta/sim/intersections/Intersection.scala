@@ -105,14 +105,10 @@ object Intersection {
 
       // Where's the head of that stuck queue trying to go?
       current = current.queue.head match {
-        case Some(a) => a.all_tickets(current.to.intersection).toList match {
-          case Nil => null
-          // TODO which ticket?
-          case ticket :: rest =>
-            if (ticket.is_approved)
-              null
-            else
-              ticket.turn.to
+        // requires invariant that we don't grab a ticket till we're committed to that lane
+        case Some(a) => a.get_ticket(current) match {
+          case Some(ticket) if !ticket.is_approved => ticket.turn.to
+          case _ => null
         }
         case None => null
       }

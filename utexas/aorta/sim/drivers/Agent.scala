@@ -44,7 +44,8 @@ class Agent(
   // how long has our speed been 0?
   private var idle_since = -1.0
 
-  val tickets = new mutable.TreeSet[Ticket]()
+  // keyed by origin lane
+  private val tickets = new mutable.HashMap[Edge, Ticket]()
 
   //////////////////////////////////////////////////////////////////////////////
   // Meta
@@ -83,7 +84,7 @@ class Agent(
     w.double(lanechange_dist_left)
     w.double(idle_since)
     w.int(tickets.size)
-    tickets.foreach(ticket => ticket.serialize(w))
+    tickets.values.toList.sorted.foreach(ticket => ticket.serialize(w))
   }
 
   //////////////////////////////////////////////////////////////////////////////
@@ -192,7 +193,7 @@ class Agent(
         case (t: Turn, e: Edge) => {
           val ticket = get_ticket(t).get
           ticket.done_tick = sim.tick
-          tickets.remove(ticket)
+          remove_ticket(ticket)
           ticket.intersection.exit(ticket)
           sim.publish(ticket.stat)
         }
@@ -231,17 +232,9 @@ class Agent(
         false
       }
       case Act_Done_With_Route() => {
-        // TODO untrue when our dest is tiny and we stop right before it!
         at.on match {
           case e: Edge => // normal
-          case t: Turn => {
-            // Tiny destination edge? TODO dont allow this kinda hack...
-            t.to.queue.free_slot
-
-            val ticket = get_ticket(t).get
-            tickets.remove(ticket)  // TODO all applicable tickets?
-            ticket.intersection.exit(ticket)
-          }
+          case t: Turn => throw new Exception(s"Done with route at $t")
         }
         //Util.assert_eq(at.on.asInstanceOf[Edge].road, route.goal)
         // Trust behavior, don't abuse this.
@@ -264,7 +257,9 @@ class Agent(
 
   // Delegate to the queues and intersections that simulation manages
   private def enter(t: Traversable, dist: Double) = t.queue.enter(this, dist)
-  private def exit(t: Traversable) = t.queue.exit(this, at.dist)
+  private def exit(t: Traversable) {
+    t.queue.exit(this, at.dist)
+  }
   private def move(t: Traversable, new_dist: Double, old_dist: Double) =
     t.queue.move(this, new_dist, old_dist)
 
@@ -317,7 +312,7 @@ class Agent(
       case _ =>
     }
     Util.log("Tickets:")
-    for (ticket <- tickets) {
+    for (ticket <- tickets.values) {
       Util.log(s"  $ticket waiting for ${ticket.how_long_waiting}")
       Util.log("  Gridlock? " + Intersection.detect_gridlock(ticket.turn))
     }
@@ -338,15 +333,24 @@ class Agent(
                         sim.tick - idle_since
   def is_stopped = speed <= cfg.epsilon
 
-  def involved_with(i: Intersection) = all_tickets(i).nonEmpty
-  def get_ticket(turn: Turn) = tickets.find(t => t.turn == turn)
-  def all_tickets(i: Intersection) = tickets.filter(t => t.intersection == i)
+  def add_ticket(ticket: Ticket) {
+    Util.assert_eq(ticket.a, this)
+    Util.assert_eq(tickets.contains(ticket.turn.from), false)
+    tickets += ((ticket.turn.from, ticket))
+  }
+  def remove_ticket(ticket: Ticket) {
+    val removed = tickets.remove(ticket.turn.from)
+    Util.assert_eq(removed.get, ticket)
+  }
+  def get_ticket(from: Edge) = tickets.get(from)
+  def get_ticket(turn: Turn) = tickets.get(turn.from)
+  // TODO rm this method.
+  def all_tickets(i: Intersection) = tickets.values.filter(t => t.intersection == i)
   // If true, we will NOT block when trying to proceed past this intersection
-  // TODO if we have multiple here, complicated.
   def wont_block(i: Intersection) = at.on match {
     // We won't block any intersection if we're about to vanish
     case e: Edge if route.done(e) => true
-    case _ => tickets.find(
+    case _ => tickets.values.find(
       t => t.intersection == i && (t.is_approved || t.is_interruption)
     ).isDefined
   }
@@ -518,7 +522,10 @@ object Agent {
     a.lanechange_dist_left = r.double
     a.idle_since = r.double
     val num_tickets = r.int
-    a.tickets ++= Range(0, num_tickets).map(_ => Ticket.unserialize(r, a, sim.graph))
+    a.tickets ++= Range(0, num_tickets).map(_ => {
+      val t = Ticket.unserialize(r, a, sim.graph)
+      (t.turn.from, t)
+    })
     // Add ourselves back to a queue
     a.at.on.queue.enter(a, a.at.dist)
     a.old_lane match {
@@ -526,7 +533,7 @@ object Agent {
       case None =>
     }
     // Add ourselves back to intersections
-    for (ticket <- a.tickets if ticket.is_approved) {
+    for (ticket <- a.tickets.values if ticket.is_approved) {
       ticket.intersection.policy.unserialize_accepted(ticket)
     }
     a.at.on match {

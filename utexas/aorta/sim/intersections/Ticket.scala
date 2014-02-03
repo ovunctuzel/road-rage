@@ -24,8 +24,7 @@ class Ticket(val a: Agent, val turn: Turn) extends Ordered[Ticket] {
   // If we interrupt a reservation successfully, don't let people block us.
   var is_interruption = false
 
-  // When our turn first becomes not blocked while we're stopped, start the
-  // timer.
+  // When our turn first becomes not blocked while we're stopped, start the timer.
   private var waiting_since = -1.0
 
   //////////////////////////////////////////////////////////////////////////////
@@ -47,8 +46,7 @@ class Ticket(val a: Agent, val turn: Turn) extends Ordered[Ticket] {
 
   def approve() {
     accept_tick = a.sim.tick
-    // Allocate a spot for them. This must be called when the turn isn't
-    // blocked.
+    // Allocate a spot for them. This must be called when the turn isn't blocked.
     // TODO this messes up parallelism again...
     if (!is_interruption) {
       // When we became the interrupting ticket, we grabbed the slot.
@@ -58,7 +56,7 @@ class Ticket(val a: Agent, val turn: Turn) extends Ordered[Ticket] {
 
   def cancel() {
     Util.assert_eq(is_approved, false)
-    a.tickets.remove(this)
+    a.remove_ticket(this)
     intersection.cancel_turn(this)
   }
 
@@ -69,14 +67,13 @@ class Ticket(val a: Agent, val turn: Turn) extends Ordered[Ticket] {
   def turn_blocked(): Boolean = {
     val target = turn.to
 
-    // They might not finish LCing before an agent in the new or old lane
-    // stalls.
+    // They might not finish LCing before an agent in the new or old lane stalls.
     if (a.is_lanechanging) {
       return true
     }
 
-    // Lane-changing and spawning respect allocations of capacity too, so this
-    // tells us if we can finish the turn.
+    // Lane-changing and spawning respect allocations of capacity too, so this tells us if we can
+    // finish the turn.
     if (!target.queue.slot_avail) {
       return true
     }
@@ -110,8 +107,6 @@ class Ticket(val a: Agent, val turn: Turn) extends Ordered[Ticket] {
 
   override def toString = s"Ticket($a, $turn, approved? $is_approved. interrupt? $is_interruption)"
 
-  // TODO if an agent ever loops and requests the same turn before clearing the
-  // prev one, gonna have a bad time!
   override def compare(other: Ticket) = Ordering[Tuple2[Int, Int]].compare(
     (a.id.int, turn.id.int), (other.a.id.int, other.turn.id.int)
   )
