@@ -28,16 +28,14 @@ class Agent(
 
   var at: Position = null
 
-  // We can only set a target acceleration, which we travel at for the entire
-  // duration of timesteps.
+  // We can only set a target acceleration, which we travel at for the entire duration of timesteps.
   val max_accel = cfg.max_accel
   // TODO max_deaccel too
   var speed: Double = 0.0   // meters/sec
   var target_accel: Double = 0  // m/s^2
   private val behavior = new LookaheadBehavior(this, route)
 
-  // old_lane is where we're shifting from. we immediately warp into the target
-  // lane.
+  // old_lane is where we're shifting from. we immediately warp into the target lane.
   var old_lane: Option[Edge] = None
   var lanechange_dist_left: Double = 0
 
@@ -53,7 +51,7 @@ class Agent(
   def setup(spawn: Edge, dist: Double) {
     wallet.setup(this)
     route.setup(this)
-    at = enter(spawn, dist)
+    at = spawn.queue.enter(this, dist)
     spawn.queue.allocate_slot
     sim.insert_agent(this)
     AgentMap.maps.foreach(m => m.when_created(this))
@@ -104,7 +102,7 @@ class Agent(
 
         // Immediately enter the target lane
         behavior.transition(at.on, lane)
-        at = enter(lane, at.dist)
+        at = lane.queue.enter(this, at.dist)
         lane.queue.allocate_slot
       }
     }
@@ -120,8 +118,8 @@ class Agent(
         lanechange_dist_left -= new_dist
         if (lanechange_dist_left <= 0) {
           // Done! Leave the old queue
-          exit(lane)
-          lane.queue.free_slot
+          lane.queue.exit(this, at.dist)
+          lane.queue.free_slot()
 
           // Return to normality
           old_lane = None
@@ -132,23 +130,9 @@ class Agent(
       case None =>
     }
 
-    if (is_stopped && target_accel <= 0.0) {
-      if (idle_since == -1.0) {
-        idle_since = sim.tick
-      }
-      // We shouldn't ever stall during a turn! Leave a little slack time-wise
-      // since the agents in front might not be packed together yet...
-      /*if (how_long_idle >= cfg.dt_s * 10) {
-        at.on match {
-          case t: Turn => Util.log(s"  $this stalled during $t!")
-          case _ =>
-        }
-      }*/
-
-      // TODO get rid of this short circuit entirely?
-      if (new_dist == 0.0) {
-        return false
-      }
+    // TODO get rid of this short circuit entirely?
+    if (is_stopped && target_accel <= 0.0 && new_dist == 0.0) {
+      return false
     }
 
     val start_on = at.on
@@ -207,16 +191,16 @@ class Agent(
     // so we finally end up somewhere...
     if (start_on == current_on) {
       val old_dist = at.dist
-      at = move(start_on, current_dist, old_dist)
+      at = start_on.queue.move(this, current_dist, old_dist)
       // Also stay updated in the other queue
       old_lane match {
         // our distance is changed since we moved above...
-        case Some(lane) => move(lane, current_dist, old_dist)
+        case Some(lane) => lane.queue.move(this, current_dist, old_dist)
         case None =>
       }
     } else {
-      exit(start_on)
-      at = enter(current_on, current_dist)
+      start_on.queue.exit(this, at.dist)
+      at = current_on.queue.enter(this, current_dist)
     }
 
     return new_dist > 0.0
@@ -255,18 +239,10 @@ class Agent(
     return dist
   }
 
-  // Delegate to the queues and intersections that simulation manages
-  private def enter(t: Traversable, dist: Double) = t.queue.enter(this, dist)
-  private def exit(t: Traversable) {
-    t.queue.exit(this, at.dist)
-  }
-  private def move(t: Traversable, new_dist: Double, old_dist: Double) =
-    t.queue.move(this, new_dist, old_dist)
-
   // Caller must remove this agent from the simulation list
   def terminate(interrupted: Boolean = false) = {
     if (!interrupted) {
-      exit(at.on)
+      at.on.queue.exit(this, at.dist)
       at.on match {
         case e: Edge => e.queue.free_slot
         case _ =>
@@ -287,6 +263,16 @@ class Agent(
     behavior.set_debug(value)
     route.set_debug(value)
     wallet.set_debug(value)
+  }
+
+  def add_ticket(ticket: Ticket) {
+    Util.assert_eq(ticket.a, this)
+    Util.assert_eq(tickets.contains(ticket.turn.from), false)
+    tickets += ((ticket.turn.from, ticket))
+  }
+  def remove_ticket(ticket: Ticket) {
+    val removed = tickets.remove(ticket.turn.from)
+    Util.assert_eq(removed.get, ticket)
   }
 
   //////////////////////////////////////////////////////////////////////////////
@@ -333,15 +319,6 @@ class Agent(
                         sim.tick - idle_since
   def is_stopped = speed <= cfg.epsilon
 
-  def add_ticket(ticket: Ticket) {
-    Util.assert_eq(ticket.a, this)
-    Util.assert_eq(tickets.contains(ticket.turn.from), false)
-    tickets += ((ticket.turn.from, ticket))
-  }
-  def remove_ticket(ticket: Ticket) {
-    val removed = tickets.remove(ticket.turn.from)
-    Util.assert_eq(removed.get, ticket)
-  }
   def get_ticket(from: Edge) = tickets.get(from)
   def get_ticket(turn: Turn) = tickets.get(turn.from)
   // TODO rm this method.
@@ -359,12 +336,10 @@ class Agent(
 
   // Just see if we have enough static space to pull off a lane-change.
   def room_to_lc(target: Edge): Boolean = {
-    // One lane could be shorter than the other. When we want to avoid the end
-    // of a lane, worry about the shorter one to be safe.
+    // Worry about the shorter lane, to be safe
     val min_len = math.min(at.on.length, target.length)
 
-    // Satisfy the physical model, which requires us to finish lane-changing
-    // before reaching the intersection.
+    // Finish lane-changing before reaching the intersection
     if (at.dist + cfg.lanechange_dist + cfg.end_threshold >= min_len) {
       return false
     }
@@ -378,7 +353,7 @@ class Agent(
     // So we have to apply what will happen next...
 
     val initial_speed = speed
-    val final_speed = math.max(0.0, initial_speed + (target_accel * cfg.dt_s))
+    val final_speed = Physics.update_speed(initial_speed, target_accel, cfg.dt_s)
     val dist = Physics.dist_at_constant_accel(target_accel, cfg.dt_s, initial_speed)
     val our_max_next_speed = final_speed + (Physics.max_next_accel(final_speed, at.on.speed_limit) * cfg.dt_s)
 

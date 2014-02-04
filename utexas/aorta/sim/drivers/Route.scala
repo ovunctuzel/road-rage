@@ -231,6 +231,8 @@ class PathRoute(goal: Road, orig_router: Router, private var rerouter: Router) e
     // Pick the lane closest to the current
     //return candidates.minBy(e => math.abs(from.lane_num - e.lane_num))
 
+    // TODO lookahead a bit to lane-change early
+
     // Discretionary lane-changing: pick the lane with the fewest people ahead of us
     return (candidates.minBy(e => owner.num_ahead(e)), !candidates.contains(from))
   }

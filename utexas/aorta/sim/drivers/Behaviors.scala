@@ -10,9 +10,11 @@ import scala.collection.mutable
 
 import utexas.aorta.common.{Util, cfg, Physics}
 
+abstract class Action
+final case class Act_Set_Accel(new_accel: Double) extends Action
+final case class Act_Done_With_Route() extends Action
+
 abstract class Behavior(a: Agent) {
-  // As an optimization and to keep some stats on how successful lane-changing
-  // is, remember the adjacent lane we'd like to switch into.
   // Start null to trigger the initial case of resetting it. Have to do it at
   // "sim time" when agent's actually first moving, otherwise the route might
   // not be ready to answer us.
@@ -38,11 +40,8 @@ abstract class Behavior(a: Agent) {
 // Never speeds up from rest, so effectively never does anything
 class IdleBehavior(a: Agent) extends Behavior(a) {
   def choose_action(): Action = Act_Set_Accel(0)
-
   def choose_turn(e: Edge) = e.next_turns.head
-
   def transition(from: Traversable, to: Traversable) = {}
-
   def dump_info() {
     Util.log("Idle behavior")
   }
@@ -95,9 +94,6 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
 
   def choose_action(): Action = {
     // Do we want to lane change?
-    // TODO these issues are both controlled by routing, so move this comment there
-    // TODO 1) discretionary lane changing to pass people
-    // TODO 2) routes can lookahead a bit to tell us to lane-change early
     
     // TODO awkward way to bootstrap this.
     if (target_lane == null) {
@@ -105,8 +101,7 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
       reset_target_lane(a.at.on.asInstanceOf[Edge])
     }
 
-    // Commit to not lane-changing if it's too late. That way, we can decide on
-    // a turn.
+    // Commit to not lane-changing if it's too late. That way, we can decide on a turn.
     target_lane match {
       case Some(target) => {
         // TODO move these changes to one place, with reset_target_lane
@@ -374,7 +369,3 @@ class LookaheadStep(
         next_at.length, route
       ))
 }
-
-abstract class Action
-final case class Act_Set_Accel(new_accel: Double) extends Action
-final case class Act_Done_With_Route() extends Action
