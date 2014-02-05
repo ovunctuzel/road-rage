@@ -30,8 +30,7 @@ case class Coordinate(x: Double, y: Double) extends Ordered[Coordinate] {
   )
 
   def serialize(w: StateWriter) {
-    w.double(x)
-    w.double(y)
+    w.doubles(x, y)
   }
 }
 

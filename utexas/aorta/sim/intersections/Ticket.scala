@@ -33,10 +33,7 @@ class Ticket(val a: Agent, val turn: Turn) extends Ordered[Ticket] {
   def serialize(w: StateWriter) {
     // Agent is implied, since we belong to them
     w.int(turn.id.int)
-    w.double(req_tick)
-    w.double(accept_tick)
-    w.double(done_tick)
-    w.double(cost_paid)
+    w.doubles(req_tick, accept_tick, done_tick, cost_paid)
     w.bool(is_interruption)
     w.double(waiting_since)
   }

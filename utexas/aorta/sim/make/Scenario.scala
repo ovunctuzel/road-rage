@@ -105,8 +105,7 @@ case class Scenario(
   }
 
   def serialize(w: StateWriter) {
-    w.string(name)
-    w.string(map_fn)
+    w.strings(name, map_fn)
     w.int(agents.size)
     agents.foreach(a => a.serialize(w))
     w.int(intersections.size)
@@ -228,8 +227,7 @@ case class MkWallet(policy: WalletType.Value, budget: Int, priority: Int, bid_ah
 
   def serialize(w: StateWriter) {
     w.int(policy.id)
-    w.int(budget)
-    w.int(priority)
+    w.ints(budget, priority)
     w.bool(bid_ahead)
   }
 }
@@ -280,12 +278,10 @@ case class SystemWalletConfig(
     s"SystemWalletConfig(thruput_bonus = $thruput_bonus, avail_capacity_threshold = $avail_capacity_threshold, capacity_bonus = $capacity_bonus, dependency_rate = $dependency_rate, waiting_rate = $waiting_rate, ready_bonus = $ready_bonus)"
 
   def serialize(w: StateWriter) {
-    w.int(thruput_bonus)
-    w.int(avail_capacity_threshold)
-    w.int(capacity_bonus)
-    w.int(dependency_rate)
-    w.int(waiting_rate)
-    w.int(ready_bonus)
+    w.ints(
+      thruput_bonus, avail_capacity_threshold, capacity_bonus, dependency_rate, waiting_rate,
+      ready_bonus
+    )
   }
 }
 

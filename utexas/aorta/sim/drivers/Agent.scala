@@ -67,8 +67,7 @@ class Agent(
 
     // Then the rest of our state
     at.serialize(w)
-    w.double(speed)
-    w.double(target_accel)
+    w.doubles(speed, target_accel)
     behavior.get_target_lane match {
       case Some(e) => w.int(e.id.int)
       case None => w.int(-1)

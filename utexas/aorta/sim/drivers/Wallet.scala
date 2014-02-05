@@ -39,8 +39,7 @@ abstract class Wallet(initial_budget: Int, val priority: Int) {
   def serialize(w: StateWriter) {
     w.int(wallet_type.id)
     // TODO initial budget vs current... will it matter?
-    w.int(budget)
-    w.int(priority)
+    w.ints(budget, priority)
     w.int(tooltip.size)
     tooltip.foreach(line => w.string(line))
     w.bool(dark_tooltip)

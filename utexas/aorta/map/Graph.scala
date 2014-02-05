@@ -26,11 +26,7 @@ class Graph(
   // Meta
 
   def serialize(w: MapStateWriter) {
-    w.double(width)
-    w.double(height)
-    w.double(offX)
-    w.double(offY)
-    w.double(scale)
+    w.doubles(width, height, offX, offY, scale)
     w.int(roads.size)
     roads.foreach(r => r.serialize(w))
     w.int(edges.size)
