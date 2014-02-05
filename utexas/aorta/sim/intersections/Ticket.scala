@@ -68,7 +68,7 @@ class Ticket(val a: Agent, val turn: Turn) extends Ordered[Ticket] {
     val target = turn.to
 
     // They might not finish LCing before an agent in the new or old lane stalls.
-    if (a.is_lanechanging) {
+    if (a.lc.is_lanechanging) {
       return true
     }
 

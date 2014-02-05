@@ -35,15 +35,13 @@ class Agent(
   var target_accel: Double = 0  // m/s^2
   private val behavior = new LookaheadBehavior(this, route)
 
-  // old_lane is where we're shifting from. we immediately warp into the target lane.
-  var old_lane: Option[Edge] = None
-  var lanechange_dist_left: Double = 0
-
   // how long has our speed been 0?
   private var idle_since = -1.0
 
   // keyed by origin lane
   private val tickets = new mutable.HashMap[Edge, Ticket]()
+
+  val lc = new LaneChangingHandler(this, behavior)  // TODO private
 
   //////////////////////////////////////////////////////////////////////////////
   // Meta
@@ -75,11 +73,11 @@ class Agent(
       case Some(e) => w.int(e.id.int)
       case None => w.int(-1)
     }
-    old_lane match {
+    lc.old_lane match {
       case Some(e) => w.int(e.id.int)
       case None => w.int(-1)
     }
-    w.double(lanechange_dist_left)
+    w.double(lc.lanechange_dist_left)
     w.double(idle_since)
     w.int(tickets.size)
     tickets.values.toList.sorted.foreach(ticket => ticket.serialize(w))
@@ -90,45 +88,14 @@ class Agent(
 
   // Returns true if we move or do anything at all
   def step(): Boolean = {
-    // If we're not already lane-changing, should we start?
-    if (!is_lanechanging && on_a_lane) {
-      behavior.get_target_lane match {
-        case Some(lane) if lane != at.on && safe_to_lc(lane) => {
-          // We have to cover a fixed distance to lane-change.
-          lanechange_dist_left = cfg.lanechange_dist
-          old_lane = Some(at.on.asInstanceOf[Edge])
-
-          // Immediately enter the target lane
-          behavior.transition(at.on, lane)
-          at = lane.queue.enter(this, at.dist)
-          lane.queue.allocate_slot()
-        }
-        case _ =>
-      }
-    }
+    lc.start_lc()
 
     // Do physics to update current speed and figure out how far we've traveled
     // in this timestep.
     // Subtle note: Do this after LCing, else we see the wrong speed
     val new_dist = update_kinematics(cfg.dt_s)
 
-    // Currently lane-changing?
-    old_lane match {
-      case Some(lane) => {
-        lanechange_dist_left -= new_dist
-        if (lanechange_dist_left <= 0) {
-          // Done! Leave the old queue
-          lane.queue.exit(this, at.dist)
-          lane.queue.free_slot()
-
-          // Return to normality
-          old_lane = None
-          lanechange_dist_left = 0
-          // We'll only shift lanes once per tick.
-        }
-      }
-      case None =>
-    }
+    lc.stop_lc(new_dist)
 
     // TODO get rid of this short circuit entirely?
     if (is_stopped && target_accel <= 0.0 && new_dist == 0.0) {
@@ -153,7 +120,7 @@ class Agent(
     var current_dist = old_dist + new_dist
 
     while (current_dist >= current_on.length) {
-      if (current_on != start_on && is_lanechanging) {
+      if (current_on != start_on && lc.is_lanechanging) {
         throw new Exception(this + " just entered an intersection while lane-changing!")
       }
       current_dist -= current_on.length
@@ -193,7 +160,7 @@ class Agent(
       val old_dist = at.dist
       at = start_on.queue.move(this, current_dist, old_dist)
       // Also stay updated in the other queue
-      old_lane match {
+      lc.old_lane match {
         // our distance is changed since we moved above...
         case Some(lane) => lane.queue.move(this, current_dist, old_dist)
         case None =>
@@ -302,13 +269,9 @@ class Agent(
       Util.log(s"  $ticket waiting for ${ticket.how_long_waiting}")
       Util.log("  Gridlock? " + Intersection.detect_gridlock(ticket.turn))
     }
-    if (is_lanechanging) {
-      Util.log(s"Lane-changing from ${old_lane.get}. $lanechange_dist_left to go!")
-    } else {
-      Util.log("Not lane-changing")
-    }
-    behavior.dump_info
-    Util.log_pop
+    lc.dump_info()
+    behavior.dump_info()
+    Util.log_pop()
   }
 
   def kinematic = Kinematic(at.dist, speed, at.on.speed_limit)
@@ -332,124 +295,9 @@ class Agent(
     ).isDefined
   }
 
-  def is_lanechanging = old_lane.isDefined
   def on_a_lane = at.on match {
     case e: Edge => true
     case t: Turn => false
-  }
-
-  // Just see if we have enough static space to pull off a lane-change.
-  def room_to_lc(target: Edge): Boolean = {
-    // Worry about the shorter lane, to be safe
-    val min_len = math.min(at.on.length, target.length)
-
-    // Finish lane-changing before reaching the intersection
-    if (at.dist + cfg.lanechange_dist + cfg.end_threshold >= min_len) {
-      return false
-    }
-
-    // Furthermore, we probably have to stop for the intersection, so be sure we
-    // have enough room to do that.
-    // This is confusing, but we're called in two places, the most important of
-    // which is step(), right before an acceleration chosen in the previous tick
-    // will be applied. The behavior chose that acceleration assuming we'd be in
-    // the old lane, not the new. TODO redo the reaction here?
-    // So we have to apply what will happen next...
-
-    val initial_speed = speed
-    val final_speed = Physics.update_speed(initial_speed, target_accel, cfg.dt_s)
-    val dist = Physics.dist_at_constant_accel(target_accel, cfg.dt_s, initial_speed)
-    val our_max_next_speed = final_speed + (Physics.max_next_accel(final_speed, at.on.speed_limit) * cfg.dt_s)
-
-    if (at.dist + dist + Physics.stopping_distance(our_max_next_speed) >= min_len) {
-      return false
-    }
-    
-    return true
-  }
-
-  // Would we cut anybody off if we LC in front of them?
-  def can_lc_without_blocking(target: Edge): Boolean = {
-    // TODO is it ok to cut off somebody thats done with their route?
-    val intersection = target.to.intersection
-    return !target.queue.all_agents.find(
-      agent => agent.at.dist < at.dist && agent.wont_block(intersection)
-    ).isDefined && !target.dont_block
-  }
-
-  def can_lc_without_crashing(target: Edge): Boolean = {
-    // We don't want to merge in too closely to the agent ahead of us, nor do we
-    // want to make somebody behind us risk running into us. So just make sure
-    // there are no agents in that danger range.
-    // TODO assumes all vehicles the same. not true forever.
-
-    val initial_speed = speed
-    val final_speed = math.max(0.0, initial_speed + (target_accel * cfg.dt_s))
-    val this_dist = Physics.dist_at_constant_accel(target_accel, cfg.dt_s, initial_speed)
-
-    // TODO this is overconservative too. we wont pick max next dist if we see
-    // somebody in front of us!
-    val ahead_dist = cfg.follow_dist + Physics.max_next_dist_plus_stopping(final_speed, target.speed_limit)
-    // For behind, assume somebody behind us is going full speed. Give them time
-    // to stop fully and not hit where we are now (TODO technically should
-    // account for the dist we'll travel, but hey, doesnt hurt to be safe...
-    // Don't forget they haven't applied their step this turn either!
-    val behind_dist = (target.speed_limit * cfg.dt_s) + cfg.follow_dist + Physics.max_next_dist_plus_stopping(target.speed_limit, target.speed_limit)
-
-    // TODO +dist for behind as well, but hey, overconservative doesnt hurt for
-    // now...
-    val nearby = target.queue.all_in_range(
-      at.dist - behind_dist, true, at.dist + this_dist + ahead_dist, true
-    )
-    return nearby.isEmpty
-  }
-
-  private def safe_to_lc(target: Edge): Boolean = {
-    at.on match {
-      case e: Edge => {
-        if (e.road != target.road) {
-          throw new Exception(this + " wants to lane-change across roads")
-        }
-        if (math.abs(target.lane_num - e.lane_num) != 1) {
-          throw new Exception(this + " wants to skip lanes when lane-changing")
-        }                                                               
-      }
-      case t: Turn => throw new Exception(this + " wants to lane-change from a turn")
-    }
-
-    if (!room_to_lc(target)) {
-      return false
-    }
-
-    // Does the target queue have capacity? Don't cause gridlock!
-    if (!target.queue.slot_avail) {
-      return false
-    }
-    if (!can_lc_without_blocking(target)) {
-      return false
-    }
-
-    // If there's somebody behind us on the target, or if we're beyond the
-    // worst-case entry distance, we don't have to worry about drivers on other
-    // roads about to take turns and fly into the new lane. But if we are
-    // concerned, just ask the intersection!
-    if (!target.queue.closest_behind(at.dist).isDefined &&
-        at.dist <= at.on.worst_entry_dist + cfg.follow_dist)
-    {
-      // Smart look-behind: the intersection knows.
-      val beware = target.from.intersection.policy.approveds_to(target)
-      // TODO for now, if theres any -- worry. could do more work using the
-      // below to see if they'll wind up too close, though.
-      if (beware.nonEmpty) {
-        return false
-      }
-    }
-
-    if (!can_lc_without_crashing(target)) {
-      return false
-    }
-
-    return true
   }
 
   def cur_queue = at.on.queue
@@ -461,7 +309,7 @@ class Agent(
     // If we're not there yet, then all of them are ahead!
     case _ => e.queue.agents.size
   }
-  def on(t: Traversable) = (at.on, old_lane) match {
+  def on(t: Traversable) = (at.on, lc.old_lane) match {
     case (ours, _) if ours == t => true
     case (_, Some(l)) if l == t => true
     case _ => false
@@ -494,11 +342,11 @@ object Agent {
       case -1 => None
       case x => Some(sim.graph.edges(x))
     })
-    a.old_lane = r.int match {
+    a.lc.old_lane = r.int match {
       case -1 => None
       case x => Some(sim.graph.edges(x))
     }
-    a.lanechange_dist_left = r.double
+    a.lc.lanechange_dist_left = r.double
     a.idle_since = r.double
     val num_tickets = r.int
     a.tickets ++= Range(0, num_tickets).map(_ => {
@@ -507,7 +355,7 @@ object Agent {
     })
     // Add ourselves back to a queue
     a.at.on.queue.enter(a, a.at.dist)
-    a.old_lane match {
+    a.lc.old_lane match {
       case Some(e) => e.queue.enter(a, a.at.dist)
       case None =>
     }

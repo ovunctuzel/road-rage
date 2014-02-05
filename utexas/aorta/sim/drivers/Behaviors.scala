@@ -54,6 +54,7 @@ class IdleBehavior(a: Agent) extends Behavior(a) {
 // Reactively avoids collisions and obeys intersections by doing a conservative
 // analysis of the next few steps.
 class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
+  // TODO move this and some other stuff to LaneChangingModule too?
   private def pick_target_lane(): Edge = {
     if (target_lane.isDefined) {
       throw new IllegalStateException("Target lane already set")
@@ -109,7 +110,7 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
         // turn now.
         // TODO call without_blocking too
         // TODO in room_to_lc, dont need tick ahead stuff.
-        if (!a.room_to_lc(target) || (a.is_stopped && !a.can_lc_without_crashing(target))) {
+        if (!a.lc.room_to_lc(target) || (a.is_stopped && !a.lc.can_lc_without_crashing(target))) {
           target_lane = Some(cur_lane)
         }
       }
@@ -234,7 +235,7 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
   // When we're lane-changing, lookahead takes care of the new path. But we
   // still have to pay attention to exactly one other agent: the one in front of
   // us on our old lane.
-  def constraint_lc_agent(): Option[Double] = a.old_lane match {
+  def constraint_lc_agent(): Option[Double] = a.lc.old_lane match {
     case Some(e) => e.queue.ahead_of(a) match {
       case Some(other) => {
         val dist_away = other.at.dist - a.at.dist

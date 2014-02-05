@@ -97,7 +97,7 @@ class Queue(t: Traversable) {
     for ((a1, a2) <- alist.zip(alist.tail)) {
       if (a1.at.dist < a2.at.dist + cfg.follow_dist) {
         Util.log(s"It's ${a1.sim.tick}")
-        Util.log(s"LCing? ${a1.old_lane} (${a1.lanechange_dist_left}), ${a2.old_lane} (${a2.lanechange_dist_left})")
+        Util.log(s"LCing? ${a1.lc.old_lane} (${a1.lc.lanechange_dist_left}), ${a2.lc.old_lane} (${a2.lc.lanechange_dist_left})")
         throw new Exception(
           s"$a2 too close to $a1 on $t (" + (a1.at.dist - a2.at.dist) + ")"
         )
