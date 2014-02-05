@@ -52,7 +52,7 @@ class Agent(
     wallet.setup(this)
     route.setup(this)
     at = spawn.queue.enter(this, dist)
-    spawn.queue.allocate_slot
+    spawn.queue.allocate_slot()
     sim.insert_agent(this)
     AgentMap.maps.foreach(m => m.when_created(this))
     set_debug(Flags.int("--track", -1) == id.int)
@@ -519,6 +519,9 @@ object Agent {
       case t: Turn => t.vert.intersection.enter(a.get_ticket(t).get)
       case _ =>
     }
+    // TODO other things in setup(), like setting debug_me?
+    a.wallet.setup(a)
+    a.route.setup(a)
     return a
   }
 }
