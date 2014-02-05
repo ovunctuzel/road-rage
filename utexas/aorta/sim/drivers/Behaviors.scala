@@ -15,10 +15,9 @@ final case class Act_Set_Accel(new_accel: Double) extends Action
 final case class Act_Done_With_Route() extends Action
 
 abstract class Behavior(a: Agent) {
-  // Start null to trigger the initial case of resetting it. Have to do it at
-  // "sim time" when agent's actually first moving, otherwise the route might
-  // not be ready to answer us.
-  var target_lane: Option[Edge] = null
+  // None indicates we need to decide. If it's equal to the agent's current lane, then no
+  // lane-changing needed.
+  protected var target_lane: Option[Edge] = None
 
   protected var debug_me = false
 
@@ -30,10 +29,15 @@ abstract class Behavior(a: Agent) {
   def transition(from: Traversable, to: Traversable)
   // just for debugging
   def dump_info()
-  def wants_to_lc(): Boolean = target_lane != null && target_lane.isDefined
 
   def set_debug(value: Boolean) {
     debug_me = value
+  }
+
+  // TODO Haven't settled on the "private write, public read" style yet.
+  def get_target_lane = target_lane
+  def init_target_lane(lane: Option[Edge]) {
+    target_lane = lane
   }
 }
 
@@ -50,67 +54,63 @@ class IdleBehavior(a: Agent) extends Behavior(a) {
 // Reactively avoids collisions and obeys intersections by doing a conservative
 // analysis of the next few steps.
 class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
-  private def reset_target_lane(base: Edge) = {
-    target_lane = None
-    // Did lookahead previously schedule a turn for this road? We can't
-    // lane-change, then! Already committed.
-    if (!a.get_ticket(base).isDefined) {
+  private def pick_target_lane(): Edge = {
+    if (target_lane.isDefined) {
+      throw new IllegalStateException("Target lane already set")
+    }
+    val base = a.at.on.asInstanceOf[Edge]
+
+    // If we already committed to a turn, then don't lane-change.
+    if (a.get_ticket(base).isDefined) {
+      return base
+    } else {
       val goal = route.pick_final_lane(base)._1
-      val target = base.adjacent_lanes.minBy(choice => math.abs(choice.lane_num - goal.lane_num))
-      // Tough liveness guarantees... give up early.
-      // TODO move this check to give up to react()
-      if (target != base && a.can_lc_without_blocking(target)) {
-        target_lane = Some(target)
-        Util.assert_eq(a.get_ticket(base).isDefined, false)
-      }
+      return base.adjacent_lanes.minBy(choice => math.abs(choice.lane_num - goal.lane_num))
     }
   }
 
-  // Don't commit to turning from some lane in lookahead unless we're there are
-  // LCing could still happen, or if it's a future edge with no other lanes.
+  // Don't necessarily commit to turning from some lane in lookahead
   private def committed_to_lane(step: LookaheadStep) = step.at match {
-    case e if e == a.at.on => !target_lane.isDefined
+    case e if e == a.at.on => target_lane match {
+      case Some(target) => target == e
+      case None => false
+    }
     case e: Edge => e.other_lanes.size == 1
-    case t: Turn => throw new Exception(s"Requesting a turn from a turn $step?!")
+    case t: Turn => throw new IllegalArgumentException(s"Requesting a turn from a turn $step?!")
   }
   
-  // TODO Or lookup in tickets now?
-  def choose_turn(e: Edge) = route.pick_turn(e)
+  override def choose_turn(e: Edge) = a.get_ticket(e).get.turn
   
-  def transition(from: Traversable, to: Traversable) = {
+  override def transition(from: Traversable, to: Traversable) {
     route.transition(from, to)
-    // reset state
-    to match {
-      case e: Edge => reset_target_lane(e)
-      case _ => target_lane = None
-    }
+    target_lane = None
   }
 
-  def dump_info() {
+  override def dump_info() {
     Util.log("Route-following behavior")
     Util.log(s"Target lane: $target_lane")
-    route.dump_info
+    route.dump_info()
   }
 
   def choose_action(): Action = {
-    // Do we want to lane change?
-    
-    // TODO awkward way to bootstrap this.
-    if (target_lane == null) {
-      // Should be an edge, since we start on edges.
-      reset_target_lane(a.at.on.asInstanceOf[Edge])
+    // Do we want to lane-change?
+    (target_lane, a.at.on) match {
+      case (None, e: Edge) => target_lane = Some(pick_target_lane)
+      case _ =>
     }
 
-    // Commit to not lane-changing if it's too late. That way, we can decide on a turn.
-    target_lane match {
-      case Some(target) => {
-        // TODO move these changes to one place, with reset_target_lane
+    // Give up one lane-changing and settle on a turn?
+    (target_lane, a.at.on) match {
+      case (Some(target), cur_lane: Edge) if target != cur_lane => {
+        // TODO left off here.
         // No room? Fundamentally impossible
         // Somebody in the way? If we're stalled and somebody's in the way,
         // we're probably waiting in a queue. Don't waste time hoping, grab a
         // turn now.
+        // TODO call without_blocking too
+        // TODO in room_to_lc, dont need tick ahead stuff.
         if (!a.room_to_lc(target) || (a.is_stopped && !a.can_lc_without_crashing(target))) {
-          target_lane = None
+          target_lane = Some(cur_lane)
         }
       }
       case _ =>

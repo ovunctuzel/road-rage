@@ -266,7 +266,7 @@ class PathRoute(goal: Road, orig_router: Router, private var rerouter: Router) e
 
   def route_type = RouteType.Path
   def dump_info() {
-    Util.log(s"Static route to $goal using $path")
+    Util.log(s"Path route to $goal using $path")
   }
 
   def roads = path.toSet

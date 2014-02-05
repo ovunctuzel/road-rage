@@ -71,7 +71,7 @@ class Agent(
     at.serialize(w)
     w.double(speed)
     w.double(target_accel)
-    behavior.target_lane match {
+    behavior.get_target_lane match {
       case Some(e) => w.int(e.id.int)
       case None => w.int(-1)
     }
@@ -90,20 +90,20 @@ class Agent(
 
   // Returns true if we move or do anything at all
   def step(): Boolean = {
-    // If they're not already lane-changing, should they start?
-    if (!is_lanechanging && behavior.wants_to_lc) {
-      val lane = behavior.target_lane.get
-      if (safe_to_lc(lane)) {
-        // We have to cover a fixed distance to lane-change. The scaling is kind
-        // of arbitrary and just forces lane-changing to not be completely
-        // instantaneous at higher speeds.
-        lanechange_dist_left = cfg.lanechange_dist
-        old_lane = Some(at.on.asInstanceOf[Edge])
+    // If we're not already lane-changing, should we start?
+    if (!is_lanechanging && on_a_lane) {
+      behavior.get_target_lane match {
+        case Some(lane) if lane != at.on && safe_to_lc(lane) => {
+          // We have to cover a fixed distance to lane-change.
+          lanechange_dist_left = cfg.lanechange_dist
+          old_lane = Some(at.on.asInstanceOf[Edge])
 
-        // Immediately enter the target lane
-        behavior.transition(at.on, lane)
-        at = lane.queue.enter(this, at.dist)
-        lane.queue.allocate_slot
+          // Immediately enter the target lane
+          behavior.transition(at.on, lane)
+          at = lane.queue.enter(this, at.dist)
+          lane.queue.allocate_slot()
+        }
+        case _ =>
       }
     }
 
@@ -333,6 +333,10 @@ class Agent(
   }
 
   def is_lanechanging = old_lane.isDefined
+  def on_a_lane = at.on match {
+    case e: Edge => true
+    case t: Turn => false
+  }
 
   // Just see if we have enough static space to pull off a lane-change.
   def room_to_lc(target: Edge): Boolean = {
@@ -410,7 +414,7 @@ class Agent(
           throw new Exception(this + " wants to skip lanes when lane-changing")
         }                                                               
       }
-      case _ => throw new Exception(this + " wants to lane-change from a turn!")
+      case t: Turn => throw new Exception(this + " wants to lane-change from a turn")
     }
 
     if (!room_to_lc(target)) {
@@ -486,10 +490,10 @@ object Agent {
     a.at = Position.unserialize(r, sim.graph)
     a.speed = r.double
     a.target_accel = r.double
-    a.behavior.target_lane = r.int match {
+    a.behavior.init_target_lane(r.int match {
       case -1 => None
       case x => Some(sim.graph.edges(x))
-    }
+    })
     a.old_lane = r.int match {
       case -1 => None
       case x => Some(sim.graph.edges(x))
