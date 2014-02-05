@@ -5,17 +5,11 @@
 package utexas.aorta.common
 
 import scala.util.Random
-import java.io.Serializable
 import scala.collection.mutable
 
 // For uniform distributions
-class RNG(seed: Long = System.currentTimeMillis) extends Serializable {
+class RNG(seed: Long = System.currentTimeMillis) {
   private val rng = new Random(seed)
-
-  def serialize(w: StateWriter) {
-    // TODO cant debug with string state RWs...
-    w.obj(this)
-  }
 
   def double(min: Double, max: Double): Double =
     if (min > max)
@@ -33,10 +27,6 @@ class RNG(seed: Long = System.currentTimeMillis) extends Serializable {
 
   // From http://en.wikipedia.org/wiki/Exponential_distribution#Generating_exponential_variates
   def sample_exponential(lambda: Double) = -math.log(double(0, 1)) / lambda
-}
-
-object RNG {
-  def unserialize(r: StateReader): RNG = r.obj.asInstanceOf[RNG]
 }
 
 // Return approximately n increasing numbers in the range [start, end]

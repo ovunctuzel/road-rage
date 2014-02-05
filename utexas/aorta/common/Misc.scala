@@ -4,7 +4,7 @@
 
 package utexas.aorta.common
 
-import java.io.{FileWriter, Serializable, File, PrintWriter}
+import java.io.{FileWriter, File, PrintWriter}
 import scala.annotation.elidable
 import scala.annotation.elidable.ASSERTION
 import java.awt.Color

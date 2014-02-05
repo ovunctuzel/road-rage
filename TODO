@@ -43,7 +43,6 @@
 - rename edges as lanes? policy -> controller? vertex -> junction? agent -> driver?
 - hard to have multiple sims due to objects with state: Graph (norm coords), system wallets,
   AgentMap, ReplayDiffScheme, GUI
-- https://github.com/scala/pickling
 - reduce vars and publics and mutable collections
 - distance/time types
 - merge headless/gui clients

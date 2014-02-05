@@ -4,11 +4,12 @@
 
 package utexas.aorta.common
 
-import java.io.{FileWriter, Serializable}
-import scala.io.Source
-
 import java.io.{ObjectOutputStream, FileOutputStream, ObjectInputStream,
                 FileInputStream, PrintWriter, BufferedReader, FileReader, File}
+
+trait Serializable {
+  def serialize(w: StateWriter)
+}
 
 // TODO make stats, maps, scenarios -- everything -- use these.
 abstract class StateWriter(fn: String) {
@@ -18,7 +19,6 @@ abstract class StateWriter(fn: String) {
   def string(x: String)
   def bool(x: Boolean)
   def long(x: Long)
-  def obj(x: Any)   // TODO remove.
 
   // TODO a macro to do lots of these in one line?
 }
@@ -44,9 +44,6 @@ class BinaryStateWriter(fn: String) extends StateWriter(fn) {
   def long(x: Long) {
     out.writeLong(x)
   }
-  def obj(x: Any) {
-    out.writeObject(x)
-  }
 }
 
 class StringStateWriter(fn: String) extends StateWriter(fn) {
@@ -70,9 +67,6 @@ class StringStateWriter(fn: String) extends StateWriter(fn) {
   def long(x: Long) {
     out.println(x)
   }
-  def obj(x: Any) {
-    out.println(x)
-  }
 }
 
 abstract class StateReader(fn: String) {
@@ -81,7 +75,6 @@ abstract class StateReader(fn: String) {
   def string: String
   def bool: Boolean
   def long: Long
-  def obj: Any
 }
 
 class BinaryStateReader(fn: String) extends StateReader(fn) {
@@ -91,7 +84,6 @@ class BinaryStateReader(fn: String) extends StateReader(fn) {
   def string = in.readUTF
   def bool = in.readBoolean
   def long = in.readLong
-  def obj = in.readObject
 }
 
 class StringStateReader(fn: String) extends StateReader(fn) {
@@ -101,8 +93,4 @@ class StringStateReader(fn: String) extends StateReader(fn) {
   def string = in.readLine
   def bool = in.readLine.toBoolean
   def long = in.readLine.toLong
-  def obj: Any = {
-    in.readLine
-    return null
-  }
 }
