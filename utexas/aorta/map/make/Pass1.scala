@@ -97,7 +97,7 @@ object Pass1 {
     "multipolygon",   // WHY ARE THERE SO MANY
     "power",          // AHHH DON'T SHOCK ME
     // cycleway is marked in addition to being highway=tertiary... geez.
-    "path", "footway", "bridleway", "steps", "pedestrian", "bus_guideway"
+    "cycleway", "path", "footway", "bridleway", "steps", "pedestrian", "bus_guideway"
     // TODO cemeteries in Houston, real roads in BTR, alleys in ATX...
     // they all cause problems when they have no name:
     // "service"
