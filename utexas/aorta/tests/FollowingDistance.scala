@@ -19,15 +19,16 @@ object FollowingDistance {
       //val follower_choice = follower.accel_to_follow(leader, leader.dist - follower.dist)
       //val follower_choice = fixed_worst_case(follower, leader)
       //val follower_choice = fixed_best_case(follower, leader)
-      val follower_choice = dynamic_best_case(follower, leader)
+      //val follower_choice = dynamic_best_case(follower, leader)
+      val follower_choice = levin(follower, leader)
 
       leader = step(leader, leader_choice)
       follower = step(follower, follower_choice)
       println(s"leader ${descr(leader)} and follower ${descr(follower)}.")
-      println(s"leader used $leader_choice, follower used $follower_choice")
+      println(s"leader used acceleration $leader_choice, follower used $follower_choice")
       val dist = leader.dist - follower.dist
-      println(s"  $dist separation, ${follower.speed} speed")
-      println(s"  ideally ${following_dist(leader.speed)} separation (one tick off though?)")
+      println(s"  $dist separation, ${follower.speed} speed of follower")
+      //println(s"  ideally ${following_dist(leader.speed)} separation (one tick off though?)")
       if (dist < cfg.follow_dist) {
         println("  *** follower is too close")
       }
@@ -67,6 +68,13 @@ object FollowingDistance {
     println(s"  their max total $their_max_dist")
     println(s"  want to wind up at $want_final_dist")
     return Physics.accel_to_cover(want_final_dist - follower.dist, follower.speed)
+  }
+
+  private def levin(follower: Kinematic, leader: Kinematic): Double = {
+    val pt1 = leader.dist + (leader.speed * cfg.dt_s) + (0.5 * -cfg.max_accel * cfg.dt_s * cfg.dt_s)
+    val pt2 = -follower.dist - (follower.speed * cfg.dt_s) - cfg.follow_dist
+    val pt3 = 0.5 * cfg.dt_s * cfg.dt_s
+    return (pt1 + pt2) / pt3
   }
 
   private def following_dist(speed: Double) = cfg.follow_dist + Physics.min_next_dist(speed)
