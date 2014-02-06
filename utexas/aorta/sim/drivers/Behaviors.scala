@@ -4,7 +4,7 @@
 
 package utexas.aorta.sim.drivers
 
-import utexas.aorta.map.{Edge, Road, Turn, Traversable}
+import utexas.aorta.map.{Edge, Road, Turn, Traversable, Position}
 import utexas.aorta.sim.intersections.Ticket
 import scala.collection.mutable
 
@@ -45,7 +45,7 @@ class IdleBehavior(a: Agent) extends Behavior(a) {
 // analysis of the next few steps.
 class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
   // Don't necessarily commit to turning from some lane in lookahead
-  private def committed_to_lane(step: LookaheadStep) = step.at match {
+  private def committed_to_lane(step: LookaheadStep) = step.at.on match {
     case e if e == a.at.on => a.lc.target_lane match {
       case Some(target) => target == e
       case None => false
@@ -73,22 +73,18 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
   }
 
   // Returns Act_Set_Accel almost always.
-  def max_safe_accel(): Action = {
+  private def max_safe_accel(): Action = {
     // Since we can't react instantly, we have to consider the worst-case of the
     // next tick, which happens when we speed up as much as possible this tick.
 
     // the output.
     var accel_for_stop: Option[Double] = None
     var accel_for_agent: Option[Double] = None
-    var accel_for_lc_agent: Option[Double] = None
     var min_speed_limit = Double.MaxValue
     var done_with_route = false
+    val accel_for_lc_agent = constraint_lc_agent
 
-    var step = new LookaheadStep(
-      a.at.on, a.kinematic.max_lookahead_dist, 0, a.at.dist_left, route
-    )
-
-    accel_for_lc_agent = constraint_lc_agent
+    var step = LookaheadStep(a.at, a.kinematic.max_lookahead_dist, 0, route)
 
     // Verify lookahead doesn't cycle to the same road twice; if it does, the route should pick the
     // second turn during the first choice!
@@ -98,7 +94,7 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
     // far enough behind an agent. Once we have to stop somewhere, don't worry
     // about agents beyond that point.
     while (step != null && !accel_for_stop.isDefined) {
-      step.at match {
+      step.at.on match {
         case e: Edge => {
           if (visited.contains(e.road)) {
             throw new Exception(s"Lookahead visited ${e.road} twice!")
@@ -121,18 +117,18 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
 
       // How many LCs do we anticipate here? Slown down to increase chances of doing multi-LCs
       // TODO (This is a bit ad-hoc)
-      step.at match {
+      step.at.on match {
         case e: Edge => route.pick_final_lane(e) match {
           case (target, true) => {
             val num_lcs = math.abs(e.lane_num - target.lane_num)
-            min_speed_limit = math.min(min_speed_limit, step.at.speed_limit / math.max(1, num_lcs))
+            min_speed_limit = math.min(min_speed_limit, e.speed_limit / math.max(1, num_lcs))
           }
           case _ => // Don't slow down for unnecessary LCs
         }
         case _ =>
       }
 
-      min_speed_limit = math.min(min_speed_limit, step.at.speed_limit)
+      min_speed_limit = math.min(min_speed_limit, step.at.on.speed_limit)
 
       // Set the next step.
       step = step.next_step match {
@@ -141,8 +137,6 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
       }
     }
 
-    // TODO consider moving this first case to choose_action and not doing
-    // lookahead when these premises hold true.
     return if (done_with_route) {
       Act_Done_With_Route()
     } else {
@@ -163,36 +157,32 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
 
   // All constraint functions return a limiting acceleration, if relevant
   // Don't plow into people
-  def constraint_agent(step: LookaheadStep): Option[Double] = {
-    val follow_agent = if (a.at.on == step.at)
+  private def constraint_agent(step: LookaheadStep): Option[Double] = {
+    val follow_agent = if (a.at.on == step.at.on)
                          a.cur_queue.ahead_of(a)
                        else
-                         step.at.queue.last
+                         step.at.on.queue.last
     return follow_agent match {
-      // This happens when we grab the last person off the next step's queue
-      // for lanechanging. Lookahead for lanechanging will change soon anyway,
-      // for now just avoid this case. TODO
-      case Some(other) if a == other => None  // TODO next to last?
       case Some(other) => {
+        Util.assert_ne(a, other)
         val dist_away = if (other.on(a.at.on))
                           other.at.dist - a.at.dist
                         else
-                          step.dist_ahead + other.at.dist
+                          step.dist_so_far + other.at.dist
         Some(a.kinematic.accel_to_follow(other.kinematic, dist_away))
       }
       case None => None
     }
   }
 
-  // When we're lane-changing, lookahead takes care of the new path. But we
-  // still have to pay attention to exactly one other agent: the one in front of
-  // us on our old lane.
-  def constraint_lc_agent(): Option[Double] = a.lc.old_lane match {
+  // When we're lane-changing, lookahead takes care of the new path. But we still have to pay
+  // attention to exactly one other agent: the one in front of us on our old lane. Since we're
+  // required to finish lane-changing before reaching the end of the lane, don't have to do full
+  // lookahead there.
+  private def constraint_lc_agent(): Option[Double] = a.lc.old_lane match {
     case Some(e) => e.queue.ahead_of(a) match {
-      case Some(other) => {
-        val dist_away = other.at.dist - a.at.dist
-        Some(a.kinematic.accel_to_follow(other.kinematic, dist_away))
-      }
+      case Some(other) =>
+        Some(a.kinematic.accel_to_follow(other.kinematic, other.at.dist - a.at.dist))
       case None => None
     }
     case None => None
@@ -200,13 +190,12 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
 
   // Returns an optional acceleration, or 'true', which indicates the agent
   // is totally done.
-  def constraint_stop(step: LookaheadStep): Either[Option[Double], Boolean] = {
+  private def constraint_stop(step: LookaheadStep): Either[Option[Double], Boolean] = {
     // Request a turn early?
-    step.at match {
+    step.at.on match {
       case e: Edge if !route.done(e) => {
         if (!a.get_ticket(e).isDefined && committed_to_lane(step)) {
-          val next_turn = route.pick_turn(e)
-          val ticket = new Ticket(a, next_turn)
+          val ticket = new Ticket(a, route.pick_turn(e))
           a.add_ticket(ticket)
           e.to.intersection.request_turn(ticket)
         }
@@ -216,15 +205,14 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
 
     // The goal is to stop in the range [length - end_threshold, length),
     // preferably right at that left border.
-
-    if (step.predict_dist < step.this_dist - cfg.end_threshold) {
+    if (step.dist_left_to_analyze < step.at.dist_left - cfg.end_threshold) {
       return Left(None)
     }
 
     // end of this current step's edge, that is
-    val dist_from_agent_to_end = step.dist_ahead + step.this_dist
+    val dist_from_agent_to_end = step.dist_so_far + step.at.dist_left
 
-    val can_go: Boolean = step.at match {
+    val can_go: Boolean = step.at.on match {
       // Don't stop at the end of a turn
       case t: Turn => true
       // Stop if we're arriving at destination
@@ -270,7 +258,7 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
         // just because the edge is short), then try to cover enough distance to
         // get us to the start of the edge.
         val want_dist = math.max(
-          step.dist_ahead, dist_from_agent_to_end - cfg.end_threshold
+          step.dist_so_far, dist_from_agent_to_end - cfg.end_threshold
         )
         Left(Some(a.kinematic.accel_to_end(want_dist)))
       }
@@ -278,47 +266,27 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
   }
 }
 
-// This is a lazy sequence of edges/turns that tracks distances away from the
-// original spot. This assumes no lane-changing: where the agent starts
-// predicting is where they'll end up.
-class LookaheadStep(
-  // TODO dist_left_to_analyze, dist_so_far?
-  val at: Traversable, val predict_dist: Double, val dist_ahead: Double,
-  val this_dist: Double, route: Route
+// This is a lazy sequence of edges/turns that tracks distances away from the original spot. This
+// assumes no lane-changing: where the agent starts predicting is where they'll end up.
+case class LookaheadStep(
+  at: Position, dist_left_to_analyze: Double, dist_so_far: Double, route: Route
 ) {
-  // Steps start at the beginning of 'at', except for the 'first' lookahead
-  // step. this_dist encodes that case. But dist_ahead is a way of measuring
-  // how far the agent really is right now from something in the future.
-  // predict_dist = how far ahead we still have to look
-  // TODO consider seeding dist_ahead with not 0 but this_dist, then lots of
-  // stuff may get simpler.
-  // dist_ahead = how far have we looked ahead so far
-  // at = where do we end up
-  // this_dist = how much distance from 'at' we'll consider. it would just be
-  // length, except for the very first step of a lookahead, since the agent
-  // doesnt start at the beginning of the step.
-  override def toString = f"Lookahead to $at with $predict_dist%.2f m left"
+  def next_step =
+    if (dist_left_to_analyze <= at.dist_left || is_last_step)
+      None
+    else
+      Some(LookaheadStep(
+        Position(next_at, 0), dist_left_to_analyze - at.dist_left, dist_so_far + at.dist_left,
+        route
+      ))
 
-  // TODO iterator syntax
-
-  // TODO this and next_at, maybe move them out of this class
-  // TODO the way this gets used is a bit redundant
-  def is_last_step = at match {
+  private def is_last_step = at.on match {
     case e: Edge => route.done(e)
     case _ => false
   }
 
-  lazy val next_at = at match {
+  private def next_at = at.on match {
     case e: Edge => route.pick_turn(e)
     case t: Turn => t.to
   }
-
-  lazy val next_step: Option[LookaheadStep] =
-    if (predict_dist - this_dist <= 0.0 || is_last_step)
-      None
-    else
-      Some(new LookaheadStep(
-        next_at, predict_dist - this_dist, dist_ahead + this_dist,
-        next_at.length, route
-      ))
 }
