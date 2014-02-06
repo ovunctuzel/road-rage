@@ -44,16 +44,6 @@ class IdleBehavior(a: Agent) extends Behavior(a) {
 // Reactively avoids collisions and obeys intersections by doing a conservative
 // analysis of the next few steps.
 class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
-  // Don't necessarily commit to turning from some lane in lookahead
-  private def committed_to_lane(step: LookaheadStep) = step.at.on match {
-    case e if e == a.at.on => a.lc.target_lane match {
-      case Some(target) => target == e
-      case None => false
-    }
-    case e: Edge => e.other_lanes.size == 1
-    case t: Turn => throw new IllegalArgumentException(s"Requesting a turn from a turn $step?!")
-  }
-  
   override def choose_turn(e: Edge) = a.get_ticket(e).get.turn
   
   override def transition(from: Traversable, to: Traversable) {
@@ -188,29 +178,20 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
     case None => None
   }
 
-  // Returns an optional acceleration, or 'true', which indicates the agent
-  // is totally done.
+  // Returns an optional acceleration, or 'true', which indicates the agent is totally done.
   private def constraint_stop(step: LookaheadStep): Either[Option[Double], Boolean] = {
-    // Request a turn early?
+    // Request a turn before we need a decision.
     step.at.on match {
       case e: Edge if !route.done(e) => {
-        if (!a.get_ticket(e).isDefined && committed_to_lane(step)) {
-          val ticket = new Ticket(a, route.pick_turn(e))
-          a.add_ticket(ticket)
-          e.to.intersection.request_turn(ticket)
-        }
+        manage_turn(e)
       }
       case _ =>
     }
 
-    // The goal is to stop in the range [length - end_threshold, length),
-    // preferably right at that left border.
+    // Want to stop in the range [length - end_threshold, length), preferably at that left border
     if (step.dist_left_to_analyze < step.at.dist_left - cfg.end_threshold) {
       return Left(None)
     }
-
-    // end of this current step's edge, that is
-    val dist_from_agent_to_end = step.dist_so_far + step.at.dist_left
 
     val can_go: Boolean = step.at.on match {
       // Don't stop at the end of a turn
@@ -219,26 +200,7 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
       case e: Edge if route.done(e) => false
       // Otherwise, ask the intersection
       case e: Edge => a.get_ticket(route.pick_turn(e)) match {
-        case Some(ticket) => {
-          if (ticket.is_approved) {
-            true
-          } else {
-            if (ticket.should_cancel) {
-              // Try again. The routing should avoid choices that're filled up,
-              // hopefully avoiding gridlock.
-              ticket.cancel()
-              // TODO if we end up doing the same thing... wtf, why? if theyre
-              // all congested, do something..
-              route.reroute(e)
-              val next_turn = route.pick_turn(e)
-
-              val replacement = new Ticket(a, next_turn)
-              a.add_ticket(replacement)
-              e.to.intersection.request_turn(replacement)
-            }
-            false
-          }
-        }
+        case Some(ticket) => ticket.is_approved
         case None => false
       }
     }
@@ -247,23 +209,52 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
     }
 
     // Are we completely done?
+    val dist_from_agent_to_end = step.dist_so_far + step.at.dist_left
     val maybe_done = dist_from_agent_to_end <= cfg.end_threshold && a.is_stopped
     return a.at.on match {
-      case e: Edge if route.done(e) && maybe_done => {
-        Right(true)
-      }
-      case _ => {
-        // We want to go the distance that puts us at length - end_threshold. If
-        // we're already past that point (due to floating point imprecision, or
-        // just because the edge is short), then try to cover enough distance to
-        // get us to the start of the edge.
-        val want_dist = math.max(
-          step.dist_so_far, dist_from_agent_to_end - cfg.end_threshold
-        )
-        Left(Some(a.kinematic.accel_to_end(want_dist)))
-      }
+      case e: Edge if route.done(e) && maybe_done => Right(true)
+      // We want to go the distance that puts us at length - end_threshold. If we're already past
+      // that point, then try to cover enough distance to get us to the start of the edge.
+      case _ => Left(Some(a.kinematic.accel_to_end(
+        math.max(step.dist_so_far, dist_from_agent_to_end - cfg.end_threshold)
+      )))
     }
   }
+
+  private def manage_turn(e: Edge) {
+    // Schedule a new turn?
+    if (!a.get_ticket(e).isDefined && committed_to_lane(e)) {
+      val ticket = new Ticket(a, route.pick_turn(e))
+      a.add_ticket(ticket)
+      e.to.intersection.request_turn(ticket)
+    }
+    // Getting impatient? This is a late reaction to gridlock.
+    a.get_ticket(e) match {
+      case Some(ticket) if ticket.should_cancel => {
+        // Try again. The routing should avoid choices that're filled up, hopefully avoiding gridlock.
+        route.reroute(e)
+        val next_turn = route.pick_turn(e)
+        // Sometimes we pick the same turn here, but the later route could change.
+        if (next_turn != ticket.turn) {
+          ticket.cancel()
+          val replacement = new Ticket(a, next_turn)
+          a.add_ticket(replacement)
+          e.to.intersection.request_turn(replacement)
+        }
+      }
+      case _ =>
+    }
+  }
+
+  // Don't necessarily commit to turning from some lane in lookahead
+  private def committed_to_lane(e: Edge) =
+    if (e == a.at.on)
+      a.lc.target_lane match {
+        case Some(target) => target == e
+        case None => false
+      }
+    else
+      e.other_lanes.size == 1
 }
 
 // This is a lazy sequence of edges/turns that tracks distances away from the original spot. This
