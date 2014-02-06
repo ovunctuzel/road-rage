@@ -18,6 +18,10 @@ class LaneChangingHandler(a: Agent, behavior: Behavior) {
   var old_lane: Option[Edge] = None
   var lanechange_dist_left: Double = 0
 
+  // None indicates we need to decide. If it's equal to the agent's current lane, then no
+  // lane-changing needed.
+  var target_lane: Option[Edge] = None
+
   //////////////////////////////////////////////////////////////////////////////
   // Actions
 
@@ -25,7 +29,7 @@ class LaneChangingHandler(a: Agent, behavior: Behavior) {
   def start_lc() {
     // If we're not already lane-changing, should we start?
     if (!is_lanechanging && a.on_a_lane) {
-      behavior.get_target_lane match {
+      target_lane match {
         case Some(lane) if lane != a.at.on && safe_to_lc(lane) => {
           // We have to cover a fixed distance to lane-change.
           lanechange_dist_left = cfg.lanechange_dist
@@ -60,6 +64,31 @@ class LaneChangingHandler(a: Agent, behavior: Behavior) {
     }
   }
 
+  def decide_lc() {
+    // Do we want to lane-change?
+    (target_lane, a.at.on) match {
+      case (None, e: Edge) => target_lane = Some(pick_target_lane)
+      case _ =>
+    }
+
+    // Give up one lane-changing and settle on a turn?
+    (target_lane, a.at.on) match {
+      case (Some(target), cur_lane: Edge) if target != cur_lane => {
+        // TODO left off here.
+        // No room? Fundamentally impossible
+        // Somebody in the way? If we're stalled and somebody's in the way,
+        // we're probably waiting in a queue. Don't waste time hoping, grab a
+        // turn now.
+        // TODO call without_blocking too
+        // TODO in room_to_lc, dont need tick ahead stuff.
+        if (!room_to_lc(target) || (a.is_stopped && !can_lc_without_crashing(target))) {
+          target_lane = Some(cur_lane)
+        }
+      }
+      case _ =>
+    }
+  }
+
   //////////////////////////////////////////////////////////////////////////////
   // Queries
 
@@ -73,8 +102,23 @@ class LaneChangingHandler(a: Agent, behavior: Behavior) {
     }
   }
 
+  private def pick_target_lane(): Edge = {
+    if (target_lane.isDefined) {
+      throw new IllegalStateException("Target lane already set")
+    }
+    val base = a.at.on.asInstanceOf[Edge]
+
+    // If we already committed to a turn, then don't lane-change.
+    if (a.get_ticket(base).isDefined) {
+      return base
+    } else {
+      val goal = a.route.pick_final_lane(base)._1
+      return base.adjacent_lanes.minBy(choice => math.abs(choice.lane_num - goal.lane_num))
+    }
+  }
+
   // Just see if we have enough static space to pull off a lane-change.
-  def room_to_lc(target: Edge): Boolean = {
+  private def room_to_lc(target: Edge): Boolean = {
     // Worry about the shorter lane, to be safe
     val min_len = math.min(a.at.on.length, target.length)
 
@@ -104,7 +148,7 @@ class LaneChangingHandler(a: Agent, behavior: Behavior) {
   }
 
   // Would we cut anybody off if we LC in front of them?
-  def can_lc_without_blocking(target: Edge): Boolean = {
+  private def can_lc_without_blocking(target: Edge): Boolean = {
     // TODO is it ok to cut off somebody thats done with their route?
     val intersection = target.to.intersection
     return !target.queue.all_agents.find(
@@ -112,7 +156,7 @@ class LaneChangingHandler(a: Agent, behavior: Behavior) {
     ).isDefined && !target.dont_block
   }
 
-  def can_lc_without_crashing(target: Edge): Boolean = {
+  private def can_lc_without_crashing(target: Edge): Boolean = {
     // We don't want to merge in too closely to the agent ahead of us, nor do we
     // want to make somebody behind us risk running into us. So just make sure
     // there are no agents in that danger range.

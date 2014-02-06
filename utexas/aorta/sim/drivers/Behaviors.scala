@@ -15,10 +15,6 @@ final case class Act_Set_Accel(new_accel: Double) extends Action
 final case class Act_Done_With_Route() extends Action
 
 abstract class Behavior(a: Agent) {
-  // None indicates we need to decide. If it's equal to the agent's current lane, then no
-  // lane-changing needed.
-  protected var target_lane: Option[Edge] = None
-
   protected var debug_me = false
 
   // asked every tick after everybody has moved
@@ -32,12 +28,6 @@ abstract class Behavior(a: Agent) {
 
   def set_debug(value: Boolean) {
     debug_me = value
-  }
-
-  // TODO Haven't settled on the "private write, public read" style yet.
-  def get_target_lane = target_lane
-  def init_target_lane(lane: Option[Edge]) {
-    target_lane = lane
   }
 }
 
@@ -54,25 +44,9 @@ class IdleBehavior(a: Agent) extends Behavior(a) {
 // Reactively avoids collisions and obeys intersections by doing a conservative
 // analysis of the next few steps.
 class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
-  // TODO move this and some other stuff to LaneChangingModule too?
-  private def pick_target_lane(): Edge = {
-    if (target_lane.isDefined) {
-      throw new IllegalStateException("Target lane already set")
-    }
-    val base = a.at.on.asInstanceOf[Edge]
-
-    // If we already committed to a turn, then don't lane-change.
-    if (a.get_ticket(base).isDefined) {
-      return base
-    } else {
-      val goal = route.pick_final_lane(base)._1
-      return base.adjacent_lanes.minBy(choice => math.abs(choice.lane_num - goal.lane_num))
-    }
-  }
-
   // Don't necessarily commit to turning from some lane in lookahead
   private def committed_to_lane(step: LookaheadStep) = step.at match {
-    case e if e == a.at.on => target_lane match {
+    case e if e == a.at.on => a.lc.target_lane match {
       case Some(target) => target == e
       case None => false
     }
@@ -84,39 +58,17 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
   
   override def transition(from: Traversable, to: Traversable) {
     route.transition(from, to)
-    target_lane = None
+    a.lc.target_lane = None
   }
 
   override def dump_info() {
     Util.log("Route-following behavior")
-    Util.log(s"Target lane: $target_lane")
+    Util.log(s"Target lane: ${a.lc.target_lane}")
     route.dump_info()
   }
 
   def choose_action(): Action = {
-    // Do we want to lane-change?
-    (target_lane, a.at.on) match {
-      case (None, e: Edge) => target_lane = Some(pick_target_lane)
-      case _ =>
-    }
-
-    // Give up one lane-changing and settle on a turn?
-    (target_lane, a.at.on) match {
-      case (Some(target), cur_lane: Edge) if target != cur_lane => {
-        // TODO left off here.
-        // No room? Fundamentally impossible
-        // Somebody in the way? If we're stalled and somebody's in the way,
-        // we're probably waiting in a queue. Don't waste time hoping, grab a
-        // turn now.
-        // TODO call without_blocking too
-        // TODO in room_to_lc, dont need tick ahead stuff.
-        if (!a.lc.room_to_lc(target) || (a.is_stopped && !a.lc.can_lc_without_crashing(target))) {
-          target_lane = Some(cur_lane)
-        }
-      }
-      case _ =>
-    }
-
+    a.lc.decide_lc()
     return max_safe_accel
   }
 

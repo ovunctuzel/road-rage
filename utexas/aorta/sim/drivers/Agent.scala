@@ -68,7 +68,7 @@ class Agent(
     // Then the rest of our state
     at.serialize(w)
     w.doubles(speed, target_accel)
-    behavior.get_target_lane match {
+    lc.target_lane match {
       case Some(e) => w.int(e.id.int)
       case None => w.int(-1)
     }
@@ -337,10 +337,10 @@ object Agent {
     a.at = Position.unserialize(r, sim.graph)
     a.speed = r.double
     a.target_accel = r.double
-    a.behavior.init_target_lane(r.int match {
+    a.lc.target_lane = r.int match {
       case -1 => None
       case x => Some(sim.graph.edges(x))
-    })
+    }
     a.lc.old_lane = r.int match {
       case -1 => None
       case x => Some(sim.graph.edges(x))
