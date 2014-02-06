@@ -7,12 +7,33 @@ package utexas.aorta.common
 import java.io.{ObjectOutputStream, FileOutputStream, ObjectInputStream,
                 FileInputStream, PrintWriter, BufferedReader, FileReader, File}
 
+trait Serializable {
+  def serialize(w: StateWriter)
+}
+
 abstract class StateWriter(fn: String) {
+  // opt writes this if the value is None
+  private val default = -1
+
   def done()
   def int(x: Int)
   def double(x: Double)
   def string(x: String)
   def bool(x: Boolean)
+  def obj(x: Serializable) {
+    x.serialize(this)
+  }
+  def list(ls: Seq[Serializable]) {
+    int(ls.size)
+    ls.foreach(x => obj(x))
+  }
+  def list_int(ls: Seq[Int]) {
+    int(ls.size)
+    ls.foreach(x => int(x))
+  }
+  def opt(x: Option[Int]) {
+    int(x.getOrElse(default))
+  }
 
   def ints(ls: Int*) {
     ls.foreach(x => int(x))
@@ -25,6 +46,18 @@ abstract class StateWriter(fn: String) {
   }
   def bool(ls: Boolean*) {
     ls.foreach(x => bool(x))
+  }
+  def objs(ls: Serializable*) {
+    ls.foreach(x => obj(x))
+  }
+  def lists(ls: Seq[Serializable]*) {
+    ls.foreach(x => list(x))
+  }
+  def lists_ints(ls: Seq[Int]*) {
+    ls.foreach(x => list_int(x))
+  }
+  def opts(ls: Option[Int]*) {
+    ls.foreach(x => opt(x))
   }
 }
 

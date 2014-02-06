@@ -8,9 +8,9 @@ import utexas.aorta.map.{Turn, Graph}
 import utexas.aorta.sim.EV_TurnFinished
 import utexas.aorta.sim.drivers.Agent
 
-import utexas.aorta.common.{Util, cfg, StateWriter, StateReader, TurnID}
+import utexas.aorta.common.{Util, cfg, StateWriter, StateReader, TurnID, Serializable}
 
-class Ticket(val a: Agent, val turn: Turn) extends Ordered[Ticket] {
+class Ticket(val a: Agent, val turn: Turn) extends Ordered[Ticket] with Serializable {
   //////////////////////////////////////////////////////////////////////////////
   // State
   

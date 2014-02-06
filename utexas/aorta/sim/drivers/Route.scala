@@ -12,12 +12,12 @@ import utexas.aorta.map.{Edge, Road, Traversable, Turn, Vertex, Graph, Router}
 import utexas.aorta.sim.{EV_Transition, EV_Reroute}
 import utexas.aorta.sim.make.{RouteType, RouterType, Factory}
 
-import utexas.aorta.common.{Util, cfg, StateWriter, StateReader, TurnID}
+import utexas.aorta.common.{Util, cfg, StateWriter, StateReader, TurnID, Serializable}
 
 // TODO maybe unify the one class with the interface, or something. other routes were useless.
 
 // Get a client to their goal by any means possible.
-abstract class Route(val goal: Road) {
+abstract class Route(val goal: Road) extends Serializable {
   //////////////////////////////////////////////////////////////////////////////
   // Transient state
 
@@ -28,8 +28,7 @@ abstract class Route(val goal: Road) {
   // Meta
 
   def serialize(w: StateWriter) {
-    w.int(route_type.id)
-    w.int(goal.id.int)
+    w.ints(route_type.id, goal.id.int)
   }
 
   protected def unserialize(r: StateReader, graph: Graph) {}
@@ -94,7 +93,7 @@ class PathRoute(goal: Road, orig_router: Router, private var rerouter: Router) e
   // to re-route.
   private var path: List[Road] = Nil
   private val chosen_turns = new mutable.ImmutableMapAdaptor(new immutable.TreeMap[Edge, Turn]())
-  private val reroutes_requested = new mutable.HashSet[Edge]()
+  private val reroutes_requested = new mutable.TreeSet[Edge]()
 
   //////////////////////////////////////////////////////////////////////////////
   // Meta
@@ -105,15 +104,12 @@ class PathRoute(goal: Road, orig_router: Router, private var rerouter: Router) e
     w.int(rerouter.router_type.id)
     // We can't tell when we last rerouted given less state; store the full
     // path.
-    w.int(path.size)
-    path.foreach(step => w.int(step.id.int))
+    w.list_int(path.map(_.id.int))
     w.int(chosen_turns.size)
     chosen_turns.foreach(tupled((e, t) => {
-      w.int(e.id.int)
-      w.int(t.id.int)
+      w.ints(e.id.int, t.id.int)
     }))
-    w.int(reroutes_requested.size)
-    reroutes_requested.foreach(e => w.int(e.id.int))
+    w.list_int(reroutes_requested.map(_.id.int).toList)
   }
 
   override def unserialize(r: StateReader, graph: Graph) {

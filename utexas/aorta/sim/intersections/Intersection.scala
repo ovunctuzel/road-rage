@@ -10,7 +10,7 @@ import utexas.aorta.map.{Vertex, Turn, Edge}
 import utexas.aorta.sim.{Simulation, EV_TurnApproved, EV_TurnStarted}
 import utexas.aorta.sim.make.{IntersectionType, OrderingType, Factory}
 
-import utexas.aorta.common.{Util, StateWriter, StateReader, TurnID}
+import utexas.aorta.common.{Util, StateWriter, StateReader, TurnID, Serializable}
 
 // Reason about collisions from conflicting simultaneous turns.
 class Intersection(val v: Vertex, policy_type: IntersectionType.Value,
@@ -117,7 +117,7 @@ object Intersection {
   }
 }
 
-abstract class Policy(val intersection: Intersection) {
+abstract class Policy(val intersection: Intersection) extends Serializable {
   //////////////////////////////////////////////////////////////////////////////
   // State
 
@@ -136,8 +136,7 @@ abstract class Policy(val intersection: Intersection) {
     Util.assert_eq(new_requests.isEmpty, true)
     w.int(request_queue.size)
     for (ticket <- request_queue) {
-      w.int(ticket.a.id.int)
-      w.int(ticket.turn.id.int)
+      w.ints(ticket.a.id.int, ticket.turn.id.int)
     }
   }
 

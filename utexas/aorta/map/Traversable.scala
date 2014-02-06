@@ -9,7 +9,7 @@ package utexas.aorta.map
 import utexas.aorta.sim.Queue
 import utexas.aorta.ui.Renderable
 
-import utexas.aorta.common.{cfg, Util, Physics, StateWriter, StateReader, TurnID}
+import utexas.aorta.common.{cfg, Util, Physics, StateWriter, StateReader, TurnID, Serializable}
 
 // Something with a sequence of lines forming a path and a way to get to more
 // somethings
@@ -188,7 +188,7 @@ object Line {
     new Line(r.double, r.double, r.double, r.double)
 }
 
-case class Position(on: Traversable, dist: Double) extends Renderable {
+case class Position(on: Traversable, dist: Double) extends Renderable with Serializable {
   Util.assert_ge(dist, 0)
   Util.assert_le(dist, on.length)
 

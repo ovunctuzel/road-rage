@@ -77,11 +77,9 @@ class Simulation(val scenario: Scenario)
     w.double(tick)
     w.int(finished_count)
     w.int(agents.size)
-    agents.foreach(a => a.serialize(w))
-    w.int(ready_to_spawn.size)
-    ready_to_spawn.foreach(a => w.int(a.id.int))
-    graph.traversables.foreach(t => t.queue.serialize(w))
-    graph.vertices.foreach(v => v.intersection.policy.serialize(w))
+    agents.foreach(a => w.obj(a))
+    w.list_int(ready_to_spawn.map(_.id.int))
+    w.lists(graph.traversables.map(_.queue), graph.vertices.map(_.intersection.policy))
   }
 
   //////////////////////////////////////////////////////////////////////////////

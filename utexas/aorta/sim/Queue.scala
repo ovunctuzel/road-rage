@@ -12,10 +12,10 @@ import Function.tupled
 import utexas.aorta.map.{Edge, Traversable, Position}
 import utexas.aorta.sim.drivers.Agent
 
-import utexas.aorta.common.{Util, cfg, Physics, StateWriter, StateReader}
+import utexas.aorta.common.{Util, cfg, Physics, StateWriter, StateReader, Serializable}
 
 // Reason about collisions on edges and within individual turns.
-class Queue(t: Traversable) {
+class Queue(t: Traversable) extends Serializable {
   //////////////////////////////////////////////////////////////////////////////
   // State
 
@@ -38,8 +38,7 @@ class Queue(t: Traversable) {
     w.int(avail_slots)
     // TODO some of these feel transient, but eh.
     w.double(last_tick)
-    w.int(prev_agents.size)
-    prev_agents.foreach(a => w.int(a.id.int))
+    w.list_int(prev_agents.map(_.id.int).toList)
   }
 
   //////////////////////////////////////////////////////////////////////////////

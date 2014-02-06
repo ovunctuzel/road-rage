@@ -12,11 +12,11 @@ import utexas.aorta.sim.intersections.{Intersection, Ticket}
 import utexas.aorta.ui.Renderable
 
 import utexas.aorta.common.{Util, cfg, Physics, StateWriter, StateReader, AgentID, EdgeID,
-                            ValueOfTime, Flags}
+                            ValueOfTime, Flags, Serializable}
 
 class Agent(
   val id: AgentID, val route: Route, val wallet: Wallet, val sim: Simulation
-) extends Ordered[Agent] with Renderable
+) extends Ordered[Agent] with Renderable with Serializable
 {
   //////////////////////////////////////////////////////////////////////////////
   // Transient state
@@ -60,26 +60,12 @@ class Agent(
   }
 
   def serialize(w: StateWriter) {
-    // First do parameters
     w.int(id.int)
-    route.serialize(w)
-    wallet.serialize(w)
-
-    // Then the rest of our state
-    at.serialize(w)
+    w.objs(route, wallet, at)
     w.doubles(speed, target_accel)
-    lc.target_lane match {
-      case Some(e) => w.int(e.id.int)
-      case None => w.int(-1)
-    }
-    lc.old_lane match {
-      case Some(e) => w.int(e.id.int)
-      case None => w.int(-1)
-    }
-    w.double(lc.lanechange_dist_left)
-    w.double(idle_since)
-    w.int(tickets.size)
-    tickets.values.toList.sorted.foreach(ticket => ticket.serialize(w))
+    w.opts(lc.target_lane.map(_.id.int), lc.old_lane.map(_.id.int))
+    w.doubles(lc.lanechange_dist_left, idle_since)
+    w.list(tickets.values.toList.sorted)
   }
 
   //////////////////////////////////////////////////////////////////////////////

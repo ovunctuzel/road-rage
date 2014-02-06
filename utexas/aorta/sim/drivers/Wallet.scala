@@ -10,11 +10,11 @@ import utexas.aorta.sim.make.{WalletType, IntersectionType, OrderingType, Factor
 import utexas.aorta.map.{Turn, Vertex}
 import utexas.aorta.sim.intersections.{Ticket, Policy, Phase, ReservationPolicy, SignalPolicy}
 
-import utexas.aorta.common.{Util, cfg, StateReader, StateWriter}
+import utexas.aorta.common.{Util, cfg, StateReader, StateWriter, Serializable}
 
 // Express an agent's preferences of trading between time and cost.
 // TODO dont require an agent, ultimately
-abstract class Wallet(initial_budget: Int, val priority: Int) {
+abstract class Wallet(initial_budget: Int, val priority: Int) extends Serializable {
   //////////////////////////////////////////////////////////////////////////////
   // Transient state
 
@@ -37,9 +37,8 @@ abstract class Wallet(initial_budget: Int, val priority: Int) {
   // Meta
 
   def serialize(w: StateWriter) {
-    w.int(wallet_type.id)
     // TODO initial budget vs current... will it matter?
-    w.ints(budget, priority)
+    w.ints(wallet_type.id, budget, priority)
     w.int(tooltip.size)
     tooltip.foreach(line => w.string(line))
     w.bool(dark_tooltip)

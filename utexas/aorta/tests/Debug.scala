@@ -44,7 +44,7 @@ object Debug {
       w2.done
     }
 
-    // 4) Load the serialized one and continue it for a bit
+    // 3) Load the serialized one and continue it for a bit
     Util.log("Loading serialized original, continuing that...")
     val new_sim = Simulation.unserialize(new BinaryStateReader("orig_snapshot"))
     Console.withOut(new java.io.FileOutputStream("log_new")) {
