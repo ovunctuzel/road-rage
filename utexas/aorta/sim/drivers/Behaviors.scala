@@ -41,8 +41,8 @@ class IdleBehavior(a: Agent) extends Behavior(a) {
   }
 }
 
-// Reactively avoids collisions and obeys intersections by doing a conservative
-// analysis of the next few steps.
+// Reactively avoids collisions and obeys intersections by doing a conservative analysis of the
+// next few steps.
 class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
   override def choose_turn(e: Edge) = a.get_ticket(e).get.turn
   
@@ -64,9 +64,6 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
 
   // Returns Act_Set_Accel almost always.
   private def max_safe_accel(): Action = {
-    // Since we can't react instantly, we have to consider the worst-case of the
-    // next tick, which happens when we speed up as much as possible this tick.
-
     // the output.
     var accel_for_stop: Option[Double] = None
     var accel_for_agent: Option[Double] = None
@@ -74,6 +71,8 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
     var done_with_route = false
     val accel_for_lc_agent = constraint_lc_agent
 
+    // Since we can't react instantly, we have to consider the worst-case of the
+    // next tick, which happens when we speed up as much as possible this tick.
     var step = LookaheadStep(a.at, a.kinematic.max_lookahead_dist, 0, route)
 
     // Verify lookahead doesn't cycle to the same road twice; if it does, the route should pick the
@@ -105,20 +104,7 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
         }
       }
 
-      // How many LCs do we anticipate here? Slown down to increase chances of doing multi-LCs
-      // TODO (This is a bit ad-hoc)
-      step.at.on match {
-        case e: Edge => route.pick_final_lane(e) match {
-          case (target, true) => {
-            val num_lcs = math.abs(e.lane_num - target.lane_num)
-            min_speed_limit = math.min(min_speed_limit, e.speed_limit / math.max(1, num_lcs))
-          }
-          case _ => // Don't slow down for unnecessary LCs
-        }
-        case _ =>
-      }
-
-      min_speed_limit = math.min(min_speed_limit, step.at.on.speed_limit)
+      min_speed_limit = math.min(min_speed_limit, constraint_speed_limit(step))
 
       // Set the next step.
       step = step.next_step match {
@@ -132,9 +118,7 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
     } else {
       val conservative_accel = List(
         accel_for_stop, accel_for_agent, accel_for_lc_agent,
-        Some(a.kinematic.accel_to_achieve(min_speed_limit)),
-        // Don't forget physical limits
-        Some(a.max_accel)
+        Some(a.kinematic.accel_to_achieve(min_speed_limit)), Some(a.max_accel)
       ).flatten.min
       //if (debug_me) {
       //  println(s"@ ${a.sim.tick}, ${a.id}'s at ${a.at.dist} with speed ${a.speed} and next accel $conservative_accel")
@@ -176,6 +160,21 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
       case None => None
     }
     case None => None
+  }
+
+  // Returns a speed limit, not an acceleration
+  private def constraint_speed_limit(step: LookaheadStep) = step.at.on match {
+    case e: Edge => route.pick_final_lane(e) match {
+      // How many required LCs do we anticipate here? Slown down to increase chances of doing many
+      case (target, true) => {
+        val num_lcs = math.abs(e.lane_num - target.lane_num)
+        // TODO (This is a bit ad-hoc)
+        // TODO maybe dont do this while in the turn, only when physically on the lane
+        e.speed_limit / math.max(1, num_lcs)
+      }
+      case _ => e.speed_limit
+    }
+    case t: Turn => t.speed_limit
   }
 
   // Returns an optional acceleration, or 'true', which indicates the agent is totally done.

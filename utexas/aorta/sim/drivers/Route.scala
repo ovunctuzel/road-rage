@@ -54,7 +54,8 @@ abstract class Route(val goal: Road) {
   // have to always return the same answer.
   def pick_turn(e: Edge): Turn
   // Prescribe the final lane on this road to aim for. We should be able to spazz around in
-  // our answer here. True if e doesn't lead to next road.
+  // our answer here. True if e doesn't already lead to next road, aka, the final lane is more than
+  // recommended.
   def pick_final_lane(e: Edge): (Edge, Boolean)
   // Just mark that we don't have to take the old turn prescribed
   def reroute(at: Edge) {}
