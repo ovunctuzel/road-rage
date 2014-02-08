@@ -306,7 +306,7 @@ object RouterType extends Enumeration {
 
 object OrderingType extends Enumeration {
   type OrderingType = Value
-  val FIFO, Auction = Value
+  val FIFO, Auction, Pressure = Value
 }
 
 object WalletType extends Enumeration {
@@ -360,6 +360,7 @@ object Factory {
   {
     case OrderingType.FIFO => new FIFO_Ordering[T]()
     case OrderingType.Auction => new AuctionOrdering[T]()
+    case OrderingType.Pressure => new AuctionOrdering[T]()
   }
 
   def make_wallet(enum: WalletType.Value, budget: Int, priority: Int, bid_ahead: Boolean)

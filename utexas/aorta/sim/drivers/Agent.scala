@@ -294,6 +294,7 @@ class Agent(
     // If we're not there yet, then all of them are ahead!
     case _ => e.queue.agents.size
   }
+  def num_behind = at.on.queue.all_in_range(0, true, at.dist, false).size
   def on(t: Traversable) = (at.on, lc.old_lane) match {
     case (ours, _) if ours == t => true
     case (_, Some(l)) if l == t => true
