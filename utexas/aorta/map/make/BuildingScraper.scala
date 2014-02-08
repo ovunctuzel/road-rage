@@ -21,7 +21,7 @@ class BuildingScraper() {
     !tags.keys.exists(nonresidence_tags.contains(_))
 
   def scrape(osm: OsmReader) {
-    osm.listen("building-scraper", _ match {
+    osm.listen(classOf[EV_OSM], _ match {
       // Grab an arbitrary point from the building
       case EV_OSM(elem) if is_bldg(elem.tags) =>
         bldgs += Bldg(elem.tags.get("addr:street"), find_center(elem.points), is_residential(elem.tags))

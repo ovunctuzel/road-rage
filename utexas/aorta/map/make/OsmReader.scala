@@ -45,7 +45,7 @@ case class OsmRelation(
   override def points = member_ways.flatMap(_.points) ++ member_nodes.map(_.coordinate)
 }
 
-class OsmReader(fn: String) extends Publisher[EV_OSM] {
+class OsmReader(fn: String) extends Publisher {
   val id_to_node = new mutable.HashMap[String, OsmNode]()
   val id_to_way = new mutable.HashMap[String, OsmWay]()
 

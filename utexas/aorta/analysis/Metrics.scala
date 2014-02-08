@@ -89,9 +89,8 @@ abstract class HistogramMetric(info: MetricInfo, width: Double) extends Metric(i
 class TripTimeMetric(info: MetricInfo) extends SinglePerAgentMetric(info) {
   override def name = "trip_time"
 
-  info.sim.listen(name, _ match {
+  info.sim.listen(classOf[EV_AgentQuit], _ match {
     case e: EV_AgentQuit => per_agent(e.agent.id) = e.trip_time
-    case _ =>
   })
 }
 
@@ -100,13 +99,14 @@ class OriginalRouteMetric(info: MetricInfo) extends SinglePerAgentMetric(info) {
   override def name = "orig_routes"
 
   private val first_reroute_time = new mutable.HashMap[AgentID, Double]()
-  info.sim.listen(name, _ match {
+  info.sim.listen(classOf[EV_Reroute], _ match {
     case EV_Reroute(a, _, false, _, _, _) if !first_reroute_time.contains(a.id) =>
       first_reroute_time(a.id) = a.sim.tick
-    // [0, 100]
-    case e: EV_AgentQuit => per_agent(e.agent.id) =
+  })
+  // per_agent is [0, 100]
+  info.sim.listen(classOf[EV_AgentQuit], _ match { case e: EV_AgentQuit =>
+    per_agent(e.agent.id) =
       100.0 * ((first_reroute_time.getOrElse(e.agent.id, e.end_tick) - e.birth_tick) / e.trip_time)
-    case _ =>
   })
 }
 
@@ -114,9 +114,8 @@ class OriginalRouteMetric(info: MetricInfo) extends SinglePerAgentMetric(info) {
 class MoneySpentMetric(info: MetricInfo) extends SinglePerAgentMetric(info) {
   override def name = "money_spent"
 
-  info.sim.listen(name, _ match {
+  info.sim.listen(classOf[EV_AgentQuit], _ match {
     case e: EV_AgentQuit => per_agent(e.agent.id) = e.total_spent
-    case _ =>
   })
 }
 
@@ -125,10 +124,9 @@ class MoneySpentMetric(info: MetricInfo) extends SinglePerAgentMetric(info) {
 class TurnDelayMetric(info: MetricInfo) extends HistogramMetric(info, 5.0) {
   override def name = "turn_delay"
 
-  info.sim.listen(name, _ match {
+  info.sim.listen(classOf[EV_TurnFinished], _ match {
     // could be accept_delay
     case e: EV_TurnFinished => histogram.add(e.total_delay)
-    case _ =>
   })
 }
 
@@ -136,9 +134,8 @@ class TurnDelayMetric(info: MetricInfo) extends HistogramMetric(info, 5.0) {
 class RoadCongestionMetric(info: MetricInfo) extends HistogramMetric(info, 10.0) {
   override def name = "road_congestion"
 
-  info.sim.listen(name, _ match {
+  info.sim.listen(classOf[EV_Transition], _ match {
     case EV_Transition(a, _, to: Edge) => histogram.add(to.road.auditor.freeflow_percent_full)
-    case _ =>
   })
 }
 
@@ -147,9 +144,8 @@ class RoadCongestionMetric(info: MetricInfo) extends HistogramMetric(info, 10.0)
 class TurnCompetitionMetric(info: MetricInfo) extends HistogramMetric(info, 1.0) {
   override def name = "turn_competition"
 
-  info.sim.listen(name, _ match {
+  info.sim.listen(classOf[EV_IntersectionOutcome], _ match {
     case EV_IntersectionOutcome(policy, losers) => histogram.add(losers.size)
-    case _ =>
   })
 }
 
@@ -158,7 +154,7 @@ class RouteRecordingMetric(info: MetricInfo) extends Metric(info) {
 
   private val routes = new mutable.HashMap[AgentID, mutable.ListBuffer[Road]]()
 
-  info.sim.listen(name, _ match {
+  info.sim.listen(classOf[EV_Transition], _ match {
     case EV_Transition(a, from, to: Turn) => {
       val path = routes.getOrElseUpdate(a.id, new mutable.ListBuffer[Road]())
       if (path.isEmpty) {
@@ -166,7 +162,6 @@ class RouteRecordingMetric(info: MetricInfo) extends Metric(info) {
       }
       path += to.to.road
     }
-    case _ =>
   })
 
   def apply(a: AgentID) = routes(a).toList
@@ -184,14 +179,15 @@ class LinkDelayMetric(info: MetricInfo) extends Metric(info) {
   ).toMap
   private val entry_time = new mutable.HashMap[Agent, Double]()
 
-  info.sim.listen(name, _ match {
+  info.sim.listen(classOf[EV_AgentSpawned], _ match {
     case EV_AgentSpawned(a) => entry_time(a) = a.sim.tick
+  })
+  info.sim.listen(classOf[EV_Transition], _ match {
     // Entering a road
     case EV_Transition(a, from: Turn, to) => entry_time(a) = a.sim.tick
     // Exiting a road
     case EV_Transition(a, from: Edge, to: Turn) =>
       add_delay(entry_time(a), a.sim.tick - entry_time(a), from.road)
-    case _ =>
   })
 
   private def add_delay(entry_time: Double, delay: Double, at: Road) {

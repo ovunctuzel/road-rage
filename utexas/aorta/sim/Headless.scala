@@ -29,13 +29,10 @@ object Headless {
 
     // Print an update every second
     var last_tick = sim.tick
-    sim.listen("headless", _ match {
-      case e: EV_Heartbeat => {
-        Util.log("[%.0fx] %s".format(e.tick - last_tick, e.describe))
-        last_tick = e.tick
-      }
-      case _ =>
-    })
+    sim.listen(classOf[EV_Heartbeat], _ match { case e: EV_Heartbeat => {
+      Util.log("[%.0fx] %s".format(e.tick - last_tick, e.describe))
+      last_tick = e.tick
+    }})
 
     Util.log("Starting simulation with time-steps of " + cfg.dt_s + "s")
     val t = Timer("headless simulation")

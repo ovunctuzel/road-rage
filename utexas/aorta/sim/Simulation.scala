@@ -19,7 +19,7 @@ import utexas.aorta.common.{Util, cfg, StateWriter, StateReader, Flags, AgentID,
                             VertexID, EdgeID, RoadID, Timer}
 import utexas.aorta.analysis.{RerouteCountMonitor, ArrivalEstimator}
 
-class Simulation(val scenario: Scenario) extends Publisher[Sim_Event] with AgentManager {
+class Simulation(val scenario: Scenario) extends Publisher with AgentManager {
   //////////////////////////////////////////////////////////////////////////////
   // State
   // (All transient, important state is in our constituent traits)

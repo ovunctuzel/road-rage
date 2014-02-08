@@ -19,7 +19,7 @@ class RouteChangeWatcher(sim: Simulation) {
   // Subscribed when the road was clear
   private val subscribers_clear = sim.graph.roads.map(r => r -> new mutable.HashSet[Agent]()).toMap
 
-  sim.listen("route-change-watcher", _ match {
+  sim.listen(classOf[EV_Reroute], _ match {
     case EV_Reroute(a, path, _, _, _, old_path) => {
       for (r <- old_path) {
         subscribers_congested(r) -= a
@@ -33,18 +33,20 @@ class RouteChangeWatcher(sim: Simulation) {
         }
       }
     }
+  })
+  sim.listen(classOf[EV_Transition], _ match {
     case EV_Transition(a, _, to: Turn) => {
       subscribers_congested(to.from.road) -= a
       subscribers_clear(to.from.road) -= a
     }
-    case EV_LinkChanged(r, congested) => {
-      if (congested) {
-        //subscribers_clear(r).foreach(a => ...)
-      } else {
-        // Maybe don't tell these guys?
-        //subscribers_congested(r).foreach(a => ...)
-      }
-    }
     case _ =>
   })
+  sim.listen(classOf[EV_LinkChanged], _ match { case EV_LinkChanged(r, congested) => {
+    if (congested) {
+      //subscribers_clear(r).foreach(a => ...)
+    } else {
+      // Maybe don't tell these guys?
+      //subscribers_congested(r).foreach(a => ...)
+    }
+  }})
 }

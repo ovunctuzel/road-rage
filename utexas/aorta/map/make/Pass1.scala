@@ -17,7 +17,7 @@ class Pass1(fn: String) {
   // How many OSM roads reference a point?
   private val node_uses = new mutable.HashMap[OsmNode, Int]()
 
-  osm.listen("pass1", _ match {
+  osm.listen(classOf[EV_OSM], _ match {
     case EV_OSM(node: OsmNode) => node_uses(node) = 0
     case EV_OSM(way: OsmWay) if !skip(way) => {
       way.refs.foreach(node => node_uses(node) += 1)

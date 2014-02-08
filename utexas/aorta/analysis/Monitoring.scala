@@ -19,16 +19,13 @@ class SimSpeedMonitor(sim: Simulation, fn: String) {
   private val start = System.currentTimeMillis
   private var last_record = start
 
-  sim.listen("sim_speed", _ match {
-    case e: EV_Heartbeat => {
-      val now = System.currentTimeMillis
-      if (now - last_record >= freq_ms) {
-        record((now - start) / 1000, e.tick)
-        last_record = now
-      }
+  sim.listen(classOf[EV_Heartbeat], _ match { case e: EV_Heartbeat => {
+    val now = System.currentTimeMillis
+    if (now - last_record >= freq_ms) {
+      record((now - start) / 1000, e.tick)
+      last_record = now
     }
-    case _ =>
-  })
+  }})
 
   private def record(realtime: Long, tick: Double) {
     file.println(s"$realtime $tick")
@@ -41,7 +38,7 @@ class RerouteCountMonitor(sim: Simulation) {
   var unrealizable_count = 0
   def discretionary_count = astar_count - unrealizable_count
 
-  sim.listen("reroute_count", _ match {
+  sim.listen(classOf[EV_Reroute], _ match {
     case EV_Reroute(_, _, _, method, unrealizable, _) => method match {
       case x if x != RouterType.Fixed && x != RouterType.Unusable => {
         astar_count += 1

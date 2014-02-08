@@ -143,7 +143,7 @@ class PathRoute(goal: Road, orig_router: Router, private var rerouter: Router) e
       }
       case _ =>
     }
-    owner.sim.publish(EV_Transition(owner, from, to))
+    owner.sim.publish(EV_Transition(owner, from, to), owner)
   }
 
   override def reroute(at: Edge) {

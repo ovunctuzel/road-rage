@@ -192,16 +192,14 @@ class FairWallet(initial_budget: Int, p: Int, initial_bid_ahead: Boolean)
 
   override def setup(agent: Agent) {
     super.setup(agent)
-    agent.sim.listen("fair_wallet", _ match {
+    agent.sim.listen(classOf[EV_Reroute], _ match {
       case EV_Reroute(a, path, _, _, _, _) if a == owner => {
         total_weight = path.map(r => weight(r.to)).sum
       }
-      case EV_Transition(a, from, to) if a == owner => to match {
-        case t: Turn => {
-          total_weight -= weight(t.vert)
-        }
-        case _ =>
-      }
+      case _ =>
+    })
+    agent.sim.listen(classOf[EV_Transition], owner, _ match {
+      case EV_Transition(a, from, to: Turn) => total_weight -= weight(to.vert)
       case _ =>
     })
   }

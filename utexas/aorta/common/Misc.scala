@@ -11,6 +11,7 @@ import java.awt.Color
 import scala.collection.{mutable, immutable}
 import scala.sys.process._
 import Function.tupled
+import scala.language.existentials  // TODO for the (channel, tag) pair in Publisher...
 
 import utexas.aorta.map.Graph
 import utexas.aorta.sim.{Simulation}
@@ -178,21 +179,39 @@ abstract class MathVector[T <: MathVector[T]](val value: Array[Double]) {
   }
 }
 
-trait Publisher[T] {
+trait Publisher {
   //////////////////////////////////////////////////////////////////////////////
   // State
 
-  private val listeners = new mutable.ListBuffer[(String, T => Any)]()
+  // TODO all type safety, lost. :(
+
+  // These listeners are just split by channel
+  private val wildcard_listeners = new mutable.HashMap[Class[_], mutable.ListBuffer[Any => Any]]()
+  // These listeners only subscribe to some (channel, tag) pair
+  private val refined_listeners = new mutable.HashMap[(Class[_], Any), mutable.ListBuffer[Any => Any]]()
 
   //////////////////////////////////////////////////////////////////////////////
   // Actions
 
-  def publish(ev: T) = listeners.foreach(l => l._2(ev))
-  def listen(tag: String, subscriber: T => Any) = {
-    listeners += ((tag, subscriber))
+  def publish(ev: Any) {
+    wildcard_listeners.getOrElse(ev.getClass, Nil).foreach(l => l(ev))
   }
-  def unlisten(tag: String) = {
-    listeners --= listeners.filter(l => l._1 != tag)
+  def publish(ev: Any, tag: Any) {
+    refined_listeners.getOrElse((ev.getClass, tag), Nil).foreach(l => l(ev))
+    publish(ev)
+  }
+  def listen(channel: Class[_], subscriber: Any => Any) {
+    if (!wildcard_listeners.contains(channel)) {
+      wildcard_listeners(channel) = new mutable.ListBuffer[Any => Any]
+    }
+    wildcard_listeners(channel) += subscriber
+  }
+  def listen(channel: Class[_], tag: Any, subscriber: Any => Any) {
+    val key = (channel, tag)
+    if (!refined_listeners.contains(key)) {
+      refined_listeners(key) = new mutable.ListBuffer[Any => Any]
+    }
+    refined_listeners(key) += subscriber
   }
 }
 

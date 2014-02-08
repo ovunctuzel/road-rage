@@ -87,17 +87,14 @@ class Experiment(config: ExpConfig) {
   protected var round = 1
   protected def simulate(sim: Simulation) = {
     var last_time = 0L
-    sim.listen("experiment-framework", _ match {
-      case e: EV_Heartbeat => {
-        val now = System.currentTimeMillis
-        if (now - last_time > config.report_every_ms) {
-          last_time = now
-          // TODO counts (active agents, moves, CH, and A*) will be wrong... dont reset yet
-          io.notify(s"Round $round at ${Util.time_num(sim.tick)}: ${e.describe}")
-        }
+    sim.listen(classOf[EV_Heartbeat], _ match { case e: EV_Heartbeat => {
+      val now = System.currentTimeMillis
+      if (now - last_time > config.report_every_ms) {
+        last_time = now
+        // TODO counts (active agents, moves, CH, and A*) will be wrong... dont reset yet
+        io.notify(s"Round $round at ${Util.time_num(sim.tick)}: ${e.describe}")
       }
-      case _ =>
-    })
+    }})
     val optional_gui = new GUIDebugger(sim) // TODO hafta sys.exit at end if used
 
     // TODO move this to simulation itself.

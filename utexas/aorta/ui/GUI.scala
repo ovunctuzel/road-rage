@@ -218,30 +218,27 @@ class GUIDebugger(sim: Simulation) {
   private val gui_signal = new File(".headless_gui")
   private var gui: Option[MapCanvas] = None
 
-  sim.listen("gui-debugger", _ match {
-    case e: EV_Heartbeat => {
-      if (gui_signal.exists) {
-        gui_signal.delete()
-        gui match {
-          case Some(ui) => {
-            if (GUI.closed) {
-              println("Resuming the GUI...")
-              GUI.top.open()
-              GUI.closed = false
-            }
-          }
-          case None => {
-            println("Launching the GUI...")
-            gui = Some(new MapCanvas(sim, headless = true))
-            GUI.launch_from_headless(gui.get)
+  sim.listen(classOf[EV_Heartbeat], _ match { case e: EV_Heartbeat => {
+    if (gui_signal.exists) {
+      gui_signal.delete()
+      gui match {
+        case Some(ui) => {
+          if (GUI.closed) {
+            println("Resuming the GUI...")
+            GUI.top.open()
+            GUI.closed = false
           }
         }
-      }
-      gui match {
-        case Some(ui) if !GUI.closed => ui.handle_ev(EV_Action("step"))
-        case _ =>
+        case None => {
+          println("Launching the GUI...")
+          gui = Some(new MapCanvas(sim, headless = true))
+          GUI.launch_from_headless(gui.get)
+        }
       }
     }
-    case _ =>
-  })
+    gui match {
+      case Some(ui) if !GUI.closed => ui.handle_ev(EV_Action("step"))
+      case _ =>
+    }
+  }})
 }

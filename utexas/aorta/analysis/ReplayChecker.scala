@@ -24,7 +24,7 @@ class ReplayWriter(sim: Simulation, writer: StateWriter) {
   Util.log(s"Recording this run to compare to another later")
   private val num_agents = sim.scenario.agents.size
 
-  sim.listen("replay-writer", _ match {
+  sim.listen(classOf[EV_Step], _ match {
     case EV_Step(tick) if tick % cfg.replay_freq == 0 => {
       // We get agents in sorted order, so we can detect the ones who aren't around
       var expect_id = 0
@@ -49,9 +49,10 @@ class ReplayWriter(sim: Simulation, writer: StateWriter) {
 class ReplayReader(sim: Simulation, reader: StateReader) {
   Util.log(s"Comparing this run against a previous")
   private val num_agents = sim.scenario.agents.size
+  private var active = true
 
-  sim.listen("replay-reader", _ match {
-    case EV_Step(tick) if tick % cfg.replay_freq == 0 => {
+  sim.listen(classOf[EV_Step], _ match {
+    case EV_Step(tick) if active && tick % cfg.replay_freq == 0 => {
       var expect_id = 0
       try {
         for (a <- sim.agents) {
@@ -76,7 +77,7 @@ class ReplayReader(sim: Simulation, reader: StateReader) {
       } catch {
         case _: EOFException => {
           Util.log(s"Nothing more to replay at $tick. Ignoring differences.")
-          sim.unlisten("replay-reader")
+          active = false
         }
       }
     }

@@ -126,23 +126,35 @@ class MapCanvas(val sim: Simulation, headless: Boolean = false) extends Scrollin
   // mapcanvas.
   // Register to hear events
   private var last_tick = 0.0
-  sim.listen("ui", _ match {
-    case e: EV_Heartbeat => {
-      update_status()
-      status.agents.text = e.describe
-      status.time.text = Util.time_num(e.tick)
-      last_tick = e.tick
+  sim.listen(classOf[EV_Heartbeat], _ match { case e: EV_Heartbeat => {
+    update_status()
+    status.agents.text = e.describe
+    status.time.text = Util.time_num(e.tick)
+    last_tick = e.tick
+  }})
+  sim.listen(classOf[EV_Signal_Change], _ match { case EV_Signal_Change(greens) => {
+    green_turns.clear()
+    for (t <- greens) {
+      green_turns(t) = GeomFactory.line2awt(GeomFactory.turn_body(t))
     }
-    case EV_Signal_Change(greens) => {
-      green_turns.clear()
-      for (t <- greens) {
-        green_turns(t) = GeomFactory.line2awt(GeomFactory.turn_body(t))
+  }})
+  sim.listen(classOf[EV_Breakpoint], _ match { case EV_Breakpoint(a) => {
+    println(s"Pausing to target $a")
+    state.camera_agent = Some(a)
+    pause()
+  }})
+  sim.listen(classOf[EV_Reroute], _ match {
+    case EV_Reroute(agent, path, _, _, _, _) if agent == state.camera_agent.getOrElse(null) => {
+      state.route_members.set(cfg.route_member_color, path.toSet)
+    }
+    case _ =>
+  })
+  sim.listen(classOf[EV_Transition], _ match {
+    case EV_Transition(agent, from, to) if agent == state.camera_agent.getOrElse(null) => from match {
+      case e: Edge => {
+        state.route_members.remove(cfg.route_member_color, e.road)
       }
-    }
-    case EV_Breakpoint(a) => {
-      println(s"Pausing to target $a")
-      state.camera_agent = Some(a)
-      pause()
+      case _ =>
     }
     case _ =>
   })
@@ -703,10 +715,7 @@ class MapCanvas(val sim: Simulation, headless: Boolean = false) extends Scrollin
     case Key.F => {
       // Unregister old listener
       state.camera_agent match {
-        case Some(a) => {
-          sim.unlisten("ui-routing")
-          a.set_debug(false)
-        }
+        case Some(a) => a.set_debug(false)
         case None =>
       }
 
@@ -717,18 +726,6 @@ class MapCanvas(val sim: Simulation, headless: Boolean = false) extends Scrollin
           a.route match {
             case r: PathRoute => {
               state.route_members.set(cfg.route_member_color, r.roads)
-              sim.listen("ui-routing", _ match {
-                case EV_Reroute(agent, path, _, _, _, _) if agent == a => {
-                  state.route_members.set(cfg.route_member_color, path.toSet)
-                }
-                case EV_Transition(agent, from, to) if agent == a => from match {
-                  case e: Edge => {
-                    state.route_members.remove(cfg.route_member_color, e.road)
-                  }
-                  case _ =>
-                }
-                case _ =>
-              })
             }
             case _ =>
           }
