@@ -30,6 +30,10 @@ class Queue(t: Traversable) extends Serializable {
   // turns.
   private var avail_slots = capacity
 
+  // Round down. How many drivers max could squish together here? Minimum 1,
+  // short edges just support 1.
+  lazy val capacity = math.max(1, math.floor(t.length / separation_dist).toInt)
+
   //////////////////////////////////////////////////////////////////////////////
   // Meta
   
@@ -188,9 +192,6 @@ class Queue(t: Traversable) extends Serializable {
   def separation_dist =
     cfg.follow_dist + Physics.max_next_dist_plus_stopping(0.0, t.speed_limit) +
     Physics.max_next_dist(0.0, t.speed_limit)
-  // Round down. How many drivers max could squish together here? Minimum 1,
-  // short edges just support 1.
-  def capacity = math.max(1, math.floor(t.length / separation_dist).toInt)
   // How many people can travel at the speed limit comfortably? This is generous, since cars are
   // planning for a worst-case where the leader slams on their brakes
   def freeflow_capacity =
