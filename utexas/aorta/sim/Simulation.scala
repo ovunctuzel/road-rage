@@ -240,9 +240,11 @@ object Simulation {
     val ready_ids = Range(0, num_ready).map(_ => new AgentID(r.int)).toSet
     sim.ready_to_spawn ++=
       sim.scenario.agents.filter(a => ready_ids.contains(a.id)).sortBy(_.birth_tick)
+    r.int // equal to number of traversables
     for (t <- sim.graph.traversables) {
       Queue.unserialize(t.queue, r, sim)
     }
+    r.int // equal to number of vertices
     for (v <- sim.graph.vertices) {
       Policy.unserialize(v.intersection.policy, r, sim)
     }

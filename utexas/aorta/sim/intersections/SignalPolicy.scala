@@ -40,7 +40,7 @@ class SignalPolicy(
   override def serialize(w: StateWriter) {
     super.serialize(w)
     w.double(started_at)
-    w.list_int(phase_order.map(_.id))
+    phase_order.foreach(p => w.int(p.id))
   }
 
   override protected def unserialize(r: StateReader, sim: Simulation) {

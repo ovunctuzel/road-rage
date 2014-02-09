@@ -252,7 +252,6 @@ object Queue {
   def unserialize(queue: Queue, r: StateReader, sim: Simulation) {
     queue.avail_slots = r.int
     queue.last_tick = r.double
-    val prev_agents_size = r.int
-    queue.prev_agents ++= Range(0, prev_agents_size).map(_ => sim.get_agent(r.int).get)
+    queue.prev_agents ++= Range(0, r.int).map(_ => sim.get_agent(r.int).get)
   }
 }
