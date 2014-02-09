@@ -49,7 +49,6 @@
 
 # Experiment framework #
 
-- lightweight experiments... cmdline flag to record trip time, then compare multiple files
 - mode to run many things locally, in parallel
 - better R templates, or another solution (gnuplot?)
 - port old experiments

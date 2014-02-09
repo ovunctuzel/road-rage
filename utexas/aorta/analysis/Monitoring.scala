@@ -32,6 +32,22 @@ class SimSpeedMonitor(sim: Simulation, fn: String) {
   }
 }
 
+// Dump a file plotting number of agents done per time
+class AgentProgressMonitor(sim: Simulation, fn: String) {
+  // Don't have to explicitly close the file when simulation finishes
+  // TODO fn library. denote what we're running on.
+  private val file = new IO(None).output_file("agent_progress_" + fn)
+  file.println("sim_tick agents_done")
+
+  sim.listen(classOf[EV_Heartbeat], _ match { case e: EV_Heartbeat => {
+    record(e.tick, e.done_agents)
+  }})
+
+  private def record(tick: Double, done_agents: Int) {
+    file.println(s"$tick $done_agents")
+  }
+}
+
 // Count how many times agents are rerouting
 class RerouteCountMonitor(sim: Simulation) {
   var astar_count = 0

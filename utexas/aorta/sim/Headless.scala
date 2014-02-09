@@ -5,7 +5,7 @@
 package utexas.aorta.sim
 
 import utexas.aorta.ui.GUIDebugger
-import utexas.aorta.analysis.{SimSpeedMonitor, ReplayReader, ReplayWriter}
+import utexas.aorta.analysis.{SimSpeedMonitor, ReplayReader, ReplayWriter, AgentProgressMonitor}
 
 import utexas.aorta.common.{Util, Timer, cfg, Flags}
 
@@ -15,6 +15,10 @@ object Headless {
     // TODO move elsewhere?
     Flags.string("--benchmark") match {
       case Some(fn) => new SimSpeedMonitor(sim, fn)
+      case None =>
+    }
+    Flags.string("--done_time") match {
+      case Some(fn) => new AgentProgressMonitor(sim, fn)
       case None =>
     }
     Flags.string("--record") match {
