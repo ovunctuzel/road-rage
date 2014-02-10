@@ -392,7 +392,7 @@ class MapCanvas(val sim: Simulation, headless: Boolean = false) extends Scrollin
     }
   }
 
-  def draw_intersection(g2d: Graphics2D, e: Edge) = {
+  def draw_intersection(g2d: Graphics2D, e: Edge) {
     if (current_turn == -1) {
       // show all turns
       for (turn <- e.next_turns) {
@@ -806,7 +806,7 @@ class MapCanvas(val sim: Simulation, headless: Boolean = false) extends Scrollin
     }
   }
 
-  def switch_mode(m: Mode.Mode) = {
+  def switch_mode(m: Mode.Mode) {
     mode = m
   }
 

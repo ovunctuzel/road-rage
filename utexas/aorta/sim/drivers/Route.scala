@@ -126,7 +126,7 @@ class PathRoute(goal: Road, orig_router: Router, private var rerouter: Router) e
   //////////////////////////////////////////////////////////////////////////////
   // Actions
 
-  def transition(from: Traversable, to: Traversable) = {
+  def transition(from: Traversable, to: Traversable) {
     (from, to) match {
       case (e: Edge, _: Turn) => {
         chosen_turns -= e

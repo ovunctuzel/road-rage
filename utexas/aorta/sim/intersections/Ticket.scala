@@ -47,7 +47,7 @@ class Ticket(val a: Agent, val turn: Turn) extends Ordered[Ticket] with Serializ
     // TODO this messes up parallelism again...
     if (!is_interruption) {
       // When we became the interrupting ticket, we grabbed the slot.
-      turn.to.queue.allocate_slot
+      turn.to.queue.allocate_slot()
     }
   }
 

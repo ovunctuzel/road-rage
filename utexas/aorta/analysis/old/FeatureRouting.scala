@@ -92,7 +92,7 @@ class AstarRouter(graph: Graph, val weights: RouteFeatures, demand: Demand) exte
   override def path(from: Road, to: Road, time: Double) = scored_path(from, to)._1
 
   // Return the weight of the final path too
-  def scored_path(from: Road, to: Road): (List[Road], RouteFeatures) = {
+  def scored_path(from: Road, to: Road): (List[Road], RouteFeatures) {
     if (from == to) {
       return (Nil, RouteFeatures.BLANK)
     }

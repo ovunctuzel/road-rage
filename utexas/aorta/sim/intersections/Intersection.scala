@@ -30,7 +30,7 @@ class Intersection(val v: Vertex, policy_type: IntersectionType.Value,
 
   override def toString = "Intersection(" + v + ")"
 
-  def request_turn(ticket: Ticket) = {
+  def request_turn(ticket: Ticket) {
     // Sanity check...
     Util.assert_eq(ticket.turn.vert, v)
     policy.request_turn(ticket)
@@ -41,7 +41,7 @@ class Intersection(val v: Vertex, policy_type: IntersectionType.Value,
     policy.cancel_turn(ticket)
   }
 
-  def enter(ticket: Ticket) = {
+  def enter(ticket: Ticket) {
     val t = ticket.turn
     if (!turns.contains(t)) {
       // We don't care until there are at least two... and this only changes when
@@ -68,7 +68,7 @@ class Intersection(val v: Vertex, policy_type: IntersectionType.Value,
     ticket.a.sim.publish(EV_TurnStarted(ticket))
   }
 
-  def exit(ticket: Ticket) = {
+  def exit(ticket: Ticket) {
     val t = ticket.turn
     turns(t) -= 1
     if (turns(t) == 0) {
@@ -147,7 +147,8 @@ abstract class Policy(val intersection: Intersection) extends Serializable {
 
   // Agents inform intersections of their intention ONCE and receive a lease
   // eventually.
-  def request_turn(ticket: Ticket) = {
+  def request_turn(ticket: Ticket) {
+    // TODO just need a writer lock, dont have to lock the whole object
     synchronized {
       new_requests += ticket
       // TODO do extra book-keeping to verify agents aren't double requesting?

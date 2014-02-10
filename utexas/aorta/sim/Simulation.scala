@@ -264,13 +264,13 @@ trait AgentManager {
   //////////////////////////////////////////////////////////////////////////////
   // Actions
 
-  def spawn_agents(tick: Double) = {
+  def spawn_agents(tick: Double) {
     while (future_spawn.nonEmpty && tick >= future_spawn.head.birth_tick) {
       ready_to_spawn += future_spawn.dequeue
     }
   }
 
-  def insert_agent(a: Agent) = {
+  def insert_agent(a: Agent) {
     Util.assert_eq(agents.contains(a), false)
     agents += a
   }

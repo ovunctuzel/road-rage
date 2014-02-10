@@ -140,7 +140,7 @@ class Queue(t: Traversable) extends Serializable {
     return Position(t, dist)
   }
 
-  def exit(a: Agent, old_dist: Double) = {
+  def exit(a: Agent, old_dist: Double) {
     start_step(a)  // lazily, if needed
 
     Util.assert_eq(agents.get(-old_dist), a)

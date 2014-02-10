@@ -35,7 +35,7 @@ class Pass3_Part2(graph: PreGraph3) {
   }
 
   // fill out an intersection with turns
-  private def connect_vertex(v: Vertex, roads: mutable.Set[Road]) = {
+  private def connect_vertex(v: Vertex, roads: mutable.Set[Road]) {
     // TODO return the turns or something so we can more efficiently set them
     // TODO cfg
     val cross_thresshold = math.Pi / 10 // allow 18 degrees

@@ -16,13 +16,13 @@ class Pass2_Part3(graph: PreGraph2) {
   def run() {
     Util.log("Collapsing degenerate vertices...")
     var verts = immutable.TreeMap.empty[Coordinate, mutable.TreeSet[PreEdge2]]
-    def addBinding(pt: Coordinate, e: PreEdge2) = {
+    def addBinding(pt: Coordinate, e: PreEdge2) {
       if (!verts.contains(pt)) {
         verts += ((pt, new mutable.TreeSet[PreEdge2]()))
       }
       verts(pt) += e
     }
-    def removeBinding(pt: Coordinate, e: PreEdge2) = {
+    def removeBinding(pt: Coordinate, e: PreEdge2) {
       if (verts.contains(pt)) {
         verts(pt) -= e
         if (verts(pt).isEmpty) {

@@ -231,7 +231,7 @@ abstract class ScrollingCanvas extends Component {
     y_off = math.max(0, y_off)
   }
 
-  def center_on(pt: Coordinate) = {
+  def center_on(pt: Coordinate) {
     x_off = (pt.x * zoom) - (size.width / 2)
     y_off = (pt.y * zoom) - (size.height / 2)
   }
@@ -239,7 +239,7 @@ abstract class ScrollingCanvas extends Component {
   // TODO swing SuperMixin has a window focus listener...
   var first_focus = true
 
-  override def paintComponent(g2d: Graphics2D) = {
+  override def paintComponent(g2d: Graphics2D) {
     // clear things
     super.paintComponent(g2d)
 
@@ -306,7 +306,7 @@ abstract class ScrollingCanvas extends Component {
     case _ => None
   }
 
-  def draw_tooltip(g2d: Graphics2D, tooltip: Tooltip) = {
+  def draw_tooltip(g2d: Graphics2D, tooltip: Tooltip) {
     val longest = tooltip.lines.maxBy(_.length)
     val width = g2d.getFontMetrics.getStringBounds(longest, g2d).getWidth
     // assume the height of each line is the same

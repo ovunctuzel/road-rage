@@ -17,7 +17,7 @@ class SystemWallet() extends Wallet(0, 0) {
   def bid_reservation(tickets: Iterable[Ticket], ours: Ticket) = Nil
 
   // Infinite budget.
-  override def spend(amount: Int, ticket: Ticket) = {}
+  override def spend(amount: Int, ticket: Ticket) {}
 }
 
 // Bids to maintain "fairness."

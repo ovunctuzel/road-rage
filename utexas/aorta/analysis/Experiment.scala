@@ -85,7 +85,7 @@ class Experiment(config: ExpConfig) {
   }
 
   protected var round = 1
-  protected def simulate(sim: Simulation) = {
+  protected def simulate(sim: Simulation) {
     var last_time = 0L
     sim.listen(classOf[EV_Heartbeat], _ match { case e: EV_Heartbeat => {
       val now = System.currentTimeMillis

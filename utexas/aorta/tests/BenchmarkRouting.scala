@@ -10,7 +10,7 @@ import utexas.aorta.sim.routes.CongestionRouter
 import utexas.aorta.common.{Util, RNG, Timer, cfg}
 
 object BenchmarkRouting {
-  def main(args: Array[String]) = {
+  def main(args: Array[String]) {
     val rounds = 100000
 
     val sim = Util.process_args(args)

@@ -103,7 +103,7 @@ object GUI extends SimpleSwingApplication {
   private var headless = false
   var closed = false
 
-  override def main(args: Array[String]) = {
+  override def main(args: Array[String]) {
     val sim = Util.process_args(args)
     canvas_2d = new MapCanvas(sim)
     // TODO doesnt start drawn correctly!
@@ -111,7 +111,7 @@ object GUI extends SimpleSwingApplication {
     super.main(args)
   }
 
-  def launch_from_headless(canvas: MapCanvas) = {
+  def launch_from_headless(canvas: MapCanvas) {
     headless = true
     canvas_2d = canvas
     super.main(Array())

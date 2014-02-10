@@ -11,7 +11,7 @@ import utexas.aorta.common.{Util, Timer, cfg, BinaryStateWriter, BinaryStateRead
 
 // Misc, temporary stuff. Maybe they'll become real tests someday.
 object Debug {
-  def main(args: Array[String]) = {
+  def main(args: Array[String]) {
     val sim = Util.process_args(args)
 
     get_optimal_times(args.head)
@@ -27,7 +27,7 @@ object Debug {
     t.stop()
   }
 
-  private def serialize_sanity(orig_sim: Simulation) = {
+  private def serialize_sanity(orig_sim: Simulation) {
     // 1) Run for some time, save original
     Util.log("Running for 60 seconds...")
     orig_sim.multi_step(60.0)
@@ -55,7 +55,7 @@ object Debug {
     }
   }
 
-  private def find_crazy_signals(sim: Simulation) = {
+  private def find_crazy_signals(sim: Simulation) {
     for (v <- sim.graph.vertices) {
       v.intersection.policy match {
         case p: SignalPolicy => {
@@ -68,7 +68,7 @@ object Debug {
     }
   }
 
-  private def calc_capacity(sim: Simulation) = {
+  private def calc_capacity(sim: Simulation) {
     var capacity = 0
     for (r <- sim.graph.roads) {
       for (e <- r.lanes) {

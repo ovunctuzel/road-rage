@@ -124,7 +124,7 @@ class Agent(
         case (e: Edge, t: Turn) => {
           val i = t.vert.intersection
           i.enter(get_ticket(t).get)
-          e.queue.free_slot
+          e.queue.free_slot()
         }
         case (t: Turn, e: Edge) => {
           val ticket = get_ticket(t).get
@@ -192,11 +192,11 @@ class Agent(
   }
 
   // Caller must remove this agent from the simulation list
-  def terminate(interrupted: Boolean = false) = {
+  def terminate(interrupted: Boolean = false) {
     if (!interrupted) {
       at.on.queue.exit(this, at.dist)
       at.on match {
-        case e: Edge => e.queue.free_slot
+        case e: Edge => e.queue.free_slot()
         case _ =>
       }
       Util.assert_eq(tickets.isEmpty, true)

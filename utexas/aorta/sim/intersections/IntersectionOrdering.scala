@@ -124,7 +124,7 @@ class AuctionOrdering[T <: Ordered[T]]() extends IntersectionOrdering[T]() {
   }
 
   // A group splits some cost somehow.
-  private def pay(who: List[Bid[T]], multiplier: Int, total_runnerup: Int) = {
+  private def pay(who: List[Bid[T]], multiplier: Int, total_runnerup: Int) {
     // Proportional payment... Each member of the winner pays proportional to
     // what they bid.
     val total_winners = who.map(_.amount).sum * multiplier

@@ -29,7 +29,7 @@ class Pass3_Part4(graph: PreGraph3) {
   }
 
   // TODO the rightmost lanes seem to still overlap a bit
-  private def adjust_lines(v: Vertex) = {
+  private def adjust_lines(v: Vertex) {
     for (in <- v.in_edges) {
       for (out <- v.out_edges) {
         val l1 = in.lines.last

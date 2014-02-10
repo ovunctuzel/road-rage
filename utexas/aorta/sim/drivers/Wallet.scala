@@ -53,7 +53,7 @@ abstract class Wallet(initial_budget: Int, val priority: Int) extends Serializab
   //////////////////////////////////////////////////////////////////////////////
   // Actions
 
-  def spend(amount: Int, ticket: Ticket) = {
+  def spend(amount: Int, ticket: Ticket) {
     Util.assert_ge(budget, amount)
     budget -= amount
     ticket.cost_paid += amount
@@ -128,7 +128,7 @@ class StaticWallet(initial_budget: Int, p: Int)
   //////////////////////////////////////////////////////////////////////////////
   // Actions
 
-  override def spend(amount: Int, ticket: Ticket) = {
+  override def spend(amount: Int, ticket: Ticket) {
     Util.assert_ge(budget, amount)
     ticket.cost_paid = amount
   }

@@ -35,7 +35,7 @@ abstract class Behavior(a: Agent) {
 class IdleBehavior(a: Agent) extends Behavior(a) {
   def choose_action(): Action = Act_Set_Accel(0)
   def choose_turn(e: Edge) = e.next_turns.head
-  def transition(from: Traversable, to: Traversable) = {}
+  def transition(from: Traversable, to: Traversable) {}
   def dump_info() {
     Util.log("Idle behavior")
   }

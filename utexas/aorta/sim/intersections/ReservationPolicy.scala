@@ -79,7 +79,7 @@ class ReservationPolicy(intersection: Intersection,
             ticket.is_interruption = true
             unqueue(ticket)
             // Furthermore, grab a spot for them and keep it!
-            ticket.turn.to.queue.allocate_slot
+            ticket.turn.to.queue.allocate_slot()
             return
           }
         }

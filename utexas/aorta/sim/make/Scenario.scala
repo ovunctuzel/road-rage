@@ -69,7 +69,7 @@ case class Scenario(
   }
 
   // Describe the percentages of each thing
-  private def percentages[T](things: Iterable[T]) = {
+  private def percentages[T](things: Iterable[T]) {
     val count = new mutable.HashMap[T, Int]().withDefaultValue(0)
     things.foreach(t => count(t) += 1)
     val total = things.size
@@ -165,7 +165,7 @@ case class MkAgent(id: AgentID, birth_tick: Double, start: RoadID, start_dist: D
     w.objs(route, wallet)
   }
 
-  def diff(other: MkAgent) = {
+  def diff(other: MkAgent) {
     Util.assert_eq(id, other.id)
     val d = List(
       Util.diff(birth_tick, other.birth_tick, "spawn time"),
@@ -236,7 +236,7 @@ case class MkIntersection(id: VertexID, policy: IntersectionType.Value,
 {
   def make(v: Vertex, sim: Simulation) = new Intersection(v, policy, ordering, sim)
 
-  def diff(other: MkIntersection) = {
+  def diff(other: MkIntersection) {
     Util.assert_eq(id, other.id)
     val d = List(
       Util.diff(policy, other.policy, "policy"),

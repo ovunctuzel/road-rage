@@ -8,7 +8,7 @@ import utexas.aorta.sim.drivers.Kinematic
 import utexas.aorta.common.{cfg, Physics}
 
 object FollowingDistance {
-  def main(args: Array[String]) = {
+  def main(args: Array[String]) {
     val speed_lim = 30
     // Perfect start
     var leader = Kinematic(100, speed_lim, speed_lim)
