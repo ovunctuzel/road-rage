@@ -12,7 +12,6 @@
 - reservation protocol should actually be faster. opportunistic.
   - michael's refined notion of turn conflict
 - unprotected left, right turn on red, better stop sign
-- if easy: backpressure lights
 - optimize fixpoints
 
 # Zones #

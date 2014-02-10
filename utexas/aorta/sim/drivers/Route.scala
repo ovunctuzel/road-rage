@@ -237,6 +237,14 @@ class PathRoute(goal: Road, orig_router: Router, private var rerouter: Router) e
   // Returns the turn we must make from at to continue down the new route
   private def perform_reroute(at: Edge, slice_before: List[Road], must_reroute: Boolean): Turn = {
     reroutes_requested -= at
+
+    // TODO only do rerouting of the ENTIRE path
+    // For now, don't do optional rerouting in the middle of the path
+    if (!must_reroute && slice_before.nonEmpty) {
+      val next_road = path.span(r => r != at.road)._2.tail.head
+      return at.next_turns.find(t => t.to.road == next_road).get
+    }
+
     // Re-route, but start from a source we can definitely reach without
     // lane-changing.
     val choice = at.next_turns.maxBy(t => t.to.queue.percent_avail)
