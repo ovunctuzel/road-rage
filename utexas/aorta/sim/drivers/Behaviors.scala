@@ -75,9 +75,10 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
     // next tick, which happens when we speed up as much as possible this tick.
     var step = LookaheadStep(a.at, a.kinematic.max_lookahead_dist, 0, route)
 
-    // Verify lookahead doesn't cycle to the same road twice; if it does, the route should pick the
-    // second turn during the first choice!
-    val visited = new mutable.HashSet[Road]()
+    // Verify lookahead doesn't cycle to the same lane twice, since an agent can only hold one
+    // ticket per origin lane at a time. Note agents may hit the same road twice in quick succession
+    // due to funky geometry and lane-changing.
+    val visited = new mutable.HashSet[Edge]()
 
     // If we don't have to stop for an intersection, keep caring about staying
     // far enough behind an agent. Once we have to stop somewhere, don't worry
@@ -85,10 +86,10 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
     while (step != null && !accel_for_stop.isDefined) {
       step.at.on match {
         case e: Edge => {
-          if (visited.contains(e.road)) {
-            throw new Exception(s"Lookahead visited ${e.road} twice!")
+          if (visited.contains(e)) {
+            throw new Exception(s"Lookahead for $a visited $e twice!")
           }
-          visited += e.road
+          visited += e
         }
         case _ =>
       }
