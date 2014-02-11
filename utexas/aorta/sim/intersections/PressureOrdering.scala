@@ -6,7 +6,7 @@ package utexas.aorta.sim.intersections
 
 import utexas.aorta.sim.drivers.Agent
 import utexas.aorta.sim.make.OrderingType
-import utexas.aorta.map.{Traversable, Edge, Turn}
+import utexas.aorta.map.{Edge, Turn}
 
 class PressureOrdering[T <: Ordered[T]]() extends IntersectionOrdering[Ticket]() {
   def ordering_type = OrderingType.Pressure

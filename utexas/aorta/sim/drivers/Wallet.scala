@@ -8,7 +8,7 @@ import utexas.aorta.sim.{EV_Transition, EV_Reroute}
 import utexas.aorta.sim.make.{WalletType, IntersectionType, OrderingType, Factory,
                               SystemWalletConfig}
 import utexas.aorta.map.{Turn, Vertex}
-import utexas.aorta.sim.intersections.{Ticket, Policy, Phase, ReservationPolicy, SignalPolicy}
+import utexas.aorta.sim.intersections.{Ticket, Policy, Phase}
 
 import utexas.aorta.common.{Util, cfg, StateReader, StateWriter, Serializable}
 

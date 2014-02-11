@@ -95,7 +95,7 @@ class Experiment(config: ExpConfig) {
         io.notify(s"Round $round at ${Util.time_num(sim.tick)}: ${e.describe}")
       }
     }})
-    val optional_gui = new GUIDebugger(sim) // TODO hafta sys.exit at end if used
+    new GUIDebugger(sim) // TODO hafta sys.exit at end if used
 
     // TODO move this to simulation itself.
     while (!sim.done) {

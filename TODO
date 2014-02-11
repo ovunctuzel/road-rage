@@ -126,7 +126,7 @@
 
 # Performance: parallelization #
 
-- PARALLEL DETERMINISM INVALID: queue avail_slots
+- agent react() is fine except for events, maybe
 
 # Map making #
 

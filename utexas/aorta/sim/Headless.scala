@@ -5,7 +5,8 @@
 package utexas.aorta.sim
 
 import utexas.aorta.ui.GUIDebugger
-import utexas.aorta.analysis.{SimSpeedMonitor, ReplayReader, ReplayWriter, AgentProgressMonitor}
+import utexas.aorta.analysis.{SimSpeedMonitor, ReplayReader, ReplayWriter, AgentProgressMonitor,
+                              REPLDebugger}
 
 import utexas.aorta.common.{Util, Timer, cfg, Flags}
 
@@ -29,7 +30,8 @@ object Headless {
       case Some(fn) => new ReplayReader(sim, Util.reader(fn))
       case None =>
     }
-    val gui = new GUIDebugger(sim)
+    new GUIDebugger(sim)
+    new REPLDebugger(sim)
 
     // Print an update every second
     var last_tick = sim.tick

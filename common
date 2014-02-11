@@ -8,4 +8,4 @@ CLASSPATH="$AORTA_CLASSES:$DEPS"
 
 JVM_OPTS="-Xmx1536m"
 
-SCALA="java -cp $CLASSPATH $JVM_OPTS"
+SCALA="java -cp $CLASSPATH $JVM_OPTS -Dscala.usejavacp=true"

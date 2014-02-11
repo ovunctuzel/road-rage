@@ -4,7 +4,6 @@
 
 package utexas.aorta.sim.intersections
 
-import utexas.aorta.map.Turn
 import utexas.aorta.sim.{Simulation, EV_IntersectionOutcome}
 import utexas.aorta.sim.make.IntersectionType
 

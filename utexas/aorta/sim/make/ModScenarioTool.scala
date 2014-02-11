@@ -204,7 +204,7 @@ object ModScenarioTool {
         }
         case "--auditor" => {
           val auditor = CongestionType.withName(shift_args)
-          Util.log("Changing link auditor: $auditor")
+          Util.log(s"Changing link auditor: $auditor")
           s = s.copy(auditor = auditor)
         }
         case _ => dump_usage

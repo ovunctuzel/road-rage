@@ -35,9 +35,6 @@ case class Coordinate(x: Double, y: Double) extends Ordered[Coordinate] {
 }
 
 object Coordinate {
-  // In meters
-  private val earth_radius = 6378100.0
-
   // use Graph.world_to_gps to get original GPS coordinates first.
   def gps_dist_in_meters(c1: Coordinate, c2: Coordinate) =
     Distance.equirectangular_dist(c1.x, c1.y, c2.x, c2.y)
