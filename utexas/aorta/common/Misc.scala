@@ -77,12 +77,6 @@ object Util {
     }
   }
 
-  def diff[T](a: T, b: T, header: String = ""): Option[String] =
-    if (a == b)
-      None
-    else
-      Some(s"$header ($a -> $b)")
-
   def mkdir(path: String) {
     (new File(path)).mkdir()
   }

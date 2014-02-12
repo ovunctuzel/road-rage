@@ -15,8 +15,7 @@ import scala.collection.mutable
 import utexas.aorta.common.{Util, StateWriter, StateReader, AgentID, VertexID, RoadID, cfg,
                             Serializable}
 
-// Array index and agent/intersection ID must correspond. Creator's
-// responsibility.
+// Array index and agent/intersection ID must correspond. Creator's responsibility.
 case class Scenario(
   name: String, map_fn: String, agents: Array[MkAgent], intersections: Array[MkIntersection],
   system_wallet: SystemWalletConfig, auditor: CongestionType.Value
@@ -39,9 +38,9 @@ case class Scenario(
     Util.log(s"Scenario $name for $map_fn\n")
     // TODO breakdown combos of policy/ordering, and wallet/budget
     Util.log("Intersection policies:")
-    percentages(intersections.map(_.policy))
+    ScenarioUtil.percentages(intersections.map(_.policy))
     Util.log("Intersection orderings:")
-    percentages(intersections.map(_.ordering))
+    ScenarioUtil.percentages(intersections.map(_.ordering))
     Util.log(s"Link auditor: $auditor")
     Util.log("")
 
@@ -49,17 +48,17 @@ case class Scenario(
     // TODO where are agents starting/going?
     if (agents.nonEmpty) {
       Util.log_push
-      Util.log("Spawning time (s): " + basic_stats(agents.map(_.birth_tick)))
+      Util.log("Spawning time (s): " + ScenarioUtil.basic_stats(agents.map(_.birth_tick)))
       Util.log("Routes:")
-      percentages(agents.map(_.route.strategy))
+      ScenarioUtil.percentages(agents.map(_.route.strategy))
       Util.log("Orig routers:")
-      percentages(agents.map(_.route.orig_router))
+      ScenarioUtil.percentages(agents.map(_.route.orig_router))
       Util.log("Rerouters:")
-      percentages(agents.map(_.route.rerouter))
+      ScenarioUtil.percentages(agents.map(_.route.rerouter))
       Util.log("Wallets:")
-      percentages(agents.map(_.wallet.policy))
-      Util.log("Budget ($): " + basic_stats_int(agents.map(_.wallet.budget)))
-      Util.log("Priority: " + basic_stats_int(agents.map(_.wallet.priority)))
+      ScenarioUtil.percentages(agents.map(_.wallet.policy))
+      Util.log("Budget ($): " + ScenarioUtil.basic_stats_int(agents.map(_.wallet.budget)))
+      Util.log("Priority: " + ScenarioUtil.basic_stats_int(agents.map(_.wallet.priority)))
       Util.log_pop
     }
 
@@ -67,31 +66,12 @@ case class Scenario(
     Util.log(system_wallet.toString)
   }
 
-  // Describe the percentages of each thing
-  private def percentages[T](things: Iterable[T]) {
-    val count = new mutable.HashMap[T, Int]().withDefaultValue(0)
-    things.foreach(t => count(t) += 1)
-    val total = things.size
-    Util.log_push
-    for (key <- count.keys) {
-      val percent = count(key).toDouble / total * 100.0
-      Util.log(f"$key: ${percent}%.2f%%")
-    }
-    Util.log_pop
-  }
-
-  // Min, max, average
-  private def basic_stats(nums: Iterable[Double]) =
-    f"${nums.min}%.2f - ${nums.max}%.2f (average ${nums.sum / nums.size}%.2f)"
-  private def basic_stats_int(nums: Iterable[Int]) =
-    f"${nums.min} - ${nums.max} (average ${nums.sum / nums.size}%.2f)"
-
   def diff(other: Scenario): Unit = {
     if (map_fn != other.map_fn) {
       Util.log(s"Scenarios are for different maps: $map_fn and ${other.map_fn}")
       return
     }
-    Util.diff(auditor, other.auditor, "link auditor") match {
+    ScenarioUtil.diff(auditor, other.auditor, "link auditor") match {
       case Some(d) => Util.log(d)
       case None =>
     }
@@ -110,8 +90,6 @@ case class Scenario(
     w.obj(system_wallet)
     w.int(auditor.id)
   }
-
-  def num_agents = agents.size
 }
 
 object Scenario {
@@ -143,16 +121,14 @@ object Scenario {
 
 // The "Mk" prefix means "Make". These're small serializable classes to make
 // agents/intersections/etc.
-// TODO associate directly with their corresponding class?
 
 case class MkAgent(id: AgentID, birth_tick: Double, start: RoadID, start_dist: Double,
                    route: MkRoute, wallet: MkWallet) extends Ordered[MkAgent] with Serializable
 {
   // break ties by ID
-  def compare(other: MkAgent) =
-    implicitly[Ordering[Tuple2[Double, Integer]]].compare(
-      (other.birth_tick, other.id.int), (birth_tick, id.int)
-    )
+  def compare(other: MkAgent) = implicitly[Ordering[Tuple2[Double, Integer]]].compare(
+    (other.birth_tick, other.id.int), (birth_tick, id.int)
+  )
 
   def make(sim: Simulation) = new Agent(id, route.make(sim), wallet.make, sim)
 
@@ -167,16 +143,16 @@ case class MkAgent(id: AgentID, birth_tick: Double, start: RoadID, start_dist: D
   def diff(other: MkAgent) {
     Util.assert_eq(id, other.id)
     val d = List(
-      Util.diff(birth_tick, other.birth_tick, "spawn time"),
-      Util.diff(start, other.start, "start"),
-      Util.diff(start_dist, other.start_dist, "start distance"),
-      Util.diff(route.goal, other.route.goal, "end"),
-      Util.diff(route.strategy, other.route.strategy, "route"),
-      Util.diff(route.orig_router, other.route.orig_router, "orig_router"),
-      Util.diff(route.rerouter, other.route.rerouter, "rerouter"),
-      Util.diff(wallet.policy, other.wallet.policy, "wallet"),
-      Util.diff(wallet.budget, other.wallet.budget, "budget"),
-      Util.diff(wallet.priority, other.wallet.priority, "priority")
+      ScenarioUtil.diff(birth_tick, other.birth_tick, "spawn time"),
+      ScenarioUtil.diff(start, other.start, "start"),
+      ScenarioUtil.diff(start_dist, other.start_dist, "start distance"),
+      ScenarioUtil.diff(route.goal, other.route.goal, "end"),
+      ScenarioUtil.diff(route.strategy, other.route.strategy, "route"),
+      ScenarioUtil.diff(route.orig_router, other.route.orig_router, "orig_router"),
+      ScenarioUtil.diff(route.rerouter, other.route.rerouter, "rerouter"),
+      ScenarioUtil.diff(wallet.policy, other.wallet.policy, "wallet"),
+      ScenarioUtil.diff(wallet.budget, other.wallet.budget, "budget"),
+      ScenarioUtil.diff(wallet.priority, other.wallet.priority, "priority")
     ).flatten.mkString(", ")
     if (d.nonEmpty) {
       Util.log(s"Agent $id different: $d")
@@ -186,8 +162,8 @@ case class MkAgent(id: AgentID, birth_tick: Double, start: RoadID, start_dist: D
 
 object MkAgent {
   def unserialize(r: StateReader) = MkAgent(
-    new AgentID(r.int), r.double, new RoadID(r.int), r.double,
-    MkRoute.unserialize(r), MkWallet.unserialize(r)
+    new AgentID(r.int), r.double, new RoadID(r.int), r.double, MkRoute.unserialize(r),
+    MkWallet.unserialize(r)
   )
 }
 
@@ -238,8 +214,8 @@ case class MkIntersection(id: VertexID, policy: IntersectionType.Value,
   def diff(other: MkIntersection) {
     Util.assert_eq(id, other.id)
     val d = List(
-      Util.diff(policy, other.policy, "policy"),
-      Util.diff(ordering, other.ordering, "ordering")
+      ScenarioUtil.diff(policy, other.policy, "policy"),
+      ScenarioUtil.diff(ordering, other.ordering, "ordering")
     ).flatten.mkString(", ")
     if (d.nonEmpty) {
       Util.log(s"Intersection $id different: $d")
@@ -278,10 +254,7 @@ case class SystemWalletConfig(
 }
 
 object SystemWalletConfig {
-  def unserialize(r: StateReader) = SystemWalletConfig(
-    r.int, r.int, r.int, r.int, r.int, r.int
-  )
-
+  def unserialize(r: StateReader) = SystemWalletConfig(r.int, r.int, r.int, r.int, r.int, r.int)
   def blank = SystemWalletConfig(0, 0, 0, 0, 0, 0)
 }
 
@@ -292,6 +265,7 @@ object IntersectionType extends Enumeration {
   val NeverGo, StopSign, Signal, Reservation, Yield, AIM = Value
 }
 
+// TODO like LookaheadBehavior, there isn't likely to be another impl. remove?
 object RouteType extends Enumeration {
   type RouteType = Value
   val Path = Value
@@ -374,6 +348,33 @@ object Factory {
     case CongestionType.Sticky => new StickyCongestion(r, sim)
     case CongestionType.MovingWindow => new MovingWindowCongestion(r, sim)
   }
+}
+
+object ScenarioUtil {
+  def diff[T](a: T, b: T, header: String = ""): Option[String] =
+    if (a == b)
+      None
+    else
+      Some(s"$header ($a -> $b)")
+
+  // Describe the percentages of each thing
+  def percentages[T](things: Iterable[T]) {
+    val count = new mutable.HashMap[T, Int]().withDefaultValue(0)
+    things.foreach(t => count(t) += 1)
+    val total = things.size
+    Util.log_push
+    for (key <- count.keys) {
+      val percent = count(key).toDouble / total * 100.0
+      Util.log(f"$key: ${percent}%.2f%%")
+    }
+    Util.log_pop
+  }
+
+  // Min, max, average
+  def basic_stats(nums: Iterable[Double]) =
+    f"${nums.min}%.2f - ${nums.max}%.2f (average ${nums.sum / nums.size}%.2f)"
+  def basic_stats_int(nums: Iterable[Int]) =
+    f"${nums.min} - ${nums.max} (average ${nums.sum / nums.size}%.2f)"
 }
 
 // TODO Most of this file is ripe for a java beans-esque generalization.
