@@ -102,6 +102,7 @@ class OriginalRouteMetric(info: MetricInfo) extends SinglePerAgentMetric(info) {
   info.sim.listen(classOf[EV_Reroute], _ match {
     case EV_Reroute(a, _, false, _, _, _) if !first_reroute_time.contains(a.id) =>
       first_reroute_time(a.id) = a.sim.tick
+    case _ =>
   })
   // per_agent is [0, 100]
   info.sim.listen(classOf[EV_AgentQuit], _ match { case e: EV_AgentQuit =>
@@ -162,6 +163,7 @@ class RouteRecordingMetric(info: MetricInfo) extends Metric(info) {
       }
       path += to.to.road
     }
+    case _ =>
   })
 
   def apply(a: AgentID) = routes(a).toList
@@ -188,6 +190,7 @@ class LinkDelayMetric(info: MetricInfo) extends Metric(info) {
     // Exiting a road
     case EV_Transition(a, from: Edge, to: Turn) =>
       add_delay(entry_time(a), a.sim.tick - entry_time(a), from.road)
+    case _ =>
   })
 
   private def add_delay(entry_time: Double, delay: Double, at: Road) {
