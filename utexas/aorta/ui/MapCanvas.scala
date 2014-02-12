@@ -16,7 +16,6 @@ import utexas.aorta.sim.{Simulation, EV_Signal_Change, EV_Transition, EV_Reroute
                          EV_Heartbeat, AgentMap}
 import utexas.aorta.sim.make.{IntersectionType, RouteType}
 import utexas.aorta.sim.drivers.{Agent, PathRoute}
-import utexas.aorta.sim.routes.CongestionRouter
 
 import utexas.aorta.common.{Util, RNG, Timer, cfg, EdgeID, VertexID, RoadID}
 
