@@ -13,6 +13,8 @@ import utexas.aorta.ui.Renderable
 import utexas.aorta.common.algorithms.AStar
 import utexas.aorta.common.{Util, ZoneID, StateReader}
 
+// TODO move to contrib until stable (but map serializes zones)
+
 // TODO consider dropping the requirement that zones have to be connected. allows for more flexible
 // shapes, and for disjoint partitioning.
 

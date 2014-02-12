@@ -2,7 +2,7 @@
 // Khandelwal of UT Austin
 // License: GNU GPL v2
 
-package utexas.aorta.analysis
+package utexas.aorta.contrib
 
 import utexas.aorta.sim.{Simulation, EV_TurnStarted, EV_TurnApproved}
 import utexas.aorta.sim.drivers.{Agent, Kinematic}

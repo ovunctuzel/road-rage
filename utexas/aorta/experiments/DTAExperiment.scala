@@ -2,7 +2,7 @@
 // Khandelwal of UT Austin
 // License: GNU GPL v2
 
-package utexas.aorta.analysis
+package utexas.aorta.experiments
 
 import utexas.aorta.map.{Graph, Road, AbstractPairAstarRouter}
 import utexas.aorta.sim.routes.SimpleHeuristic

@@ -1,3 +1,0 @@
-TODO write me
-
-264c595f773fcf229ac9baeb873ec9ad5e83dafc <-- the commit where stuff was done
