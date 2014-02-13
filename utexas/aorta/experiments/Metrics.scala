@@ -15,9 +15,11 @@ import scala.collection.mutable
 
 case class MetricInfo(sim: Simulation, mode: String, io: IO, uid: String)
 
+// One per trial
 abstract class Metric(info: MetricInfo) {
   def name: String
   // Really should be in the companion object, and the type should indicate they're all the same.
+  // TODO scenario is unused
   def output(ls: List[Metric], scenario: Scenario)
   def mode = info.mode
 }
