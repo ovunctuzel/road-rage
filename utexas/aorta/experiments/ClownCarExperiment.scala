@@ -39,6 +39,6 @@ class ClownCarExperiment(config: ExpConfig) extends SmartExperiment(config) {
       run_trial(ClownCarExperiment.use_router(base, RouterType.DumbToll), "avoid_max"),
       run_trial(ClownCarExperiment.use_router(base, RouterType.SumToll), "avoid_sum")
       //run_trial(ClownCarExperiment.use_router(base, RouterType.TollThreshold), "toll_threshold")
-    ), scenario)
+    ))
   }
 }

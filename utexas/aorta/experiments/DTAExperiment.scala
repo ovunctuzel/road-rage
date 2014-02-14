@@ -4,7 +4,9 @@
 
 package utexas.aorta.experiments
 
-import utexas.aorta.map.{Graph, Road, AbstractPairAstarRouter, SimpleHeuristic}
+import utexas.aorta.map.{Graph, Road, AbstractPairAstarRouter, SimpleHeuristic, Turn, Edge}
+import utexas.aorta.sim.{EV_AgentSpawned, EV_Transition}
+import utexas.aorta.sim.drivers.Agent
 import utexas.aorta.sim.make.{Scenario, RouterType}
 import utexas.aorta.common.{Util, RNG}
 
@@ -40,7 +42,7 @@ class DTAExperiment(config: ExpConfig) extends SmartExperiment(config) {
       }
     }
 
-    output_data(results.toList, scenario)
+    output_data(results.toList)
   }
 
   // Reroute some drivers using actual delays
@@ -75,4 +77,48 @@ class TimeDependentAStar(graph: Graph, delays: LinkDelayMetric, start_time: Doub
   override def cost_step(
     prev: Road, next: Road, cost_sofar: (Double, Double)
   ) = (Util.bool2binary(next.auditor.congested), delays.delay(next, start_time + cost_sofar._2))
+}
+
+class LinkDelayMetric(info: MetricInfo) extends Metric(info) {
+  override def name = "link_delay"
+
+  // TODO will this eat too much memory?
+  private val delays_per_time = info.sim.graph.roads.map(
+    r => r -> new java.util.TreeMap[Double, Double]()
+  ).toMap
+  private val entry_time = new mutable.HashMap[Agent, Double]()
+
+  info.sim.listen(classOf[EV_AgentSpawned], _ match {
+    case EV_AgentSpawned(a) => entry_time(a) = a.sim.tick
+  })
+  info.sim.listen(classOf[EV_Transition], _ match {
+    // Entering a road
+    case EV_Transition(a, from: Turn, to) => entry_time(a) = a.sim.tick
+    // Exiting a road
+    case EV_Transition(a, from: Edge, to: Turn) =>
+      add_delay(entry_time(a), a.sim.tick - entry_time(a), from.road)
+    case _ =>
+  })
+
+  private def add_delay(entry_time: Double, delay: Double, at: Road) {
+    // Two agents can enter the same Road at the same time (on different lanes)
+    // Just arbitrarily overwrite if there's a conflict
+    delays_per_time(at).put(entry_time, delay)
+  }
+
+  override def output(ls: List[Metric]) {
+    // Don't actually save anything!
+  }
+
+  // Many possible interpolations for this...
+  def delay(on: Road, at: Double) = delays_per_time(on).lowerKey(at) match {
+    // 'at' is before all entries here? then the road's clear
+    case 0.0 => on.freeflow_time  // TODO 0.0 is how failure gets encoded by java treemap...
+    case entry_time => delays_per_time(on).get(entry_time) match {
+      // 'at' happens after the most recent entry finishes
+      case delay if at > entry_time + delay => on.freeflow_time
+      // This instance overlaps 'at', so just use the same delay.
+      case delay => delay
+    }
+  }
 }

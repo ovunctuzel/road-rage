@@ -60,3 +60,27 @@ class RouteAnalyzer(config: ExpConfig) extends Experiment(config) {
       .map(step => RouteFeatures.for_step(step, demand))
       .fold(RouteFeatures.BLANK)((a, b) => a + b)
 }*/
+
+/*
+class RouteRecordingMetric(info: MetricInfo) extends Metric(info) {
+  override def name = "route_recording"
+
+  private val routes = new mutable.HashMap[AgentID, mutable.ListBuffer[Road]]()
+
+  info.sim.listen(classOf[EV_Transition], _ match {
+    case EV_Transition(a, from, to: Turn) => {
+      val path = routes.getOrElseUpdate(a.id, new mutable.ListBuffer[Road]())
+      if (path.isEmpty) {
+        path += to.from.road
+      }
+      path += to.to.road
+    }
+    case _ =>
+  })
+
+  def apply(a: AgentID) = routes(a).toList
+  override def output(ls: List[Metric]) {
+    throw new UnsupportedOperationException("Why save the actual routes?")
+  }
+}
+*/

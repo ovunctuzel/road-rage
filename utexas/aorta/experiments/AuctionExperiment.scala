@@ -50,6 +50,6 @@ class AuctionExperiment(config: ExpConfig) extends SmartExperiment(config) {
       run_trial(AuctionExperiment.equal_budgets(nosys_base), "equal_no_sysbids"),
       run_trial(AuctionExperiment.fixed_budgets(sysbid_base), "fixed_sysbids"),
       run_trial(AuctionExperiment.fixed_budgets(nosys_base), "fixed_no_sysbids")
-    ), scenario)
+    ))
   }
 }

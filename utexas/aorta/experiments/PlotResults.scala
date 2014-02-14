@@ -67,8 +67,13 @@ case class ScenarioTag(id: String, map: String)
 case class TripTimeResult(priority: Double, ideal_time: Double, times: Array[Double])
 case class ScenarioTimes(tag: ScenarioTag, modes: Array[String], agents: Array[TripTimeResult])
 
+// TODO stuff here is the dual of stuff in Metrics. pair them together somehow?
 object ScenarioTag {
-  def apply(fn: String) = new ScenarioTag("id", "map")  // TODO decide format
+  // fn is of the form $metric.$scenario.$map, possibly with a trailing .gz
+  def apply(fn: String): ScenarioTag = {
+    val pieces = fn.split("\\.")
+    return new ScenarioTag(pieces(1), pieces(2))
+  }
 }
 object TripTimeResult {
   def apply(fields: Array[Double]) = new TripTimeResult(fields(1), fields(2), fields.drop(3))

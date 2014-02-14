@@ -35,4 +35,9 @@ class IO(gs_prefix: Option[String]) {
   def compress(fn: String) {
     Util.blockingly_run(Seq("gzip", "-f", fn))
   }
+
+  def done(fn: String) {
+    compress(fn)
+    upload(fn + ".gz")
+  }
 }

@@ -137,12 +137,12 @@ abstract class SmartExperiment(config: ExpConfig) extends Experiment(config) {
     return metrics
   }
 
-  protected def output_data(results: List[List[Metric]], s: Scenario) {
+  protected def output_data(results: List[List[Metric]]) {
     val mode_order = results.map(ls => ls.head.mode)
     for ((name, metrics) <- results.flatten.groupBy(_.name)) {
       val metrics_by_mode = metrics.map(m => m.mode -> m).toMap
       // Sort into a canonical mode order, which should come from the results
-      metrics.head.output(mode_order.map(m => metrics_by_mode(m)), s)
+      metrics.head.output(mode_order.map(m => metrics_by_mode(m)))
     }
   }
 }
