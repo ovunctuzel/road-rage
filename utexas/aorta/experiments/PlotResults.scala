@@ -5,7 +5,7 @@
 package utexas.aorta.experiments
 
 import scala.collection.JavaConverters.seqAsJavaListConverter
-import org.jfree.data.xy.{XYSeries, XYSeriesCollection}
+import org.jfree.data.xy.{XYSeries, XYSeriesCollection, IntervalXYDataset}
 import org.jfree.chart.{JFreeChart, ChartFactory, ChartFrame}
 import org.jfree.data.statistics.{HistogramDataset, DefaultBoxAndWhiskerCategoryDataset}
 import org.jfree.chart.plot.PlotOrientation
@@ -19,9 +19,11 @@ import utexas.aorta.common.Util
 object PlotResults extends PlotUtil {
   def main(args: Array[String]) {
     args.head match {
+      // TODO mark all of these as for single scenarios only
       case "time_vs_priority" => show(time_vs_priority(read_times(args.tail.head)))
       case "time_histogram" => show(time_histogram(read_times(args.tail.head)))
       case "time_boxplot" => show(time_boxplot(read_times(args.tail.head)))
+      case "turn_delay_histogram" => show(turn_delay_histogram(read_turn_delay(args.tail.head)))
     }
   }
 
@@ -48,9 +50,16 @@ object PlotResults extends PlotUtil {
     }
     return boxplot("Trip time distribution", "Trip time / ideal time", data)
   }
+
+  private def turn_delay_histogram(s: ScenarioTurnDelays): JFreeChart = {
+    val data = new XYSeriesCollection()
+    for ((mode, ls) <- s.delays.groupBy(_.mode)) {
+      add_xy(data, mode, ls.map(d => (d.bin, d.count)))
+    }
+    return histogram("Turn delay distribution", "Turn delay (s)", data)
+  }
 }
 
-// TODO box plots too. jfreechart seems better at those?
 trait PlotUtil {
   private val num_bins = 20
 
@@ -67,6 +76,14 @@ trait PlotUtil {
     return ScenarioTimes(
       ScenarioTag(fn), header.drop(3),
       lines.map(l => TripTimeResult(l.split(" ").map(_.toDouble))).toArray
+    )
+  }
+
+  protected def read_turn_delay(fn: String): ScenarioTurnDelays = {
+    val lines = read(fn).getLines
+    Util.assert_eq(lines.next, "mode turn_delay_bin count")
+    return ScenarioTurnDelays(
+      ScenarioTag(fn), lines.map(l => TurnDelayResult(l.split(" "))).toArray
     )
   }
 
@@ -92,11 +109,12 @@ trait PlotUtil {
     )
 
   // TODO hollow style would rock
-  protected def histogram(title: String, x: String, data: HistogramDataset) =
+  protected def histogram(title: String, x: String, data: IntervalXYDataset) =
     ChartFactory.createHistogram(
       title, x, "Count", data, PlotOrientation.VERTICAL, true, false, false
     )
 
+  // TODO boxplots from pre-binned data like turn_delays
   protected def boxplot(title: String, y: String, data: DefaultBoxAndWhiskerCategoryDataset) =
     ChartFactory.createBoxAndWhiskerChart(title, "Mode", y, data, true)
 
@@ -109,7 +127,9 @@ trait PlotUtil {
 
 case class ScenarioTag(id: String, map: String)
 case class TripTimeResult(priority: Double, ideal_time: Double, times: Array[Double])
+case class TurnDelayResult(mode: String, bin: Double, count: Double)
 case class ScenarioTimes(tag: ScenarioTag, modes: Array[String], agents: Array[TripTimeResult])
+case class ScenarioTurnDelays(tag: ScenarioTag, delays: Array[TurnDelayResult])
 
 // TODO stuff here is the dual of stuff in Metrics. pair them together somehow?
 object ScenarioTag {
@@ -121,4 +141,8 @@ object ScenarioTag {
 }
 object TripTimeResult {
   def apply(fields: Array[Double]) = new TripTimeResult(fields(1), fields(2), fields.drop(3))
+}
+object TurnDelayResult {
+  def apply(fields: Array[String]) =
+    new TurnDelayResult(fields(0), fields(1).toDouble, fields(2).toDouble)
 }
