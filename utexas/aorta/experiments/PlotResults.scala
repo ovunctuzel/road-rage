@@ -4,9 +4,10 @@
 
 package utexas.aorta.experiments
 
+import scala.collection.JavaConverters.seqAsJavaListConverter
 import org.jfree.data.xy.{XYSeries, XYSeriesCollection}
 import org.jfree.chart.{JFreeChart, ChartFactory, ChartFrame}
-import org.jfree.data.statistics.HistogramDataset
+import org.jfree.data.statistics.{HistogramDataset, DefaultBoxAndWhiskerCategoryDataset}
 import org.jfree.chart.plot.PlotOrientation
 import scala.io.Source
 import java.util.zip.GZIPInputStream
@@ -14,11 +15,13 @@ import java.io.{BufferedInputStream, FileInputStream}
 
 import utexas.aorta.common.Util
 
+// TODO separate methods for grabbing data from stuff that plots it as histogram/box plot/etc
 object PlotResults extends PlotUtil {
   def main(args: Array[String]) {
     args.head match {
       case "time_vs_priority" => show(time_vs_priority(read_times(args.tail.head)))
       case "time_histogram" => show(time_histogram(read_times(args.tail.head)))
+      case "time_boxplot" => show(time_boxplot(read_times(args.tail.head)))
     }
   }
 
@@ -36,6 +39,14 @@ object PlotResults extends PlotUtil {
       add_histo(data, mode, s.agents.map(a => a.times(idx) / a.ideal_time))
     }
     return histogram("Trip time distribution", "Trip time / ideal time", data)
+  }
+
+  private def time_boxplot(s: ScenarioTimes): JFreeChart = {
+    val data = new DefaultBoxAndWhiskerCategoryDataset()
+    for ((mode, idx) <- s.modes.zipWithIndex) {
+      add_box(data, mode, s.agents.map(a => a.times(idx) / a.ideal_time))
+    }
+    return boxplot("Trip time distribution", "Trip time / ideal time", data)
   }
 }
 
@@ -71,6 +82,10 @@ trait PlotUtil {
     chart.addSeries(name, data, num_bins)
   }
 
+  protected def add_box(chart: DefaultBoxAndWhiskerCategoryDataset, name: String, data: Array[Double]) {
+    chart.add(data.toList.asJava, name, "")
+  }
+
   protected def scatter_plot(title: String, x: String, y: String, data: XYSeriesCollection) =
     ChartFactory.createScatterPlot(
       title, x, y, data, PlotOrientation.VERTICAL, true, false, false
@@ -81,6 +96,9 @@ trait PlotUtil {
     ChartFactory.createHistogram(
       title, x, "Count", data, PlotOrientation.VERTICAL, true, false, false
     )
+
+  protected def boxplot(title: String, y: String, data: DefaultBoxAndWhiskerCategoryDataset) =
+    ChartFactory.createBoxAndWhiskerChart(title, "Mode", y, data, true)
 
   protected def show(chart: JFreeChart) {
     val frame = new ChartFrame("A nefarious plot", chart)
