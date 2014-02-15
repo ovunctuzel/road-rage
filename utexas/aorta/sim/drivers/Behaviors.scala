@@ -59,6 +59,7 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
 
   def choose_action(): Action = {
     a.lc.decide_lc()
+    a.wallet.react()
     return max_safe_accel
   }
 

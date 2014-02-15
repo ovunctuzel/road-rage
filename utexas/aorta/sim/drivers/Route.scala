@@ -199,7 +199,9 @@ class PathRoute(goal: Road, orig_router: Router, private var rerouter: Router) e
       Util.assert_eq(path.isEmpty, true)
       first_time = false
       val new_path = from.road :: orig_router.path(from.road, goal, owner.sim.tick)
-      owner.sim.publish(EV_Reroute(owner, new_path, true, orig_router.router_type, false, path))
+      owner.sim.publish(
+        EV_Reroute(owner, new_path, true, orig_router.router_type, false, path), owner
+      )
       path = new_path
     }
 
@@ -255,7 +257,9 @@ class PathRoute(goal: Road, orig_router: Router, private var rerouter: Router) e
     // Stitch together the new path into the full thing.
     val new_path =
       slice_before ++ (at.road :: source :: rerouter.path(source, goal, owner.sim.tick))
-    owner.sim.publish(EV_Reroute(owner, new_path, false, rerouter.router_type, must_reroute, path))
+    owner.sim.publish(
+      EV_Reroute(owner, new_path, false, rerouter.router_type, must_reroute, path), owner
+    )
     path = new_path
     return choice
   }

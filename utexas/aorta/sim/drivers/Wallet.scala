@@ -13,7 +13,6 @@ import utexas.aorta.sim.intersections.{Ticket, Policy, Phase}
 import utexas.aorta.common.{Util, cfg, StateReader, StateWriter, Serializable}
 
 // Express an agent's preferences of trading between time and cost.
-// TODO dont require an agent, ultimately
 abstract class Wallet(initial_budget: Int, val priority: Int) extends Serializable {
   //////////////////////////////////////////////////////////////////////////////
   // Transient state
@@ -67,6 +66,9 @@ abstract class Wallet(initial_budget: Int, val priority: Int) extends Serializab
   def set_debug(value: Boolean) {
     debug_me = value
   }
+
+  // Called before lookahead behavior does its magic
+  def react() {}
 
   //////////////////////////////////////////////////////////////////////////////
   // Queries
@@ -143,13 +145,13 @@ class StaticWallet(initial_budget: Int, p: Int)
     choice.map(thing => (thing, budget))
 
   // Be greedier. We have infinite budget, so contribute to our queue.
-  protected def bid_stop_sign(tickets: Iterable[Ticket], ours: Ticket) =
+  override def bid_stop_sign(tickets: Iterable[Ticket], ours: Ticket) =
     bid_full(greedy_my_ticket(tickets, ours))
 
-  protected def bid_signal(phases: Iterable[Phase], ours: Ticket) =
+  override def bid_signal(phases: Iterable[Phase], ours: Ticket) =
     bid_full(my_phases(phases, ours))
 
-  protected def bid_reservation(tickets: Iterable[Ticket], ours: Ticket) =
+  override def bid_reservation(tickets: Iterable[Ticket], ours: Ticket) =
     bid_full(greedy_my_ticket(tickets, ours))
 }
 
@@ -161,9 +163,9 @@ class FreeriderWallet(p: Int) extends Wallet(0, p) {
   override def toString = "FR"
   def wallet_type = WalletType.Freerider
 
-  protected def bid_stop_sign(tickets: Iterable[Ticket], ours: Ticket) = Nil
-  protected def bid_signal(phases: Iterable[Phase], ours: Ticket) = Nil
-  protected def bid_reservation(tickets: Iterable[Ticket], ours: Ticket) = Nil
+  override def bid_stop_sign(tickets: Iterable[Ticket], ours: Ticket) = Nil
+  override def bid_signal(phases: Iterable[Phase], ours: Ticket) = Nil
+  override def bid_reservation(tickets: Iterable[Ticket], ours: Ticket) = Nil
 }
 
 // Bid once per intersection some amount proportional to the rest of the trip.
@@ -192,11 +194,8 @@ class FairWallet(initial_budget: Int, p: Int, initial_bid_ahead: Boolean)
 
   override def setup(agent: Agent) {
     super.setup(agent)
-    agent.sim.listen(classOf[EV_Reroute], _ match {
-      case EV_Reroute(a, path, _, _, _, _) if a == owner => {
-        total_weight = path.map(r => weight(r.to)).sum
-      }
-      case _ =>
+    agent.sim.listen(classOf[EV_Reroute], owner, _ match {
+      case ev: EV_Reroute => total_weight = ev.path.map(r => weight(r.to)).sum
     })
     agent.sim.listen(classOf[EV_Transition], owner, _ match {
       case EV_Transition(a, from, to: Turn) => total_weight -= weight(to.vert)
@@ -220,13 +219,13 @@ class FairWallet(initial_budget: Int, p: Int, initial_bid_ahead: Boolean)
     thing => (thing, math.floor(budget * (weight(v) / total_weight)).toInt)
   )
 
-  protected def bid_stop_sign(tickets: Iterable[Ticket], ours: Ticket) =
+  override def bid_stop_sign(tickets: Iterable[Ticket], ours: Ticket) =
     bid_fair(my_ticket(tickets, ours), ours.turn.vert)
 
-  protected def bid_signal(phases: Iterable[Phase], ours: Ticket) =
+  override def bid_signal(phases: Iterable[Phase], ours: Ticket) =
     bid_fair(my_phases(phases, ours), ours.turn.vert)
 
-  protected def bid_reservation(tickets: Iterable[Ticket], ours: Ticket) =
+  override def bid_reservation(tickets: Iterable[Ticket], ours: Ticket) =
     bid_fair(my_ticket(tickets, ours), ours.turn.vert)
 
   // How much should we plan on spending, or actually spend, at this
