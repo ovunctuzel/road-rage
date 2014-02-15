@@ -9,7 +9,7 @@ import Function.tupled
 
 import utexas.aorta.map.make.MapStateWriter
 import utexas.aorta.ui.Renderable
-import utexas.aorta.sim.LinkAuditor
+import utexas.aorta.sim.RoadAgent
 import utexas.aorta.common.{Util, RoadID, VertexID, Physics, StateReader}
 
 // An oriented bundle of lanes
@@ -34,7 +34,7 @@ class Road(
   // Deterministic state
 
   // TODO like queues for traversables and intersections for vertices... bad dependency to have.
-  var auditor: LinkAuditor = null
+  var road_agent: RoadAgent = null
 
   // TODO move this table. actually, store speed limit
   val speed_limit = Physics.mph_to_si(road_type match {

@@ -20,6 +20,8 @@ import utexas.aorta.common.{Util, ZoneID, StateReader}
 
 // TODO something with zones isnt deterministic.
 
+// TODO RoadAgent and related at the zone granularity?
+
 class ZoneMap(
   val zones: Array[Zone], mapping: immutable.SortedMap[Road, immutable.SortedSet[Zone]],
   val links: immutable.SortedMap[Zone, immutable.SortedSet[Zone]]

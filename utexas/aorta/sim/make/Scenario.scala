@@ -18,7 +18,7 @@ import utexas.aorta.common.{Util, StateWriter, StateReader, AgentID, VertexID, R
 // Array index and agent/intersection ID must correspond. Creator's responsibility.
 case class Scenario(
   name: String, map_fn: String, agents: Array[MkAgent], intersections: Array[MkIntersection],
-  system_wallet: SystemWalletConfig, auditor: CongestionType.Value
+  system_wallet: SystemWalletConfig, road_agent: CongestionType.Value
 ) extends Serializable {
   def graph = Graph.load(map_fn)
   def make_sim() = new Simulation(this)
@@ -29,7 +29,7 @@ case class Scenario(
   }
 
   def make_intersection(v: Vertex, sim: Simulation) = intersections(v.id.int).make(v, sim)
-  def make_auditor(r: Road, sim: Simulation) = Factory.make_auditor(auditor, r, sim)
+  def make_road_agent(r: Road, sim: Simulation) = Factory.make_road_agent(road_agent, r, sim)
 
   // Although the massive numbers of agents were probably created with a
   // distribution function originally, we just see the individual list in the
@@ -41,7 +41,7 @@ case class Scenario(
     ScenarioUtil.percentages(intersections.map(_.policy))
     Util.log("Intersection orderings:")
     ScenarioUtil.percentages(intersections.map(_.ordering))
-    Util.log(s"Link auditor: $auditor")
+    Util.log(s"Road agent: $road_agent")
     Util.log("")
 
     Util.log(s"${agents.size} agents total")
@@ -71,7 +71,7 @@ case class Scenario(
       Util.log(s"Scenarios are for different maps: $map_fn and ${other.map_fn}")
       return
     }
-    ScenarioUtil.diff(auditor, other.auditor, "link auditor") match {
+    ScenarioUtil.diff(road_agent, other.road_agent, "Road Agent") match {
       case Some(d) => Util.log(d)
       case None =>
     }
@@ -88,7 +88,7 @@ case class Scenario(
     w.strings(name, map_fn)
     w.lists(agents, intersections)
     w.obj(system_wallet)
-    w.int(auditor.id)
+    w.int(road_agent.id)
   }
 }
 
@@ -110,7 +110,7 @@ object Scenario {
       AgentDistribution.default(graph),
       IntersectionDistribution.default(graph),
       SystemWalletConfig(),
-      CongestionType.withName(cfg.auditor)
+      CongestionType.withName(cfg.road_agent)
     )
     // Always save it, so resimulation is easy.
     Util.mkdir("scenarios")
@@ -349,7 +349,7 @@ object Factory {
     case WalletType.Fair => new FairWallet(budget, priority, bid_ahead)
   }
 
-  def make_auditor(enum: CongestionType.Value, r: Road, sim: Simulation) = enum match {
+  def make_road_agent(enum: CongestionType.Value, r: Road, sim: Simulation) = enum match {
     case CongestionType.Current => new CurrentCongestion(r, sim)
     case CongestionType.Sticky => new StickyCongestion(r, sim)
     case CongestionType.MovingWindow => new MovingWindowCongestion(r, sim)

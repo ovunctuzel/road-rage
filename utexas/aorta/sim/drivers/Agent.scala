@@ -119,12 +119,13 @@ class Agent(
         case t: Turn => t.to
       }
 
-      // tell the intersection
+      // tell the intersection and road agent
       (current_on, next) match {
         case (e: Edge, t: Turn) => {
           val i = t.vert.intersection
           i.enter(get_ticket(t).get)
           e.queue.free_slot()
+          e.road.road_agent.exit(this)
         }
         case (t: Turn, e: Edge) => {
           val ticket = get_ticket(t).get
@@ -132,6 +133,7 @@ class Agent(
           remove_ticket(ticket)
           ticket.intersection.exit(ticket)
           sim.publish(ticket.stat)
+          e.road.road_agent.enter(this)
         }
       }
 

@@ -51,7 +51,7 @@ class Simulation(val scenario: Scenario) extends Publisher with AgentManager {
     // TODO always do this, and forget this map/sim separation?
     graph.traversables.foreach(t => t.queue = new Queue(t))
     graph.vertices.foreach(v => v.intersection = scenario.make_intersection(v, this))
-    graph.roads.foreach(r => r.auditor = scenario.make_auditor(r, this))
+    graph.roads.foreach(r => r.road_agent = scenario.make_road_agent(r, this))
 
     // Are we starting for the first time?
     if (tick == 0.0) {
@@ -121,7 +121,7 @@ class Simulation(val scenario: Scenario) extends Publisher with AgentManager {
     // steps, we ensure the intersections' temporary state becomes firm.
     graph.vertices.foreach(v => v.intersection.policy.react_tick())
 
-    graph.roads.foreach(r => r.auditor.react())
+    graph.roads.foreach(r => r.road_agent.react())
 
     // Record a heartbeat every 1.0s
     if (System.currentTimeMillis - last_real_time >= 1000.0) {

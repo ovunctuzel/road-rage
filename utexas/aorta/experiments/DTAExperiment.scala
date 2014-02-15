@@ -76,7 +76,7 @@ class TimeDependentAStar(graph: Graph, delays: LinkDelayMetric, start_time: Doub
   // cost_sofar._2 is the time spent in the route so far
   override def cost_step(
     prev: Road, next: Road, cost_sofar: (Double, Double)
-  ) = (Util.bool2binary(next.auditor.congested), delays.delay(next, start_time + cost_sofar._2))
+  ) = (Util.bool2binary(next.road_agent.congested), delays.delay(next, start_time + cost_sofar._2))
 }
 
 class LinkDelayMetric(info: MetricInfo) extends Metric(info) {

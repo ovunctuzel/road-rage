@@ -6,14 +6,22 @@ package utexas.aorta.sim
 
 import scala.collection.mutable
 
+import utexas.aorta.contrib.Tollbooth
 import utexas.aorta.map.{Road, Turn}
 import utexas.aorta.sim.drivers.Agent
 import utexas.aorta.common.{cfg, Util, Price}
 
-// Manage information at the road level
-// TODO maybe also at the zone level?
-abstract class LinkAuditor(val r: Road, sim: Simulation) {
+// Present information about congestion at the road level
+abstract class RoadAgent(val r: Road, sim: Simulation) {
   // TODO need to savestate, once we decide what state we really have
+  private val tollbooth = new Tollbooth(this)
+
+  def enter(a: Agent) {
+    tollbooth.when_enter(a)
+  }
+  def exit(a: Agent) {
+    tollbooth.when_exit(a)
+  }
 
   def congested(): Boolean
   // TODO how often must this be called?
@@ -36,7 +44,7 @@ abstract class LinkAuditor(val r: Road, sim: Simulation) {
 }
 
 // Just report the current state of congestion. Subject to oscillation.
-class CurrentCongestion(r: Road, sim: Simulation) extends LinkAuditor(r, sim) {
+class CurrentCongestion(r: Road, sim: Simulation) extends RoadAgent(r, sim) {
   private var last_state = false
 
   override def congested = congested_now
@@ -50,7 +58,7 @@ class CurrentCongestion(r: Road, sim: Simulation) extends LinkAuditor(r, sim) {
 
 // Only flip states congested<->not if the state persists for >= 30s. Has a bias for whatever state
 // starts.
-class StickyCongestion(r: Road, sim: Simulation) extends LinkAuditor(r, sim) {
+class StickyCongestion(r: Road, sim: Simulation) extends RoadAgent(r, sim) {
   private val threshold = 30.0  // seconds
   private var congested_state = false
   private var opposite_since: Option[Double] = None
@@ -80,7 +88,7 @@ class StickyCongestion(r: Road, sim: Simulation) extends LinkAuditor(r, sim) {
 }
 
 // Report the most popular state of the last 30s
-class MovingWindowCongestion(r: Road, sim: Simulation) extends LinkAuditor(r, sim) {
+class MovingWindowCongestion(r: Road, sim: Simulation) extends RoadAgent(r, sim) {
   private val duration = 31.0  // seconds
   private def num_observations = (duration / cfg.dt_s).toInt
   Util.assert_eq(num_observations % 2, 1) // must be odd
@@ -112,7 +120,6 @@ class MovingWindowCongestion(r: Road, sim: Simulation) extends LinkAuditor(r, si
 }
 
 // When any link in an agent's path changes state, inform them.
-// TODO consider updating at the zone granularity
 class RouteChangeWatcher(sim: Simulation) {
   // Subscribed when the road was congested
   private val subscribers_congested
@@ -127,7 +134,7 @@ class RouteChangeWatcher(sim: Simulation) {
         subscribers_clear(r) -= a
       }
       for (r <- path) {
-        if (r.auditor.congested) {
+        if (r.road_agent.congested) {
           subscribers_congested(r) += a
         } else {
           subscribers_clear(r) += a
