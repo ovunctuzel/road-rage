@@ -6,6 +6,7 @@ package utexas.aorta.experiments
 
 import org.jfree.data.xy.{XYSeries, XYSeriesCollection}
 import org.jfree.chart.{JFreeChart, ChartFactory, ChartFrame}
+import org.jfree.data.statistics.HistogramDataset
 import org.jfree.chart.plot.PlotOrientation
 import scala.io.Source
 import java.util.zip.GZIPInputStream
@@ -17,20 +18,31 @@ object PlotResults extends PlotUtil {
   def main(args: Array[String]) {
     args.head match {
       case "time_vs_priority" => show(time_vs_priority(read_times(args.tail.head)))
+      case "time_histogram" => show(time_histogram(read_times(args.tail.head)))
     }
   }
 
   private def time_vs_priority(s: ScenarioTimes): JFreeChart = {
     val data = new XYSeriesCollection()
     for ((mode, idx) <- s.modes.zipWithIndex) {
-      add(data, mode, s.agents.map(a => (a.priority, a.times(idx) / a.ideal_time)))
+      add_xy(data, mode, s.agents.map(a => (a.priority, a.times(idx) / a.ideal_time)))
     }
     return scatter_plot("Time vs priority", "Priority", "Trip time / ideal time", data)
   }
+
+  private def time_histogram(s: ScenarioTimes): JFreeChart = {
+    val data = new HistogramDataset()
+    for ((mode, idx) <- s.modes.zipWithIndex) {
+      add_histo(data, mode, s.agents.map(a => a.times(idx) / a.ideal_time))
+    }
+    return histogram("Trip time distribution", "Trip time / ideal time", data)
+  }
 }
 
-// TODO histograms and box plots too. jfreechart seems better at those?
+// TODO box plots too. jfreechart seems better at those?
 trait PlotUtil {
+  private val num_bins = 20
+
   private def read(fn: String) =
     if (fn.endsWith(".gz"))
       Source.fromInputStream(new GZIPInputStream(new BufferedInputStream(new FileInputStream(fn))))
@@ -47,7 +59,7 @@ trait PlotUtil {
     )
   }
 
-  protected def add(chart: XYSeriesCollection, name: String, data: Array[(Double, Double)]) {
+  protected def add_xy(chart: XYSeriesCollection, name: String, data: Array[(Double, Double)]) {
     val series = new XYSeries(name)
     for ((x, y) <- data) {
       series.add(x, y)
@@ -55,9 +67,19 @@ trait PlotUtil {
     chart.addSeries(series)
   }
 
+  protected def add_histo(chart: HistogramDataset, name: String, data: Array[Double]) {
+    chart.addSeries(name, data, num_bins)
+  }
+
   protected def scatter_plot(title: String, x: String, y: String, data: XYSeriesCollection) =
     ChartFactory.createScatterPlot(
       title, x, y, data, PlotOrientation.VERTICAL, true, false, false
+    )
+
+  // TODO hollow style would rock
+  protected def histogram(title: String, x: String, data: HistogramDataset) =
+    ChartFactory.createHistogram(
+      title, x, "Count", data, PlotOrientation.VERTICAL, true, false, false
     )
 
   protected def show(chart: JFreeChart) {
