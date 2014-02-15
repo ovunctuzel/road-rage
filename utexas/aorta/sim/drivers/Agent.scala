@@ -192,20 +192,17 @@ class Agent(
   }
 
   // Caller must remove this agent from the simulation list
-  def terminate(interrupted: Boolean = false) {
-    if (!interrupted) {
-      at.on.queue.exit(this, at.dist)
-      at.on match {
-        case e: Edge => e.queue.free_slot()
-        case _ =>
-      }
-      Util.assert_eq(tickets.isEmpty, true)
+  def terminate() {
+    at.on.queue.exit(this, at.dist)
+    at.on match {
+      case e: Edge => e.queue.free_slot()
+      case _ =>
     }
+    Util.assert_eq(tickets.isEmpty, true)
     val maker = sim.scenario.agents(id.int)
     sim.publish(EV_AgentQuit(
       this, maker.birth_tick, sim.graph.get_r(maker.start), route.goal, route.route_type,
-      wallet.wallet_type, maker.wallet.budget, sim.tick, wallet.budget, wallet.priority,
-      !interrupted
+      wallet.wallet_type, maker.wallet.budget, sim.tick, wallet.budget, wallet.priority
     ))
     AgentMap.maps.foreach(m => m.destroy(this))
   }

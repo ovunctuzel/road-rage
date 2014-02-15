@@ -60,11 +60,6 @@ class Simulation(val scenario: Scenario) extends Publisher with AgentManager {
       future_spawn ++= scenario.agents.filter(_.birth_tick > tick)
     }
 
-    // TODO exactly when do we need this?
-    sys.ShutdownHookThread({
-      terminate()
-    })
-
     return this
   }
 
@@ -146,12 +141,6 @@ class Simulation(val scenario: Scenario) extends Publisher with AgentManager {
     for (i <- Range(0, ticks.toInt)) {
       step()
     }
-  }
-
-  def terminate() {
-    // Record this so any monitors always know about the end
-    record_heartbeat(0)
-    agents.foreach(a => a.terminate(interrupted = true))
   }
 
   // True if we've correctly promoted into real agents. Does the work of
