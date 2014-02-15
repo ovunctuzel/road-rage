@@ -114,7 +114,6 @@ trait PlotUtil {
       title, x, "Count", data, PlotOrientation.VERTICAL, true, false, false
     )
 
-  // TODO boxplots from pre-binned data like turn_delays
   protected def boxplot(title: String, y: String, data: DefaultBoxAndWhiskerCategoryDataset) =
     ChartFactory.createBoxAndWhiskerChart(title, "Mode", y, data, true)
 

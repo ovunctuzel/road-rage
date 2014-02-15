@@ -71,10 +71,12 @@ object FollowingDistance {
   }
 
   private def levin(follower: Kinematic, leader: Kinematic): Double = {
-    val pt1 = leader.dist + (leader.speed * cfg.dt_s) + (0.5 * -cfg.max_accel * cfg.dt_s * cfg.dt_s)
-    val pt2 = -follower.dist - (follower.speed * cfg.dt_s) - cfg.follow_dist
-    val pt3 = 0.5 * cfg.dt_s * cfg.dt_s
-    return (pt1 + pt2) / pt3
+    val common_numer = math.max(
+      leader.dist + (leader.speed * cfg.dt_s) + (0.5 * -cfg.max_accel * cfg.dt_s * cfg.dt_s),
+      leader.dist
+    ) - follower.dist - (follower.speed * cfg.dt_s)
+    val l1 = common_numer - (0.5 * -cfg.max_accel * cfg.dt_s * cfg.dt_s)
+    return (common_numer - l1) / (0.5 * cfg.dt_s * cfg.dt_s)
   }
 
   private def following_dist(speed: Double) = cfg.follow_dist + Physics.min_next_dist(speed)
