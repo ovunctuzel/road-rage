@@ -69,6 +69,9 @@ abstract class HistogramMetric(info: MetricInfo, width: Double) extends Metric(i
 class TripTimeMetric(info: MetricInfo) extends SinglePerAgentMetric(info) {
   override def name = "trip_time"
 
+  override def extra_fields = List("priority", "ideal_time")
+  override def extra_data(a: MkAgent) = List(a.wallet.priority, a.ideal_time(info.sim.graph))
+
   info.sim.listen(classOf[EV_AgentQuit], _ match {
     case e: EV_AgentQuit => per_agent(e.agent.id) = e.trip_time
   })
