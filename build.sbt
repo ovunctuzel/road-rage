@@ -19,7 +19,7 @@ libraryDependencies += "org.scala-lang" % "scala-compiler" % scalaVersion.value
 
 libraryDependencies += "org.scala-lang.modules" %% "scala-xml" % "1.0-RC3"
 
-libraryDependencies += "com.xeiam.xchart" % "xchart" % "2.3.0"
+libraryDependencies += "org.jfree" % "jfreechart" % "1.0.15"
 
 // Be able to collect all dependencies
 packSettings

@@ -4,8 +4,9 @@
 
 package utexas.aorta.experiments
 
-import com.xeiam.xchart.{Chart, ChartBuilder, SwingWrapper}
-import com.xeiam.xchart.StyleManager.{ChartType, ChartTheme}
+import org.jfree.data.xy.{XYSeries, XYSeriesCollection}
+import org.jfree.chart.{JFreeChart, ChartFactory, ChartFrame}
+import org.jfree.chart.plot.PlotOrientation
 import scala.io.Source
 import java.util.zip.GZIPInputStream
 import java.io.{BufferedInputStream, FileInputStream}
@@ -19,21 +20,17 @@ object PlotResults extends PlotUtil {
     }
   }
 
-  private def time_vs_priority(s: ScenarioTimes): Chart = {
-    val chart = scatter_plot("Time vs priority", "Priority", "Trip time / ideal time").build
+  private def time_vs_priority(s: ScenarioTimes): JFreeChart = {
+    val data = new XYSeriesCollection()
     for ((mode, idx) <- s.modes.zipWithIndex) {
-      add(chart, mode, s.agents.map(a => (a.priority, a.times(idx) / a.ideal_time)))
+      add(data, mode, s.agents.map(a => (a.priority, a.times(idx) / a.ideal_time)))
     }
-    return chart
+    return scatter_plot("Time vs priority", "Priority", "Trip time / ideal time", data)
   }
 }
 
 // TODO histograms and box plots too. jfreechart seems better at those?
 trait PlotUtil {
-  private val width = 800
-  private val height = 600
-  private val theme = ChartTheme.Matlab
-
   private def read(fn: String) =
     if (fn.endsWith(".gz"))
       Source.fromInputStream(new GZIPInputStream(new BufferedInputStream(new FileInputStream(fn))))
@@ -50,16 +47,23 @@ trait PlotUtil {
     )
   }
 
-  protected def scatter_plot(title: String, x: String, y: String) = new ChartBuilder()
-    .chartType(ChartType.Scatter).width(width).height(height).theme(theme)
-    .title(title).xAxisTitle(x).yAxisTitle(y)
-
-  protected def add(chart: Chart, name: String, data: Array[(Double, Double)]) {
-    chart.addSeries(name, data.map(_._1), data.map(_._2))
+  protected def add(chart: XYSeriesCollection, name: String, data: Array[(Double, Double)]) {
+    val series = new XYSeries(name)
+    for ((x, y) <- data) {
+      series.add(x, y)
+    }
+    chart.addSeries(series)
   }
 
-  protected def show(chart: Chart) {
-    new SwingWrapper(chart).displayChart()
+  protected def scatter_plot(title: String, x: String, y: String, data: XYSeriesCollection) =
+    ChartFactory.createScatterPlot(
+      title, x, y, data, PlotOrientation.VERTICAL, true, false, false
+    )
+
+  protected def show(chart: JFreeChart) {
+    val frame = new ChartFrame("A nefarious plot", chart)
+    frame.pack()
+    frame.setVisible(true)
   }
 }
 
