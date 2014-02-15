@@ -15,49 +15,58 @@ import java.io.{BufferedInputStream, FileInputStream}
 
 import utexas.aorta.common.Util
 
-// TODO separate methods for grabbing data from stuff that plots it as histogram/box plot/etc
+// Used for showing histograms or boxplots from a bunch of individual values
+case class DistributionData(
+  values_per_mode: Map[String, Array[Double]], title: String, label: String
+)
+// Histograms and boxplots from pre-binned values. Arrays of (bin, count)
+case class PreBinnedData(
+  bins_per_mode: Map[String, Array[(Double, Double)]], title: String, label: String
+)
+// (X, Y) pairs for association
+case class ScatterData(
+  points_per_mode: Map[String, Array[(Double, Double)]], title: String, x: String, y: String
+)
+
 object PlotResults extends PlotUtil {
   def main(args: Array[String]) {
-    args.head match {
+    args(0) match {
       // TODO mark all of these as for single scenarios only
-      case "time_vs_priority" => show(time_vs_priority(read_times(args.tail.head)))
-      case "time_histogram" => show(time_histogram(read_times(args.tail.head)))
-      case "time_boxplot" => show(time_boxplot(read_times(args.tail.head)))
-      case "turn_delay_histogram" => show(turn_delay_histogram(read_turn_delay(args.tail.head)))
+      // TODO separate out somehow!
+      case "time" => {
+        val data = time_distr(read_times(args(2)))
+        args(1) match {
+          case "histogram" => show(histogram(data))
+          case "boxplot" => show(boxplot(data))
+        }
+      }
+      case "turn_delay" => {
+        val data = turn_delay_distr(read_turn_delay(args(2)))
+        args(1) match {
+          case "histogram" => show(histogram(data))
+        }
+      }
+      case "time_vs_priority" => show(scatterplot(time_vs_priority(read_times(args(1)))))
     }
   }
 
-  private def time_vs_priority(s: ScenarioTimes): JFreeChart = {
-    val data = new XYSeriesCollection()
-    for ((mode, idx) <- s.modes.zipWithIndex) {
-      add_xy(data, mode, s.agents.map(a => (a.priority, a.times(idx) / a.ideal_time)))
-    }
-    return scatter_plot("Time vs priority", "Priority", "Trip time / ideal time", data)
-  }
+  private def time_vs_priority(s: ScenarioTimes) = ScatterData(
+    s.modes.zipWithIndex.map(_ match {
+      case (mode, idx) => mode -> s.agents.map(a => (a.priority, a.times(idx) / a.ideal_time))
+    }).toMap, "Time vs priority", "Priority", "Trip time / ideal time"
+  )
 
-  private def time_histogram(s: ScenarioTimes): JFreeChart = {
-    val data = new HistogramDataset()
-    for ((mode, idx) <- s.modes.zipWithIndex) {
-      add_histo(data, mode, s.agents.map(a => a.times(idx) / a.ideal_time))
-    }
-    return histogram("Trip time distribution", "Trip time / ideal time", data)
-  }
+  private def time_distr(s: ScenarioTimes) = DistributionData(
+    s.modes.zipWithIndex.map(_ match {
+      case (mode, idx) => mode -> s.agents.map(a => a.times(idx) / a.ideal_time)
+    }).toMap, "Trip time distribution", "Trip time / ideal time"
+  )
 
-  private def time_boxplot(s: ScenarioTimes): JFreeChart = {
-    val data = new DefaultBoxAndWhiskerCategoryDataset()
-    for ((mode, idx) <- s.modes.zipWithIndex) {
-      add_box(data, mode, s.agents.map(a => a.times(idx) / a.ideal_time))
-    }
-    return boxplot("Trip time distribution", "Trip time / ideal time", data)
-  }
-
-  private def turn_delay_histogram(s: ScenarioTurnDelays): JFreeChart = {
-    val data = new XYSeriesCollection()
-    for ((mode, ls) <- s.delays.groupBy(_.mode)) {
-      add_xy(data, mode, ls.map(d => (d.bin, d.count)))
-    }
-    return histogram("Turn delay distribution", "Turn delay (s)", data)
-  }
+  private def turn_delay_distr(s: ScenarioTurnDelays) = PreBinnedData(
+    s.delays.groupBy(_.mode).map(_ match {
+      case (mode, ls) => mode -> ls.map(d => (d.bin, d.count))
+    }).toMap, "Turn delay distribution", "Turn delay (s)"
+  )
 }
 
 trait PlotUtil {
@@ -95,27 +104,44 @@ trait PlotUtil {
     chart.addSeries(series)
   }
 
-  protected def add_histo(chart: HistogramDataset, name: String, data: Array[Double]) {
-    chart.addSeries(name, data, num_bins)
-  }
-
-  protected def add_box(chart: DefaultBoxAndWhiskerCategoryDataset, name: String, data: Array[Double]) {
-    chart.add(data.toList.asJava, name, "")
-  }
-
-  protected def scatter_plot(title: String, x: String, y: String, data: XYSeriesCollection) =
-    ChartFactory.createScatterPlot(
-      title, x, y, data, PlotOrientation.VERTICAL, true, false, false
+  protected def scatterplot(data: ScatterData): JFreeChart = {
+    val chart = new XYSeriesCollection()
+    for ((mode, points) <- data.points_per_mode) {
+      add_xy(chart, mode, points)
+    }
+    return ChartFactory.createScatterPlot(
+      data.title, data.x, data.y, chart, PlotOrientation.VERTICAL, true, false, false
     )
+  }
 
   // TODO hollow style would rock
-  protected def histogram(title: String, x: String, data: IntervalXYDataset) =
-    ChartFactory.createHistogram(
-      title, x, "Count", data, PlotOrientation.VERTICAL, true, false, false
+  protected def histogram(data: DistributionData): JFreeChart = {
+    val chart = new HistogramDataset()
+    for ((mode, values) <- data.values_per_mode) {
+      chart.addSeries(mode, values, num_bins)
+    }
+    return ChartFactory.createHistogram(
+      data.title, data.label, "Count", chart, PlotOrientation.VERTICAL, true, false, false
     )
+  }
 
-  protected def boxplot(title: String, y: String, data: DefaultBoxAndWhiskerCategoryDataset) =
-    ChartFactory.createBoxAndWhiskerChart(title, "Mode", y, data, true)
+  protected def histogram(data: PreBinnedData): JFreeChart = {
+    val chart = new XYSeriesCollection()
+    for ((mode, bin_counts) <- data.bins_per_mode) {
+      add_xy(chart, mode, bin_counts)
+    }
+    return ChartFactory.createHistogram(
+      data.title, data.label, "Count", chart, PlotOrientation.VERTICAL, true, false, false
+    )
+  }
+
+  protected def boxplot(data: DistributionData): JFreeChart = {
+    val chart = new DefaultBoxAndWhiskerCategoryDataset()
+    for ((mode, values) <- data.values_per_mode) {
+      chart.add(values.toList.asJava, mode, "")
+    }
+    return ChartFactory.createBoxAndWhiskerChart(data.title, "Mode", data.label, chart, true)
+  }
 
   protected def show(chart: JFreeChart) {
     val frame = new ChartFrame("A nefarious plot", chart)
