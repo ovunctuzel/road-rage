@@ -43,14 +43,14 @@ class FixedRouter(graph: Graph, initial_path: List[Road]) extends Router(graph) 
 // Score is a pair of doubles
 abstract class AbstractPairAstarRouter(graph: Graph) extends Router(graph) {
   def heuristic_factory(goal: Road): (Road) => (Double, Double)
-  def cost_step(
-    prev: Road, next: Road, cost_sofar: (Double, Double)
-  ): (Double, Double)
+  def cost_step(prev: Road, next: Road, cost_sofar: (Double, Double)): (Double, Double)
+  def cost_start() = (0.0, 0.0)
 
   protected def add_cost(a: (Double, Double), b: (Double, Double)) = (a._1 + b._1, a._2 + b._2)
 
   override def path(from: Road, to: Road, time: Double) = AStar.path(
-    from, Set(to), (step: Road) => step.succs, cost_step, heuristic_factory(to), add_cost
+    from, Set(to), (step: Road) => step.succs, cost_step, heuristic_factory(to), add_cost,
+    cost_start = cost_start
   )
 }
 
@@ -119,4 +119,22 @@ class SumTollRouter(graph: Graph) extends AbstractPairAstarRouter(graph)
 
   override def cost_step(prev: Road, next: Road, cost_sofar: (Double, Double)) =
     (next.road_agent.toll.dollars, next.freeflow_time)
+}
+
+// Score is (price + time * impatience_penalty, time). The time component lets us request quotes
+// properly from tollbooths.
+class TollboothRouter(graph: Graph) extends AbstractPairAstarRouter(graph) {
+  private var owner: Agent = null
+  override def router_type = RouterType.Tollbooth
+  override def setup(a: Agent) {
+    owner = a
+  }
+
+  override def heuristic_factory(goal: Road) = (r: Road) => (0, 0)
+  override def cost_step(prev: Road, next: Road, cost_sofar: (Double, Double)) = (
+    next.road_agent.tollbooth.toll(cost_sofar._2).dollars + next.freeflow_time * owner.wallet.priority,
+    next.freeflow_time
+  )
+  // Seed with the actual time we're starting
+  override def cost_start = (0, owner.sim.tick)
 }

@@ -280,7 +280,7 @@ object RouteType extends Enumeration {
 object RouterType extends Enumeration {
   type RouterType = Value
   // Agents don't use Unusable; it's just for manually-invoked routers.
-  val Congestion, Zone, Fixed, Unusable, DumbToll, TollThreshold, SumToll = Value
+  val Congestion, Zone, Fixed, Unusable, DumbToll, TollThreshold, SumToll, Tollbooth = Value
 }
 
 object OrderingType extends Enumeration {
@@ -333,6 +333,7 @@ object Factory {
     case RouterType.DumbToll => new DumbTollRouter(graph)
     case RouterType.TollThreshold => new TollThresholdRouter(graph)
     case RouterType.SumToll => new SumTollRouter(graph)
+    case RouterType.Tollbooth => new TollboothRouter(graph)
   }
 
   def make_intersection_ordering[T <: Ordered[T]](enum: OrderingType.Value) = enum match

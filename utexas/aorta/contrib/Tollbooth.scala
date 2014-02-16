@@ -41,4 +41,7 @@ class Tollbooth(road: RoadAgent) {
   def verify_done() {
     Util.assert_eq(registrations.isEmpty, true)
   }
+
+  // TODO tmp. this'll get fancier soon.
+  def toll(eta: Double) = road.toll
 }

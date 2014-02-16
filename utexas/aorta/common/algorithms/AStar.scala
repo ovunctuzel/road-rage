@@ -16,7 +16,8 @@ object AStar {
     calc_heuristic: (T) => (Double, Double),
     add_cost: ((Double, Double), (Double, Double)) => (Double, Double) =
       (a: (Double, Double), b: (Double, Double)) => (a._1 + b._1, a._2 + b._2),
-    allow_cycles: Boolean = false
+    allow_cycles: Boolean = false,
+    cost_start: (Double, Double) = (0, 0)
   ): List[T] = {
     if (goals.contains(start) && !allow_cycles) {
       return Nil
@@ -32,7 +33,7 @@ object AStar {
     val open = new PriorityQueue[T]()
     val ordering_tuple = Ordering[(Double, Double)].on((pair: (Double, Double)) => pair)
 
-    costs(start) = (0, 0)
+    costs(start) = cost_start
     open.insert(start, calc_heuristic(start))
     // Indicate start in backrefs by not including it
 
