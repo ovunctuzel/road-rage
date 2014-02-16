@@ -37,4 +37,8 @@ class Tollbooth(road: RoadAgent) {
     Util.assert_eq(registrations.contains(a), true)
     registrations -= a
   }
+
+  def verify_done() {
+    Util.assert_eq(registrations.isEmpty, true)
+  }
 }

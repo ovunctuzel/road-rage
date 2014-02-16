@@ -201,11 +201,11 @@ class PathRoute(goal: Road, orig_router: Router, private var rerouter: Router) e
     if (first_time) {
       Util.assert_eq(path.isEmpty, true)
       first_time = false
-      val new_path = from.road :: orig_router.path(from.road, goal, owner.sim.tick)
+      val old_path = path
+      path = from.road :: orig_router.path(from.road, goal, owner.sim.tick)
       owner.sim.publish(
-        EV_Reroute(owner, new_path, true, orig_router.router_type, false, path), owner
+        EV_Reroute(owner, path, true, orig_router.router_type, false, old_path), owner
       )
-      path = new_path
     }
 
     // Lookahead could be calling us from anywhere. Figure out where we are in
@@ -258,12 +258,11 @@ class PathRoute(goal: Road, orig_router: Router, private var rerouter: Router) e
     // TODO Erase all turn choices AFTER source, if we've made any?
 
     // Stitch together the new path into the full thing.
-    val new_path =
-      slice_before ++ (at.road :: source :: rerouter.path(source, goal, owner.sim.tick))
+    val old_path = path
+    path = slice_before ++ (at.road :: source :: rerouter.path(source, goal, owner.sim.tick))
     owner.sim.publish(
-      EV_Reroute(owner, new_path, false, rerouter.router_type, must_reroute, path), owner
+      EV_Reroute(owner, path, false, rerouter.router_type, must_reroute, old_path), owner
     )
-    path = new_path
     return choice
   }
 

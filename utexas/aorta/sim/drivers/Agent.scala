@@ -174,7 +174,7 @@ class Agent(
       }
       case Act_Done_With_Route() => {
         at.on match {
-          case e: Edge => e.road_agent.tollbooth.exit(this)
+          case e: Edge => e.road.road_agent.tollbooth.exit(this)
           case t: Turn => throw new Exception(s"Done with route at $t")
         }
         //Util.assert_eq(at.on.asInstanceOf[Edge].road, route.goal)

@@ -45,6 +45,7 @@ object Headless {
     while (!sim.done) {
       sim.step()
     }
+    sim.verify_done()
     t.stop
     sys.exit
   }

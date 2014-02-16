@@ -41,7 +41,7 @@ class TollBroker(a: Agent) {
     }
 
     // Register for the next k=5 roads
-    var eta = a.at.dist_left / a.at.on.speed_limit
+    var eta = a.sim.tick + a.at.dist_left / a.at.on.speed_limit
     for (r <- a.route.next_roads(k) if !registrations.contains(r)) {
       r.road_agent.tollbooth.register(a, eta)
       registrations += r

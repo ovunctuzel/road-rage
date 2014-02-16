@@ -193,6 +193,12 @@ class Simulation(val scenario: Scenario) extends Publisher with AgentManager {
     (agents.isEmpty && ready_to_spawn.isEmpty && future_spawn.isEmpty) ||
     (tick > time_limit)
 
+  def verify_done() {
+    Util.assert_eq(agents.isEmpty, true)
+    graph.vertices.foreach(v => v.intersection.policy.verify_done())
+    graph.roads.foreach(r => r.road_agent.tollbooth.verify_done())
+  }
+
   def savestate(fn: String): String = {
     val t = Timer("savestating")
     val w = Util.writer(fn)

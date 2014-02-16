@@ -221,6 +221,11 @@ abstract class Policy(val intersection: Intersection) extends Serializable {
   def validate_entry(ticket: Ticket) = accepted.contains(ticket)
   def current_greens() = accepted.map(_.turn).toSet
   def queued_count = request_queue.size
+
+  def verify_done() {
+    Util.assert_eq(request_queue.isEmpty, true)
+    Util.assert_eq(accepted.isEmpty, true)
+  }
 }
 
 object Policy {
