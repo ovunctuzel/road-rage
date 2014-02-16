@@ -128,6 +128,7 @@ class Agent(
           i.enter(get_ticket(t).get)
           e.queue.free_slot()
           e.road.road_agent.tollbooth.exit(this)
+          toll_broker.exited(e.road)
         }
         case (t: Turn, e: Edge) => {
           val ticket = get_ticket(t).get
@@ -173,7 +174,7 @@ class Agent(
       }
       case Act_Done_With_Route() => {
         at.on match {
-          case e: Edge => // normal
+          case e: Edge => e.road_agent.tollbooth.exit(this)
           case t: Turn => throw new Exception(s"Done with route at $t")
         }
         //Util.assert_eq(at.on.asInstanceOf[Edge].road, route.goal)

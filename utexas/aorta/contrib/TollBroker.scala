@@ -9,6 +9,7 @@ import scala.collection.mutable
 import utexas.aorta.sim.EV_Reroute
 import utexas.aorta.sim.drivers.Agent
 import utexas.aorta.map.{Road, Turn}
+import utexas.aorta.common.Util
 
 class TollBroker(a: Agent) {
   private val k = 5
@@ -17,12 +18,19 @@ class TollBroker(a: Agent) {
   // Setup
   a.sim.listen(classOf[EV_Reroute], a, _ match {
     case ev: EV_Reroute => {
-      for (r <- registrations -- a.route.next_roads(k)) {
+      val obselete = registrations -- a.route.next_roads(k)
+      for (r <- obselete) {
         r.road_agent.tollbooth.cancel(a)
       }
+      registrations --= obselete
       // We'll register for the new roads during react()
     }
   })
+
+  def exited(r: Road) {
+    Util.assert_eq(registrations.contains(r), true)
+    registrations -= r
+  }
 
   // Invoked before lookahead behavior runs
   def react() {

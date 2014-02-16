@@ -34,6 +34,8 @@ abstract class RoadAgent(val r: Road, sim: Simulation) {
       new Price(math.max(0, freeflow_percent_full - 50))
     else
       new Price(0)
+
+  override def toString = s"Road agent for $r"
 }
 
 // Just report the current state of congestion. Subject to oscillation.

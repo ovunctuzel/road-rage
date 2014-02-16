@@ -4,18 +4,37 @@
 
 package utexas.aorta.contrib
 
+import scala.collection.mutable
+
 import utexas.aorta.sim.RoadAgent
 import utexas.aorta.sim.drivers.Agent
+import utexas.aorta.common.Util
 
 // Manage reservations to use roads
 class Tollbooth(road: RoadAgent) {
   // TODO serialization and such
+  // map to ETA
+  private val registrations = new mutable.HashMap[Agent, Double]()
 
-  def register(a: Agent, eta: Double) {}
+  def register(a: Agent, eta: Double) {
+    Util.assert_eq(registrations.contains(a), false)
+    registrations(a) = eta
+  }
 
-  def cancel(a: Agent) {}
+  def cancel(a: Agent) {
+    Util.assert_eq(registrations.contains(a), true)
+    registrations -= a
+  }
 
-  def enter(a: Agent) {}
+  def enter(a: Agent) {
+    Util.assert_eq(registrations.contains(a), true)
+    val lag = a.sim.tick - registrations(a)
+    // Drivers are arriving both early and late right now
+    //println(s"$a arrived $lag late")
+  }
 
-  def exit(a: Agent) {}
+  def exit(a: Agent) {
+    Util.assert_eq(registrations.contains(a), true)
+    registrations -= a
+  }
 }
