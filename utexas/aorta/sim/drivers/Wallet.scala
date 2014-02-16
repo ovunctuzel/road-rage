@@ -67,9 +67,6 @@ abstract class Wallet(initial_budget: Int, val priority: Int) extends Serializab
     debug_me = value
   }
 
-  // Called before lookahead behavior does its magic
-  def react() {}
-
   //////////////////////////////////////////////////////////////////////////////
   // Queries
 

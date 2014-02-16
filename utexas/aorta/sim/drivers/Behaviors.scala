@@ -59,8 +59,9 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
 
   def choose_action(): Action = {
     a.lc.decide_lc()
-    a.wallet.react()
-    return max_safe_accel
+    val accel = max_safe_accel
+    a.toll_broker.react()
+    return accel
   }
 
   // Returns Act_Set_Accel almost always.

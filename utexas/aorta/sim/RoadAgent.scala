@@ -14,14 +14,7 @@ import utexas.aorta.common.{cfg, Util, Price}
 // Present information about congestion at the road level
 abstract class RoadAgent(val r: Road, sim: Simulation) {
   // TODO need to savestate, once we decide what state we really have
-  private val tollbooth = new Tollbooth(this)
-
-  def enter(a: Agent) {
-    tollbooth.when_enter(a)
-  }
-  def exit(a: Agent) {
-    tollbooth.when_exit(a)
-  }
+  val tollbooth = new Tollbooth(this)
 
   def congested(): Boolean
   // TODO how often must this be called?

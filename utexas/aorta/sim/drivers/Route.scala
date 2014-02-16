@@ -69,6 +69,8 @@ abstract class Route(val goal: Road) extends Serializable {
   def route_type(): RouteType.Value
   def done(at: Edge) = at.road == goal
   def dump_info()
+  def current_path(): List[Road]
+  def next_roads(num: Int): List[Road]
 }
 
 object Route {
@@ -278,7 +280,12 @@ class PathRoute(goal: Road, orig_router: Router, private var rerouter: Router) e
     Util.log(s"Path route to $goal using $path")
   }
 
-  def roads = path.toSet
+  def current_path = path
+  def next_roads(num: Int) =
+    if (path.isEmpty)
+      Nil
+    else
+      path.tail.take(num)
 
   // Prefer the one that's emptiest now and try to get close to a lane that
   // we'll want to LC to anyway. Only call when we haven't chosen something yet.

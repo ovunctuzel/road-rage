@@ -11,7 +11,11 @@ import utexas.aorta.sim.drivers.Agent
 class Tollbooth(road: RoadAgent) {
   // TODO serialization and such
 
-  def when_enter(a: Agent) {}
+  def register(a: Agent, eta: Double) {}
 
-  def when_exit(a: Agent) {}
+  def cancel(a: Agent) {}
+
+  def enter(a: Agent) {}
+
+  def exit(a: Agent) {}
 }

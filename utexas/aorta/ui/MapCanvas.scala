@@ -722,12 +722,7 @@ class MapCanvas(val sim: Simulation, headless: Boolean = false) extends Scrollin
       state.camera_agent match {
         case Some(a) => {
           a.set_debug(true)
-          a.route match {
-            case r: PathRoute => {
-              state.route_members.set(cfg.route_member_color, r.roads)
-            }
-            case _ =>
-          }
+          state.route_members.set(cfg.route_member_color, a.route.current_path.toSet)
         }
         case None => {
           state.route_members.clear()
