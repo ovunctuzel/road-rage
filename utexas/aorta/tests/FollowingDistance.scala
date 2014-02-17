@@ -70,13 +70,19 @@ object FollowingDistance {
     return Physics.accel_to_cover(want_final_dist - follower.dist, follower.speed)
   }
 
+  // There's some excellent PDFs with the derivation of this, don't worry ;)
   private def levin(follower: Kinematic, leader: Kinematic): Double = {
-    val common_numer = math.max(
-      leader.dist + (leader.speed * cfg.dt_s) + (0.5 * -cfg.max_accel * cfg.dt_s * cfg.dt_s),
-      leader.dist
-    ) - follower.dist - (follower.speed * cfg.dt_s)
-    val l1 = common_numer - (0.5 * -cfg.max_accel * cfg.dt_s * cfg.dt_s)
-    return (common_numer - l1) / (0.5 * cfg.dt_s * cfg.dt_s)
+    val alpha = cfg.dt_s * cfg.dt_s / -cfg.max_accel
+    val beta = (2 * follower.speed * cfg.dt_s / -cfg.max_accel) - (0.5 * cfg.dt_s * cfg.dt_s)
+    val L1 = cfg.follow_dist
+    val gamma = -L1 - math.max((leader.speed - cfg.max_accel * cfg.dt_s) * (leader.speed - cfg.max_accel * cfg.dt_s), 0) / -cfg.max_accel + follower.speed * follower.speed / -cfg.max_accel + leader.dist + math.max(0, follower.speed * cfg.dt_s + 0.5 * -cfg.max_accel * cfg.dt_s * cfg.dt_s) - follower.dist - follower.speed * cfg.dt_s
+    val a2 = (-beta - math.sqrt(beta * beta - 4 * alpha * gamma)) / (2 * alpha)
+    if (math.max(0, (leader.speed - cfg.max_accel * cfg.dt_s) * (leader.speed - cfg.max_accel * cfg.dt_s)) / -cfg.max_accel - (follower.speed + a2 * cfg.dt_s) * (follower.speed + a2 * cfg.dt_s) / -cfg.max_accel < 0)
+    {
+      return (leader.dist + math.max(0, leader.speed * cfg.dt_s + 0.5 * -cfg.max_accel * cfg.dt_s * cfg.dt_s) - follower.dist - follower.speed * cfg.dt_s - L1) / (0.5 * cfg.dt_s * cfg.dt_s)
+    } else {
+      return a2
+    }
   }
 
   private def following_dist(speed: Double) = cfg.follow_dist + Physics.min_next_dist(speed)
