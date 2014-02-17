@@ -20,7 +20,7 @@ object AStar {
     cost_start: (Double, Double) = (0, 0)
   ): List[T] = {
     if (goals.contains(start) && !allow_cycles) {
-      return Nil
+      return List(start)
     }
 
     // Stitch together our path
@@ -53,8 +53,8 @@ object AStar {
           // Clean as we go to break loops
           pointer = backrefs.remove(pointer.get)
         }
-        // Exclude 'start'
-        return path.tail.toList
+        // Include 'start'
+        return path.toList
       } else {
         for (next_state <- successors(current)) {
           val tentative_cost = add_cost(

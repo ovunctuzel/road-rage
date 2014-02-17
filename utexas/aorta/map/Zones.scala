@@ -119,6 +119,7 @@ object ZoneMap {
     while (open.nonEmpty) {
       print(s"\r  ${open.size} roads left to process")
       val base = open.head
+      // TODO path now includes start step 'base'. relevant?
       val path = AStar.path(
         base, Set(base), (step: Road) => step.succs,
         (_: Road, next: Road, _: (Double, Double)) => (next.freeflow_time, 0),
@@ -212,7 +213,7 @@ class ZoneRouter(graph: Graph) extends Router(graph) {
     }
   }
 
-  // Doesn't include start as the first zone
+  // Includes start as the first zone
   private def zone_path(start: Zone, goal: Zone) = AStar.path(
     start, Set(goal), (step: Zone) => zone_map.links(step),
     // TODO some notion of congestion within a zone

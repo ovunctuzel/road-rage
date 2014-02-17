@@ -14,7 +14,7 @@ abstract class Router(graph: Graph) {
   protected var debug_me = false
 
   def router_type: RouterType.Value
-  // Doesn't include 'from' as the first step
+  // Includes 'from' as the first step
   def path(from: Road, to: Road, time: Double): List[Road]
 
   // TODO messy to include this jump, but hard to pipe in specific params...
@@ -28,14 +28,9 @@ abstract class Router(graph: Graph) {
 class FixedRouter(graph: Graph, initial_path: List[Road]) extends Router(graph) {
   override def router_type = RouterType.Fixed
   override def path(from: Road, to: Road, time: Double): List[Road] = {
-    if (initial_path.nonEmpty) {
-      // remember, paths don't include from as the first step.
-      Util.assert_eq(from.succs.contains(initial_path.head), true)
-      Util.assert_eq(to, initial_path.last)
-    } else {
-      // This is the only time when empty paths should be acceptable
-      Util.assert_eq(from, to)
-    }
+    // remember, paths don't include from as the first step.
+    Util.assert_eq(from, initial_path.head)
+    Util.assert_eq(to, initial_path.last)
     return initial_path
   }
 }
