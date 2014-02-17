@@ -24,40 +24,40 @@ class Tollbooth(road: RoadAgent) {
   private def idx(eta: Double) = math.floor(eta / half_duration).toInt
 
   def register(a: Agent, eta: Double) {
-    Util.assert_eq(registrations.contains(a), false)
+    /*Util.assert_eq(registrations.contains(a), false)
     Util.assert_eq(slots.entryExists(idx(eta), _ == a), false)
     registrations(a) = eta
-    slots.addBinding(idx(eta), a)
+    slots.addBinding(idx(eta), a)*/
   }
 
   def cancel(a: Agent) {
-    Util.assert_eq(registrations.contains(a), true)
+    /*Util.assert_eq(registrations.contains(a), true)
     val eta = registrations(a)
     Util.assert_eq(slots.entryExists(idx(eta), _ == a), true)
     registrations -= a
-    slots.removeBinding(idx(eta), a)
+    slots.removeBinding(idx(eta), a)*/
   }
 
   def enter(a: Agent) {
-    Util.assert_eq(registrations.contains(a), true)
+    /*Util.assert_eq(registrations.contains(a), true)
     val eta = registrations(a)
     Util.assert_eq(slots.entryExists(idx(eta), _ == a), true)
     val lag = a.sim.tick - eta
     // Drivers are arriving both early and late right now
-    //println(s"$a arrived $lag late")
+    //println(s"$a arrived $lag late")*/
   }
 
   def exit(a: Agent) {
-    Util.assert_eq(registrations.contains(a), true)
+    /*Util.assert_eq(registrations.contains(a), true)
     val eta = registrations(a)
     Util.assert_eq(slots.entryExists(idx(eta), _ == a), true)
     registrations -= a
-    slots.removeBinding(idx(eta), a)
+    slots.removeBinding(idx(eta), a)*/
   }
 
   def verify_done() {
-    Util.assert_eq(registrations.isEmpty, true)
-    Util.assert_eq(slots.isEmpty, true)
+    /*Util.assert_eq(registrations.isEmpty, true)
+    Util.assert_eq(slots.isEmpty, true)*/
   }
 
   // Simple policy for now.
