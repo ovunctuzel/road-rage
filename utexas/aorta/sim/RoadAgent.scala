@@ -18,7 +18,9 @@ abstract class RoadAgent(val r: Road, sim: Simulation) {
 
   def congested(): Boolean
   // TODO how often must this be called?
-  def react()
+  def react() {
+    tollbooth.react()
+  }
 
   def congested_now = r.lanes.exists(e => e.queue.is_congested)
 
@@ -44,6 +46,7 @@ class CurrentCongestion(r: Road, sim: Simulation) extends RoadAgent(r, sim) {
 
   override def congested = congested_now
   override def react() {
+    super.react()
     if (congested != last_state) {
       sim.publish(EV_LinkChanged(r, congested))
       last_state = congested
@@ -61,6 +64,7 @@ class StickyCongestion(r: Road, sim: Simulation) extends RoadAgent(r, sim) {
   override def congested = congested_state
 
   override def react() {
+    super.react()
     // Are we currently the same as we are permanently?
     if (congested_now == congested_state) {
       // Reset any timers that could've changed state
@@ -97,6 +101,7 @@ class MovingWindowCongestion(r: Road, sim: Simulation) extends RoadAgent(r, sim)
 
   // TODO assumes we'll be called every tick... fix
   override def react() {
+    super.react()
     last_observations.dequeue() match {
       case true => true_cnt -= 1
       case false => false_cnt -= 1

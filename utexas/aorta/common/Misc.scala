@@ -220,6 +220,25 @@ class BinnedHistogram(width: Double) {
   def apply(bin: Int) = bin_counts(bin)
 }
 
+// Instances of T are added in possibly nondeterministic orders during a simulation step, but the
+// consumer needs to see them in a deterministic order.
+trait BatchDuringStep[T <: Ordered[T]] {
+  val transient_requests = new mutable.TreeSet[T]()
+  var request_queue: List[T] = Nil
+
+  def add_request(item: T) {
+    // TODO just need a writer lock, dont have to lock the whole object
+    synchronized {
+      transient_requests += item
+    }
+  }
+
+  def end_batch_step() {
+    request_queue ++= transient_requests
+    transient_requests.clear()
+  }
+}
+
 class AgentID(val int: Int) extends AnyVal {
   override def toString = int.toString
 }

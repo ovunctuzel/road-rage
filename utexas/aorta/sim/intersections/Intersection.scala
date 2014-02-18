@@ -10,7 +10,7 @@ import utexas.aorta.map.{Vertex, Turn, Edge}
 import utexas.aorta.sim.{Simulation, EV_TurnApproved, EV_TurnStarted}
 import utexas.aorta.sim.make.{IntersectionType, OrderingType, Factory}
 
-import utexas.aorta.common.{Util, StateWriter, StateReader, TurnID, Serializable}
+import utexas.aorta.common.{Util, StateWriter, StateReader, TurnID, Serializable, BatchDuringStep}
 
 // Reason about collisions from conflicting simultaneous turns.
 class Intersection(val v: Vertex, policy_type: IntersectionType.Value,
@@ -117,23 +117,16 @@ object Intersection {
   }
 }
 
-abstract class Policy(val intersection: Intersection) extends Serializable {
+abstract class Policy(val intersection: Intersection)
+  extends Serializable with BatchDuringStep[Ticket]
+{
   //////////////////////////////////////////////////////////////////////////////
   // State
 
-  // This will have a deterministic order.
-  protected var request_queue: List[Ticket] = Nil
   protected val accepted = new mutable.TreeSet[Ticket]()
 
-  // Agents could be added to this in any order, but they'll wind up in
-  // request_queue in a deterministic order. This is transient state.
-  private val new_requests = new mutable.TreeSet[Ticket]()
-
-  //////////////////////////////////////////////////////////////////////////////
-  // State
-
   def serialize(w: StateWriter) {
-    Util.assert_eq(new_requests.isEmpty, true)
+    Util.assert_eq(transient_requests.isEmpty, true)
     w.int(request_queue.size)
     for (ticket <- request_queue) {
       w.ints(ticket.a.id.int, ticket.turn.id.int)
@@ -145,27 +138,22 @@ abstract class Policy(val intersection: Intersection) extends Serializable {
   //////////////////////////////////////////////////////////////////////////////
   // Actions
 
-  // Agents inform intersections of their intention ONCE and receive a lease
-  // eventually.
+  // Agents inform intersections of their intention ONCE and receive a lease eventually.
   def request_turn(ticket: Ticket) {
-    // TODO just need a writer lock, dont have to lock the whole object
-    synchronized {
-      new_requests += ticket
-      // TODO do extra book-keeping to verify agents aren't double requesting?
-    }
+    // TODO do extra book-keeping to verify agents aren't double requesting?
+    add_request(ticket)
   }
 
   def cancel_turn(ticket: Ticket) {
     synchronized {
-      // TODO assert not in new_requests
+      // TODO assert not in transient_requests
       // TODO assert it was in here!
       request_queue = request_queue.filter(t => t != ticket)
     }
   }
 
   def react_tick() {
-    request_queue ++= new_requests
-    new_requests.clear()
+    end_batch_step()
     react()
   }
 

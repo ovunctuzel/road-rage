@@ -8,10 +8,10 @@ import scala.collection.mutable
 
 import utexas.aorta.sim.RoadAgent
 import utexas.aorta.sim.drivers.Agent
-import utexas.aorta.common.{Util, Price}
+import utexas.aorta.common.{Util, Price, BatchDuringStep}
 
 // Manage reservations to use roads
-class Tollbooth(road: RoadAgent) {
+class Tollbooth(road: RoadAgent) extends BatchDuringStep[Request] {
   private val half_duration = 15 * 60.0
   // TODO serialization and such
   // map to ETA
@@ -26,14 +26,14 @@ class Tollbooth(road: RoadAgent) {
   def register(a: Agent, eta: Double) {
     Util.assert_eq(registrations.contains(a), false)
     Util.assert_eq(slots.entryExists(idx(eta), _ == a), false)
-    registrations(a) = eta
-    slots.addBinding(idx(eta), a)
+    add_request(Request(a, eta))
   }
 
   def cancel(a: Agent) {
     Util.assert_eq(registrations.contains(a), true)
     val eta = registrations(a)
     Util.assert_eq(slots.entryExists(idx(eta), _ == a), true)
+    // TODO is it possible to cancel a request they made earlier during the tick? I think not...
     registrations -= a
     slots.removeBinding(idx(eta), a)
   }
@@ -60,6 +60,21 @@ class Tollbooth(road: RoadAgent) {
     Util.assert_eq(slots.isEmpty, true)
   }
 
+  def react() {
+    end_batch_step()
+    for (r <- request_queue) {
+      registrations(r.a) = r.eta
+      slots.addBinding(idx(r.eta), r.a)
+    }
+    request_queue = Nil
+  }
+
   // Simple policy for now.
   def toll(eta: Double) = new Price(slots.getOrElse(idx(eta), Set()).size / road.freeflow_capacity)
+}
+
+case class Request(a: Agent, eta: Double) extends Ordered[Request] {
+  override def compare(other: Request) = Ordering[Tuple2[Int, Double]].compare(
+    (a.id.int, eta), (other.a.id.int, other.eta)
+  )
 }
