@@ -14,6 +14,7 @@ import utexas.aorta.common.Util
 class TollBroker(a: Agent) {
   private val k = 5
   private val registrations = new mutable.HashSet[Road]()
+  private var total_cost = 0.0
 
   // Setup
   a.sim.listen(classOf[EV_Reroute], a, _ match {
@@ -53,5 +54,11 @@ class TollBroker(a: Agent) {
       registrations += r
       eta += r.freeflow_time
     }
+  }
+
+  // only Tollbooths should call this
+  def spend(amount: Double) {
+    Util.assert_ge(amount, 0)
+    total_cost += amount
   }
 }

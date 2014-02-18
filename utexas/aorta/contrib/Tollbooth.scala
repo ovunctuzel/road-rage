@@ -12,6 +12,10 @@ import utexas.aorta.common.{Util, Price, BatchDuringStep}
 
 // Manage reservations to use roads
 class Tollbooth(road: RoadAgent) extends BatchDuringStep[Request] {
+  private val cancellation_fee = 5.0
+  private val early_fee = 10.0
+  private val late_fee = 10.0
+
   private val half_duration = 15 * 60.0
   // TODO serialization and such
   // map to ETA
@@ -26,7 +30,7 @@ class Tollbooth(road: RoadAgent) extends BatchDuringStep[Request] {
   def register(a: Agent, eta: Double) {
     Util.assert_eq(registrations.contains(a), false)
     Util.assert_eq(slots.entryExists(idx(eta), _ == a), false)
-    add_request(Request(a, eta))
+    add_request(Request(a, eta, toll(eta).dollars))
   }
 
   def cancel(a: Agent) {
@@ -36,15 +40,22 @@ class Tollbooth(road: RoadAgent) extends BatchDuringStep[Request] {
     // TODO is it possible to cancel a request they made earlier during the tick? I think not...
     registrations -= a
     slots.removeBinding(idx(eta), a)
+    a.toll_broker.spend(cancellation_fee)
   }
 
   def enter(a: Agent) {
     Util.assert_eq(registrations.contains(a), true)
     val eta = registrations(a)
     Util.assert_eq(slots.entryExists(idx(eta), _ == a), true)
-    val lag = a.sim.tick - eta
-    // Drivers are arriving both early and late right now
-    //println(s"$a arrived $lag late")
+
+    val earliest_time = idx(eta) * (2 * half_duration)
+    val latest_time = (idx(eta) + 1) * (2 * half_duration)
+    if (a.sim.tick < earliest_time) {
+      a.toll_broker.spend(early_fee)
+    }
+    if (a.sim.tick > latest_time) {
+      a.toll_broker.spend(late_fee)
+    }
   }
 
   def exit(a: Agent) {
@@ -65,6 +76,7 @@ class Tollbooth(road: RoadAgent) extends BatchDuringStep[Request] {
     for (r <- request_queue) {
       registrations(r.a) = r.eta
       slots.addBinding(idx(r.eta), r.a)
+      r.a.toll_broker.spend(r.toll)
     }
     request_queue = Nil
   }
@@ -73,7 +85,8 @@ class Tollbooth(road: RoadAgent) extends BatchDuringStep[Request] {
   def toll(eta: Double) = new Price(slots.getOrElse(idx(eta), Set()).size / road.freeflow_capacity)
 }
 
-case class Request(a: Agent, eta: Double) extends Ordered[Request] {
+// We, the tollbooth, set the toll at the time the request is made
+case class Request(a: Agent, eta: Double, toll: Double) extends Ordered[Request] {
   override def compare(other: Request) = Ordering[Tuple2[Int, Double]].compare(
     (a.id.int, eta), (other.a.id.int, other.eta)
   )
