@@ -91,6 +91,13 @@ class TripDistanceMetric(info: MetricInfo) extends SinglePerAgentMetric(info) {
       per_agent(a.id) = from.road.length
     case _ =>
   })
+  // Handle the case of agents spawning where they end and never firing a transition
+  // TODO make EV_Transition fire when agents spawn?
+  info.sim.listen(classOf[EV_AgentQuit], _ match {
+    case e: EV_AgentQuit if !per_agent.contains(e.agent.id) =>
+      per_agent(e.agent.id) = e.agent.at.on.asInstanceOf[Edge].road.length
+    case _ =>
+  })
 }
 
 // Measure how long a driver follows their original route.

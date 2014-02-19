@@ -126,6 +126,12 @@ class PathRoute(goal: Road, orig_router: Router, private var rerouter: Router) e
     Range(0, r.int).map(_ => reroutes_requested += graph.edges(r.int))
   }
 
+  override def setup(a: Agent) {
+    super.setup(a)
+    orig_router.setup(a)
+    rerouter.setup(a)
+  }
+
   //////////////////////////////////////////////////////////////////////////////
   // Actions
 

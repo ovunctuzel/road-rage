@@ -42,6 +42,9 @@ object ExpConfig {
     map_fn = rng.choose(Array(
       "maps/austin.map", "maps/baton_rouge.map", "maps/seattle.map", "maps/sf.map"
     )))
+  def tollbooth_test = template.copy(
+    spawn_per_hour = 8000, generations = 1, map_fn = "maps/austin.map"
+  )
   //def safe_atx_cloud_test =
     //template.copy(spawn_per_hour = 10000, generations = 3, map_fn = "maps/austin.map")
 
@@ -54,6 +57,7 @@ object ExpConfig {
         case "tiny" => tiny_test
         case "local" => small_local_test
         case "cloud" => atx_cloud_test
+        case "tollbooth" => tollbooth_test
         case _ => throw new IllegalArgumentException(s"Dunno mode ${args.head}")
       }
       if (args.tail.isEmpty) {
@@ -138,6 +142,7 @@ abstract class SmartExperiment(config: ExpConfig) extends Experiment(config) {
   }
 
   protected def output_data(results: List[List[Metric]]) {
+    Util.log("All simulations over, dumping metrics now...")
     val mode_order = results.map(ls => ls.head.mode)
     for ((name, metrics) <- results.flatten.groupBy(_.name)) {
       val metrics_by_mode = metrics.map(m => m.mode -> m).toMap

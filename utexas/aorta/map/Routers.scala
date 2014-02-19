@@ -61,7 +61,7 @@ class FreeflowRouter(graph: Graph) extends AbstractPairAstarRouter(graph) with S
   override def router_type = RouterType.Unusable
 
   override def cost_step(prev: Road, next: Road, cost_sofar: (Double, Double)) =
-    (next.freeflow_time, 0)
+    (0, next.freeflow_time)
 }
 
 // Cost for each step is (dollars, time)
