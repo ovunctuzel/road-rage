@@ -77,6 +77,22 @@ class TripTimeMetric(info: MetricInfo) extends SinglePerAgentMetric(info) {
   })
 }
 
+// Measure how far each agent travels
+class TripDistanceMetric(info: MetricInfo) extends SinglePerAgentMetric(info) {
+  override def name = "trip_distance"
+
+  override def extra_fields = List("priority", "ideal_distance")
+  override def extra_data(a: MkAgent) = List(a.wallet.priority, a.ideal_distance(info.sim.graph))
+
+  info.sim.listen(classOf[EV_Transition], _ match {
+    case EV_Transition(a, from: Turn, to: Edge) => per_agent(a.id) += to.road.length
+    // Don't miss the first road
+    case EV_Transition(a, from: Edge, to: Turn) if !per_agent.contains(a.id) =>
+      per_agent(a.id) = from.road.length
+    case _ =>
+  })
+}
+
 // Measure how long a driver follows their original route.
 class OriginalRouteMetric(info: MetricInfo) extends SinglePerAgentMetric(info) {
   override def name = "orig_routes"
@@ -120,6 +136,7 @@ class RoadCongestionMetric(info: MetricInfo) extends HistogramMetric(info, 10.0)
 
   info.sim.listen(classOf[EV_Transition], _ match {
     case EV_Transition(a, _, to: Edge) => histogram.add(to.road.road_agent.freeflow_percent_full)
+    case _ =>
   })
 }
 

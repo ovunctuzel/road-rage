@@ -31,30 +31,6 @@ case class ScatterData(
 trait PlotUtil {
   private val num_bins = 20
 
-  private def read(fn: String) =
-    if (fn.endsWith(".gz"))
-      Source.fromInputStream(new GZIPInputStream(new BufferedInputStream(new FileInputStream(fn))))
-    else
-      Source.fromFile(fn)
-
-  protected def read_times(fn: String): ScenarioTimes = {
-    val lines = read(fn).getLines
-    val header = lines.next.split(" ")
-    Util.assert_eq(header.take(3).toList, List("agent", "priority", "ideal_time"))
-    return ScenarioTimes(
-      ScenarioTag(fn), header.drop(3),
-      lines.map(l => TripTimeResult(l.split(" ").map(_.toDouble))).toArray
-    )
-  }
-
-  protected def read_turn_delay(fn: String): ScenarioTurnDelays = {
-    val lines = read(fn).getLines
-    Util.assert_eq(lines.next, "mode turn_delay_bin count")
-    return ScenarioTurnDelays(
-      ScenarioTag(fn), lines.map(l => TurnDelayResult(l.split(" "))).toArray
-    )
-  }
-
   private def add_xy(chart: XYSeriesCollection, name: String, data: Array[(Double, Double)]) {
     val series = new XYSeries(name)
     for ((x, y) <- data) {
@@ -109,10 +85,51 @@ trait PlotUtil {
   }
 }
 
+trait MetricReader {
+  private def read(fn: String) =
+    if (fn.endsWith(".gz"))
+      Source.fromInputStream(new GZIPInputStream(new BufferedInputStream(new FileInputStream(fn))))
+    else
+      Source.fromFile(fn)
+
+  protected def read_times(fn: String): ScenarioTimes = {
+    val lines = read(fn).getLines
+    val header = lines.next.split(" ")
+    Util.assert_eq(header.take(3).toList, List("agent", "priority", "ideal_time"))
+    return ScenarioTimes(
+      ScenarioTag(fn), header.drop(3),
+      lines.map(l => TripTimeResult(l.split(" ").map(_.toDouble))).toArray
+    )
+  }
+
+  protected def read_distances(fn: String): ScenarioDistances = {
+    val lines = read(fn).getLines
+    val header = lines.next.split(" ")
+    Util.assert_eq(header.take(3).toList, List("agent", "priority", "ideal_distance"))
+    return ScenarioDistances(
+      ScenarioTag(fn), header.drop(3),
+      lines.map(l => TripDistanceResult(l.split(" ").map(_.toDouble))).toArray
+    )
+  }
+
+  protected def read_turn_delay(fn: String): ScenarioTurnDelays = {
+    val lines = read(fn).getLines
+    Util.assert_eq(lines.next, "mode turn_delay_bin count")
+    return ScenarioTurnDelays(
+      ScenarioTag(fn), lines.map(l => TurnDelayResult(l.split(" "))).toArray
+    )
+  }
+}
+
 case class ScenarioTag(id: String, map: String)
+
 case class TripTimeResult(priority: Double, ideal_time: Double, times: Array[Double])
-case class TurnDelayResult(mode: String, bin: Double, count: Double)
 case class ScenarioTimes(tag: ScenarioTag, modes: Array[String], agents: Array[TripTimeResult])
+
+case class TripDistanceResult(priority: Double, ideal_distance: Double, distances: Array[Double])
+case class ScenarioDistances(tag: ScenarioTag, modes: Array[String], agents: Array[TripDistanceResult])
+
+case class TurnDelayResult(mode: String, bin: Double, count: Double)
 case class ScenarioTurnDelays(tag: ScenarioTag, delays: Array[TurnDelayResult])
 
 // TODO stuff here is the dual of stuff in Metrics. pair them together somehow?
@@ -125,6 +142,9 @@ object ScenarioTag {
 }
 object TripTimeResult {
   def apply(fields: Array[Double]) = new TripTimeResult(fields(1), fields(2), fields.drop(3))
+}
+object TripDistanceResult {
+  def apply(fields: Array[Double]) = new TripDistanceResult(fields(1), fields(2), fields.drop(3))
 }
 object TurnDelayResult {
   def apply(fields: Array[String]) =

@@ -164,6 +164,7 @@ case class MkAgent(id: AgentID, birth_tick: Double, start: RoadID, start_dist: D
     new FreeflowRouter(graph).path(graph.get_r(start), graph.get_r(route.goal), 0)
   // TODO doesnt account for turns
   def ideal_time(graph: Graph) = ideal_path(graph).map(_.freeflow_time).sum
+  def ideal_distance(graph: Graph) = ideal_path(graph).map(_.length).sum
 }
 
 object MkAgent {
