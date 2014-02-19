@@ -8,13 +8,17 @@ import utexas.aorta.sim.drivers.Agent
 import utexas.aorta.sim.make.OrderingType
 import utexas.aorta.map.{Edge, Turn}
 
-class PressureOrdering[T <: Ordered[T]]() extends IntersectionOrdering[Ticket]() {
+class PressureOrdering[T <: Ordered[T]]() extends IntersectionOrdering[T]() {
   def ordering_type = OrderingType.Pressure
-  def choose(choices: Iterable[Ticket], participants: Iterable[Ticket], client: Policy): Option[Ticket] = {
+  def choose(choices: Iterable[T], participants: Iterable[Ticket], client: Policy): Option[T] = {
     if (choices.isEmpty) {
       return None
     } else {
-      return Some(choices.maxBy(t => weight(t.a)))
+      if (choices.head.isInstanceOf[Ticket]) {
+        return Some(choices.maxBy(t => weight(t.asInstanceOf[Ticket].a)))
+      } else {
+        return Some(choices.maxBy(p => p.asInstanceOf[Phase].head_agents.map(a => weight(a)).sum))
+      }
     }
   }
 

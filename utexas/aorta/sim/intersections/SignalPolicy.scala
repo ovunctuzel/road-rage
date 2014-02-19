@@ -9,7 +9,7 @@ import scala.collection.mutable
 import Function.tupled
 
 import utexas.aorta.map.{Turn, Vertex, Edge}
-import utexas.aorta.sim.{EV_Signal_Change, Simulation, EV_IntersectionOutcome}
+import utexas.aorta.sim.{EV_Signal_Change, Simulation, EV_IntersectionOutcome, Queue}
 import utexas.aorta.sim.make.{IntersectionType, OrderingType}
 
 import utexas.aorta.common.{Util, cfg, StateWriter, StateReader}
@@ -195,7 +195,8 @@ class Phase(val id: Int, val turns: Set[Turn], val offset: Double, val duration:
 
   def has(turn: Turn) = turns(turn)
 
-  def all_agents = turns.flatMap(_.from.queue.all_agents)
+  def all_agents = turns.flatMap(_.from.queue.all_agents).toSet
+  def head_agents = turns.map(t => t.from.queue).toSet.flatMap((q: Queue) => q.head)
   def all_tickets: Set[Ticket] = {
     val i = turns.head.vert.intersection
     return all_agents.flatMap(a => a.all_tickets(i)).filter(t => has(t.turn))
