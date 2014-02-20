@@ -7,7 +7,7 @@ package utexas.aorta.experiments
 import scala.collection.JavaConverters.seqAsJavaListConverter
 import org.jfree.data.xy.{XYSeries, XYSeriesCollection}
 import org.jfree.chart.{JFreeChart, ChartFactory, ChartFrame}
-import org.jfree.data.statistics.{HistogramDataset, DefaultBoxAndWhiskerCategoryDataset}
+import org.jfree.data.statistics.{HistogramDataset, DefaultBoxAndWhiskerCategoryDataset, Statistics}
 import org.jfree.chart.plot.PlotOrientation
 import scala.io.Source
 import java.util.zip.GZIPInputStream
@@ -43,6 +43,11 @@ trait PlotUtil {
     val chart = new XYSeriesCollection()
     for ((mode, points) <- data.points_per_mode) {
       add_xy(chart, mode, points)
+      val coefficient = Statistics.getCorrelation(
+        points.map(_._1.asInstanceOf[java.lang.Number]),
+        points.map(_._2.asInstanceOf[java.lang.Number])
+      )
+      Util.log(s"Correlation between ${data.x} and $mode: r = $coefficient")
     }
     return ChartFactory.createScatterPlot(
       data.title, data.x, data.y, chart, PlotOrientation.VERTICAL, true, false, false
