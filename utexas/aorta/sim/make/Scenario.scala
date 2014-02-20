@@ -160,8 +160,10 @@ case class MkAgent(id: AgentID, birth_tick: Double, start: RoadID, start_dist: D
   }
 
   // TODO belongs elsewhere?
+  // Excludes start road, since driver could start towards the end of the first road, and ideal_path
+  // must be the quickest route (even if it's impossible to achieve by a few seconds)
   def ideal_path(graph: Graph) =
-    new FreeflowRouter(graph).path(graph.get_r(start), graph.get_r(route.goal), 0)
+    new FreeflowRouter(graph).path(graph.get_r(start), graph.get_r(route.goal), 0).tail
   // TODO doesnt account for turns
   def ideal_time(graph: Graph) = ideal_path(graph).map(_.freeflow_time).sum
   def ideal_distance(graph: Graph) = ideal_path(graph).map(_.length).sum

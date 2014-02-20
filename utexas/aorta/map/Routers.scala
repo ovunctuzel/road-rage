@@ -51,8 +51,9 @@ abstract class AbstractPairAstarRouter(graph: Graph) extends Router(graph) {
 
 // No guess for cost, straight-line distance at 1m/s for freeflow time
 trait SimpleHeuristic extends AbstractPairAstarRouter {
+  private val max_speed = 80.0  // TODO put in cfg
   override def heuristic_factory(goal: Road) =
-    (state: Road) => (0.0, state.end_pt.dist_to(goal.end_pt))  // TODO divided by some speed limit?
+    (state: Road) => (0.0, state.end_pt.dist_to(goal.end_pt) / max_speed)
   // Alternate heuristics explore MUCH less states, but the oracles are too
   // pricy. (CH, Dijkstra table of distances)
 }

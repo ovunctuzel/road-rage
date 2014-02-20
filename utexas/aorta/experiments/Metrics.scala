@@ -81,6 +81,9 @@ class TripTimeMetric(info: MetricInfo) extends SinglePerAgentMetric(info) {
 class TripDistanceMetric(info: MetricInfo) extends SinglePerAgentMetric(info) {
   override def name = "trip_distance"
 
+  // ideal_distance is the distance of the ideal path, which is the shortest by freeflow time and
+  // not length. So distance ratios < 1 happen when a driver takes a shorter distance route that has
+  // lower speed limits.
   override def extra_fields = List("priority", "ideal_distance")
   override def extra_data(a: MkAgent) = List(a.wallet.priority, a.ideal_distance(info.sim.graph))
 
