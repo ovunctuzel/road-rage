@@ -57,7 +57,10 @@ class TollBroker(a: Agent) {
     var eta = a.sim.tick + a.at.dist_left / a.at.on.speed_limit
     for (r <- next_roads) {
       if (!registrations.contains(r)) {
-        r.road_agent.tollbooth.register(a, eta)
+        // For now, offer to raise the toll by the value of our priority
+        // TODO * freeflow time?
+        val offer = a.wallet.priority
+        r.road_agent.tollbooth.register(a, eta, offer)
         registrations += r
       }
       // We've already counted the current road, so start with the next
