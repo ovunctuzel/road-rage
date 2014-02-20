@@ -41,13 +41,14 @@ trait PlotUtil {
 
   protected def scatterplot(data: ScatterData): JFreeChart = {
     val chart = new XYSeriesCollection()
+    Util.log(s"Correlation between ${data.x} and ${data.y}")
     for ((mode, points) <- data.points_per_mode) {
       add_xy(chart, mode, points)
       val coefficient = Statistics.getCorrelation(
         points.map(_._1.asInstanceOf[java.lang.Number]),
         points.map(_._2.asInstanceOf[java.lang.Number])
       )
-      Util.log(s"Correlation between ${data.x} and $mode: r = $coefficient")
+      Util.log(s"  $mode: r = $coefficient")
     }
     return ChartFactory.createScatterPlot(
       data.title, data.x, data.y, chart, PlotOrientation.VERTICAL, true, false, false

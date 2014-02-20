@@ -12,7 +12,12 @@ import utexas.aorta.map.{Road, Turn, Edge}
 import utexas.aorta.common.Util
 
 class TollBroker(a: Agent) {
-  private val k = 5
+  //private val k = 5
+  private val k =
+    if (a.wallet.priority > 250)
+      20
+    else
+      5
   private val registrations = new mutable.HashSet[Road]()
   private var total_cost = 0.0
 
@@ -20,6 +25,7 @@ class TollBroker(a: Agent) {
   a.sim.listen(classOf[EV_Reroute], a, _ match {
     case ev: EV_Reroute => {
       val obselete = registrations -- a.route.next_roads(k)
+      // TODO cancel all and re-calculate eta for planned ones, IF we're changing path to get there?
       for (r <- obselete) {
         r.road_agent.tollbooth.cancel(a)
       }
@@ -49,10 +55,15 @@ class TollBroker(a: Agent) {
 
     // Register for the next k=5 roads
     var eta = a.sim.tick + a.at.dist_left / a.at.on.speed_limit
-    for (r <- next_roads if !registrations.contains(r)) {
-      r.road_agent.tollbooth.register(a, eta)
-      registrations += r
-      eta += r.freeflow_time
+    for (r <- next_roads) {
+      if (!registrations.contains(r)) {
+        r.road_agent.tollbooth.register(a, eta)
+        registrations += r
+      }
+      // We've already counted the current road, so start with the next
+      if (r != next_roads.head) {
+        eta += r.freeflow_time
+      }
     }
   }
 

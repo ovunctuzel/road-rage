@@ -48,13 +48,17 @@ class Tollbooth(road: RoadAgent) extends BatchDuringStep[Request] {
     val eta = registrations(a)
     Util.assert_eq(slots.entryExists(idx(eta), _ == a), true)
 
-    val earliest_time = idx(eta) * (2 * half_duration)
-    val latest_time = (idx(eta) + 1) * (2 * half_duration)
+    // Arriving early/late could be a way to game the system. For the driver behaviors in TollBroker
+    // now that don't try to cheat, arriving early/late is actually a bug.
+    val earliest_time = idx(eta) * half_duration
+    val latest_time = (idx(eta) + 2) * half_duration
     if (a.sim.tick < earliest_time) {
       a.toll_broker.spend(early_fee)
+      //Util.log(s"$a (rank ${a.wallet.priority}) early to ${road.r}: ${a.sim.tick} < $earliest_time. eta was $eta")
     }
     if (a.sim.tick > latest_time) {
       a.toll_broker.spend(late_fee)
+      //Util.log(s"$a (rank ${a.wallet.priority}) late to ${road.r}: ${a.sim.tick} > $latest_time. eta was $eta")
     }
   }
 
