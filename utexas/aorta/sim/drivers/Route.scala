@@ -57,7 +57,7 @@ abstract class Route(val goal: Road) extends Serializable {
   // recommended.
   def pick_final_lane(e: Edge): (Edge, Boolean)
   // Just mark that we don't have to take the old turn prescribed
-  def reroute(at: Edge) {}
+  def request_reroute(at: Edge) {}
 
   def set_debug(value: Boolean) {
     debug_me = value
@@ -91,7 +91,6 @@ class PathRoute(goal: Road, orig_router: Router, private var rerouter: Router) e
   //////////////////////////////////////////////////////////////////////////////
   // State
 
-  private var first_time = true
   // Head is the current step. If that step isn't immediately reachable, we have
   // to re-route.
   private var path: List[Road] = Nil
@@ -103,7 +102,6 @@ class PathRoute(goal: Road, orig_router: Router, private var rerouter: Router) e
 
   override def serialize(w: StateWriter) {
     super.serialize(w)
-    w.bool(first_time)
     w.int(rerouter.router_type.id)
     // We can't tell when we last rerouted given less state; store the full
     // path.
@@ -116,7 +114,6 @@ class PathRoute(goal: Road, orig_router: Router, private var rerouter: Router) e
   }
 
   override def unserialize(r: StateReader, graph: Graph) {
-    first_time = r.bool
     rerouter = Factory.make_router(RouterType(r.int), graph, Nil)
     path = Range(0, r.int).map(_ => graph.roads(r.int)).toList
     val chosen_size = r.int
@@ -130,6 +127,12 @@ class PathRoute(goal: Road, orig_router: Router, private var rerouter: Router) e
     super.setup(a)
     orig_router.setup(a)
     rerouter.setup(a)
+
+    Util.assert_eq(path.isEmpty, true)
+    path = orig_router.path(a.at.on.asEdge.road, goal, owner.sim.tick)
+    owner.sim.publish(
+      EV_Reroute(owner, path, true, orig_router.router_type, false, Nil), owner
+    )
   }
 
   //////////////////////////////////////////////////////////////////////////////
@@ -155,8 +158,7 @@ class PathRoute(goal: Road, orig_router: Router, private var rerouter: Router) e
     owner.sim.publish(EV_Transition(owner, from, to), owner)
   }
 
-  override def reroute(at: Edge) {
-    Util.assert_eq(chosen_turns.contains(at), true)
+  override def request_reroute(at: Edge) {
     chosen_turns -= at
     reroutes_requested += at
   }
@@ -168,33 +170,26 @@ class PathRoute(goal: Road, orig_router: Router, private var rerouter: Router) e
       return chosen_turns(e)
     }
 
-    // Lookahead could be calling us from anywhere. Figure out where we are in
-    // the path.
-    val pair = path.span(r => r != e.road)
-    val before = pair._1
-    val slice = pair._2
+    // Lookahead could be calling us from anywhere. Figure out where we are in the path.
+    val (before, slice) = path.span(r => r != e.road)
     Util.assert_eq(slice.nonEmpty, true)
-    val dest = slice.tail.headOption
+    val dest = slice.tail.head
 
     // Is the next step reachable?
-    val must_reroute = dest match {
-      case Some(d) => e.next_turns.filter(t => t.to.road == d).isEmpty
-      // Our router has only given us a piece of the path
-      case None => true
-    }
+    val must_reroute = e.next_turns.filter(t => t.to.road == dest).isEmpty
     // This variant only considers long roads capable of being congested, which is risky...
-    val should_reroute = dest.map(_.road_agent.congested).getOrElse(false)
+    val should_reroute = dest.road_agent.congested
     // Since short roads can gridlock too, have the client detect that and explicitly force us to
     // handle it
     val asked_to_reroute = reroutes_requested.contains(e)
 
-    val best =
+    val turn =
       if (must_reroute || should_reroute || asked_to_reroute)
         perform_reroute(e, before, must_reroute)
       else
-        best_turn(e, dest.get, slice.tail.tail.headOption.getOrElse(null))
-    chosen_turns(e) = best
-    return best
+        best_turn(e, dest, slice.tail.tail.headOption.getOrElse(null))
+    chosen_turns(e) = turn
+    return turn
   }
 
   def pick_final_lane(from: Edge): (Edge, Boolean) = {
@@ -203,28 +198,11 @@ class PathRoute(goal: Road, orig_router: Router, private var rerouter: Router) e
       return (from, false)
     }
 
-    // This method is called first, so do the lazy initialization here.
-    if (first_time) {
-      Util.assert_eq(path.isEmpty, true)
-      first_time = false
-      path = orig_router.path(from.road, goal, owner.sim.tick)
-      owner.sim.publish(
-        EV_Reroute(owner, path, true, orig_router.router_type, false, Nil), owner
-      )
-    }
-
-    // Lookahead could be calling us from anywhere. Figure out where we are in
-    // the path.
-    val pair = path.span(r => r != from.road)
-    val slice = pair._2
+    // Lookahead could be calling us from anywhere. Figure out where we are in the path.
+    val slice = path.dropWhile(r => r != from.road)
     Util.assert_eq(slice.nonEmpty, true)
 
-    val next_step = slice.tail.headOption match {
-      case Some(r) => r
-      // Our router hasn't told us everything yet
-      case None => perform_reroute(from, pair._1, true).to.road
-    }
-
+    val next_step = slice.tail.head
     // Find all lanes going to the next step.
     val candidates = candidate_lanes(from, next_step) match {
       case Nil => {

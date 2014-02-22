@@ -234,7 +234,7 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
     a.get_ticket(e) match {
       case Some(ticket) if ticket.should_cancel => {
         // Try again. The routing should avoid choices that're filled up, hopefully avoiding gridlock.
-        route.reroute(e)
+        route.request_reroute(e)
         val next_turn = route.pick_turn(e)
         // Sometimes we pick the same turn here, but the later route could change.
         if (next_turn != ticket.turn) {

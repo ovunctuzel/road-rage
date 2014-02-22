@@ -23,6 +23,8 @@ class Turn(val id: TurnID, val from: Edge, val to: Edge)
   // Queries
 
   override def compare(other: Turn) = id.int.compare(other.id.int)
+  override def asTurn = this
+  override def asEdge = throw new Exception("This is a turn, not an edge")
 
   override def toString = "turn[" + id + "](" + from + ", " + to + ")"
   // Short form is nice.

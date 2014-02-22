@@ -184,16 +184,12 @@ class LaneChangingHandler(a: Agent, behavior: Behavior) {
   }
 
   private def safe_to_lc(target: Edge): Boolean = {
-    a.at.on match {
-      case e: Edge => {
-        if (e.road != target.road) {
-          throw new Exception(s"$a wants to lane-change across roads")
-        }
-        if (math.abs(target.lane_num - e.lane_num) != 1) {
-          throw new Exception(s"$a wants to skip lanes when lane-changing")
-        }                                                               
-      }
-      case t: Turn => throw new Exception(s"$a wants to lane-change from a turn")
+    val e = a.at.on.asEdge
+    if (e.road != target.road) {
+      throw new Exception(s"$a wants to lane-change across roads")
+    }
+    if (math.abs(target.lane_num - e.lane_num) != 1) {
+      throw new Exception(s"$a wants to skip lanes when lane-changing")
     }
 
     if (!room_to_lc(target)) {

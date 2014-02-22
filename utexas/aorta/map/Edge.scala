@@ -36,6 +36,8 @@ class Edge(
 
   override def compare(other: Edge) = id.int.compare(other.id.int)
   override def toString = s"Lane ${road.dir}${lane_num} of ${road.name} (E$id, R${road.id})"
+  override def asEdge = this
+  override def asTurn = throw new Exception("This is an edge, not a turn")
 
   // no lane-changing
   //def leads_to = next_turns

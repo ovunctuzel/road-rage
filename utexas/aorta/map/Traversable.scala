@@ -36,6 +36,11 @@ abstract class Traversable(val lines: Array[Line]) {
   def leads_to: List[Traversable]
   def speed_limit: Double
 
+  // Sometimes we statically know if a traversable should be a turn or edge and want something less
+  // verbose than pattern matching
+  def asEdge: Edge
+  def asTurn: Turn
+
   def cost = length / speed_limit
 
   // if dist is > length or < 0, then this query makes no sense

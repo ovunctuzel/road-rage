@@ -49,13 +49,14 @@ class Agent(
   // Meta
 
   def setup(spawn: Edge, dist: Double) {
-    wallet.setup(this)
-    route.setup(this)
     at = spawn.queue.enter(this, dist)
     spawn.queue.allocate_slot()
     sim.insert_agent(this)
     AgentMap.maps.foreach(m => m.when_created(this))
     set_debug(Flags.int("--track", -1) == id.int)
+    // Try to do this after most of our state has been set up
+    wallet.setup(this)
+    route.setup(this)
     if (debug_me) {
       sim.publish(EV_Breakpoint(this))
     }
@@ -173,10 +174,7 @@ class Agent(
         false
       }
       case Act_Done_With_Route() => {
-        at.on match {
-          case e: Edge => e.road.road_agent.tollbooth.exit(this)
-          case t: Turn => throw new Exception(s"Done with route at $t")
-        }
+        at.on.asEdge.road.road_agent.tollbooth.exit(this)
         //Util.assert_eq(at.on.asInstanceOf[Edge].road, route.goal)
         // Trust behavior, don't abuse this.
         // (Plus, it doesn't hold for RouteAnalyzer vehicles...)

@@ -63,7 +63,7 @@ class Intersection(val v: Vertex, policy_type: IntersectionType.Value,
       Util.log("  Origin lane length: " + t.from.length + "; time " + ticket.a.sim.tick)
       ticket.a.debug()
       policy.dump_info()
-      sys.exit()
+      throw new Exception("Driver entered intersection without accepted ticket")
     }
     ticket.a.sim.publish(EV_TurnStarted(ticket))
   }
