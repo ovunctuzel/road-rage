@@ -15,7 +15,8 @@ abstract class Router(graph: Graph) {
 
   def router_type: RouterType.Value
   // Includes 'from' as the first step
-  def path(from: Road, to: Road, time: Double): List[Road]
+  // TODO time, banned, etc... take a builder with options to A* call
+  def path(from: Road, to: Road, time: Double, banned: Set[Road] = Set()): List[Road]
 
   // TODO messy to include this jump, but hard to pipe in specific params...
   def setup(a: Agent) {}
@@ -27,7 +28,7 @@ abstract class Router(graph: Graph) {
 
 class FixedRouter(graph: Graph, initial_path: List[Road]) extends Router(graph) {
   override def router_type = RouterType.Fixed
-  override def path(from: Road, to: Road, time: Double): List[Road] = {
+  override def path(from: Road, to: Road, time: Double, banned: Set[Road]): List[Road] = {
     // remember, paths don't include from as the first step.
     Util.assert_eq(from, initial_path.head)
     Util.assert_eq(to, initial_path.last)
@@ -43,9 +44,9 @@ abstract class AbstractPairAstarRouter(graph: Graph) extends Router(graph) {
 
   protected def add_cost(a: (Double, Double), b: (Double, Double)) = (a._1 + b._1, a._2 + b._2)
 
-  override def path(from: Road, to: Road, time: Double) = AStar.path(
+  override def path(from: Road, to: Road, time: Double, banned: Set[Road]) = AStar.path(
     from, Set(to), (step: Road) => step.succs, cost_step, heuristic_factory(to), add_cost,
-    cost_start = cost_start
+    cost_start = cost_start, banned_nodes = banned
   )
 }
 

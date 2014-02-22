@@ -184,7 +184,7 @@ class ZoneRouter(graph: Graph) extends Router(graph) {
 
   override def router_type = RouterType.Zone
 
-  override def path(from: Road, to: Road, time: Double): List[Road] = {
+  override def path(from: Road, to: Road, time: Double, banned: Set[Road]): List[Road] = {
     if (zone_map(from).intersect(zone_map(to)).nonEmpty) {
       // In the same zone! Be normal now.
       return AStar.path(

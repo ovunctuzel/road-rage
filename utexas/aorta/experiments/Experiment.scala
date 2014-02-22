@@ -132,6 +132,7 @@ abstract class SmartExperiment(config: ExpConfig) extends Experiment(config) {
       case e: Throwable => {
         io.notify(s"BORKED - $e")
         val fn = "buggy_" + sim.graph.basename + "_" + mode
+        // TODO specific modified scenario, not the generic one
         Util.blockingly_run(Seq("mv", "-f", scenario.name, fn))
         // TODO also upload latest savestate, and name everything reasonably
         io.upload(fn)

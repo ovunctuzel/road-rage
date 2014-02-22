@@ -5,6 +5,7 @@
 package utexas.aorta.sim.drivers
 
 import utexas.aorta.map.{Edge, Road, Turn, Traversable, Position}
+import utexas.aorta.sim.EV_Transition
 import utexas.aorta.sim.intersections.Ticket
 import scala.collection.mutable
 
@@ -44,6 +45,8 @@ class IdleBehavior(a: Agent) extends Behavior(a) {
 // Reactively avoids collisions and obeys intersections by doing a conservative analysis of the
 // next few steps.
 class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
+  private val rerouter = new RerouteRequester(a)  // TODO structure differently
+
   override def choose_turn(e: Edge) = a.get_ticket(e).get.turn
   
   override def transition(from: Traversable, to: Traversable) {
@@ -58,6 +61,10 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
   }
 
   def choose_action(): Action = {
+    // TODO hacky way to switch, very tmp
+    if (a.sim.scenario.agents(a.id.int).route.rerouter == utexas.aorta.sim.make.RouterType.Tollbooth) {
+      rerouter.react()
+    }
     a.lc.decide_lc()
     val accel = max_safe_accel
     a.toll_broker.react()
@@ -238,6 +245,9 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
         val next_turn = route.pick_turn(e)
         // Sometimes we pick the same turn here, but the later route could change.
         if (next_turn != ticket.turn) {
+          // We don't need to cancel later tickets, because there are none. We only cancel
+          // unapproved tickets, and we don't lookahead beyond intersections we can't yet cross.
+          // but TODO verify it
           ticket.cancel()
           val replacement = new Ticket(a, next_turn)
           a.add_ticket(replacement)
@@ -281,5 +291,50 @@ case class LookaheadStep(
   private def next_at = at.on match {
     case e: Edge => route.pick_turn(e)
     case t: Turn => t.to
+  }
+}
+
+class RerouteRequester(a: Agent) {
+  private var roads_crossed = 1
+  private val reroute_frequency = 5
+  var should_reroute = false
+
+  a.sim.listen(classOf[EV_Transition], a, _ match {
+    case EV_Transition(_, from, to: Turn) => {
+      roads_crossed += 1
+      if (roads_crossed % reroute_frequency == 0) {
+        should_reroute = true
+      }
+    }
+    case _ =>
+  })
+
+  def react() {
+    if (should_reroute) {
+      should_reroute = false
+
+      // Find the first edge for which the driver has no tickets, so we don't have to cancel
+      // anything
+      var at = a.at.on
+      while (true) {
+        at match {
+          case e: Edge => {
+            if (e.road == a.route.goal) {
+              return
+            }
+            a.get_ticket(e) match {
+              case Some(ticket) => at = ticket.turn
+              case None => {
+                // Reroute from there
+                a.route.request_reroute(e)
+                a.route.flush_reroute(e)
+                return
+              }
+            }
+          }
+          case t: Turn => at = t.to
+        }
+      }
+    }
   }
 }

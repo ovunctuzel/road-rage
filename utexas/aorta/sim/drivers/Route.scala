@@ -58,6 +58,8 @@ abstract class Route(val goal: Road) extends Serializable {
   def pick_final_lane(e: Edge): (Edge, Boolean)
   // Just mark that we don't have to take the old turn prescribed
   def request_reroute(at: Edge) {}
+  // Immediately perform rerouting requested
+  def flush_reroute(at: Edge) {}
 
   def set_debug(value: Boolean) {
     debug_me = value
@@ -159,8 +161,16 @@ class PathRoute(goal: Road, orig_router: Router, private var rerouter: Router) e
   }
 
   override def request_reroute(at: Edge) {
+    Util.assert_ne(at.road, goal)
     chosen_turns -= at
     reroutes_requested += at
+  }
+
+  override def flush_reroute(at: Edge) {
+    Util.assert_ne(at.road, goal)
+    Util.assert_eq(reroutes_requested.contains(at), true)
+    // If it fails, no worries
+    perform_reroute(at, path.takeWhile(r => r != at.road), false)
   }
 
   def pick_turn(e: Edge): Turn = {
@@ -183,11 +193,16 @@ class PathRoute(goal: Road, orig_router: Router, private var rerouter: Router) e
     // handle it
     val asked_to_reroute = reroutes_requested.contains(e)
 
-    val turn =
-      if (must_reroute || should_reroute || asked_to_reroute)
-        perform_reroute(e, before, must_reroute)
-      else
-        best_turn(e, dest, slice.tail.tail.headOption.getOrElse(null))
+    val turn = if (must_reroute || should_reroute || asked_to_reroute) {
+      val success = perform_reroute(e, before, must_reroute)
+      if (must_reroute) {
+        Util.assert_eq(success, true)
+      }
+      val (_, rerouted_slice) = path.span(r => r != e.road)
+      best_turn(e, rerouted_slice.tail.head, rerouted_slice.tail.tail.headOption.getOrElse(null))
+    } else {
+      best_turn(e, dest, slice.tail.tail.headOption.getOrElse(null))
+    }
     chosen_turns(e) = turn
     return turn
   }
@@ -222,31 +237,39 @@ class PathRoute(goal: Road, orig_router: Router, private var rerouter: Router) e
     return (candidates.minBy(e => owner.num_ahead(e)), !candidates.contains(from))
   }
 
-  // Returns the turn we must make from at to continue down the new route
-  private def perform_reroute(at: Edge, slice_before: List[Road], must_reroute: Boolean): Turn = {
+  // Returns true if rerouting succeeds
+  private def perform_reroute(at: Edge, slice_before: List[Road], must_reroute: Boolean): Boolean = {
     reroutes_requested -= at
 
-    // TODO only do rerouting of the ENTIRE path
-    // For now, don't do optional rerouting in the middle of the path
-    if (!must_reroute && slice_before.nonEmpty) {
-      val next_road = path.span(r => r != at.road)._2.tail.head
-      return at.next_turns.find(t => t.to.road == next_road).get
-    }
+    // A problem: if we try to avoid looping back to roads at the start of the path, then some paths
+    // aren't possible.
+    // Ban roads in the prefix of our path, since drivers looping around to try to do LCing stuff is
+    // buggy and funky.
+    val banned =
+      if (!must_reroute)
+        (at.road :: slice_before).toSet
+      else
+        Set[Road]()
 
-    // Re-route, but start from a source we can definitely reach without
-    // lane-changing.
+    // Re-route, but start from a source we can definitely reach without lane-changing.
     val choice = at.next_turns.maxBy(t => t.to.queue.percent_avail)
     val source = choice.to.road
 
-    // TODO Erase all turn choices AFTER source, if we've made any?
-
-    // Stitch together the new path into the full thing.
-    val old_path = path
-    path = slice_before ++ (at.road :: rerouter.path(source, goal, owner.sim.tick))
-    owner.sim.publish(
-      EV_Reroute(owner, path, false, rerouter.router_type, must_reroute, old_path), owner
-    )
-    return choice
+    try {
+      // TODO Erase all turn choices excluding slice_before stuff, if we've made any?
+      val old_path = path
+      path = slice_before ++ (at.road :: rerouter.path(source, goal, owner.sim.tick, banned = banned))
+      owner.sim.publish(
+        EV_Reroute(owner, path, false, rerouter.router_type, must_reroute, old_path), owner
+      )
+      return true
+    } catch {
+      // Couldn't A* due to constraints, but that's alright
+      case e: Exception => {
+        Util.assert_eq(banned.nonEmpty, true)
+        return false
+      }
+    }
   }
 
   override def set_debug(value: Boolean) {

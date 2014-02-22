@@ -6,6 +6,8 @@ package utexas.aorta.common.algorithms
 
 import scala.collection.mutable
 
+import utexas.aorta.common.Util
+
 // TODO perf bug: I think one of the sets calls toString! test with a slow toString
 object AStar {
   // T is the node type
@@ -17,8 +19,14 @@ object AStar {
     add_cost: ((Double, Double), (Double, Double)) => (Double, Double) =
       (a: (Double, Double), b: (Double, Double)) => (a._1 + b._1, a._2 + b._2),
     allow_cycles: Boolean = false,
-    cost_start: (Double, Double) = (0, 0)
+    cost_start: (Double, Double) = (0, 0),
+    banned_nodes: Set[T] = Set[T]()
   ): List[T] = {
+    //Util.assert_eq(banned_nodes.contains(start), false)
+    if (banned_nodes.contains(start)) {
+      throw new IllegalArgumentException(s"A* from $start, but ban $banned_nodes")
+    }
+    Util.assert_eq(banned_nodes.intersect(goals).isEmpty, true)
     if (goals.contains(start) && !allow_cycles) {
       return List(start)
     }
@@ -56,7 +64,7 @@ object AStar {
         // Include 'start'
         return path.toList
       } else {
-        for (next_state <- successors(current)) {
+        for (next_state <- successors(current) if !banned_nodes.contains(next_state)) {
           val tentative_cost = add_cost(
             costs(current), calc_cost(current, next_state, costs(current))
           )
