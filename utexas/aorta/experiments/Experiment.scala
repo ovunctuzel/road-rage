@@ -12,6 +12,7 @@ import utexas.aorta.sim.{Simulation, EV_Heartbeat, EV_AgentSpawned}
 import utexas.aorta.sim.drivers.Agent
 import utexas.aorta.sim.make.{ModScenarioTool, Scenario}
 import utexas.aorta.ui.GUIDebugger
+import utexas.aorta.analysis.REPL
 
 import utexas.aorta.common.{RNG, Util, Flags, AgentID, IO}
 
@@ -23,7 +24,10 @@ case class ExpConfig(
   deadline: Int,
   map_fn: String,
   gs_prefix: Option[String]
-)
+) {
+  // TODO local mode could be automated too, but for now, this works
+  def is_automated = gs_prefix.isDefined
+}
 
 object ExpConfig {
   private val rng = new RNG()
@@ -131,11 +135,14 @@ abstract class SmartExperiment(config: ExpConfig) extends Experiment(config) {
     } catch {
       case e: Throwable => {
         io.notify(s"BORKED - $e")
-        val fn = "buggy_" + sim.graph.basename + "_" + mode
-        // TODO specific modified scenario, not the generic one
-        Util.blockingly_run(Seq("mv", "-f", scenario.name, fn))
+        val name = "buggy_" + sim.graph.basename + "_" + mode
+        s.copy(name = name).save()
         // TODO also upload latest savestate, and name everything reasonably
-        io.upload(fn)
+        io.upload(name)
+        if (!config.is_automated) {
+          // Drop into a REPL to allow for manual diagnosis
+          new REPL(sim).run()
+        }
         throw e
       }
     }
