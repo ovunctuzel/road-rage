@@ -18,6 +18,7 @@ import utexas.aorta.sim.make.{IntersectionType, RouteType}
 import utexas.aorta.sim.drivers.{Agent, PathRoute}
 
 import utexas.aorta.common.{Util, RNG, Timer, cfg, EdgeID, VertexID, RoadID}
+import utexas.aorta.common.algorithms.Pathfind
 
 object Mode extends Enumeration {
   type Mode = Value
@@ -815,7 +816,7 @@ class MapCanvas(val sim: Simulation, headless: Boolean = false) extends Scrollin
     val routers = List(new CongestionRouter(sim.graph))
 
     for ((router, color) <- routers.zip(colors)) {
-      val route = router.path(from, to, sim.tick)
+      val route = router.path(Pathfind(start = from, goals = Set(to)))
       //route.foreach(step => println("  - " + step))
       println(s"for $color, we have $route")
 

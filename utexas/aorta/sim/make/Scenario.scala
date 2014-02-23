@@ -14,6 +14,7 @@ import scala.collection.mutable
 
 import utexas.aorta.common.{Util, StateWriter, StateReader, AgentID, VertexID, RoadID, cfg,
                             Serializable}
+import utexas.aorta.common.algorithms.Pathfind
 
 // Array index and agent/intersection ID must correspond. Creator's responsibility.
 case class Scenario(
@@ -163,7 +164,9 @@ case class MkAgent(id: AgentID, birth_tick: Double, start: RoadID, start_dist: D
   // Excludes start road, since driver could start towards the end of the first road, and ideal_path
   // must be the quickest route (even if it's impossible to achieve by a few seconds)
   def ideal_path(graph: Graph) =
-    new FreeflowRouter(graph).path(graph.get_r(start), graph.get_r(route.goal), 0).tail
+    new FreeflowRouter(graph).path(
+      Pathfind(start = graph.get_r(start), goals = Set(graph.get_r(route.goal)))
+    ).tail
   // TODO doesnt account for turns
   // Since we exclude the first road, it's possible to end up with a 0-length path and 0
   // time/distance
@@ -181,7 +184,7 @@ object MkAgent {
 // orig_router, rerouter, and initial_path are only for strategy = Path
 case class MkRoute(
   strategy: RouteType.Value, orig_router: RouterType.Value, rerouter: RouterType.Value,
-  initial_path: List[RoadID], goal: RoadID, reroute_policy: ReroutePolicy.Value
+  initial_path: List[RoadID], goal: RoadID, reroute_policy: ReroutePolicyType.Value
 ) extends Serializable {
   def make(sim: Simulation) = Factory.make_route(
     strategy, sim.graph, orig_router, rerouter, sim.graph.get_r(goal),
@@ -198,7 +201,7 @@ case class MkRoute(
 object MkRoute {
   def unserialize(r: StateReader) = MkRoute(
     RouteType(r.int), RouterType(r.int), RouterType(r.int),
-    Range(0, r.int).map(_ => new RoadID(r.int)).toList, new RoadID(r.int), ReroutePolicy(r.int)
+    Range(0, r.int).map(_ => new RoadID(r.int)).toList, new RoadID(r.int), ReroutePolicyType(r.int)
   )
 }
 
@@ -303,8 +306,8 @@ object CongestionType extends Enumeration {
   val Current, Sticky, MovingWindow = Value
 }
 
-object ReroutePolicy extends Enumeration {
-  type ReroutePolicy = Value
+object ReroutePolicyType extends Enumeration {
+  type ReroutePolicyType = Value
   val Never, Regularly = Value
 }
 
@@ -328,7 +331,7 @@ object Factory {
 
   def make_route(
     enum: RouteType.Value, graph: Graph, orig_router: RouterType.Value, rerouter: RouterType.Value,
-    goal: Road, initial_path: List[Road], reroute_policy: ReroutePolicy.Value
+    goal: Road, initial_path: List[Road], reroute_policy: ReroutePolicyType.Value
   ) = enum match {
     case RouteType.Path => new PathRoute(
       goal, make_router(orig_router, graph, initial_path), make_router(rerouter, graph, Nil),
@@ -339,7 +342,7 @@ object Factory {
   def make_router(enum: RouterType.Value, graph: Graph, initial_path: List[Road])
   = enum match {
     case RouterType.Congestion => new CongestionRouter(graph)
-    case RouterType.Zone => new ZoneRouter(graph)
+    //case RouterType.Zone => new ZoneRouter(graph)
     case RouterType.Fixed => new FixedRouter(graph, initial_path)
     case RouterType.DumbToll => new DumbTollRouter(graph)
     case RouterType.TollThreshold => new TollThresholdRouter(graph)
@@ -368,9 +371,9 @@ object Factory {
     case CongestionType.MovingWindow => new MovingWindowCongestion(r, sim)
   }
 
-  def make_reroute_policy(enum: ReroutePolicy.Value, a: Agent) = enum match {
-    case ReroutePolicy.Never => new NeverReroutePolicy(a)
-    case ReroutePolicy.Regularly => new RegularlyReroutePolicy(a)
+  def make_reroute_policy(enum: ReroutePolicyType.Value, a: Agent) = enum match {
+    case ReroutePolicyType.Never => new NeverReroutePolicy(a)
+    case ReroutePolicyType.Regularly => new RegularlyReroutePolicy(a)
   }
 }
 

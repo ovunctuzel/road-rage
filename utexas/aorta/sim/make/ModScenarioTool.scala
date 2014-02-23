@@ -267,7 +267,7 @@ object ModScenarioTool {
         ),
         rerouter = RouterType.withName(params.getOrElse("rerouter", old.route.rerouter.toString)),
         goal = params.get("end").map(r => new RoadID(r.toInt)).getOrElse(old.route.goal),
-        reroute_policy = ReroutePolicy.withName(params.getOrElse("reroute_policy", old.route.reroute_policy.toString))
+        reroute_policy = ReroutePolicyType.withName(params.getOrElse("reroute_policy", old.route.reroute_policy.toString))
       ),
       wallet = old.wallet.copy(
         policy = WalletType.withName(params.getOrElse("wallet", old.wallet.policy.toString)),

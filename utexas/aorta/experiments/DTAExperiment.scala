@@ -9,6 +9,7 @@ import utexas.aorta.sim.{EV_AgentSpawned, EV_Transition}
 import utexas.aorta.sim.drivers.Agent
 import utexas.aorta.sim.make.{Scenario, RouterType}
 import utexas.aorta.common.{Util, RNG}
+import utexas.aorta.common.algorithms.Pathfind
 
 import scala.collection.mutable
 
@@ -56,7 +57,7 @@ class DTAExperiment(config: ExpConfig) extends SmartExperiment(config) {
         // Replan!
         // TODO spawn vs start time...
         val new_path = new TimeDependentAStar(graph, delay, a.birth_tick)
-          .path(graph.get_r(a.start), graph.get_r(a.route.goal), 0 /* this time doesnt matter */)
+          .path(Pathfind(start = graph.get_r(a.start), goals = Set(graph.get_r(a.route.goal))))
           .map(_.id)
         a.copy(route = a.route.copy(orig_router = RouterType.Fixed, initial_path = new_path))
         // TODO make these delays available to all/some drivers, for rerouting? could introduce bad
@@ -72,11 +73,11 @@ class TimeDependentAStar(graph: Graph, delays: LinkDelayMetric, start_time: Doub
   extends AbstractPairAstarRouter(graph) with SimpleHeuristic
 {
   override def router_type = RouterType.Unusable
-
-  // cost_sofar._2 is the time spent in the route so far
-  override def cost_step(
-    prev: Road, next: Road, cost_sofar: (Double, Double)
-  ) = (Util.bool2binary(next.road_agent.congested), delays.delay(next, start_time + cost_sofar._2))
+  override def transform(spec: Pathfind[Road]) = super.transform(spec).copy(
+    calc_cost = (prev: Road, next: Road, cost_sofar: (Double, Double)) =>
+      // cost_sofar._2 is the time spent in the route so far
+      (Util.bool2binary(next.road_agent.congested), delays.delay(next, start_time + cost_sofar._2))
+  )
 }
 
 class LinkDelayMetric(info: MetricInfo) extends Metric(info) {

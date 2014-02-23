@@ -4,9 +4,10 @@
 
 package utexas.aorta.tests
 
-import utexas.aorta.map.{ZoneRouter, CongestionRouter}
+import utexas.aorta.map.{CongestionRouter}
 
 import utexas.aorta.common.{Util, RNG, Timer, cfg}
+import utexas.aorta.common.algorithms.Pathfind
 
 object BenchmarkRouting {
   def main(args: Array[String]) {
@@ -16,8 +17,8 @@ object BenchmarkRouting {
     val rng = new RNG()
 
     val routers = List(
-      (new CongestionRouter(sim.graph), "congestion_a*"),
-      (new ZoneRouter(sim.graph), "zone_a*")
+      (new CongestionRouter(sim.graph), "congestion_a*")
+      //(new ZoneRouter(sim.graph), "zone_a*")
     )
     val sum_times = Array.fill[Double](routers.size)(0.0)
 
@@ -30,7 +31,7 @@ object BenchmarkRouting {
       }
       for (((router, name), idx) <- routers.zipWithIndex) {
         val t = Timer(name)
-        router.path(from, to, 0.0)
+        router.path(Pathfind(start = from, goals = Set(to)))
         sum_times(idx) += t.so_far
       }
     }

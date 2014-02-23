@@ -10,14 +10,15 @@ import scala.collection.mutable
 
 import utexas.aorta.map.{Edge, Road, Traversable, Turn, Vertex, Graph, Router}
 import utexas.aorta.sim.{EV_Transition, EV_Reroute}
-import utexas.aorta.sim.make.{RouteType, RouterType, Factory, ReroutePolicy}
+import utexas.aorta.sim.make.{RouteType, RouterType, Factory, ReroutePolicyType}
 
 import utexas.aorta.common.{Util, cfg, StateWriter, StateReader, TurnID, Serializable}
+import utexas.aorta.common.algorithms.Pathfind
 
 // TODO maybe unify the one class with the interface, or something. other routes were useless.
 
 // Get a client to their goal by any means possible.
-abstract class Route(val goal: Road, reroute_policy: ReroutePolicy.Value) extends Serializable {
+abstract class Route(val goal: Road, reroute_policy: ReroutePolicyType.Value) extends Serializable {
   //////////////////////////////////////////////////////////////////////////////
   // Transient state
 
@@ -87,7 +88,7 @@ object Route {
     // Original router will never be used again, and rerouter will have to be reset by PathRoute.
     val route = Factory.make_route(
       RouteType(r.int), graph, RouterType.Fixed, RouterType.Fixed, graph.roads(r.int), Nil,
-      ReroutePolicy(r.int)
+      ReroutePolicyType(r.int)
     )
     route.unserialize(r, graph)
     return route
@@ -97,7 +98,7 @@ object Route {
 // Follow routes prescribed by routers. Only reroute when forced or encouraged to.
 // TODO rerouter only var due to serialization
 class PathRoute(
-  goal: Road, orig_router: Router, private var rerouter: Router, reroute_policy: ReroutePolicy.Value
+  goal: Road, orig_router: Router, private var rerouter: Router, reroute_policy: ReroutePolicyType.Value
 ) extends Route(goal, reroute_policy) {
   //////////////////////////////////////////////////////////////////////////////
   // State
@@ -140,7 +141,7 @@ class PathRoute(
     rerouter.setup(a)
 
     Util.assert_eq(path.isEmpty, true)
-    path = orig_router.path(a.at.on.asEdge.road, goal, owner.sim.tick)
+    path = orig_router.path(Pathfind(start = a.at.on.asEdge.road, goals = Set(goal)))
     owner.sim.publish(
       EV_Reroute(owner, path, true, orig_router.router_type, false, Nil), owner
     )
@@ -267,7 +268,7 @@ class PathRoute(
     try {
       // TODO Erase all turn choices excluding slice_before stuff, if we've made any?
       val old_path = path
-      path = slice_before ++ (at.road :: rerouter.path(source, goal, owner.sim.tick, banned = banned))
+      path = slice_before ++ (at.road :: rerouter.path(Pathfind(start = source, goals = Set(goal), banned_nodes = banned)))
       owner.sim.publish(
         EV_Reroute(owner, path, false, rerouter.router_type, must_reroute, old_path), owner
       )
@@ -279,6 +280,37 @@ class PathRoute(
         return false
       }
     }
+  }
+
+  private def mandatory_reroute(at: Edge, slice_before: List[Road]) {
+    // TODO Erase all turn choices excluding slice_before stuff, if we've made any?
+    val old_path = path
+    path = slice_before ++ (at.road :: rerouter.path(Pathfind(
+      // Start from a source we can definitely reach without lane-changing.
+      start = at.next_turns.maxBy(t => t.to.queue.percent_avail).to.road,
+      goals = Set(goal)
+      // Don't ban any roads from the path. If we wind up looping back on something, then for now,
+      // so be it.
+    )))
+    owner.sim.publish(
+      EV_Reroute(owner, path, false, rerouter.router_type, true, old_path), owner
+    )
+  }
+
+  private def optional_reroute(at: Edge, slice_before: List[Road]) {
+    // TODO Erase all turn choices excluding slice_before stuff, if we've made any?
+    val old_path = path
+    path = slice_before ++ rerouter.path(Pathfind(
+        start = at.road,
+        goals = Set(goal),
+        // Don't hit anything already in our path
+        banned_nodes = (at.road :: slice_before).toSet
+        // Let the algorithm pick the best next step
+      ).first_succs(at.next_roads)
+    )
+    owner.sim.publish(
+      EV_Reroute(owner, path, false, rerouter.router_type, false, old_path), owner
+    )
   }
 
   override def set_debug(value: Boolean) {

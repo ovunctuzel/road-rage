@@ -4,7 +4,8 @@
 
 package utexas.aorta.experiments
 
-import utexas.aorta.sim.make.{Scenario, OrderingType, IntersectionType, RouterType, ReroutePolicy}
+import utexas.aorta.sim.make.{Scenario, OrderingType, IntersectionType, RouterType,
+                              ReroutePolicyType}
 
 object PhantomTollboothExperiment {
   def main(args: Array[String]) {
@@ -21,7 +22,7 @@ object PhantomTollboothExperiment {
     )),
     agents = s.agents.map(a => a.copy(route = a.route.copy(
       orig_router = RouterType.Tollbooth, rerouter = RouterType.Tollbooth,
-      reroute_policy = ReroutePolicy.Regularly
+      reroute_policy = ReroutePolicyType.Regularly
     )))
   )
 }

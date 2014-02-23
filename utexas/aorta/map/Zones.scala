@@ -10,7 +10,7 @@ import Function.tupled
 import utexas.aorta.map.make.MapStateWriter
 import utexas.aorta.sim.make.RouterType
 import utexas.aorta.ui.Renderable
-import utexas.aorta.common.algorithms.AStar
+import utexas.aorta.common.algorithms.{AStar, Pathfind}
 import utexas.aorta.common.{Util, ZoneID, StateReader}
 
 // TODO move to contrib until stable (but map serializes zones)
@@ -120,12 +120,12 @@ object ZoneMap {
       print(s"\r  ${open.size} roads left to process")
       val base = open.head
       // TODO path now includes start step 'base'. relevant?
-      val path = AStar.path(
-        base, Set(base), (step: Road) => step.succs,
-        (_: Road, next: Road, _: (Double, Double)) => (next.freeflow_time, 0),
-        (state: Road) => (state.end_pt.dist_to(base.end_pt), 0),
+      val path = AStar.path(Pathfind(
+        start = base, goals = Set(base), successors = (step: Road) => step.succs,
+        calc_cost = (_: Road, next: Road, _: (Double, Double)) => (next.freeflow_time, 0),
+        calc_heuristic = (state: Road) => (state.end_pt.dist_to(base.end_pt), 0),
         allow_cycles = true
-      )
+      ))
       val new_zone = new mutable.HashSet[Road]()
       new_zone ++= path
       open --= new_zone
@@ -176,7 +176,7 @@ object ZoneMap {
 }
 
 // Lazily computes an actual path to get through each zone
-class ZoneRouter(graph: Graph) extends Router(graph) {
+/*class ZoneRouter(graph: Graph) extends Router(graph) {
   private val zone_map = graph.zones
   // TODO savestate
   // Caching saves some time, and it also avoids bouncing between local maxima
@@ -220,4 +220,4 @@ class ZoneRouter(graph: Graph) extends Router(graph) {
     (_: Zone, next: Zone, _: (Double, Double)) => (next.freeflow_time, 0),
     (state: Zone) => (state.center.dist_to(goal.center), 0)
   )
-}
+}*/
