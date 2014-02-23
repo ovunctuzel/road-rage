@@ -4,8 +4,21 @@
 
 package utexas.aorta.experiments
 
+import utexas.aorta.analysis.REPL
+
 object Results extends PlotUtil with MetricReader {
   def main(args: Array[String]) {
+    if (args(0) == "repl") {
+      // TODO tab completion would rock
+      new REPL() {
+        override def init() {
+          super.init()
+          e.eval("import utexas.aorta.experiments.Results._")
+        }
+      }.run()
+      sys.exit()
+    }
+
     (args(0), args(1)) match {
       // TODO mark all of these as for single scenarios only
       case ("time", "histogram") => show(histogram(time_distr(read_times(args(2)))))
@@ -19,31 +32,31 @@ object Results extends PlotUtil with MetricReader {
   }
 
   // TODO time and distance are now repetitive...
-  private def time_vs_priority(s: ScenarioTimes) = ScatterData(
+  def time_vs_priority(s: ScenarioTimes) = ScatterData(
     s.modes.zipWithIndex.map(_ match {
       case (mode, idx) => mode -> s.agents.map(a => (a.priority, a.times(idx) / a.ideal_time))
     }).toMap, "Time vs priority", "Priority", "Trip time / ideal time"
   )
 
-  private def distance_vs_priority(s: ScenarioDistances) = ScatterData(
+  def distance_vs_priority(s: ScenarioDistances) = ScatterData(
     s.modes.zipWithIndex.map(_ match {
       case (mode, idx) => mode -> s.agents.map(a => (a.priority, a.distances(idx) / a.ideal_distance))
     }).toMap, "Distance vs priority", "Priority", "Trip distance / ideal distance"
   )
 
-  private def time_distr(s: ScenarioTimes) = DistributionData(
+  def time_distr(s: ScenarioTimes) = DistributionData(
     s.modes.zipWithIndex.map(_ match {
       case (mode, idx) => mode -> s.agents.map(a => a.times(idx) / a.ideal_time)
     }).toMap, "Trip time distribution", "Trip time / ideal time"
   )
 
-  private def distance_distr(s: ScenarioDistances) = DistributionData(
+  def distance_distr(s: ScenarioDistances) = DistributionData(
     s.modes.zipWithIndex.map(_ match {
       case (mode, idx) => mode -> s.agents.map(a => a.distances(idx) / a.ideal_distance)
     }).toMap, "Trip distance distribution", "Trip distance / ideal distance"
   )
 
-  private def turn_delay_distr(s: ScenarioTurnDelays) = PreBinnedData(
+  def turn_delay_distr(s: ScenarioTurnDelays) = PreBinnedData(
     s.delays.groupBy(_.mode).map(_ match {
       case (mode, ls) => mode -> ls.map(d => (d.bin, d.count))
     }).toMap, "Turn delay distribution", "Turn delay (s)"

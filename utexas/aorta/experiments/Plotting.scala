@@ -39,7 +39,7 @@ trait PlotUtil {
     chart.addSeries(series)
   }
 
-  protected def scatterplot(data: ScatterData): JFreeChart = {
+  def scatterplot(data: ScatterData): JFreeChart = {
     val chart = new XYSeriesCollection()
     Util.log(s"Correlation between ${data.x} and ${data.y}")
     for ((mode, points) <- data.points_per_mode) {
@@ -56,7 +56,7 @@ trait PlotUtil {
   }
 
   // TODO hollow style would rock
-  protected def histogram(data: DistributionData): JFreeChart = {
+  def histogram(data: DistributionData): JFreeChart = {
     val chart = new HistogramDataset()
     for ((mode, values) <- data.values_per_mode) {
       chart.addSeries(mode, values, num_bins)
@@ -66,7 +66,7 @@ trait PlotUtil {
     )
   }
 
-  protected def histogram(data: PreBinnedData): JFreeChart = {
+  def histogram(data: PreBinnedData): JFreeChart = {
     val chart = new XYSeriesCollection()
     for ((mode, bin_counts) <- data.bins_per_mode) {
       add_xy(chart, mode, bin_counts)
@@ -76,7 +76,7 @@ trait PlotUtil {
     )
   }
 
-  protected def boxplot(data: DistributionData): JFreeChart = {
+  def boxplot(data: DistributionData): JFreeChart = {
     val chart = new DefaultBoxAndWhiskerCategoryDataset()
     for ((mode, values) <- data.values_per_mode) {
       chart.add(values.toList.asJava, mode, "")
@@ -84,7 +84,7 @@ trait PlotUtil {
     return ChartFactory.createBoxAndWhiskerChart(data.title, "Mode", data.label, chart, true)
   }
 
-  protected def show(chart: JFreeChart) {
+  def show(chart: JFreeChart) {
     val frame = new ChartFrame("A nefarious plot", chart)
     frame.pack()
     frame.setVisible(true)
@@ -98,7 +98,7 @@ trait MetricReader {
     else
       Source.fromFile(fn)
 
-  protected def read_times(fn: String): ScenarioTimes = {
+  def read_times(fn: String): ScenarioTimes = {
     val lines = read(fn).getLines
     val header = lines.next.split(" ")
     Util.assert_eq(header.take(3).toList, List("agent", "priority", "ideal_time"))
@@ -108,7 +108,7 @@ trait MetricReader {
     )
   }
 
-  protected def read_distances(fn: String): ScenarioDistances = {
+  def read_distances(fn: String): ScenarioDistances = {
     val lines = read(fn).getLines
     val header = lines.next.split(" ")
     Util.assert_eq(header.take(3).toList, List("agent", "priority", "ideal_distance"))
@@ -118,7 +118,7 @@ trait MetricReader {
     )
   }
 
-  protected def read_turn_delay(fn: String): ScenarioTurnDelays = {
+  def read_turn_delay(fn: String): ScenarioTurnDelays = {
     val lines = read(fn).getLines
     Util.assert_eq(lines.next, "mode turn_delay_bin count")
     return ScenarioTurnDelays(

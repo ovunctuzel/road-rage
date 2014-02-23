@@ -12,7 +12,7 @@ import utexas.aorta.sim.{Simulation, EV_Heartbeat, EV_AgentSpawned}
 import utexas.aorta.sim.drivers.Agent
 import utexas.aorta.sim.make.{ModScenarioTool, Scenario}
 import utexas.aorta.ui.GUIDebugger
-import utexas.aorta.analysis.REPL
+import utexas.aorta.analysis.SimREPL
 
 import utexas.aorta.common.{RNG, Util, Flags, AgentID, IO}
 
@@ -141,7 +141,7 @@ abstract class SmartExperiment(config: ExpConfig) extends Experiment(config) {
         io.upload(name)
         if (!config.is_automated) {
           // Drop into a REPL to allow for manual diagnosis
-          new REPL(sim).run()
+          new SimREPL(sim).run()
         }
         throw e
       }
