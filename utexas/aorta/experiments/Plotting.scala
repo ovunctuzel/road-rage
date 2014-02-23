@@ -18,7 +18,12 @@ import utexas.aorta.common.Util
 // Used for showing histograms or boxplots from a bunch of individual values
 case class DistributionData(
   values_per_mode: Map[String, Array[Double]], title: String, label: String
-)
+) {
+  def cap(limit: Double) = copy(values_per_mode = values_per_mode.mapValues(
+    ls => ls.filter(_ < limit)
+  ))
+  def select(mode: String) = copy(values_per_mode = Map(mode -> values_per_mode(mode)))
+}
 // Histograms and boxplots from pre-binned values. Arrays of (bin, count)
 case class PreBinnedData(
   bins_per_mode: Map[String, Array[(Double, Double)]], title: String, label: String
@@ -26,7 +31,12 @@ case class PreBinnedData(
 // (X, Y) pairs for association
 case class ScatterData(
   points_per_mode: Map[String, Array[(Double, Double)]], title: String, x: String, y: String
-)
+) {
+  def cap(limit: Double) = copy(points_per_mode = points_per_mode.mapValues(
+    ls => ls.filter(pt => pt._2 < limit)
+  ))
+  def select(mode: String) = copy(points_per_mode = Map(mode -> points_per_mode(mode)))
+}
 
 trait PlotUtil {
   private val num_bins = 20
