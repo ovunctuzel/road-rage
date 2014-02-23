@@ -10,31 +10,33 @@ import scala.collection.mutable
 
 import utexas.aorta.map.{Edge, Road, Traversable, Turn, Vertex, Graph, Router}
 import utexas.aorta.sim.{EV_Transition, EV_Reroute}
-import utexas.aorta.sim.make.{RouteType, RouterType, Factory}
+import utexas.aorta.sim.make.{RouteType, RouterType, Factory, ReroutePolicy}
 
 import utexas.aorta.common.{Util, cfg, StateWriter, StateReader, TurnID, Serializable}
 
 // TODO maybe unify the one class with the interface, or something. other routes were useless.
 
 // Get a client to their goal by any means possible.
-abstract class Route(val goal: Road) extends Serializable {
+abstract class Route(val goal: Road, reroute_policy: ReroutePolicy.Value) extends Serializable {
   //////////////////////////////////////////////////////////////////////////////
   // Transient state
 
   protected var owner: Agent = null
   protected var debug_me = false  // TODO just grab from owner?
+  private var rerouter: ReroutePolicy = null // TODO is it transient?
 
   //////////////////////////////////////////////////////////////////////////////
   // Meta
 
   def serialize(w: StateWriter) {
-    w.ints(route_type.id, goal.id.int)
+    w.ints(route_type.id, goal.id.int, reroute_policy.id)
   }
 
   protected def unserialize(r: StateReader, graph: Graph) {}
 
   def setup(a: Agent) {
     owner = a
+    rerouter = Factory.make_reroute_policy(reroute_policy, a)
   }
 
   //////////////////////////////////////////////////////////////////////////////
@@ -45,6 +47,10 @@ abstract class Route(val goal: Road) extends Serializable {
     case e: Edge if e.to == v => at :: Nil
     case e: Edge => at :: steps_to(pick_turn(e), v)
     case t: Turn => at :: steps_to(t.to, v)
+  }
+
+  def react() {
+    rerouter.react()
   }
 
   // The client tells us they've physically moved
@@ -80,7 +86,8 @@ object Route {
   def unserialize(r: StateReader, graph: Graph): Route = {
     // Original router will never be used again, and rerouter will have to be reset by PathRoute.
     val route = Factory.make_route(
-      RouteType(r.int), graph, RouterType.Fixed, RouterType.Fixed, graph.roads(r.int), Nil
+      RouteType(r.int), graph, RouterType.Fixed, RouterType.Fixed, graph.roads(r.int), Nil,
+      ReroutePolicy(r.int)
     )
     route.unserialize(r, graph)
     return route
@@ -89,7 +96,9 @@ object Route {
 
 // Follow routes prescribed by routers. Only reroute when forced or encouraged to.
 // TODO rerouter only var due to serialization
-class PathRoute(goal: Road, orig_router: Router, private var rerouter: Router) extends Route(goal) {
+class PathRoute(
+  goal: Road, orig_router: Router, private var rerouter: Router, reroute_policy: ReroutePolicy.Value
+) extends Route(goal, reroute_policy) {
   //////////////////////////////////////////////////////////////////////////////
   // State
 
@@ -316,4 +325,58 @@ class PathRoute(goal: Road, orig_router: Router, private var rerouter: Router) e
 
   private def candidate_lanes(from: Edge, dest: Road) =
     from.other_lanes.filter(f => f.succs.exists(t => t.road == dest)).toList
+}
+
+// Responsible for requesting reroutes
+abstract class ReroutePolicy() {
+  def react()
+}
+
+class NeverReroutePolicy(a: Agent) extends ReroutePolicy {
+  override def react() {}
+}
+
+class RegularlyReroutePolicy(a: Agent) extends ReroutePolicy {
+  private var roads_crossed = 1
+  private val reroute_frequency = 5
+  private var should_reroute = false
+
+  a.sim.listen(classOf[EV_Transition], a, _ match {
+    case EV_Transition(_, from, to: Turn) => {
+      roads_crossed += 1
+      if (roads_crossed % reroute_frequency == 0) {
+        should_reroute = true
+      }
+    }
+    case _ =>
+  })
+
+  override def react() {
+    if (should_reroute) {
+      should_reroute = false
+
+      // Find the first edge for which the driver has no tickets, so we don't have to cancel
+      // anything
+      var at = a.at.on
+      while (true) {
+        at match {
+          case e: Edge => {
+            if (e.road == a.route.goal) {
+              return
+            }
+            a.get_ticket(e) match {
+              case Some(ticket) => at = ticket.turn
+              case None => {
+                // Reroute from there
+                a.route.request_reroute(e)
+                a.route.flush_reroute(e)
+                return
+              }
+            }
+          }
+          case t: Turn => at = t.to
+        }
+      }
+    }
+  }
 }

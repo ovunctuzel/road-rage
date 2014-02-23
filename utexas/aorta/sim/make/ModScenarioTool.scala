@@ -239,7 +239,8 @@ object ModScenarioTool {
 
   private def mod_agent(old: MkAgent, params: Map[String, String], graph: Graph, rng: RNG): MkAgent = {
     val bad_params = params.keys.toSet.diff(Set(
-      "start", "time", "route", "end", "wallet", "budget", "orig_router", "rerouter"
+      "start", "time", "route", "end", "wallet", "budget", "orig_router", "rerouter",
+      "reroute_policy"
     ))
     if (!bad_params.isEmpty) {
       Util.log(s"$bad_params aren't valid params for --agent or --all_agents")
@@ -265,7 +266,8 @@ object ModScenarioTool {
           params.getOrElse("orig_router", old.route.orig_router.toString)
         ),
         rerouter = RouterType.withName(params.getOrElse("rerouter", old.route.rerouter.toString)),
-        goal = params.get("end").map(r => new RoadID(r.toInt)).getOrElse(old.route.goal)
+        goal = params.get("end").map(r => new RoadID(r.toInt)).getOrElse(old.route.goal),
+        reroute_policy = ReroutePolicy.withName(params.getOrElse("reroute_policy", old.route.reroute_policy.toString))
       ),
       wallet = old.wallet.copy(
         policy = WalletType.withName(params.getOrElse("wallet", old.wallet.policy.toString)),

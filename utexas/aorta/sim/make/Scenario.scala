@@ -181,24 +181,24 @@ object MkAgent {
 // orig_router, rerouter, and initial_path are only for strategy = Path
 case class MkRoute(
   strategy: RouteType.Value, orig_router: RouterType.Value, rerouter: RouterType.Value,
-  initial_path: List[RoadID], goal: RoadID
+  initial_path: List[RoadID], goal: RoadID, reroute_policy: ReroutePolicy.Value
 ) extends Serializable {
   def make(sim: Simulation) = Factory.make_route(
     strategy, sim.graph, orig_router, rerouter, sim.graph.get_r(goal),
-    initial_path.map(id => sim.graph.get_r(id))
+    initial_path.map(id => sim.graph.get_r(id)), reroute_policy
   )
 
   def serialize(w: StateWriter) {
     w.ints(strategy.id, orig_router.id, rerouter.id)
     w.list_int(initial_path.map(_.int))
-    w.int(goal.int)
+    w.ints(goal.int, reroute_policy.id)
   }
 }
 
 object MkRoute {
   def unserialize(r: StateReader) = MkRoute(
     RouteType(r.int), RouterType(r.int), RouterType(r.int),
-    Range(0, r.int).map(_ => new RoadID(r.int)).toList, new RoadID(r.int)
+    Range(0, r.int).map(_ => new RoadID(r.int)).toList, new RoadID(r.int), ReroutePolicy(r.int)
   )
 }
 
@@ -303,6 +303,11 @@ object CongestionType extends Enumeration {
   val Current, Sticky, MovingWindow = Value
 }
 
+object ReroutePolicy extends Enumeration {
+  type ReroutePolicy = Value
+  val Never, Regularly = Value
+}
+
 object Factory {
   def make_policy(i: Intersection, policy: IntersectionType.Value,
                   ordering: OrderingType.Value, sim: Simulation) = policy match
@@ -323,10 +328,11 @@ object Factory {
 
   def make_route(
     enum: RouteType.Value, graph: Graph, orig_router: RouterType.Value, rerouter: RouterType.Value,
-    goal: Road, initial_path: List[Road]
+    goal: Road, initial_path: List[Road], reroute_policy: ReroutePolicy.Value
   ) = enum match {
     case RouteType.Path => new PathRoute(
-      goal, make_router(orig_router, graph, initial_path), make_router(rerouter, graph, Nil)
+      goal, make_router(orig_router, graph, initial_path), make_router(rerouter, graph, Nil),
+      reroute_policy
     )
   }
 
@@ -360,6 +366,11 @@ object Factory {
     case CongestionType.Current => new CurrentCongestion(r, sim)
     case CongestionType.Sticky => new StickyCongestion(r, sim)
     case CongestionType.MovingWindow => new MovingWindowCongestion(r, sim)
+  }
+
+  def make_reroute_policy(enum: ReroutePolicy.Value, a: Agent) = enum match {
+    case ReroutePolicy.Never => new NeverReroutePolicy(a)
+    case ReroutePolicy.Regularly => new RegularlyReroutePolicy(a)
   }
 }
 
