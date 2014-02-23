@@ -12,7 +12,6 @@ scalaSource in Compile := baseDirectory.value
 
 // TODO aliases that take args
 
-// TODO managed dependencies for everything
 libraryDependencies += "org.scala-lang" % "scala-swing" % "2.11.0-M4"
 
 libraryDependencies += "org.scala-lang" % "scala-compiler" % scalaVersion.value
@@ -20,6 +19,8 @@ libraryDependencies += "org.scala-lang" % "scala-compiler" % scalaVersion.value
 libraryDependencies += "org.scala-lang.modules" %% "scala-xml" % "1.0-RC3"
 
 libraryDependencies += "org.jfree" % "jfreechart" % "1.0.15"
+
+libraryDependencies += "jline" % "jline" % "2.11"
 
 // Be able to collect all dependencies
 packSettings

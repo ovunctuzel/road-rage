@@ -6,12 +6,14 @@ package utexas.aorta.analysis
 
 import javax.script.{ScriptEngineManager, ScriptException}
 import java.io.File
-import scala.io.ReadStdin
+import jline.console.ConsoleReader
 
 import utexas.aorta.sim.{Simulation, EV_Heartbeat}
 
 class REPL(sim: Simulation) {
   private val e = new ScriptEngineManager().getEngineByName("scala")
+  private val reader = new ConsoleReader()
+  reader.setPrompt("> ")
   private var first_time = true
 
   def run() {
@@ -23,8 +25,7 @@ class REPL(sim: Simulation) {
     println("Type 'quit' to exit the REPL. The main simulation object is bound to 'sim'.")
 
     while (true) {
-      // TODO use jline or something nicer
-      val input = ReadStdin.readLine("> ")
+      val input = reader.readLine()
       if (input == "quit") {
         return
       }
