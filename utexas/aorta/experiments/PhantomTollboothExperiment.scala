@@ -22,7 +22,7 @@ object PhantomTollboothExperiment {
     )),
     agents = s.agents.map(a => a.copy(route = a.route.copy(
       orig_router = RouterType.Tollbooth, rerouter = RouterType.Tollbooth,
-      reroute_policy = ReroutePolicyType.Regularly
+      reroute_policy = ReroutePolicyType.PriceChange
     )))
   )
 }

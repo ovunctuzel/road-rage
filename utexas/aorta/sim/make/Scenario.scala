@@ -308,7 +308,7 @@ object CongestionType extends Enumeration {
 
 object ReroutePolicyType extends Enumeration {
   type ReroutePolicyType = Value
-  val Never, Regularly = Value
+  val Never, Regularly, PriceChange = Value
 }
 
 object Factory {
@@ -374,6 +374,7 @@ object Factory {
   def make_reroute_policy(enum: ReroutePolicyType.Value, a: Agent) = enum match {
     case ReroutePolicyType.Never => new NeverReroutePolicy(a)
     case ReroutePolicyType.Regularly => new RegularlyReroutePolicy(a)
+    case ReroutePolicyType.PriceChange => new PriceChangeReroutePolicy(a)
   }
 }
 
