@@ -56,11 +56,6 @@ final case class EV_AgentQuit(
   // Note this includes waiting to actually spawn on the first lane
   def trip_time = end_tick - birth_tick
   def total_spent = start_budget - end_budget
-  // High priority and long trip time is bad; low priority or low trip time is
-  // good.
-  // Don't neglect freeriders, ever.
-  def weight = priority + 1
-  def weighted_value = weight * trip_time
 }
 
 final case class EV_Transition(a: Agent, from: Traversable, to: Traversable) extends Sim_Event

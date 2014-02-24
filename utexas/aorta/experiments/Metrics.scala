@@ -72,8 +72,13 @@ class TripTimeMetric(info: MetricInfo) extends SinglePerAgentMetric(info) {
   override def extra_fields = List("priority", "ideal_time")
   override def extra_data(a: MkAgent) = List(a.wallet.priority, a.ideal_time(info.sim.graph))
 
+  // First fill out the actual spawn time
+  info.sim.listen(classOf[EV_AgentSpawned], _ match {
+    case EV_AgentSpawned(a) => per_agent(a.id) = a.sim.tick
+  })
+  // Then determine the trip time when they finish
   info.sim.listen(classOf[EV_AgentQuit], _ match {
-    case e: EV_AgentQuit => per_agent(e.agent.id) = e.trip_time
+    case e: EV_AgentQuit => per_agent(e.agent.id) = e.agent.sim.tick - per_agent(e.agent.id)
   })
 }
 
