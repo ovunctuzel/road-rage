@@ -18,6 +18,7 @@ class REPL() {
 
   protected def init() {
     first_time = false
+    println("Initializing REPL, please wait a few seconds...")
   }
 
   protected def welcome() {
@@ -36,12 +37,13 @@ class REPL() {
         return
       }
       try {
+        // TODO bug: if you eval something like "foo(", silence till you close off all the ()'s
         val result = e.eval(input)
         if (result != null) {
           println(result)
         }
       } catch {
-        case e: ScriptException => // the error message already gets printed
+        // Catches both syntax errors and actual in-simulation exceptions
         case e: Throwable => e.printStackTrace()
       }
     }

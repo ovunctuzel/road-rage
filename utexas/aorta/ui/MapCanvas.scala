@@ -143,7 +143,12 @@ class MapCanvas(val sim: Simulation, headless: Boolean = false) extends Scrollin
     println(s"Pausing to target $a")
     state.camera_agent = Some(a)
     pause()
-    new SimREPL(sim).run()
+    // Launch this in a separate thread so the sim can be continued normally
+    new Thread {
+      override def run() {
+        new SimREPL(sim).run()
+      }
+    }.start()
   }})
   sim.listen(classOf[EV_Reroute], _ match {
     case EV_Reroute(agent, path, _, _, _, _) if agent == state.camera_agent.getOrElse(null) => {
