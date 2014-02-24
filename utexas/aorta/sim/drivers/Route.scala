@@ -64,9 +64,10 @@ abstract class Route(val goal: Road, reroute_policy: ReroutePolicyType.Value) ex
   // recommended.
   def pick_final_lane(e: Edge): (Edge, Boolean)
   // Just mark that we don't have to take the old turn prescribed
+  // TODO deprecated.
   def request_reroute(at: Edge) {}
-  // Immediately perform rerouting requested
-  def flush_reroute(at: Edge) {}
+  // May fail
+  def optional_reroute(at: Edge) {}
 
   def set_debug(value: Boolean) {
     debug_me = value
@@ -176,13 +177,6 @@ class PathRoute(
     reroutes_requested += at
   }
 
-  override def flush_reroute(at: Edge) {
-    Util.assert_ne(at.road, goal)
-    Util.assert_eq(reroutes_requested.contains(at), true)
-    // If it fails, no worries
-    perform_reroute(at, path.takeWhile(r => r != at.road), false)
-  }
-
   def pick_turn(e: Edge): Turn = {
     // Just lookup if we've already committed to something.
     // TODO ultimately, our clients should ask us less and look at tickets.
@@ -248,6 +242,7 @@ class PathRoute(
   }
 
   // Returns true if rerouting succeeds
+  // TODO deprecate and remove soon. call mandatory_reroute and optional_reroute explicitly.
   private def perform_reroute(at: Edge, slice_before: List[Road], must_reroute: Boolean): Boolean = {
     reroutes_requested -= at
 
@@ -282,7 +277,11 @@ class PathRoute(
     }
   }
 
+  // Ultimately, fuse mandatory and optional? Mandatory may produce longer paths because it starts
+  // from an arbitrary choice, and it may loop back in on itself to try to LC. Optional avoids these
+  // two issues, but it may fail.
   private def mandatory_reroute(at: Edge, slice_before: List[Road]) {
+    Util.assert_ne(at.road, goal)
     // TODO Erase all turn choices excluding slice_before stuff, if we've made any?
     val old_path = path
     path = slice_before ++ (at.road :: rerouter.path(Pathfind(
@@ -297,20 +296,28 @@ class PathRoute(
     )
   }
 
-  private def optional_reroute(at: Edge, slice_before: List[Road]) {
+  override def optional_reroute(at: Edge) {
+    Util.assert_ne(at.road, goal)
+    // TODO assert at.road is in current path
+    val slice_before = path.takeWhile(r => r != at.road)
     // TODO Erase all turn choices excluding slice_before stuff, if we've made any?
     val old_path = path
-    path = slice_before ++ rerouter.path(Pathfind(
-        start = at.road,
-        goals = Set(goal),
-        // Don't hit anything already in our path
-        banned_nodes = (at.road :: slice_before).toSet
-        // Let the algorithm pick the best next step
-      ).first_succs(at.next_roads)
-    )
-    owner.sim.publish(
-      EV_Reroute(owner, path, false, rerouter.router_type, false, old_path), owner
-    )
+    try {
+      path = slice_before ++ rerouter.path(Pathfind(
+          start = at.road,
+          goals = Set(goal),
+          // Don't hit anything already in our path
+          banned_nodes = (at.road :: slice_before).toSet
+          // Let the algorithm pick the best next step
+        ).first_succs(at.next_roads)
+      )
+      owner.sim.publish(
+        EV_Reroute(owner, path, false, rerouter.router_type, false, old_path), owner
+      )
+    } catch {
+      // Couldn't A* due to constraints, but that's alright
+      case e: Exception =>  // TODO catch a specific exception!
+    }
   }
 
   override def set_debug(value: Boolean) {
@@ -379,8 +386,7 @@ abstract class ReroutePolicy(a: Agent) {
               case Some(ticket) => at = ticket.turn
               case None => {
                 // Reroute from there
-                a.route.request_reroute(e)
-                a.route.flush_reroute(e)
+                a.route.optional_reroute(e)
                 return
               }
             }
