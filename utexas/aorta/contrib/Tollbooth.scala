@@ -87,6 +87,17 @@ class Tollbooth(road: RoadAgent) extends BatchDuringStep[Request] {
 
   // Simple policy for now.
   def toll(eta: Double) = new Price(current_prices.getOrElse(idx(eta), 0.0) / road.freeflow_capacity)
+
+  // If the agent is rerouting and may have already registered here, don't count their own
+  // contribution to the toll
+  def toll_with_discount(eta: Double, a: Agent): Price = {
+    val base_price = toll(eta).dollars
+    val discounted_price = registrations.get(a) match {
+      case Some((prev_eta, offer)) if idx(eta) == idx(prev_eta) => base_price - offer
+      case _ => base_price
+    }
+    return new Price(discounted_price)
+  }
 }
 
 // We, the tollbooth, set the toll at the time the request is made

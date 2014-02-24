@@ -129,7 +129,8 @@ class TollboothRouter(graph: Graph) extends AbstractPairAstarRouter(graph) {
 
   override def transform(spec: Pathfind[Road]) = super.transform(spec).copy(
     calc_cost = (prev: Road, next: Road, cost_sofar: (Double, Double)) => (
-      next.road_agent.tollbooth.toll(cost_sofar._2).dollars + next.freeflow_time * owner.wallet.priority,
+      next.road_agent.tollbooth.toll_with_discount(cost_sofar._2, owner).dollars +
+      next.freeflow_time * owner.wallet.priority,
       next.freeflow_time
     ),
     // Seed with the actual time we're starting

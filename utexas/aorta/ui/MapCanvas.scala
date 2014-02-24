@@ -16,6 +16,7 @@ import utexas.aorta.sim.{Simulation, EV_Signal_Change, EV_Transition, EV_Reroute
                          EV_Heartbeat, AgentMap}
 import utexas.aorta.sim.make.{IntersectionType, RouteType}
 import utexas.aorta.sim.drivers.{Agent, PathRoute}
+import utexas.aorta.analysis.SimREPL
 
 import utexas.aorta.common.{Util, RNG, Timer, cfg, EdgeID, VertexID, RoadID}
 import utexas.aorta.common.algorithms.Pathfind
@@ -142,6 +143,7 @@ class MapCanvas(val sim: Simulation, headless: Boolean = false) extends Scrollin
     println(s"Pausing to target $a")
     state.camera_agent = Some(a)
     pause()
+    new SimREPL(sim).run()
   }})
   sim.listen(classOf[EV_Reroute], _ match {
     case EV_Reroute(agent, path, _, _, _, _) if agent == state.camera_agent.getOrElse(null) => {
