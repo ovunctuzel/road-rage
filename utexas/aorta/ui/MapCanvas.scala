@@ -69,7 +69,6 @@ class GuiState(val canvas: MapCanvas) {
   var chosen_edge2: Option[Edge] = None
   var show_zone_colors = false
   var show_zone_centers = false
-  var snow_effect: Option[SnowEffect] = None
   val custom_road_colors = new mutable.HashMap[Road, Color]()
 
   // Actions
@@ -231,22 +230,6 @@ class MapCanvas(val sim: Simulation, headless: Boolean = false) extends Scrollin
         }
       }
     }.start()
-
-    // TODO messy to do this just for snow, and could repeat work...
-    new Thread {
-      override def run() {
-        while (true) {
-          state.snow_effect match {
-            case Some(fx) => {
-              fx.move()
-              repaint()
-            }
-            case None =>
-          }
-          Thread.sleep(50)
-        }
-      }
-    }.start()
   }
 
   def update_status() {
@@ -395,7 +378,6 @@ class MapCanvas(val sim: Simulation, headless: Boolean = false) extends Scrollin
         }
         case None =>
       }
-      state.snow_effect.foreach(fx => fx.render(state))
       return state.tooltips.toList
     }
   }
@@ -739,9 +721,13 @@ class MapCanvas(val sim: Simulation, headless: Boolean = false) extends Scrollin
         }
       }
     }
-    case Key.X => state.snow_effect match {
-      case Some(effect) => state.snow_effect = None
-      case None => state.snow_effect = Some(new SnowEffect(this))
+    case Key.X => {
+      // Launch this in a separate thread so the sim can be continued normally
+      new Thread {
+        override def run() {
+          new SimREPL(sim).run()
+        }
+      }.start()
     }
     case Key.G => {
       show_green = !show_green
