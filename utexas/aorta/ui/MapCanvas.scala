@@ -824,13 +824,30 @@ class MapCanvas(val sim: Simulation, headless: Boolean = false) extends Scrollin
   }
 
   // Hardcoded to show first component of 2-tuple cost
-  def show_path_costs(result: PathResult) {
-    val max_cost = result.costs.values.map(_._1).max
+  def show_path_costs(result: PathResult, percentile: Double = .99) {
+    // Exclude the top percent of costs; they're usually super high and throw off the visualization
+    val sorted_costs = result.costs.values.map(_._1).toArray.sorted
+    val max_cost = sorted_costs((percentile * sorted_costs.size).toInt)
+    val heatmap = new Heatmap()
     for ((r, cost) <- result.costs) {
-      state.custom_road_colors(r) = new Color((cost._1 / max_cost).toFloat, 0, 0)
+      state.custom_road_colors(r) = heatmap.color(math.min(cost._1 / max_cost, 1.0))
     }
-    state.custom_road_colors(result.path.head) = Color.GREEN
-    state.custom_road_colors(result.path.last) = Color.BLUE
+    for (r <- result.path) {
+      state.custom_road_colors(r) = Color.GREEN
+    }
+    repaint()
+  }
+
+  def show_tolls(percentile: Double = .99) {
+    val costs = sim.graph.roads.map(_.road_agent.tollbooth.toll(sim.tick).dollars)
+    // Exclude the top percent of costs; they're usually super high and throw off the visualization
+    val sorted_costs = costs.sorted
+    val max_cost = sorted_costs((percentile * sorted_costs.size).toInt)
+    val heatmap = new Heatmap()
+    for (r <- sim.graph.roads) {
+      val cost = r.road_agent.tollbooth.toll(sim.tick).dollars
+      state.custom_road_colors(r) = heatmap.color(math.min(cost / max_cost, 1.0))
+    }
     repaint()
   }
 }
@@ -905,4 +922,14 @@ object GeomFactory {
   )
 
   def line2awt(l: Line): Line2D.Double = new Line2D.Double(l.x1, l.y1, l.x2, l.y2)
+}
+
+class Heatmap() {
+  // From colorbrewer2.org
+  private val colors = Array(
+    "#ffffe5", "#fff7bc", "#fee391", "#fec44f", "#fe9929", "#ec7014", "#cc4c02", "#993404", "#662506"
+  ).map(hex => Color.decode(hex))
+
+  // x is [0, 1]
+  def color(x: Double) = colors(math.min((x * colors.size).toInt, colors.size - 1))
 }
