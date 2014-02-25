@@ -7,13 +7,15 @@ package utexas.aorta.sim.drivers
 import scala.collection.mutable
 
 import utexas.aorta.contrib.TollBroker
-import utexas.aorta.map.{Edge, Coordinate, Turn, Traversable, Graph, Position, Vertex}
+import utexas.aorta.map.{Edge, Coordinate, Turn, Traversable, Graph, Position, Vertex, PathResult}
 import utexas.aorta.sim.{Simulation, EV_AgentQuit, AgentMap, EV_Breakpoint}
 import utexas.aorta.sim.intersections.{Intersection, Ticket}
+import utexas.aorta.sim.make.Factory
 import utexas.aorta.ui.Renderable
 
 import utexas.aorta.common.{Util, cfg, Physics, StateWriter, StateReader, AgentID, EdgeID,
                             ValueOfTime, Flags, Serializable}
+import utexas.aorta.common.algorithms.Pathfind
 
 class Agent(
   val id: AgentID, val route: Route, val wallet: Wallet, val sim: Simulation
@@ -257,6 +259,12 @@ class Agent(
     lc.dump_info()
     behavior.dump_info()
     Util.log_pop()
+  }
+  def debug_route(): PathResult = {
+    val maker = sim.scenario.agents(id.int)
+    val router = Factory.make_router(maker.route.rerouter, sim.graph, Nil)
+    router.setup(this)
+    return router.path(Pathfind(start = at.on.asEdge.road, goals = Set(route.goal)))
   }
 
   def kinematic = Kinematic(at.dist, speed, at.on.speed_limit)

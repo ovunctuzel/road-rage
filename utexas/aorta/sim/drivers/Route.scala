@@ -16,33 +16,33 @@ import utexas.aorta.common.{Util, cfg, StateWriter, StateReader, TurnID, Seriali
 import utexas.aorta.common.algorithms.Pathfind
 
 // Get a client to their goal by any means possible.
-abstract class Route(val goal: Road, reroute_policy: ReroutePolicyType.Value) extends Serializable {
+abstract class Route(val goal: Road, reroute_policy_type: ReroutePolicyType.Value) extends Serializable {
   //////////////////////////////////////////////////////////////////////////////
   // Transient state
 
   protected var owner: Agent = null
   protected var debug_me = false  // TODO just grab from owner?
-  private var rerouter: ReroutePolicy = null // TODO is it transient?
+  private var reroute_policy: ReroutePolicy = null // TODO is it transient?
 
   //////////////////////////////////////////////////////////////////////////////
   // Meta
 
   def serialize(w: StateWriter) {
-    w.ints(route_type.id, goal.id.int, reroute_policy.id)
+    w.ints(route_type.id, goal.id.int, reroute_policy_type.id)
   }
 
   protected def unserialize(r: StateReader, graph: Graph) {}
 
   def setup(a: Agent) {
     owner = a
-    rerouter = Factory.make_reroute_policy(reroute_policy, a)
+    reroute_policy = Factory.make_reroute_policy(reroute_policy_type, a)
   }
 
   //////////////////////////////////////////////////////////////////////////////
   // Actions
 
   def react() {
-    rerouter.react()
+    reroute_policy.react()
   }
 
   // The client tells us they've physically moved
