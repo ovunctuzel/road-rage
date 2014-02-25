@@ -139,10 +139,10 @@ trait MetricReader {
 
 case class ScenarioTag(id: String, map: String)
 
-case class TripTimeResult(priority: Double, ideal_time: Double, times: Array[Double])
+case class TripTimeResult(id: Int, priority: Double, ideal_time: Double, times: Array[Double])
 case class ScenarioTimes(tag: ScenarioTag, modes: Array[String], agents: Array[TripTimeResult])
 
-case class TripDistanceResult(priority: Double, ideal_distance: Double, distances: Array[Double])
+case class TripDistanceResult(id: Int, priority: Double, ideal_distance: Double, distances: Array[Double])
 case class ScenarioDistances(tag: ScenarioTag, modes: Array[String], agents: Array[TripDistanceResult])
 
 case class TurnDelayResult(mode: String, bin: Double, count: Double)
@@ -157,10 +157,14 @@ object ScenarioTag {
   }
 }
 object TripTimeResult {
-  def apply(fields: Array[Double]) = new TripTimeResult(fields(1), fields(2), fields.drop(3))
+  def apply(fields: Array[Double]) = new TripTimeResult(
+    fields(0).toInt, fields(1), fields(2), fields.drop(3)
+  )
 }
 object TripDistanceResult {
-  def apply(fields: Array[Double]) = new TripDistanceResult(fields(1), fields(2), fields.drop(3))
+  def apply(fields: Array[Double]) = new TripDistanceResult(
+    fields(0).toInt, fields(1), fields(2), fields.drop(3)
+  )
 }
 object TurnDelayResult {
   def apply(fields: Array[String]) =

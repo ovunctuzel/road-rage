@@ -6,7 +6,7 @@ package utexas.aorta.experiments
 
 import utexas.aorta.analysis.REPL
 
-object Results extends PlotUtil with MetricReader {
+object Results extends PlotUtil with MetricReader with UsefulAnalytics {
   def main(args: Array[String]) {
     if (args(0) == "repl") {
       // TODO tab completion would rock
@@ -61,4 +61,20 @@ object Results extends PlotUtil with MetricReader {
       case (mode, ls) => mode -> ls.map(d => (d.bin, d.count))
     }).toMap, "Turn delay distribution", "Turn delay (s)"
   )
+}
+
+// Misc, sometimes temporary stuff to do processing in the REPL
+trait UsefulAnalytics {
+  case class TollboothResult(id: Int, priority: Double, ideal_time: Double, toll_time: Double) {
+    def ratio = toll_time / ideal_time
+  }
+
+  // The top 10 drivers with high priority and poor trip time
+  def find_worst_cases(s: ScenarioTimes) = s.agents
+    .map(a => TollboothResult(a.id, a.priority, a.ideal_time, a.times(s.modes.indexOf("tolls"))))
+    .filter(a => a.priority > 400)
+    .sortBy(a => a.ratio)
+    .reverse
+    .take(10)
+    .toList
 }
