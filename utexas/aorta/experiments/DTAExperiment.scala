@@ -57,7 +57,7 @@ class DTAExperiment(config: ExpConfig) extends SmartExperiment(config) {
         // Replan!
         // TODO spawn vs start time...
         val new_path = new TimeDependentAStar(graph, delay, a.birth_tick)
-          .path(Pathfind(start = graph.get_r(a.start), goals = Set(graph.get_r(a.route.goal))))
+          .path(Pathfind(start = graph.get_r(a.start), goals = Set(graph.get_r(a.route.goal)))).path
           .map(_.id)
         a.copy(route = a.route.copy(orig_router = RouterType.Fixed, initial_path = new_path))
         // TODO make these delays available to all/some drivers, for rerouting? could introduce bad

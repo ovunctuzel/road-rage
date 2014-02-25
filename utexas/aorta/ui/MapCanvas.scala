@@ -823,7 +823,7 @@ class MapCanvas(val sim: Simulation, headless: Boolean = false) extends Scrollin
     val routers = List(new CongestionRouter(sim.graph))
 
     for ((router, color) <- routers.zip(colors)) {
-      val route = router.path(Pathfind(start = from, goals = Set(to)))
+      val route = router.path(Pathfind(start = from, goals = Set(to))).path
       //route.foreach(step => println("  - " + step))
       println(s"for $color, we have $route")
 

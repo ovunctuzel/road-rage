@@ -166,7 +166,7 @@ case class MkAgent(id: AgentID, birth_tick: Double, start: RoadID, start_dist: D
   def ideal_path(graph: Graph) =
     new FreeflowRouter(graph).path(
       Pathfind(start = graph.get_r(start), goals = Set(graph.get_r(route.goal)))
-    ).tail
+    ).path.tail
   // TODO doesnt account for turns
   // Since we exclude the first road, it's possible to end up with a 0-length path and 0
   // time/distance

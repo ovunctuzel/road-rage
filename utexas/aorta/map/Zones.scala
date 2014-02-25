@@ -125,7 +125,7 @@ object ZoneMap {
         calc_cost = (_: Road, next: Road, _: (Double, Double)) => (next.freeflow_time, 0),
         calc_heuristic = (state: Road) => (state.end_pt.dist_to(base.end_pt), 0),
         allow_cycles = true
-      ))
+      ))._1
       val new_zone = new mutable.HashSet[Road]()
       new_zone ++= path
       open --= new_zone

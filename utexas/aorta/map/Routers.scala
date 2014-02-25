@@ -10,13 +10,14 @@ import utexas.aorta.sim.make.RouterType
 import utexas.aorta.common.{Util, Price}
 import utexas.aorta.common.algorithms.{AStar, Pathfind}
 
+case class PathResult(path: List[Road], costs: Map[Road, (Double, Double)])
+
 abstract class Router(graph: Graph) {
   protected var debug_me = false
 
   def router_type: RouterType.Value
   // Includes 'from' as the first step
-  // TODO time, banned, etc... take a builder with options to A* call
-  def path(spec: Pathfind[Road]): List[Road]
+  def path(spec: Pathfind[Road]): PathResult
 
   // TODO messy to include this jump, but hard to pipe in specific params...
   def setup(a: Agent) {}
@@ -28,17 +29,18 @@ abstract class Router(graph: Graph) {
 
 class FixedRouter(graph: Graph, initial_path: List[Road]) extends Router(graph) {
   override def router_type = RouterType.Fixed
-  override def path(spec: Pathfind[Road]): List[Road] = {
-    // remember, paths don't include from as the first step.
+  override def path(spec: Pathfind[Road]): PathResult = {
     Util.assert_eq(spec.start, initial_path.head)
     Util.assert_eq(spec.goals.contains(initial_path.last), true)
-    return initial_path
+    return PathResult(initial_path, Map())
   }
 }
 
 // Score is a pair of doubles
 abstract class AbstractPairAstarRouter(graph: Graph) extends Router(graph) {
-  override def path(spec: Pathfind[Road]) = AStar.path(transform(spec))
+  override def path(spec: Pathfind[Road]) = AStar.path(transform(spec)) match {
+    case (route, costs) => PathResult(route, costs)
+  }
 
   protected def transform(spec: Pathfind[Road]) = spec.copy(
     successors = (step: Road) => step.succs

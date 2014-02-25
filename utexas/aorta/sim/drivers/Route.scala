@@ -115,7 +115,7 @@ class PathRoute(
     rerouter.setup(a)
 
     Util.assert_eq(path.isEmpty, true)
-    path = orig_router.path(Pathfind(start = a.at.on.asEdge.road, goals = Set(goal)))
+    path = orig_router.path(Pathfind(start = a.at.on.asEdge.road, goals = Set(goal))).path
     owner.sim.publish(
       EV_Reroute(owner, path, true, orig_router.router_type, false, Nil), owner
     )
@@ -203,7 +203,7 @@ class PathRoute(
       goals = Set(goal)
       // Don't ban any roads from the path. If we wind up looping back on something, then for now,
       // so be it.
-    )))
+    )).path)
     owner.sim.publish(
       EV_Reroute(owner, path, false, rerouter.router_type, true, old_path), owner
     )
@@ -222,7 +222,7 @@ class PathRoute(
           banned_nodes = (at.road :: slice_before).toSet
           // Let the algorithm pick the best next step
         ).first_succs(at.next_roads)
-      )
+      ).path
       owner.sim.publish(
         EV_Reroute(owner, path, false, rerouter.router_type, false, old_path), owner
       )

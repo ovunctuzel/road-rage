@@ -29,14 +29,15 @@ case class Pathfind[T](
 object AStar {
   // T is the node type
   // TODO All costs are pairs of doubles lexicographically ordered right now. Generalize.
-  def path[T](spec: Pathfind[T]): List[T] = {
+  // The result is the path, then the map from node to cost
+  def path[T](spec: Pathfind[T]): (List[T], Map[T, (Double, Double)]) = {
     //Util.assert_eq(banned_nodes.contains(start), false)
     if (spec.banned_nodes.contains(spec.start)) {
       throw new IllegalArgumentException(s"A* from ${spec.start}, but ban ${spec.banned_nodes}")
     }
     Util.assert_eq(spec.banned_nodes.intersect(spec.goals).isEmpty, true)
     if (spec.goals.contains(spec.start) && !spec.allow_cycles) {
-      return List(spec.start)
+      return (List(spec.start), Map())
     }
 
     // Stitch together our path
@@ -70,7 +71,7 @@ object AStar {
           pointer = backrefs.remove(pointer.get)
         }
         // Include 'start'
-        return path.toList
+        return (path.toList, costs.toMap)
       } else {
         for (next_state <- spec.successors(current) if !spec.banned_nodes.contains(next_state)) {
           val tentative_cost = spec.add_cost(
