@@ -75,7 +75,7 @@ class Ticket(val a: Agent, val turn: Turn) extends Ordered[Ticket] with Serializ
       return true
     }
 
-    val steps = a.route.steps_to(a.at.on, turn.vert)
+    val steps = a.steps_to(a.at.on, turn.vert)
     // TODO efficiency... dont search behind us, only look one person ahead once
     // this is really an enforced invariant
     val blocked_cur_step = steps.head.queue.all_agents.find(

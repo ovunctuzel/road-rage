@@ -7,7 +7,7 @@ package utexas.aorta.sim.drivers
 import scala.collection.mutable
 
 import utexas.aorta.contrib.TollBroker
-import utexas.aorta.map.{Edge, Coordinate, Turn, Traversable, Graph, Position}
+import utexas.aorta.map.{Edge, Coordinate, Turn, Traversable, Graph, Position, Vertex}
 import utexas.aorta.sim.{Simulation, EV_AgentQuit, AgentMap, EV_Breakpoint}
 import utexas.aorta.sim.intersections.{Intersection, Ticket}
 import utexas.aorta.ui.Renderable
@@ -126,13 +126,13 @@ class Agent(
       (current_on, next) match {
         case (e: Edge, t: Turn) => {
           val i = t.vert.intersection
-          i.enter(get_ticket(t).get)
+          i.enter(get_ticket(e).get)
           e.queue.free_slot()
           e.road.road_agent.tollbooth.exit(this)
           toll_broker.exited(e.road)
         }
         case (t: Turn, e: Edge) => {
-          val ticket = get_ticket(t).get
+          val ticket = get_ticket(t.from).get
           ticket.done_tick = sim.tick
           remove_ticket(ticket)
           ticket.intersection.exit(ticket)
@@ -268,7 +268,6 @@ class Agent(
   def is_stopped = speed <= cfg.epsilon
 
   def get_ticket(from: Edge) = tickets.get(from)
-  def get_ticket(turn: Turn) = tickets.get(turn.from)
   // TODO rm this method.
   def all_tickets(i: Intersection) = tickets.values.filter(t => t.intersection == i)
   // If true, we will NOT block when trying to proceed past this intersection
@@ -306,11 +305,19 @@ class Agent(
   }
   def our_lead = at.on.queue.ahead_of(this)
   def our_tail = at.on.queue.behind(this)
-  def how_far_away(i: Intersection) = route.steps_to(at.on, i.v).map(_.length).sum - at.dist
+  def how_far_away(i: Intersection) = steps_to(at.on, i.v).map(_.length).sum - at.dist
   // Report some number that fully encodes our current choice
   // TODO should be getting turns chosen and LCs done too, to distinguish a few
   // rare cases thatd we'll otherwise blur.
   def characterize_choice = target_accel
+
+  // No lane-changing, uses turns from requested tickets. This means callers can't expect this to
+  // reach beyond what lookahead has touched.
+  def steps_to(at: Traversable, v: Vertex): List[Traversable] = at match {
+    case e: Edge if e.to == v => at :: Nil
+    case e: Edge => at :: steps_to(get_ticket(e).get.turn, v)
+    case t: Turn => at :: steps_to(t.to, v)
+  }
 
   // Seconds saved per dollar. Just use priority for now.
   def value_of_time = new ValueOfTime(wallet.priority)
@@ -350,7 +357,7 @@ object Agent {
       ticket.intersection.policy.unserialize_accepted(ticket)
     }
     a.at.on match {
-      case t: Turn => t.vert.intersection.enter(a.get_ticket(t).get)
+      case t: Turn => t.vert.intersection.enter(a.get_ticket(t.from).get)
       case _ =>
     }
     // TODO other things in setup(), like setting debug_me?

@@ -77,7 +77,7 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
 
     // Since we can't react instantly, we have to consider the worst-case of the
     // next tick, which happens when we speed up as much as possible this tick.
-    var step = LookaheadStep(a.at, a.kinematic.max_lookahead_dist, 0, route)
+    var step = LookaheadStep(a.at, a.kinematic.max_lookahead_dist, 0, a)
 
     // Verify lookahead doesn't cycle to the same lane twice, since an agent can only hold one
     // ticket per origin lane at a time. Note agents may hit the same road twice in quick succession
@@ -111,10 +111,15 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
 
       min_speed_limit = math.min(min_speed_limit, constraint_speed_limit(step))
 
-      // Set the next step.
-      step = step.next_step match {
-        case Some(s) => s
-        case None => null
+      // Set the next step. If we're stopping here, don't bother -- next_step would fail to find a
+      // ticket to figure out where we want to go.
+      if (accel_for_stop.isDefined) {
+        step = null
+      } else {
+        step = step.next_step match {
+          case Some(s) => s
+          case None => null
+        }
       }
     }
 
@@ -203,7 +208,7 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
       // Stop if we're arriving at destination
       case e: Edge if route.done(e) => false
       // Otherwise, ask the intersection
-      case e: Edge => a.get_ticket(route.pick_turn(e)) match {
+      case e: Edge => a.get_ticket(e) match {
         case Some(ticket) => ticket.is_approved
         case None => false
       }
@@ -236,7 +241,7 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
     a.get_ticket(e) match {
       case Some(ticket) if ticket.should_cancel => {
         // Try again. The routing should avoid choices that're filled up, hopefully avoiding gridlock.
-        route.request_reroute(e)
+        route.optional_reroute(e)
         val next_turn = route.pick_turn(e)
         // Sometimes we pick the same turn here, but the later route could change.
         if (next_turn != ticket.turn) {
@@ -267,24 +272,26 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
 // This is a lazy sequence of edges/turns that tracks distances away from the original spot. This
 // assumes no lane-changing: where the agent starts predicting is where they'll end up.
 case class LookaheadStep(
-  at: Position, dist_left_to_analyze: Double, dist_so_far: Double, route: Route
+  at: Position, dist_left_to_analyze: Double, dist_so_far: Double, a: Agent
 ) {
   def next_step =
     if (dist_left_to_analyze <= at.dist_left || is_last_step)
       None
     else
       Some(LookaheadStep(
-        Position(next_at, 0), dist_left_to_analyze - at.dist_left, dist_so_far + at.dist_left,
-        route
+        Position(next_at, 0), dist_left_to_analyze - at.dist_left, dist_so_far + at.dist_left, a
       ))
 
   private def is_last_step = at.on match {
-    case e: Edge => route.done(e)
+    case e: Edge => a.route.done(e)
     case _ => false
   }
 
   private def next_at = at.on match {
-    case e: Edge => route.pick_turn(e)
+    // This is called after manage_turn, which'll guarantee the ticket is present. However, if
+    // manage_turn defers the decision (due to LCing), then this method shouldn't be called, since
+    // the driver must stop at that intersection.
+    case e: Edge => a.get_ticket(e).get.turn
     case t: Turn => t.to
   }
 }

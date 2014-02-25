@@ -24,7 +24,7 @@ class TollBroker(a: Agent) {
   // Setup
   a.sim.listen(classOf[EV_Reroute], a, _ match {
     case ev: EV_Reroute => {
-      val obselete = registrations -- a.route.next_roads(k)
+      val obselete = registrations -- a.route.current_path.take(k)
       // TODO cancel all and re-calculate eta for planned ones, IF we're changing path to get there?
       for (r <- obselete) {
         r.road_agent.tollbooth.cancel(a)
@@ -48,7 +48,7 @@ class TollBroker(a: Agent) {
     }
 
     // TODO bad workaround. agents that start on same road they end break otherwise.
-    val next_roads = a.route.next_roads(k) match {
+    val next_roads = a.route.current_path.take(k) match {
       case Nil => List(a.at.on.asInstanceOf[Edge].road)
       case ls => ls
     }
