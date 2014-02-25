@@ -70,6 +70,7 @@ class GuiState(val canvas: MapCanvas) {
   var show_zone_colors = false
   var show_zone_centers = false
   var snow_effect: Option[SnowEffect] = None
+  val custom_road_colors = new mutable.HashMap[Road, Color]()
 
   // Actions
   def reset(g: Graphics2D) {
@@ -573,6 +574,7 @@ class MapCanvas(val sim: Simulation, headless: Boolean = false) extends Scrollin
       state.chosen_edge1 = None
       state.chosen_edge2 = None
       state.route_members.clear()
+      state.custom_road_colors.clear()
       repaint()
     }
     // TODO refactor the 4 teleports?
@@ -832,6 +834,17 @@ class MapCanvas(val sim: Simulation, headless: Boolean = false) extends Scrollin
       state.route_members.set(color, route.toSet)
     }
     timer.stop()
+    repaint()
+  }
+
+  // Hardcoded to show first component of 2-tuple cost
+  def show_path_costs(result: PathResult) {
+    val max_cost = result.costs.values.map(_._1).max
+    for ((r, cost) <- result.costs) {
+      state.custom_road_colors(r) = new Color((cost._1 / max_cost).toFloat, 0, 0)
+    }
+    state.custom_road_colors(result.path.head) = Color.GREEN
+    state.custom_road_colors(result.path.last) = Color.BLUE
     repaint()
   }
 }

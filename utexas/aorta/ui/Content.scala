@@ -154,7 +154,9 @@ class DrawRoad(val r: Road, state: GuiState) {
   }
 
   private def color(): Color =
-    if (state.chosen_road.getOrElse(null) == r)
+    if (state.custom_road_colors.contains(r))
+      state.custom_road_colors(r)
+    else if (state.chosen_road.getOrElse(null) == r)
       cfg.chosen_road_color
     else if (state.route_members.contains(r))
       state.route_members.color(r).get
