@@ -115,7 +115,7 @@ class PathRoute(
     rerouter.setup(a)
 
     Util.assert_eq(path.isEmpty, true)
-    path = orig_router.path(Pathfind(start = a.at.on.asEdge.road, goals = Set(goal))).path
+    path = orig_router.path(a.at.on.asEdge.road, goal).path
     owner.sim.publish(
       EV_Reroute(owner, path, true, orig_router.router_type, false, Nil), owner
     )

@@ -14,7 +14,6 @@ import scala.collection.mutable
 
 import utexas.aorta.common.{Util, StateWriter, StateReader, AgentID, VertexID, RoadID, cfg,
                             Serializable}
-import utexas.aorta.common.algorithms.Pathfind
 
 // Array index and agent/intersection ID must correspond. Creator's responsibility.
 case class Scenario(
@@ -164,9 +163,7 @@ case class MkAgent(id: AgentID, birth_tick: Double, start: RoadID, start_dist: D
   // Excludes start road, since driver could start towards the end of the first road, and ideal_path
   // must be the quickest route (even if it's impossible to achieve by a few seconds)
   def ideal_path(graph: Graph) =
-    new FreeflowRouter(graph).path(
-      Pathfind(start = graph.get_r(start), goals = Set(graph.get_r(route.goal)))
-    ).path.tail
+    new FreeflowRouter(graph).path(graph.get_r(start), graph.get_r(route.goal)).path.tail
   // TODO doesnt account for turns
   // Since we exclude the first road, it's possible to end up with a 0-length path and 0
   // time/distance

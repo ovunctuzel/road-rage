@@ -7,7 +7,6 @@ package utexas.aorta.tests
 import utexas.aorta.map.{CongestionRouter}
 
 import utexas.aorta.common.{Util, RNG, Timer, cfg}
-import utexas.aorta.common.algorithms.Pathfind
 
 object BenchmarkRouting {
   def main(args: Array[String]) {
@@ -31,7 +30,7 @@ object BenchmarkRouting {
       }
       for (((router, name), idx) <- routers.zipWithIndex) {
         val t = Timer(name)
-        router.path(Pathfind(start = from, goals = Set(to)))
+        router.path(from, to)
         sum_times(idx) += t.so_far
       }
     }

@@ -15,7 +15,6 @@ import utexas.aorta.ui.Renderable
 
 import utexas.aorta.common.{Util, cfg, Physics, StateWriter, StateReader, AgentID, EdgeID,
                             ValueOfTime, Flags, Serializable}
-import utexas.aorta.common.algorithms.Pathfind
 
 class Agent(
   val id: AgentID, val route: Route, val wallet: Wallet, val sim: Simulation
@@ -264,7 +263,7 @@ class Agent(
     val maker = sim.scenario.agents(id.int)
     val router = Factory.make_router(maker.route.rerouter, sim.graph, Nil)
     router.setup(this)
-    return router.path(Pathfind(start = at.on.asEdge.road, goals = Set(route.goal)))
+    return router.path(at.on.asEdge.road, route.goal)
   }
 
   def kinematic = Kinematic(at.dist, speed, at.on.speed_limit)

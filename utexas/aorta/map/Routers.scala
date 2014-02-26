@@ -18,6 +18,7 @@ abstract class Router(graph: Graph) {
   def router_type: RouterType.Value
   // Includes 'from' as the first step
   def path(spec: Pathfind[Road]): PathResult
+  def path(from: Road, to: Road): PathResult = path(Pathfind(start = from, goals = Set(to)))
 
   // TODO messy to include this jump, but hard to pipe in specific params...
   def setup(a: Agent) {}
