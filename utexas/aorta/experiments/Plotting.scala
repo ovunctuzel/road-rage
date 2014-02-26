@@ -135,6 +135,15 @@ trait MetricReader {
       ScenarioTag(fn), lines.map(l => TurnDelayResult(l.split(" "))).toArray
     )
   }
+
+  def read_paths(fn: String): ScenarioPaths = {
+    val lines = read(fn).getLines
+    val header = lines.next.split(" ")
+    Util.assert_eq(header.take(3).toList, List("agent", "priority", "ideal_spawn_time"))
+    return ScenarioPaths(
+      ScenarioTag(fn), header.drop(3), lines.map(l => AgentPath(l.split(" "))).toArray
+    )
+  }
 }
 
 case class ScenarioTag(id: String, map: String)
@@ -147,6 +156,10 @@ case class ScenarioDistances(tag: ScenarioTag, modes: Array[String], agents: Arr
 
 case class TurnDelayResult(mode: String, bin: Double, count: Double)
 case class ScenarioTurnDelays(tag: ScenarioTag, delays: Array[TurnDelayResult])
+
+case class Crossing(road: Int, entry: Double, exit: Double)
+case class AgentPath(id: Int, priority: Double, ideal_spawn_time: Double, path: Array[List[Crossing]])
+case class ScenarioPaths(tag: ScenarioTag, modes: Array[String], paths: Array[AgentPath])
 
 // TODO stuff here is the dual of stuff in Metrics. pair them together somehow?
 object ScenarioTag {
@@ -169,4 +182,14 @@ object TripDistanceResult {
 object TurnDelayResult {
   def apply(fields: Array[String]) =
     new TurnDelayResult(fields(0), fields(1).toDouble, fields(2).toDouble)
+}
+object AgentPath {
+  def apply(fields: Array[String]) = new AgentPath(
+    fields(0).toInt, fields(1).toDouble, fields(2).toDouble,
+    fields.drop(3).map(s => Crossing.list(s)).toArray
+  )
+}
+object Crossing {
+  def list(raw: String) = raw.split(",").grouped(3).map(triple => single(triple)).toList
+  def single(triple: Array[String]) = Crossing(triple(0).toInt, triple(1).toDouble, triple(2).toDouble)
 }

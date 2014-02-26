@@ -26,8 +26,8 @@ abstract class Metric(info: MetricInfo) {
 }
 
 // Record one double per agent
-abstract class SinglePerAgentMetric(info: MetricInfo) extends Metric(info) {
-  protected val per_agent = new mutable.HashMap[AgentID, Double]()
+abstract class SinglePerAgentMetric[T](info: MetricInfo) extends Metric(info) {
+  protected val per_agent = new mutable.HashMap[AgentID, T]()
   def apply(a: AgentID) = per_agent(a)
 
   // These are invariant of trial and printed before the per-agent metric
@@ -39,7 +39,7 @@ abstract class SinglePerAgentMetric(info: MetricInfo) extends Metric(info) {
     f.println(("agent" :: extra_fields ++ ls.map(_.mode)).mkString(" "))
     for (a <- info.sim.scenario.agents) {
       f.println((
-        a.id :: extra_data(a) ++ ls.map(_.asInstanceOf[SinglePerAgentMetric].per_agent(a.id))
+        a.id :: extra_data(a) ++ ls.map(_.asInstanceOf[SinglePerAgentMetric[T]].per_agent(a.id))
       ).mkString(" "))
     }
     f.close()
@@ -66,7 +66,7 @@ abstract class HistogramMetric(info: MetricInfo, width: Double) extends Metric(i
 }
 
 // Measure how long each agent's trip takes
-class TripTimeMetric(info: MetricInfo) extends SinglePerAgentMetric(info) {
+class TripTimeMetric(info: MetricInfo) extends SinglePerAgentMetric[Double](info) {
   override def name = "trip_time"
 
   override def extra_fields = List("priority", "ideal_time")
@@ -83,7 +83,7 @@ class TripTimeMetric(info: MetricInfo) extends SinglePerAgentMetric(info) {
 }
 
 // Measure how far each agent travels
-class TripDistanceMetric(info: MetricInfo) extends SinglePerAgentMetric(info) {
+class TripDistanceMetric(info: MetricInfo) extends SinglePerAgentMetric[Double](info) {
   override def name = "trip_distance"
 
   // ideal_distance is the distance of the ideal path, which is the shortest by freeflow time and
@@ -109,7 +109,7 @@ class TripDistanceMetric(info: MetricInfo) extends SinglePerAgentMetric(info) {
 }
 
 // Measure how long a driver follows their original route.
-class OriginalRouteMetric(info: MetricInfo) extends SinglePerAgentMetric(info) {
+class OriginalRouteMetric(info: MetricInfo) extends SinglePerAgentMetric[Double](info) {
   override def name = "orig_routes"
 
   private val first_reroute_time = new mutable.HashMap[AgentID, Double]()
@@ -126,7 +126,7 @@ class OriginalRouteMetric(info: MetricInfo) extends SinglePerAgentMetric(info) {
 }
 
 // Measure how much money the agent actually spends of their total budget
-class MoneySpentMetric(info: MetricInfo) extends SinglePerAgentMetric(info) {
+class MoneySpentMetric(info: MetricInfo) extends SinglePerAgentMetric[Double](info) {
   override def name = "money_spent"
 
   info.sim.listen(classOf[EV_AgentQuit], _ match {
@@ -162,5 +162,33 @@ class TurnCompetitionMetric(info: MetricInfo) extends HistogramMetric(info, 1.0)
 
   info.sim.listen(classOf[EV_IntersectionOutcome], _ match {
     case EV_IntersectionOutcome(policy, losers) => histogram.add(losers.size)
+  })
+}
+
+// Record (road ID, entry time, exit time) for every road each driver crosses
+// Encode as a string, sadly
+class TripDumpMetric(info: MetricInfo) extends SinglePerAgentMetric[mutable.StringBuilder](info) {
+  override def name = "trip_dump"
+
+  override def extra_fields = List("priority", "ideal_spawn_time")
+  override def extra_data(a: MkAgent) = List(a.wallet.priority, a.birth_tick)
+
+  // EV_Transition isn't fired for initial entry
+  info.sim.listen(classOf[EV_AgentSpawned], _ match {
+    case EV_AgentSpawned(a) => per_agent(a.id) = new StringBuilder(
+      a.at.on.asEdge.road.id.int + "," + a.sim.tick + ","
+    )
+  })
+
+  info.sim.listen(classOf[EV_Transition], _ match {
+    case EV_Transition(a, from: Edge, to: Turn) => per_agent(a.id) ++= a.sim.tick.toString
+    case EV_Transition(a, from: Turn, to: Edge) =>
+      per_agent(a.id) ++= "," + to.road.id.int + "," + a.sim.tick + ","
+    case _ =>
+  })
+
+  // EV_Transition isn't fired for exit either
+  info.sim.listen(classOf[EV_AgentQuit], _ match {
+    case e: EV_AgentQuit => per_agent(e.agent.id) ++= e.agent.sim.tick.toString
   })
 }
