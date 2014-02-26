@@ -5,6 +5,7 @@
 package utexas.aorta.sim.make
 
 import utexas.aorta.map.Graph
+import utexas.aorta.experiments.ScenarioPresets
 
 import utexas.aorta.common.{Util, RNG, cfg, RoadID}
 
@@ -206,6 +207,11 @@ object ModScenarioTool {
           val road_agent = CongestionType.withName(shift_args)
           Util.log(s"Changing road agent: $road_agent")
           s = s.copy(road_agent = road_agent)
+        }
+        case "--preset" => {
+          val preset = shift_args
+          Util.log(s"Using experiment preset $preset")
+          s = ScenarioPresets.transform(s, preset)
         }
         case _ => dump_usage
       }

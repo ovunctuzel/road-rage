@@ -4,22 +4,10 @@
 
 package utexas.aorta.experiments
 
-import utexas.aorta.sim.make.{Scenario, OrderingType, WalletType, RouterType}
-
 object ClownCarExperiment {
   def main(args: Array[String]) {
     new ClownCarExperiment(ExpConfig.from_args(args)).run_experiment()
   }
-
-  // Scenario transformations
-  def smart_intersections(s: Scenario) = s.copy(
-    // System bids on by default
-    intersections = s.intersections.map(_.copy(ordering = OrderingType.Auction)),
-    agents = s.agents.map(a => a.copy(wallet = a.wallet.copy(budget = 1, policy = WalletType.Static)))
-  )
-  def use_router(s: Scenario, r: RouterType.Value) = s.copy(
-    agents = s.agents.map(a => a.copy(route = a.route.copy(orig_router = r, rerouter = r)))
-  )
 }
 
 class ClownCarExperiment(config: ExpConfig) extends SmartExperiment(config) {
@@ -32,12 +20,12 @@ class ClownCarExperiment(config: ExpConfig) extends SmartExperiment(config) {
   )
 
   override def run() {
-    val base = ClownCarExperiment.smart_intersections(scenario)
+    val base = ScenarioPresets.transform(scenario, "clowncar_smart_intersections")
 
     output_data(List(
       run_trial(base, "baseline"),
-      run_trial(ClownCarExperiment.use_router(base, RouterType.DumbToll), "avoid_max"),
-      run_trial(ClownCarExperiment.use_router(base, RouterType.SumToll), "avoid_sum")
+      run_trial(ScenarioPresets.transform(base, "clowncar_use_dumbtoll_router"), "avoid_max"),
+      run_trial(ScenarioPresets.transform(base, "clowncar_use_sumtoll_router"), "avoid_sum")
       //run_trial(ClownCarExperiment.use_router(base, RouterType.TollThreshold), "toll_threshold")
     ))
   }

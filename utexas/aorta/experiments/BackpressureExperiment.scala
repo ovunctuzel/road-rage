@@ -4,20 +4,10 @@
 
 package utexas.aorta.experiments
 
-import utexas.aorta.sim.make.{Scenario, OrderingType, IntersectionType}
-
 object BackpressureExperiment {
   def main(args: Array[String]) {
     new BackpressureExperiment(ExpConfig.from_args(args)).run_experiment()
   }
-
-  // Scenario transformations
-  def use_backpressure(s: Scenario) = s.copy(
-    intersections = s.intersections.map(_.copy(ordering = OrderingType.Pressure))
-  )
-  def use_reservation(s: Scenario) = s.copy(
-    intersections = s.intersections.map(_.copy(policy = IntersectionType.Reservation))
-  )
 }
 
 class BackpressureExperiment(config: ExpConfig) extends SmartExperiment(config) {
@@ -27,13 +17,14 @@ class BackpressureExperiment(config: ExpConfig) extends SmartExperiment(config) 
 
   override def run() {
     val fcfs = scenario
-    val backpressure = BackpressureExperiment.use_backpressure(fcfs)
+    val backpressure = ScenarioPresets.transform(fcfs, "backpressure_use_backpressure")
 
     output_data(List(
       run_trial(fcfs, "fcfs_mixed"),
       run_trial(backpressure, "backpressure_mixed"),
-      run_trial(BackpressureExperiment.use_reservation(fcfs), "fcfs_reservation"),
-      run_trial(BackpressureExperiment.use_reservation(backpressure), "backpressure_reservation")
+      run_trial(ScenarioPresets.transform(fcfs, "backpressure_use_reservation"), "fcfs_reservation"),
+      run_trial(ScenarioPresets.transform(backpressure, "backpressure_use_reservation"),
+                "backpressure_reservation")
     ))
   }
 }
