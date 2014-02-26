@@ -4,14 +4,14 @@
 
 package utexas.aorta.analysis
 
-import javax.script.{ScriptEngineManager, ScriptException}
+import scala.tools.nsc.{Interpreter, Settings}
 import java.io.File
 import jline.console.ConsoleReader
 
 import utexas.aorta.sim.{Simulation, EV_Heartbeat}
 
 class REPL() {
-  protected val e = new ScriptEngineManager().getEngineByName("scala")
+  protected val e = new Interpreter(new Settings())
   private val reader = new ConsoleReader()
   reader.setPrompt("> ")
   private var first_time = true
@@ -37,11 +37,7 @@ class REPL() {
         return
       }
       try {
-        // TODO bug: if you eval something like "foo(", silence till you close off all the ()'s
-        val result = e.eval(input)
-        if (result != null) {
-          println(result)
-        }
+        e.interpret(input)
       } catch {
         // Catches both syntax errors and actual in-simulation exceptions
         case e: Throwable => e.printStackTrace()
@@ -53,8 +49,7 @@ class REPL() {
 class SimREPL(sim: Simulation) extends REPL {
   override def init() {
     super.init()
-    e.put("raw_sim_obj", sim)
-    e.eval("val sim = raw_sim_obj.asInstanceOf[utexas.aorta.sim.Simulation]")
+    e.bind("sim", "utexas.aorta.sim.Simulation", sim)
   }
 
   override def welcome() {

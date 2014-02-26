@@ -13,7 +13,7 @@ object Results extends PlotUtil with MetricReader with UsefulAnalytics {
       new REPL() {
         override def init() {
           super.init()
-          e.eval("import utexas.aorta.experiments.Results._")
+          e.interpret("import utexas.aorta.experiments.Results._")
         }
       }.run()
       sys.exit()

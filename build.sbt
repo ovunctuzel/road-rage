@@ -2,7 +2,7 @@ name := "aorta"
 
 version := "0.1-SNAPSHOT"
 
-scalaVersion := "2.11.0-M4"
+scalaVersion := "2.10.3"
 
 // src/main/scala is too verbose
 scalaSource in Compile := baseDirectory.value
@@ -12,11 +12,11 @@ scalaSource in Compile := baseDirectory.value
 
 // TODO aliases that take args
 
-libraryDependencies += "org.scala-lang" % "scala-swing" % "2.11.0-M4"
+libraryDependencies += "org.scala-lang" % "scala-swing" % scalaVersion.value
 
 libraryDependencies += "org.scala-lang" % "scala-compiler" % scalaVersion.value
 
-libraryDependencies += "org.scala-lang.modules" %% "scala-xml" % "1.0-RC3"
+//libraryDependencies += "org.scala-lang.modules" %% "scala-xml" % "1.0-RC3"
 
 libraryDependencies += "org.jfree" % "jfreechart" % "1.0.15"
 
