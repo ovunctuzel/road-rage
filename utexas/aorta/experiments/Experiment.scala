@@ -83,7 +83,7 @@ class Experiment(config: ExpConfig) {
 
   protected def scenario_params: Array[String] = Array()
   protected def get_scenario(): Scenario = {
-    val scenario_fn = config.map_fn.replace("maps/", "scenarios/").replace(".map", "_routes")
+    val scenario_fn = config.map_fn.replace("maps/", "scenarios/").replace(".map", "_" + uid)
     io.notify("Generating scenario")
     ModScenarioTool.main(Array(
       config.map_fn, "--out", scenario_fn, "--spawn", config.spawn_per_hour.toString,
