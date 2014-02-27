@@ -23,7 +23,9 @@ case class ExpConfig(
   report_every_ms: Int,
   deadline: Int,
   map_fn: String,
-  gs_prefix: Option[String]
+  gs_prefix: Option[String],
+  // If this is set, don't generate a new scenario
+  scenario_fn: Option[String]
 ) {
   // TODO local mode could be automated too, but for now, this works
   def is_automated = gs_prefix.isDefined
@@ -37,7 +39,7 @@ object ExpConfig {
   private val report_locally_every_ms = 10 * 1000
   private val report_remotely_every_ms = 60 * 1000
 
-  def template = ExpConfig(0, 0, 0, 12 * 3600, random_map, None)
+  def template = ExpConfig(0, 0, 0, 12 * 3600, random_map, None, None)
 
   def tiny_test = template.copy(spawn_per_hour = 1000, generations = 1)
   def small_local_test = template.copy(spawn_per_hour = 5000, generations = 3)
@@ -62,6 +64,7 @@ object ExpConfig {
         case "local" => small_local_test
         case "cloud" => atx_cloud_test
         case "tollbooth" => tollbooth_test
+        case fn if fn.startsWith("scenarios/") => template.copy(scenario_fn = Some(fn))
         case _ => throw new IllegalArgumentException(s"Dunno mode ${args.head}")
       }
       if (args.tail.isEmpty) {
@@ -83,13 +86,24 @@ class Experiment(config: ExpConfig) {
 
   protected def scenario_params: Array[String] = Array()
   protected def get_scenario(): Scenario = {
-    val scenario_fn = config.map_fn.replace("maps/", "scenarios/").replace(".map", "_" + uid)
-    io.notify("Generating scenario")
-    ModScenarioTool.main(Array(
-      config.map_fn, "--out", scenario_fn, "--spawn", config.spawn_per_hour.toString,
-      "delay=3600", "lifetime=3600", "generations=" + config.generations
-    ) ++ scenario_params)
-    return Scenario.load(scenario_fn)
+    config.scenario_fn match {
+      case Some(fn) => {
+        val orig = Scenario.load(fn)
+        // Make a copy under the right uid
+        val s = orig.copy(name = orig.map_fn.replace("maps/", "scenarios/").replace(".map", "_" + uid))
+        s.save()
+        return s
+      }
+      case None => {
+        val scenario_fn = config.map_fn.replace("maps/", "scenarios/").replace(".map", "_" + uid)
+        io.notify("Generating scenario")
+        ModScenarioTool.main(Array(
+          config.map_fn, "--out", scenario_fn, "--spawn", config.spawn_per_hour.toString,
+          "delay=3600", "lifetime=3600", "generations=" + config.generations
+        ) ++ scenario_params)
+        return Scenario.load(scenario_fn)
+      }
+    }
   }
 
   protected var round = 1

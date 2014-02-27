@@ -14,7 +14,7 @@ class PhantomTollboothExperiment(config: ExpConfig) extends SmartExperiment(conf
   override def scenario_params = Array("budget=0-500")
 
   override def get_metrics(info: MetricInfo) = List(
-    new TripTimeMetric(info), new TripDistanceMetric(info), new TripDumpMetric(info)
+    new TripTimeMetric(info), new TripDistanceMetric(info), new TripPathsMetric(info)
   )
 
   override def run() {
