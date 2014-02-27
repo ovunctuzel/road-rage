@@ -167,8 +167,8 @@ class TurnCompetitionMetric(info: MetricInfo) extends HistogramMetric(info, 1.0)
 
 // Record (road ID, entry time, exit time) for every road each driver crosses
 // Encode as a string, sadly
-class TripDumpMetric(info: MetricInfo) extends SinglePerAgentMetric[mutable.StringBuilder](info) {
-  override def name = "trip_dump"
+class TripPathsMetric(info: MetricInfo) extends SinglePerAgentMetric[mutable.StringBuilder](info) {
+  override def name = "trip_paths"
 
   override def extra_fields = List("priority", "ideal_spawn_time")
   override def extra_data(a: MkAgent) = List(a.wallet.priority, a.birth_tick)

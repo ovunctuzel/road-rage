@@ -149,17 +149,15 @@ trait MetricReader {
 case class ScenarioTag(id: String, map: String)
 
 case class TripTimeResult(id: Int, priority: Double, ideal_time: Double, times: Array[Double])
-case class ScenarioTimes(tag: ScenarioTag, modes: Array[String], agents: Array[TripTimeResult])
-
 case class TripDistanceResult(id: Int, priority: Double, ideal_distance: Double, distances: Array[Double])
-case class ScenarioDistances(tag: ScenarioTag, modes: Array[String], agents: Array[TripDistanceResult])
-
 case class TurnDelayResult(mode: String, bin: Double, count: Double)
-case class ScenarioTurnDelays(tag: ScenarioTag, delays: Array[TurnDelayResult])
-
 case class Crossing(road: Int, entry: Double, exit: Double)
-case class AgentPath(id: Int, priority: Double, ideal_spawn_time: Double, path: Array[List[Crossing]])
-case class ScenarioPaths(tag: ScenarioTag, modes: Array[String], paths: Array[AgentPath])
+case class AgentPath(id: Int, priority: Double, ideal_spawn_time: Double, paths: Array[List[Crossing]])
+
+case class ScenarioTimes(tag: ScenarioTag, modes: Array[String], agents: Array[TripTimeResult])
+case class ScenarioDistances(tag: ScenarioTag, modes: Array[String], agents: Array[TripDistanceResult])
+case class ScenarioTurnDelays(tag: ScenarioTag, delays: Array[TurnDelayResult])
+case class ScenarioPaths(tag: ScenarioTag, modes: Array[String], agents: Array[AgentPath])
 
 // TODO stuff here is the dual of stuff in Metrics. pair them together somehow?
 object ScenarioTag {
