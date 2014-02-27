@@ -6,26 +6,27 @@ package utexas.aorta.contrib
 
 import scala.collection.mutable
 
-import utexas.aorta.sim.RoadAgent
 import utexas.aorta.sim.drivers.Agent
 import utexas.aorta.common.{Util, Price, BatchDuringStep}
 
-// Manage reservations to use roads
-class Tollbooth(road: RoadAgent) extends BatchDuringStep[Request] {
-  private val cancellation_fee = 5.0
-  private val early_fee = 10.0
-  private val late_fee = 10.0
+// Manage reservations to use some resource during a window of time
+abstract class Tollbooth() extends BatchDuringStep[Request] {
+  def toll(eta: Double): Price
 
-  private val half_duration = 15 * 60.0
+  protected val cancellation_fee = 5.0
+  protected val early_fee = 10.0
+  protected val late_fee = 10.0
+
+  protected val half_duration = 15 * 60.0
   // TODO serialization and such
   // map to (ETA, offer)
-  private val registrations = new mutable.HashMap[Agent, (Double, Double)]()
+  protected val registrations = new mutable.HashMap[Agent, (Double, Double)]()
   // The int idx is 0 for 0-30 mins, 1 for 15-45 mins, etc
-  private val current_prices = new mutable.HashMap[Int, Double]()
+  protected val current_prices = new mutable.HashMap[Int, Double]()
   // TODO refactor the maintenance of registrations/slots and all the asserts
 
   // TODO this assigns 16 to 15-45, so eta better be a lower bound... desirable?
-  private def idx(eta: Double) = math.floor(eta / half_duration).toInt
+  protected def idx(eta: Double) = math.floor(eta / half_duration).toInt
 
   // The offer doesn't have to be past any threshold; it's up to the drivers to reroute and see high
   // new toll
@@ -84,9 +85,6 @@ class Tollbooth(road: RoadAgent) extends BatchDuringStep[Request] {
     }
     request_queue = Nil
   }
-
-  // Simple policy for now.
-  def toll(eta: Double) = new Price(current_prices.getOrElse(idx(eta), 0.0) / road.freeflow_capacity)
 
   // If the agent is rerouting and may have already registered here, don't count their own
   // contribution to the toll
