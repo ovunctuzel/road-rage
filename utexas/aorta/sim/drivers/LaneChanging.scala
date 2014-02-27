@@ -166,9 +166,8 @@ class LaneChangingHandler(a: Agent, behavior: Behavior) {
     val final_speed = math.max(0.0, initial_speed + (a.target_accel * cfg.dt_s))
     val this_dist = Physics.dist_at_constant_accel(a.target_accel, cfg.dt_s, initial_speed)
 
-    // TODO this is overconservative too. we wont pick max next dist if we see
-    // somebody in front of us!
-    val ahead_dist = cfg.follow_dist + Physics.max_next_dist_plus_stopping(final_speed, target.speed_limit)
+    // If we see somebody in front of us, we could slam on our brakes. Would it be OK?
+    val ahead_dist = cfg.follow_dist + Physics.min_next_dist_plus_stopping(final_speed)
     // For behind, assume somebody behind us is going full speed. Give them time
     // to stop fully and not hit where we are now (TODO technically should
     // account for the dist we'll travel, but hey, doesnt hurt to be safe...

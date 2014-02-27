@@ -180,7 +180,7 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
         val num_lcs = math.abs(e.lane_num - target.lane_num)
         // TODO (This is a bit ad-hoc)
         // TODO maybe dont do this while in the turn, only when physically on the lane
-        e.speed_limit / math.max(1, num_lcs)
+        e.speed_limit / (num_lcs + 1)
       }
       case _ => e.speed_limit
     }
