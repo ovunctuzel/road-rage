@@ -18,6 +18,7 @@ class TollBroker(a: Agent) {
       20
     else
       5
+  // We've also registered for intersections at the end of each road
   private val registrations = new mutable.HashSet[Road]()
   private var total_cost = 0.0
 
@@ -28,6 +29,7 @@ class TollBroker(a: Agent) {
       // TODO cancel all and re-calculate eta for planned ones, IF we're changing path to get there?
       for (r <- obselete) {
         r.road_agent.tollbooth.cancel(a)
+        r.to.intersection.tollbooth.cancel(a)
       }
       registrations --= obselete
       // We'll register for the new roads during react()
@@ -56,16 +58,24 @@ class TollBroker(a: Agent) {
     // Register for the next k=5 roads
     var eta = a.sim.tick + a.at.dist_left / a.at.on.speed_limit
     for (r <- next_roads) {
+      var registered = false
+      // For now, offer to raise the toll by the value of our priority
+      // TODO * freeflow time?
+      val offer = a.wallet.priority
+
       if (!registrations.contains(r)) {
-        // For now, offer to raise the toll by the value of our priority
-        // TODO * freeflow time?
-        val offer = a.wallet.priority
+        registered = true
         r.road_agent.tollbooth.register(a, eta, offer)
         registrations += r
       }
       // We've already counted the current road, so start with the next
       if (r != next_roads.head) {
         eta += r.freeflow_time
+      }
+      // Update the eta before registering for the intersection
+      if (registered) {
+        // TODO also send along next intended road to the intersection, or none if done
+        r.to.intersection.tollbooth.register(a, eta, offer)
       }
     }
   }

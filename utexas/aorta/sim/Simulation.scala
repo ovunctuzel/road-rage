@@ -119,7 +119,10 @@ class Simulation(val scenario: Scenario) extends Publisher with AgentManager {
 
     // Let intersections react to the new world. By doing this after agent
     // steps, we ensure the intersections' temporary state becomes firm.
-    graph.vertices.foreach(v => v.intersection.policy.react_tick())
+    for (v <- graph.vertices) {
+      v.intersection.policy.react_tick()
+      v.intersection.tollbooth.react()
+    }
 
     graph.roads.foreach(r => r.road_agent.react())
 

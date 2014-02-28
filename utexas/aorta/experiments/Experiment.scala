@@ -148,6 +148,7 @@ abstract class SmartExperiment(config: ExpConfig) extends Experiment(config) {
       simulate(sim)
     } catch {
       case e: Throwable => {
+        e.printStackTrace()
         io.notify(s"BORKED - $e")
         val name = "buggy_" + sim.graph.basename + "_" + mode
         s.copy(name = name).save()
