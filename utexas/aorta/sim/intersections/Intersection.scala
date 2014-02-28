@@ -71,7 +71,7 @@ class Intersection(val v: Vertex, policy_type: IntersectionType.Value,
       policy.dump_info()
       throw new Exception("Driver entered intersection without accepted ticket")
     }
-    tollbooth.enter(ticket.a)
+    tollbooth.enter(ticket.a, ticket.turn.from.road)
     ticket.a.sim.publish(EV_TurnStarted(ticket))
   }
 
@@ -86,7 +86,7 @@ class Intersection(val v: Vertex, policy_type: IntersectionType.Value,
       }
     }
     policy.handle_exit(ticket)
-    tollbooth.exit(ticket.a)
+    tollbooth.exit(ticket.a, ticket.turn.from.road)
     number_finished += 1
     sum_waiting_times += ticket.how_long_waiting
   }

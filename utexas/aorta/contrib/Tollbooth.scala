@@ -20,8 +20,9 @@ abstract class Tollbooth() extends BatchDuringStep[Request] {
 
   protected val half_duration = 15 * 60.0
   // TODO serialization and such
-  // map to (ETA, offer)
-  protected val registrations = new mutable.HashMap[Agent, (Double, Double)]()
+  // key is (agent, source road), value is (ETA, offer)
+  // TODO source road is only meaningful for booths at intersections, it's redundant at roads
+  protected val registrations = new mutable.HashMap[(Agent, Road), (Double, Double)]()
   // The int idx is 0 for 0-30 mins, 1 for 15-45 mins, etc
   protected val current_prices = new mutable.HashMap[Int, Double]()
   // TODO refactor the maintenance of registrations/slots and all the asserts
@@ -33,24 +34,27 @@ abstract class Tollbooth() extends BatchDuringStep[Request] {
   // new toll
   // next_road is the next road the agent plans to use after passing through this tollbooth. None if
   // they're at the end of their path.
-  def register(a: Agent, eta: Double, next_road: Option[Road], offer: Double) {
-    Util.assert_eq(registrations.contains(a), false)
+  def register(a: Agent, source: Road, eta: Double, next_road: Option[Road], offer: Double) {
+    Util.assert_eq(registrations.contains((a, source)), false)
     Util.assert_ge(offer, 0)
-    add_request(Request(a, eta, toll(eta).dollars, offer))
+    // Note next_road is ignored for now
+    add_request(Request(a, source, eta, toll(eta).dollars, offer))
   }
 
-  def cancel(a: Agent) {
-    Util.assert_eq(registrations.contains(a), true)
-    val (eta, offer) = registrations(a)
+  def cancel(a: Agent, source: Road) {
+    val key = (a, source)
+    Util.assert_eq(registrations.contains(key), true)
+    val (eta, offer) = registrations(key)
     // TODO is it possible to cancel a request they made earlier during the tick? I think not...
-    registrations -= a
+    registrations -= key
     current_prices(idx(eta)) -= offer
     a.toll_broker.spend(cancellation_fee)
   }
 
-  def enter(a: Agent) {
-    Util.assert_eq(registrations.contains(a), true)
-    val (eta, _) = registrations(a)
+  def enter(a: Agent, source: Road) {
+    val key = (a, source)
+    Util.assert_eq(registrations.contains(key), true)
+    val (eta, _) = registrations(key)
 
     // Arriving early/late could be a way to game the system. For the driver behaviors in TollBroker
     // now that don't try to cheat, arriving early/late is actually a bug.
@@ -66,10 +70,11 @@ abstract class Tollbooth() extends BatchDuringStep[Request] {
     }
   }
 
-  def exit(a: Agent) {
-    Util.assert_eq(registrations.contains(a), true)
-    val (eta, offer) = registrations(a)
-    registrations -= a
+  def exit(a: Agent, source: Road) {
+    val key = (a, source)
+    Util.assert_eq(registrations.contains(key), true)
+    val (eta, offer) = registrations(key)
+    registrations -= key
     current_prices(idx(eta)) -= offer
   }
 
@@ -81,7 +86,7 @@ abstract class Tollbooth() extends BatchDuringStep[Request] {
   def react() {
     end_batch_step()
     for (r <- request_queue) {
-      registrations(r.a) = (r.eta, r.offer)
+      registrations((r.a, r.source)) = (r.eta, r.offer)
       current_prices(idx(r.eta)) = current_prices.getOrElse(idx(r.eta), 0.0) + r.offer
       // What should people spend?
       r.a.toll_broker.spend(r.offer)
@@ -91,9 +96,9 @@ abstract class Tollbooth() extends BatchDuringStep[Request] {
 
   // If the agent is rerouting and may have already registered here, don't count their own
   // contribution to the toll
-  def toll_with_discount(eta: Double, a: Agent): Price = {
+  def toll_with_discount(eta: Double, a: Agent, source: Road): Price = {
     val base_price = toll(eta).dollars
-    val discounted_price = registrations.get(a) match {
+    val discounted_price = registrations.get((a, source)) match {
       case Some((prev_eta, offer)) if idx(eta) == idx(prev_eta) => base_price - offer
       case _ => base_price
     }
@@ -102,7 +107,9 @@ abstract class Tollbooth() extends BatchDuringStep[Request] {
 }
 
 // We, the tollbooth, set the toll at the time the request is made
-case class Request(a: Agent, eta: Double, old_toll: Double, offer: Double) extends Ordered[Request] {
+case class Request(a: Agent, source: Road, eta: Double, old_toll: Double, offer: Double)
+  extends Ordered[Request]
+{
   override def compare(other: Request) = Ordering[Tuple2[Int, Double]].compare(
     (a.id.int, eta), (other.a.id.int, other.eta)
   )

@@ -129,7 +129,7 @@ class Agent(
           val i = t.vert.intersection
           i.enter(get_ticket(e).get)
           e.queue.free_slot()
-          e.road.road_agent.tollbooth.exit(this)
+          e.road.road_agent.tollbooth.exit(this, e.road)
           toll_broker.exited(e.road)
         }
         case (t: Turn, e: Edge) => {
@@ -138,7 +138,7 @@ class Agent(
           remove_ticket(ticket)
           ticket.intersection.exit(ticket)
           sim.publish(ticket.stat)
-          e.road.road_agent.tollbooth.enter(this)
+          e.road.road_agent.tollbooth.enter(this, e.road)
         }
       }
 
@@ -175,7 +175,7 @@ class Agent(
         false
       }
       case Act_Done_With_Route() => {
-        at.on.asEdge.road.road_agent.tollbooth.exit(this)
+        at.on.asEdge.road.road_agent.tollbooth.exit(this, at.on.asEdge.road)
         //Util.assert_eq(at.on.asInstanceOf[Edge].road, route.goal)
         // Trust behavior, don't abuse this.
         // (Plus, it doesn't hold for RouteAnalyzer vehicles...)
