@@ -50,14 +50,16 @@ class TollBroker(a: Agent) {
     }
 
     // TODO bad workaround. agents that start on same road they end break otherwise.
-    val next_roads = a.route.current_path.take(k) match {
-      case Nil => List(a.at.on.asInstanceOf[Edge].road)
-      case ls => ls
+    val next_roads = a.route.current_path match {
+      case Nil => Array(a.at.on.asInstanceOf[Edge].road)
+      case ls => ls.toArray
     }
 
     // Register for the next k=5 roads
     var eta = a.sim.tick + a.at.dist_left / a.at.on.speed_limit
-    for (r <- next_roads) {
+    for (idx <- Range(0, math.min(k, next_roads.size))) {
+      val r = next_roads(idx)
+      val next_r = next_roads.lift(idx + 1)
       var registered = false
       // For now, offer to raise the toll by the value of our priority
       // TODO * freeflow time?
@@ -65,7 +67,7 @@ class TollBroker(a: Agent) {
 
       if (!registrations.contains(r)) {
         registered = true
-        r.road_agent.tollbooth.register(a, eta, offer)
+        r.road_agent.tollbooth.register(a, eta, next_r, offer)
         registrations += r
       }
       // We've already counted the current road, so start with the next
@@ -75,7 +77,7 @@ class TollBroker(a: Agent) {
       // Update the eta before registering for the intersection
       if (registered) {
         // TODO also send along next intended road to the intersection, or none if done
-        r.to.intersection.tollbooth.register(a, eta, offer)
+        r.to.intersection.tollbooth.register(a, eta, next_r, offer)
       }
     }
   }

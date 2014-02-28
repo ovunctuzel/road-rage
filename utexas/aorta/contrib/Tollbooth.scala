@@ -6,6 +6,7 @@ package utexas.aorta.contrib
 
 import scala.collection.mutable
 
+import utexas.aorta.map.Road
 import utexas.aorta.sim.drivers.Agent
 import utexas.aorta.common.{Util, Price, BatchDuringStep}
 
@@ -30,7 +31,9 @@ abstract class Tollbooth() extends BatchDuringStep[Request] {
 
   // The offer doesn't have to be past any threshold; it's up to the drivers to reroute and see high
   // new toll
-  def register(a: Agent, eta: Double, offer: Double) {
+  // next_road is the next road the agent plans to use after passing through this tollbooth. None if
+  // they're at the end of their path.
+  def register(a: Agent, eta: Double, next_road: Option[Road], offer: Double) {
     Util.assert_eq(registrations.contains(a), false)
     Util.assert_ge(offer, 0)
     add_request(Request(a, eta, toll(eta).dollars, offer))
