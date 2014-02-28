@@ -23,6 +23,9 @@ case class DistributionData(
     ls => ls.filter(_ < limit)
   ))
   def select(mode: String) = copy(values_per_mode = Map(mode -> values_per_mode(mode)))
+  def vs_baseline() = copy(values_per_mode = (values_per_mode - "baseline").mapValues(agents =>
+    agents.zip(values_per_mode("baseline")).map(_ match { case (x, baseline) => x - baseline })
+  ))
 }
 // Histograms and boxplots from pre-binned values. Arrays of (bin, count)
 case class PreBinnedData(
@@ -32,10 +35,17 @@ case class PreBinnedData(
 case class ScatterData(
   points_per_mode: Map[String, Array[(Double, Double)]], title: String, x: String, y: String
 ) {
+  // TODO mod title in cap, vs_baseline, etc
   def cap(limit: Double) = copy(points_per_mode = points_per_mode.mapValues(
     ls => ls.filter(pt => pt._2 < limit)
   ))
   def select(mode: String) = copy(points_per_mode = Map(mode -> points_per_mode(mode)))
+  // Assumes higher is worse, so it does baseline - each mode. In the result, more positive is
+  // better.
+  def vs_baseline() = copy(points_per_mode = (points_per_mode - "baseline").mapValues(agents =>
+    agents.zip(points_per_mode("baseline"))
+      .map(_ match { case (pt, baseline) => (pt._1, pt._2 - baseline._2) })
+  ))
 }
 
 trait PlotUtil {
