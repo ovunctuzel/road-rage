@@ -12,7 +12,7 @@ object AuctionExperiment {
   }
 }
 
-class AuctionExperiment(config: ExpConfig) extends SmartExperiment(config) {
+class AuctionExperiment(config: ExpConfig) extends SmartExperiment(config, "auction") {
   override def scenario_params = Array("budget=0-500")
 
   override def get_metrics(info: MetricInfo) = List(

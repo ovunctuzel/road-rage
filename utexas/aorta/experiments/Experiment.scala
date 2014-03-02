@@ -132,7 +132,7 @@ class Experiment(config: ExpConfig) {
 }
 
 // The future! All experiments should be rewritten to have this form, probably
-abstract class SmartExperiment(config: ExpConfig) extends Experiment(config) {
+abstract class SmartExperiment(config: ExpConfig, val name: String) extends Experiment(config) {
   protected def run(): Unit
   protected def get_metrics(info: MetricInfo): List[Metric]
 
@@ -143,7 +143,7 @@ abstract class SmartExperiment(config: ExpConfig) extends Experiment(config) {
 
   protected def run_trial(s: Scenario, mode: String): List[Metric] = {
     val sim = s.make_sim().setup()
-    val metrics = get_metrics(MetricInfo(sim, mode, io, uid))
+    val metrics = get_metrics(MetricInfo(sim, mode, io, uid, name))
     try {
       simulate(sim)
     } catch {
@@ -166,6 +166,8 @@ abstract class SmartExperiment(config: ExpConfig) extends Experiment(config) {
 
   protected def output_data(results: List[List[Metric]]) {
     Util.log("All simulations over, dumping metrics now...")
+    Util.mkdir(results.head.head.info.base_dir)
+
     val mode_order = results.map(ls => ls.head.mode)
     for ((name, metrics) <- results.flatten.groupBy(_.name)) {
       val metrics_by_mode = metrics.map(m => m.mode -> m).toMap

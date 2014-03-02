@@ -10,7 +10,7 @@ object ClownCarExperiment {
   }
 }
 
-class ClownCarExperiment(config: ExpConfig) extends SmartExperiment(config) {
+class ClownCarExperiment(config: ExpConfig) extends SmartExperiment(config, "clowncar") {
   // We never want to send somebody to a road already with more than its freeflow capacity, so the
   // max budget should be 50 (since that's the cost of a 100% freeflow-congested road).
   override def scenario_params = Array("budget=0-50")

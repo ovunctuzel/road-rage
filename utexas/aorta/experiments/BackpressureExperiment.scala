@@ -10,7 +10,7 @@ object BackpressureExperiment {
   }
 }
 
-class BackpressureExperiment(config: ExpConfig) extends SmartExperiment(config) {
+class BackpressureExperiment(config: ExpConfig) extends SmartExperiment(config, "backpressure") {
   override def get_metrics(info: MetricInfo) = List(
     new TripTimeMetric(info), new TurnDelayMetric(info)
   )

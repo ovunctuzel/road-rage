@@ -13,16 +13,18 @@ import utexas.aorta.common.{AgentID, IO, Util, BinnedHistogram}
 
 import scala.collection.mutable
 
-case class MetricInfo(sim: Simulation, mode: String, io: IO, uid: String)
+case class MetricInfo(sim: Simulation, mode: String, io: IO, uid: String, experiment: String) {
+  def base_dir = experiment + "_" + uid + "_" + sim.graph.basename
+}
 
 // One per trial
-abstract class Metric(info: MetricInfo) {
+abstract class Metric(val info: MetricInfo) {
   def name: String
   // Really should be in the companion object, and the type should indicate they're all the same.
   def output(ls: List[Metric])
   def mode = info.mode
 
-  protected def fn = s"${name}.${info.uid}.${info.sim.graph.basename}"
+  protected def fn = info.base_dir + "/" + name
 }
 
 // Record one double per agent

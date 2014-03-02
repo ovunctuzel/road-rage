@@ -20,7 +20,7 @@ object DTAExperiment {
 }
 
 // Dynamic traffic assignment
-class DTAExperiment(config: ExpConfig) extends SmartExperiment(config) {
+class DTAExperiment(config: ExpConfig) extends SmartExperiment(config, "dta") {
   private val iterations = 5  // TODO put in ExpConfig
   private val rng = new RNG()
 

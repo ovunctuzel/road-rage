@@ -15,6 +15,8 @@ import java.io.{BufferedInputStream, FileInputStream}
 
 import utexas.aorta.common.Util
 
+// TODO auto-titling and saving plots with good filenames
+
 // Used for showing histograms or boxplots from a bunch of individual values
 case class DistributionData(
   values_per_mode: Map[String, Array[Double]], title: String, label: String
