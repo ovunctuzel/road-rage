@@ -19,7 +19,7 @@ class Intersection(val v: Vertex, policy_type: IntersectionType.Value,
                    val ordering_type: OrderingType.Value, sim: Simulation)
 {
   val policy = Factory.make_policy(this, policy_type, ordering_type, sim)
-  val tollbooth = new IntersectionTollbooth()
+  val tollbooth = new IntersectionTollbooth(this)
 
   // Multiple agents can be on the same turn; the corresponding queue will
   // handle collisions. So in fact, we want to track which turns are active...

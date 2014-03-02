@@ -51,6 +51,10 @@ class Vertex(val location: Coordinate, val id: VertexID) extends Renderable {
   def out_verts = turns.map(t => t.to.to).toSet
 
   def roads_in = turns.map(_.from.road).toSet
+  // A bit of a hack, using lane->lane turns
+  def road_conflicts(from: Road, to: Road) =
+    turns.find(t => t.from.road == from && t.to.road == to).get
+    .conflicts.map(t => (t.from.road, t.to.road))
   def edges = turns.flatMap(t => List(t.from, t.to))
   def roads = edges.map(_.road).toSet
   def in_edges = turns.map(t => t.from).toSet

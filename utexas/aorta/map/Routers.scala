@@ -131,11 +131,14 @@ class TollboothRouter(graph: Graph) extends AbstractPairAstarRouter(graph) {
   }
 
   override def transform(spec: Pathfind[Road]) = super.transform(spec).copy(
+    // TODO usually ignore prev, but here, have to know pairs to moves, so grab toll for prev->next
+    // TODO does this make eta offset strangely?
     calc_cost = (prev: Road, next: Road, cost_sofar: (Double, Double)) => (
-      (next.road_agent.tollbooth.toll_with_discount(cost_sofar._2, owner).dollars +
-       next.to.intersection.tollbooth.toll_with_discount(cost_sofar._2 + next.freeflow_time, owner, next).dollars) +
-      (next.freeflow_time * owner.wallet.priority),
-      next.freeflow_time
+      (prev.road_agent.tollbooth.toll_with_discount(cost_sofar._2, owner).dollars +
+       prev.to.intersection.tollbooth.toll_with_discount(
+         cost_sofar._2 + prev.freeflow_time, owner, prev, next
+       ).dollars) + (prev.freeflow_time * owner.wallet.priority),
+      prev.freeflow_time
     ),
     // Seed with the actual time we're starting
     cost_start = (0, owner.sim.tick)

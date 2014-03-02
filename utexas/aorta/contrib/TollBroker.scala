@@ -27,9 +27,12 @@ class TollBroker(a: Agent) {
     case ev: EV_Reroute => {
       val obselete = registrations -- a.route.current_path.take(k)
       // TODO cancel all and re-calculate eta for planned ones, IF we're changing path to get there?
+      // TODO cancel intersections if we're going to take a different turn
       for (r <- obselete) {
         r.road_agent.tollbooth.cancel(a)
-        r.to.intersection.tollbooth.cancel(a, r)
+        if (r != a.route.goal) {
+          r.to.intersection.tollbooth.cancel(a, r)
+        }
       }
       registrations --= obselete
       // We'll register for the new roads during react()
@@ -75,9 +78,8 @@ class TollBroker(a: Agent) {
         eta += r.freeflow_time
       }
       // Update the eta before registering for the intersection
-      if (registered) {
-        // TODO also send along next intended road to the intersection, or none if done
-        r.to.intersection.tollbooth.register(a, r, eta, next_r, offer)
+      if (registered && next_r.isDefined) {
+        r.to.intersection.tollbooth.register(a, r, eta, next_r.get, offer)
       }
     }
   }
