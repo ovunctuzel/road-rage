@@ -5,6 +5,7 @@
 package utexas.aorta.experiments
 
 import scala.io.Source
+import scala.collection.mutable
 import java.util.zip.GZIPInputStream
 import java.io.{BufferedInputStream, FileInputStream}
 
@@ -22,7 +23,7 @@ trait MetricReader {
     val header = lines.next.split(" ")
     Util.assert_eq(header.take(3).toList, List("agent", "priority", "ideal_time"))
     return ScenarioTimes(
-      ScenarioTag(fn), header.drop(3),
+      ScenarioTag(fn.split("/").head), header.drop(3),
       lines.map(l => TripTimeResult(l.split(" ").map(_.toDouble))).toArray
     )
   }
@@ -32,7 +33,7 @@ trait MetricReader {
     val header = lines.next.split(" ")
     Util.assert_eq(header.take(3).toList, List("agent", "priority", "ideal_distance"))
     return ScenarioDistances(
-      ScenarioTag(fn), header.drop(3),
+      ScenarioTag(fn.split("/").head), header.drop(3),
       lines.map(l => TripDistanceResult(l.split(" ").map(_.toDouble))).toArray
     )
   }
@@ -41,7 +42,7 @@ trait MetricReader {
     val lines = read(fn).getLines
     Util.assert_eq(lines.next, "mode turn_delay_bin count")
     return ScenarioTurnDelays(
-      ScenarioTag(fn), lines.map(l => TurnDelayResult(l.split(" "))).toArray
+      ScenarioTag(fn.split("/").head), lines.map(l => TurnDelayResult(l.split(" "))).toArray
     )
   }
 
@@ -50,12 +51,52 @@ trait MetricReader {
     val header = lines.next.split(" ")
     Util.assert_eq(header.take(3).toList, List("agent", "priority", "ideal_spawn_time"))
     return ScenarioPaths(
-      ScenarioTag(fn), header.drop(3), lines.map(l => AgentPath(l.split(" "))).toArray
+      ScenarioTag(fn.split("/").head), header.drop(3), lines.map(l => AgentPath(l.split(" "))).toArray
     )
+  }
+
+  def load(base_dir: String): Summary = {
+    val times = read_times(base_dir + "/trip_time.gz")
+    val distances = read_distances(base_dir + "/trip_distance.gz")
+    val paths = read_paths(base_dir + "/trip_paths.gz")
+    val agents = (times.agents, distances.agents, paths.agents).zipped.map({
+      case (t, d, p) => AgentSummary(
+        t.id, t.ideal_time.toInt, d.ideal_distance.toInt, p.ideal_spawn_time, t.times, d.distances,
+        p.paths
+      )
+    })
+    return Summary(ScenarioTag(base_dir), times.modes, agents, times, distances, paths)
   }
 }
 
-case class ScenarioTag(id: String, map: String)
+// TODO This assumes all the metrics to fill this out were chosen, and right now, it's created
+// from the other smaller structures
+case class Summary(
+  tag: ScenarioTag, modes: Array[String], agents: Array[AgentSummary],
+  // TODO Only included so methods in Results can work. Re-think.
+  time: ScenarioTimes, distance: ScenarioDistances, path: ScenarioPaths
+) {
+  def apply(agent: Int) = agents(agent)
+}
+case class AgentSummary(
+  id: Int, ideal_time: Int, ideal_distance: Int, ideal_spawn_time: Double,
+  times: Array[Double], distances: Array[Double], paths: Array[List[Crossing]]
+) {
+  override def toString(): String = {
+    val s = new mutable.StringBuilder()
+    s ++= s"Agent $id\n"
+    s ++= s"  Time: ideal $ideal_time, actual "
+    s ++= times.map(t => f"$t (${t / ideal_time}%.2fx)").mkString(", ") + "\n"
+    s ++= s"  Distance: ideal $ideal_distance, actual "
+    s ++= distances.map(d => f"$d (${d / ideal_distance}%.2fx)").mkString(", ") + "\n"
+    for ((path, idx) <- paths.zipWithIndex) {
+      s ++= s"  Path times ($idx): " + path.map(c => c.exit - c.entry).mkString(", ") + "\n"
+    }
+    return s.toString
+  }
+}
+
+case class ScenarioTag(experiment: String, id: String, map: String)
 
 case class TripTimeResult(id: Int, priority: Double, ideal_time: Double, times: Array[Double])
 case class TripDistanceResult(id: Int, priority: Double, ideal_distance: Double, distances: Array[Double])
@@ -70,10 +111,10 @@ case class ScenarioPaths(tag: ScenarioTag, modes: Array[String], agents: Array[A
 
 // TODO stuff here is the dual of stuff in Metrics. pair them together somehow?
 object ScenarioTag {
-  // fn is of the form $metric.$scenario.$map, possibly with a trailing .gz
+  // fn is of the form experiment_id_map
   def apply(fn: String): ScenarioTag = {
-    val pieces = fn.split("\\.")
-    return new ScenarioTag(pieces(1), pieces(2))
+    val pieces = fn.split("_")
+    return new ScenarioTag(pieces(0), pieces(1), pieces(2))
   }
 }
 object TripTimeResult {

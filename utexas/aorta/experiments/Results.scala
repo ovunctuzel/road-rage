@@ -14,6 +14,10 @@ object Results extends PlotUtil with MetricReader with UsefulAnalytics {
         override def init() {
           super.init()
           e.interpret("import utexas.aorta.experiments.Results._")
+          if (args.size > 1) {
+            println(s"Loading all results from ${args(1)}...")
+            e.interpret("val s = load(\"" + args(1) + "\")")
+          }
         }
       }.run()
       sys.exit()
