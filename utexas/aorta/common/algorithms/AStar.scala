@@ -5,6 +5,7 @@
 package utexas.aorta.common.algorithms
 
 import scala.collection.mutable
+import java.util
 
 import utexas.aorta.common.Util
 
@@ -47,7 +48,7 @@ object AStar {
     // Best cost so far
     val costs = new mutable.HashMap[T, (Double, Double)]()
 
-    val open = new PriorityQueue[T]()
+    val open = new JavaPriorityQueue[T]()
     val ordering_tuple = Ordering[(Double, Double)].on((pair: (Double, Double)) => pair)
 
     costs(spec.start) = spec.cost_start
@@ -92,8 +93,17 @@ object AStar {
   }
 }
 
+abstract class PriorityQueue[T]() {
+  def insert(item: T, weight: (Double, Double))
+  def shift(): T
+  def contains(item: T): Boolean
+  def nonEmpty(): Boolean
+
+  // TODO have a change_weight.
+}
+
 // TODO generalize score.
-class PriorityQueue[T]() {
+class ScalaPriorityQueue[T]() extends PriorityQueue[T] {
   private case class Item(item: T, weight: (Double, Double))
 
   private val pq = new mutable.PriorityQueue[Item]()(
@@ -101,19 +111,50 @@ class PriorityQueue[T]() {
   )
   private val members = new mutable.HashSet[T]()
 
-  def insert(item: T, weight: (Double, Double)) {
+  override def insert(item: T, weight: (Double, Double)) {
     pq.enqueue(Item(item, weight))
     members += item
   }
 
-  def shift(): T = {
+  override def shift(): T = {
     val item = pq.dequeue().item
     members -= item // TODO not true if there are multiples!
     return item
   }
 
-  // TODO have a change_weight.
+  override def contains(item: T) = members.contains(item)
+  override def nonEmpty = pq.nonEmpty
+}
 
-  def contains(item: T) = members.contains(item)
-  def nonEmpty = pq.nonEmpty
+class JavaPriorityQueue[T]() extends PriorityQueue[T] {
+  private case class Item(item: T, weight_1: Double, weight_2: Double)
+
+  private val pq = new util.PriorityQueue[Item](100, new util.Comparator[Item]() {
+    override def compare(a: Item, b: Item) =
+      if (a.weight_1 < b.weight_1)
+        -1
+      else if (a.weight_1 > b.weight_1)
+        1
+      else if (a.weight_2 < b.weight_2)
+        -1
+      else if (a.weight_2 > b.weight_2)
+        1
+      else
+        0
+  })
+  private val members = new mutable.HashSet[T]()
+
+  override def insert(item: T, weight: (Double, Double)) {
+    pq.add(Item(item, weight._1, weight._2))
+    members += item
+  }
+
+  override def shift(): T = {
+    val item = pq.poll().item
+    members -= item // TODO not true if there are multiples!
+    return item
+  }
+
+  override def contains(item: T) = members.contains(item)
+  override def nonEmpty = !pq.isEmpty
 }
