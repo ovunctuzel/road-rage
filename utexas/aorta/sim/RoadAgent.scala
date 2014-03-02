@@ -43,10 +43,13 @@ abstract class RoadAgent(val r: Road, sim: Simulation) {
 // Just report the current state of congestion. Subject to oscillation.
 class CurrentCongestion(r: Road, sim: Simulation) extends RoadAgent(r, sim) {
   private var last_state = false
+  // Since react() is called every tick, might as well cache the current state
+  private var current_state = congested_now
 
-  override def congested = congested_now
+  override def congested = current_state
   override def react() {
     super.react()
+    current_state = congested_now
     if (congested != last_state) {
       sim.publish(EV_LinkChanged(r, congested))
       last_state = congested
