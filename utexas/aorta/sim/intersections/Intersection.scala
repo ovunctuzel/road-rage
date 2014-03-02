@@ -9,7 +9,7 @@ import scala.collection.mutable
 import utexas.aorta.map.{Vertex, Turn, Edge}
 import utexas.aorta.sim.{Simulation, EV_TurnApproved, EV_TurnStarted}
 import utexas.aorta.sim.make.{IntersectionType, OrderingType, Factory}
-import utexas.aorta.contrib.Tollbooth
+import utexas.aorta.contrib.IntersectionTollbooth
 
 import utexas.aorta.common.{Util, StateWriter, StateReader, TurnID, Serializable, BatchDuringStep,
                             Price}
@@ -19,10 +19,7 @@ class Intersection(val v: Vertex, policy_type: IntersectionType.Value,
                    val ordering_type: OrderingType.Value, sim: Simulation)
 {
   val policy = Factory.make_policy(this, policy_type, ordering_type, sim)
-  val tollbooth = new Tollbooth() {
-    // Every intersection is the same for now
-    override def toll(eta: Double) = new Price(current_prices.getOrElse(idx(eta), 0.0))
-  }
+  val tollbooth = new IntersectionTollbooth()
 
   // Multiple agents can be on the same turn; the corresponding queue will
   // handle collisions. So in fact, we want to track which turns are active...

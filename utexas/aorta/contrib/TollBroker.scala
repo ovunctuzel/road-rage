@@ -28,7 +28,7 @@ class TollBroker(a: Agent) {
       val obselete = registrations -- a.route.current_path.take(k)
       // TODO cancel all and re-calculate eta for planned ones, IF we're changing path to get there?
       for (r <- obselete) {
-        r.road_agent.tollbooth.cancel(a, r)
+        r.road_agent.tollbooth.cancel(a)
         r.to.intersection.tollbooth.cancel(a, r)
       }
       registrations --= obselete
@@ -67,7 +67,7 @@ class TollBroker(a: Agent) {
 
       if (!registrations.contains(r)) {
         registered = true
-        r.road_agent.tollbooth.register(a, r, eta, next_r, offer)
+        r.road_agent.tollbooth.register(a, eta, offer)
         registrations += r
       }
       // We've already counted the current road, so start with the next

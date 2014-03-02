@@ -10,9 +10,9 @@ import utexas.aorta.map.Road
 import utexas.aorta.sim.drivers.Agent
 import utexas.aorta.common.{Util, Price, BatchDuringStep}
 
-// Manage reservations to use some resource during a window of time
-abstract class Tollbooth() extends BatchDuringStep[Request] {
-  def toll(eta: Double): Price
+// Manage reservations to use some an intersection resource during a window of time
+class IntersectionTollbooth() extends BatchDuringStep[IntersectionRequest] {
+  def toll(eta: Double) = new Price(current_prices.getOrElse(idx(eta), 0.0))
 
   protected val cancellation_fee = 5.0
   protected val early_fee = 10.0
@@ -21,7 +21,6 @@ abstract class Tollbooth() extends BatchDuringStep[Request] {
   protected val half_duration = 15 * 60.0
   // TODO serialization and such
   // key is (agent, source road), value is (ETA, offer)
-  // TODO source road is only meaningful for booths at intersections, it's redundant at roads
   protected val registrations = new mutable.HashMap[(Agent, Road), (Double, Double)]()
   // The int idx is 0 for 0-30 mins, 1 for 15-45 mins, etc
   protected val current_prices = new mutable.HashMap[Int, Double]()
@@ -38,7 +37,7 @@ abstract class Tollbooth() extends BatchDuringStep[Request] {
     Util.assert_eq(registrations.contains((a, source)), false)
     Util.assert_ge(offer, 0)
     // Note next_road is ignored for now
-    add_request(Request(a, source, eta, toll(eta).dollars, offer))
+    add_request(IntersectionRequest(a, source, eta, toll(eta).dollars, offer))
   }
 
   def cancel(a: Agent, source: Road) {
@@ -107,10 +106,11 @@ abstract class Tollbooth() extends BatchDuringStep[Request] {
 }
 
 // We, the tollbooth, set the toll at the time the request is made
-case class Request(a: Agent, source: Road, eta: Double, old_toll: Double, offer: Double)
-  extends Ordered[Request]
+case class IntersectionRequest(a: Agent, source: Road, eta: Double, old_toll: Double, offer: Double)
+  extends Ordered[IntersectionRequest]
 {
-  override def compare(other: Request) = Ordering[Tuple2[Int, Double]].compare(
+  override def compare(other: IntersectionRequest) = Ordering[Tuple2[Int, Double]].compare(
     (a.id.int, eta), (other.a.id.int, other.eta)
   )
 }
+
