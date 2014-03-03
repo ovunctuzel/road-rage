@@ -34,7 +34,7 @@ object BenchmarkRouting {
       if (i % print_every == 0) {
         Util.log(f"round $i%,d / $rounds%,d")
         for (((_, name), idx) <- routers.zipWithIndex) {
-          Util.log(s"  $name: ${sum_times(idx)}s total, ${sum_times(idx) / rounds}s per path")
+          Util.log(s"  $name: ${sum_times(idx)}s total, ${sum_times(idx) / i}s per path")
         }
       }
     }
