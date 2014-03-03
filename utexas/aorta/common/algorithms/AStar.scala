@@ -24,7 +24,8 @@ case class Pathfind(
     (a: (Double, Double), b: (Double, Double)) => (a._1 + b._1, a._2 + b._2),
   allow_cycles: Boolean = false,
   cost_start: (Double, Double) = (0, 0),
-  banned_nodes: Set[Road] = Set[Road]()
+  banned_nodes: Set[Road] = Set[Road](),
+  return_costs: Boolean = false
 ) {
   def first_succs(succs: Iterable[Road]) = this.copy(
     successors = (state: Road) => if (state == start) succs else successors(state)
@@ -35,7 +36,8 @@ case class Pathfind(
 object AStar {
   // T is the node type
   // TODO All costs are pairs of doubles lexicographically ordered right now. Generalize.
-  // The result is the path, then the map from node to cost
+  // The result is the path, then the map from node to cost. For performance, if return_costs is
+  // false, then the cost map will be empty.
   def path(spec: Pathfind): (List[Road], Map[Road, (Double, Double)]) = {
     //Util.assert_eq(banned_nodes.contains(start), false)
     if (spec.banned_nodes.contains(spec.start)) {
@@ -77,7 +79,11 @@ object AStar {
           pointer = backrefs.remove(pointer.get)
         }
         // Include 'start'
-        return (path.toList, costs.toMap)
+        if (spec.return_costs) {
+          return (path.toList, costs.toMap)
+        } else {
+          return (path.toList, Map[Road, (Double, Double)]())
+        }
       } else {
         for (next_state <- spec.successors(current) if !spec.banned_nodes.contains(next_state)) {
           val tentative_cost = spec.add_cost(
