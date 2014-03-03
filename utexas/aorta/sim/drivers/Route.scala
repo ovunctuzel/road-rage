@@ -200,7 +200,7 @@ class PathRoute(
     path = slice_before ++ (at.road :: rerouter.path(Pathfind(
       // Start from a source we can definitely reach without lane-changing.
       start = at.next_turns.maxBy(t => t.to.queue.percent_avail).to.road,
-      goals = Set(goal)
+      goal = goal
       // Don't ban any roads from the path. If we wind up looping back on something, then for now,
       // so be it.
     )).path)
@@ -217,7 +217,7 @@ class PathRoute(
     try {
       path = slice_before ++ rerouter.path(Pathfind(
           start = at.road,
-          goals = Set(goal),
+          goal = goal,
           // Don't hit anything already in our path
           banned_nodes = (at.road :: slice_before).toSet
           // Let the algorithm pick the best next step

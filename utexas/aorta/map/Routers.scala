@@ -18,7 +18,7 @@ abstract class Router(graph: Graph) {
   def router_type: RouterType.Value
   // Includes 'from' as the first step
   def path(spec: Pathfind): PathResult
-  def path(from: Road, to: Road): PathResult = path(Pathfind(start = from, goals = Set(to)))
+  def path(from: Road, to: Road): PathResult = path(Pathfind(start = from, goal = to))
 
   // TODO messy to include this jump, but hard to pipe in specific params...
   def setup(a: Agent) {}
@@ -32,7 +32,7 @@ class FixedRouter(graph: Graph, initial_path: List[Road]) extends Router(graph) 
   override def router_type = RouterType.Fixed
   override def path(spec: Pathfind): PathResult = {
     Util.assert_eq(spec.start, initial_path.head)
-    Util.assert_eq(spec.goals.contains(initial_path.last), true)
+    Util.assert_eq(spec.goal, initial_path.last)
     return PathResult(initial_path, Map())
   }
 }
@@ -52,7 +52,7 @@ abstract class AbstractPairAstarRouter(graph: Graph) extends Router(graph) {
 trait SimpleHeuristic extends AbstractPairAstarRouter {
   private val max_speed = 80.0  // TODO put in cfg
   override def transform(spec: Pathfind) = super.transform(spec).copy(
-    calc_heuristic = (state: Road) => (0.0, state.end_pt.dist_to(spec.goals.head.end_pt) / max_speed)
+    calc_heuristic = (state: Road) => (0.0, state.end_pt.dist_to(spec.goal.end_pt) / max_speed)
   )
   // Alternate heuristics explore MUCH less states, but the oracles are too
   // pricy. (CH, Dijkstra table of distances)

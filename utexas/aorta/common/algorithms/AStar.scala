@@ -9,12 +9,14 @@ import java.util
 
 // The algorithms here are generic, but for performance reasons, they are specialized for Roads, the
 // only use case in AORTA. TODO investigate @specialized.
+// TODO other mostly unused features removed for performance:
+// - multiple goals
 import utexas.aorta.map.Road
 import utexas.aorta.common.Util
 
 case class Pathfind(
   start: Road = null,
-  goals: Set[Road] = null,
+  goal: Road = null,
   successors: (Road) => Iterable[Road] = null,
   calc_cost: (Road, Road, (Double, Double)) => (Double, Double) = null,
   calc_heuristic: (Road) => (Double, Double) = (node: Road) => (0.0, 0.0),
@@ -39,8 +41,8 @@ object AStar {
     if (spec.banned_nodes.contains(spec.start)) {
       throw new IllegalArgumentException(s"A* from ${spec.start}, but ban ${spec.banned_nodes}")
     }
-    Util.assert_eq(spec.banned_nodes.intersect(spec.goals).isEmpty, true)
-    if (spec.goals.contains(spec.start) && !spec.allow_cycles) {
+    Util.assert_eq(spec.banned_nodes.contains(spec.goal), false)
+    if (spec.start == spec.goal && !spec.allow_cycles) {
       return (List(spec.start), Map())
     }
 
@@ -65,7 +67,7 @@ object AStar {
       }
 
       // If backrefs doesn't have goal, allow_cycles is true and we just started
-      if (spec.goals.contains(current) && spec.goals.intersect(backrefs.keys.toSet).nonEmpty) {
+      if (current == spec.goal && backrefs.contains(spec.goal)) {
         // Reconstruct the path
         val path = new mutable.ListBuffer[Road]()
         var pointer: Option[Road] = Some(current)
@@ -92,7 +94,7 @@ object AStar {
       }
     }
 
-    throw new Exception(s"Couldn't A* from ${spec.start} to ${spec.goals}")
+    throw new Exception(s"Couldn't A* from ${spec.start} to ${spec.goal}")
   }
 }
 
