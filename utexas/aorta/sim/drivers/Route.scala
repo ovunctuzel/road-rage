@@ -221,7 +221,7 @@ class PathRoute(
           // Don't hit anything already in our path
           banned_nodes = (at.road :: slice_before).toSet
           // Let the algorithm pick the best next step
-        ).first_succs(at.next_roads)
+        ).first_succs(at.next_roads.toArray)
       ).path
       owner.sim.publish(
         EV_Reroute(owner, path, false, rerouter.router_type, false, old_path), owner

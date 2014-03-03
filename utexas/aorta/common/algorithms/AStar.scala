@@ -17,7 +17,7 @@ import utexas.aorta.common.Util
 case class Pathfind(
   start: Road = null,
   goal: Road = null,
-  successors: (Road) => Iterable[Road] = null,
+  successors: (Road) => Array[Road] = null,
   calc_cost: (Road, Road, (Double, Double)) => (Double, Double) = null,
   calc_heuristic: (Road) => (Double, Double) = (node: Road) => (0.0, 0.0),
   add_cost: ((Double, Double), (Double, Double)) => (Double, Double) =
@@ -27,7 +27,7 @@ case class Pathfind(
   banned_nodes: Set[Road] = Set[Road](),
   return_costs: Boolean = false
 ) {
-  def first_succs(succs: Iterable[Road]) = this.copy(
+  def first_succs(succs: Array[Road]) = this.copy(
     successors = (state: Road) => if (state == start) succs else successors(state)
   )
 }
@@ -85,16 +85,23 @@ object AStar {
           return (path.toList, Map[Road, (Double, Double)]())
         }
       } else {
-        for (next_state <- spec.successors(current) if !spec.banned_nodes.contains(next_state)) {
-          val tentative_cost = spec.add_cost(
-            costs(current), spec.calc_cost(current, next_state, costs(current))
-          )
-          if (!visited.contains(next_state) && (!open.contains(next_state) || ordering_tuple.lt(tentative_cost, costs(next_state)))) {
-            backrefs(next_state) = current
-            costs(next_state) = tentative_cost
-            // if they're in open_members, modify weight in the queue? or
-            // new step will clobber it. fine.
-            open.insert(next_state, spec.add_cost(tentative_cost, spec.calc_heuristic(next_state)))
+        // This foreach manually rewritten as a while to avoid closures in a tight loop.
+        val succs = spec.successors(current)
+        var i = 0
+        while (i < succs.size) {
+          val next_state = succs(i)
+          i += 1
+          if (!spec.banned_nodes.contains(next_state) && !visited.contains(next_state)) {
+            val tentative_cost = spec.add_cost(
+              costs(current), spec.calc_cost(current, next_state, costs(current))
+            )
+            if (!open.contains(next_state) || ordering_tuple.lt(tentative_cost, costs(next_state))) {
+              backrefs(next_state) = current
+              costs(next_state) = tentative_cost
+              // if they're in open_members, modify weight in the queue? or
+              // new step will clobber it. fine.
+              open.insert(next_state, spec.add_cost(tentative_cost, spec.calc_heuristic(next_state)))
+            }
           }
         }
       }

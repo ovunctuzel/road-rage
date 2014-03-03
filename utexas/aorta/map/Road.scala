@@ -121,7 +121,7 @@ class Road(
 
   def freeflow_time = length / speed_limit
 
-  lazy val succs = lanes.flatMap(e => e.next_turns.map(t => t.to.road))
+  lazy val succs = lanes.flatMap(e => e.next_turns.map(t => t.to.road)).toArray
   def preds = lanes.flatMap(e => e.prev_turns.map(t => t.from.road))
   def next_roads = lanes.flatMap(e => e.next_roads).toSet
 
