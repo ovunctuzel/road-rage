@@ -17,7 +17,7 @@ abstract class Router(graph: Graph) {
 
   def router_type: RouterType.Value
   // Includes 'from' as the first step
-  def path(spec: Pathfind[Road]): PathResult
+  def path(spec: Pathfind): PathResult
   def path(from: Road, to: Road): PathResult = path(Pathfind(start = from, goals = Set(to)))
 
   // TODO messy to include this jump, but hard to pipe in specific params...
@@ -30,7 +30,7 @@ abstract class Router(graph: Graph) {
 
 class FixedRouter(graph: Graph, initial_path: List[Road]) extends Router(graph) {
   override def router_type = RouterType.Fixed
-  override def path(spec: Pathfind[Road]): PathResult = {
+  override def path(spec: Pathfind): PathResult = {
     Util.assert_eq(spec.start, initial_path.head)
     Util.assert_eq(spec.goals.contains(initial_path.last), true)
     return PathResult(initial_path, Map())
@@ -39,11 +39,11 @@ class FixedRouter(graph: Graph, initial_path: List[Road]) extends Router(graph) 
 
 // Score is a pair of doubles
 abstract class AbstractPairAstarRouter(graph: Graph) extends Router(graph) {
-  override def path(spec: Pathfind[Road]) = AStar.path(transform(spec)) match {
+  override def path(spec: Pathfind) = AStar.path(transform(spec)) match {
     case (route, costs) => PathResult(route, costs)
   }
 
-  protected def transform(spec: Pathfind[Road]) = spec.copy(
+  protected def transform(spec: Pathfind) = spec.copy(
     successors = (step: Road) => step.succs
   )
 }
@@ -51,7 +51,7 @@ abstract class AbstractPairAstarRouter(graph: Graph) extends Router(graph) {
 // No guess for cost, straight-line distance at 1m/s for freeflow time
 trait SimpleHeuristic extends AbstractPairAstarRouter {
   private val max_speed = 80.0  // TODO put in cfg
-  override def transform(spec: Pathfind[Road]) = super.transform(spec).copy(
+  override def transform(spec: Pathfind) = super.transform(spec).copy(
     calc_heuristic = (state: Road) => (0.0, state.end_pt.dist_to(spec.goals.head.end_pt) / max_speed)
   )
   // Alternate heuristics explore MUCH less states, but the oracles are too
@@ -60,14 +60,14 @@ trait SimpleHeuristic extends AbstractPairAstarRouter {
 
 class FreeflowRouter(graph: Graph) extends AbstractPairAstarRouter(graph) with SimpleHeuristic {
   override def router_type = RouterType.Unusable
-  override def transform(spec: Pathfind[Road]) = super.transform(spec).copy(
+  override def transform(spec: Pathfind) = super.transform(spec).copy(
     calc_cost = (prev: Road, next: Road, cost_sofar: (Double, Double)) => (0, next.freeflow_time)
   )
 }
 
 // Cost for each step is (dollars, time)
 trait TollAndTimeCost extends AbstractPairAstarRouter {
-  override def transform(spec: Pathfind[Road]) = super.transform(spec).copy(
+  override def transform(spec: Pathfind) = super.transform(spec).copy(
     calc_cost = (prev: Road, next: Road, cost_sofar: (Double, Double)) =>
       (next.road_agent.toll.dollars, next.freeflow_time)
   )
@@ -76,7 +76,7 @@ trait TollAndTimeCost extends AbstractPairAstarRouter {
 // Score is (number of congested roads, total freeflow time)
 class CongestionRouter(graph: Graph) extends AbstractPairAstarRouter(graph) with SimpleHeuristic {
   override def router_type = RouterType.Congestion
-  override def transform(spec: Pathfind[Road]) = super.transform(spec).copy(
+  override def transform(spec: Pathfind) = super.transform(spec).copy(
     calc_cost = (prev: Road, next: Road, cost_sofar: (Double, Double)) =>
       (Util.bool2binary(next.road_agent.congested), next.freeflow_time)
   )
@@ -87,7 +87,7 @@ class DumbTollRouter(graph: Graph) extends AbstractPairAstarRouter(graph)
   with SimpleHeuristic with TollAndTimeCost
 {
   override def router_type = RouterType.DumbToll
-  override def transform(spec: Pathfind[Road]) = super.transform(spec).copy(
+  override def transform(spec: Pathfind) = super.transform(spec).copy(
     add_cost = (a: (Double, Double), b: (Double, Double)) => (math.max(a._1, b._1), a._2 + b._2)
   )
 }
@@ -103,7 +103,7 @@ class TollThresholdRouter(graph: Graph) extends AbstractPairAstarRouter(graph) w
   }
 
   override def router_type = RouterType.TollThreshold
-  override def transform(spec: Pathfind[Road]) = super.transform(spec).copy(
+  override def transform(spec: Pathfind) = super.transform(spec).copy(
     calc_cost = (prev: Road, next: Road, cost_sofar: (Double, Double)) =>
       (Util.bool2binary(next.road_agent.toll.dollars > max_toll.dollars), next.freeflow_time)
   )
@@ -115,7 +115,7 @@ class SumTollRouter(graph: Graph) extends AbstractPairAstarRouter(graph)
   with SimpleHeuristic with TollAndTimeCost
 {
   override def router_type = RouterType.SumToll
-  override def transform(spec: Pathfind[Road]) = super.transform(spec).copy(
+  override def transform(spec: Pathfind) = super.transform(spec).copy(
     calc_cost = (prev: Road, next: Road, cost_sofar: (Double, Double)) =>
       (next.road_agent.toll.dollars, next.freeflow_time)
   )
@@ -130,7 +130,7 @@ class TollboothRouter(graph: Graph) extends AbstractPairAstarRouter(graph) {
     owner = a
   }
 
-  override def transform(spec: Pathfind[Road]) = super.transform(spec).copy(
+  override def transform(spec: Pathfind) = super.transform(spec).copy(
     // TODO usually ignore prev, but here, have to know pairs to moves, so grab toll for prev->next
     // TODO does this make eta offset strangely?
     calc_cost = (prev: Road, next: Road, cost_sofar: (Double, Double)) => (

@@ -7,22 +7,25 @@ package utexas.aorta.common.algorithms
 import scala.collection.mutable
 import java.util
 
+// The algorithms here are generic, but for performance reasons, they are specialized for Roads, the
+// only use case in AORTA. TODO investigate @specialized.
+import utexas.aorta.map.Road
 import utexas.aorta.common.Util
 
-case class Pathfind[T](
-  start: T = null,
-  goals: Set[T] = null,
-  successors: (T) => Iterable[T] = null,
-  calc_cost: (T, T, (Double, Double)) => (Double, Double) = null,
-  calc_heuristic: (T) => (Double, Double) = (node: T) => (0.0, 0.0),
+case class Pathfind(
+  start: Road = null,
+  goals: Set[Road] = null,
+  successors: (Road) => Iterable[Road] = null,
+  calc_cost: (Road, Road, (Double, Double)) => (Double, Double) = null,
+  calc_heuristic: (Road) => (Double, Double) = (node: Road) => (0.0, 0.0),
   add_cost: ((Double, Double), (Double, Double)) => (Double, Double) =
     (a: (Double, Double), b: (Double, Double)) => (a._1 + b._1, a._2 + b._2),
   allow_cycles: Boolean = false,
   cost_start: (Double, Double) = (0, 0),
-  banned_nodes: Set[T] = Set[T]()
+  banned_nodes: Set[Road] = Set[Road]()
 ) {
-  def first_succs(succs: Iterable[T]) = this.copy(
-    successors = (state: T) => if (state == start) succs else successors(state)
+  def first_succs(succs: Iterable[Road]) = this.copy(
+    successors = (state: Road) => if (state == start) succs else successors(state)
   )
 }
 
@@ -31,7 +34,7 @@ object AStar {
   // T is the node type
   // TODO All costs are pairs of doubles lexicographically ordered right now. Generalize.
   // The result is the path, then the map from node to cost
-  def path[T](spec: Pathfind[T]): (List[T], Map[T, (Double, Double)]) = {
+  def path(spec: Pathfind): (List[Road], Map[Road, (Double, Double)]) = {
     //Util.assert_eq(banned_nodes.contains(start), false)
     if (spec.banned_nodes.contains(spec.start)) {
       throw new IllegalArgumentException(s"A* from ${spec.start}, but ban ${spec.banned_nodes}")
@@ -42,13 +45,13 @@ object AStar {
     }
 
     // Stitch together our path
-    val backrefs = new mutable.HashMap[T, T]()
+    val backrefs = new mutable.HashMap[Road, Road]()
     // We're finished with these
-    val visited = new mutable.HashSet[T]()
+    val visited = new mutable.HashSet[Road]()
     // Best cost so far
-    val costs = new mutable.HashMap[T, (Double, Double)]()
+    val costs = new mutable.HashMap[Road, (Double, Double)]()
 
-    val open = new JavaPriorityQueue[T]()
+    val open = new JavaPriorityQueue()
     val ordering_tuple = Ordering[(Double, Double)].on((pair: (Double, Double)) => pair)
 
     costs(spec.start) = spec.cost_start
@@ -64,8 +67,8 @@ object AStar {
       // If backrefs doesn't have goal, allow_cycles is true and we just started
       if (spec.goals.contains(current) && spec.goals.intersect(backrefs.keys.toSet).nonEmpty) {
         // Reconstruct the path
-        val path = new mutable.ListBuffer[T]()
-        var pointer: Option[T] = Some(current)
+        val path = new mutable.ListBuffer[Road]()
+        var pointer: Option[Road] = Some(current)
         while (pointer.isDefined) {
           path.prepend(pointer.get)
           // Clean as we go to break loops
@@ -93,41 +96,41 @@ object AStar {
   }
 }
 
-abstract class PriorityQueue[T]() {
-  def insert(item: T, weight: (Double, Double))
-  def shift(): T
-  def contains(item: T): Boolean
+abstract class PriorityQueue() {
+  def insert(item: Road, weight: (Double, Double))
+  def shift(): Road
+  def contains(item: Road): Boolean
   def nonEmpty(): Boolean
 
   // TODO have a change_weight.
 }
 
 // TODO generalize score.
-class ScalaPriorityQueue[T]() extends PriorityQueue[T] {
-  private case class Item(item: T, weight: (Double, Double))
+class ScalaPriorityQueue() extends PriorityQueue {
+  private case class Item(item: Road, weight: (Double, Double))
 
   private val pq = new mutable.PriorityQueue[Item]()(
     Ordering[(Double, Double)].on((item: Item) => item.weight).reverse
   )
-  private val members = new mutable.HashSet[T]()
+  private val members = new mutable.HashSet[Road]()
 
-  override def insert(item: T, weight: (Double, Double)) {
+  override def insert(item: Road, weight: (Double, Double)) {
     pq.enqueue(Item(item, weight))
     members += item
   }
 
-  override def shift(): T = {
+  override def shift(): Road = {
     val item = pq.dequeue().item
     members -= item // TODO not true if there are multiples!
     return item
   }
 
-  override def contains(item: T) = members.contains(item)
+  override def contains(item: Road) = members.contains(item)
   override def nonEmpty = pq.nonEmpty
 }
 
-class JavaPriorityQueue[T]() extends PriorityQueue[T] {
-  private case class Item(item: T, weight_1: Double, weight_2: Double)
+class JavaPriorityQueue() extends PriorityQueue {
+  private case class Item(item: Road, weight_1: Double, weight_2: Double)
 
   private val pq = new util.PriorityQueue[Item](100, new util.Comparator[Item]() {
     override def compare(a: Item, b: Item) =
@@ -142,19 +145,19 @@ class JavaPriorityQueue[T]() extends PriorityQueue[T] {
       else
         0
   })
-  private val members = new mutable.HashSet[T]()
+  private val members = new mutable.HashSet[Road]()
 
-  override def insert(item: T, weight: (Double, Double)) {
+  override def insert(item: Road, weight: (Double, Double)) {
     pq.add(Item(item, weight._1, weight._2))
     members += item
   }
 
-  override def shift(): T = {
+  override def shift(): Road = {
     val item = pq.poll().item
     members -= item // TODO not true if there are multiples!
     return item
   }
 
-  override def contains(item: T) = members.contains(item)
+  override def contains(item: Road) = members.contains(item)
   override def nonEmpty = !pq.isEmpty
 }

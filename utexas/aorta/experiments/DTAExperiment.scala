@@ -73,7 +73,7 @@ class TimeDependentAStar(graph: Graph, delays: LinkDelayMetric, start_time: Doub
   extends AbstractPairAstarRouter(graph) with SimpleHeuristic
 {
   override def router_type = RouterType.Unusable
-  override def transform(spec: Pathfind[Road]) = super.transform(spec).copy(
+  override def transform(spec: Pathfind) = super.transform(spec).copy(
     calc_cost = (prev: Road, next: Road, cost_sofar: (Double, Double)) =>
       // cost_sofar._2 is the time spent in the route so far
       (Util.bool2binary(next.road_agent.congested), delays.delay(next, start_time + cost_sofar._2))
