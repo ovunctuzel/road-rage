@@ -8,9 +8,7 @@ import utexas.aorta.sim.drivers.Agent
 import utexas.aorta.sim.make.RouterType
 
 import utexas.aorta.common.{Util, Price}
-import utexas.aorta.common.algorithms.{AStar, Pathfind}
-
-case class PathResult(path: List[Road], costs: Map[Road, (Double, Double)])
+import utexas.aorta.common.algorithms.{AStar, Pathfind, PathResult}
 
 abstract class Router(graph: Graph) {
   protected var debug_me = false
@@ -33,15 +31,13 @@ class FixedRouter(graph: Graph, initial_path: List[Road]) extends Router(graph) 
   override def path(spec: Pathfind): PathResult = {
     Util.assert_eq(spec.start, initial_path.head)
     Util.assert_eq(spec.goal, initial_path.last)
-    return PathResult(initial_path, Map())
+    return PathResult(initial_path, Map(), 0)
   }
 }
 
 // Score is a pair of doubles
 abstract class AbstractPairAstarRouter(graph: Graph) extends Router(graph) {
-  override def path(spec: Pathfind) = AStar.path(transform(spec)) match {
-    case (route, costs) => PathResult(route, costs)
-  }
+  override def path(spec: Pathfind) = AStar.path(transform(spec))
 
   protected def transform(spec: Pathfind) = spec.copy(
     successors = (step: Road) => step.succs

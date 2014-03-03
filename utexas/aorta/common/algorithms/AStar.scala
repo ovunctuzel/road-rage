@@ -32,20 +32,21 @@ case class Pathfind(
   )
 }
 
+case class PathResult(path: List[Road], costs: Map[Road, (Double, Double)], nodes_visited: Int)
+
 // TODO perf bug: I think one of the sets calls toString! test with a slow toString
 object AStar {
   // T is the node type
   // TODO All costs are pairs of doubles lexicographically ordered right now. Generalize.
-  // The result is the path, then the map from node to cost. For performance, if return_costs is
-  // false, then the cost map will be empty.
-  def path(spec: Pathfind): (List[Road], Map[Road, (Double, Double)]) = {
+  // For performance, if return_costs is false, then the cost map will be empty.
+  def path(spec: Pathfind): PathResult = {
     //Util.assert_eq(banned_nodes.contains(start), false)
     if (spec.banned_nodes.contains(spec.start)) {
       throw new IllegalArgumentException(s"A* from ${spec.start}, but ban ${spec.banned_nodes}")
     }
     Util.assert_eq(spec.banned_nodes.contains(spec.goal), false)
     if (spec.start == spec.goal && !spec.allow_cycles) {
-      return (List(spec.start), Map())
+      return PathResult(List(spec.start), Map(), 0)
     }
 
     // Stitch together our path
@@ -80,9 +81,9 @@ object AStar {
         }
         // Include 'start'
         if (spec.return_costs) {
-          return (path.toList, costs.toMap)
+          return PathResult(path.toList, costs.toMap, visited.size)
         } else {
-          return (path.toList, Map[Road, (Double, Double)]())
+          return PathResult(path.toList, Map[Road, (Double, Double)](), visited.size)
         }
       } else {
         // This foreach manually rewritten as a while to avoid closures in a tight loop.

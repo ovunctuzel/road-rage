@@ -20,6 +20,7 @@ object BenchmarkRouting {
       (new CongestionRouter(sim.graph), "congestion_a*")
     )
     val sum_times = Array.fill[Double](routers.size)(0.0)
+    val sum_nodes = Array.fill[Int](routers.size)(0)
 
     for (i <- 1 until rounds) {
       val from = rng.choose(sim.graph.roads)
@@ -27,14 +28,16 @@ object BenchmarkRouting {
 
       for (((router, name), idx) <- routers.zipWithIndex) {
         val t = Timer(name)
-        router.path(from, to)
+        val nodes = router.path(from, to).nodes_visited
         sum_times(idx) += t.so_far
+        sum_nodes(idx) += nodes
       }
 
       if (i % print_every == 0) {
         Util.log(f"round $i%,d / $rounds%,d")
         for (((_, name), idx) <- routers.zipWithIndex) {
           Util.log(s"  $name: ${sum_times(idx)}s total, ${sum_times(idx) / i}s per path")
+          Util.log("  %s: %,d nodes per path".format(name, sum_nodes(idx) / i))
         }
       }
     }

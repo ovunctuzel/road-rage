@@ -19,6 +19,7 @@ import utexas.aorta.sim.drivers.{Agent, PathRoute}
 import utexas.aorta.analysis.SimREPL
 
 import utexas.aorta.common.{Util, RNG, Timer, cfg, EdgeID, VertexID, RoadID}
+import utexas.aorta.common.algorithms.PathResult
 
 object Mode extends Enumeration {
   type Mode = Value

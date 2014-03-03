@@ -7,7 +7,7 @@ package utexas.aorta.sim.drivers
 import scala.collection.mutable
 
 import utexas.aorta.contrib.TollBroker
-import utexas.aorta.map.{Edge, Coordinate, Turn, Traversable, Graph, Position, Vertex, PathResult}
+import utexas.aorta.map.{Edge, Coordinate, Turn, Traversable, Graph, Position, Vertex}
 import utexas.aorta.sim.{Simulation, EV_AgentQuit, AgentMap, EV_Breakpoint}
 import utexas.aorta.sim.intersections.{Intersection, Ticket}
 import utexas.aorta.sim.make.Factory
@@ -15,6 +15,7 @@ import utexas.aorta.ui.Renderable
 
 import utexas.aorta.common.{Util, cfg, Physics, StateWriter, StateReader, AgentID, EdgeID,
                             ValueOfTime, Flags, Serializable}
+import utexas.aorta.common.algorithms.PathResult
 
 class Agent(
   val id: AgentID, val route: Route, val wallet: Wallet, val sim: Simulation
