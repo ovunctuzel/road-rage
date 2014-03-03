@@ -58,7 +58,7 @@ class Road(
     case "services"       => 10
     //case "track"          => 35
     // I feel the need.  The need for speed.  Where can we find one of these?
-    case "raceway"        => 300
+    //case "raceway"        => 300
     //case "null"           => 30
     //case "proposed"       => 35
     //case "construction"     => 20

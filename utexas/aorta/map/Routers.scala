@@ -7,7 +7,7 @@ package utexas.aorta.map
 import utexas.aorta.sim.drivers.Agent
 import utexas.aorta.sim.make.RouterType
 
-import utexas.aorta.common.{Util, Price}
+import utexas.aorta.common.{Util, Price, Physics}
 import utexas.aorta.common.algorithms.{AStar, Pathfind, PathResult}
 
 abstract class Router(graph: Graph) {
@@ -46,7 +46,7 @@ abstract class AbstractPairAstarRouter(graph: Graph) extends Router(graph) {
 
 // No guess for cost, straight-line distance at 1m/s for freeflow time
 trait SimpleHeuristic extends AbstractPairAstarRouter {
-  private val max_speed = 80.0  // TODO put in cfg
+  private val max_speed = Physics.mph_to_si(80.0)  // TODO put in cfg
   override def transform(spec: Pathfind) = super.transform(spec).copy(
     calc_heuristic = (state: Road) => (0.0, state.end_pt.dist_to(spec.goal.end_pt) / max_speed)
   )
