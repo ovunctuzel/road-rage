@@ -14,7 +14,7 @@ import utexas.aorta.sim.make.{ModScenarioTool, Scenario}
 import utexas.aorta.ui.GUIDebugger
 import utexas.aorta.analysis.SimREPL
 
-import utexas.aorta.common.{RNG, Util, Flags, AgentID, IO}
+import utexas.aorta.common.{RNG, Util, Flags, AgentID, IO, Timer}
 
 // TODO divorce scenario generation from the rest?
 case class ExpConfig(
@@ -145,7 +145,9 @@ abstract class SmartExperiment(config: ExpConfig, val name: String) extends Expe
     val sim = s.make_sim().setup()
     val metrics = get_metrics(MetricInfo(sim, mode, io, uid, name))
     try {
+      val t = Timer(s"round $round ($mode)")
       simulate(sim)
+      t.stop()
     } catch {
       case e: Throwable => {
         e.printStackTrace()
