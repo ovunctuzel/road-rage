@@ -131,7 +131,6 @@ abstract class Policy(val intersection: Intersection)
   protected val accepted = new mutable.TreeSet[Ticket]()
 
   def serialize(w: StateWriter) {
-    Util.assert_eq(transient_requests.isEmpty, true)
     w.int(request_queue.size)
     for (ticket <- request_queue) {
       w.ints(ticket.a.id.int, ticket.turn.id.int)
@@ -153,7 +152,7 @@ abstract class Policy(val intersection: Intersection)
     synchronized {
       // TODO assert not in transient_requests
       // TODO assert it was in here!
-      request_queue = request_queue.filter(t => t != ticket)
+      request_queue -= ticket
     }
   }
 
@@ -170,7 +169,7 @@ abstract class Policy(val intersection: Intersection)
   }
 
   protected def unqueue(ticket: Ticket) {
-    request_queue = request_queue.filter(_ != ticket)
+    request_queue -= ticket
   }
 
   def react(): Unit
@@ -225,7 +224,7 @@ object Policy {
   def unserialize(policy: Policy, r: StateReader, sim: Simulation) {
     val num_requests = r.int
     for (i <- Range(0, num_requests)) {
-      policy.request_queue :+= find_ticket(r, sim)
+      policy.request_queue += find_ticket(r, sim)
     }
     policy.unserialize(r, sim)
   }

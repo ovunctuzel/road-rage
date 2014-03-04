@@ -223,19 +223,26 @@ class BinnedHistogram(width: Double) {
 // Instances of T are added in possibly nondeterministic orders during a simulation step, but the
 // consumer needs to see them in a deterministic order.
 trait BatchDuringStep[T <: Ordered[T]] {
-  val transient_requests = new mutable.TreeSet[T]()
-  var request_queue: List[T] = Nil
+  private val transient_requests = new mutable.TreeSet[T]()
+  protected val request_queue = new mutable.ListBuffer[T]()
+  protected var new_transients = false
 
   def add_request(item: T) {
     // TODO just need a writer lock, dont have to lock the whole object
     synchronized {
       transient_requests += item
+      new_transients = true
     }
   }
 
   def end_batch_step() {
-    request_queue ++= transient_requests
-    transient_requests.clear()
+    // iterating over transient_requests is actually a bottleneck if many things do it every tick,
+    // so avoiding it is useful
+    if (new_transients) {
+      request_queue ++= transient_requests
+      transient_requests.clear()
+      new_transients = false
+    }
   }
 }
 

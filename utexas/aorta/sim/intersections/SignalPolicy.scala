@@ -63,7 +63,7 @@ class SignalPolicy(
       ordering.choose(candidates, request_queue, this) match {
         case Some(p) => {
           sim.publish(
-            EV_IntersectionOutcome(policy_type, request_queue.filter(t => !p.has(t.turn)))
+            EV_IntersectionOutcome(policy_type, request_queue.filter(t => !p.has(t.turn)).toList)
           )
           current_phase = p
           phase_order = phase_order.filter(phase => phase != p)

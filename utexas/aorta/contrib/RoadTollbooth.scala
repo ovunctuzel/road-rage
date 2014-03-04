@@ -88,7 +88,7 @@ class RoadTollbooth(road: RoadAgent) extends BatchDuringStep[RoadRequest] {
       // What should people spend?
       r.a.toll_broker.spend(r.offer)
     }
-    request_queue = Nil
+    request_queue.clear()
   }
 
   // If the agent is rerouting and may have already registered here, don't count their own

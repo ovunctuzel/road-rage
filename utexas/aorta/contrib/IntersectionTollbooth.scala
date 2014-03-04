@@ -105,7 +105,7 @@ class IntersectionTollbooth(intersection: Intersection) extends BatchDuringStep[
       // What should people spend? Should it be proportional to number of conflicts?
       r.a.toll_broker.spend(r.offer)
     }
-    request_queue = Nil
+    request_queue.clear()
   }
 
   // If the agent is rerouting and may have already registered here, don't count their own

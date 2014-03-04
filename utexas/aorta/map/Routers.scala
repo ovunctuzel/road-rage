@@ -52,6 +52,7 @@ trait SimpleHeuristic extends AbstractPairAstarRouter {
   )
   // Alternate heuristics explore MUCH less states, but the oracles are too
   // pricy. (CH, Dijkstra table of distances)
+  // TODO make a fast mode that doesnt divide by speed limit. Suboptimal paths.
 }
 
 class FreeflowRouter(graph: Graph) extends AbstractPairAstarRouter(graph) with SimpleHeuristic {
