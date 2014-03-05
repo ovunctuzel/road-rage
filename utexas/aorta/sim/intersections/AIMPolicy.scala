@@ -100,7 +100,7 @@ class AIMPolicy(intersection: Intersection, ordering: IntersectionOrdering[Ticke
     t.a.sim.active_intersections += intersection
 
     // Also check that our slack value is sufficient.
-    val projected = Physics.simulate_steps(t.turn.length + cfg.end_threshold, 0, t.turn.speed_limit)
+    val projected = Physics.simulate_steps(t.turn.length + cfg.end_threshold, 0, t.turn.speed_limit)._1
     if (t.duration < projected || t.duration > projected + slack) {
       throw new Exception(s"Actual duration ${t.duration} isn't in [$projected, ${projected + slack}]")
     }
@@ -119,8 +119,8 @@ class AIMPolicy(intersection: Intersection, ordering: IntersectionOrdering[Ticke
 
     // Includes end_threshold, so assumes we're starting right at that mark...
     def time(turn: Turn, initial_speed: Double) = turn match {
-      case `turn1` => Physics.simulate_steps(collision_dist1 + cfg.end_threshold, initial_speed, turn1.speed_limit)
-      case `turn2` => Physics.simulate_steps(collision_dist2 + cfg.end_threshold, initial_speed, turn2.speed_limit)
+      case `turn1` => Physics.simulate_steps(collision_dist1 + cfg.end_threshold, initial_speed, turn1.speed_limit)._1
+      case `turn2` => Physics.simulate_steps(collision_dist2 + cfg.end_threshold, initial_speed, turn2.speed_limit)._1
       case _ => throw new IllegalArgumentException(s"$turn doesn't belong to $this")
     }
   }

@@ -15,21 +15,18 @@ case class Kinematic(dist: Double, speed: Double, speed_limit: Double) {
   def min_next_dist = Physics.min_next_dist(speed)
   def max_next_speed = Physics.max_next_speed(speed, speed_limit)
 
-  def accel_to_follow(follow: Kinematic, dist_from_them_now: Double): Double = {
-    val us_worst_dist = max_next_dist_plus_stopping
-    val most_we_could_go = max_next_dist
-    val least_they_could_go = follow.min_next_dist
-
-    // TODO this optimizes for next tick, so we're playing it really
-    // conservative here... will that make us fluctuate more?
-    val projected_dist_from_them = dist_from_them_now - most_we_could_go + least_they_could_go
-    val desired_dist_btwn = us_worst_dist + cfg.follow_dist
-
-    // Positive = speed up, zero = go their speed, negative = slow down
-    val delta_dist = projected_dist_from_them - desired_dist_btwn
-
-    // Try to cover whatever the distance is
-    return Physics.accel_to_cover(delta_dist, speed)
+  def accel_to_follow(leader: Kinematic, dist_from_them_now: Double): Double = {
+    val alpha = cfg.dt_s * cfg.dt_s / -cfg.max_accel
+    val beta = (2 * speed * cfg.dt_s / -cfg.max_accel) - (0.5 * cfg.dt_s * cfg.dt_s)
+    val L1 = cfg.follow_dist    // equal to car length + minimum buffer distance at all times
+    val gamma = -L1 - math.max((leader.speed - cfg.max_accel * cfg.dt_s) * (leader.speed - cfg.max_accel * cfg.dt_s), 0) / -cfg.max_accel + speed * speed / -cfg.max_accel + dist_from_them_now + math.max(0, speed * cfg.dt_s + 0.5 * -cfg.max_accel * cfg.dt_s * cfg.dt_s) - speed * cfg.dt_s
+    val a2 = (-beta - math.sqrt(beta * beta - 4 * alpha * gamma)) / (2 * alpha)
+    if (math.max(0, (leader.speed - cfg.max_accel * cfg.dt_s) * (leader.speed - cfg.max_accel * cfg.dt_s)) / -cfg.max_accel - (speed + a2 * cfg.dt_s) * (speed + a2 * cfg.dt_s) / -cfg.max_accel < 0)
+    {
+      return (dist_from_them_now + math.max(0, leader.speed * cfg.dt_s + 0.5 * -cfg.max_accel * cfg.dt_s * cfg.dt_s) - speed * cfg.dt_s - L1) / (0.5 * cfg.dt_s * cfg.dt_s)
+    } else {
+      return a2
+    }
   }
 
   // Find an accel to travel want_dist and wind up with speed 0.

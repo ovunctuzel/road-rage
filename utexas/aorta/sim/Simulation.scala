@@ -60,6 +60,8 @@ class Simulation(val scenario: Scenario) extends Publisher with AgentManager {
       future_spawn ++= scenario.agents.filter(_.birth_tick > tick)
     }
 
+    new utexas.aorta.contrib.ArrivalEstimator(this)
+
     return this
   }
 

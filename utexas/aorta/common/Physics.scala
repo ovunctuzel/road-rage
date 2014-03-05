@@ -69,7 +69,8 @@ object Physics {
   def mph_to_si(r: Double) = r * 0.44704
 
   // How much time to cover >= target_dist as fast as possible with initial/max speed?
-  def simulate_steps(target_dist: Double, initial_speed: Double, max_speed: Double): Double = {
+  // (time, speed)
+  def simulate_steps(target_dist: Double, initial_speed: Double, max_speed: Double): (Double, Double) = {
     var dist = 0.0
     var speed = initial_speed
     var dt = 0.0
@@ -79,6 +80,6 @@ object Physics {
       dist += dist_at_constant_accel(accel, cfg.dt_s, speed)
       speed += accel * cfg.dt_s
     }
-    return dt
+    return (dt, speed)
   }
 }
