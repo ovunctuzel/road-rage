@@ -5,27 +5,18 @@
 package utexas.aorta.ui
 
 import scala.collection.mutable
-import java.awt.{Graphics2D, Shape, BasicStroke, Color, Polygon}
-import java.awt.geom._
-import scala.language.implicitConversions
-import scala.util.Try
+import java.awt.{Graphics2D, Shape, BasicStroke, Color}
+import java.awt.geom.{Rectangle2D, Ellipse2D, Line2D}
 
 import utexas.aorta.map._  // TODO yeah getting lazy.
 import utexas.aorta.sim.{Simulation, EV_Signal_Change, EV_Transition, EV_Reroute, EV_Breakpoint,
                          EV_Heartbeat, AgentMap}
-import utexas.aorta.sim.make.{IntersectionType, RouteType}
-import utexas.aorta.sim.drivers.{Agent, PathRoute}
+import utexas.aorta.sim.make.IntersectionType
+import utexas.aorta.sim.drivers.Agent
 import utexas.aorta.analysis.SimREPL
 
-import utexas.aorta.common.{Util, RNG, Timer, cfg}
+import utexas.aorta.common.{Util, Timer, cfg}
 import utexas.aorta.common.algorithms.PathResult
-
-object Mode extends Enumeration {
-  type Mode = Value
-  val EXPLORE = Value("Explore")  // just chilling
-  val PICK_1st = Value("Pick 1st edge") // for now, only client is pathfinding
-  val PICK_2nd = Value("Pick 2nd edge")
-}
 
 // Cleanly separates GUI state from users of it
 class GuiState(val canvas: MapCanvas) {
@@ -51,7 +42,6 @@ class GuiState(val canvas: MapCanvas) {
   var show_zone_centers = false
   var running = false
   var speed_cap: Int = 1  // A rate of realtime. 1x is realtime.
-  var mode = Mode.EXPLORE
   var current_turn = -1  // for cycling through turns from an edge
   var show_green = false
 
@@ -61,10 +51,7 @@ class GuiState(val canvas: MapCanvas) {
     tooltips.clear()
   }
 
-  def switch_mode(m: Mode.Mode) {
-    mode = m
-  }
-
+  // TODO doesnt belong...
   def draw_turn(turn: Turn, color: Color) {
     g2d.setColor(color)
     val l = GeomFactory.turn_body(turn)
@@ -423,11 +410,7 @@ class MapCanvas(val sim: Simulation, headless: Boolean = false) extends Scrollin
     handle_ev_action("toggle-running")
   }
 
-  def show_pathfinding() {
-    // contract: must be called when current_edge1 and 2 are set
-    val from = state.chosen_edge1.get.road
-    val to = state.chosen_edge2.get.road
-
+  def show_pathfinding(from: Road, to: Road) {
     val timer = Timer("Pathfinding")
     // TODO Show each type of route in a different color...
     val colors = List(Color.RED, Color.BLUE, Color.CYAN, Color.GREEN, Color.YELLOW)

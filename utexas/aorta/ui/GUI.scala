@@ -165,10 +165,6 @@ object GUI extends SimpleSwingApplication {
           canvas_2d.handle_ev(EV_Action("teleport-vertex"))
         })
         
-        // TODO these are kind of toggleable...
-        contents += new MenuItem(Action("Pathfind") {
-          canvas_2d.handle_ev(EV_Action("pathfind"))
-        })
         contents += new MenuItem(Action("Clear Route") {
           canvas_2d.handle_ev(EV_Action("clear-route"))
         })

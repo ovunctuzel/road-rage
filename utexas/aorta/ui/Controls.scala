@@ -64,15 +64,7 @@ trait Controls {
         state.running = true
       }
     }
-    case "pathfind" => {
-      state.switch_mode(Mode.PICK_1st)
-      state.chosen_edge1 = None
-      state.chosen_edge2 = None
-      state.road_colors.reset()
-      canvas.repaint()
-    }
     case "clear-route" => {
-      state.switch_mode(Mode.EXPLORE)
       state.chosen_edge1 = None
       state.chosen_edge2 = None
       state.road_colors.reset()
@@ -87,7 +79,7 @@ trait Controls {
         // just vaguely moving that way
         Util.log("Here's " + e)
         canvas.center_on(e.lines.head.start)
-        state.chosen_edge2 = Some(e)  // just kind of use this to highlight it
+        state.chosen_edge1 = Some(e)  // just kind of use this to highlight it (a hack)
         canvas.repaint()
       }
       canvas.grab_focus()
@@ -141,21 +133,20 @@ trait Controls {
       }
     }
     case Key.P => handle_ev(EV_Action("toggle-running"))
-    case Key.C if state.current_edge.isDefined => {
-      state.mode match {
-        case Mode.PICK_1st => {
-          state.chosen_edge1 = state.current_edge
-          state.switch_mode(Mode.PICK_2nd)
-          canvas.repaint()
-        }
-        case Mode.PICK_2nd => {
-          state.chosen_edge2 = state.current_edge
-          // TODO later, let this inform any client
-          canvas.show_pathfinding()
-          state.switch_mode(Mode.EXPLORE)
-        }
-        case _ =>
+    case Key.C if state.current_edge.isDefined => (state.chosen_edge1, state.chosen_edge2) match {
+      case (Some(source), None) => {
+        state.chosen_edge2 = state.current_edge
+        // TODO later, let this inform any client
+        canvas.show_pathfinding(source.road, state.current_edge.get.road)
       }
+      case (None, None) | (Some(_), Some(_))=> {
+        Util.log("Press 'c' again to choose a target road for pathfinding")
+        state.road_colors.reset()
+        state.chosen_edge1 = state.current_edge
+        state.chosen_edge2 = None
+        canvas.repaint()
+      }
+      case _ => // (None, Some) should be impossible
     }
     case Key.OpenBracket => {
       state.speed_cap = math.max(0, state.speed_cap - 1)
