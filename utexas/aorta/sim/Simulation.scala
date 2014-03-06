@@ -299,6 +299,11 @@ class AgentMap[T](default: T) {
   def destroy(a: Agent) {
     mapping.remove(a.id)
   }
+
+  // If we load from a save-state, this can be useful.
+  def create_from_existing(sim: Simulation) {
+    sim.agents.foreach(a => when_created(a))
+  }
 }
 
 object AgentMap {

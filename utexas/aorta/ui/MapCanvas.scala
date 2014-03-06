@@ -8,7 +8,7 @@ import scala.collection.mutable
 import java.awt.{Graphics2D, Shape, BasicStroke, Color}
 import java.awt.geom.{Rectangle2D, Ellipse2D, Line2D}
 
-import utexas.aorta.map._  // TODO yeah getting lazy.
+import utexas.aorta.map.{Road, Vertex, CongestionRouter, Edge, Position, Turn, Coordinate, Zone}
 import utexas.aorta.sim.{Simulation, EV_Signal_Change, EV_Transition, EV_Reroute, EV_Breakpoint,
                          EV_Heartbeat, AgentMap}
 import utexas.aorta.sim.make.IntersectionType
@@ -20,8 +20,7 @@ import utexas.aorta.common.algorithms.PathResult
 
 // Cleanly separates GUI state from users of it
 class GuiState(val canvas: MapCanvas) {
-  // TODO ******** lots of stuff in mapcanvas that just sets/gets us... move it
-  // here!
+  // TODO ******** lots of stuff in mapcanvas that just sets/gets us... move it here!
 
   // Per-render state
   var g2d: Graphics2D = null
@@ -100,32 +99,43 @@ class GuiState(val canvas: MapCanvas) {
 }
 
 class MapCanvas(val sim: Simulation, headless: Boolean = false) extends ScrollingCanvas with Controls {
-  ///////////////////////
-  // TODO organize better. new magic here.
-
+  //////////////////////////////////////////////////////////////////////////////
+  // State
   private val state = new GuiState(this)
-  setup_controls(state, this)
 
-  // TODO this could just be a nice sorted list instead. only have to do lookup
-  // when agents are destroyed. could batch those TODO...
   val driver_renderers = new AgentMap[DrawDriver](null) {
     override def when_created(a: Agent) {
       put(a.id, new DrawDriver(a, state))
     }
   }
-  // If we loaded from a savestate, we won't know about these
-  for (a <- sim.agents) {
-    driver_renderers.put(a.id, new DrawDriver(a, state))
-  }
-
   val road_renderers = sim.graph.roads.map(r => new DrawRoad(r, state))
   private val road_lookup = road_renderers.map(r => r.r -> r).toMap
   private val artifact_renderers = sim.graph.artifacts.map(a => new DrawRoadArtifact(a, state))
+  private val drawing_stroke = new BasicStroke(
+    5.0f, BasicStroke.CAP_BUTT, BasicStroke.JOIN_MITER, 1.0f, Array(1.0f), 0.0f
+  )
 
-  // TODO eventually, GUI should listen to this and manage the gui, not
-  // mapcanvas.
-  // Register to hear events
   private var last_tick = 0.0
+  private var last_render: Long = 0
+  private var tick_last_render = 0.0
+
+  private val green_turns = new mutable.HashMap[Turn, Shape]()
+  private val policy_colors = Map(
+    IntersectionType.StopSign -> cfg.stopsign_color,
+    IntersectionType.Signal -> cfg.signal_color,
+    IntersectionType.Reservation -> cfg.reservation_color,
+    IntersectionType.Yield -> cfg.yield_color,
+    IntersectionType.AIM -> cfg.aim_color
+  )
+
+  //////////////////////////////////////////////////////////////////////////////
+  // Setup
+  setup_controls(state, this)
+  driver_renderers.create_from_existing(sim)
+  // begin in the center
+  x_off = canvas_width / 2
+  y_off = canvas_height / 2
+
   sim.listen(classOf[EV_Heartbeat], _ match { case e: EV_Heartbeat => {
     update_status()
     StatusBar.agents.text = e.describe
@@ -166,37 +176,6 @@ class MapCanvas(val sim: Simulation, headless: Boolean = false) extends Scrollin
     case _ =>
   })
 
-
-  ///////////////////////
-
-  def zoomed_in = zoom > cfg.zoom_threshold
-
-  private var last_render: Long = 0
-  private var tick_last_render = 0.0
-  def step_sim() {
-    sim.step()
-    state.camera_agent match {
-      case Some(a) => {
-        if (sim.has_agent(a)) {
-          center_on(a.at.location)
-        } else {
-          Util.log(a + " is done; the camera won't stalk them anymore")
-          state.camera_agent = None
-          state.road_colors.reset()
-        }
-      }
-      case None =>
-    }
-
-    // Only render every 0.2 seconds
-    val now = System.currentTimeMillis
-    if (now - last_render > cfg.render_ms && sim.tick != tick_last_render ) {
-      handle_ev(EV_Action("step"))
-      last_render = now
-      tick_last_render = sim.tick
-    }
-  }
-
   // Headless mode might be controlling us...
   if (!headless) {
     // fire steps every now and then
@@ -229,32 +208,6 @@ class MapCanvas(val sim: Simulation, headless: Boolean = false) extends Scrollin
     }.start()
   }
 
-  def update_status() {
-    StatusBar.sim_speed.text = "%dx / %dx".format((sim.tick - last_tick).toInt, state.speed_cap)
-  }
-
-  // state
-  private val green_turns = new mutable.HashMap[Turn, Shape]()
-  private val policy_colors = Map(
-    IntersectionType.StopSign -> cfg.stopsign_color,
-    IntersectionType.Signal -> cfg.signal_color,
-    IntersectionType.Reservation -> cfg.reservation_color,
-    IntersectionType.Yield -> cfg.yield_color,
-    IntersectionType.AIM -> cfg.aim_color
-  )
-
-  def canvas_width = sim.graph.width.toInt
-  def canvas_height = sim.graph.height.toInt
-
-  // begin in the center
-  x_off = canvas_width / 2
-  y_off = canvas_height / 2
-
-  // TODO make this look cooler.
-  private val drawing_stroke = new BasicStroke(
-    5.0f, BasicStroke.CAP_BUTT, BasicStroke.JOIN_MITER, 1.0f, Array(1.0f), 0.0f
-  )
-
   // At this point, signal policies have already fired up and sent the first
   // round of greens. We missed it, so compute manually the first time.
   // TODO better solution
@@ -264,7 +217,38 @@ class MapCanvas(val sim: Simulation, headless: Boolean = false) extends Scrollin
     }
   }
 
-  def render_canvas(g2d: Graphics2D, window: Rectangle2D.Double): List[Tooltip] = {
+  //////////////////////////////////////////////////////////////////////////////
+  // Actions
+
+  def step_sim() {
+    sim.step()
+    state.camera_agent match {
+      case Some(a) => {
+        if (sim.has_agent(a)) {
+          center_on(a.at.location)
+        } else {
+          Util.log(a + " is done; the camera won't stalk them anymore")
+          state.camera_agent = None
+          state.road_colors.reset()
+        }
+      }
+      case None =>
+    }
+
+    // Only render every 0.2 seconds
+    val now = System.currentTimeMillis
+    if (now - last_render > cfg.render_ms && sim.tick != tick_last_render ) {
+      handle_ev(EV_Action("step"))
+      last_render = now
+      tick_last_render = sim.tick
+    }
+  }
+
+  def update_status() {
+    StatusBar.sim_speed.text = "%dx / %dx".format((sim.tick - last_tick).toInt, state.speed_cap)
+  }
+
+  override def render_canvas(g2d: Graphics2D, window: Rectangle2D.Double): List[Tooltip] = {
     state.reset(g2d)
 
     if (state.show_zone_centers) {
@@ -447,4 +431,12 @@ class MapCanvas(val sim: Simulation, headless: Boolean = false) extends Scrollin
     }
     repaint()
   }
+
+  //////////////////////////////////////////////////////////////////////////////
+  // Queries
+
+  def zoomed_in = zoom > cfg.zoom_threshold
+
+  override def canvas_width = sim.graph.width.toInt
+  override def canvas_height = sim.graph.height.toInt
 }
