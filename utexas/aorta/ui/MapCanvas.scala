@@ -65,34 +65,26 @@ class GuiState(val canvas: MapCanvas) {
 
     // TODO determine if a low-granularity search to narrow down results helps.
 
+    val sim = canvas.sim
     val cursor = new Rectangle2D.Double(x - eps, y - eps, eps * 2, eps * 2)
 
     if (show_zone_centers) {
       current_obj = sim.graph.zones.zones.find(z => bubble(z.center).intersects(cursor))
     } else {
-      // Order of search: agents, vertices, edges, roads
       // TODO ideally, center agent bubble where the vehicle center is drawn.
-
-      // TODO this is _kind_ of ugly.
-      current_obj = canvas.driver_renderers.values.find(a => a.hits(cursor)) match {
-        case None => sim.graph.vertices.find(v => bubble(v.location).intersects(cursor)) match {
-          case None => canvas.road_renderers.flatMap(r => r.edges).find(e => e.hits(cursor)) match {
-            case None => canvas.road_renderers.find(r => r.hits(cursor)) match {
-              case None => None
-              case Some(r) => Some(r.r)
-            }
-            case Some(e) => Some(Position(e.edge, e.edge.approx_dist(Coordinate(x, y), 1.0)))
-          }
-          case Some(v) => Some(v)
-        }
-        case Some(a) => Some(a.agent)
-      }
+      // Order of search: agents, vertices, edges, roads
+      current_obj =
+        canvas.driver_renderers.values.find(_.hits(cursor)).map(_.agent)
+        .orElse(sim.graph.vertices.find(v => bubble(v.location).intersects(cursor)))
+        .orElse(canvas.road_renderers.flatMap(_.edges).find(_.hits(cursor))
+                .map(e => Position(e.edge, e.edge.approx_dist(Coordinate(x, y), 1.0))))
+        .orElse(canvas.road_renderers.find(_.hits(cursor)).map(_.r))
     }
   }
 
   // Queries
   def current_edge: Option[Edge] = current_obj match {
-    case Some(pos: Position) => Some(pos.on.asInstanceOf[Edge])
+    case Some(pos: Position) => Some(pos.on.asEdge)
     case _ => None
   }
   def current_agent: Option[Agent] = current_obj match {
@@ -105,7 +97,6 @@ class GuiState(val canvas: MapCanvas) {
   def bubble(pt: Coordinate) = new Ellipse2D.Double(
     pt.x - eps, pt.y - eps, eps * 2, eps * 2
   )
-  private def sim = canvas.sim
 }
 
 class MapCanvas(val sim: Simulation, headless: Boolean = false) extends ScrollingCanvas with Controls {
