@@ -92,7 +92,7 @@ class DrawDriver(val agent: Agent, state: GuiState) {
     // Draw where we're headed
     // TODO deal with multiple per vert in a much better way
     agent.all_tickets(agent.cur_vert.intersection).headOption match {
-      case Some(t) => state.draw_turn(t.turn, Color.WHITE)
+      case Some(t) => DrawIntersection.draw_turn(state, t.turn, Color.WHITE)
       case None =>
     }
   }
@@ -221,6 +221,33 @@ class DrawEdge(val edge: Edge, state: GuiState) {
     // Draw the lines on the borders of lanes, not in the middle
     val l = line.perp_shift(0.5)
     return new Line2D.Double(l.x1, l.y1, l.x2, l.y2)
+  }
+}
+
+// Not worth the memory to cache these, I guess
+object DrawIntersection {
+  def draw_turn(state: GuiState, turn: Turn, color: Color) {
+    state.g2d.setColor(color)
+    val l = GeomFactory.turn_body(turn)
+    state.g2d.draw(GeomFactory.line2awt(l))
+    state.g2d.fill(GeomFactory.turn_tip(l))
+  }
+
+  def draw_turns(state: GuiState, e: Edge) {
+    if (state.current_turn == -1) {
+      // show all turns
+      for (turn <- e.next_turns) {
+        draw_turn(state, turn, Color.GREEN)
+      }
+    } else {
+      // show one turn and its conflicts
+      val turn = e.next_turns(state.current_turn)
+      draw_turn(state, turn, Color.GREEN)
+
+      for (conflict <- turn.conflicts) {
+        draw_turn(state, conflict, Color.RED)
+      }
+    }
   }
 }
 

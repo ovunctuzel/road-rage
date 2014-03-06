@@ -20,8 +20,6 @@ import utexas.aorta.common.algorithms.PathResult
 
 // Cleanly separates GUI state from users of it
 class GuiState(val canvas: MapCanvas) {
-  // TODO ******** lots of stuff in mapcanvas that just sets/gets us... move it here!
-
   // Per-render state
   var g2d: Graphics2D = null
   val tooltips = new mutable.ListBuffer[Tooltip]()
@@ -48,14 +46,6 @@ class GuiState(val canvas: MapCanvas) {
   def reset(g: Graphics2D) {
     g2d = g
     tooltips.clear()
-  }
-
-  // TODO doesnt belong...
-  def draw_turn(turn: Turn, color: Color) {
-    g2d.setColor(color)
-    val l = GeomFactory.turn_body(turn)
-    g2d.draw(GeomFactory.line2awt(l))
-    g2d.fill(GeomFactory.turn_tip(l))
   }
 
   def redo_mouseover(x: Double, y: Double) {
@@ -295,12 +285,12 @@ class MapCanvas(val sim: Simulation, headless: Boolean = false) extends Scrollin
         state.current_obj match {
           case Some(pos: Position) => {
             val e = pos.on.asInstanceOf[Edge]
-            draw_intersection(g2d, e)
+            DrawIntersection.draw_turns(state, e)
             highlight_buildings(g2d, e.road)
           }
           case Some(v: Vertex) => {
             for (t <- v.intersection.policy.current_greens) {
-              state.draw_turn(t, cfg.turn_color)
+              DrawIntersection.draw_turn(state, t, cfg.turn_color)
             }
           }
           case _ =>
@@ -353,23 +343,6 @@ class MapCanvas(val sim: Simulation, headless: Boolean = false) extends Scrollin
         case None =>
       }
       return state.tooltips.toList
-    }
-  }
-
-  def draw_intersection(g2d: Graphics2D, e: Edge) {
-    if (state.current_turn == -1) {
-      // show all turns
-      for (turn <- e.next_turns) {
-        state.draw_turn(turn, Color.GREEN)
-      }
-    } else {
-      // show one turn and its conflicts
-      val turn = e.next_turns(state.current_turn)
-      state.draw_turn(turn, Color.GREEN)
-
-      for (conflict <- turn.conflicts) {
-        state.draw_turn(conflict, Color.RED)
-      }
     }
   }
 
