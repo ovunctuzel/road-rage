@@ -91,4 +91,24 @@ trait Visualization {
       canvas.repaint()
     }
   }
+
+  def show_pagerank() {
+    val iterations = 50
+    val alpha = .15
+    val graph = sim.graph
+    // TODO seed initial_weight with our own notion of importance?
+    val initial_weight = 1.0 / graph.roads.size
+    val rank_source = alpha / graph.roads.size
+    var rank = graph.roads.map(r => r -> initial_weight).toMap
+    for (i <- Range(0, iterations)) {
+      println(s"Computing PageRank, iteration $i of $iterations...")
+      val new_rank = graph.roads.map(r => r ->
+        (rank_source + (1.0 - alpha) * r.preds.map(pred => rank(pred) / pred.succs.size).sum)
+      ).toMap
+      val sum_ranks = new_rank.values.sum
+      rank = new_rank.mapValues(x => x / sum_ranks)
+    }
+    show_heatmap(rank, 1.0, "PageRank")
+    canvas.repaint()
+  }
 }
