@@ -68,15 +68,14 @@ trait Controls {
       state.switch_mode(Mode.PICK_1st)
       state.chosen_edge1 = None
       state.chosen_edge2 = None
-      state.route_members.clear()
+      state.road_colors.reset()
       canvas.repaint()
     }
     case "clear-route" => {
       state.switch_mode(Mode.EXPLORE)
       state.chosen_edge1 = None
       state.chosen_edge2 = None
-      state.route_members.clear()
-      state.custom_road_colors.clear()
+      state.road_colors.reset()
       canvas.repaint()
     }
     // TODO refactor the 4 teleports?
@@ -181,10 +180,11 @@ trait Controls {
       state.camera_agent match {
         case Some(a) => {
           a.set_debug(true)
-          state.route_members.set(cfg.route_member_color, a.route.current_path.toSet)
+          state.road_colors.set_layer("route")
+          a.route.current_path.foreach(r => state.road_colors.set(r, cfg.route_member_color))
         }
         case None => {
-          state.route_members.clear()
+          state.road_colors.reset()
         }
       }
     }

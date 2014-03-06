@@ -5,13 +5,40 @@
 package utexas.aorta.ui
 
 import java.awt.Color
+import scala.collection.mutable
 
-import utexas.aorta.map.Vertex
+import utexas.aorta.map.{Vertex, Road}
 import utexas.aorta.sim.AgentMap
 
 import utexas.aorta.common.{cfg, AgentID}
 
-object ColorScheme {
+class RoadColorScheme() {
+  // TODO some kind of multi-layer system would be cool, if we had widgets to let people
+  // toggle/order them
+  private val colors = new mutable.HashMap[Road, Color]()
+  private var current_layer = "default layer"
+
+  def reset() {
+    set_layer("default layer")
+  }
+  def set_layer(name: String) {
+    colors.clear()
+    current_layer = name
+  }
+  def set(r: Road, c: Color) {
+    colors(r) = c
+  }
+  def unset(r: Road) {
+    colors -= r
+  }
+
+  def layer = current_layer
+  def apply(r: Road) = colors(r)
+  def has(r: Road, layer: String) = layer == current_layer && colors.contains(r)
+  def has(r: Road) = colors.contains(r)
+}
+
+object DriverColorScheme {
   def color(d: DrawDriver, state: GuiState) = Stream(
     AccelerationScheme.color _, FocusVertexScheme.color _, CameraScheme.color _,
     StalledScheme.color _, PersonalScheme.color _

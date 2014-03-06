@@ -27,25 +27,6 @@ object Mode extends Enumeration {
   val PICK_2nd = Value("Pick 2nd edge")
 }
 
-class ColorMap() {
-  private val route_members = new mutable.HashMap[Color, Set[Road]]()
-
-  def clear() {
-    route_members.clear()
-  }
-  def set(color: Color, roads: Set[Road]) {
-    route_members(color) = roads
-  }
-  def remove(color: Color, road: Road) {
-    if (route_members.contains(color)) {
-      route_members(color) -= road
-    }
-  }
-  def color(road: Road): Option[Color] =
-    route_members.keys.find(color => route_members(color).contains(road))
-  def contains(road: Road) = color(road).isDefined
-}
-
 // Cleanly separates GUI state from users of it
 class GuiState(val canvas: MapCanvas) {
   // TODO ******** lots of stuff in mapcanvas that just sets/gets us... move it
@@ -56,10 +37,10 @@ class GuiState(val canvas: MapCanvas) {
   val tooltips = new mutable.ListBuffer[Tooltip]()
 
   // Permanent state
+  val road_colors = new RoadColorScheme()
   var show_tooltips = true
   var current_obj: Option[Renderable] = None
   var camera_agent: Option[Agent] = None
-  val route_members = new ColorMap()
   var chosen_road: Option[Road] = None
   var highlight_type: Option[String] = None
   var polygon_roads1: Set[Road] = Set()
@@ -68,7 +49,6 @@ class GuiState(val canvas: MapCanvas) {
   var chosen_edge2: Option[Edge] = None
   var show_zone_colors = false
   var show_zone_centers = false
-  val custom_road_colors = new mutable.HashMap[Road, Color]()
   var running = false
   var speed_cap: Int = 1  // A rate of realtime. 1x is realtime.
   var mode = Mode.EXPLORE
@@ -193,14 +173,15 @@ class MapCanvas(val sim: Simulation, headless: Boolean = false) extends Scrollin
   }})
   sim.listen(classOf[EV_Reroute], _ match {
     case EV_Reroute(agent, path, _, _, _, _) if agent == state.camera_agent.getOrElse(null) => {
-      state.route_members.set(cfg.route_member_color, path.toSet)
+      state.road_colors.set_layer("route")
+      path.foreach(r => state.road_colors.set(r, cfg.route_member_color))
     }
     case _ =>
   })
   sim.listen(classOf[EV_Transition], _ match {
     case EV_Transition(agent, from, to) if agent == state.camera_agent.getOrElse(null) => from match {
       case e: Edge => {
-        state.route_members.remove(cfg.route_member_color, e.road)
+        state.road_colors.unset(e.road)
       }
       case _ =>
     }
@@ -223,7 +204,7 @@ class MapCanvas(val sim: Simulation, headless: Boolean = false) extends Scrollin
         } else {
           Util.log(a + " is done; the camera won't stalk them anymore")
           state.camera_agent = None
-          state.route_members.clear()
+          state.road_colors.reset()
         }
       }
       case None =>
@@ -448,7 +429,7 @@ class MapCanvas(val sim: Simulation, headless: Boolean = false) extends Scrollin
     val to = state.chosen_edge2.get.road
 
     val timer = Timer("Pathfinding")
-    // Show each type of route in a different color...
+    // TODO Show each type of route in a different color...
     val colors = List(Color.RED, Color.BLUE, Color.CYAN, Color.GREEN, Color.YELLOW)
     val routers = List(new CongestionRouter(sim.graph))
 
@@ -456,10 +437,8 @@ class MapCanvas(val sim: Simulation, headless: Boolean = false) extends Scrollin
       val route = router.path(from, to).path
       //route.foreach(step => println("  - " + step))
       println(s"for $color, we have $route")
-
-      // Filter and just remember the edges; the UI doesn't want to highlight
-      // turns.
-      state.route_members.set(color, route.toSet)
+      state.road_colors.set_layer(s"${router.router_type} pathfinding")
+      route.foreach(r => state.road_colors.set(r, color))
     }
     timer.stop()
     repaint()
@@ -471,11 +450,12 @@ class MapCanvas(val sim: Simulation, headless: Boolean = false) extends Scrollin
     val sorted_costs = result.costs.values.map(_._1).toArray.sorted
     val max_cost = sorted_costs((percentile * sorted_costs.size).toInt)
     val heatmap = new Heatmap()
+    state.road_colors.set_layer("path costs")
     for ((r, cost) <- result.costs) {
-      state.custom_road_colors(r) = heatmap.color(math.min(cost._1 / max_cost, 1.0))
+      state.road_colors.set(r, heatmap.color(math.min(cost._1 / max_cost, 1.0)))
     }
     for (r <- result.path) {
-      state.custom_road_colors(r) = Color.GREEN
+      state.road_colors.set(r, Color.GREEN)
     }
     repaint()
   }
@@ -486,9 +466,10 @@ class MapCanvas(val sim: Simulation, headless: Boolean = false) extends Scrollin
     val sorted_costs = costs.sorted
     val max_cost = sorted_costs((percentile * sorted_costs.size).toInt)
     val heatmap = new Heatmap()
+    state.road_colors.set_layer("tolls")
     for (r <- sim.graph.roads) {
       val cost = r.road_agent.tollbooth.toll(sim.tick).dollars
-      state.custom_road_colors(r) = heatmap.color(math.min(cost / max_cost, 1.0))
+      state.road_colors.set(r, heatmap.color(math.min(cost / max_cost, 1.0)))
     }
     repaint()
   }

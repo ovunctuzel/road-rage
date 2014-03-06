@@ -29,7 +29,7 @@ class DrawDriver(val agent: Agent, state: GuiState) {
   def hits(bbox: Rectangle2D.Double) = agent_bubble.intersects(bbox)
 
   def render() {
-    state.g2d.setColor(ColorScheme.color(this, state))
+    state.g2d.setColor(DriverColorScheme.color(this, state))
     if (state.canvas.zoomed_in) {
       // TODO cfg. just tweak these by sight.
       val vehicle_length = 0.2  // along the edge
@@ -125,7 +125,7 @@ class DrawRoad(val r: Road, state: GuiState) {
   def hits(bbox: Rectangle2D.Double) = lines.exists(l => l.intersects(bbox))
 
   def render_road() {
-    if (!state.canvas.zoomed_in && state.route_members.contains(r)) {
+    if (!state.canvas.zoomed_in && state.road_colors.has(r, "route")) {
       state.g2d.setStroke(GeomFactory.strokes(2 * r.num_lanes))
     } else {
       state.g2d.setStroke(GeomFactory.strokes(r.num_lanes))
@@ -154,12 +154,10 @@ class DrawRoad(val r: Road, state: GuiState) {
   }
 
   private def color(): Color =
-    if (state.custom_road_colors.contains(r))
-      state.custom_road_colors(r)
+    if (state.road_colors.has(r))
+      state.road_colors(r)
     else if (state.chosen_road.getOrElse(null) == r)
       cfg.chosen_road_color
-    else if (state.route_members.contains(r))
-      state.route_members.color(r).get
     else if (state.polygon_roads1(r))
       cfg.src_polygon_color
     else if (state.polygon_roads2(r))
