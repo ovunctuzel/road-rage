@@ -134,17 +134,6 @@ object GUI extends SimpleSwingApplication {
     
     menuBar = new MenuBar {
       contents += new Menu("File") {
-        contents += new MenuItem(Action("Configuration") {
-          popup_config
-        })
-        contents += new MenuItem(
-          Action("Save scenario for later resimulation")
-        {
-          // TODO
-          val fn = "resim_log"
-          //Simulation.save_log(fn)
-          Dialog.showMessage(message = "TODO Scenario saved in '" + fn + "'")
-        })
         contents += new Separator
         contents += new MenuItem(Action("Quit") {
           sys.exit
@@ -184,15 +173,6 @@ object GUI extends SimpleSwingApplication {
           canvas_2d.handle_ev(EV_Action("clear-route"))
         })
       }
-
-      contents += new Menu("Simulate") {
-        contents += new MenuItem(Action("Spawn Army") {
-          canvas_2d.handle_ev(EV_Action("spawn-army"))
-        })
-        contents += new MenuItem(Action("Play/Pause") {
-          canvas_2d.handle_ev(EV_Action("toggle-running"))
-        })
-      }
     }
 
     // TODO toggle between helper and other stuff in right pane
@@ -205,10 +185,6 @@ object GUI extends SimpleSwingApplication {
       add(Status_Bar.panel, BorderPanel.Position.North)
       add(main_content, BorderPanel.Position.Center)
     }
-  }
-
-  def popup_config() {
-    // TODO tabbed pane by category?
   }
 }
 

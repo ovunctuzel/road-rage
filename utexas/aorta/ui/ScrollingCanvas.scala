@@ -8,6 +8,7 @@ import swing._  // TODO figure out exactly what
 import swing.event._
 import java.awt.{Color, RenderingHints, Polygon}
 import java.awt.geom.{Rectangle2D, RoundRectangle2D}
+import scala.util.Try
 
 import utexas.aorta.map.Coordinate
 
@@ -87,28 +88,6 @@ abstract class ScrollingCanvas extends Component {
       }
       polygon.xpoints(polygon.npoints - 1) = x
       polygon.ypoints(polygon.npoints - 1) = y
-      repaint
-    }
-    case KeyPressed(_, Key.S, _, _) if drawing_mode => {
-      // finish it off
-      if (polygon.npoints < 3) {
-        Util.log("A polygon needs more than one line")
-      } else {
-        handle_ev(EV_Select_Polygon_For_Army())
-      }
-      drawing_mode = false
-      polygon = new Polygon()
-      repaint
-    }
-    case KeyPressed(_, Key.P, _, _) if drawing_mode => {
-      // TODO refactor
-      if (polygon.npoints < 3) {
-        Util.log("A polygon needs more than one line")
-      } else {
-        handle_ev(EV_Select_Polygon_For_Policy())
-      }
-      drawing_mode = false
-      polygon = new Polygon()
       repaint
     }
     case KeyPressed(_, Key.R, _, _) if drawing_mode => {
@@ -279,32 +258,10 @@ abstract class ScrollingCanvas extends Component {
   def viewing_window: Rectangle2D.Double =
     new Rectangle2D.Double(x1, y1, x2 - x1, y2 - y1)
 
-  // TODO ew, even refactored, these are a bit ugly.
-  def prompt_int(msg: String): Option[Int]
-    = Dialog.showInput(message = msg, initial = "") match
-  { 
-    case Some(num) => {
-      try {
-        Some(num.toInt)
-      } catch {
-        case _: NumberFormatException => None
-      }
-    }
-    case _ => None
-  }
-  
-  def prompt_double(msg: String): Option[Double]
-    = Dialog.showInput(message = msg, initial = "") match                   
-  {                                                                         
-    case Some(num) => {
-      try {
-        Some(num.toDouble)
-      } catch {
-        case _: NumberFormatException => None
-      }
-    }
-    case _ => None
-  }
+  def prompt_int(msg: String) =
+    Dialog.showInput(message = msg, initial = "").map(num => Try(num.toInt).toOption).flatten
+  def prompt_double(msg: String) =
+    Dialog.showInput(message = msg, initial = "").map(num => Try(num.toDouble).toOption).flatten
 
   def draw_tooltip(g2d: Graphics2D, tooltip: Tooltip) {
     val longest = tooltip.lines.maxBy(_.length)
@@ -355,6 +312,4 @@ final case class EV_Param_Set(key: String, value: Option[String]) extends UI_Eve
 // that to work...
 final case class EV_Key_Press(key: Any) extends UI_Event
 final case class EV_Action(key: String) extends UI_Event
-final case class EV_Select_Polygon_For_Army() extends UI_Event
-final case class EV_Select_Polygon_For_Policy() extends UI_Event
 final case class EV_Select_Polygon_For_Serialization() extends UI_Event

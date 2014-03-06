@@ -10,6 +10,7 @@ import java.awt.geom._
 import swing.event.Key
 import swing.Dialog
 import scala.language.implicitConversions
+import scala.util.Try
 
 import utexas.aorta.map._  // TODO yeah getting lazy.
 import utexas.aorta.sim.{Simulation, EV_Signal_Change, EV_Transition, EV_Reroute, EV_Breakpoint,
@@ -242,7 +243,6 @@ class MapCanvas(val sim: Simulation, headless: Boolean = false) extends Scrollin
   // state
   private var current_turn = -1  // for cycling through turns from an edge
   private var mode = Mode.EXPLORE
-  private var chosen_pos: Option[Position] = None
   private val green_turns = new mutable.HashMap[Turn, Shape]()
   private var show_green = false
   private val policy_colors = Map(
@@ -454,58 +454,6 @@ class MapCanvas(val sim: Simulation, headless: Boolean = false) extends Scrollin
       state.highlight_type = value
       repaint()
     }
-    case EV_Select_Polygon_For_Army() => {
-      // TODO continuation style would make this reasonable:
-      // 1) dont keep all that ugly state in the object
-      //    (but how to clear it?)
-      // 2) code reads like a simple flow
-
-      // Let's find all vertices inside the polygon.
-      val rds = sim.graph.vertices.filter(
-        v => polygon.contains(v.location.x, v.location.y)).flatMap(v => v.roads
-      ).toSet
-      Util.log("Matched " + rds.size + " roads")
-      if (rds.isEmpty) {
-        Util.log("Try that again.")
-      } else {
-        if (state.polygon_roads1.isEmpty) {
-          state.polygon_roads1 = rds
-          Util.log("Now select a second set of roads")
-        } else {
-          state.polygon_roads2 = rds
-
-          prompt_generator(
-            state.polygon_roads1.toList.flatMap(_.lanes),
-            state.polygon_roads2.toList.flatMap(_.lanes)
-          )
-
-          // Make the keyboard work again
-          grab_focus
-
-          state.polygon_roads1 = Set()
-          state.polygon_roads2 = Set()
-        }
-      }
-    }
-    case EV_Select_Polygon_For_Policy() => {
-      // Let's find all vertices inside the polygon.
-      val intersections = sim.graph.vertices.filter(
-        v => polygon.contains(v.location.x, v.location.y)
-      ).map(_.intersection)
-      Util.log("Matched " + intersections.size + " intersections")
-      Dialog.showInput(
-        message = "What policy should govern these intersections?",
-        initial = "",
-        entries = IntersectionType.values.toList
-      ) match {
-        case Some(name) => {
-          // TODO make a new scenario...
-          /*val builder = Simulation.policy_builder(IntersectionType.withName(name.toString))
-          intersections.foreach(i => i.policy = builder(i))*/
-        }
-        case None =>
-      }
-    }
     case EV_Select_Polygon_For_Serialization() => {
       val dir = s"maps/area_${sim.graph.name}"
       Util.mkdir(dir)
@@ -532,9 +480,6 @@ class MapCanvas(val sim: Simulation, headless: Boolean = false) extends Scrollin
   }
 
   def handle_ev_action(ev: String): Unit = ev match {
-    case "spawn-army" => {
-      prompt_generator(sim.graph.edges, sim.graph.edges)
-    }
     case "step" => repaint()
     case "toggle-running" => {
       if (running) {
@@ -560,78 +505,46 @@ class MapCanvas(val sim: Simulation, headless: Boolean = false) extends Scrollin
       repaint()
     }
     // TODO refactor the 4 teleports?
+    // TODO center on some part of the thing and zoom in?
     case "teleport-edge" => {
-      prompt_int("What edge ID do you seek?") match {
-        case Some(id) => {
-          try {
-            val e = sim.graph.get_e(new EdgeID(id.toInt))
-            // TODO center on some part of the edge and zoom in, rather than
-            // just vaguely moving that way
-            Util.log("Here's " + e)
-            center_on(e.lines.head.start)
-            state.chosen_edge2 = Some(e)  // just kind of use this to highlight it
-            repaint()
-          } catch {
-            case _: NumberFormatException => Util.log("Bad edge ID " + id)
-          }
-        }
-        case _ =>
+      for (id <- prompt_int("What edge ID do you seek?");
+           e <- Try(sim.graph.get_e(new EdgeID(id))))
+      {
+        // just vaguely moving that way
+        Util.log("Here's " + e)
+        center_on(e.lines.head.start)
+        state.chosen_edge2 = Some(e)  // just kind of use this to highlight it
+        repaint()
       }
       grab_focus
     }
     case "teleport-road" => {
-      prompt_int("What road ID do you seek?") match {
-        case Some(id) => {
-          try {
-            val r = sim.graph.get_r(new RoadID(id.toInt))
-            // TODO center on some part of the road and zoom in, rather than
-            // just vaguely moving that way
-            Util.log("Here's " + r)
-            center_on(r.rightmost.approx_midpt)
-            state.chosen_road = Some(r)
-            repaint()
-          } catch {
-            case _: NumberFormatException => Util.log("Bad edge ID " + id)
-          }
-        }
-        case _ =>
+      for (id <- prompt_int("What road ID do you seek?");
+           r <- Try(sim.graph.get_r(new RoadID(id))))
+      {
+        Util.log("Here's " + r)
+        center_on(r.rightmost.approx_midpt)
+        state.chosen_road = Some(r)
+        repaint()
       }
       grab_focus()
     }
     case "teleport-agent" => {
-      prompt_int("What agent ID do you seek?") match {
-        case Some(id) => {
-          try {
-            sim.get_agent(id.toInt) match {
-              case Some(a) => {
-                Util.log("Here's " + a)
-                state.current_obj = Some(a)
-                handle_ev_keypress(Key.F)
-                repaint()
-              }
-              case _ => Util.log("Didn't find " + id)
-            }
-          } catch {
-            case _: NumberFormatException => Util.log("Bad agent ID " + id)
-          }
-        }
-        case _ =>
+      for (id <- prompt_int("What agent ID do you seek?"); a <- sim.get_agent(id)) {
+        Util.log("Here's " + a)
+        state.current_obj = Some(a)
+        handle_ev_keypress(Key.F)
+        repaint()
       }
       grab_focus
     }
     case "teleport-vertex" => {
-      prompt_int("What vertex ID do you seek?") match {
-        case Some(id) => {
-          try {
-            val v = sim.graph.get_v(new VertexID(id.toInt))
-            Util.log("Here's " + v)
-            center_on(v.location)
-            repaint()
-          } catch {
-            case _: NumberFormatException => Util.log("Bad vertex ID " + id)
-          }
-        }
-        case _ =>
+      for (id <- prompt_int("What vertex ID do you seek?");
+           v <- Try(sim.graph.get_v(new VertexID(id.toInt))))
+      {
+        Util.log("Here's " + v)
+        center_on(v.location)
+        repaint()
       }
       grab_focus()
     }
@@ -667,26 +580,6 @@ class MapCanvas(val sim: Simulation, headless: Boolean = false) extends Scrollin
           // TODO later, let this inform any client
           show_pathfinding()
           switch_mode(Mode.EXPLORE)
-        }
-        case _ =>
-      }
-    }
-    case Key.M if state.current_edge.isDefined => {
-      mode match {
-        case Mode.EXPLORE => {
-          state.chosen_edge1 = state.current_edge
-          chosen_pos = state.current_obj.asInstanceOf[Option[Position]]
-          switch_mode(Mode.PICK_2nd)
-          repaint()
-        }
-        case Mode.PICK_2nd => {
-          state.chosen_edge2 = state.current_edge
-          // TODO make one agent from chosen_pos to current_edge
-          state.chosen_edge1 = None
-          state.chosen_edge2 = None
-          chosen_pos = None
-          switch_mode(Mode.EXPLORE)
-          repaint()
         }
         case _ =>
       }
@@ -729,71 +622,17 @@ class MapCanvas(val sim: Simulation, headless: Boolean = false) extends Scrollin
         }
       }.start()
     }
-    case Key.G => {
-      show_green = !show_green
-    }
-    case Key.T => {
-      state.show_tooltips = !state.show_tooltips
-    }
-    case Key.Z => {
-      state.show_zone_colors = !state.show_zone_colors
-    }
-    case Key.W => {
-      state.show_zone_centers = !state.show_zone_centers
-    }
+    case Key.G => show_green = !show_green
+    case Key.T => state.show_tooltips = !state.show_tooltips
+    case Key.Z => state.show_zone_colors = !state.show_zone_colors
+    case Key.W => state.show_zone_centers = !state.show_zone_centers
     case Key.S => {
       if (!running) {
         step_sim()
       }
     }
-    case Key.I => {
-      AccelerationScheme.enabled = !AccelerationScheme.enabled
-    }
+    case Key.I => AccelerationScheme.enabled = !AccelerationScheme.enabled
     case _ => // Ignore the rest
-  }
-
-  def prompt_generator(src: Seq[Edge], dst: Seq[Edge]): Unit = {
-    Util.log("Creating a new generator...")
-
-    // Ask: what type of behavior and route strategy
-    // TODO plumb behavior through, too, once there's reason to
-    val route_type = Dialog.showInput(
-      message = "How should the agents route to their destination?",
-      initial = "",
-      entries = RouteType.values.toList
-    ) match {
-      case Some(name) => RouteType.withName(name.toString)
-      case None => return
-    }
-
-    // Ask: fixed (how many) or continuous (how many per what time)
-    // TODO improve the UI.
-    Dialog.showOptions(
-      message = "Want a fixed, one-time burst or a continuous generator?",
-      optionType = Dialog.Options.YesNoCancel, initial = 0,
-      entries = Seq("Constant", "Continuous")
-    ) match {
-      case Dialog.Result.Yes => {
-        // Fixed
-        prompt_int("How many agents?") match {
-          case Some(num) => {
-            // TODO make em
-          }
-          case _ =>
-        }
-      }
-      case Dialog.Result.No => {
-        // Continuous
-        prompt_double(
-          "How often (in simulation-time seconds) do you want one new agent?"
-        ) match {
-          case Some(time) => {
-            // TODO make em
-          }
-          case _ =>
-        }
-      }
-    }
   }
 
   def switch_mode(m: Mode.Mode) {
