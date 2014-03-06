@@ -8,7 +8,6 @@ import swing._  // TODO figure out exactly what
 import swing.event._
 import java.awt.{Color, RenderingHints, Polygon}
 import java.awt.geom.{Rectangle2D, RoundRectangle2D}
-import scala.util.Try
 
 import utexas.aorta.map.Coordinate
 
@@ -27,9 +26,6 @@ case class Tooltip(x: Double, y: Double, lines: List[String], dark: Boolean)
 abstract class ScrollingCanvas extends Component {
   // TODO percentages, ideally!
   preferredSize = new Dimension(600, Int.MaxValue)
-
-  // It's nice to have access to this.
-  protected val status = Status_Bar
 
   override def focusable = true   // for keys to work
 
@@ -62,7 +58,7 @@ abstract class ScrollingCanvas extends Component {
 
   // Free-hand drawing stuff
   protected var drawing_mode = false
-  var polygon = new Polygon()
+  protected var drawing_polygon = new Polygon()
 
   reactions += {
     // Free-hand drawing stuff
@@ -73,33 +69,33 @@ abstract class ScrollingCanvas extends Component {
       drawing_mode = false
     }
     case e: MousePressed if drawing_mode => {
-      grab_focus
+      grab_focus()
       val x = screen_to_map_x(e.point.x).toInt
       val y = screen_to_map_y(e.point.y).toInt
-      polygon.addPoint(x, y)
-      repaint
+      drawing_polygon.addPoint(x, y)
+      repaint()
     }
     case e: MouseDragged if drawing_mode => {
       val x = screen_to_map_x(e.point.x).toInt
       val y = screen_to_map_y(e.point.y).toInt
-      if (polygon.npoints == 1) {
+      if (drawing_polygon.npoints == 1) {
         // add it, so we can drag and make the first line
-        polygon.addPoint(x, y)
+        drawing_polygon.addPoint(x, y)
       }
-      polygon.xpoints(polygon.npoints - 1) = x
-      polygon.ypoints(polygon.npoints - 1) = y
-      repaint
+      drawing_polygon.xpoints(drawing_polygon.npoints - 1) = x
+      drawing_polygon.ypoints(drawing_polygon.npoints - 1) = y
+      repaint()
     }
     case KeyPressed(_, Key.R, _, _) if drawing_mode => {
       // finish it off
-      if (polygon.npoints < 3) {
+      if (drawing_polygon.npoints < 3) {
         Util.log("A polygon needs more than one line")
       } else {
-        handle_ev(EV_Select_Polygon_For_Serialization())
+        handle_ev(EV_Select_Polygon_For_Serialization(drawing_polygon))
       }
       drawing_mode = false
-      polygon = new Polygon()
-      repaint
+      drawing_polygon = new Polygon()
+      repaint()
     }
 
     // TODO fast_mode
@@ -113,7 +109,7 @@ abstract class ScrollingCanvas extends Component {
     }
 
     case e: MousePressed => {
-      grab_focus
+      grab_focus()
       click_x = e.point.x
       click_y = e.point.y
     }
@@ -129,7 +125,7 @@ abstract class ScrollingCanvas extends Component {
       fix_oob()
 
       // show the pan
-      repaint
+      repaint()
 
       // reset for the next event
       click_x = e.point.x
@@ -154,10 +150,10 @@ abstract class ScrollingCanvas extends Component {
       x_off = ((zoom / old_zoom) * (mouse_at_x + x_off)) - mouse_at_x
       y_off = ((zoom / old_zoom) * (mouse_at_y + y_off)) - mouse_at_y
 
-      fix_oob
+      fix_oob()
       // show the zoom
-      status.zoom.text = f"$zoom%.1f"
-      repaint
+      StatusBar.zoom.text = f"$zoom%.1f"
+      repaint()
     }
 
     // on my system, this is fired constantly at a repeat rate, rather than
@@ -172,14 +168,14 @@ abstract class ScrollingCanvas extends Component {
         case _         => handle_ev(EV_Key_Press(key))
       }
 
-      fix_oob
-      repaint
+      fix_oob()
+      repaint()
     }
   }
 
-  protected def grab_focus() {
+  def grab_focus() {
     if (!hasFocus) {
-      requestFocus
+      requestFocus()
     }
   }
 
@@ -223,7 +219,7 @@ abstract class ScrollingCanvas extends Component {
     super.paintComponent(g2d)
 
     if (first_focus) {
-      grab_focus
+      grab_focus()
       first_focus = false
     }
 
@@ -257,11 +253,6 @@ abstract class ScrollingCanvas extends Component {
   def y2 = screen_to_map_y(size.height)
   def viewing_window: Rectangle2D.Double =
     new Rectangle2D.Double(x1, y1, x2 - x1, y2 - y1)
-
-  def prompt_int(msg: String) =
-    Dialog.showInput(message = msg, initial = "").map(num => Try(num.toInt).toOption).flatten
-  def prompt_double(msg: String) =
-    Dialog.showInput(message = msg, initial = "").map(num => Try(num.toDouble).toOption).flatten
 
   def draw_tooltip(g2d: Graphics2D, tooltip: Tooltip) {
     val longest = tooltip.lines.maxBy(_.length)
@@ -312,4 +303,4 @@ final case class EV_Param_Set(key: String, value: Option[String]) extends UI_Eve
 // that to work...
 final case class EV_Key_Press(key: Any) extends UI_Event
 final case class EV_Action(key: String) extends UI_Event
-final case class EV_Select_Polygon_For_Serialization() extends UI_Event
+final case class EV_Select_Polygon_For_Serialization(poly: Polygon) extends UI_Event

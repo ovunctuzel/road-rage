@@ -7,8 +7,6 @@ package utexas.aorta.ui
 import scala.collection.mutable
 import java.awt.{Graphics2D, Shape, BasicStroke, Color, Polygon}
 import java.awt.geom._
-import swing.event.Key
-import swing.Dialog
 import scala.language.implicitConversions
 import scala.util.Try
 
@@ -19,7 +17,7 @@ import utexas.aorta.sim.make.{IntersectionType, RouteType}
 import utexas.aorta.sim.drivers.{Agent, PathRoute}
 import utexas.aorta.analysis.SimREPL
 
-import utexas.aorta.common.{Util, RNG, Timer, cfg, EdgeID, VertexID, RoadID}
+import utexas.aorta.common.{Util, RNG, Timer, cfg}
 import utexas.aorta.common.algorithms.PathResult
 
 object Mode extends Enumeration {
@@ -71,6 +69,11 @@ class GuiState(val canvas: MapCanvas) {
   var show_zone_colors = false
   var show_zone_centers = false
   val custom_road_colors = new mutable.HashMap[Road, Color]()
+  var running = false
+  var speed_cap: Int = 1  // A rate of realtime. 1x is realtime.
+  var mode = Mode.EXPLORE
+  var current_turn = -1  // for cycling through turns from an edge
+  var show_green = false
 
   // Actions
   def reset(g: Graphics2D) {
@@ -78,11 +81,46 @@ class GuiState(val canvas: MapCanvas) {
     tooltips.clear()
   }
 
+  def switch_mode(m: Mode.Mode) {
+    mode = m
+  }
+
   def draw_turn(turn: Turn, color: Color) {
     g2d.setColor(color)
     val l = GeomFactory.turn_body(turn)
     g2d.draw(GeomFactory.line2awt(l))
     g2d.fill(GeomFactory.turn_tip(l))
+  }
+
+  def redo_mouseover(x: Double, y: Double) {
+    current_obj = None
+    current_turn = -1
+
+    // TODO determine if a low-granularity search to narrow down results helps.
+
+    val cursor = new Rectangle2D.Double(x - eps, y - eps, eps * 2, eps * 2)
+
+    if (show_zone_centers) {
+      current_obj = sim.graph.zones.zones.find(z => bubble(z.center).intersects(cursor))
+    } else {
+      // Order of search: agents, vertices, edges, roads
+      // TODO ideally, center agent bubble where the vehicle center is drawn.
+
+      // TODO this is _kind_ of ugly.
+      current_obj = canvas.driver_renderers.values.find(a => a.hits(cursor)) match {
+        case None => sim.graph.vertices.find(v => bubble(v.location).intersects(cursor)) match {
+          case None => canvas.road_renderers.flatMap(r => r.edges).find(e => e.hits(cursor)) match {
+            case None => canvas.road_renderers.find(r => r.hits(cursor)) match {
+              case None => None
+              case Some(r) => Some(r.r)
+            }
+            case Some(e) => Some(Position(e.edge, e.edge.approx_dist(Coordinate(x, y), 1.0)))
+          }
+          case Some(v) => Some(v)
+        }
+        case Some(a) => Some(a.agent)
+      }
+    }
   }
 
   // Queries
@@ -100,17 +138,19 @@ class GuiState(val canvas: MapCanvas) {
   def bubble(pt: Coordinate) = new Ellipse2D.Double(
     pt.x - eps, pt.y - eps, eps * 2, eps * 2
   )
+  private def sim = canvas.sim
 }
 
-class MapCanvas(val sim: Simulation, headless: Boolean = false) extends ScrollingCanvas {
+class MapCanvas(val sim: Simulation, headless: Boolean = false) extends ScrollingCanvas with Controls {
   ///////////////////////
   // TODO organize better. new magic here.
 
   private val state = new GuiState(this)
+  setup_controls(state, this)
 
   // TODO this could just be a nice sorted list instead. only have to do lookup
   // when agents are destroyed. could batch those TODO...
-  private val driver_renderers = new AgentMap[DrawDriver](null) {
+  val driver_renderers = new AgentMap[DrawDriver](null) {
     override def when_created(a: Agent) {
       put(a.id, new DrawDriver(a, state))
     }
@@ -120,7 +160,7 @@ class MapCanvas(val sim: Simulation, headless: Boolean = false) extends Scrollin
     driver_renderers.put(a.id, new DrawDriver(a, state))
   }
 
-  private val road_renderers = sim.graph.roads.map(r => new DrawRoad(r, state))
+  val road_renderers = sim.graph.roads.map(r => new DrawRoad(r, state))
   private val road_lookup = road_renderers.map(r => r.r -> r).toMap
   private val artifact_renderers = sim.graph.artifacts.map(a => new DrawRoadArtifact(a, state))
 
@@ -130,8 +170,8 @@ class MapCanvas(val sim: Simulation, headless: Boolean = false) extends Scrollin
   private var last_tick = 0.0
   sim.listen(classOf[EV_Heartbeat], _ match { case e: EV_Heartbeat => {
     update_status()
-    status.agents.text = e.describe
-    status.time.text = Util.time_num(e.tick)
+    StatusBar.agents.text = e.describe
+    StatusBar.time.text = Util.time_num(e.tick)
     last_tick = e.tick
   }})
   sim.listen(classOf[EV_Signal_Change], _ match { case EV_Signal_Change(greens) => {
@@ -172,12 +212,9 @@ class MapCanvas(val sim: Simulation, headless: Boolean = false) extends Scrollin
 
   def zoomed_in = zoom > cfg.zoom_threshold
 
-  // A rate of realtime. 1x is realtime.
-  var speed_cap: Int = 1
-
   private var last_render: Long = 0
   private var tick_last_render = 0.0
-  private def step_sim() {
+  def step_sim() {
     sim.step()
     state.camera_agent match {
       case Some(a) => {
@@ -207,7 +244,7 @@ class MapCanvas(val sim: Simulation, headless: Boolean = false) extends Scrollin
     new Thread {
       override def run() {
         while (true) {
-          if (running && speed_cap > 0) {
+          if (state.running && state.speed_cap > 0) {
             val start_time = System.currentTimeMillis
             step_sim()
 
@@ -215,8 +252,8 @@ class MapCanvas(val sim: Simulation, headless: Boolean = false) extends Scrollin
             // In order to make speed_cap ticks per second, each tick needs to
             // last 1000 / speed_cap milliseconds.
             val goal = 
-              if (speed_cap > 0)
-                (1000 / speed_cap).toInt
+              if (state.speed_cap > 0)
+                (1000 / state.speed_cap).toInt
               else
                 0
             val dt_ms = System.currentTimeMillis - start_time
@@ -234,17 +271,11 @@ class MapCanvas(val sim: Simulation, headless: Boolean = false) extends Scrollin
   }
 
   def update_status() {
-    status.sim_speed.text = "%dx / %dx".format((sim.tick - last_tick).toInt, speed_cap)
+    StatusBar.sim_speed.text = "%dx / %dx".format((sim.tick - last_tick).toInt, state.speed_cap)
   }
 
-  // but we can also pause
-  var running = false
-
   // state
-  private var current_turn = -1  // for cycling through turns from an edge
-  private var mode = Mode.EXPLORE
   private val green_turns = new mutable.HashMap[Turn, Shape]()
-  private var show_green = false
   private val policy_colors = Map(
     IntersectionType.StopSign -> cfg.stopsign_color,
     IntersectionType.Signal -> cfg.signal_color,
@@ -333,7 +364,7 @@ class MapCanvas(val sim: Simulation, headless: Boolean = false) extends Scrollin
         }
 
         // Show traffic signal stuff
-        if (show_green) {
+        if (state.show_green) {
           g2d.setStroke(GeomFactory.center_stroke)
           g2d.setColor(Color.GREEN)
           green_turns.foreach(t => if (t._2.intersects(window)) {
@@ -361,7 +392,7 @@ class MapCanvas(val sim: Simulation, headless: Boolean = false) extends Scrollin
       // Finally, if the user is free-handing a region, show their work.
       g2d.setColor(cfg.polygon_color)
       g2d.setStroke(drawing_stroke)
-      g2d.draw(polygon)
+      g2d.draw(drawing_polygon)
 
       // What tooltips do we want?
       state.current_obj match {
@@ -383,14 +414,14 @@ class MapCanvas(val sim: Simulation, headless: Boolean = false) extends Scrollin
   }
 
   def draw_intersection(g2d: Graphics2D, e: Edge) {
-    if (current_turn == -1) {
+    if (state.current_turn == -1) {
       // show all turns
       for (turn <- e.next_turns) {
         state.draw_turn(turn, Color.GREEN)
       }
     } else {
       // show one turn and its conflicts
-      val turn = e.next_turns(current_turn)
+      val turn = e.next_turns(state.current_turn)
       state.draw_turn(turn, Color.GREEN)
 
       for (conflict <- turn.conflicts) {
@@ -406,237 +437,9 @@ class MapCanvas(val sim: Simulation, headless: Boolean = false) extends Scrollin
     }
   }
 
-  def redo_mouseover(x: Double, y: Double): Unit = {
-    state.current_obj = None
-    current_turn = -1
-
-    if (!zoomed_in) {
-      return
-    }
-
-    // TODO determine if a low-granularity search to narrow down results helps.
-
-    val cursor = new Rectangle2D.Double(
-      x - state.eps, y - state.eps, state.eps * 2, state.eps * 2
-    )
-
-    if (state.show_zone_centers) {
-      state.current_obj = sim.graph.zones.zones.find(z => state.bubble(z.center).intersects(cursor))
-    } else {
-      // Order of search: agents, vertices, edges, roads
-      // TODO ideally, center agent bubble where the vehicle center is drawn.
-
-      // TODO this is _kind_ of ugly.
-      state.current_obj = driver_renderers.values.find(a => a.hits(cursor)) match {
-        case None => sim.graph.vertices.find(v => state.bubble(v.location).intersects(cursor)) match {
-          case None => road_renderers.flatMap(r => r.edges).find(e => e.hits(cursor)) match {
-            case None => road_renderers.find(r => r.hits(cursor)) match {
-              case None => None
-              case Some(r) => Some(r.r)
-            }
-            case Some(e) => Some(Position(e.edge, e.edge.approx_dist(Coordinate(x, y), 1.0)))
-          }
-          case Some(v) => Some(v)
-        }
-        case Some(a) => Some(a.agent)
-      }
-    }
-  }
-
-  def handle_ev(ev: UI_Event): Unit = ev match {
-    case EV_Action(action) => handle_ev_action(action)
-    case EV_Key_Press(key) => handle_ev_keypress(key)
-    case EV_Mouse_Moved(x, y) => {
-      redo_mouseover(x, y)
-      repaint()
-    }
-    case EV_Param_Set("highlight", value) => {
-      state.highlight_type = value
-      repaint()
-    }
-    case EV_Select_Polygon_For_Serialization() => {
-      val dir = s"maps/area_${sim.graph.name}"
-      Util.mkdir(dir)
-      Dialog.showInput(message = "Name this area", initial = "") match {
-        case Some(name) => {
-          val edges = sim.graph.vertices.filter(
-            v => polygon.contains(v.location.x, v.location.y)).flatMap(v => v.edges
-          ).map(_.id).toArray
-          val w = Util.writer(s"${dir}/${name}")
-          w.int(edges.size)
-          edges.foreach(id => w.int(id.int))
-          w.done()
-          Util.log(s"Area saved to ${dir}/${name}")
-        }
-        case None =>
-      }
-    }
-    case _ =>
-  }
-
   def pause() {
-    running = true
+    state.running = true
     handle_ev_action("toggle-running")
-  }
-
-  def handle_ev_action(ev: String): Unit = ev match {
-    case "step" => repaint()
-    case "toggle-running" => {
-      if (running) {
-        running = false
-        status.sim_speed.text = s"Paused / $speed_cap"
-      } else {
-        running = true
-      }
-    }
-    case "pathfind" => {
-      switch_mode(Mode.PICK_1st)
-      state.chosen_edge1 = None
-      state.chosen_edge2 = None
-      state.route_members.clear()
-      repaint()
-    }
-    case "clear-route" => {
-      switch_mode(Mode.EXPLORE)
-      state.chosen_edge1 = None
-      state.chosen_edge2 = None
-      state.route_members.clear()
-      state.custom_road_colors.clear()
-      repaint()
-    }
-    // TODO refactor the 4 teleports?
-    // TODO center on some part of the thing and zoom in?
-    case "teleport-edge" => {
-      for (id <- prompt_int("What edge ID do you seek?");
-           e <- Try(sim.graph.get_e(new EdgeID(id))))
-      {
-        // just vaguely moving that way
-        Util.log("Here's " + e)
-        center_on(e.lines.head.start)
-        state.chosen_edge2 = Some(e)  // just kind of use this to highlight it
-        repaint()
-      }
-      grab_focus
-    }
-    case "teleport-road" => {
-      for (id <- prompt_int("What road ID do you seek?");
-           r <- Try(sim.graph.get_r(new RoadID(id))))
-      {
-        Util.log("Here's " + r)
-        center_on(r.rightmost.approx_midpt)
-        state.chosen_road = Some(r)
-        repaint()
-      }
-      grab_focus()
-    }
-    case "teleport-agent" => {
-      for (id <- prompt_int("What agent ID do you seek?"); a <- sim.get_agent(id)) {
-        Util.log("Here's " + a)
-        state.current_obj = Some(a)
-        handle_ev_keypress(Key.F)
-        repaint()
-      }
-      grab_focus
-    }
-    case "teleport-vertex" => {
-      for (id <- prompt_int("What vertex ID do you seek?");
-           v <- Try(sim.graph.get_v(new VertexID(id.toInt))))
-      {
-        Util.log("Here's " + v)
-        center_on(v.location)
-        repaint()
-      }
-      grab_focus()
-    }
-  }
-
-  def handle_ev_keypress(key: Any): Unit = key match {
-    // TODO this'll be tab someday, i vow!
-    case Key.Control => {
-      // cycle through turns
-      state.current_edge match {
-        case Some(e) => {
-          current_turn += 1
-          if (current_turn >= e.next_turns.size) {
-            current_turn = 0
-          }
-          repaint()
-        }
-        case None =>
-      }
-    }
-    case Key.P => {
-      handle_ev(EV_Action("toggle-running"))
-    }
-    case Key.C if state.current_edge.isDefined => {
-      mode match {
-        case Mode.PICK_1st => {
-          state.chosen_edge1 = state.current_edge
-          switch_mode(Mode.PICK_2nd)
-          repaint()
-        }
-        case Mode.PICK_2nd => {
-          state.chosen_edge2 = state.current_edge
-          // TODO later, let this inform any client
-          show_pathfinding()
-          switch_mode(Mode.EXPLORE)
-        }
-        case _ =>
-      }
-    }
-    case Key.OpenBracket => {
-      speed_cap = math.max(0, speed_cap - 1)
-      update_status()
-    }
-    case Key.CloseBracket => {
-      speed_cap += 1
-      update_status()
-    }
-    case Key.D => state.current_obj match {
-      case Some(thing) => thing.debug
-      case None =>
-    }
-    case Key.F => {
-      // Unregister old listener
-      state.camera_agent match {
-        case Some(a) => a.set_debug(false)
-        case None =>
-      }
-
-      state.camera_agent = state.current_agent
-      state.camera_agent match {
-        case Some(a) => {
-          a.set_debug(true)
-          state.route_members.set(cfg.route_member_color, a.route.current_path.toSet)
-        }
-        case None => {
-          state.route_members.clear()
-        }
-      }
-    }
-    case Key.X => {
-      // Launch this in a separate thread so the sim can be continued normally
-      new Thread {
-        override def run() {
-          new SimREPL(sim).run()
-        }
-      }.start()
-    }
-    case Key.G => show_green = !show_green
-    case Key.T => state.show_tooltips = !state.show_tooltips
-    case Key.Z => state.show_zone_colors = !state.show_zone_colors
-    case Key.W => state.show_zone_centers = !state.show_zone_centers
-    case Key.S => {
-      if (!running) {
-        step_sim()
-      }
-    }
-    case Key.I => AccelerationScheme.enabled = !AccelerationScheme.enabled
-    case _ => // Ignore the rest
-  }
-
-  def switch_mode(m: Mode.Mode) {
-    mode = m
   }
 
   def show_pathfinding() {

@@ -13,7 +13,7 @@ import java.io.File
 import utexas.aorta.sim.{Simulation, EV_Heartbeat}
 import utexas.aorta.common.{Util, cfg}
 
-object Status_Bar {
+object StatusBar {
   val zoom       = new Label("1.0") // TODO from cfg
   val agents     = new Label("0 moved / 0 live / 0 ready")
   val time       = new Label("0.0")
@@ -45,13 +45,13 @@ object Status_Bar {
     c.ipadx = 50
     c.gridx = 0
     c.gridy = 1
-    layout(Status_Bar.zoom) = c
+    layout(StatusBar.zoom) = c
     c.gridx = 1
-    layout(Status_Bar.agents) = c
+    layout(StatusBar.agents) = c
     c.gridx = 2
-    layout(Status_Bar.time) = c
+    layout(StatusBar.time) = c
     c.gridx = 3
-    layout(Status_Bar.sim_speed) = c
+    layout(StatusBar.sim_speed) = c
   }
 }
 
@@ -182,7 +182,7 @@ object GUI extends SimpleSwingApplication {
       background = Color.LIGHT_GRAY
       border = Swing.MatteBorder(2, 2, 2, 2, Color.RED)
 
-      add(Status_Bar.panel, BorderPanel.Position.North)
+      add(StatusBar.panel, BorderPanel.Position.North)
       add(main_content, BorderPanel.Position.Center)
     }
   }
