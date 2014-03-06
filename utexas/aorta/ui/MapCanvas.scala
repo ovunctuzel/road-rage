@@ -375,16 +375,21 @@ class MapCanvas(val sim: Simulation, headless: Boolean = false) extends Scrollin
     repaint()
   }
 
-  // Hardcoded to show first component of 2-tuple cost
-  def show_path_costs(result: PathResult, percentile: Double = .99) {
+  def show_heatmap(costs: Map[Road, Double], percentile: Double, layer: String) {
     // Exclude the top percent of costs; they're usually super high and throw off the visualization
-    val sorted_costs = result.costs.values.map(_._1).toArray.sorted
+    val sorted_costs = costs.values.toArray.sorted
     val max_cost = sorted_costs((percentile * sorted_costs.size).toInt)
     val heatmap = new Heatmap()
-    state.road_colors.set_layer("path costs")
-    for ((r, cost) <- result.costs) {
-      state.road_colors.set(r, heatmap.color(math.min(cost._1 / max_cost, 1.0)))
+    state.road_colors.set_layer(layer)
+    for ((r, cost) <- costs) {
+      // Cap at 1 since we may chop off some of the largest values
+      state.road_colors.set(r, heatmap.color(math.min(cost / max_cost, 1.0)))
     }
+  }
+
+  // Hardcoded to show first component of 2-tuple cost
+  def show_path_costs(result: PathResult, percentile: Double = .99) {
+    show_heatmap(result.costs.mapValues(_._1), percentile, "path costs")
     for (r <- result.path) {
       state.road_colors.set(r, Color.GREEN)
     }
@@ -392,16 +397,8 @@ class MapCanvas(val sim: Simulation, headless: Boolean = false) extends Scrollin
   }
 
   def show_tolls(percentile: Double = .99) {
-    val costs = sim.graph.roads.map(_.road_agent.tollbooth.toll(sim.tick).dollars)
-    // Exclude the top percent of costs; they're usually super high and throw off the visualization
-    val sorted_costs = costs.sorted
-    val max_cost = sorted_costs((percentile * sorted_costs.size).toInt)
-    val heatmap = new Heatmap()
-    state.road_colors.set_layer("tolls")
-    for (r <- sim.graph.roads) {
-      val cost = r.road_agent.tollbooth.toll(sim.tick).dollars
-      state.road_colors.set(r, heatmap.color(math.min(cost / max_cost, 1.0)))
-    }
+    val costs = sim.graph.roads.map(r => r -> r.road_agent.tollbooth.toll(sim.tick).dollars).toMap
+    show_heatmap(costs, percentile, "tolls")
     repaint()
   }
 
