@@ -125,7 +125,7 @@ class DrawRoad(val r: Road, state: GuiState) {
   def hits(bbox: Rectangle2D.Double) = lines.exists(l => l.intersects(bbox))
 
   def render_road() {
-    if (!state.canvas.zoomed_in && state.road_colors.has(r, "route")) {
+    if (!state.canvas.zoomed_in && state.road_colors.get("route", r).isDefined) {
       state.g2d.setStroke(GeomFactory.strokes(2 * r.num_lanes))
     } else {
       state.g2d.setStroke(GeomFactory.strokes(r.num_lanes))
@@ -154,8 +154,8 @@ class DrawRoad(val r: Road, state: GuiState) {
   }
 
   private def color(): Color =
-    if (state.road_colors.has(r))
-      state.road_colors(r)
+    if (state.road_colors.get(state.cur_layer, r).isDefined)
+      state.road_colors.get(state.cur_layer, r).get
     else if (state.chosen_road.getOrElse(null) == r)
       cfg.chosen_road_color
     else if (state.polygon_roads1(r))

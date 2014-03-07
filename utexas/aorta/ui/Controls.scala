@@ -69,7 +69,7 @@ trait Controls {
     case "clear-route" => {
       state.chosen_edge1 = None
       state.chosen_edge2 = None
-      state.road_colors.reset()
+      state.road_colors.del_layer("route")
       canvas.repaint()
     }
     // TODO refactor the 4 teleports?
@@ -144,7 +144,7 @@ trait Controls {
       }
       case (None, None) | (Some(_), Some(_))=> {
         Util.log("Press 'c' again to choose a target road for pathfinding")
-        state.road_colors.reset()
+        state.road_colors.del_layer("route")
         state.chosen_edge1 = state.current_edge
         state.chosen_edge2 = None
         canvas.repaint()
@@ -174,11 +174,11 @@ trait Controls {
       state.camera_agent match {
         case Some(a) => {
           a.set_debug(true)
-          state.road_colors.set_layer("route")
-          a.route.current_path.foreach(r => state.road_colors.set(r, cfg.route_member_color))
+          state.road_colors.add_layer("route")
+          a.route.current_path.foreach(r => state.road_colors.set("route", r, cfg.route_member_color))
         }
         case None => {
-          state.road_colors.reset()
+          state.road_colors.del_layer("route")
         }
       }
     }

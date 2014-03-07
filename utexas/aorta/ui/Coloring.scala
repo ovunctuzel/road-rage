@@ -12,30 +12,25 @@ import utexas.aorta.sim.AgentMap
 
 import utexas.aorta.common.{cfg, AgentID}
 
+// Callers can create multiple "layers" (just named color schemes) and then select colors from a
+// layer
 class RoadColorScheme() {
-  // TODO some kind of multi-layer system would be cool, if we had widgets to let people
-  // toggle/order them
-  private val colors = new mutable.HashMap[Road, Color]()
-  private var current_layer = "default layer"
+  private val layers = new mutable.HashMap[String, mutable.HashMap[Road, Color]]()
 
-  def reset() {
-    set_layer("default layer")
+  def add_layer(name: String) {
+    layers(name) = new mutable.HashMap[Road, Color]()
   }
-  def set_layer(name: String) {
-    colors.clear()
-    current_layer = name
+  def del_layer(name: String) {
+    layers -= name
   }
-  def set(r: Road, c: Color) {
-    colors(r) = c
+  def set(layer: String, r: Road, c: Color) {
+    layers(layer)(r) = c
   }
-  def unset(r: Road) {
-    colors -= r
+  def unset(layer: String, r: Road) {
+    layers(layer) -= r
   }
 
-  def layer = current_layer
-  def apply(r: Road) = colors(r)
-  def has(r: Road, layer: String) = layer == current_layer && colors.contains(r)
-  def has(r: Road) = colors.contains(r)
+  def get(layer: String, r: Road): Option[Color] = layers.get(layer).flatMap(_.get(r))
 }
 
 object DriverColorScheme {

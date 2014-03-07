@@ -42,6 +42,7 @@ class GuiState(val canvas: MapCanvas) {
   var speed_cap: Int = 1  // A rate of realtime. 1x is realtime.
   var current_turn = -1  // for cycling through turns from an edge
   var show_green = false
+  var cur_layer = ""
 
   // Actions
   def reset(g: Graphics2D) {
@@ -152,15 +153,15 @@ class MapCanvas(val sim: Simulation, headless: Boolean = false) extends Scrollin
   }})
   sim.listen(classOf[EV_Reroute], _ match {
     case EV_Reroute(agent, path, _, _, _, _) if agent == state.camera_agent.getOrElse(null) => {
-      state.road_colors.set_layer("route")
-      path.foreach(r => state.road_colors.set(r, cfg.route_member_color))
+      state.road_colors.add_layer("route")
+      path.foreach(r => state.road_colors.set("route", r, cfg.route_member_color))
     }
     case _ =>
   })
   sim.listen(classOf[EV_Transition], _ match {
     case EV_Transition(agent, from, to) if agent == state.camera_agent.getOrElse(null) => from match {
       case e: Edge => {
-        state.road_colors.unset(e.road)
+        state.road_colors.unset("route", e.road)
       }
       case _ =>
     }
@@ -220,7 +221,7 @@ class MapCanvas(val sim: Simulation, headless: Boolean = false) extends Scrollin
         } else {
           Util.log(a + " is done; the camera won't stalk them anymore")
           state.camera_agent = None
-          state.road_colors.reset()
+          state.road_colors.del_layer("route")
         }
       }
       case None =>
@@ -369,9 +370,10 @@ class MapCanvas(val sim: Simulation, headless: Boolean = false) extends Scrollin
       val route = router.path(from, to).path
       //route.foreach(step => println("  - " + step))
       println(s"for $color, we have $route")
+      // TODO a hack, I want to name it properly!
       //state.road_colors.set_layer(s"${router.router_type} pathfinding")
-      state.road_colors.set_layer("route")  // to get bold roads
-      route.foreach(r => state.road_colors.set(r, color))
+      state.road_colors.add_layer("route")  // to get bold roads
+      route.foreach(r => state.road_colors.set("route", r, color))
     }
     timer.stop()
     repaint()
@@ -384,10 +386,10 @@ class MapCanvas(val sim: Simulation, headless: Boolean = false) extends Scrollin
     val sorted_costs = costs.values.toArray.sorted
     val max_cost = sorted_costs((percentile * sorted_costs.size).toInt)
     val heatmap = new Heatmap()
-    state.road_colors.set_layer(layer)
+    state.road_colors.add_layer(layer)
     for ((r, cost) <- costs) {
       // Cap at 1 since we may chop off some of the largest values
-      state.road_colors.set(r, heatmap.color(math.min(cost / max_cost, 1.0)))
+      state.road_colors.set(layer, r, heatmap.color(math.min(cost / max_cost, 1.0)))
     }
   }
 
@@ -395,7 +397,7 @@ class MapCanvas(val sim: Simulation, headless: Boolean = false) extends Scrollin
   def show_path_costs(result: PathResult, percentile: Double = .99) {
     show_heatmap(result.costs.mapValues(_._1), percentile, "path costs")
     for (r <- result.path) {
-      state.road_colors.set(r, Color.GREEN)
+      state.road_colors.set("path costs", r, Color.GREEN)
     }
     repaint()
   }
