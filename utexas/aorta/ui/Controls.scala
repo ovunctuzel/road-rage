@@ -6,7 +6,9 @@ package utexas.aorta.ui
 
 import swing.Dialog
 import swing.event.Key
+import scala.swing.FileChooser
 import scala.util.Try
+import java.io.File
 
 import utexas.aorta.sim.Simulation
 import utexas.aorta.analysis.SimREPL
@@ -116,6 +118,7 @@ trait Controls {
     }
   }
 
+  // Unused letter keys: a b e h j k l m n o q r u v
   def handle_ev_keypress(key: Any): Unit = key match {
     // TODO this'll be tab someday, i vow!
     case Key.Control => {
@@ -197,6 +200,7 @@ trait Controls {
       }
     }
     case Key.I => AccelerationScheme.enabled = !AccelerationScheme.enabled
+    case Key.Y => canvas.show_road_usage()
     case _ =>
   }
 
@@ -205,4 +209,12 @@ trait Controls {
     Dialog.showInput(message = msg, initial = "").map(num => Try(num.toInt).toOption).flatten
   private def prompt_double(msg: String) =
     Dialog.showInput(message = msg, initial = "").map(num => Try(num.toDouble).toOption).flatten
+  def prompt_fn(title: String = ""): Option[String] = {
+    val chooser = new FileChooser(new File("."))
+    chooser.title = title
+    return chooser.showOpenDialog(null) match {
+      case FileChooser.Result.Approve => Some(chooser.selectedFile.getPath)
+      case _ => None
+    }
+  }
 }

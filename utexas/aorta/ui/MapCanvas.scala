@@ -14,6 +14,7 @@ import utexas.aorta.sim.{Simulation, EV_Signal_Change, EV_Transition, EV_Reroute
 import utexas.aorta.sim.make.IntersectionType
 import utexas.aorta.sim.drivers.Agent
 import utexas.aorta.analysis.SimREPL
+import utexas.aorta.experiments.ScenarioRoadUsage
 
 import utexas.aorta.common.{Util, Timer, cfg}
 import utexas.aorta.common.algorithms.PathResult
@@ -376,6 +377,8 @@ class MapCanvas(val sim: Simulation, headless: Boolean = false) extends Scrollin
     repaint()
   }
 
+  // TODO stuff like this belongs at a higher level, maybe
+
   def show_heatmap(costs: Map[Road, Double], percentile: Double, layer: String) {
     // Exclude the top percent of costs; they're usually super high and throw off the visualization
     val sorted_costs = costs.values.toArray.sorted
@@ -401,6 +404,21 @@ class MapCanvas(val sim: Simulation, headless: Boolean = false) extends Scrollin
     val costs = sim.graph.roads.map(r => r -> r.road_agent.tollbooth.toll(sim.tick).dollars).toMap
     show_heatmap(costs, percentile, "tolls")
     repaint()
+  }
+
+  def show_road_usage(percentile: Double = .99) {
+    for (fn <- prompt_fn("Select a road_usage.gz metric from an experiment")) {
+      val metric = ScenarioRoadUsage(fn)
+      // TODO ask which mode to show, num_drivers or sum_priority
+      // TODO all!? layers!!!
+      // TODO delta btwn!!!!
+      val mode = "baseline"
+      show_heatmap(
+        metric.usages_by_mode(mode).map(r => sim.graph.get_r(r.r) -> r.num_drivers.toDouble).toMap,
+        percentile, "road usage"
+      )
+      repaint()
+    }
   }
 
   //////////////////////////////////////////////////////////////////////////////

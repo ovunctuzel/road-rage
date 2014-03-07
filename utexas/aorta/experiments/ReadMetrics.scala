@@ -7,12 +7,12 @@ package utexas.aorta.experiments
 import scala.io.Source
 import scala.collection.mutable
 import java.util.zip.GZIPInputStream
-import java.io.{BufferedInputStream, FileInputStream}
+import java.io.{BufferedInputStream, FileInputStream, File}
 
-import utexas.aorta.common.Util
+import utexas.aorta.common.{Util, RoadID}
 
 trait MetricReader {
-  private def read(fn: String) =
+  def read(fn: String) =
     if (fn.endsWith(".gz"))
       Source.fromInputStream(new GZIPInputStream(new BufferedInputStream(new FileInputStream(fn))))
     else
@@ -23,7 +23,7 @@ trait MetricReader {
     val header = lines.next.split(" ")
     Util.assert_eq(header.take(3).toList, List("agent", "priority", "ideal_time"))
     return ScenarioTimes(
-      ScenarioTag(fn.split("/").head), header.drop(3),
+      ScenarioTag(fn), header.drop(3),
       lines.map(l => TripTimeResult(l.split(" ").map(_.toDouble))).toArray
     )
   }
@@ -33,7 +33,7 @@ trait MetricReader {
     val header = lines.next.split(" ")
     Util.assert_eq(header.take(3).toList, List("agent", "priority", "ideal_distance"))
     return ScenarioDistances(
-      ScenarioTag(fn.split("/").head), header.drop(3),
+      ScenarioTag(fn), header.drop(3),
       lines.map(l => TripDistanceResult(l.split(" ").map(_.toDouble))).toArray
     )
   }
@@ -42,7 +42,7 @@ trait MetricReader {
     val lines = read(fn).getLines
     Util.assert_eq(lines.next, "mode turn_delay_bin count")
     return ScenarioTurnDelays(
-      ScenarioTag(fn.split("/").head), lines.map(l => TurnDelayResult(l.split(" "))).toArray
+      ScenarioTag(fn), lines.map(l => TurnDelayResult(l.split(" "))).toArray
     )
   }
 
@@ -51,7 +51,7 @@ trait MetricReader {
     val header = lines.next.split(" ")
     Util.assert_eq(header.take(3).toList, List("agent", "priority", "ideal_spawn_time"))
     return ScenarioPaths(
-      ScenarioTag(fn.split("/").head), header.drop(3), lines.map(l => AgentPath(l.split(" "))).toArray
+      ScenarioTag(fn), header.drop(3), lines.map(l => AgentPath(l.split(" "))).toArray
     )
   }
 
@@ -65,7 +65,7 @@ trait MetricReader {
         p.paths
       )
     })
-    return Summary(ScenarioTag(base_dir), times.modes, agents, times, distances, paths)
+    return Summary(times.tag, times.modes, agents, times, distances, paths)
   }
 }
 
@@ -103,18 +103,23 @@ case class TripDistanceResult(id: Int, priority: Double, ideal_distance: Double,
 case class TurnDelayResult(mode: String, bin: Double, count: Double)
 case class Crossing(road: Int, entry: Double, exit: Double)
 case class AgentPath(id: Int, priority: Double, ideal_spawn_time: Double, paths: Array[List[Crossing]])
+case class RoadUsage(r: RoadID, mode: String, num_drivers: Int, sum_priority: Int)
 
 case class ScenarioTimes(tag: ScenarioTag, modes: Array[String], agents: Array[TripTimeResult])
 case class ScenarioDistances(tag: ScenarioTag, modes: Array[String], agents: Array[TripDistanceResult])
 case class ScenarioTurnDelays(tag: ScenarioTag, delays: Array[TurnDelayResult])
 case class ScenarioPaths(tag: ScenarioTag, modes: Array[String], agents: Array[AgentPath])
+case class ScenarioRoadUsage(tag: ScenarioTag, usages_by_mode: Map[String, List[RoadUsage]])
 
 // TODO stuff here is the dual of stuff in Metrics. pair them together somehow?
 object ScenarioTag {
-  // fn is of the form experiment_id_map
+  // fn is a possibly full path of the form "/.../experiment_id_map/something_final"
   def apply(fn: String): ScenarioTag = {
-    val pieces = fn.split("_")
-    return new ScenarioTag(pieces(0), pieces(1), pieces(2))
+    // Passing fn through File canonicalizes the path and gets rid of double //'s
+    val items = new File(fn).getPath.split("/")
+    val pieces = items(items.size - 2).split("_")
+    // The city piece could have _'s in it
+    return new ScenarioTag(pieces(0), pieces(1), pieces.drop(2).mkString("_"))
   }
 }
 object TripTimeResult {
@@ -140,4 +145,19 @@ object AgentPath {
 object Crossing {
   def list(raw: String) = raw.split(",").grouped(3).map(triple => single(triple)).toList
   def single(triple: Array[String]) = Crossing(triple(0).toInt, triple(1).toDouble, triple(2).toDouble)
+}
+object RoadUsage {
+  def apply(fields: Array[String]) = new RoadUsage(
+    new RoadID(fields(0).toInt), fields(1), fields(2).toInt, fields(3).toInt
+  )
+}
+
+object ScenarioRoadUsage extends MetricReader {
+  def apply(fn: String): ScenarioRoadUsage = {
+    val lines = read(fn).getLines
+    val header = lines.next
+    Util.assert_eq(header, "road mode num_drivers sum_priority")
+    val usages = lines.map(l => RoadUsage(l.split(" "))).toList
+    return ScenarioRoadUsage(ScenarioTag(fn), usages.groupBy(_.mode))
+  }
 }
