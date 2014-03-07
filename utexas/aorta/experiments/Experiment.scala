@@ -49,7 +49,7 @@ object ExpConfig {
       "maps/austin.map", "maps/baton_rouge.map", "maps/seattle.map", "maps/sf.map"
     )))
   def tollbooth_test = template.copy(
-    spawn_per_hour = 8000, generations = 1, map_fn = "maps/austin.map"
+    spawn_per_hour = 10000, generations = 1, map_fn = "maps/small_austin.map"
   )
   //def safe_atx_cloud_test =
     //template.copy(spawn_per_hour = 10000, generations = 3, map_fn = "maps/austin.map")

@@ -361,14 +361,15 @@ class MapCanvas(val sim: Simulation, headless: Boolean = false) extends Scrollin
   def show_pathfinding(from: Road, to: Road) {
     val timer = Timer("Pathfinding")
     // TODO Show each type of route in a different color...
-    val colors = List(Color.RED, Color.BLUE, Color.CYAN, Color.GREEN, Color.YELLOW)
+    val colors = List(Color.CYAN, Color.RED, Color.BLUE, Color.GREEN, Color.YELLOW)
     val routers = List(new CongestionRouter(sim.graph))
 
     for ((router, color) <- routers.zip(colors)) {
       val route = router.path(from, to).path
       //route.foreach(step => println("  - " + step))
       println(s"for $color, we have $route")
-      state.road_colors.set_layer(s"${router.router_type} pathfinding")
+      //state.road_colors.set_layer(s"${router.router_type} pathfinding")
+      state.road_colors.set_layer("route")  // to get bold roads
       route.foreach(r => state.road_colors.set(r, color))
     }
     timer.stop()
