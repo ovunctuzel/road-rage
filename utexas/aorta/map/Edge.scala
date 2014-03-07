@@ -58,7 +58,7 @@ class Edge(
   def best_adj_lane(to_reach: Edge)
     = adjacent_lanes.minBy(e => math.abs(to_reach.lane_num - e.lane_num))
 
-  lazy val next_turns = to.turns_from(this)
+  def next_turns = to.turns_from(this)
   def prev_turns = from.turns_to(this)
   def succs: List[Edge] = next_turns.map(t => t.to)
   def preds: List[Edge] = prev_turns.map(t => t.from)

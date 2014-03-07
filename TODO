@@ -50,10 +50,10 @@
 # Experiment framework #
 
 - mode to run many things locally, in parallel
-- better R templates, or another solution (gnuplot?)
 - port old experiments
 - even record the parameters of the runs?
 - revamp ModScenarioTool
+- warm up period for measurements?
 
 ####################################################################################################
 ### Future projects
@@ -131,6 +131,7 @@
 
 # Map making #
 
+- find all cases where you can enter a road from one lane only and not reach all succs from that lane (aka have to LC)
 - not sure: if LC dist is > road dist, super problems
 - min lengths should matter for lanes everywhere, not roads
 - degenerate verts should have same num of lanes
