@@ -4,6 +4,7 @@
 
 package utexas.aorta.ui
 
+import swing.{MenuItem, Action}
 import java.awt.Color
 import scala.collection.mutable
 
@@ -14,14 +15,31 @@ import utexas.aorta.common.{cfg, AgentID}
 
 // Callers can create multiple "layers" (just named color schemes) and then select colors from a
 // layer
-class RoadColorScheme() {
+class RoadColorScheme(state: GuiState) {
   private val layers = new mutable.HashMap[String, mutable.HashMap[Road, Color]]()
+  // A silly hack because it's obnoxious to filter through a Swing component
+  private val menu_items = new mutable.HashMap[String, MenuItem]()
+
+  GUI.layer_menu.contents += new MenuItem(Action("Don't show any special layer") {
+    state.cur_layer = ""
+    state.canvas.repaint()
+  })
 
   def add_layer(name: String) {
     layers(name) = new mutable.HashMap[Road, Color]()
+    val item = new MenuItem(Action(name) {
+      state.cur_layer = name
+      state.canvas.repaint()
+    })
+    GUI.layer_menu.contents += item
+    menu_items(name) = item
   }
   def del_layer(name: String) {
-    layers -= name
+    if (layers.contains(name)) {
+      layers -= name
+      // Can't just do -=
+      GUI.layer_menu.peer.remove(menu_items.remove(name).get.peer)
+    }
   }
   def set(layer: String, r: Road, c: Color) {
     layers(layer)(r) = c

@@ -26,7 +26,7 @@ class GuiState(val canvas: MapCanvas) {
   val tooltips = new mutable.ListBuffer[Tooltip]()
 
   // Permanent state
-  val road_colors = new RoadColorScheme()
+  val road_colors = new RoadColorScheme(this)
   var show_tooltips = true
   var current_obj: Option[Renderable] = None
   var camera_agent: Option[Agent] = None
@@ -374,6 +374,7 @@ class MapCanvas(val sim: Simulation, headless: Boolean = false) extends Scrollin
       //state.road_colors.set_layer(s"${router.router_type} pathfinding")
       state.road_colors.add_layer("route")  // to get bold roads
       route.foreach(r => state.road_colors.set("route", r, color))
+      state.cur_layer = "route"
     }
     timer.stop()
     repaint()
@@ -391,6 +392,7 @@ class MapCanvas(val sim: Simulation, headless: Boolean = false) extends Scrollin
       // Cap at 1 since we may chop off some of the largest values
       state.road_colors.set(layer, r, heatmap.color(math.min(cost / max_cost, 1.0)))
     }
+    state.cur_layer = layer
   }
 
   // Hardcoded to show first component of 2-tuple cost
@@ -411,14 +413,17 @@ class MapCanvas(val sim: Simulation, headless: Boolean = false) extends Scrollin
   def show_road_usage(percentile: Double = .99) {
     for (fn <- prompt_fn("Select a road_usage.gz metric from an experiment")) {
       val metric = ScenarioRoadUsage(fn)
-      // TODO ask which mode to show, num_drivers or sum_priority
-      // TODO all!? layers!!!
       // TODO delta btwn!!!!
-      val mode = "baseline"
-      show_heatmap(
-        metric.usages_by_mode(mode).map(r => sim.graph.get_r(r.r) -> r.num_drivers.toDouble).toMap,
-        percentile, "road usage"
-      )
+      for (mode <- metric.usages_by_mode.keys) {
+        show_heatmap(
+          metric.usages_by_mode(mode).map(r => sim.graph.get_r(r.r) -> r.num_drivers.toDouble).toMap,
+          percentile, s"road usage in $mode (number of drivers)"
+        )
+        show_heatmap(
+          metric.usages_by_mode(mode).map(r => sim.graph.get_r(r.r) -> r.sum_priority.toDouble).toMap,
+          percentile, s"road usage in $mode (sum of driver priority)"
+        )
+      }
       repaint()
     }
   }

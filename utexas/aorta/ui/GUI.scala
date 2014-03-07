@@ -64,6 +64,7 @@ object GUI extends SimpleSwingApplication {
   )
   // null just because it's parametric from argv
   var canvas_2d: MapCanvas = null
+  val layer_menu = new Menu("Road Color Layer")
 
   val helper = new BoxPanel(Orientation.Vertical) {
     border = Swing.MatteBorder(5, 5, 5, 5, Color.BLACK)
@@ -169,6 +170,7 @@ object GUI extends SimpleSwingApplication {
           canvas_2d.handle_ev(EV_Action("clear-route"))
         })
       }
+      contents += layer_menu
     }
 
     // TODO toggle between helper and other stuff in right pane
