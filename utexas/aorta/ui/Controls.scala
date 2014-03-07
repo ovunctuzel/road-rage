@@ -176,7 +176,7 @@ trait Controls {
           a.set_debug(true)
           state.road_colors.add_layer("route")
           a.route.current_path.foreach(r => state.road_colors.set("route", r, cfg.route_member_color))
-          state.cur_layer = "route"
+          state.set_cur_layer("route")
           canvas.repaint()
         }
         case None => {
@@ -184,6 +184,7 @@ trait Controls {
         }
       }
     }
+    // TODO convert some/many of these to menus
     case Key.X => {
       // Launch this in a separate thread so the sim can be continued normally
       new Thread {

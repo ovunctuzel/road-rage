@@ -26,7 +26,6 @@ class GuiState(val canvas: MapCanvas) {
   val tooltips = new mutable.ListBuffer[Tooltip]()
 
   // Permanent state
-  val road_colors = new RoadColorScheme(this)
   var show_tooltips = true
   var current_obj: Option[Renderable] = None
   var camera_agent: Option[Agent] = None
@@ -43,11 +42,18 @@ class GuiState(val canvas: MapCanvas) {
   var current_turn = -1  // for cycling through turns from an edge
   var show_green = false
   var cur_layer = ""
+  // Has to be after cur_layer so it's defined :\
+  val road_colors = new RoadColorScheme(this)
 
   // Actions
   def reset(g: Graphics2D) {
     g2d = g
     tooltips.clear()
+  }
+
+  def set_cur_layer(layer: String) {
+    road_colors.change_cur_layer(layer)
+    cur_layer = layer
   }
 
   def redo_mouseover(x: Double, y: Double) {
@@ -374,7 +380,7 @@ class MapCanvas(val sim: Simulation, headless: Boolean = false) extends Scrollin
       //state.road_colors.set_layer(s"${router.router_type} pathfinding")
       state.road_colors.add_layer("route")  // to get bold roads
       route.foreach(r => state.road_colors.set("route", r, color))
-      state.cur_layer = "route"
+      state.set_cur_layer("route")
     }
     timer.stop()
     repaint()
@@ -392,7 +398,7 @@ class MapCanvas(val sim: Simulation, headless: Boolean = false) extends Scrollin
       // Cap at 1 since we may chop off some of the largest values
       state.road_colors.set(layer, r, heatmap.color(math.min(cost / max_cost, 1.0)))
     }
-    state.cur_layer = layer
+    state.set_cur_layer(layer)
   }
 
   // Hardcoded to show first component of 2-tuple cost
@@ -413,7 +419,7 @@ class MapCanvas(val sim: Simulation, headless: Boolean = false) extends Scrollin
   def show_road_usage(percentile: Double = .99) {
     for (fn <- prompt_fn("Select a road_usage.gz metric from an experiment")) {
       val metric = ScenarioRoadUsage(fn)
-      // TODO delta btwn!!!!
+      // TODO delta btwn baseline and others. how to handle negatives?
       for (mode <- metric.usages_by_mode.keys) {
         show_heatmap(
           metric.usages_by_mode(mode).map(r => sim.graph.get_r(r.r) -> r.num_drivers.toDouble).toMap,

@@ -20,15 +20,14 @@ class RoadColorScheme(state: GuiState) {
   // A silly hack because it's obnoxious to filter through a Swing component
   private val menu_items = new mutable.HashMap[String, MenuItem]()
 
-  GUI.layer_menu.contents += new MenuItem(Action("Don't show any special layer") {
-    state.cur_layer = ""
-    state.canvas.repaint()
-  })
+  private val no_layer = "Don't show any special layer"
+  add_layer(no_layer)
+  state.cur_layer = no_layer
 
   def add_layer(name: String) {
     layers(name) = new mutable.HashMap[Road, Color]()
     val item = new MenuItem(Action(name) {
-      state.cur_layer = name
+      state.set_cur_layer(name)
       state.canvas.repaint()
     })
     GUI.layer_menu.contents += item
@@ -39,6 +38,9 @@ class RoadColorScheme(state: GuiState) {
       layers -= name
       // Can't just do -=
       GUI.layer_menu.peer.remove(menu_items.remove(name).get.peer)
+      if (state.cur_layer == name) {
+        state.cur_layer = no_layer
+      }
     }
   }
   def set(layer: String, r: Road, c: Color) {
@@ -46,6 +48,10 @@ class RoadColorScheme(state: GuiState) {
   }
   def unset(layer: String, r: Road) {
     layers(layer) -= r
+  }
+  def change_cur_layer(name: String) {
+    menu_items(state.cur_layer).action.title = state.cur_layer
+    menu_items(name).action.title = s"[current] $name"
   }
 
   def get(layer: String, r: Road): Option[Color] = layers.get(layer).flatMap(_.get(r))
