@@ -194,3 +194,35 @@ class TripPathsMetric(info: MetricInfo) extends SinglePerAgentMetric[mutable.Str
     case e: EV_AgentQuit => per_agent(e.agent.id) ++= e.agent.sim.tick.toString
   })
 }
+
+class RoadUsageMetric(info: MetricInfo) extends Metric(info) {
+  protected val num_drivers = new mutable.HashMap[Road, Int]()
+  protected val sum_priority = new mutable.HashMap[Road, Int]()
+  for (r <- info.sim.graph.roads) {
+    num_drivers(r) = 0
+    sum_priority(r) = 0
+  }
+
+  override def name = "road_usage"
+
+  override def output(ls: List[Metric]) {
+    val f = info.io.output_file(fn)
+    f.println("road mode num_drivers sum_priority")
+    for (raw_metric <- ls) {
+      for (r <- info.sim.graph.roads) {
+        val metric = raw_metric.asInstanceOf[RoadUsageMetric]
+        f.println(List(r.id, metric.mode, metric.num_drivers(r), metric.sum_priority(r)).mkString(" "))
+      }
+    }
+    f.close()
+    info.io.done(fn)
+  }
+
+  info.sim.listen(classOf[EV_Transition], _ match {
+    case EV_Transition(a, from: Turn, to: Edge) => {
+      num_drivers(to.road) += 1
+      sum_priority(to.road) += a.wallet.priority
+    }
+    case _ =>
+  })
+}
