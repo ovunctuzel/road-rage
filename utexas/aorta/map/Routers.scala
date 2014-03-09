@@ -39,9 +39,7 @@ class FixedRouter(graph: Graph, initial_path: List[Road]) extends Router(graph) 
 abstract class AbstractPairAstarRouter(graph: Graph) extends Router(graph) {
   override def path(spec: Pathfind) = AStar.path(transform(spec))
 
-  protected def transform(spec: Pathfind) = spec.copy(
-    successors = (step: Road) => step.succs
-  )
+  protected def transform(spec: Pathfind) = spec
 }
 
 // No guess for cost, straight-line distance at 1m/s for freeflow time

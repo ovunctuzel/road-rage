@@ -13,7 +13,7 @@ import utexas.aorta.sim.{EV_Transition, EV_Reroute}
 import utexas.aorta.sim.make.{RouteType, RouterType, Factory, ReroutePolicyType}
 
 import utexas.aorta.common.{Util, cfg, StateWriter, StateReader, TurnID, Serializable}
-import utexas.aorta.common.algorithms.Pathfind
+import utexas.aorta.common.algorithms.{Pathfind, PathfindingFailedException}
 
 // Get a client to their goal by any means possible.
 abstract class Route(val goal: Road, reroute_policy_type: ReroutePolicyType.Value) extends Serializable {
@@ -219,7 +219,7 @@ class PathRoute(
           start = at.road,
           goal = goal,
           // Don't hit anything already in our path
-          banned_nodes = (at.road :: slice_before).toSet
+          banned_nodes = slice_before.toSet
           // Let the algorithm pick the best next step
         ).first_succs(at.next_roads.toArray)
       ).path
@@ -228,7 +228,7 @@ class PathRoute(
       )
     } catch {
       // Couldn't A* due to constraints, but that's alright
-      case e: Exception =>  // TODO catch a specific exception!
+      case e: PathfindingFailedException =>
     }
   }
 

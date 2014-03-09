@@ -7,6 +7,7 @@ package utexas.aorta.ui
 import scala.collection.mutable
 import java.awt.{Graphics2D, Shape, BasicStroke, Color}
 import java.awt.geom.{Rectangle2D, Ellipse2D, Line2D}
+import swing.event.Key
 
 import utexas.aorta.map.{Road, Vertex, CongestionRouter, Edge, Position, Turn, Coordinate, Zone}
 import utexas.aorta.sim.{Simulation, EV_Signal_Change, EV_Transition, EV_Reroute, EV_Breakpoint,
@@ -148,7 +149,8 @@ class MapCanvas(val sim: Simulation, headless: Boolean = false) extends Scrollin
   }})
   sim.listen(classOf[EV_Breakpoint], _ match { case EV_Breakpoint(a) => {
     println(s"Pausing to target $a")
-    state.camera_agent = Some(a)
+    state.current_obj = Some(a)
+    handle_ev_keypress(Key.F)
     pause()
     // Launch this in a separate thread so the sim can be continued normally
     new Thread {

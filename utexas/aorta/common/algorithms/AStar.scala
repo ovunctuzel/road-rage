@@ -17,7 +17,7 @@ import utexas.aorta.common.Util
 case class Pathfind(
   start: Road = null,
   goal: Road = null,
-  successors: (Road) => Array[Road] = null,
+  successors: (Road) => Array[Road] = (step: Road) => step.succs,
   calc_cost: (Road, Road, (Double, Double)) => (Double, Double) = null,
   calc_heuristic: (Road) => (Double, Double) = (node: Road) => (0.0, 0.0),
   add_cost: ((Double, Double), (Double, Double)) => (Double, Double) =
@@ -33,6 +33,8 @@ case class Pathfind(
 }
 
 case class PathResult(path: List[Road], costs: Map[Road, (Double, Double)], nodes_visited: Int)
+
+class PathfindingFailedException(msg: String) extends Exception(msg)
 
 // TODO perf bug: I think one of the sets calls toString! test with a slow toString
 object AStar {
@@ -108,7 +110,7 @@ object AStar {
       }
     }
 
-    throw new Exception(s"Couldn't A* from ${spec.start} to ${spec.goal}")
+    throw new PathfindingFailedException(s"Couldn't A* from ${spec.start} to ${spec.goal}")
   }
 }
 
