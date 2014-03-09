@@ -13,7 +13,11 @@ import utexas.aorta.common.{Util, Price, BatchDuringStep}
 
 // Manage reservations to use a road resource during a window of time
 class RoadTollbooth(road: RoadAgent) extends BatchDuringStep[RoadRequest] {
-  def toll(eta: Double) = new Price(current_prices.getOrElse(idx(eta), 0.0) / road.freeflow_capacity)
+  // TODO freeflow_capacity no longer matters?
+  def toll(eta: Double) = new Price(
+    registrations.values.filter(r => idx(r._1) == idx(eta)).map(_._2)
+      .reduceOption(_ max _).getOrElse(0)
+  )
 
   protected val cancellation_fee = 5.0
   protected val early_fee = 10.0
@@ -21,11 +25,10 @@ class RoadTollbooth(road: RoadAgent) extends BatchDuringStep[RoadRequest] {
 
   protected val half_duration = 15 * 60.0
   // TODO serialization and such
-  // value is (ETA, offer)
+  // value is (ETA, price)
+  // TODO the data structures were awkward, so let's be inefficient and simple for now
   protected val registrations = new mutable.HashMap[Agent, (Double, Double)]()
   // The int idx is 0 for 0-30 mins, 1 for 15-45 mins, etc
-  protected val current_prices = new mutable.HashMap[Int, Double]()
-  // TODO refactor the maintenance of registrations/slots and all the asserts
 
   // TODO this assigns 16 to 15-45, so eta better be a lower bound... desirable?
   protected def idx(eta: Double) = math.floor(eta / half_duration).toInt
@@ -41,10 +44,8 @@ class RoadTollbooth(road: RoadAgent) extends BatchDuringStep[RoadRequest] {
   def cancel(a: Agent) {
     val key = a
     Util.assert_eq(registrations.contains(key), true)
-    val (eta, offer) = registrations(key)
     // TODO is it possible to cancel a request they made earlier during the tick? I think not...
     registrations -= key
-    current_prices(idx(eta)) -= offer
     a.toll_broker.spend(cancellation_fee)
   }
 
@@ -70,21 +71,17 @@ class RoadTollbooth(road: RoadAgent) extends BatchDuringStep[RoadRequest] {
   def exit(a: Agent) {
     val key = a
     Util.assert_eq(registrations.contains(key), true)
-    val (eta, offer) = registrations(key)
     registrations -= key
-    current_prices(idx(eta)) -= offer
   }
 
   def verify_done() {
     Util.assert_eq(registrations.isEmpty, true)
-    Util.assert_eq(current_prices.values.toSet, Set(0))
   }
 
   def react() {
     end_batch_step()
     for (r <- request_queue) {
       registrations(r.a) = (r.eta, r.offer)
-      current_prices(idx(r.eta)) = current_prices.getOrElse(idx(r.eta), 0.0) + r.offer
       // What should people spend?
       r.a.toll_broker.spend(r.offer)
     }
@@ -96,13 +93,16 @@ class RoadTollbooth(road: RoadAgent) extends BatchDuringStep[RoadRequest] {
   def toll_with_discount(eta: Double, a: Agent): Price = {
     val base_price = toll(eta).dollars
     val discounted_price = registrations.get(a) match {
-      case Some((prev_eta, offer)) if idx(eta) == idx(prev_eta) => base_price - offer
+      case Some((prev_eta, offer)) if idx(eta) == idx(prev_eta) =>
+        (registrations - a).values.filter(r => idx(r._1) == idx(eta)).map(_._2)
+          .reduceOption(_ max _).getOrElse(0.0)
       case _ => base_price
     }
     return new Price(discounted_price)
   }
 }
 
+// TODO Semantics of registering keep changing; may not need to batch anymore.
 case class RoadRequest(a: Agent, eta: Double, offer: Double) extends Ordered[RoadRequest] {
   override def compare(other: RoadRequest) = Ordering[Tuple2[Int, Double]].compare(
     (a.id.int, eta), (other.a.id.int, other.eta)

@@ -12,10 +12,14 @@ import utexas.aorta.sim.drivers.Agent
 import utexas.aorta.common.{Util, Price, BatchDuringStep}
 
 // Manage reservations to use some an intersection resource during a window of time
+// TODO refactor with RoadTollbooth.
 class IntersectionTollbooth(intersection: Intersection) extends BatchDuringStep[IntersectionRequest]
 {
   private def toll(eta: Double, source: Road, dest: Road) = new Price(
-    current_prices.getOrElse((idx(eta), source, dest), 0.0)
+    registrations.values
+      .filter(r => idx(r.eta) == idx(eta) && r.conflicts.contains((source, dest)))
+      .map(_.offer)
+      .reduceOption(_ max _).getOrElse(0)
   )
 
   protected val cancellation_fee = 5.0
@@ -27,10 +31,6 @@ class IntersectionTollbooth(intersection: Intersection) extends BatchDuringStep[
   case class Registration(eta: Double, offer: Double, conflicts: Set[(Road, Road)])
   // key is (agent, source road)
   protected val registrations = new mutable.HashMap[(Agent, Road), Registration]()
-  // The int idx is 0 for 0-30 mins, 1 for 15-45 mins, etc
-  // source -> dest road, implying a turn
-  protected val current_prices = new mutable.HashMap[(Int, Road, Road), Double]()
-  // TODO refactor the maintenance of registrations/slots and all the asserts
 
   // TODO this assigns 16 to 15-45, so eta better be a lower bound... desirable?
   protected def idx(eta: Double) = math.floor(eta / half_duration).toInt
@@ -50,12 +50,8 @@ class IntersectionTollbooth(intersection: Intersection) extends BatchDuringStep[
   def cancel(a: Agent, source: Road) {
     val key = (a, source)
     Util.assert_eq(registrations.contains(key), true)
-    val registration = registrations(key)
     // TODO is it possible to cancel a request they made earlier during the tick? I think not...
     registrations -= key
-    for ((r1, r2) <- registration.conflicts) {
-      current_prices((idx(registration.eta), r1, r2)) -= registration.offer
-    }
     a.toll_broker.spend(cancellation_fee)
   }
 
@@ -81,16 +77,11 @@ class IntersectionTollbooth(intersection: Intersection) extends BatchDuringStep[
   def exit(a: Agent, source: Road) {
     val key = (a, source)
     Util.assert_eq(registrations.contains(key), true)
-    val registration = registrations(key)
     registrations -= key
-    for ((r1, r2) <- registration.conflicts) {
-      current_prices((idx(registration.eta), r1, r2)) -= registration.offer
-    }
   }
 
   def verify_done() {
     Util.assert_eq(registrations.isEmpty, true)
-    Util.assert_eq(current_prices.values.toSet, Set(0))
   }
 
   def react() {
@@ -98,10 +89,6 @@ class IntersectionTollbooth(intersection: Intersection) extends BatchDuringStep[
     for (r <- request_queue) {
       val conflicts = intersection.v.road_conflicts(r.source, r.next_road)
       registrations((r.a, r.source)) = Registration(r.eta, r.offer, conflicts)
-      for ((r1, r2) <- conflicts) {
-        val key = (idx(r.eta), r1, r2)
-        current_prices(key) = current_prices.getOrElse(key, 0.0) + r.offer
-      }
       // What should people spend? Should it be proportional to number of conflicts?
       r.a.toll_broker.spend(r.offer)
     }
@@ -113,7 +100,11 @@ class IntersectionTollbooth(intersection: Intersection) extends BatchDuringStep[
   def toll_with_discount(eta: Double, a: Agent, source: Road, dest: Road): Price = {
     val base_price = toll(eta, source, dest).dollars
     val discounted_price = registrations.get((a, source)) match {
-      case Some(Registration(prev_eta, offer, _)) if idx(eta) == idx(prev_eta) => base_price - offer
+      case Some(Registration(prev_eta, offer, _)) if idx(eta) == idx(prev_eta) =>
+        (registrations - ((a, source))).values
+          .filter(r => idx(r.eta) == idx(eta) && r.conflicts.contains((source, dest)))
+          .map(_.offer)
+          .reduceOption(_ max _).getOrElse(0.0)
       case _ => base_price
     }
     return new Price(discounted_price)
