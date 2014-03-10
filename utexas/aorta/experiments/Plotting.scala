@@ -43,7 +43,7 @@ case class ScatterData(
   // better.
   def vs_baseline() = copy(points_per_mode = (points_per_mode - "baseline").mapValues(agents =>
     agents.zip(points_per_mode("baseline"))
-      .map(_ match { case (pt, baseline) => (pt._1, pt._2 - baseline._2) })
+      .map(_ match { case (pt, baseline) => (pt._1, baseline._2 - pt._2) })
   ))
 }
 
