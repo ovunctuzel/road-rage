@@ -146,7 +146,7 @@ class TollboothRouter(graph: Graph) extends AbstractPairAstarRouter(graph) {
       val time = raw_time / max_freeflow_time
       val priority = raw_priority / max_priority
       // TODO throw in asserts for the range
-      val cost = (1 - priority) * (road_price + intersection_price) + (time * priority)
+      val cost = 0.1 * (1 - priority) * (road_price + intersection_price) + (time * priority)
       (cost, prev.freeflow_time)
     },
     // Seed with the actual time we're starting
