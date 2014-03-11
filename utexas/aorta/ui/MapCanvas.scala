@@ -9,16 +9,14 @@ import java.awt.{Graphics2D, Shape, BasicStroke, Color}
 import java.awt.geom.{Rectangle2D, Ellipse2D, Line2D}
 import swing.event.Key
 
-import utexas.aorta.map.{Road, Vertex, CongestionRouter, Edge, Position, Turn, Coordinate, Zone}
+import utexas.aorta.map.{Road, Vertex, Edge, Position, Turn, Coordinate, Zone}
 import utexas.aorta.sim.{Simulation, EV_Signal_Change, EV_Transition, EV_Reroute, EV_Breakpoint,
                          EV_Heartbeat, AgentMap}
 import utexas.aorta.sim.make.IntersectionType
 import utexas.aorta.sim.drivers.Agent
 import utexas.aorta.analysis.SimREPL
-import utexas.aorta.experiments.ScenarioRoadUsage
 
-import utexas.aorta.common.{Util, Timer, cfg}
-import utexas.aorta.common.algorithms.PathResult
+import utexas.aorta.common.{Util, cfg}
 
 // Cleanly separates GUI state from users of it
 class GuiState(val canvas: MapCanvas) {
@@ -60,9 +58,6 @@ class GuiState(val canvas: MapCanvas) {
   def redo_mouseover(x: Double, y: Double) {
     current_obj = None
     current_turn = -1
-
-    // TODO determine if a low-granularity search to narrow down results helps.
-
     val sim = canvas.sim
     val cursor = new Rectangle2D.Double(x - eps, y - eps, eps * 2, eps * 2)
 
@@ -92,12 +87,12 @@ class GuiState(val canvas: MapCanvas) {
 
   // the radius of a small epsilon circle for the cursor
   def eps = 5.0 / canvas.zoom
-  def bubble(pt: Coordinate) = new Ellipse2D.Double(
-    pt.x - eps, pt.y - eps, eps * 2, eps * 2
-  )
+  def bubble(pt: Coordinate) = new Ellipse2D.Double(pt.x - eps, pt.y - eps, eps * 2, eps * 2)
 }
 
-class MapCanvas(val sim: Simulation, headless: Boolean = false) extends ScrollingCanvas with Controls {
+class MapCanvas(val sim: Simulation, headless: Boolean = false)
+  extends ScrollingCanvas with Controls with Visualization
+{
   //////////////////////////////////////////////////////////////////////////////
   // State
   private val state = new GuiState(this)
@@ -130,6 +125,7 @@ class MapCanvas(val sim: Simulation, headless: Boolean = false) extends Scrollin
   //////////////////////////////////////////////////////////////////////////////
   // Setup
   setup_controls(state, this)
+  setup_viz(state, this)
   driver_renderers.create_from_existing(sim)
   // begin in the center
   x_off = canvas_width / 2
@@ -140,12 +136,6 @@ class MapCanvas(val sim: Simulation, headless: Boolean = false) extends Scrollin
     StatusBar.agents.text = e.describe
     StatusBar.time.text = Util.time_num(e.tick)
     last_tick = e.tick
-  }})
-  sim.listen(classOf[EV_Signal_Change], _ match { case EV_Signal_Change(greens) => {
-    green_turns.clear()
-    for (t <- greens) {
-      green_turns(t) = GeomFactory.line2awt(GeomFactory.turn_body(t))
-    }
   }})
   sim.listen(classOf[EV_Breakpoint], _ match { case EV_Breakpoint(a) => {
     println(s"Pausing to target $a")
@@ -208,6 +198,12 @@ class MapCanvas(val sim: Simulation, headless: Boolean = false) extends Scrollin
     }.start()
   }
 
+  sim.listen(classOf[EV_Signal_Change], _ match { case EV_Signal_Change(greens) => {
+    green_turns.clear()
+    for (t <- greens) {
+      green_turns(t) = GeomFactory.line2awt(GeomFactory.turn_body(t))
+    }
+  }})
   // At this point, signal policies have already fired up and sent the first
   // round of greens. We missed it, so compute manually the first time.
   // TODO better solution
@@ -366,77 +362,6 @@ class MapCanvas(val sim: Simulation, headless: Boolean = false) extends Scrollin
   def pause() {
     state.running = true
     handle_ev_action("toggle-running")
-  }
-
-  def show_pathfinding(from: Road, to: Road) {
-    val timer = Timer("Pathfinding")
-    // TODO Show each type of route in a different color...
-    val colors = List(Color.CYAN, Color.RED, Color.BLUE, Color.GREEN, Color.YELLOW)
-    val routers = List(new CongestionRouter(sim.graph))
-
-    for ((router, color) <- routers.zip(colors)) {
-      val route = router.path(from, to).path
-      //route.foreach(step => println("  - " + step))
-      println(s"for $color, we have $route")
-      // TODO a hack, I want to name it properly!
-      //state.road_colors.set_layer(s"${router.router_type} pathfinding")
-      state.road_colors.add_layer("route")  // to get bold roads
-      route.foreach(r => state.road_colors.set("route", r, color))
-      state.set_cur_layer("route")
-    }
-    timer.stop()
-    repaint()
-  }
-
-  // TODO stuff like this belongs at a higher level, maybe
-
-  // percentile is [0, 1]
-  def show_heatmap(costs: Map[Road, Double], percentile: Double, layer: String) {
-    // Exclude the top percent of costs; they're usually super high and throw off the visualization
-    val sorted_costs = costs.values.toArray.sorted
-    val max_cost = sorted_costs(math.min(
-      sorted_costs.size - 1, (percentile * sorted_costs.size).toInt
-    ))
-    val heatmap = new Heatmap()
-    state.road_colors.add_layer(layer)
-    for ((r, cost) <- costs) {
-      // Cap at 1 since we may chop off some of the largest values
-      state.road_colors.set(layer, r, heatmap.color(math.min(cost / max_cost, 1.0)))
-    }
-    state.set_cur_layer(layer)
-  }
-
-  // Hardcoded to show first component of 2-tuple cost
-  def show_path_costs(result: PathResult, percentile: Double = .99) {
-    show_heatmap(result.costs.mapValues(_._1), percentile, "path costs")
-    for (r <- result.path) {
-      state.road_colors.set("path costs", r, Color.GREEN)
-    }
-    repaint()
-  }
-
-  def show_tolls(percentile: Double = .99) {
-    val costs = sim.graph.roads.map(r => r -> r.road_agent.tollbooth.toll(sim.tick).dollars).toMap
-    show_heatmap(costs, percentile, "tolls")
-    repaint()
-  }
-
-  def show_road_usage(percentile: Double = .99) {
-    for (fn <- prompt_fn("Select a road_usage.gz metric from an experiment")) {
-      val metric = ScenarioRoadUsage(fn)
-      // TODO delta btwn baseline and others. how to handle negatives?
-      for (mode <- metric.usages_by_mode.keys) {
-        show_heatmap(
-          metric.usages_by_mode(mode).map(r => sim.graph.get_r(r.r) -> r.num_drivers.toDouble).toMap,
-          percentile, s"road usage in $mode (number of drivers)"
-        )
-        show_heatmap(
-          metric.usages_by_mode(mode).map(r => sim.graph.get_r(r.r) -> r.sum_priority.toDouble).toMap,
-          percentile, s"road usage in $mode (sum of driver priority)"
-        )
-      }
-      repaint()
-    }
   }
 
   //////////////////////////////////////////////////////////////////////////////
