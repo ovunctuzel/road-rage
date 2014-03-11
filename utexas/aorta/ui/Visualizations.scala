@@ -5,11 +5,12 @@
 package utexas.aorta.ui
 
 import java.awt.Color
+import scala.collection.mutable
 
-import utexas.aorta.map.{Road, CongestionRouter}
+import utexas.aorta.map.{Road, CongestionRouter, FreeflowRouter}
 import utexas.aorta.sim.Simulation
 import utexas.aorta.experiments.ScenarioRoadUsage
-import utexas.aorta.common.Timer
+import utexas.aorta.common.{Timer, RNG}
 import utexas.aorta.common.algorithms.PathResult
 
 trait Visualization {
@@ -109,6 +110,24 @@ trait Visualization {
       rank = new_rank.mapValues(x => x / sum_ranks)
     }
     show_heatmap(rank, 1.0, "PageRank")
+    canvas.repaint()
+  }
+
+  def show_popular_roads() {
+    val num_routes = 3000
+    val router = new FreeflowRouter(sim.graph)
+    val rng = new RNG()
+    val frequency = new mutable.HashMap[Road, Double]()
+    sim.graph.roads.foreach(r => frequency(r) = 0)
+    for (i <- Range(0, num_routes)) {
+      if (i % 500 == 0) {
+        println(s"Visualizing popular roads, $i / $num_routes...")
+      }
+      for (r <- router.path(rng.choose(sim.graph.roads), rng.choose(sim.graph.roads)).path) {
+        frequency(r) += 1
+      }
+    }
+    show_heatmap(frequency.toMap, 1.0, "Popularity for uniformly distributed paths")
     canvas.repaint()
   }
 }
