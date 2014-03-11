@@ -25,22 +25,23 @@ object Mappable {
     import c.universe._
     val tpe = weakTypeOf[T]
 
-    val fields = tpe.declarations.collectFirst {
+    val fields = tpe.declarations.collectFirst({
       case m: MethodSymbol if m.isPrimaryConstructor => m
-    }.get.paramss.head
+    }).get.paramss.head
 
-    val toMapParams = fields.map { field =>
+    val per_field: List[Apply] = fields.map(field => {
       val name = field.name
       val decoded = name.decoded
       val returnType = tpe.declaration(name).typeSignature
 
-      q"$decoded -> t.$name"
-    }
+      q"w.string(t.$name.toString)"
+    })
 
     val result = c.Expr[Mappable[T]] { q"""
       new Mappable[$tpe] {
         def magic_save(t: $tpe, w: MagicWriter) {
-          val result = Map(..$toMapParams)
+          ..$per_field
+          val result = "foo"
           println(result)
         }
       }
