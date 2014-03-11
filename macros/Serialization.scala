@@ -3,9 +3,19 @@ package utexas.aorta.common
 import scala.language.experimental.macros
 import scala.reflect.macros.Context
 
+// TODO gotta replicate stuff here... ultimately
+// 1) share serialization code in common project
+// 2) just have serialization stuff here <----
+class MagicWriter(fn: String) {
+  def done() {}
+  def int(x: Int) {}
+  def double(x: Double) {}
+  def string(x: String) {}
+  def bool(x: Boolean) {}
+}
+
 trait Mappable[T] {
-  def toMap(t: T): Map[String, Any]
-  def fromMap(map: Map[String, Any]): T
+  def magic_save(t: T, w: MagicWriter)
 }
 
 object Mappable {
@@ -14,7 +24,6 @@ object Mappable {
   def materializeMappableImpl[T: c.WeakTypeTag](c: Context): c.Expr[Mappable[T]] = {
     import c.universe._
     val tpe = weakTypeOf[T]
-    val companion = tpe.typeSymbol.companionSymbol
 
     val fields = tpe.declarations.collectFirst {
       case m: MethodSymbol if m.isPrimaryConstructor => m
@@ -27,18 +36,13 @@ object Mappable {
 
       q"$decoded -> t.$name"
     }
-    val fromMapParams = fields.map { field =>
-      val name = field.name
-      val decoded = name.decoded
-      val returnType = tpe.declaration(name).typeSignature
-
-      q"map($decoded).asInstanceOf[$returnType]"
-    }
 
     val result = c.Expr[Mappable[T]] { q"""
       new Mappable[$tpe] {
-        def toMap(t: $tpe): Map[String, Any] = Map(..$toMapParams)
-        def fromMap(map: Map[String, Any]): $tpe = $companion(..$fromMapParams)
+        def magic_save(t: $tpe, w: MagicWriter) {
+          val result = Map(..$toMapParams)
+          println(result)
+        }
       }
     """ }
     println(result)
