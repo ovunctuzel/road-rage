@@ -390,10 +390,13 @@ class MapCanvas(val sim: Simulation, headless: Boolean = false) extends Scrollin
 
   // TODO stuff like this belongs at a higher level, maybe
 
+  // percentile is [0, 1]
   def show_heatmap(costs: Map[Road, Double], percentile: Double, layer: String) {
     // Exclude the top percent of costs; they're usually super high and throw off the visualization
     val sorted_costs = costs.values.toArray.sorted
-    val max_cost = sorted_costs((percentile * sorted_costs.size).toInt)
+    val max_cost = sorted_costs(math.min(
+      sorted_costs.size - 1, (percentile * sorted_costs.size).toInt
+    ))
     val heatmap = new Heatmap()
     state.road_colors.add_layer(layer)
     for ((r, cost) <- costs) {
