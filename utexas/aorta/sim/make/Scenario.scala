@@ -13,7 +13,12 @@ import Function.tupled
 import scala.collection.mutable
 
 import utexas.aorta.common.{Util, StateWriter, StateReader, AgentID, VertexID, RoadID, cfg,
-                            Serializable}
+                            Serializable, Mappable}
+
+object Magic {
+  def mapify[T: Mappable](t: T) = implicitly[Mappable[T]].toMap(t)
+  def materialize[T: Mappable](map: Map[String, Any]) = implicitly[Mappable[T]].fromMap(map)
+}
 
 // Array index and agent/intersection ID must correspond. Creator's responsibility.
 case class Scenario(
@@ -27,6 +32,8 @@ case class Scenario(
     serialize(w)
     w.done()
   }
+
+  def toMap = Magic.mapify(this)
 
   def make_intersection(v: Vertex, sim: Simulation) = intersections(v.id.int).make(v, sim)
   def make_road_agent(r: Road, sim: Simulation) = Factory.make_road_agent(road_agent, r, sim)
