@@ -49,8 +49,6 @@ case class Scenario(
     if (agents.nonEmpty) {
       Util.log_push
       Util.log("Spawning time (s): " + ScenarioUtil.basic_stats(agents.map(_.birth_tick)))
-      Util.log("Routes:")
-      ScenarioUtil.percentages(agents.map(_.route.strategy))
       Util.log("Orig routers:")
       ScenarioUtil.percentages(agents.map(_.route.orig_router))
       Util.log("Rerouters:")
@@ -130,7 +128,6 @@ case class MkAgent(id: AgentID, birth_tick: Double, start: RoadID, start_dist: D
       ScenarioUtil.diff(start, other.start, "start"),
       ScenarioUtil.diff(start_dist, other.start_dist, "start distance"),
       ScenarioUtil.diff(route.goal, other.route.goal, "end"),
-      ScenarioUtil.diff(route.strategy, other.route.strategy, "route"),
       ScenarioUtil.diff(route.orig_router, other.route.orig_router, "orig_router"),
       ScenarioUtil.diff(route.rerouter, other.route.rerouter, "rerouter"),
       ScenarioUtil.diff(wallet.policy, other.wallet.policy, "wallet"),
@@ -161,13 +158,12 @@ object MkAgent {
   def do_magic_load(r: MagicReader) = MagicSerializable.materialize[MkAgent].magic_load(r)
 }
 
-// orig_router, rerouter, and initial_path are only for strategy = Path
 case class MkRoute(
-  strategy: RouteType.Value, orig_router: RouterType.Value, rerouter: RouterType.Value,
+  orig_router: RouterType.Value, rerouter: RouterType.Value,
   initial_path: Array[RoadID], goal: RoadID, reroute_policy: ReroutePolicyType.Value
 ) {
   def make(sim: Simulation) = Factory.make_route(
-    strategy, sim.graph, orig_router, rerouter, sim.graph.get_r(goal),
+    sim.graph, orig_router, rerouter, sim.graph.get_r(goal),
     initial_path.map(id => sim.graph.get_r(id)).toList, reroute_policy
   )
 }
@@ -241,12 +237,6 @@ object IntersectionType extends Enumeration {
   val NeverGo, StopSign, Signal, Reservation, Yield, AIM = Value
 }
 
-// TODO like LookaheadBehavior, there isn't likely to be another impl. remove?
-object RouteType extends Enumeration {
-  type RouteType = Value
-  val Path = Value
-}
-
 object RouterType extends Enumeration {
   type RouterType = Value
   // Agents don't use Unusable; it's just for manually-invoked routers.
@@ -292,14 +282,12 @@ object Factory {
   }
 
   def make_route(
-    enum: RouteType.Value, graph: Graph, orig_router: RouterType.Value, rerouter: RouterType.Value,
+    graph: Graph, orig_router: RouterType.Value, rerouter: RouterType.Value,
     goal: Road, initial_path: List[Road], reroute_policy: ReroutePolicyType.Value
-  ) = enum match {
-    case RouteType.Path => new PathRoute(
-      goal, make_router(orig_router, graph, initial_path), make_router(rerouter, graph, Nil),
-      reroute_policy
-    )
-  }
+  ) = new PathRoute(
+    goal, make_router(orig_router, graph, initial_path), make_router(rerouter, graph, Nil),
+    reroute_policy
+  )
 
   def make_router(enum: RouterType.Value, graph: Graph, initial_path: List[Road])
   = enum match {

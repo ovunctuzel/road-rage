@@ -144,9 +144,6 @@ object ModScenarioTool {
             case Some(t) => t.toDouble
             case None => 3600.0
           }
-          val route = Array(
-            RouteType.withName(params.getOrElse("route", cfg.route))
-          )
           val wallet = Array(
             WalletType.withName(params.getOrElse("wallet", cfg.wallet))
           )
@@ -163,8 +160,7 @@ object ModScenarioTool {
           for (generation <- Range(0, generations)) {
             val time = (generation * lifetime, generation * lifetime + delay)
             val new_agents = AgentDistribution.uniform_times(
-              Range(s.agents.size, s.agents.size + number), starts, ends, time,
-              route, wallet, budget
+              Range(s.agents.size, s.agents.size + number), starts, ends, time, wallet, budget
             )
             s = s.copy(agents = s.agents ++ new_agents)
           }
@@ -245,8 +241,7 @@ object ModScenarioTool {
 
   private def mod_agent(old: MkAgent, params: Map[String, String], graph: Graph, rng: RNG): MkAgent = {
     val bad_params = params.keys.toSet.diff(Set(
-      "start", "time", "route", "end", "wallet", "budget", "orig_router", "rerouter",
-      "reroute_policy"
+      "start", "time", "end", "wallet", "budget", "orig_router", "rerouter", "reroute_policy"
     ))
     if (!bad_params.isEmpty) {
       Util.log(s"$bad_params aren't valid params for --agent or --all_agents")
@@ -267,7 +262,6 @@ object ModScenarioTool {
       start_dist = start_dist,
       birth_tick = params.getOrElse("time", old.birth_tick.toString).toDouble,
       route = old.route.copy(
-        strategy = RouteType.withName(params.getOrElse("route", old.route.strategy.toString)),
         orig_router = RouterType.withName(
           params.getOrElse("orig_router", old.route.orig_router.toString)
         ),

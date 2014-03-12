@@ -94,7 +94,6 @@ object MagicSerializable {
         // TODO hacky way to detect/handle enumerations
         val read = field_type.toString match {
           case "utexas.aorta.sim.make.IntersectionType.Value" => q"IntersectionType(r.int)"
-          case "utexas.aorta.sim.make.RouteType.Value" => q"RouteType(r.int)"
           case "utexas.aorta.sim.make.RouterType.Value" => q"RouterType(r.int)"
           case "utexas.aorta.sim.make.OrderingType.Value" => q"OrderingType(r.int)"
           case "utexas.aorta.sim.make.WalletType.Value" => q"WalletType(r.int)"

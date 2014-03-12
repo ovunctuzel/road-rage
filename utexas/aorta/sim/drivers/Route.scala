@@ -10,7 +10,7 @@ import scala.collection.mutable
 
 import utexas.aorta.map.{Edge, Road, Traversable, Turn, Vertex, Graph, Router}
 import utexas.aorta.sim.{EV_Transition, EV_Reroute}
-import utexas.aorta.sim.make.{RouteType, RouterType, Factory, ReroutePolicyType}
+import utexas.aorta.sim.make.{RouterType, Factory, ReroutePolicyType}
 
 import utexas.aorta.common.{Util, cfg, StateWriter, StateReader, TurnID, Serializable}
 import utexas.aorta.common.algorithms.{Pathfind, PathfindingFailedException}
@@ -28,7 +28,7 @@ abstract class Route(val goal: Road, reroute_policy_type: ReroutePolicyType.Valu
   // Meta
 
   def serialize(w: StateWriter) {
-    w.ints(route_type.id, goal.id.int, reroute_policy_type.id)
+    w.ints(goal.id.int, reroute_policy_type.id)
   }
 
   protected def unserialize(r: StateReader, graph: Graph) {}
@@ -64,7 +64,6 @@ abstract class Route(val goal: Road, reroute_policy_type: ReroutePolicyType.Valu
   //////////////////////////////////////////////////////////////////////////////
   // Queries
 
-  def route_type(): RouteType.Value
   def done(at: Edge) = at.road == goal
   def dump_info()
   // Includes current road
@@ -75,8 +74,7 @@ object Route {
   def unserialize(r: StateReader, graph: Graph): Route = {
     // Original router will never be used again, and rerouter will have to be reset by PathRoute.
     val route = Factory.make_route(
-      RouteType(r.int), graph, RouterType.Fixed, RouterType.Fixed, graph.roads(r.int), Nil,
-      ReroutePolicyType(r.int)
+      graph, RouterType.Fixed, RouterType.Fixed, graph.roads(r.int), Nil, ReroutePolicyType(r.int)
     )
     route.unserialize(r, graph)
     return route
@@ -241,7 +239,6 @@ class PathRoute(
   //////////////////////////////////////////////////////////////////////////////
   // Queries
 
-  def route_type = RouteType.Path
   def dump_info() {
     Util.log(s"Path route to $goal using $path")
   }

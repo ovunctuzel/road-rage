@@ -64,7 +64,6 @@ object cfg {
   val road_agent = params("road_agent")
   val polygon_color = color(params("polygon_color"))
   val reservation_color = color(params("reservation_color"))
-  val route = params("route")
   val route_member_color = color(params("route_member_color"))
   val signal_color = color(params("signal_color"))
   val signal_duration = params("signal_duration").toInt

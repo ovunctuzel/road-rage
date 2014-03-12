@@ -50,16 +50,14 @@ object AgentDistribution {
   // thing?
   private val rng = new RNG()
 
-  val all_routes = RouteType.values.toArray
   val all_wallets = WalletType.values.toArray
-  lazy val default_route = RouteType.withName(cfg.route)
   lazy val default_wallet = WalletType.withName(cfg.wallet)
 
   def filter_candidates(starts: Array[Road]) = starts.filter(_.rightmost.ok_to_spawn)
 
   // TODO specify "80% x, 20% y" for stuff...
   def uniform_times(ids: Range, starts: Array[Road], ends: Array[Road],
-              times: (Double, Double), routes: Array[RouteType.Value],
+              times: (Double, Double),
               wallets: Array[WalletType.Value],
               budgets: (Int, Int)): Array[MkAgent] =
   {
@@ -71,8 +69,10 @@ object AgentDistribution {
       val time = raw_time - (raw_time % cfg.dt_s) // TODO may still have fp issue
       MkAgent(
         new AgentID(id), time, start.id, start.rightmost.safe_spawn_dist(rng),
-        MkRoute(rng.choose(routes), RouterType.Congestion, RouterType.Congestion,
-                Array(), rng.choose(ends).id, ReroutePolicyType.Never),
+        MkRoute(
+          RouterType.Congestion, RouterType.Congestion, Array(), rng.choose(ends).id,
+          ReroutePolicyType.Never
+        ),
         // For now, force the same budget and priority here, and clean it up
         // later.
         MkWallet(rng.choose(wallets), budget, budget, false /* bid_ahead */)
@@ -83,8 +83,7 @@ object AgentDistribution {
   // TODO unify with uniform_times, and figure out how to split up factors a little.
   def poisson_times(
     first_id: AgentID, starts: Array[Road], ends: Array[Road], start_time: Double,
-    end_time: Double, vehicles_per_hour: Int, routes: Array[RouteType.Value],
-    wallets: Array[WalletType.Value], budgets: (Int, Int)
+    end_time: Double, vehicles_per_hour: Int, wallets: Array[WalletType.Value], budgets: (Int, Int)
   ): Array[MkAgent] = {
     val actual_starts = filter_candidates(starts)
     val n = (vehicles_per_hour * ((end_time - start_time) / 3600.0)).toInt
@@ -97,8 +96,10 @@ object AgentDistribution {
       id += 1
       result += MkAgent(
         new AgentID(id), time, start.id, start.rightmost.safe_spawn_dist(rng),
-        MkRoute(rng.choose(routes), RouterType.Congestion, RouterType.Congestion,
-                Array(), rng.choose(ends).id, ReroutePolicyType.Never),
+        MkRoute(
+          RouterType.Congestion, RouterType.Congestion, Array(), rng.choose(ends).id,
+          ReroutePolicyType.Never
+        ),
         // For now, force the same budget and priority here, and clean it up
         // later.
         MkWallet(rng.choose(wallets), budget, budget, false /* bid_ahead */)
@@ -108,7 +109,6 @@ object AgentDistribution {
   }
 
   def default(graph: Graph) = uniform_times(
-    Range(0, cfg.army_size), graph.roads, graph.roads, (0.0, 60.0),
-    Array(default_route), Array(default_wallet), (100, 200)
+    Range(0, cfg.army_size), graph.roads, graph.roads, (0.0, 60.0), Array(default_wallet), (100, 200)
   )
 }

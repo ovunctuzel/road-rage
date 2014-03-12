@@ -206,8 +206,8 @@ class Agent(
     Util.assert_eq(tickets.isEmpty, true)
     val maker = sim.scenario.agents(id.int)
     sim.publish(EV_AgentQuit(
-      this, maker.birth_tick, sim.graph.get_r(maker.start), route.goal, route.route_type,
-      wallet.wallet_type, maker.wallet.budget, sim.tick, wallet.budget, wallet.priority
+      this, maker.birth_tick, sim.graph.get_r(maker.start), route.goal, wallet.wallet_type,
+      maker.wallet.budget, sim.tick, wallet.budget, wallet.priority
     ))
     AgentMap.maps.foreach(m => m.destroy(this))
   }

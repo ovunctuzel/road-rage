@@ -7,7 +7,7 @@ package utexas.aorta.sim
 import utexas.aorta.map.{Turn, Vertex, Road, Traversable}
 import utexas.aorta.sim.drivers.Agent
 import utexas.aorta.sim.intersections.Ticket
-import utexas.aorta.sim.make.{MkIntersection, RouteType, IntersectionType, WalletType, RouterType}
+import utexas.aorta.sim.make.{MkIntersection, IntersectionType, WalletType, RouterType}
 import utexas.aorta.analysis.RerouteCountMonitor
 import utexas.aorta.common.Util
 
@@ -48,9 +48,8 @@ final case class EV_TurnStarted(ticket: Ticket) extends Sim_Event
 
 final case class EV_AgentSpawned(a: Agent) extends Sim_Event
 final case class EV_AgentQuit(
-  agent: Agent, birth_tick: Double, start: Road, end: Road,
-  route: RouteType.Value, wallet: WalletType.Value, start_budget: Int,
-  end_tick: Double, end_budget: Int, priority: Int
+  agent: Agent, birth_tick: Double, start: Road, end: Road, wallet: WalletType.Value,
+  start_budget: Int, end_tick: Double, end_budget: Int, priority: Int
 ) extends Sim_Event
 {
   // Note this includes waiting to actually spawn on the first lane
