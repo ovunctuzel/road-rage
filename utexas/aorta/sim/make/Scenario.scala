@@ -164,11 +164,11 @@ object MkAgent {
 // orig_router, rerouter, and initial_path are only for strategy = Path
 case class MkRoute(
   strategy: RouteType.Value, orig_router: RouterType.Value, rerouter: RouterType.Value,
-  initial_path: List[RoadID], goal: RoadID, reroute_policy: ReroutePolicyType.Value
+  initial_path: Array[RoadID], goal: RoadID, reroute_policy: ReroutePolicyType.Value
 ) {
   def make(sim: Simulation) = Factory.make_route(
     strategy, sim.graph, orig_router, rerouter, sim.graph.get_r(goal),
-    initial_path.map(id => sim.graph.get_r(id)), reroute_policy
+    initial_path.map(id => sim.graph.get_r(id)).toList, reroute_policy
   )
 }
 

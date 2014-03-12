@@ -82,7 +82,7 @@ object MagicSerializable {
         q"w.int(t.$name)"
       } else if (field_type =:= typeOf[Boolean]) {
         q"w.bool(t.$name)"
-      } else if (field_type <:< typeOf[Array[_]] || field_type <:< typeOf[List[_]]) {
+      } else if (field_type <:< typeOf[Array[_]]) {
         val type_param = field_type.asInstanceOf[TypeRef].args.head.typeSymbol.companionSymbol
         val inner = type_param.toString match {
           // TODO make a method there just to avoid this case?
@@ -126,19 +126,14 @@ object MagicSerializable {
         q"r.int"
       } else if (field_type =:= typeOf[Boolean]) {
         q"r.bool"
-      // TODO use array uniformly, get rid of list case
-      } else if (field_type <:< typeOf[Array[_]] || field_type <:< typeOf[List[_]]) {
+      } else if (field_type <:< typeOf[Array[_]]) {
         val type_param = field_type.asInstanceOf[TypeRef].args.head.typeSymbol.companionSymbol
         val inner = type_param.toString match {
           // TODO make a method there just to avoid this case?
           case "object RoadID" => q"new RoadID(r.int)"
           case _ => q"$type_param.do_magic_load(r)"
         }
-        if (field_type <:< typeOf[Array[_]]) {
-          q"Range(0, r.int).map(_ => $inner).toArray"
-        } else {
-          q"Range(0, r.int).map(_ => $inner).toList"
-        }
+        q"Range(0, r.int).map(_ => $inner).toArray"
       } else if (field_type.toString.endsWith(".Value")) {
         // TODO hacky way to handle enumerations
         field_type.toString match {

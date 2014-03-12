@@ -59,6 +59,7 @@ class DTAExperiment(config: ExpConfig) extends SmartExperiment(config, "dta") {
         val new_path = new TimeDependentAStar(graph, delay, a.birth_tick)
           .path(graph.get_r(a.start), graph.get_r(a.route.goal)).path
           .map(_.id)
+          .toArray
         a.copy(route = a.route.copy(orig_router = RouterType.Fixed, initial_path = new_path))
         // TODO make these delays available to all/some drivers, for rerouting? could introduce bad
         // biases towards regions that should be clear but arent, though.
