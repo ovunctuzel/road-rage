@@ -101,15 +101,9 @@ object MagicSerializable {
       } else if (field_type.toString.endsWith("ID")) {
         // TODO hacky way to detect AnyVals...
         q"w.int(t.$name.int)"
-      // TODO hacky way of getting around quasiquoting
-      } else if (field_type.toString == "utexas.aorta.sim.make.SystemWalletConfig") {
-        q"SystemWalletConfig.do_magic_save(t.$name, w)"
-      } else if (field_type.toString == "utexas.aorta.sim.make.MkRoute") {
-        q"MkRoute.do_magic_save(t.$name, w)"
-      } else if (field_type.toString == "utexas.aorta.sim.make.MkWallet") {
-        q"MkWallet.do_magic_save(t.$name, w)"
       } else {
-        c.abort(c.enclosingPosition, s"Dunno how to serialize $field_type")
+        val type_param = field_type.typeSymbol.companionSymbol
+        q"$type_param.do_magic_save(t.$name, w)"
       }
     })
 
@@ -152,15 +146,9 @@ object MagicSerializable {
           case "utexas.aorta.common.VertexID" => q"new VertexID(r.int)"
           case "utexas.aorta.common.RoadID" => q"new RoadID(r.int)"
         }
-      // TODO hacky way of getting around quasiquoting
-      } else if (field_type.toString == "utexas.aorta.sim.make.SystemWalletConfig") {
-        q"SystemWalletConfig.do_magic_load(r)"
-      } else if (field_type.toString == "utexas.aorta.sim.make.MkRoute") {
-        q"MkRoute.do_magic_load(r)"
-      } else if (field_type.toString == "utexas.aorta.sim.make.MkWallet") {
-        q"MkWallet.do_magic_load(r)"
       } else {
-        c.abort(c.enclosingPosition, s"Dunno how to unserialize $field_type")
+        val type_param = field_type.typeSymbol.companionSymbol
+        q"$type_param.do_magic_load(r)"
       }
     })
 
