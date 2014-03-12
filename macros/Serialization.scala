@@ -69,6 +69,7 @@ object MagicSerializable {
       case m: MethodSymbol if m.isPrimaryConstructor => m
     }).get.paramss.head
 
+    // TODO refactor read/write into one loop!
     val write_per_field = fields.map(field => {
       val name = field.name
       // All of the fields are methods () => Something
@@ -84,23 +85,15 @@ object MagicSerializable {
         q"w.bool(t.$name)"
       } else if (field_type <:< typeOf[Array[_]]) {
         val type_param = field_type.asInstanceOf[TypeRef].args.head.typeSymbol.companionSymbol
-        val inner = type_param.toString match {
-          // TODO make a method there just to avoid this case?
-          case "object RoadID" => q"w.int(obj.int)"
-          case _ => q"$type_param.do_magic_save(obj, w)"
-        }
         q"""
           w.int(t.$name.size)
           for (obj <- t.$name) {
-            $inner
+            $type_param.do_magic_save(obj, w)
           }
         """
       } else if (field_type.toString.endsWith(".Value")) {
         // TODO hacky way to detect enumerations
         q"w.int(t.$name.id)"
-      } else if (field_type.toString.endsWith("ID")) {
-        // TODO hacky way to detect AnyVals...
-        q"w.int(t.$name.int)"
       } else {
         val type_param = field_type.typeSymbol.companionSymbol
         q"$type_param.do_magic_save(t.$name, w)"
@@ -122,12 +115,7 @@ object MagicSerializable {
         q"r.bool"
       } else if (field_type <:< typeOf[Array[_]]) {
         val type_param = field_type.asInstanceOf[TypeRef].args.head.typeSymbol.companionSymbol
-        val inner = type_param.toString match {
-          // TODO make a method there just to avoid this case?
-          case "object RoadID" => q"new RoadID(r.int)"
-          case _ => q"$type_param.do_magic_load(r)"
-        }
-        q"Range(0, r.int).map(_ => $inner).toArray"
+        q"Range(0, r.int).map(_ => $type_param.do_magic_load(r)).toArray"
       } else if (field_type.toString.endsWith(".Value")) {
         // TODO hacky way to handle enumerations
         field_type.toString match {
@@ -138,13 +126,6 @@ object MagicSerializable {
           case "utexas.aorta.sim.make.WalletType.Value" => q"WalletType(r.int)"
           case "utexas.aorta.sim.make.CongestionType.Value" => q"CongestionType(r.int)"
           case "utexas.aorta.sim.make.ReroutePolicyType.Value" => q"ReroutePolicyType(r.int)"
-        }
-      } else if (field_type.toString.endsWith("ID")) {
-        // TODO hacky way to handle AnyVals...
-        field_type.toString match {
-          case "utexas.aorta.common.AgentID" => q"new AgentID(r.int)"
-          case "utexas.aorta.common.VertexID" => q"new VertexID(r.int)"
-          case "utexas.aorta.common.RoadID" => q"new RoadID(r.int)"
         }
       } else {
         val type_param = field_type.typeSymbol.companionSymbol

@@ -246,11 +246,24 @@ trait BatchDuringStep[T <: Ordered[T]] {
   }
 }
 
+// TODO terribly repetitive. macros? :P
 class AgentID(val int: Int) extends AnyVal {
   override def toString = int.toString
 }
+object AgentID {
+  def do_magic_save(obj: AgentID, w: MagicWriter) {
+    w.int(obj.int)
+  }
+  def do_magic_load(r: MagicReader) = new AgentID(r.int)
+}
 class VertexID(val int: Int) extends AnyVal {
   override def toString = int.toString
+}
+object VertexID {
+  def do_magic_save(obj: VertexID, w: MagicWriter) {
+    w.int(obj.int)
+  }
+  def do_magic_load(r: MagicReader) = new VertexID(r.int)
 }
 class TurnID(val int: Int) extends AnyVal {
   override def toString = int.toString
@@ -260,6 +273,12 @@ class EdgeID(val int: Int) extends AnyVal {
 }
 class RoadID(val int: Int) extends AnyVal {
   override def toString = int.toString
+}
+object RoadID {
+  def do_magic_save(obj: RoadID, w: MagicWriter) {
+    w.int(obj.int)
+  }
+  def do_magic_load(r: MagicReader) = new RoadID(r.int)
 }
 class ZoneID(val int: Int) extends AnyVal with Ordered[ZoneID] {
   override def toString = int.toString
