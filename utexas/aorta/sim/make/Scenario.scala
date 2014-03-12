@@ -12,19 +12,19 @@ import utexas.aorta.sim.intersections._
 import Function.tupled
 import scala.collection.mutable
 
-import utexas.aorta.common.{Util, StateWriter, StateReader, AgentID, VertexID, RoadID, cfg,
-                            Serializable, MagicSerializable, MagicWriter}
+import utexas.aorta.common.{Util, StateReader, AgentID, VertexID, RoadID, cfg,
+                            MagicSerializable, MagicWriter, BinaryMagicWriter}
 
 // Array index and agent/intersection ID must correspond. Creator's responsibility.
 case class Scenario(
   name: String, map_fn: String, agents: Array[MkAgent], intersections: Array[MkIntersection],
   system_wallet: SystemWalletConfig, road_agent: CongestionType.Value
-) extends Serializable {
+) {
   def graph = Graph.load(map_fn)
   def make_sim() = new Simulation(this)
   def save() {
-    val w = Util.writer(name)
-    serialize(w)
+    val w = new BinaryMagicWriter(name)
+    Scenario.do_magic_save(this, w)
     w.done()
   }
 
@@ -83,13 +83,6 @@ case class Scenario(
 
     // TODO diff SystemWalletConfig
   }
-
-  def serialize(w: StateWriter) {
-    w.strings(name, map_fn)
-    w.lists(agents, intersections)
-    w.obj(system_wallet)
-    w.int(road_agent.id)
-  }
 }
 
 object Scenario {
@@ -127,7 +120,7 @@ object Scenario {
 // agents/intersections/etc.
 
 case class MkAgent(id: AgentID, birth_tick: Double, start: RoadID, start_dist: Double,
-                   route: MkRoute, wallet: MkWallet) extends Ordered[MkAgent] with Serializable
+                   route: MkRoute, wallet: MkWallet) extends Ordered[MkAgent]
 {
   // break ties by ID
   def compare(other: MkAgent) = implicitly[Ordering[Tuple2[Double, Integer]]].compare(
@@ -135,14 +128,6 @@ case class MkAgent(id: AgentID, birth_tick: Double, start: RoadID, start_dist: D
   )
 
   def make(sim: Simulation) = new Agent(id, route.make(sim), wallet.make, sim)
-
-  def serialize(w: StateWriter) {
-    w.int(id.int)
-    w.double(birth_tick)
-    w.int(start.int)
-    w.double(start_dist)
-    w.objs(route, wallet)
-  }
 
   def diff(other: MkAgent) {
     Util.assert_eq(id, other.id)
@@ -190,17 +175,11 @@ object MkAgent {
 case class MkRoute(
   strategy: RouteType.Value, orig_router: RouterType.Value, rerouter: RouterType.Value,
   initial_path: List[RoadID], goal: RoadID, reroute_policy: ReroutePolicyType.Value
-) extends Serializable {
+) {
   def make(sim: Simulation) = Factory.make_route(
     strategy, sim.graph, orig_router, rerouter, sim.graph.get_r(goal),
     initial_path.map(id => sim.graph.get_r(id)), reroute_policy
   )
-
-  def serialize(w: StateWriter) {
-    w.ints(strategy.id, orig_router.id, rerouter.id)
-    w.list_int(initial_path.map(_.int))
-    w.ints(goal.int, reroute_policy.id)
-  }
 }
 
 object MkRoute {
@@ -214,15 +193,8 @@ object MkRoute {
   )
 }
 
-case class MkWallet(policy: WalletType.Value, budget: Int, priority: Int, bid_ahead: Boolean)
-  extends Serializable
-{
+case class MkWallet(policy: WalletType.Value, budget: Int, priority: Int, bid_ahead: Boolean) {
   def make() = Factory.make_wallet(policy, budget, priority, bid_ahead)
-
-  def serialize(w: StateWriter) {
-    w.ints(policy.id, budget, priority)
-    w.bool(bid_ahead)
-  }
 }
 
 object MkWallet {
@@ -232,8 +204,7 @@ object MkWallet {
   def unserialize(r: StateReader) = MkWallet(WalletType(r.int), r.int, r.int, r.bool)
 }
 
-case class MkIntersection(id: VertexID, policy: IntersectionType.Value,
-                          ordering: OrderingType.Value) extends Serializable
+case class MkIntersection(id: VertexID, policy: IntersectionType.Value, ordering: OrderingType.Value)
 {
   def make(v: Vertex, sim: Simulation) = new Intersection(v, policy, ordering, sim)
 
@@ -246,10 +217,6 @@ case class MkIntersection(id: VertexID, policy: IntersectionType.Value,
     if (d.nonEmpty) {
       Util.log(s"Intersection $id different: $d")
     }
-  }
-
-  def serialize(w: StateWriter) {
-    w.ints(id.int, policy.id, ordering.id)
   }
 }
 
@@ -270,16 +237,9 @@ case class SystemWalletConfig(
   dependency_rate: Int          = 2,
   waiting_rate: Int             = 1,
   ready_bonus: Int              = 5
-) extends Serializable {
+) {
   override def toString =
     s"SystemWalletConfig(thruput_bonus = $thruput_bonus, avail_capacity_threshold = $avail_capacity_threshold, capacity_bonus = $capacity_bonus, dependency_rate = $dependency_rate, waiting_rate = $waiting_rate, ready_bonus = $ready_bonus)"
-
-  def serialize(w: StateWriter) {
-    w.ints(
-      thruput_bonus, avail_capacity_threshold, capacity_bonus, dependency_rate, waiting_rate,
-      ready_bonus
-    )
-  }
 }
 
 object SystemWalletConfig {
