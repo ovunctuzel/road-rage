@@ -3,7 +3,8 @@ package utexas.aorta.common
 import scala.language.experimental.macros
 import scala.reflect.macros.Context
 
-import java.io.{ObjectOutputStream, FileOutputStream, PrintWriter, File}
+import java.io.{ObjectOutputStream, ObjectInputStream, FileOutputStream, FileInputStream,
+                PrintWriter, File}
 
 // TODO gotta replicate stuff here... ultimately
 // 1) share serialization code in common project
@@ -35,22 +36,40 @@ class BinaryMagicWriter(fn: String) extends MagicWriter(fn) {
   }
 }
 
+abstract class MagicReader(fn: String) {
+  def int: Int
+  def double: Double
+  def string: String
+  def bool: Boolean
+}
+
+class BinaryMagicReader(fn: String) extends MagicReader(fn) {
+  private val in = new ObjectInputStream(new FileInputStream(fn))
+  override def int = in.readInt
+  override def double = in.readDouble
+  override def string = in.readUTF
+  override def bool = in.readBoolean
+}
+
 trait MagicSerializable[T] {
   def magic_save(t: T, w: MagicWriter)
+  def magic_load(r: MagicReader): T
 }
 
 object MagicSerializable {
+  // TODO this is called several times. lazy val?
   def materialize[T]: MagicSerializable[T] = macro materialize_impl[T]
 
   def materialize_impl[T: c.WeakTypeTag](c: Context): c.Expr[MagicSerializable[T]] = {
     import c.universe._
     val tpe = weakTypeOf[T]
+    val companion = tpe.typeSymbol.companionSymbol
 
     val fields = tpe.declarations.collectFirst({
       case m: MethodSymbol if m.isPrimaryConstructor => m
     }).get.paramss.head
 
-    val per_field = fields.map(field => {
+    val write_per_field = fields.map(field => {
       val name = field.name
       // All of the fields are methods () => Something
       val field_type = tpe.declaration(name).asMethod.returnType
@@ -95,11 +114,19 @@ object MagicSerializable {
       }
     })
 
+    val read_per_field = fields.map(field => {
+      val name = field.name
+      // All of the fields are methods () => Something
+      val field_type = tpe.declaration(name).asMethod.returnType
+      q"null.asInstanceOf[$field_type]"
+    })
+
     val result = c.Expr[MagicSerializable[T]](q"""
       new MagicSerializable[$tpe] {
         def magic_save(t: $tpe, w: MagicWriter) {
-          ..$per_field
+          ..$write_per_field
         }
+        def magic_load(r: MagicReader): $tpe = $companion(..$read_per_field)
       }
     """)
     println(s"Generated serialization magic for $tpe")
