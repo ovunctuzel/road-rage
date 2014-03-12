@@ -40,7 +40,9 @@ object Mappable {
         q"w.double(t.$name)"
       } else if (field_type =:= typeOf[Int]) {
         q"w.int(t.$name)"
-      } else if (field_type <:< typeOf[Array[_]]) {
+      } else if (field_type =:= typeOf[Boolean]) {
+        q"w.bool(t.$name)"
+      } else if (field_type <:< typeOf[Array[_]] || field_type <:< typeOf[List[_]]) {
         val type_param = field_type.asInstanceOf[TypeRef].args.head
         q"w.int(t.$name.size)"
         /*q"""
@@ -65,7 +67,8 @@ object Mappable {
         }
       }
     """ }
-    println(result)
+    println(s"Generated magic for $tpe")
+    //println(result)
     result
   }
 }
