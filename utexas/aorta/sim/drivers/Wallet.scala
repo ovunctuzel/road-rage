@@ -228,14 +228,5 @@ class FairWallet(initial_budget: Int, p: Int, initial_bid_ahead: Boolean)
   // How much should we plan on spending, or actually spend, at this
   // intersection?
   // TODO better heuristic? base it on the policy, too!
-  private def weight(v: Vertex): Double = {
-    // Grant me the serenity to accept the things I can't change...
-    v.intersection.ordering_type match {
-      case OrderingType.FIFO => return 0.0
-      case _ =>
-    }
-
-    // TODO this is untuned, so make it unweighted
-    return 1.0
-  }
+  private def weight(v: Vertex) = 1.0
 }

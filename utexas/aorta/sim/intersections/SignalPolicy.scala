@@ -16,8 +16,8 @@ import utexas.aorta.common.{Util, cfg, StateWriter, StateReader}
 
 // A phase-based light.
 class SignalPolicy(
-  intersection: Intersection, ordering: IntersectionOrdering[Phase], sim: Simulation
-) extends Policy(intersection)
+  vertex: Vertex, ordering: IntersectionOrdering[Phase], sim: Simulation
+) extends Policy(vertex)
 {
   //////////////////////////////////////////////////////////////////////////////
   // State
@@ -135,7 +135,7 @@ class SignalPolicy(
   private def in_overtime = sim.tick > end_at
 
   private def setup_phases(): List[Phase] = {
-    val phase_ls = Phase.phases_for(intersection)
+    val phase_ls = Phase.phases_for(vertex)
 
     val turns_seen = new mutable.HashSet[Turn]
     var expect_offset = phase_ls.head.offset
@@ -144,7 +144,7 @@ class SignalPolicy(
       expect_offset += phase.duration
       turns_seen ++= phase.turns
     }
-    Util.assert_eq(turns_seen.size, intersection.v.turns.size)
+    Util.assert_eq(turns_seen.size, vertex.turns.size)
 
     return phase_ls
   }
@@ -204,12 +204,12 @@ class Phase(val id: Int, val turns: Set[Turn], val offset: Double, val duration:
 }
 
 object Phase {
-  def phases_for(i: Intersection): List[Phase] = {
+  def phases_for(v: Vertex): List[Phase] = {
     // Arbitrary grouping
     //return phase_maker(i.v, (remaining: Iterable[Turn], start: Turn) => remaining)
 
     // Try to have turns in the same and opposite (antiparallel) direction grouped
-    return phase_maker(i.v, (remaining: Iterable[Turn], start: Turn) => {
+    return phase_maker(v, (remaining: Iterable[Turn], start: Turn) => {
       val pair = remaining.partition(t => parallel(t, start))
       pair._1.toList ++ pair._2.toList
     })

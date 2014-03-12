@@ -6,15 +6,15 @@ package utexas.aorta.sim.intersections
 
 import utexas.aorta.sim.{Simulation, EV_IntersectionOutcome}
 import utexas.aorta.sim.make.IntersectionType
+import utexas.aorta.map.Vertex
 
 import utexas.aorta.common.{Util, StateWriter, StateReader, TurnID}
 
 // Accept as many compatible turns as possible, until an interruption occurs.
 // (To get the old greedy behavior, add the constraint back to candidates, or
 // reimplement it with an ordering with "inertia.")
-class ReservationPolicy(intersection: Intersection,
-                        ordering: IntersectionOrdering[Ticket])
-  extends Policy(intersection)
+class ReservationPolicy(vertex: Vertex, ordering: IntersectionOrdering[Ticket])
+  extends Policy(vertex)
 {
   // Prevent more from being accepted until this ticket is approved.
   private var interruption: Option[Ticket] = None

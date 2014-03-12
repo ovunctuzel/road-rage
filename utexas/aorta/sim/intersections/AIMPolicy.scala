@@ -4,15 +4,15 @@
 
 package utexas.aorta.sim.intersections
 
-import utexas.aorta.map.{Turn, Line}
+import utexas.aorta.map.{Turn, Line, Vertex}
 import utexas.aorta.sim.drivers.Agent
 import utexas.aorta.sim.make.IntersectionType
 import utexas.aorta.common.{Physics, cfg, Util}
 
 import scala.collection.mutable
 
-class AIMPolicy(intersection: Intersection, ordering: IntersectionOrdering[Ticket])
-  extends ReservationPolicy(intersection, ordering)
+class AIMPolicy(vertex: Vertex, ordering: IntersectionOrdering[Ticket])
+  extends ReservationPolicy(vertex, ordering)
 {
   // We can't model when drivers will cross conflict points exactly
   private val slack = 15 * cfg.dt_s

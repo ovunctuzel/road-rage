@@ -188,7 +188,9 @@ object MkWallet {
 
 case class MkIntersection(id: VertexID, policy: IntersectionType.Value, ordering: OrderingType.Value)
 {
-  def make(v: Vertex, sim: Simulation) = new Intersection(v, policy, ordering, sim)
+  def make(v: Vertex, sim: Simulation) = new Intersection(
+    v, Factory.make_policy(v, policy, ordering, sim)
+  )
 
   def diff(other: MkIntersection) {
     Util.assert_eq(id, other.id)
@@ -264,21 +266,21 @@ object ReroutePolicyType extends Enumeration {
 }
 
 object Factory {
-  def make_policy(i: Intersection, policy: IntersectionType.Value,
+  def make_policy(v: Vertex, policy: IntersectionType.Value,
                   ordering: OrderingType.Value, sim: Simulation) = policy match
   {
     case IntersectionType.NeverGo =>
-      new NeverGoPolicy(i)
+      new NeverGoPolicy(v)
     case IntersectionType.StopSign =>
-      new StopSignPolicy(i, make_intersection_ordering[Ticket](ordering))
+      new StopSignPolicy(v, make_intersection_ordering[Ticket](ordering))
     case IntersectionType.Signal =>
-      new SignalPolicy(i, make_intersection_ordering[Phase](ordering), sim)
+      new SignalPolicy(v, make_intersection_ordering[Phase](ordering), sim)
     case IntersectionType.Reservation =>
-      new ReservationPolicy(i, make_intersection_ordering[Ticket](ordering))
+      new ReservationPolicy(v, make_intersection_ordering[Ticket](ordering))
     case IntersectionType.Yield =>
-      new YieldPolicy(i, make_intersection_ordering[Ticket](ordering))
+      new YieldPolicy(v, make_intersection_ordering[Ticket](ordering))
     case IntersectionType.AIM =>
-      new AIMPolicy(i, make_intersection_ordering[Ticket](ordering))
+      new AIMPolicy(v, make_intersection_ordering[Ticket](ordering))
   }
 
   def make_route(

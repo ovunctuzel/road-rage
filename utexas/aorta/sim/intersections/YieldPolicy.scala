@@ -6,7 +6,7 @@ package utexas.aorta.sim.intersections
 
 import scala.collection.mutable
 
-import utexas.aorta.map.{Turn, Edge}
+import utexas.aorta.map.{Turn, Edge, Vertex}
 import utexas.aorta.sim.drivers.Agent
 import utexas.aorta.sim.make.IntersectionType
 
@@ -14,9 +14,7 @@ import utexas.aorta.common.{Util, cfg}
 
 // Automatically admit agents requesting common turns, and make the others queue and go when they
 // can.
-class YieldPolicy(intersection: Intersection, ordering: IntersectionOrdering[Ticket])
-  extends Policy(intersection)
-{
+class YieldPolicy(vertex: Vertex, ordering: IntersectionOrdering[Ticket]) extends Policy(vertex) {
   //////////////////////////////////////////////////////////////////////////////
   // State
 
@@ -99,7 +97,7 @@ class YieldPolicy(intersection: Intersection, ordering: IntersectionOrdering[Tic
   // Note that if all roads at the intersection are major, then the turns picked here might be
   // terrible
   private def compute_common_turns(): Set[Turn] = {
-    val best = intersection.v.turns.filter(t => t.from.road.is_major && t.to.road.is_major)
+    val best = vertex.turns.filter(t => t.from.road.is_major && t.to.road.is_major)
     // Arbitrary order may be bad...
     val result = new mutable.HashSet[Turn]()
     for (candidate <- best) {

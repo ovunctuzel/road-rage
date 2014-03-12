@@ -8,17 +8,14 @@ import scala.collection.mutable
 
 import utexas.aorta.map.{Vertex, Turn, Edge}
 import utexas.aorta.sim.{Simulation, EV_TurnApproved, EV_TurnStarted}
-import utexas.aorta.sim.make.{IntersectionType, OrderingType, Factory}
+import utexas.aorta.sim.make.{IntersectionType}
 import utexas.aorta.contrib.IntersectionTollbooth
 
 import utexas.aorta.common.{Util, StateWriter, StateReader, TurnID, Serializable, BatchDuringStep,
                             Price}
 
 // Reason about collisions from conflicting simultaneous turns.
-class Intersection(val v: Vertex, policy_type: IntersectionType.Value,
-                   val ordering_type: OrderingType.Value, sim: Simulation)
-{
-  val policy = Factory.make_policy(this, policy_type, ordering_type, sim)
+class Intersection(val v: Vertex, val policy: Policy) {
   val tollbooth = new IntersectionTollbooth(this)
 
   // Multiple agents can be on the same turn; the corresponding queue will
@@ -122,9 +119,7 @@ object Intersection {
   }
 }
 
-abstract class Policy(val intersection: Intersection)
-  extends Serializable with BatchDuringStep[Ticket]
-{
+abstract class Policy(vertex: Vertex) extends Serializable with BatchDuringStep[Ticket] {
   //////////////////////////////////////////////////////////////////////////////
   // State
 
@@ -204,6 +199,8 @@ abstract class Policy(val intersection: Intersection)
 
   def policy_type(): IntersectionType.Value
 
+  def intersection = vertex.intersection
+
   def dump_info() {
     Util.log(s"$intersection is a $policy_type")
     Util.log(s"Accepted: $accepted")
@@ -236,7 +233,7 @@ object Policy {
 }
 
 // Simplest base-line ever.
-class NeverGoPolicy(intersection: Intersection) extends Policy(intersection) {
+class NeverGoPolicy(vertex: Vertex) extends Policy(vertex) {
   def react() {}
   def policy_type = IntersectionType.NeverGo
 }

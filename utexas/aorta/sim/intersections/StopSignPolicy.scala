@@ -6,13 +6,12 @@ package utexas.aorta.sim.intersections
 
 import utexas.aorta.sim.EV_IntersectionOutcome
 import utexas.aorta.sim.make.IntersectionType
+import utexas.aorta.map.Vertex
 
 import utexas.aorta.common.cfg
 
 // Always stop, then FIFO. Totally unoptimized.
-class StopSignPolicy(intersection: Intersection,
-                     ordering: IntersectionOrdering[Ticket])
-  extends Policy(intersection)
+class StopSignPolicy(vertex: Vertex, ordering: IntersectionOrdering[Ticket]) extends Policy(vertex)
 {
   def react() {
     if (accepted.isEmpty) {
