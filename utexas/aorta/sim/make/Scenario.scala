@@ -13,7 +13,7 @@ import Function.tupled
 import scala.collection.mutable
 
 import utexas.aorta.common.{Util, StateWriter, StateReader, AgentID, VertexID, RoadID, cfg,
-                            Serializable, Mappable, MagicWriter}
+                            Serializable, MagicSerializable, MagicWriter}
 
 // Array index and agent/intersection ID must correspond. Creator's responsibility.
 case class Scenario(
@@ -93,8 +93,8 @@ case class Scenario(
 }
 
 object Scenario {
-  def do_magic(obj: Scenario, w: MagicWriter) {
-    Mappable.materializeMappable[Scenario].magic_save(obj, w)
+  def do_magic_save(obj: Scenario, w: MagicWriter) {
+    MagicSerializable.materialize[Scenario].magic_save(obj, w)
   }
 
   def unserialize(r: StateReader) = Scenario(
@@ -181,8 +181,8 @@ object MkAgent {
     MkWallet.unserialize(r)
   )
 
-  def do_magic(obj: MkAgent, w: MagicWriter) {
-    Mappable.materializeMappable[MkAgent].magic_save(obj, w)
+  def do_magic_save(obj: MkAgent, w: MagicWriter) {
+    MagicSerializable.materialize[MkAgent].magic_save(obj, w)
   }
 }
 
@@ -204,8 +204,8 @@ case class MkRoute(
 }
 
 object MkRoute {
-  def do_magic(obj: MkRoute, w: MagicWriter) {
-    Mappable.materializeMappable[MkRoute].magic_save(obj, w)
+  def do_magic_save(obj: MkRoute, w: MagicWriter) {
+    MagicSerializable.materialize[MkRoute].magic_save(obj, w)
   }
 
   def unserialize(r: StateReader) = MkRoute(
@@ -226,8 +226,8 @@ case class MkWallet(policy: WalletType.Value, budget: Int, priority: Int, bid_ah
 }
 
 object MkWallet {
-  def do_magic(obj: MkWallet, w: MagicWriter) {
-    Mappable.materializeMappable[MkWallet].magic_save(obj, w)
+  def do_magic_save(obj: MkWallet, w: MagicWriter) {
+    MagicSerializable.materialize[MkWallet].magic_save(obj, w)
   }
   def unserialize(r: StateReader) = MkWallet(WalletType(r.int), r.int, r.int, r.bool)
 }
@@ -254,8 +254,8 @@ case class MkIntersection(id: VertexID, policy: IntersectionType.Value,
 }
 
 object MkIntersection {
-  def do_magic(obj: MkIntersection, w: MagicWriter) {
-    Mappable.materializeMappable[MkIntersection].magic_save(obj, w)
+  def do_magic_save(obj: MkIntersection, w: MagicWriter) {
+    MagicSerializable.materialize[MkIntersection].magic_save(obj, w)
   }
   def unserialize(r: StateReader) = MkIntersection(
     new VertexID(r.int), IntersectionType(r.int), OrderingType(r.int)
@@ -283,8 +283,8 @@ case class SystemWalletConfig(
 }
 
 object SystemWalletConfig {
-  def do_magic(obj: SystemWalletConfig, w: MagicWriter) {
-    Mappable.materializeMappable[SystemWalletConfig].magic_save(obj, w)
+  def do_magic_save(obj: SystemWalletConfig, w: MagicWriter) {
+    MagicSerializable.materialize[SystemWalletConfig].magic_save(obj, w)
   }
   def unserialize(r: StateReader) = SystemWalletConfig(r.int, r.int, r.int, r.int, r.int, r.int)
   def blank = SystemWalletConfig(0, 0, 0, 0, 0, 0)
