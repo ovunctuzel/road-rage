@@ -69,56 +69,30 @@ object MagicSerializable {
       case m: MethodSymbol if m.isPrimaryConstructor => m
     }).get.paramss.head
 
-    // TODO refactor read/write into one loop!
-    val write_per_field = fields.map(field => {
+    val both_per_field = fields.map(field => {
       val name = field.name
       // All of the fields are methods () => Something
       val field_type = tpe.declaration(name).asMethod.returnType
 
       if (field_type =:= typeOf[String]) {
-        q"w.string(t.$name)"
+        (q"w.string(t.$name)", q"r.string")
       } else if (field_type =:= typeOf[Double]) {
-        q"w.double(t.$name)"
+        (q"w.double(t.$name)", q"r.double")
       } else if (field_type =:= typeOf[Int]) {
-        q"w.int(t.$name)"
+        (q"w.int(t.$name)", q"r.int")
       } else if (field_type =:= typeOf[Boolean]) {
-        q"w.bool(t.$name)"
+        (q"w.bool(t.$name)", q"r.bool")
       } else if (field_type <:< typeOf[Array[_]]) {
         val type_param = field_type.asInstanceOf[TypeRef].args.head.typeSymbol.companionSymbol
-        q"""
+        (q"""
           w.int(t.$name.size)
           for (obj <- t.$name) {
             $type_param.do_magic_save(obj, w)
           }
-        """
+        """, q"Range(0, r.int).map(_ => $type_param.do_magic_load(r)).toArray")
       } else if (field_type.toString.endsWith(".Value")) {
-        // TODO hacky way to detect enumerations
-        q"w.int(t.$name.id)"
-      } else {
-        val type_param = field_type.typeSymbol.companionSymbol
-        q"$type_param.do_magic_save(t.$name, w)"
-      }
-    })
-
-    val read_per_field = fields.map(field => {
-      val name = field.name
-      // All of the fields are methods () => Something
-      val field_type = tpe.declaration(name).asMethod.returnType
-
-      if (field_type =:= typeOf[String]) {
-        q"r.string"
-      } else if (field_type =:= typeOf[Double]) {
-        q"r.double"
-      } else if (field_type =:= typeOf[Int]) {
-        q"r.int"
-      } else if (field_type =:= typeOf[Boolean]) {
-        q"r.bool"
-      } else if (field_type <:< typeOf[Array[_]]) {
-        val type_param = field_type.asInstanceOf[TypeRef].args.head.typeSymbol.companionSymbol
-        q"Range(0, r.int).map(_ => $type_param.do_magic_load(r)).toArray"
-      } else if (field_type.toString.endsWith(".Value")) {
-        // TODO hacky way to handle enumerations
-        field_type.toString match {
+        // TODO hacky way to detect/handle enumerations
+        val read = field_type.toString match {
           case "utexas.aorta.sim.make.IntersectionType.Value" => q"IntersectionType(r.int)"
           case "utexas.aorta.sim.make.RouteType.Value" => q"RouteType(r.int)"
           case "utexas.aorta.sim.make.RouterType.Value" => q"RouterType(r.int)"
@@ -127,11 +101,14 @@ object MagicSerializable {
           case "utexas.aorta.sim.make.CongestionType.Value" => q"CongestionType(r.int)"
           case "utexas.aorta.sim.make.ReroutePolicyType.Value" => q"ReroutePolicyType(r.int)"
         }
+        (q"w.int(t.$name.id)", read)
       } else {
         val type_param = field_type.typeSymbol.companionSymbol
-        q"$type_param.do_magic_load(r)"
+        (q"$type_param.do_magic_save(t.$name, w)", q"$type_param.do_magic_load(r)")
       }
     })
+    val write_per_field = both_per_field.map(_._1)
+    val read_per_field = both_per_field.map(_._2)
 
     val result = c.Expr[MagicSerializable[T]](q"""
       new MagicSerializable[$tpe] {
