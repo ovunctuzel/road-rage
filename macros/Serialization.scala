@@ -29,12 +29,26 @@ object Mappable {
       case m: MethodSymbol if m.isPrimaryConstructor => m
     }).get.paramss.head
 
-    val per_field: List[Apply] = fields.map(field => {
+    val per_field = fields.map(field => {
       val name = field.name
-      val decoded = name.decoded
-      val returnType = tpe.declaration(name).typeSignature
+      // All of the fields are methods () => Something
+      val field_type = tpe.declaration(name).asMethod.returnType
 
-      q"w.string(t.$name.toString)"
+      if (field_type =:= typeOf[String]) {
+        q"w.string(t.$name)"
+      } else if (field_type <:< typeOf[Array[_]]) {
+        val type_param = field_type.asInstanceOf[TypeRef].args.head
+        q"""
+          w.int(t.$name.size)
+          for (obj <- t.$name) {
+            materializeMappableImpl[$type_param].magic_save(obj, w)
+          }
+        """
+      } else {
+        // TODO Enumerations are hard to detect
+        println(s"$name is $field_type")
+        q"w.string(t.$name.toString)"
+      }
     })
 
     val result = c.Expr[Mappable[T]] { q"""
