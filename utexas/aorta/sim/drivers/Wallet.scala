@@ -5,8 +5,7 @@
 package utexas.aorta.sim.drivers
 
 import utexas.aorta.sim.{EV_Transition, EV_Reroute}
-import utexas.aorta.sim.make.{WalletType, IntersectionType, OrderingType, Factory,
-                              SystemWalletConfig}
+import utexas.aorta.sim.make.{WalletType, IntersectionType, OrderingType, SystemWalletConfig}
 import utexas.aorta.map.{Turn, Vertex}
 import utexas.aorta.sim.intersections.{Ticket, Policy, Phase}
 
@@ -112,7 +111,7 @@ abstract class Wallet(initial_budget: Int, val priority: Int) extends Serializab
 object Wallet {
   def unserialize(r: StateReader): Wallet = {
     // Subclasses that care about bid_ahead will unserialize it.
-    val wallet = Factory.make_wallet(WalletType(r.int), r.int, r.int, false)
+    val wallet = WalletType.make(WalletType(r.int), r.int, r.int, false)
     wallet.tooltip = Range(0, r.int).map(_ => r.string).toList
     wallet.dark_tooltip = r.bool
     wallet.unserialize(r)

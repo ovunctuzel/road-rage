@@ -29,7 +29,7 @@ case class Scenario(
   }
 
   def make_intersection(v: Vertex, sim: Simulation) = intersections(v.id.int).make(v, sim)
-  def make_road_agent(r: Road, sim: Simulation) = Factory.make_road_agent(road_agent, r, sim)
+  def make_road_agent(r: Road, sim: Simulation) = CongestionType.make(road_agent, r, sim)
 
   // Although the massive numbers of agents were probably created with a
   // distribution function originally, we just see the individual list in the
@@ -162,9 +162,10 @@ case class MkRoute(
   orig_router: RouterType.Value, rerouter: RouterType.Value,
   initial_path: Array[RoadID], goal: RoadID, reroute_policy: ReroutePolicyType.Value
 ) {
-  def make(sim: Simulation) = Factory.make_route(
-    sim.graph, orig_router, rerouter, sim.graph.get_r(goal),
-    initial_path.map(id => sim.graph.get_r(id)).toList, reroute_policy
+  def make(sim: Simulation) = new PathRoute(
+    sim.graph.get_r(goal),
+    RouterType.make(orig_router, sim.graph, initial_path.map(id => sim.graph.get_r(id)).toList),
+    RouterType.make(rerouter, sim.graph, Nil), reroute_policy
   )
 }
 
@@ -176,7 +177,7 @@ object MkRoute {
 }
 
 case class MkWallet(policy: WalletType.Value, budget: Int, priority: Int, bid_ahead: Boolean) {
-  def make() = Factory.make_wallet(policy, budget, priority, bid_ahead)
+  def make() = WalletType.make(policy, budget, priority, bid_ahead)
 }
 
 object MkWallet {
@@ -189,7 +190,7 @@ object MkWallet {
 case class MkIntersection(id: VertexID, policy: IntersectionType.Value, ordering: OrderingType.Value)
 {
   def make(v: Vertex, sim: Simulation) = new Intersection(
-    v, Factory.make_policy(v, policy, ordering, sim)
+    v, IntersectionType.make(v, policy, ordering, sim)
   )
 
   def diff(other: MkIntersection) {
@@ -237,96 +238,77 @@ object SystemWalletConfig {
 object IntersectionType extends Enumeration {
   type IntersectionType = Value
   val NeverGo, StopSign, Signal, Reservation, Yield, AIM = Value
+
+  def make(v: Vertex, policy: IntersectionType.Value, ordering: OrderingType.Value,
+           sim: Simulation) = policy match
+  {
+    case NeverGo => new NeverGoPolicy(v)
+    case StopSign => new StopSignPolicy(v, OrderingType.make[Ticket](ordering))
+    case Signal => new SignalPolicy(v, OrderingType.make[Phase](ordering), sim)
+    case Reservation => new ReservationPolicy(v, OrderingType.make[Ticket](ordering))
+    case Yield => new YieldPolicy(v, OrderingType.make[Ticket](ordering))
+    case AIM => new AIMPolicy(v, OrderingType.make[Ticket](ordering))
+  }
 }
 
 object RouterType extends Enumeration {
   type RouterType = Value
   // Agents don't use Unusable; it's just for manually-invoked routers.
   val Congestion, Zone, Fixed, Unusable, DumbToll, TollThreshold, SumToll, Tollbooth = Value
+
+  def make(enum: RouterType.Value, graph: Graph, initial_path: List[Road]) = enum match {
+    case Congestion => new CongestionRouter(graph)
+    //case RouterType.Zone => new ZoneRouter(graph)
+    case Fixed => new FixedRouter(graph, initial_path)
+    case DumbToll => new DumbTollRouter(graph)
+    case TollThreshold => new TollThresholdRouter(graph)
+    case SumToll => new SumTollRouter(graph)
+    case Tollbooth => new TollboothRouter(graph)
+  }
 }
 
 object OrderingType extends Enumeration {
   type OrderingType = Value
   val FIFO, Auction, Pressure, Toll = Value
+
+  def make[T <: Ordered[T]](enum: OrderingType.Value) = enum match {
+    case FIFO => new FIFO_Ordering[T]()
+    case Auction => new AuctionOrdering[T]()
+    case Pressure => new PressureOrdering[T]()
+    case Toll => new TollOrdering[T]()
+  }
 }
 
 object WalletType extends Enumeration {
   type WalletType = Value
   val Static, Freerider, Fair, System = Value
+
+  def make(enum: WalletType.Value, budget: Int, priority: Int, bid_ahead: Boolean) = enum match {
+    case Static => new StaticWallet(budget, priority)
+    case Freerider => new FreeriderWallet(priority)
+    case Fair => new FairWallet(budget, priority, bid_ahead)
+  }
 }
 
 object CongestionType extends Enumeration {
   type CongestionType = Value
   val Current, Sticky, MovingWindow = Value
+
+  def make(enum: CongestionType.Value, r: Road, sim: Simulation) = enum match {
+    case Current => new CurrentCongestion(r, sim)
+    case Sticky => new StickyCongestion(r, sim)
+    case MovingWindow => new MovingWindowCongestion(r, sim)
+  }
 }
 
 object ReroutePolicyType extends Enumeration {
   type ReroutePolicyType = Value
   val Never, Regularly, PriceChange = Value
-}
 
-object Factory {
-  def make_policy(v: Vertex, policy: IntersectionType.Value,
-                  ordering: OrderingType.Value, sim: Simulation) = policy match
-  {
-    case IntersectionType.NeverGo =>
-      new NeverGoPolicy(v)
-    case IntersectionType.StopSign =>
-      new StopSignPolicy(v, make_intersection_ordering[Ticket](ordering))
-    case IntersectionType.Signal =>
-      new SignalPolicy(v, make_intersection_ordering[Phase](ordering), sim)
-    case IntersectionType.Reservation =>
-      new ReservationPolicy(v, make_intersection_ordering[Ticket](ordering))
-    case IntersectionType.Yield =>
-      new YieldPolicy(v, make_intersection_ordering[Ticket](ordering))
-    case IntersectionType.AIM =>
-      new AIMPolicy(v, make_intersection_ordering[Ticket](ordering))
-  }
-
-  def make_route(
-    graph: Graph, orig_router: RouterType.Value, rerouter: RouterType.Value,
-    goal: Road, initial_path: List[Road], reroute_policy: ReroutePolicyType.Value
-  ) = new PathRoute(
-    goal, make_router(orig_router, graph, initial_path), make_router(rerouter, graph, Nil),
-    reroute_policy
-  )
-
-  def make_router(enum: RouterType.Value, graph: Graph, initial_path: List[Road])
-  = enum match {
-    case RouterType.Congestion => new CongestionRouter(graph)
-    //case RouterType.Zone => new ZoneRouter(graph)
-    case RouterType.Fixed => new FixedRouter(graph, initial_path)
-    case RouterType.DumbToll => new DumbTollRouter(graph)
-    case RouterType.TollThreshold => new TollThresholdRouter(graph)
-    case RouterType.SumToll => new SumTollRouter(graph)
-    case RouterType.Tollbooth => new TollboothRouter(graph)
-  }
-
-  def make_intersection_ordering[T <: Ordered[T]](enum: OrderingType.Value) = enum match
-  {
-    case OrderingType.FIFO => new FIFO_Ordering[T]()
-    case OrderingType.Auction => new AuctionOrdering[T]()
-    case OrderingType.Pressure => new PressureOrdering[T]()
-    case OrderingType.Toll => new TollOrdering[T]()
-  }
-
-  def make_wallet(enum: WalletType.Value, budget: Int, priority: Int, bid_ahead: Boolean)
-  = enum match {
-    case WalletType.Static => new StaticWallet(budget, priority)
-    case WalletType.Freerider => new FreeriderWallet(priority)
-    case WalletType.Fair => new FairWallet(budget, priority, bid_ahead)
-  }
-
-  def make_road_agent(enum: CongestionType.Value, r: Road, sim: Simulation) = enum match {
-    case CongestionType.Current => new CurrentCongestion(r, sim)
-    case CongestionType.Sticky => new StickyCongestion(r, sim)
-    case CongestionType.MovingWindow => new MovingWindowCongestion(r, sim)
-  }
-
-  def make_reroute_policy(enum: ReroutePolicyType.Value, a: Agent) = enum match {
-    case ReroutePolicyType.Never => new NeverReroutePolicy(a)
-    case ReroutePolicyType.Regularly => new RegularlyReroutePolicy(a)
-    case ReroutePolicyType.PriceChange => new PriceChangeReroutePolicy(a)
+  def make(enum: ReroutePolicyType.Value, a: Agent) = enum match {
+    case Never => new NeverReroutePolicy(a)
+    case Regularly => new RegularlyReroutePolicy(a)
+    case PriceChange => new PriceChangeReroutePolicy(a)
   }
 }
 
@@ -356,5 +338,3 @@ object ScenarioUtil {
   def basic_stats_int(nums: Iterable[Int]) =
     f"${nums.min} - ${nums.max} (average ${nums.sum / nums.size}%.2f)"
 }
-
-// TODO Most of this file is ripe for a java beans-esque generalization.

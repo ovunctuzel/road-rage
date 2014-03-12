@@ -10,7 +10,7 @@ import scala.collection.mutable
 
 import utexas.aorta.map.{Edge, Road, Traversable, Turn, Vertex, Graph, Router}
 import utexas.aorta.sim.{EV_Transition, EV_Reroute}
-import utexas.aorta.sim.make.{RouterType, Factory, ReroutePolicyType}
+import utexas.aorta.sim.make.{RouterType, ReroutePolicyType}
 
 import utexas.aorta.common.{Util, cfg, StateWriter, StateReader, TurnID, Serializable}
 import utexas.aorta.common.algorithms.{Pathfind, PathfindingFailedException}
@@ -35,7 +35,7 @@ abstract class Route(val goal: Road, reroute_policy_type: ReroutePolicyType.Valu
 
   def setup(a: Agent) {
     owner = a
-    reroute_policy = Factory.make_reroute_policy(reroute_policy_type, a)
+    reroute_policy = ReroutePolicyType.make(reroute_policy_type, a)
   }
 
   //////////////////////////////////////////////////////////////////////////////
@@ -73,8 +73,9 @@ abstract class Route(val goal: Road, reroute_policy_type: ReroutePolicyType.Valu
 object Route {
   def unserialize(r: StateReader, graph: Graph): Route = {
     // Original router will never be used again, and rerouter will have to be reset by PathRoute.
-    val route = Factory.make_route(
-      graph, RouterType.Fixed, RouterType.Fixed, graph.roads(r.int), Nil, ReroutePolicyType(r.int)
+    val route = new PathRoute(
+      graph.roads(r.int), RouterType.make(RouterType.Fixed, graph, Nil),
+      RouterType.make(RouterType.Fixed, graph, Nil), ReroutePolicyType(r.int)
     )
     route.unserialize(r, graph)
     return route
@@ -103,7 +104,7 @@ class PathRoute(
   }
 
   override def unserialize(r: StateReader, graph: Graph) {
-    rerouter = Factory.make_router(RouterType(r.int), graph, Nil)
+    rerouter = RouterType.make(RouterType(r.int), graph, Nil)
     path = Range(0, r.int).map(_ => graph.roads(r.int)).toList
   }
 
