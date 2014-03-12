@@ -36,14 +36,19 @@ object Mappable {
 
       if (field_type =:= typeOf[String]) {
         q"w.string(t.$name)"
+      } else if (field_type =:= typeOf[Double]) {
+        q"w.double(t.$name)"
+      } else if (field_type =:= typeOf[Int]) {
+        q"w.int(t.$name)"
       } else if (field_type <:< typeOf[Array[_]]) {
         val type_param = field_type.asInstanceOf[TypeRef].args.head
-        q"""
+        q"w.int(t.$name.size)"
+        /*q"""
           w.int(t.$name.size)
           for (obj <- t.$name) {
-            materializeMappableImpl[$type_param].magic_save(obj, w)
+            $type_param.do_magic(obj, w)
           }
-        """
+        """*/
       } else {
         // TODO Enumerations are hard to detect
         println(s"$name is $field_type")
