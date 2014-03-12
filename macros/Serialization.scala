@@ -19,7 +19,7 @@ trait Mappable[T] {
 }
 
 object Mappable {
-  implicit def materializeMappable[T]: Mappable[T] = macro materializeMappableImpl[T]
+  def materializeMappable[T]: Mappable[T] = macro materializeMappableImpl[T]
 
   def materializeMappableImpl[T: c.WeakTypeTag](c: Context): c.Expr[Mappable[T]] = {
     import c.universe._
@@ -70,7 +70,6 @@ object Mappable {
       } else if (field_type.toString == "utexas.aorta.sim.make.MkWallet") {
         q"MkWallet.do_magic(t.$name, w)"
       } else {
-        // TODO error messages don't actually show up
         c.abort(c.enclosingPosition, s"Dunno how to serialize $field_type")
       }
     })

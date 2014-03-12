@@ -15,12 +15,6 @@ import scala.collection.mutable
 import utexas.aorta.common.{Util, StateWriter, StateReader, AgentID, VertexID, RoadID, cfg,
                             Serializable, Mappable, MagicWriter}
 
-object Helper {
-  def save[T: Mappable](t: T, w: MagicWriter) {
-    implicitly[Mappable[T]].magic_save(t, w)
-  }
-}
-
 // Array index and agent/intersection ID must correspond. Creator's responsibility.
 case class Scenario(
   name: String, map_fn: String, agents: Array[MkAgent], intersections: Array[MkIntersection],
@@ -100,7 +94,7 @@ case class Scenario(
 
 object Scenario {
   def do_magic(obj: Scenario, w: MagicWriter) {
-    Helper.save(obj, w)
+    Mappable.materializeMappable[Scenario].magic_save(obj, w)
   }
 
   def unserialize(r: StateReader) = Scenario(
@@ -188,7 +182,7 @@ object MkAgent {
   )
 
   def do_magic(obj: MkAgent, w: MagicWriter) {
-    Helper.save(obj, w)
+    Mappable.materializeMappable[MkAgent].magic_save(obj, w)
   }
 }
 
@@ -211,7 +205,7 @@ case class MkRoute(
 
 object MkRoute {
   def do_magic(obj: MkRoute, w: MagicWriter) {
-    Helper.save(obj, w)
+    Mappable.materializeMappable[MkRoute].magic_save(obj, w)
   }
 
   def unserialize(r: StateReader) = MkRoute(
@@ -233,7 +227,7 @@ case class MkWallet(policy: WalletType.Value, budget: Int, priority: Int, bid_ah
 
 object MkWallet {
   def do_magic(obj: MkWallet, w: MagicWriter) {
-    Helper.save(obj, w)
+    Mappable.materializeMappable[MkWallet].magic_save(obj, w)
   }
   def unserialize(r: StateReader) = MkWallet(WalletType(r.int), r.int, r.int, r.bool)
 }
@@ -261,7 +255,7 @@ case class MkIntersection(id: VertexID, policy: IntersectionType.Value,
 
 object MkIntersection {
   def do_magic(obj: MkIntersection, w: MagicWriter) {
-    Helper.save(obj, w)
+    Mappable.materializeMappable[MkIntersection].magic_save(obj, w)
   }
   def unserialize(r: StateReader) = MkIntersection(
     new VertexID(r.int), IntersectionType(r.int), OrderingType(r.int)
@@ -290,7 +284,7 @@ case class SystemWalletConfig(
 
 object SystemWalletConfig {
   def do_magic(obj: SystemWalletConfig, w: MagicWriter) {
-    Helper.save(obj, w)
+    Mappable.materializeMappable[SystemWalletConfig].magic_save(obj, w)
   }
   def unserialize(r: StateReader) = SystemWalletConfig(r.int, r.int, r.int, r.int, r.int, r.int)
   def blank = SystemWalletConfig(0, 0, 0, 0, 0, 0)
