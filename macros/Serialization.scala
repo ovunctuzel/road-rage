@@ -118,7 +118,56 @@ object MagicSerializable {
       val name = field.name
       // All of the fields are methods () => Something
       val field_type = tpe.declaration(name).asMethod.returnType
-      q"null.asInstanceOf[$field_type]"
+
+      if (field_type =:= typeOf[String]) {
+        q"r.string"
+      } else if (field_type =:= typeOf[Double]) {
+        q"r.double"
+      } else if (field_type =:= typeOf[Int]) {
+        q"r.int"
+      } else if (field_type =:= typeOf[Boolean]) {
+        q"r.bool"
+      } else if (field_type <:< typeOf[Array[_]] || field_type <:< typeOf[List[_]]) {
+        val type_param = field_type.asInstanceOf[TypeRef].args.head
+        // TODO For some reason, quasiquoting type_param directly blows up
+        val inner = type_param.toString match {
+          case "utexas.aorta.sim.make.MkAgent" => q"MkAgent.do_magic_load(r)"
+          case "utexas.aorta.sim.make.MkIntersection" => q"MkIntersection.do_magic_load(r)"
+          case "utexas.aorta.common.RoadID" => q"new RoadID(r.int)"
+        }
+        if (field_type <:< typeOf[Array[_]]) {
+          q"Range(0, r.int).map(_ => $inner).toArray"
+        } else {
+          q"Range(0, r.int).map(_ => $inner).toList"
+        }
+      } else if (field_type.toString.endsWith(".Value")) {
+        // TODO hacky way to handle enumerations
+        field_type.toString match {
+          case "utexas.aorta.sim.make.IntersectionType.Value" => q"IntersectionType(r.int)"
+          case "utexas.aorta.sim.make.RouteType.Value" => q"RouteType(r.int)"
+          case "utexas.aorta.sim.make.RouterType.Value" => q"RouterType(r.int)"
+          case "utexas.aorta.sim.make.OrderingType.Value" => q"OrderingType(r.int)"
+          case "utexas.aorta.sim.make.WalletType.Value" => q"WalletType(r.int)"
+          case "utexas.aorta.sim.make.CongestionType.Value" => q"CongestionType(r.int)"
+          case "utexas.aorta.sim.make.ReroutePolicyType.Value" => q"ReroutePolicyType(r.int)"
+        }
+      } else if (field_type.toString.endsWith("ID")) {
+        // TODO hacky way to handle AnyVals...
+        field_type.toString match {
+          case "utexas.aorta.common.AgentID" => q"new AgentID(r.int)"
+          case "utexas.aorta.common.VertexID" => q"new VertexID(r.int)"
+          case "utexas.aorta.common.RoadID" => q"new RoadID(r.int)"
+        }
+      // TODO hacky way of getting around quasiquoting
+      } else if (field_type.toString == "utexas.aorta.sim.make.SystemWalletConfig") {
+        q"SystemWalletConfig.do_magic_load(r)"
+      } else if (field_type.toString == "utexas.aorta.sim.make.MkRoute") {
+        q"MkRoute.do_magic_load(r)"
+      } else if (field_type.toString == "utexas.aorta.sim.make.MkWallet") {
+        q"MkWallet.do_magic_load(r)"
+      } else {
+        c.abort(c.enclosingPosition, s"Dunno how to unserialize $field_type")
+      }
     })
 
     val result = c.Expr[MagicSerializable[T]](q"""

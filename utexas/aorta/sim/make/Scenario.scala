@@ -12,8 +12,8 @@ import utexas.aorta.sim.intersections._
 import Function.tupled
 import scala.collection.mutable
 
-import utexas.aorta.common.{Util, StateReader, AgentID, VertexID, RoadID, cfg,
-                            MagicSerializable, MagicWriter, BinaryMagicWriter, MagicReader}
+import utexas.aorta.common.{Util, AgentID, VertexID, RoadID, cfg, MagicSerializable, MagicWriter,
+                            BinaryMagicWriter, MagicReader, BinaryMagicReader}
 
 // Array index and agent/intersection ID must correspond. Creator's responsibility.
 case class Scenario(
@@ -91,14 +91,7 @@ object Scenario {
   }
   def do_magic_load(r: MagicReader) = MagicSerializable.materialize[Scenario].magic_load(r)
 
-  def unserialize(r: StateReader) = Scenario(
-    r.string, r.string,
-    Range(0, r.int).map(_ => MkAgent.unserialize(r)).toArray,
-    Range(0, r.int).map(_ => MkIntersection.unserialize(r)).toArray,
-    SystemWalletConfig.unserialize(r), CongestionType(r.int)
-  )
-
-  def load(fn: String) = unserialize(Util.reader(fn))
+  def load(fn: String) = do_magic_load(new BinaryMagicReader(fn))
 
   def default(map_fn: String): Scenario = {
     val graph = Graph.load(map_fn)
@@ -162,11 +155,6 @@ case class MkAgent(id: AgentID, birth_tick: Double, start: RoadID, start_dist: D
 }
 
 object MkAgent {
-  def unserialize(r: StateReader) = MkAgent(
-    new AgentID(r.int), r.double, new RoadID(r.int), r.double, MkRoute.unserialize(r),
-    MkWallet.unserialize(r)
-  )
-
   def do_magic_save(obj: MkAgent, w: MagicWriter) {
     MagicSerializable.materialize[MkAgent].magic_save(obj, w)
   }
@@ -189,11 +177,6 @@ object MkRoute {
     MagicSerializable.materialize[MkRoute].magic_save(obj, w)
   }
   def do_magic_load(r: MagicReader) = MagicSerializable.materialize[MkRoute].magic_load(r)
-
-  def unserialize(r: StateReader) = MkRoute(
-    RouteType(r.int), RouterType(r.int), RouterType(r.int),
-    Range(0, r.int).map(_ => new RoadID(r.int)).toList, new RoadID(r.int), ReroutePolicyType(r.int)
-  )
 }
 
 case class MkWallet(policy: WalletType.Value, budget: Int, priority: Int, bid_ahead: Boolean) {
@@ -205,7 +188,6 @@ object MkWallet {
     MagicSerializable.materialize[MkWallet].magic_save(obj, w)
   }
   def do_magic_load(r: MagicReader) = MagicSerializable.materialize[MkWallet].magic_load(r)
-  def unserialize(r: StateReader) = MkWallet(WalletType(r.int), r.int, r.int, r.bool)
 }
 
 case class MkIntersection(id: VertexID, policy: IntersectionType.Value, ordering: OrderingType.Value)
@@ -229,9 +211,6 @@ object MkIntersection {
     MagicSerializable.materialize[MkIntersection].magic_save(obj, w)
   }
   def do_magic_load(r: MagicReader) = MagicSerializable.materialize[MkIntersection].magic_load(r)
-  def unserialize(r: StateReader) = MkIntersection(
-    new VertexID(r.int), IntersectionType(r.int), OrderingType(r.int)
-  )
 }
 
 case class SystemWalletConfig(
@@ -252,7 +231,6 @@ object SystemWalletConfig {
     MagicSerializable.materialize[SystemWalletConfig].magic_save(obj, w)
   }
   def do_magic_load(r: MagicReader) = MagicSerializable.materialize[SystemWalletConfig].magic_load(r)
-  def unserialize(r: StateReader) = SystemWalletConfig(r.int, r.int, r.int, r.int, r.int, r.int)
   def blank = SystemWalletConfig(0, 0, 0, 0, 0, 0)
 }
 
