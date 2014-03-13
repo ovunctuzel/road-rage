@@ -78,8 +78,7 @@ class Agent(
   def step(): Boolean = {
     lc.start_lc()
 
-    // Do physics to update current speed and figure out how far we've traveled
-    // in this timestep.
+    // Do physics to update current speed and figure out how far we've traveled in this timestep.
     // Subtle note: Do this after LCing, else we see the wrong speed
     val new_dist = update_kinematics(cfg.dt_s)
 
@@ -114,19 +113,14 @@ class Agent(
       current_dist -= current_on.length
       // Are we finishing a turn or starting one?
       val next: Traversable = current_on match {
-        case e: Edge => {
-          val turn = behavior.choose_turn(e)
-          assert(e.next_turns.contains(turn))    // Verify it was a legal choice
-          turn
-        }
+        case e: Edge => behavior.choose_turn(e)
         case t: Turn => t.to
       }
 
       // tell the intersection and road agent
       (current_on, next) match {
         case (e: Edge, t: Turn) => {
-          val i = t.vert.intersection
-          i.enter(get_ticket(e).get)
+          t.vert.intersection.enter(get_ticket(e).get)
           e.queue.free_slot()
           e.road.road_agent.tollbooth.exit(this)
           toll_broker.exited(e.road)
@@ -165,22 +159,20 @@ class Agent(
   }
 
   // Returns true if we're done
-  def react(): Boolean = {
-    return behavior.choose_action match {
-      case Act_Set_Accel(new_accel) => {
-        // we have physical limits
-        Util.assert_le(new_accel.abs, max_accel)
-        target_accel = new_accel
-        false
-      }
-      case Act_Done_With_Route() => {
-        at.on.asEdge.road.road_agent.tollbooth.exit(this)
-        //Util.assert_eq(at.on.asInstanceOf[Edge].road, route.goal)
-        // Trust behavior, don't abuse this.
-        // (Plus, it doesn't hold for RouteAnalyzer vehicles...)
-        Util.assert_eq(speed <= cfg.epsilon, true)
-        true
-      }
+  def react(): Boolean = behavior.choose_action match {
+    case Act_Set_Accel(new_accel) => {
+      // we have physical limits
+      Util.assert_le(new_accel.abs, max_accel)
+      target_accel = new_accel
+      false
+    }
+    case Act_Done_With_Route() => {
+      at.on.asEdge.road.road_agent.tollbooth.exit(this)
+      //Util.assert_eq(at.on.asInstanceOf[Edge].road, route.goal)
+      // Trust behavior, don't abuse this.
+      // (Plus, it doesn't hold for RouteAnalyzer vehicles...)
+      Util.assert_eq(speed <= cfg.epsilon, true)
+      true
     }
   }
 
