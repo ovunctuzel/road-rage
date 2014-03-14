@@ -20,19 +20,5 @@ object AortaBuild extends Build {
         "jline" % "jline" % "2.11"
       )
     )
-  ).dependsOn(macros)
-
-  lazy val macros = Project(
-    id = "aorta-macros",
-    base = file("macros"),
-    settings = buildSettings ++ Seq(
-      scalaSource in Compile := baseDirectory.value,
-      autoCompilerPlugins := true,
-      libraryDependencies ++= Seq(
-        "org.scala-lang" % "scala-reflect" % scalaVersion.value,
-        "org.scalamacros" % "quasiquotes" % "2.0.0-M3" cross CrossVersion.full,
-        compilerPlugin("org.scalamacros" % "paradise" % "2.0.0-M3" cross CrossVersion.full)
-      )
-    )
   )
 }
