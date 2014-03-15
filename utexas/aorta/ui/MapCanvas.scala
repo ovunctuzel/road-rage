@@ -9,9 +9,9 @@ import java.awt.{Graphics2D, Shape, BasicStroke, Color}
 import java.awt.geom.{Rectangle2D, Ellipse2D, Line2D}
 import swing.event.Key
 
-import utexas.aorta.map.{Road, Vertex, Edge, Position, Turn, Coordinate, Zone}
+import utexas.aorta.map.{Road, Vertex, Edge, Turn, Coordinate, Zone}
 import utexas.aorta.sim.{Simulation, EV_Signal_Change, EV_Transition, EV_Reroute, EV_Breakpoint,
-                         EV_Heartbeat, AgentMap}
+                         EV_Heartbeat, AgentMap, Position}
 import utexas.aorta.sim.make.IntersectionType
 import utexas.aorta.sim.drivers.Agent
 import utexas.aorta.analysis.SimREPL

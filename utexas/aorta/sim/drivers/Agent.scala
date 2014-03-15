@@ -7,8 +7,8 @@ package utexas.aorta.sim.drivers
 import scala.collection.mutable
 
 import utexas.aorta.contrib.TollBroker
-import utexas.aorta.map.{Edge, Coordinate, Turn, Traversable, Graph, Position, Vertex}
-import utexas.aorta.sim.{Simulation, EV_AgentQuit, AgentMap, EV_Breakpoint}
+import utexas.aorta.map.{Edge, Coordinate, Turn, Traversable, Graph, Vertex}
+import utexas.aorta.sim.{Simulation, EV_AgentQuit, AgentMap, EV_Breakpoint, Position}
 import utexas.aorta.sim.intersections.{Intersection, Ticket}
 import utexas.aorta.ui.Renderable
 

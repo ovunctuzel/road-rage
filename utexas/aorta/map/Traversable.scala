@@ -7,9 +7,8 @@ package utexas.aorta.map
 // TODO I don't want this dependency, but at the moment, it leads to a great
 // perf boost due to dropping a pricy hash lookup
 import utexas.aorta.sim.Queue
-import utexas.aorta.ui.Renderable
 
-import utexas.aorta.common.{cfg, Util, Physics, StateWriter, StateReader, TurnID, Serializable}
+import utexas.aorta.common.{cfg, Util, Physics, StateWriter, StateReader}
 
 // Something with a sequence of lines forming a path and a way to get to more
 // somethings
@@ -191,47 +190,4 @@ class Line(val x1: Double, val y1: Double, val x2: Double, val y2: Double) {
 object Line {
   def unserialize(r: StateReader) =
     new Line(r.double, r.double, r.double, r.double)
-}
-
-case class Position(on: Traversable, dist: Double) extends Renderable with Serializable {
-  Util.assert_ge(dist, 0)
-  Util.assert_le(dist, on.length)
-
-  def location = on.location(dist)
-  def dist_left = on.length - dist
-  override def toString = s"($on, $dist)"
-  override def tooltip = List(f"$on at $dist%.2f")
-  
-  def debug = {
-    Util.log(toString)
-    on match {
-      case e: Edge => e.debug
-      case _ =>
-    }
-  }
-
-  def serialize(w: StateWriter) {
-    on match {
-      case e: Edge => {
-        w.bool(true)
-        w.int(e.id.int)
-      }
-      case t: Turn => {
-        w.bool(false)
-        w.int(t.id.int)
-      }
-    }
-    w.double(dist)
-  }
-}
-
-object Position {
-  def unserialize(r: StateReader, graph: Graph): Position = {
-    val on: Traversable =
-      if (r.bool)
-        graph.edges(r.int)
-      else
-        graph.turns(new TurnID(r.int))
-    return Position(on, r.double)
-  }
 }

@@ -4,8 +4,8 @@
 
 package utexas.aorta.sim.drivers
 
-import utexas.aorta.map.{Edge, Road, Turn, Traversable, Position}
-import utexas.aorta.sim.EV_Transition
+import utexas.aorta.map.{Edge, Road, Turn, Traversable}
+import utexas.aorta.sim.{EV_Transition, Position}
 import utexas.aorta.sim.intersections.Ticket
 import scala.collection.mutable
 
