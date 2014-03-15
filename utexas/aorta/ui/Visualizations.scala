@@ -55,6 +55,7 @@ trait Visualization {
     state.road_colors.add_layer(layer)
     for ((r, cost) <- costs) {
       // Cap at 1 since we may chop off some of the largest values
+      // TODO also try / sum_cost?
       state.road_colors.set(layer, r, heatmap.color(math.min(cost / max_cost, 1.0)))
     }
     state.set_cur_layer(layer)

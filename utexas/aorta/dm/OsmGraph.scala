@@ -30,6 +30,11 @@ class OsmGraph(ways: Set[OsmWay], connections: Map[OsmWay, Set[OsmWay]]) {
     }
     return rank
   }
+
+  def convert_costs(costs: Map[OsmWay, Double], graph: Graph): Map[Road, Double] = {
+    val costs_by_id = costs.map({ case (k, v) => k.id -> v}).toMap
+    return graph.roads.map(r => r -> costs_by_id(r.osm_id)).toMap
+  }
 }
 case class OsmWay(id: String, label: String)
 
