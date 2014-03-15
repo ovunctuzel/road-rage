@@ -254,11 +254,10 @@ object IntersectionType extends Enumeration {
 object RouterType extends Enumeration {
   type RouterType = Value
   // Agents don't use Unusable; it's just for manually-invoked routers.
-  val Congestion, Zone, Fixed, Unusable, DumbToll, TollThreshold, SumToll, Tollbooth = Value
+  val Congestion, Fixed, Unusable, DumbToll, TollThreshold, SumToll, Tollbooth = Value
 
   def make(enum: RouterType.Value, graph: Graph, initial_path: List[Road]) = enum match {
     case Congestion => new CongestionRouter(graph)
-    //case RouterType.Zone => new ZoneRouter(graph)
     case Fixed => new FixedRouter(graph, initial_path)
     case DumbToll => new DumbTollRouter(graph)
     case TollThreshold => new TollThresholdRouter(graph)

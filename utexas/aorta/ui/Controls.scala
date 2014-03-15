@@ -118,7 +118,7 @@ trait Controls {
     }
   }
 
-  // Unused letter keys: a b e h j k l m n o q r u v
+  // Unused letter keys: a b e h j k l m n o q r u v w z
   def handle_ev_keypress(key: Any): Unit = key match {
     // TODO this'll be tab someday, i vow!
     case Key.Control => {
@@ -195,8 +195,6 @@ trait Controls {
     }
     case Key.G => state.show_green = !state.show_green
     case Key.T => state.show_tooltips = !state.show_tooltips
-    case Key.Z => state.show_zone_colors = !state.show_zone_colors
-    case Key.W => state.show_zone_centers = !state.show_zone_centers
     case Key.S => {
       if (!state.running) {
         canvas.step_sim()

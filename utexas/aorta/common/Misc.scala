@@ -280,10 +280,6 @@ object RoadID {
   }
   def do_magic_load(r: MagicReader) = new RoadID(r.int)
 }
-class ZoneID(val int: Int) extends AnyVal with Ordered[ZoneID] {
-  override def toString = int.toString
-  override def compare(other: ZoneID) = int.compare(other.int)
-}
 class ValueOfTime(val time_per_cost: Double) extends AnyVal {
   override def toString = time_per_cost.toString
   // TODO return Time type
