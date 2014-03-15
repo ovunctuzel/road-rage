@@ -6,7 +6,8 @@ package utexas.aorta.dm
 
 import scala.collection.mutable
 
-import utexas.aorta.map.{Graph, Road}
+import utexas.aorta.map.{Graph, Road, FreeflowRouter}
+import utexas.aorta.common.RNG
 
 // Directed graph
 class OsmGraph(
@@ -31,6 +32,25 @@ class OsmGraph(
       rank = new_rank.mapValues(x => x / sum_ranks)
     }
     return rank
+  }
+
+  def popular_ways(graph: Graph): Map[OsmWay, Double] = {
+    def way(r: Road) = OsmWay(r.osm_id, r.road_type)
+
+    val num_routes = 3000
+    val router = new FreeflowRouter(graph)
+    val rng = new RNG()
+    val frequency = new mutable.HashMap[OsmWay, Double]()
+    ways.foreach(w => frequency(w) = 0)
+    for (i <- Range(0, num_routes)) {
+      if (i % 500 == 0) {
+        println(s"Visualizing popular roads, $i / $num_routes...")
+      }
+      for (r <- router.path(rng.choose(graph.roads), rng.choose(graph.roads)).path) {
+        frequency(way(r)) += 1
+      }
+    }
+    return frequency.toMap
   }
 
   def convert_costs(costs: Map[OsmWay, Double], graph: Graph): Map[Road, Double] = {
