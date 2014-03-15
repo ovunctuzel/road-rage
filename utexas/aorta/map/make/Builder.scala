@@ -44,7 +44,7 @@ object Builder {
     val remap_lines = new Pass3_Part4(graph3).run()
     bldgs.group(graph3)
 
-    new_fix_ids(graph3)
+    new_fix_ids(graph3, remap_lines._1, remap_lines._2)
     val graph = new Graph(
       graph3.roads.toArray, graph3.edges.toArray, graph3.vertices.toArray, artifacts,
       graph1.width, graph1.height, graph1.offX, graph1.offY, graph1.scale,
@@ -55,17 +55,21 @@ object Builder {
       s" edges, and ${graph3.vertices.length} vertices"
     )
     Util.mkdir("maps")
-    val w = fix_ids(graph, output, remap_lines._1, remap_lines._2)
+    val w = fix_ids(graph, output)
     graph.serialize(w)
     w.done()
 
     return output
   }
 
-  private def new_fix_ids(graph: PreGraph3) {
+  private def new_fix_ids(graph: PreGraph3, first_lines: Map[EdgeID, Line], last_lines: Map[EdgeID, Line]) {
     val vertices = (for ((v, id) <- graph.vertices.zipWithIndex)
       yield v.id -> new VertexID(id)
     ).toMap
+    val roads = (for ((r, id) <- graph.roads.zipWithIndex)
+      yield r.id -> new RoadID(id)
+    ).toMap
+
     graph.vertices = graph.vertices.map(old => {
       val v = new Vertex(old.location, vertices(old.id))
       v.turns ++= old.turns
@@ -73,24 +77,32 @@ object Builder {
     })
     graph.roads = graph.roads.map(old => {
       val r = new Road(
-        old.id, old.dir, old.length, old.name, old.road_type, old.osm_id, vertices(old.v1.id),
-        vertices(old.v2.id), old.points
+        roads(old.id), old.dir, old.length, old.name, old.road_type, old.osm_id,
+        vertices(old.v1.id), vertices(old.v2.id), old.points
       )
       r.houses ++= old.houses
       r.shops ++= old.shops
       r
     })
+    graph.edges = graph.edges.map(old => {
+      val lines = if (old.lines.size > 1) {
+        val l1 = first_lines.getOrElse(old.id, old.lines.head)
+        val l2 = old.lines.tail.dropRight(1)
+        val l3 = last_lines.getOrElse(old.id, old.lines.last)
+        Array(l1) ++ l2 ++ Array(l3)
+      } else {
+        Array(first_lines.getOrElse(old.id, old.lines.head))
+      }
+      new Edge(old.id, roads(old.road.id), old.lane_num, lines)
+    })
   }
 
-  private def fix_ids(graph: Graph, fn: String, first: Map[Edge, Line], last: Map[Edge, Line]): MapStateWriter = {
+  private def fix_ids(graph: Graph, fn: String): MapStateWriter = {
     val edges = (for ((e, raw_id) <- graph.edges.zipWithIndex)
       yield e.id -> new EdgeID(raw_id)
     ).toMap
-    val roads = (for ((r, id) <- graph.roads.zipWithIndex)
-      yield r.id -> new RoadID(id)
-    ).toMap
 
-    return new MapStateWriter(fn, edges, roads, first, last)
+    return new MapStateWriter(fn, edges)
   }
 }
 
@@ -99,7 +111,6 @@ object Builder {
 // TODO dont extend a BinaryStateWriter specifically.
 // TODO ideally, have methods for each type of id, and override them.
 class MapStateWriter(
-  fn: String, val edges: Map[EdgeID, EdgeID],
-  val roads: Map[RoadID, RoadID], val first_lines: Map[Edge, Line], val last_lines: Map[Edge, Line]
+  fn: String, val edges: Map[EdgeID, EdgeID]
 ) extends BinaryStateWriter(fn)
 // TODO make turn IDs contig too

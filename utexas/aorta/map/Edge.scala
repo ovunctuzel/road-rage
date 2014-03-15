@@ -21,14 +21,10 @@ class Edge(
 
   def serialize(w: MapStateWriter) {
     w.int(w.edges(id).int)
-    w.int(w.roads(road.id).int)
+    w.int(road_id.int)
     w.int(lane_num)
     w.int(lines.length)
-    w.first_lines.getOrElse(this, lines.head).serialize(w)
-    lines.tail.dropRight(1).foreach(l => l.serialize(w))
-    if (lines.size > 1) {
-      w.last_lines.getOrElse(this, lines.last).serialize(w)
-    }
+    lines.foreach(l => l.serialize(w))
   }
 
   def setup(roads: Array[Road]) {

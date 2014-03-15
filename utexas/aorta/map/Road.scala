@@ -70,7 +70,7 @@ class Road(
   // Meta
 
   def serialize(w: MapStateWriter) {
-    w.int(w.roads(id).int)
+    w.int(id.int)
     w.int(dir.id)
     w.double(length)
     w.strings(name, road_type, osm_id)

@@ -6,15 +6,15 @@ package utexas.aorta.map.make
 
 import scala.collection.mutable
 
-import utexas.aorta.map.{Edge, Vertex, Turn, Line, Direction}
+import utexas.aorta.map.{Vertex, Turn, Line, Direction}
 
-import utexas.aorta.common.{Util, cfg, TurnID}
+import utexas.aorta.common.{Util, cfg, TurnID, EdgeID}
 
 class Pass3_Part4(graph: PreGraph3) {
-  private val shortest_first_line = new mutable.HashMap[Edge, Line]
-  private val shortest_last_line = new mutable.HashMap[Edge, Line]
+  private val shortest_first_line = new mutable.HashMap[EdgeID, Line]
+  private val shortest_last_line = new mutable.HashMap[EdgeID, Line]
 
-  def run(): (Map[Edge, Line], Map[Edge, Line]) = {
+  def run(): (Map[EdgeID, Line], Map[EdgeID, Line]) = {
     Util.log("Tidying up geometry...")
     var cnt = graph.vertices.size
     for (v <- graph.vertices) {
@@ -35,11 +35,11 @@ class Pass3_Part4(graph: PreGraph3) {
         val l1 = in.lines.last
         val l2 = out.lines.head
 
-        if (!shortest_last_line.contains(in)) {
-          shortest_last_line(in) = l1
+        if (!shortest_last_line.contains(in.id)) {
+          shortest_last_line(in.id) = l1
         }
-        if (!shortest_first_line.contains(out)) {
-          shortest_first_line(out) = l2
+        if (!shortest_first_line.contains(out.id)) {
+          shortest_first_line(out.id) = l2
         }
 
         l1.segment_intersection(l2) match {
@@ -49,14 +49,14 @@ class Pass3_Part4(graph: PreGraph3) {
 
             // This line will intersect many -- store the one that gets
             // trimmed the most.
-            if (!shortest_last_line.contains(in) || possible1.length < shortest_last_line(in).length) {
+            if (!shortest_last_line.contains(in.id) || possible1.length < shortest_last_line(in.id).length) {
               if (ok_mod(possible1)) {
-                shortest_last_line(in) = possible1
+                shortest_last_line(in.id) = possible1
               }
             }
-            if (!shortest_first_line.contains(out) || possible2.length < shortest_first_line(out).length) {
+            if (!shortest_first_line.contains(out.id) || possible2.length < shortest_first_line(out.id).length) {
               if (ok_mod(possible2)) {
-                shortest_first_line(out) = possible2
+                shortest_first_line(out.id) = possible2
               }
             }
           }
@@ -67,12 +67,12 @@ class Pass3_Part4(graph: PreGraph3) {
 
     // Handle edges with only one line
     for (e <- graph.edges if e.lines.size == 1) {
-      (shortest_first_line.get(e), shortest_last_line.get(e)) match {
+      (shortest_first_line.get(e.id), shortest_last_line.get(e.id)) match {
         case (Some(l1), Some(l2)) => {
           // shortest_first_line will be the one that overrides
           val candidate = new Line(l1.x1, l1.y1, l2.x2, l2.y2)
           if (ok_mod(candidate)) {
-            shortest_first_line(e) = candidate
+            shortest_first_line(e.id) = candidate
           }
         }
         case _ =>
