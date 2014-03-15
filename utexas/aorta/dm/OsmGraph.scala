@@ -9,7 +9,28 @@ import scala.collection.mutable
 import utexas.aorta.map.{Graph, Road}
 
 // Directed graph
-class OsmGraph(ways: Set[OsmWay], connections: Map[OsmWay, Set[OsmWay]])
+class OsmGraph(ways: Set[OsmWay], connections: Map[OsmWay, Set[OsmWay]]) {
+  def succs(way: OsmWay) = connections(way)
+  def preds(way: OsmWay) = connections.keys.filter(w => connections(w).contains(way)) // TODO slow?
+
+  def pagerank(): Map[OsmWay, Double] = {
+    val iterations = 50
+    val alpha = .15
+    // TODO seed initial_weight with our own notion of importance?
+    val initial_weight = 1.0 / ways.size
+    val rank_source = alpha / ways.size
+    var rank = ways.map(w => w -> initial_weight).toMap
+    for (i <- Range(0, iterations)) {
+      println(s"Computing PageRank, iteration $i of $iterations...")
+      val new_rank = ways.map(w => w ->
+        (rank_source + (1.0 - alpha) * preds(w).map(pred => rank(pred) / succs(pred).size).sum)
+      ).toMap
+      val sum_ranks = new_rank.values.sum
+      rank = new_rank.mapValues(x => x / sum_ranks)
+    }
+    return rank
+  }
+}
 case class OsmWay(id: String, label: String)
 
 object OsmGraph {
