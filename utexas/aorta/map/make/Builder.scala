@@ -44,7 +44,7 @@ object Builder {
     val remap_lines = new Pass3_Part4(graph3).run()
     bldgs.group(graph3)
 
-    new_fix_ids(graph3, remap_lines._1, remap_lines._2)
+    fix_ids(graph3, remap_lines._1, remap_lines._2)
     val graph = new Graph(
       graph3.roads.toArray, graph3.edges.toArray, graph3.vertices.toArray, artifacts,
       graph1.width, graph1.height, graph1.offX, graph1.offY, graph1.scale,
@@ -55,14 +55,14 @@ object Builder {
       s" edges, and ${graph3.vertices.length} vertices"
     )
     Util.mkdir("maps")
-    val w = fix_ids(graph, output)
+    val w = Util.writer(output)
     graph.serialize(w)
     w.done()
 
     return output
   }
 
-  private def new_fix_ids(graph: PreGraph3, first_lines: Map[EdgeID, Line], last_lines: Map[EdgeID, Line]) {
+  private def fix_ids(graph: PreGraph3, first_lines: Map[EdgeID, Line], last_lines: Map[EdgeID, Line]) {
     val vertices = (for ((v, id) <- graph.vertices.zipWithIndex)
       yield v.id -> new VertexID(id)
     ).toMap
@@ -99,17 +99,4 @@ object Builder {
       new Edge(edges(old.id), roads(old.road.id), old.lane_num, lines)
     })
   }
-
-  private def fix_ids(graph: Graph, fn: String): MapStateWriter = {
-    return new MapStateWriter(fn)
-  }
 }
-
-// TODO nuke this thing.
-// Since we propagate a StateWriter to serialize maps anyway, push the re-mapping of IDs with it.
-// TODO dont extend a BinaryStateWriter specifically.
-// TODO ideally, have methods for each type of id, and override them.
-class MapStateWriter(
-  fn: String
-) extends BinaryStateWriter(fn)
-// TODO make turn IDs contig too

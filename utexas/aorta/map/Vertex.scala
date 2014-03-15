@@ -7,8 +7,7 @@ package utexas.aorta.map
 import Function.tupled
 
 import utexas.aorta.ui.Renderable
-import utexas.aorta.map.make.MapStateWriter
-import utexas.aorta.common.{Util, StateReader, VertexID}
+import utexas.aorta.common.{Util, StateReader, StateWriter, VertexID}
 
 // TODO I don't want this dependency, but at the moment, it leads to a great
 // perf boost due to dropping a pricy hash lookup
@@ -30,7 +29,7 @@ class Vertex(val location: Coordinate, val id: VertexID) extends Renderable {
   //////////////////////////////////////////////////////////////////////////////
   // Meta
 
-  def serialize(w: MapStateWriter) {
+  def serialize(w: StateWriter) {
     location.serialize(w)
     w.int(id.int)
     w.int(turns.length)

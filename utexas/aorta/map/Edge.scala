@@ -6,8 +6,7 @@ package utexas.aorta.map
 
 import scala.collection.mutable
 import utexas.aorta.ui.Renderable
-import utexas.aorta.map.make.MapStateWriter
-import utexas.aorta.common.{cfg, RNG, Util, StateReader, EdgeID, RoadID, Price}
+import utexas.aorta.common.{cfg, RNG, Util, StateReader, StateWriter, EdgeID, RoadID, Price}
 
 // TODO var lane num due to fixing IDs. necessary?
 class Edge(
@@ -19,7 +18,7 @@ class Edge(
   //////////////////////////////////////////////////////////////////////////////
   // Meta
 
-  def serialize(w: MapStateWriter) {
+  def serialize(w: StateWriter) {
     w.int(id.int)
     w.int(road_id.int)
     w.int(lane_num)

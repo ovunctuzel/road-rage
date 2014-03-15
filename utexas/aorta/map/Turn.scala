@@ -4,8 +4,7 @@
 
 package utexas.aorta.map
 
-import utexas.aorta.map.make.MapStateWriter
-import utexas.aorta.common.{StateReader, TurnID, EdgeID, Util}
+import utexas.aorta.common.{StateReader, StateWriter, TurnID, EdgeID, Util}
 
 class Turn(val id: TurnID, from_id: EdgeID, to_id: EdgeID, geometry: Array[Line])
   extends Traversable(geometry) with Ordered[Turn]
@@ -19,7 +18,7 @@ class Turn(val id: TurnID, from_id: EdgeID, to_id: EdgeID, geometry: Array[Line]
   //////////////////////////////////////////////////////////////////////////////
   // Meta
 
-  def serialize(w: MapStateWriter) {
+  def serialize(w: StateWriter) {
     w.int(id.int)
     w.int(from_id.int)
     w.int(to_id.int)

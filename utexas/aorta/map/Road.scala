@@ -7,10 +7,9 @@ package utexas.aorta.map
 import scala.collection.mutable
 import Function.tupled
 
-import utexas.aorta.map.make.MapStateWriter
 import utexas.aorta.ui.Renderable
 import utexas.aorta.sim.RoadAgent
-import utexas.aorta.common.{Util, RoadID, VertexID, Physics, StateReader}
+import utexas.aorta.common.{Util, RoadID, VertexID, Physics, StateReader, StateWriter}
 
 // An oriented bundle of lanes
 class Road(
@@ -69,7 +68,7 @@ class Road(
   //////////////////////////////////////////////////////////////////////////////
   // Meta
 
-  def serialize(w: MapStateWriter) {
+  def serialize(w: StateWriter) {
     w.int(id.int)
     w.int(dir.id)
     w.double(length)
@@ -164,7 +163,7 @@ object Road {
 // When we merge short roads, we get rid of geometry. Preserve it here for the GUI's sake in
 // absolutely minimal form.
 case class RoadArtifact(points: Array[Coordinate]) {
-  def serialize(w: MapStateWriter) {
+  def serialize(w: StateWriter) {
     w.int(points.size)
     points.foreach(pt => pt.serialize(w))
   }
