@@ -9,7 +9,9 @@ import scala.collection.mutable
 import utexas.aorta.map.{Graph, Road}
 
 // Directed graph
-class OsmGraph(ways: Set[OsmWay], connections: Map[OsmWay, Set[OsmWay]]) {
+class OsmGraph(
+  ways: Set[OsmWay], connections: Map[OsmWay, Set[OsmWay]], lengths: Map[OsmWay, Double]
+) {
   def succs(way: OsmWay) = connections(way)
   def preds(way: OsmWay) = connections.keys.filter(w => connections(w).contains(way)) // TODO slow?
 
@@ -44,9 +46,12 @@ object OsmGraph {
 
     val ways = orig.roads.map(way).toSet
     val connections = ways.map(w => w -> new mutable.HashSet[OsmWay]()).toMap
+    val lengths = new mutable.HashMap[OsmWay, Double]()
+    ways.foreach(w => lengths(w) = 0)
     for (r <- orig.roads) {
       connections(way(r)) ++= r.succs.map(way)
+      lengths(way(r)) += r.length
     }
-    return new OsmGraph(ways, connections.mapValues(_.toSet))
+    return new OsmGraph(ways, connections.mapValues(_.toSet), lengths.toMap)
   }
 }
