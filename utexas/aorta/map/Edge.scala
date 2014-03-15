@@ -11,10 +11,10 @@ import utexas.aorta.common.{cfg, RNG, Util, StateReader, EdgeID, RoadID, Price}
 
 // TODO var lane num due to fixing IDs. necessary?
 class Edge(
-  val id: EdgeID, val road: Road, var lane_num: Int, geometry: Array[Line]
+  val id: EdgeID, road_id: RoadID, var lane_num: Int, geometry: Array[Line]
 ) extends Traversable(geometry) with Renderable with Ordered[Edge]
 {
-  road.lanes += this
+  var road: Road = null
 
   //////////////////////////////////////////////////////////////////////////////
   // Meta
@@ -29,6 +29,12 @@ class Edge(
     if (lines.size > 1) {
       w.last_lines.getOrElse(this, lines.last).serialize(w)
     }
+  }
+
+  def setup(roads: Array[Road]) {
+    road = roads(road_id.int)
+    Util.assert_eq(road.id, road_id)
+    road.lanes += this
   }
 
   //////////////////////////////////////////////////////////////////////////////
@@ -117,8 +123,8 @@ class Edge(
 }
 
 object Edge {
-  def unserialize(r: StateReader, roads: Array[Road]) = new Edge(
-    new EdgeID(r.int), roads(r.int), r.int, Range(0, r.int).map(_ => Line.unserialize(r)).toArray
+  def unserialize(r: StateReader) = new Edge(
+    new EdgeID(r.int), new RoadID(r.int), r.int, Range(0, r.int).map(_ => Line.unserialize(r)).toArray
   )
 }
 

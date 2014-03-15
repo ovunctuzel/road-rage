@@ -94,7 +94,7 @@ object Graph {
     val s = r.double
     set_params(w, h, xo, yo, s)
     val roads = Range(0, r.int).map(_ => Road.unserialize(r)).toArray
-    val edges = Range(0, r.int).map(_ => Edge.unserialize(r, roads)).toArray
+    val edges = Range(0, r.int).map(_ => Edge.unserialize(r)).toArray
     val vertices = Range(0, r.int).map(_ => Vertex.unserialize(r)).toArray
     val name = r.string
     val artifacts = Range(0, r.int).map(_ => RoadArtifact.unserialize(r)).toArray
@@ -103,6 +103,7 @@ object Graph {
     // TODO replace with lazy val's and a mutable wrapper around an immutable graph.
     g.roads.foreach(r => r.setup(vertices))
     g.turns.values.foreach(t => t.setup(edges))
+    g.edges.foreach(e => e.setup(roads))
     return g
   }
 }

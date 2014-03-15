@@ -112,7 +112,8 @@ class PreGraph3(old_graph: PreGraph2) {
         case _ =>
       }
     }*/
-    val e = new Edge(new EdgeID(edges.length), r, lane_num, lines)
+    val e = new Edge(new EdgeID(edges.length), r.id, lane_num, lines)
+    e.setup(roads.toArray)  // TODO inefficient?
     edges += e
   }
 
