@@ -255,7 +255,7 @@ object Phase {
 
       groups += this_group.toSet
     }
-    return turn_groups_to_phases(maximize_groups(groups.toList, vert.turns))
+    return turn_groups_to_phases(maximize_groups(groups.toList, vert.turns.toList))
   }
 
   // Threshold of 10 degrees

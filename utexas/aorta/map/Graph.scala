@@ -6,21 +6,13 @@ package utexas.aorta.map
 
 import scala.collection.mutable
 
-import utexas.aorta.common.{Util, StateReader, StateWriter, VertexID, EdgeID, RoadID}
+import utexas.aorta.common.{Util, StateReader, StateWriter, VertexID, EdgeID, RoadID, TurnID}
 
 class Graph(
   val roads: Array[Road], val edges: Array[Edge], val vertices: Array[Vertex],
-  val artifacts: Array[RoadArtifact], val width: Double, val height: Double, val offX: Double,
-  val offY: Double, val scale: Double, val name: String
+  val turns: Array[Turn], val artifacts: Array[RoadArtifact], val width: Double, val height: Double,
+  val offX: Double, val offY: Double, val scale: Double, val name: String
 ) {
-  //////////////////////////////////////////////////////////////////////////////
-  // Deterministic state
-
-  // TODO if we squish down IDs, it can be an array too!
-  val turns = vertices.foldLeft(List[Turn]())(
-    (l, v) => v.turns.toList ++ l
-  ).map(t => t.id -> t).toMap
-
   //////////////////////////////////////////////////////////////////////////////
   // Meta
 
@@ -32,6 +24,8 @@ class Graph(
     edges.foreach(e => e.serialize(w))
     w.int(vertices.size)
     vertices.foreach(v => v.serialize(w))
+    w.int(turns.size)
+    turns.foreach(t => t.serialize(w))
     w.string(name)
     w.int(artifacts.size)
     artifacts.foreach(a => a.serialize(w))
@@ -40,11 +34,12 @@ class Graph(
   //////////////////////////////////////////////////////////////////////////////
   // Queries
 
-  def traversables() = edges ++ turns.values
+  def traversables() = edges ++ turns
 
   def get_v(id: VertexID) = vertices(id.int)
   def get_e(id: EdgeID) = edges(id.int)
   def get_r(id: RoadID) = roads(id.int)
+  def get_t(id: TurnID) = turns(id.int)
 
   // TODO file library
   def basename = name.replace("maps/", "").replace(".map", "")
@@ -95,14 +90,15 @@ object Graph {
     val roads = Range(0, r.int).map(_ => Road.unserialize(r)).toArray
     val edges = Range(0, r.int).map(_ => Edge.unserialize(r)).toArray
     val vertices = Range(0, r.int).map(_ => Vertex.unserialize(r)).toArray
+    val turns = Range(0, r.int).map(_ => Turn.unserialize(r)).toArray
     val name = r.string
     val artifacts = Range(0, r.int).map(_ => RoadArtifact.unserialize(r)).toArray
-    val g = new Graph(roads, edges, vertices, artifacts, w, h, xo, yo, s, name)
+    val g = new Graph(roads, edges, vertices, turns, artifacts, w, h, xo, yo, s, name)
     // Embrace dependencies, but decouple them and setup afterwards.
     // TODO replace with lazy val's and a mutable wrapper around an immutable graph.
-    g.roads.foreach(r => r.setup(vertices))
-    g.turns.values.foreach(t => t.setup(edges))
     g.edges.foreach(e => e.setup(roads))
+    g.roads.foreach(r => r.setup(vertices))
+    g.turns.foreach(t => t.setup(edges))
     return g
   }
 }

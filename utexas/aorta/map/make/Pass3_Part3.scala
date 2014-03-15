@@ -128,8 +128,11 @@ class Pass3_Part3(graph: PreGraph3) {
     // TODO write these at set differences..
     graph.edges = graph.edges.filter(e => !doomed_edges.contains(e))
     val doomed_turns = bad_turns.toSet
+    graph.turns = graph.turns.filter(t => !doomed_turns.contains(t))
     for (v <- graph.vertices) {
-      v.turns = v.turns.filter(t => !doomed_turns.contains(t))
+      val good_turns = v.turns.filter(t => !doomed_turns.contains(t))
+      v.turns.clear()
+      v.turns ++= good_turns
     }
 
     fix_map()
@@ -208,10 +211,11 @@ class Pass3_Part3(graph: PreGraph3) {
   }
 
   private def remove_turns_to_bad_edges(bad_edges: Set[Edge]) {
+    graph.turns = graph.turns.filter(t => !bad_edges.contains(t.from) && !bad_edges.contains(t.to))
     for (v <- graph.vertices) {
-      v.turns = v.turns.filter(
-        t => !bad_edges.contains(t.from) && !bad_edges.contains(t.to)
-      )
+      val good_turns = v.turns.filter(t => !bad_edges.contains(t.from) && !bad_edges.contains(t.to))
+      v.turns.clear()
+      v.turns ++= good_turns
     }
   }
 

@@ -21,8 +21,9 @@ class PreGraph3(old_graph: PreGraph2) {
   // TODO i hope this wont be necessary eventually
   var road_id_cnt = 0
 
-  var edges = new mutable.MutableList[Edge]           // a directed lane
+  var edges = new mutable.MutableList[Edge]
   var roads: List[Road] = Nil
+  var turns = new mutable.ListBuffer[Turn]
   val other_side = new mutable.HashMap[Road, Road]()
 
   for (old <- old_graph.edges) {
@@ -30,7 +31,6 @@ class PreGraph3(old_graph: PreGraph2) {
   }
 
   // support Tarjan's. Each of these expensive things should only be called once
-  def turns() = vertices.foldLeft(List[Turn]())((l, v) => v.turns ++ l)
   def traversables() = edges ++ turns
 
   def add_road(old_edge: PreEdge2) {

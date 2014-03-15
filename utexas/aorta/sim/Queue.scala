@@ -295,7 +295,7 @@ object Position {
       if (r.bool)
         graph.edges(r.int)
       else
-        graph.turns(new TurnID(r.int))
+        graph.turns(r.int)
     return Position(on, r.double)
   }
 }

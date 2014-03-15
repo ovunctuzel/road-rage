@@ -5,6 +5,7 @@
 package utexas.aorta.map
 
 import Function.tupled
+import scala.collection.mutable
 
 import utexas.aorta.ui.Renderable
 import utexas.aorta.common.{Util, StateReader, StateWriter, VertexID}
@@ -17,8 +18,7 @@ class Vertex(val location: Coordinate, val id: VertexID) extends Renderable {
   //////////////////////////////////////////////////////////////////////////////
   // State
 
-  // TODO we could keep a map for faster lookup
-  var turns: List[Turn] = Nil
+  val turns = new mutable.ListBuffer[Turn]()
 
   //////////////////////////////////////////////////////////////////////////////
   // Deterministic state
@@ -32,17 +32,15 @@ class Vertex(val location: Coordinate, val id: VertexID) extends Renderable {
   def serialize(w: StateWriter) {
     location.serialize(w)
     w.int(id.int)
-    w.int(turns.length)
-    turns.foreach(t => t.serialize(w))
   }
 
   //////////////////////////////////////////////////////////////////////////////
   // Queries
 
-  def turns_from(from: Edge): List[Turn] = turns.filter(_.from == from)
-  def turns_to(to: Edge): List[Turn] = turns.filter(_.to == to)
+  def turns_from(from: Edge): List[Turn] = turns.filter(_.from == from).toList
+  def turns_to(to: Edge): List[Turn] = turns.filter(_.to == to).toList
   def edges_to(to: Road): List[Edge] =
-    turns.filter(_.to.road == to).map(_.from)
+    turns.filter(_.to.road == to).map(_.from).toList
 
   // what verts lead to this one?
   def in_verts = turns.map(t => t.from.from).toSet
@@ -89,9 +87,5 @@ class Vertex(val location: Coordinate, val id: VertexID) extends Renderable {
 }
 
 object Vertex {
-  def unserialize(r: StateReader): Vertex = {
-    val v = new Vertex(Coordinate.unserialize(r), new VertexID(r.int))
-    v.turns ++= Range(0, r.int).map(_ => Turn.unserialize(r))
-    return v
-  }
+  def unserialize(r: StateReader) = new Vertex(Coordinate.unserialize(r), new VertexID(r.int))
 }

@@ -150,7 +150,7 @@ class Ticket(val a: Agent, val turn: Turn) extends Ordered[Ticket] with Serializ
 
 object Ticket {
   def unserialize(r: StateReader, a: Agent, graph: Graph): Ticket = {
-    val ticket = new Ticket(a, graph.turns(new TurnID(r.int)))
+    val ticket = new Ticket(a, graph.turns(r.int))
     ticket.req_tick = r.double
     ticket.accept_tick = r.double
     ticket.done_tick = r.double

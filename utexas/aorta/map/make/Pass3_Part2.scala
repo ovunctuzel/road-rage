@@ -45,6 +45,7 @@ class Pass3_Part2(graph: PreGraph3) {
         new TurnID(next_id), pair._1.id, pair._2.id,
         Array(new Line(pair._1.end_pt, pair._2.start_pt))
       )
+      graph.turns += t
       t.setup(graph.edges.toArray)
       return t
     }
@@ -91,15 +92,15 @@ class Pass3_Part2(graph: PreGraph3) {
 
         if (lane_diff == 0) {
           // exact 1:1 mapping
-          v.turns ++= from_edges.zip(to_edges).map(make_turn)
+          from_edges.zip(to_edges).foreach(make_turn)
         } else if (lane_diff < 0) {
           // more to less. the rightmost will all have to merge.
           // we have 'to_edges.length - 1' regular dsts.
           val (mergers, regulars) = from_edges.splitAt(from_edges.length - (to_edges.length - 1))
           Util.assert_eq(regulars.length, to_edges.length - 1)
 
-          v.turns ++= mergers.map(from => make_turn((from, to_edges.head)))
-          v.turns ++= regulars.zip(to_edges.tail).map(make_turn)
+          mergers.foreach(from => make_turn((from, to_edges.head)))
+          regulars.zip(to_edges.tail).foreach(make_turn)
         } else if (lane_diff > 0) {
           // less to more. the leftmost gets to pick many destinations.
           val lucky_src = from_edges.last
@@ -108,15 +109,15 @@ class Pass3_Part2(graph: PreGraph3) {
           val (regular_dsts, choices) = to_edges.splitAt(to_edges.size - lane_diff - 1)
           Util.assert_eq(regular_srcs.size, regular_dsts.size)
           
-          v.turns ++= regular_srcs.zip(regular_dsts).map(make_turn)
-          v.turns ++= choices.map(to => make_turn((lucky_src, to)))
+          regular_srcs.zip(regular_dsts).foreach(make_turn)
+          choices.foreach(to => make_turn((lucky_src, to)))
         }
       } else if (angle_btwn < 0) {
         // no multiple turn lanes supported yet. it's just too hard to know when
         // this is the case.
-        v.turns = make_turn((from_rep.leftmost_lane, to_rep.leftmost_lane)) :: v.turns
+        make_turn((from_rep.leftmost_lane, to_rep.leftmost_lane))
       } else {
-        v.turns = make_turn((from_rep.rightmost_lane, to_rep.rightmost_lane)) :: v.turns
+        make_turn((from_rep.rightmost_lane, to_rep.rightmost_lane))
       }
     }
   }

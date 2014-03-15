@@ -229,7 +229,7 @@ object Policy {
   def find_ticket(r: StateReader, sim: Simulation): Ticket =
     find_ticket(sim, r.int, new TurnID(r.int))
   def find_ticket(sim: Simulation, agent_id: Int, turn_id: TurnID): Ticket =
-    sim.get_agent(agent_id).get.get_ticket(sim.graph.turns(turn_id).from).get
+    sim.get_agent(agent_id).get.get_ticket(sim.graph.get_t(turn_id).from).get
 }
 
 // Simplest base-line ever.

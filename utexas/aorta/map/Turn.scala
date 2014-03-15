@@ -30,6 +30,7 @@ class Turn(val id: TurnID, from_id: EdgeID, to_id: EdgeID, geometry: Array[Line]
     to = edges(to_id.int)
     Util.assert_eq(from.id, from_id)
     Util.assert_eq(to.id, to_id)
+    vert.turns += this
   }
 
   //////////////////////////////////////////////////////////////////////////////

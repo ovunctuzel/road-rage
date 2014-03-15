@@ -8,7 +8,7 @@ import scala.collection.mutable
 import utexas.aorta.ui.Renderable
 import utexas.aorta.common.{cfg, RNG, Util, StateReader, StateWriter, EdgeID, RoadID, Price}
 
-// TODO var lane num due to fixing IDs. necessary?
+// TODO var lane num due to tarjan pruning. can re-make an edge, now.
 class Edge(
   val id: EdgeID, road_id: RoadID, var lane_num: Int, geometry: Array[Line]
 ) extends Traversable(geometry) with Renderable with Ordered[Edge]

@@ -46,8 +46,8 @@ object Builder {
 
     fix_ids(graph3, remap_lines._1, remap_lines._2)
     val graph = new Graph(
-      graph3.roads.toArray, graph3.edges.toArray, graph3.vertices.toArray, artifacts,
-      graph1.width, graph1.height, graph1.offX, graph1.offY, graph1.scale,
+      graph3.roads.toArray, graph3.edges.toArray, graph3.vertices.toArray, graph3.turns.toArray,
+      artifacts, graph1.width, graph1.height, graph1.offX, graph1.offY, graph1.scale,
       input.replace(".osm", "").replace("osm/", "")
     )
     Util.log(
@@ -72,12 +72,14 @@ object Builder {
     val edges = (for ((e, raw_id) <- graph.edges.zipWithIndex)
       yield e.id -> new EdgeID(raw_id)
     ).toMap
+    val turns = (for ((t, raw_id) <- graph.turns.zipWithIndex)
+      yield t.id -> new TurnID(raw_id)
+    ).toMap
 
-    graph.vertices = graph.vertices.map(old => {
-      val v = new Vertex(old.location, vertices(old.id))
-      v.turns ++= old.turns.map(t => new Turn(t.id, edges(t.from.id), edges(t.to.id), t.lines))
-      v
-    })
+    graph.vertices = graph.vertices.map(v => new Vertex(v.location, vertices(v.id)))
+    graph.turns = graph.turns.map(
+      t => new Turn(turns(t.id), edges(t.from.id), edges(t.to.id), t.lines)
+    )
     graph.roads = graph.roads.map(old => {
       val r = new Road(
         roads(old.id), old.dir, old.length, old.name, old.road_type, old.osm_id,
