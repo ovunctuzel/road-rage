@@ -32,7 +32,7 @@ class Vertex(val location: Coordinate, val id: VertexID) extends Renderable {
 
   def serialize(w: MapStateWriter) {
     location.serialize(w)
-    w.int(w.vertices(id).int)
+    w.int(id.int)
     w.int(turns.length)
     turns.foreach(t => t.serialize(w))
   }
