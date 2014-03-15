@@ -21,8 +21,8 @@ class Turn(val id: TurnID, from_id: EdgeID, to_id: EdgeID, geometry: Array[Line]
 
   def serialize(w: MapStateWriter) {
     w.int(id.int)
-    w.int(w.edges(from.id).int)
-    w.int(w.edges(to.id).int)
+    w.int(from_id.int)
+    w.int(to_id.int)
     lines.head.serialize(w)
   }
 

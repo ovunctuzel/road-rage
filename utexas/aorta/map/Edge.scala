@@ -20,7 +20,7 @@ class Edge(
   // Meta
 
   def serialize(w: MapStateWriter) {
-    w.int(w.edges(id).int)
+    w.int(id.int)
     w.int(road_id.int)
     w.int(lane_num)
     w.int(lines.length)

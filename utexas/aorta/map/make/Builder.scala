@@ -4,7 +4,7 @@
 
 package utexas.aorta.map.make
 
-import utexas.aorta.map.{Graph, Edge, Line, Vertex, Road}
+import utexas.aorta.map.{Graph, Edge, Line, Vertex, Road, Turn}
 import utexas.aorta.common.{Util, EdgeID, VertexID, TurnID, RoadID, BinaryStateWriter}
 
 import scala.collection.mutable
@@ -69,10 +69,13 @@ object Builder {
     val roads = (for ((r, id) <- graph.roads.zipWithIndex)
       yield r.id -> new RoadID(id)
     ).toMap
+    val edges = (for ((e, raw_id) <- graph.edges.zipWithIndex)
+      yield e.id -> new EdgeID(raw_id)
+    ).toMap
 
     graph.vertices = graph.vertices.map(old => {
       val v = new Vertex(old.location, vertices(old.id))
-      v.turns ++= old.turns
+      v.turns ++= old.turns.map(t => new Turn(t.id, edges(t.from.id), edges(t.to.id), t.lines))
       v
     })
     graph.roads = graph.roads.map(old => {
@@ -93,16 +96,12 @@ object Builder {
       } else {
         Array(first_lines.getOrElse(old.id, old.lines.head))
       }
-      new Edge(old.id, roads(old.road.id), old.lane_num, lines)
+      new Edge(edges(old.id), roads(old.road.id), old.lane_num, lines)
     })
   }
 
   private def fix_ids(graph: Graph, fn: String): MapStateWriter = {
-    val edges = (for ((e, raw_id) <- graph.edges.zipWithIndex)
-      yield e.id -> new EdgeID(raw_id)
-    ).toMap
-
-    return new MapStateWriter(fn, edges)
+    return new MapStateWriter(fn)
   }
 }
 
@@ -111,6 +110,6 @@ object Builder {
 // TODO dont extend a BinaryStateWriter specifically.
 // TODO ideally, have methods for each type of id, and override them.
 class MapStateWriter(
-  fn: String, val edges: Map[EdgeID, EdgeID]
+  fn: String
 ) extends BinaryStateWriter(fn)
 // TODO make turn IDs contig too
