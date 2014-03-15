@@ -4,7 +4,7 @@
 
 package utexas.aorta.map.make
 
-import utexas.aorta.map.{Graph, Edge, Line, Vertex, Road, Turn}
+import utexas.aorta.map.{Graph, Edge, Line, Vertex, Road, Turn, Coordinate}
 import utexas.aorta.common.{Util, EdgeID, VertexID, TurnID, RoadID, BinaryStateWriter}
 
 import scala.collection.mutable
@@ -42,9 +42,9 @@ object Builder {
     new Pass3_Part2(graph3).run()
     new Pass3_Part3(graph3).run()
     val remap_lines = new Pass3_Part4(graph3).run()
-    bldgs.group(graph3)
+    val bldg_results = bldgs.group(graph3)
 
-    fix_ids(graph3, remap_lines._1, remap_lines._2)
+    fix_ids(graph3, remap_lines._1, remap_lines._2, bldg_results._1, bldg_results._2)
     val graph = new Graph(
       graph3.roads.toArray, graph3.edges.toArray, graph3.vertices.toArray, graph3.turns.toArray,
       artifacts, graph1.width, graph1.height, graph1.offX, graph1.offY, graph1.scale,
@@ -62,7 +62,10 @@ object Builder {
     return output
   }
 
-  private def fix_ids(graph: PreGraph3, first_lines: Map[EdgeID, Line], last_lines: Map[EdgeID, Line]) {
+  private def fix_ids(
+    graph: PreGraph3, first_lines: Map[EdgeID, Line], last_lines: Map[EdgeID, Line],
+    houses: Map[Road, Array[Coordinate]], shops: Map[Road, Array[Coordinate]]
+  ) {
     val vertices = (for ((v, id) <- graph.vertices.zipWithIndex)
       yield v.id -> new VertexID(id)
     ).toMap
@@ -80,15 +83,10 @@ object Builder {
     graph.turns = graph.turns.map(
       t => new Turn(turns(t.id), edges(t.from.id), edges(t.to.id), t.lines)
     )
-    graph.roads = graph.roads.map(old => {
-      val r = new Road(
-        roads(old.id), old.dir, old.length, old.name, old.road_type, old.osm_id,
-        vertices(old.v1.id), vertices(old.v2.id), old.points
-      )
-      r.houses ++= old.houses
-      r.shops ++= old.shops
-      r
-    })
+    graph.roads = graph.roads.map(r => new Road(
+      roads(r.id), r.dir, r.length, r.name, r.road_type, r.osm_id,
+      vertices(r.v1.id), vertices(r.v2.id), r.points, houses(r), shops(r)
+    ))
     graph.edges = graph.edges.map(old => {
       val lines = if (old.lines.size > 1) {
         val l1 = first_lines.getOrElse(old.id, old.lines.head)

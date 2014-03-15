@@ -38,7 +38,8 @@ class PreGraph3(old_graph: PreGraph2) {
     val r_pos = new Road(
       new RoadID(road_id_cnt), Direction.POS, Road.road_len(old_edge.points),
       old_edge.dat.name, old_edge.dat.road_type, old_edge.dat.orig_id,
-      get_vert(old_edge.from).id, get_vert(old_edge.to).id, old_edge.points.toArray
+      get_vert(old_edge.from).id, get_vert(old_edge.to).id, old_edge.points.toArray, Array(),
+      Array()
     )
     r_pos.setup(vertices.toArray)
     roads :+= r_pos
@@ -59,7 +60,8 @@ class PreGraph3(old_graph: PreGraph2) {
       val r_neg = new Road(
         new RoadID(road_id_cnt), Direction.NEG, Road.road_len(old_edge.points),
         old_edge.dat.name, old_edge.dat.road_type, old_edge.dat.orig_id,
-        get_vert(old_edge.to).id, get_vert(old_edge.from).id, old_edge.points.reverse.toArray
+        get_vert(old_edge.to).id, get_vert(old_edge.from).id, old_edge.points.reverse.toArray,
+        Array(), Array()
       )
       r_neg.setup(vertices.toArray)
       roads :+= r_neg

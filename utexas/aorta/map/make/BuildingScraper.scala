@@ -5,7 +5,7 @@
 package utexas.aorta.map.make
 
 import scala.collection.mutable
-import utexas.aorta.map.Coordinate
+import utexas.aorta.map.{Coordinate, Road}
 import utexas.aorta.common.Util
 
 class BuildingScraper() {
@@ -44,7 +44,11 @@ class BuildingScraper() {
     bldgs ++= fixed
   }
 
-  def group(graph: PreGraph3) {
+  // Returns houses, then shops
+  def group(graph: PreGraph3): (Map[Road, Array[Coordinate]], Map[Road, Array[Coordinate]]) = {
+    val houses = graph.roads.map(r => r -> new mutable.ArrayBuffer[Coordinate]()).toMap
+    val shops = graph.roads.map(r => r -> new mutable.ArrayBuffer[Coordinate]()).toMap
+
     Util.log(s"Matching ${bldgs.size} buildings to roads...")
     // First group roads by their name for fast pruning
     val roads_by_name = graph.roads.groupBy(_.name)
@@ -55,14 +59,15 @@ class BuildingScraper() {
         val candidates = roads_by_name(bldg.road.get)
         val r = candidates.minBy(r => r.lanes.last.approx_midpt.dist_to(bldg.point))
         if (bldg.residential) {
-          r.houses += bldg.point
+          houses(r) += bldg.point
         } else {
-          r.shops += bldg.point
+          shops(r) += bldg.point
         }
       } else {
         skipped += 1
       }
     }
     Util.log(s"Skipped ${skipped} buildings that couldn't be matched to roads by name")
+    return (houses.mapValues(_.toArray), shops.mapValues(_.toArray))
   }
 }

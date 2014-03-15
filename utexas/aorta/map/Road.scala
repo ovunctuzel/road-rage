@@ -15,7 +15,7 @@ import utexas.aorta.common.{Util, RoadID, VertexID, Physics, StateReader, StateW
 class Road(
   val id: RoadID, val dir: Direction.Value, val length: Double, val name: String,
   val road_type: String, val osm_id: String, v1_id: VertexID, v2_id: VertexID,
-  val points: Array[Coordinate]
+  val points: Array[Coordinate], val houses: Array[Coordinate], val shops: Array[Coordinate]
 ) extends Ordered[Road] with Renderable
 {
   //////////////////////////////////////////////////////////////////////////////
@@ -24,10 +24,6 @@ class Road(
   var v1: Vertex = null
   var v2: Vertex = null
   val lanes = new mutable.ListBuffer[Edge]()
-
-  // TODO lets figure out how to build immutable stuff.
-  val houses = new mutable.ListBuffer[Coordinate]()
-  val shops = new mutable.ListBuffer[Coordinate]()
 
   //////////////////////////////////////////////////////////////////////////////
   // Deterministic state
@@ -145,16 +141,13 @@ class Road(
 }
 
 object Road {
-  def unserialize(r: StateReader): Road = {
-    val road = new Road(
-      new RoadID(r.int), Direction(r.int), r.double, r.string, r.string, r.string,
-      new VertexID(r.int), new VertexID(r.int),
-      Range(0, r.int).map(_ => Coordinate.unserialize(r)).toArray
-    )
-    Range(0, r.int).foreach(_ => road.shops += Coordinate.unserialize(r))
-    Range(0, r.int).foreach(_ => road.houses += Coordinate.unserialize(r))
-    return road
-  }
+  def unserialize(r: StateReader) = new Road(
+    new RoadID(r.int), Direction(r.int), r.double, r.string, r.string, r.string,
+    new VertexID(r.int), new VertexID(r.int),
+    Range(0, r.int).map(_ => Coordinate.unserialize(r)).toArray,
+    Range(0, r.int).map(_ => Coordinate.unserialize(r)).toArray,
+    Range(0, r.int).map(_ => Coordinate.unserialize(r)).toArray
+  )
 
   def road_len(pts: Iterable[Coordinate]) =
     pts.zip(pts.tail).map(tupled((p1, p2) => new Line(p1, p2).length)).sum
