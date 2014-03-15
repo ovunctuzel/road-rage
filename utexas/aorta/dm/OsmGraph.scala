@@ -7,15 +7,13 @@ package utexas.aorta.dm
 import scala.collection.mutable
 
 import utexas.aorta.map.{Graph, Road, FreeflowRouter}
-import utexas.aorta.common.RNG
+import utexas.aorta.common.{RNG, Util}
 
 // Directed graph
 class OsmGraph(
-  ways: Set[OsmWay], connections: Map[OsmWay, Set[OsmWay]], lengths: Map[OsmWay, Double]
+  graph: Graph, val ways: Set[OsmWay], val succs: Map[OsmWay, Set[OsmWay]],
+  val preds: Map[OsmWay, Set[OsmWay]], val lengths: Map[OsmWay, Double]
 ) {
-  def succs(way: OsmWay) = connections(way)
-  def preds(way: OsmWay) = connections.keys.filter(w => connections(w).contains(way)) // TODO slow?
-
   def pagerank(): Map[OsmWay, Double] = {
     val iterations = 50
     val alpha = .15
@@ -34,7 +32,7 @@ class OsmGraph(
     return rank
   }
 
-  def popular_ways(graph: Graph): Map[OsmWay, Double] = {
+  def popular_ways(): Map[OsmWay, Double] = {
     def way(r: Road) = OsmWay(r.osm_id, r.road_type)
 
     val num_routes = 3000
@@ -53,7 +51,7 @@ class OsmGraph(
     return frequency.toMap
   }
 
-  def convert_costs(costs: Map[OsmWay, Double], graph: Graph): Map[Road, Double] = {
+  def convert_costs(costs: Map[OsmWay, Double]): Map[Road, Double] = {
     val costs_by_id = costs.map({ case (k, v) => k.id -> v}).toMap
     return graph.roads.map(r => r -> costs_by_id(r.osm_id)).toMap
   }
@@ -63,15 +61,18 @@ case class OsmWay(id: String, label: String)
 object OsmGraph {
   def convert(orig: Graph): OsmGraph = {
     def way(r: Road) = OsmWay(r.osm_id, r.road_type)
+    Util.log("Converting AORTA graph to OSM graph...")
 
     val ways = orig.roads.map(way).toSet
-    val connections = ways.map(w => w -> new mutable.HashSet[OsmWay]()).toMap
+    val succs = ways.map(w => w -> new mutable.HashSet[OsmWay]()).toMap
+    val preds = ways.map(w => w -> new mutable.HashSet[OsmWay]()).toMap
     val lengths = new mutable.HashMap[OsmWay, Double]()
     ways.foreach(w => lengths(w) = 0)
     for (r <- orig.roads) {
-      connections(way(r)) ++= r.succs.map(way)
+      succs(way(r)) ++= r.succs.map(way)
+      preds(way(r)) ++= r.preds.map(way)
       lengths(way(r)) += r.length
     }
-    return new OsmGraph(ways, connections.mapValues(_.toSet), lengths.toMap)
+    return new OsmGraph(orig, ways, succs.mapValues(_.toSet), preds.mapValues(_.toSet), lengths.toMap)
   }
 }

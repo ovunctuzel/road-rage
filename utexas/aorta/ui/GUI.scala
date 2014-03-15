@@ -106,10 +106,14 @@ object GUI extends SimpleSwingApplication {
 
   override def main(args: Array[String]) {
     val sim = Util.process_args(args)
-    canvas_2d = new MapCanvas(sim)
+    run(new MapCanvas(Util.process_args(args)))
+  }
+
+  def run(canvas: MapCanvas) {
+    canvas_2d = canvas
     // TODO doesnt start drawn correctly!
-    canvas_2d.repaint
-    super.main(args)
+    canvas_2d.repaint()
+    super.main(Array())
   }
 
   def launch_from_headless(canvas: MapCanvas) {
