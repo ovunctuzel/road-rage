@@ -96,13 +96,15 @@ object Graph {
     set_params(w, h, xo, yo, s)
     val roads = Range(0, r.int).map(_ => Road.unserialize(r)).toArray
     val edges = Range(0, r.int).map(_ => Edge.unserialize(r, roads)).toArray
-    val vertices = Range(0, r.int).map(_ => Vertex.unserialize(r, edges)).toArray
+    val vertices = Range(0, r.int).map(_ => Vertex.unserialize(r)).toArray
     val name = r.string
     val zones = ZoneMap.unserialize(r, roads)
     val artifacts = Range(0, r.int).map(_ => RoadArtifact.unserialize(r)).toArray
     val g = new Graph(roads, edges, vertices, zones, artifacts, w, h, xo, yo, s, name)
-    // Dependency between roads, edges, and vertices is cyclic, so have to set up one of these.
+    // Embrace dependencies, but decouple them and setup afterwards.
+    // TODO replace with lazy val's and a mutable wrapper around an immutable graph.
     g.roads.foreach(r => r.setup(vertices))
+    g.turns.values.foreach(t => t.setup(edges))
     return g
   }
 }

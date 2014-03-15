@@ -5,11 +5,17 @@
 package utexas.aorta.map
 
 import utexas.aorta.map.make.MapStateWriter
-import utexas.aorta.common.{StateReader, TurnID, EdgeID}
+import utexas.aorta.common.{StateReader, TurnID, EdgeID, Util}
 
-class Turn(val id: TurnID, val from: Edge, val to: Edge)
-  extends Traversable(Array(new Line(from.end_pt, to.start_pt))) with Ordered[Turn]
+class Turn(val id: TurnID, from_id: EdgeID, to_id: EdgeID, geometry: Array[Line])
+  extends Traversable(geometry) with Ordered[Turn]
 {
+  //////////////////////////////////////////////////////////////////////////////
+  // State
+
+  var from: Edge = null
+  var to: Edge = null
+
   //////////////////////////////////////////////////////////////////////////////
   // Meta
 
@@ -17,6 +23,14 @@ class Turn(val id: TurnID, val from: Edge, val to: Edge)
     w.int(id.int)
     w.int(w.edges(from.id).int)
     w.int(w.edges(to.id).int)
+    lines.head.serialize(w)
+  }
+
+  def setup(edges: Array[Edge]) {
+    from = edges(from_id.int)
+    to = edges(to_id.int)
+    Util.assert_eq(from.id, from_id)
+    Util.assert_eq(to.id, to_id)
   }
 
   //////////////////////////////////////////////////////////////////////////////
@@ -46,7 +60,7 @@ class Turn(val id: TurnID, val from: Edge, val to: Edge)
 }
 
 object Turn {
-  def unserialize(r: StateReader, edges: Array[Edge]) = new Turn(
-    new TurnID(r.int), edges(r.int), edges(r.int)
+  def unserialize(r: StateReader) = new Turn(
+    new TurnID(r.int), new EdgeID(r.int), new EdgeID(r.int), Array(Line.unserialize(r))
   )
 }
