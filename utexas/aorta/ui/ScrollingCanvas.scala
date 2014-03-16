@@ -293,6 +293,9 @@ abstract class ScrollingCanvas extends Component {
   def canvas_width: Int
   def canvas_height: Int
   def handle_ev(ev: UI_Event)
+  def canvas_offX: Double
+  def canvas_offY: Double
+  def canvas_scale: Double
 }
 
 sealed trait UI_Event

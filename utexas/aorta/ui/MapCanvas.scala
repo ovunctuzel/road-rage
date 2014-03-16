@@ -343,4 +343,7 @@ class MapCanvas(val sim: Simulation, headless: Boolean = false)
 
   override def canvas_width = sim.graph.width.toInt
   override def canvas_height = sim.graph.height.toInt
+  override def canvas_offX = sim.graph.offX
+  override def canvas_offY = sim.graph.offY
+  override def canvas_scale = sim.graph.scale
 }
