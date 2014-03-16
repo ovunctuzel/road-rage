@@ -47,11 +47,11 @@ class Graph(
 
 // It's a bit funky, but the actual graph instance doesn't have this; we do.
 object Graph {
-  var width = 0.0
-  var height = 0.0
-  var xoff = 0.0
-  var yoff = 0.0
-  var scale = 0.0
+  private var width = 0.0
+  private var height = 0.0
+  private var xoff = 0.0
+  private var yoff = 0.0
+  private var scale = 0.0
 
   private val cached_graphs = new mutable.HashMap[String, Graph]()
 
@@ -80,13 +80,11 @@ object Graph {
   }
 
   def unserialize(r: StateReader): Graph = {
-    // Set these before loading any traversables, since length'll be computed from em
     val w = r.double
     val h = r.double
     val xo = r.double
     val yo = r.double
     val s = r.double
-    set_params(w, h, xo, yo, s)
     val roads = Range(0, r.int).map(_ => Road.unserialize(r)).toArray
     val edges = Range(0, r.int).map(_ => Edge.unserialize(r)).toArray
     val vertices = Range(0, r.int).map(_ => Vertex.unserialize(r)).toArray
@@ -94,6 +92,10 @@ object Graph {
     val name = r.string
     val artifacts = Range(0, r.int).map(_ => RoadArtifact.unserialize(r)).toArray
     val g = new Graph(roads, edges, vertices, turns, artifacts, w, h, xo, yo, s, name)
+
+    // Length of traversables depends on these being set, but that doesn't really happen during
+    // unserialization, so it's fine to do this afterwards
+    set_params(w, h, xo, yo, s)
     // Embrace dependencies, but decouple them and setup afterwards.
     // TODO replace with lazy val's and a mutable wrapper around an immutable graph.
     g.edges.foreach(e => e.setup(roads))
