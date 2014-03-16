@@ -9,12 +9,14 @@ import Function.tupled
 
 import utexas.aorta.ui.Renderable
 import utexas.aorta.sim.RoadAgent
-import utexas.aorta.common.{Util, RoadID, VertexID, Physics, StateReader, StateWriter}
+import utexas.aorta.common.{Util, RoadID, VertexID, Physics, MagicSerializable, MagicReader,
+                            MagicWriter}
 
 // An oriented bundle of lanes
+// TODO v1_id, v2_id public for magic serialization
 class Road(
   val id: RoadID, val dir: Direction.Value, val length: Double, val name: String,
-  val road_type: String, val osm_id: String, v1_id: VertexID, v2_id: VertexID,
+  val road_type: String, val osm_id: String, val v1_id: VertexID, val v2_id: VertexID,
   val points: Array[Coordinate], val houses: Array[Coordinate], val shops: Array[Coordinate]
 ) extends Ordered[Road] with Renderable
 {
@@ -63,21 +65,6 @@ class Road(
 
   //////////////////////////////////////////////////////////////////////////////
   // Meta
-
-  def serialize(w: StateWriter) {
-    w.int(id.int)
-    w.int(dir.id)
-    w.double(length)
-    w.strings(name, road_type, osm_id)
-    w.int(v1_id.int)
-    w.int(v2_id.int)
-    w.int(points.size)
-    points.foreach(pt => pt.serialize(w))
-    w.int(shops.size)
-    shops.foreach(pt => pt.serialize(w))
-    w.int(houses.size)
-    houses.foreach(pt => pt.serialize(w))
-  }
 
   def setup(vertices: Array[Vertex]) {
     v1 = vertices(v1_id.int)
@@ -141,26 +128,18 @@ class Road(
 }
 
 object Road {
-  def unserialize(r: StateReader) = new Road(
-    new RoadID(r.int), Direction(r.int), r.double, r.string, r.string, r.string,
-    new VertexID(r.int), new VertexID(r.int),
-    Range(0, r.int).map(_ => Coordinate.unserialize(r)).toArray,
-    Range(0, r.int).map(_ => Coordinate.unserialize(r)).toArray,
-    Range(0, r.int).map(_ => Coordinate.unserialize(r)).toArray
-  )
-
   def road_len(pts: Iterable[Coordinate]) =
     pts.zip(pts.tail).map(tupled((p1, p2) => new Line(p1, p2).length)).sum
+
+  def do_magic_save(obj: Road, w: MagicWriter) {
+    MagicSerializable.materialize[Road].magic_save(obj, w)
+  }
+  def do_magic_load(r: MagicReader) = MagicSerializable.materialize[Road].magic_load(r)
 }
 
 // When we merge short roads, we get rid of geometry. Preserve it here for the GUI's sake in
 // absolutely minimal form.
 case class RoadArtifact(points: Array[Coordinate]) {
-  def serialize(w: StateWriter) {
-    w.int(points.size)
-    points.foreach(pt => pt.serialize(w))
-  }
-
   def lines = points.zip(points.tail).map(p => shift_line(p))
   private def shift_line(pair: (Coordinate, Coordinate)) =
     // this shift helps center the drawn artifact
@@ -168,7 +147,8 @@ case class RoadArtifact(points: Array[Coordinate]) {
 }
 
 object RoadArtifact {
-  def unserialize(r: StateReader) = RoadArtifact(
-    Range(0, r.int).map(_ => Coordinate.unserialize(r)).toArray
-  )
+  def do_magic_save(obj: RoadArtifact, w: MagicWriter) {
+    MagicSerializable.materialize[RoadArtifact].magic_save(obj, w)
+  }
+  def do_magic_load(r: MagicReader) = MagicSerializable.materialize[RoadArtifact].magic_load(r)
 }

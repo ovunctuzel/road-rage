@@ -5,7 +5,7 @@
 package utexas.aorta.map.make
 
 import utexas.aorta.map.{Graph, Edge, Line, Vertex, Road, Turn, Coordinate}
-import utexas.aorta.common.{Util, EdgeID, VertexID, TurnID, RoadID, BinaryStateWriter}
+import utexas.aorta.common.{Util, EdgeID, VertexID, TurnID, RoadID, BinaryMagicWriter}
 
 import scala.collection.mutable
 
@@ -55,8 +55,8 @@ object Builder {
       s" edges, and ${graph3.vertices.length} vertices"
     )
     Util.mkdir("maps")
-    val w = Util.writer(output)
-    graph.serialize(w)
+    val w = new BinaryMagicWriter(output)
+    Graph.do_magic_save(graph, w)
     w.done()
 
     return output

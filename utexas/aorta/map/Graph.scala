@@ -6,31 +6,14 @@ package utexas.aorta.map
 
 import scala.collection.mutable
 
-import utexas.aorta.common.{Util, StateReader, StateWriter, VertexID, EdgeID, RoadID, TurnID}
+import utexas.aorta.common.{MagicSerializable, MagicReader, MagicWriter, VertexID, EdgeID,
+                            RoadID, TurnID, BinaryMagicReader}
 
 class Graph(
   val roads: Array[Road], val edges: Array[Edge], val vertices: Array[Vertex],
   val turns: Array[Turn], val artifacts: Array[RoadArtifact], val width: Double, val height: Double,
   val offX: Double, val offY: Double, val scale: Double, val name: String
 ) {
-  //////////////////////////////////////////////////////////////////////////////
-  // Meta
-
-  def serialize(w: StateWriter) {
-    w.doubles(width, height, offX, offY, scale)
-    w.int(roads.size)
-    roads.foreach(r => r.serialize(w))
-    w.int(edges.size)
-    edges.foreach(e => e.serialize(w))
-    w.int(vertices.size)
-    vertices.foreach(v => v.serialize(w))
-    w.int(turns.size)
-    turns.foreach(t => t.serialize(w))
-    w.string(name)
-    w.int(artifacts.size)
-    artifacts.foreach(a => a.serialize(w))
-  }
-
   //////////////////////////////////////////////////////////////////////////////
   // Queries
 
@@ -73,34 +56,25 @@ object Graph {
   def load(fn: String): Graph = {
     if (!cached_graphs.contains(fn)) {
       print(s"Loading $fn...")
-      cached_graphs(fn) = unserialize(Util.reader(fn))
+      cached_graphs(fn) = do_magic_load(new BinaryMagicReader(fn))
       println(s"\rLoaded $fn.     ")
     }
     return cached_graphs(fn)
   }
 
-  def unserialize(r: StateReader): Graph = {
-    val w = r.double
-    val h = r.double
-    val xo = r.double
-    val yo = r.double
-    val s = r.double
-    val roads = Range(0, r.int).map(_ => Road.unserialize(r)).toArray
-    val edges = Range(0, r.int).map(_ => Edge.unserialize(r)).toArray
-    val vertices = Range(0, r.int).map(_ => Vertex.unserialize(r)).toArray
-    val turns = Range(0, r.int).map(_ => Turn.unserialize(r)).toArray
-    val name = r.string
-    val artifacts = Range(0, r.int).map(_ => RoadArtifact.unserialize(r)).toArray
-    val g = new Graph(roads, edges, vertices, turns, artifacts, w, h, xo, yo, s, name)
-
+  def do_magic_save(obj: Graph, w: MagicWriter) {
+    MagicSerializable.materialize[Graph].magic_save(obj, w)
+  }
+  def do_magic_load(r: MagicReader): Graph = {
+    val g = MagicSerializable.materialize[Graph].magic_load(r)
     // Length of traversables depends on these being set, but that doesn't really happen during
     // unserialization, so it's fine to do this afterwards
-    set_params(w, h, xo, yo, s)
+    set_params(g.width, g.height, g.offX, g.offY, g.scale)
     // Embrace dependencies, but decouple them and setup afterwards.
     // TODO replace with lazy val's and a mutable wrapper around an immutable graph.
-    g.edges.foreach(e => e.setup(roads))
-    g.roads.foreach(r => r.setup(vertices))
-    g.turns.foreach(t => t.setup(edges))
+    g.edges.foreach(e => e.setup(g.roads))
+    g.roads.foreach(r => r.setup(g.vertices))
+    g.turns.foreach(t => t.setup(g.edges))
     return g
   }
 }

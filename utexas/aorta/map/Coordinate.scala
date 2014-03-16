@@ -4,7 +4,7 @@
 
 package utexas.aorta.map
 
-import utexas.aorta.common.{StateWriter, StateReader}
+import utexas.aorta.common.{MagicSerializable, MagicReader, MagicWriter}
 import utexas.aorta.common.algorithms.Distance
 
 /*
@@ -28,10 +28,6 @@ case class Coordinate(x: Double, y: Double) extends Ordered[Coordinate] {
   def dist_to(o: Coordinate) = Coordinate.gps_dist_in_meters(
     Graph.world_to_gps(this.x, this.y), Graph.world_to_gps(o.x, o.y)
   )
-
-  def serialize(w: StateWriter) {
-    w.doubles(x, y)
-  }
 }
 
 object Coordinate {
@@ -39,5 +35,8 @@ object Coordinate {
   def gps_dist_in_meters(c1: Coordinate, c2: Coordinate) =
     Distance.equirectangular_dist(c1.x, c1.y, c2.x, c2.y)
 
-  def unserialize(r: StateReader) = Coordinate(r.double, r.double)
+  def do_magic_save(obj: Coordinate, w: MagicWriter) {
+    MagicSerializable.materialize[Coordinate].magic_save(obj, w)
+  }
+  def do_magic_load(r: MagicReader) = MagicSerializable.materialize[Coordinate].magic_load(r)
 }

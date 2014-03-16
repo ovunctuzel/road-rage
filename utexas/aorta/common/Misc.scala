@@ -268,8 +268,20 @@ object VertexID {
 class TurnID(val int: Int) extends AnyVal {
   override def toString = int.toString
 }
+object TurnID {
+  def do_magic_save(obj: TurnID, w: MagicWriter) {
+    w.int(obj.int)
+  }
+  def do_magic_load(r: MagicReader) = new TurnID(r.int)
+}
 class EdgeID(val int: Int) extends AnyVal {
   override def toString = int.toString
+}
+object EdgeID {
+  def do_magic_save(obj: EdgeID, w: MagicWriter) {
+    w.int(obj.int)
+  }
+  def do_magic_load(r: MagicReader) = new EdgeID(r.int)
 }
 class RoadID(val int: Int) extends AnyVal {
   override def toString = int.toString

@@ -6,25 +6,19 @@ package utexas.aorta.map
 
 import scala.collection.mutable
 import utexas.aorta.ui.Renderable
-import utexas.aorta.common.{cfg, RNG, Util, StateReader, StateWriter, EdgeID, RoadID, Price}
+import utexas.aorta.common.{cfg, RNG, Util, MagicSerializable, MagicReader, MagicWriter, EdgeID,
+                            RoadID, Price}
 
 // TODO var lane num due to tarjan pruning. can re-make an edge, now.
+// TODO public road_id, geometry for magic serialization
 class Edge(
-  val id: EdgeID, road_id: RoadID, var lane_num: Int, geometry: Array[Line]
+  val id: EdgeID, val road_id: RoadID, var lane_num: Int, val geometry: Array[Line]
 ) extends Traversable(geometry) with Renderable with Ordered[Edge]
 {
   var road: Road = null
 
   //////////////////////////////////////////////////////////////////////////////
   // Meta
-
-  def serialize(w: StateWriter) {
-    w.int(id.int)
-    w.int(road_id.int)
-    w.int(lane_num)
-    w.int(lines.length)
-    lines.foreach(l => l.serialize(w))
-  }
 
   def setup(roads: Array[Road]) {
     road = roads(road_id.int)
@@ -118,9 +112,10 @@ class Edge(
 }
 
 object Edge {
-  def unserialize(r: StateReader) = new Edge(
-    new EdgeID(r.int), new RoadID(r.int), r.int, Range(0, r.int).map(_ => Line.unserialize(r)).toArray
-  )
+  def do_magic_save(obj: Edge, w: MagicWriter) {
+    MagicSerializable.materialize[Edge].magic_save(obj, w)
+  }
+  def do_magic_load(r: MagicReader) = MagicSerializable.materialize[Edge].magic_load(r)
 }
 
 // This is completely arbitrary, it doesn't really mean anything

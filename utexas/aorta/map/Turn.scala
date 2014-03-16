@@ -4,9 +4,10 @@
 
 package utexas.aorta.map
 
-import utexas.aorta.common.{StateReader, StateWriter, TurnID, EdgeID, Util}
+import utexas.aorta.common.{MagicSerializable, MagicReader, MagicWriter, TurnID, EdgeID, Util}
 
-class Turn(val id: TurnID, from_id: EdgeID, to_id: EdgeID, geometry: Array[Line])
+// TODO args except id public only due to magic serialization
+class Turn(val id: TurnID, val from_id: EdgeID, val to_id: EdgeID, val geometry: Array[Line])
   extends Traversable(geometry) with Ordered[Turn]
 {
   //////////////////////////////////////////////////////////////////////////////
@@ -17,13 +18,6 @@ class Turn(val id: TurnID, from_id: EdgeID, to_id: EdgeID, geometry: Array[Line]
 
   //////////////////////////////////////////////////////////////////////////////
   // Meta
-
-  def serialize(w: StateWriter) {
-    w.int(id.int)
-    w.int(from_id.int)
-    w.int(to_id.int)
-    lines.head.serialize(w)
-  }
 
   def setup(edges: Array[Edge]) {
     from = edges(from_id.int)
@@ -60,7 +54,8 @@ class Turn(val id: TurnID, from_id: EdgeID, to_id: EdgeID, geometry: Array[Line]
 }
 
 object Turn {
-  def unserialize(r: StateReader) = new Turn(
-    new TurnID(r.int), new EdgeID(r.int), new EdgeID(r.int), Array(Line.unserialize(r))
-  )
+  def do_magic_save(obj: Turn, w: MagicWriter) {
+    MagicSerializable.materialize[Turn].magic_save(obj, w)
+  }
+  def do_magic_load(r: MagicReader) = MagicSerializable.materialize[Turn].magic_load(r)
 }

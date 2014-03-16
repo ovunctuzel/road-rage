@@ -8,7 +8,7 @@ package utexas.aorta.map
 // perf boost due to dropping a pricy hash lookup
 import utexas.aorta.sim.Queue
 
-import utexas.aorta.common.{cfg, Util, Physics, StateWriter, StateReader}
+import utexas.aorta.common.{cfg, Util, Physics, MagicSerializable, MagicReader, MagicWriter}
 
 // Something with a sequence of lines forming a path and a way to get to more
 // somethings
@@ -86,10 +86,6 @@ abstract class Traversable(val lines: Array[Line]) {
 class Line(val x1: Double, val y1: Double, val x2: Double, val y2: Double) {
   //////////////////////////////////////////////////////////////////////////////
   // Meta
-
-  def serialize(w: StateWriter) {
-    w.doubles(x1, y1, x2, y2)
-  }
 
   def this(pt1: Coordinate, pt2: Coordinate) = this(pt1.x, pt1.y, pt2.x, pt2.y)
   def this(v1: Vertex, v2: Vertex) = this(v1.location, v2.location)
@@ -190,6 +186,8 @@ class Line(val x1: Double, val y1: Double, val x2: Double, val y2: Double) {
 }
 
 object Line {
-  def unserialize(r: StateReader) =
-    new Line(r.double, r.double, r.double, r.double)
+  def do_magic_save(obj: Line, w: MagicWriter) {
+    MagicSerializable.materialize[Line].magic_save(obj, w)
+  }
+  def do_magic_load(r: MagicReader) = MagicSerializable.materialize[Line].magic_load(r)
 }

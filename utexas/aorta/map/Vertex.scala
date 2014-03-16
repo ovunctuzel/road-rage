@@ -8,7 +8,7 @@ import Function.tupled
 import scala.collection.mutable
 
 import utexas.aorta.ui.Renderable
-import utexas.aorta.common.{Util, StateReader, StateWriter, VertexID}
+import utexas.aorta.common.{Util, MagicSerializable, MagicReader, MagicWriter, VertexID}
 
 // TODO I don't want this dependency, but at the moment, it leads to a great
 // perf boost due to dropping a pricy hash lookup
@@ -25,14 +25,6 @@ class Vertex(val location: Coordinate, val id: VertexID) extends Renderable {
 
   // TODO messy to have this dependency here.
   var intersection: Intersection = null
-
-  //////////////////////////////////////////////////////////////////////////////
-  // Meta
-
-  def serialize(w: StateWriter) {
-    location.serialize(w)
-    w.int(id.int)
-  }
 
   //////////////////////////////////////////////////////////////////////////////
   // Queries
@@ -87,5 +79,8 @@ class Vertex(val location: Coordinate, val id: VertexID) extends Renderable {
 }
 
 object Vertex {
-  def unserialize(r: StateReader) = new Vertex(Coordinate.unserialize(r), new VertexID(r.int))
+  def do_magic_save(obj: Vertex, w: MagicWriter) {
+    MagicSerializable.materialize[Vertex].magic_save(obj, w)
+  }
+  def do_magic_load(r: MagicReader) = MagicSerializable.materialize[Vertex].magic_load(r)
 }

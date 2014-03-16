@@ -99,6 +99,7 @@ object MagicSerializable {
           case "utexas.aorta.sim.make.WalletType.Value" => q"WalletType(r.int)"
           case "utexas.aorta.sim.make.CongestionType.Value" => q"CongestionType(r.int)"
           case "utexas.aorta.sim.make.ReroutePolicyType.Value" => q"ReroutePolicyType(r.int)"
+          case "utexas.aorta.map.Direction.Value" => q"Direction(r.int)"
         }
         (q"w.int(t.$name.id)", read)
       } else {
@@ -114,7 +115,7 @@ object MagicSerializable {
         def magic_save(t: $tpe, w: MagicWriter) {
           ..$write_per_field
         }
-        def magic_load(r: MagicReader): $tpe = $companion(..$read_per_field)
+        def magic_load(r: MagicReader): $tpe = new $tpe(..$read_per_field)
       }
     """)
     println(s"Generated serialization magic for $tpe")
