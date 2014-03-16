@@ -96,9 +96,7 @@ class Line(val x1: Double, val y1: Double, val x2: Double, val y2: Double) {
   // Queries
 
   // TODO Compute and store it once, since the math isn't free?
-  def length = Coordinate.gps_dist_in_meters(
-    Graph.world_to_gps(x1, y1), Graph.world_to_gps(x2, y2)
-  )
+  def length = Coordinate.gps_dist_in_meters(Coordinate(x1, y1), Coordinate(x2, y2))
 
   // return [0, 2pi) like a reasonable bloody...
   // also, this is a place where we have to recall the coordinate system has y

@@ -45,7 +45,6 @@ class Pass1(fn: String) {
       graph.add_vertex(edge.points.head)
       graph.add_vertex(edge.points.last)
     }
-    graph.normalize()
     Util.log(s"OSM nodes: ${osm.id_to_node.size}, ways: ${graph.edges.size}")
     return graph
   }
@@ -124,44 +123,9 @@ class PreGraph1() {
     vert_lookup += where
   }
   def is_vert(pt: Coordinate) = vert_lookup.contains(pt)
-
-  // Longitude, Latitude origin is bottom-left; we draw from top-left
-  // Hence height - y
-  // This is the ONLY place we handle y inversion. Don't make things
-  // confusing after this!
-  def fix(pt: Coordinate) = Coordinate((pt.x + offX) * scale, height - ((pt.y + offY) * scale))
-
-  def normalize() {
-    var minX = Double.MaxValue
-    var minY = Double.MaxValue
-    var maxX = Double.MinValue
-    var maxY = Double.MinValue
-    for (e <- edges; pt <- e.points) {
-      minX = math.min(minX, pt.x)
-      minY = math.min(minY, pt.y)
-      maxX = math.max(maxX, pt.x)
-      maxY = math.max(maxY, pt.y)
-    }
-    Util.log(s"Bounds: $minX .. $maxX, $minY .. $maxY")
-
-    // so to make (minX, minY) the new origin...
-    offX = 0 - minX
-    offY = 0 - minY
-
-    // Scale everything up by some fixed ratio...
-    width = (maxX + offX) * scale
-    height = (maxY + offY) * scale
-
-    val new_pts = vert_lookup.map(fix)
-    vert_lookup.clear()
-    vert_lookup ++= new_pts
-    for (e <- edges) {
-      e.points = e.points.map(fix)
-    }
-  }
 }
 
 case class PreEdge1(
-  name: String, road_type: String, oneway: Boolean, orig_id: String, var points: List[Coordinate],
+  name: String, road_type: String, oneway: Boolean, orig_id: String, points: List[Coordinate],
   lanes: Option[Int]
 )

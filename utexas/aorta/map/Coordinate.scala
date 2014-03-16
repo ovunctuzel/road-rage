@@ -25,9 +25,7 @@ case class Coordinate(x: Double, y: Double) extends Ordered[Coordinate] {
   override def toString = s"($x, $y)"
 
   def +(other: Coordinate) = Coordinate(x + other.x, y + other.y)
-  def dist_to(o: Coordinate) = Coordinate.gps_dist_in_meters(
-    Graph.world_to_gps(this.x, this.y), Graph.world_to_gps(o.x, o.y)
-  )
+  def dist_to(o: Coordinate) = Coordinate.gps_dist_in_meters(this, o)
 
   def serialize(w: StateWriter) {
     w.doubles(x, y)
@@ -35,7 +33,6 @@ case class Coordinate(x: Double, y: Double) extends Ordered[Coordinate] {
 }
 
 object Coordinate {
-  // use Graph.world_to_gps to get original GPS coordinates first.
   def gps_dist_in_meters(c1: Coordinate, c2: Coordinate) =
     Distance.equirectangular_dist(c1.x, c1.y, c2.x, c2.y)
 

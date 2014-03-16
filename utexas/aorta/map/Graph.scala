@@ -10,14 +10,12 @@ import utexas.aorta.common.{Util, StateReader, StateWriter, VertexID, EdgeID, Ro
 
 class Graph(
   val roads: Array[Road], val edges: Array[Edge], val vertices: Array[Vertex],
-  val turns: Array[Turn], val artifacts: Array[RoadArtifact], val width: Double, val height: Double,
-  val offX: Double, val offY: Double, val scale: Double, val name: String
+  val turns: Array[Turn], val artifacts: Array[RoadArtifact], val name: String
 ) {
   //////////////////////////////////////////////////////////////////////////////
   // Meta
 
   def serialize(w: StateWriter) {
-    w.doubles(width, height, offX, offY, scale)
     w.int(roads.size)
     roads.foreach(r => r.serialize(w))
     w.int(edges.size)
@@ -26,9 +24,9 @@ class Graph(
     vertices.foreach(v => v.serialize(w))
     w.int(turns.size)
     turns.foreach(t => t.serialize(w))
-    w.string(name)
     w.int(artifacts.size)
     artifacts.foreach(a => a.serialize(w))
+    w.string(name)
   }
 
   //////////////////////////////////////////////////////////////////////////////
@@ -41,34 +39,29 @@ class Graph(
   def get_r(id: RoadID) = roads(id.int)
   def get_t(id: TurnID) = turns(id.int)
 
+  // TODO not sure if these make sense here. only the UI cares.
+  private lazy val minX = roads.flatMap(_.points).map(_.x).min
+  private lazy val maxX = roads.flatMap(_.points).map(_.x).max
+  private lazy val minY = roads.flatMap(_.points).map(_.y).min
+  private lazy val maxY = roads.flatMap(_.points).map(_.y).max
+  lazy val scale = 5000.0
+  lazy val offX = 0 - minX
+  lazy val offY = 0 - minY
+  lazy val width = (maxX + offX) * scale
+  lazy val height = (maxY + offY) * scale
+  // Longitude, Latitude origin is bottom-left; we draw from top-left
+  // Hence height - y
+  // This is the ONLY place we handle y inversion. Don't make things
+  // confusing after this!
+  def fix(pt: Coordinate) = Coordinate((pt.x + offX) * scale, height - ((pt.y + offY) * scale))
+
   // TODO file library
   def basename = name.replace("maps/", "").replace(".map", "")
 }
 
 // It's a bit funky, but the actual graph instance doesn't have this; we do.
 object Graph {
-  var width = 0.0
-  var height = 0.0
-  var xoff = 0.0
-  var yoff = 0.0
-  var scale = 0.0
-
   private val cached_graphs = new mutable.HashMap[String, Graph]()
-
-  // this MUST be set before world_to_gps is called.
-  // TODO get rid of this approach once GPS coordinates always retained
-  def set_params(w: Double, h: Double, x: Double, y: Double, s: Double) {
-    width = w
-    height = h
-    xoff = x
-    yoff = y
-    scale = s
-  }
-
-  // inverts what PreGraph1's normalize() does.
-  def world_to_gps(x: Double, y: Double) = Coordinate(
-    (x / scale) - xoff, ((height - y) / scale) - yoff
-  )
 
   def load(fn: String): Graph = {
     if (!cached_graphs.contains(fn)) {
@@ -80,20 +73,13 @@ object Graph {
   }
 
   def unserialize(r: StateReader): Graph = {
-    // Set these before loading any traversables, since length'll be computed from em
-    val w = r.double
-    val h = r.double
-    val xo = r.double
-    val yo = r.double
-    val s = r.double
-    set_params(w, h, xo, yo, s)
     val roads = Range(0, r.int).map(_ => Road.unserialize(r)).toArray
     val edges = Range(0, r.int).map(_ => Edge.unserialize(r)).toArray
     val vertices = Range(0, r.int).map(_ => Vertex.unserialize(r)).toArray
     val turns = Range(0, r.int).map(_ => Turn.unserialize(r)).toArray
-    val name = r.string
     val artifacts = Range(0, r.int).map(_ => RoadArtifact.unserialize(r)).toArray
-    val g = new Graph(roads, edges, vertices, turns, artifacts, w, h, xo, yo, s, name)
+    val name = r.string
+    val g = new Graph(roads, edges, vertices, turns, artifacts, name)
     // Embrace dependencies, but decouple them and setup afterwards.
     // TODO replace with lazy val's and a mutable wrapper around an immutable graph.
     g.edges.foreach(e => e.setup(roads))

@@ -29,8 +29,6 @@ object Builder {
     val pass1 = new Pass1(input)
     bldgs.scrape(pass1.osm)
     val graph1 = pass1.run()
-    bldgs.normalize_coords(graph1.fix _)
-    Graph.set_params(graph1.width, graph1.height, graph1.offX, graph1.offY, graph1.scale)
 
     // Pass 2
     val graph2 = new PreGraph2(graph1)
@@ -47,8 +45,7 @@ object Builder {
     fix_ids(graph3, remap_lines._1, remap_lines._2, bldg_results._1, bldg_results._2)
     val graph = new Graph(
       graph3.roads.toArray, graph3.edges.toArray, graph3.vertices.toArray, graph3.turns.toArray,
-      artifacts, graph1.width, graph1.height, graph1.offX, graph1.offY, graph1.scale,
-      input.replace(".osm", "").replace("osm/", "")
+      artifacts, input.replace(".osm", "").replace("osm/", "")
     )
     Util.log(
       s"Dumping map with ${graph3.roads.length} roads, ${graph3.edges.length}" +
