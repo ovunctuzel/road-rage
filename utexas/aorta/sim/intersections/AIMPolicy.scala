@@ -140,8 +140,8 @@ class AIMPolicy(vertex: Vertex, ordering: IntersectionOrdering[Ticket])
   private def make_conflict(turn1: Turn, turn2: Turn): Option[Conflict] =
     turn1.conflict_line.segment_intersection(turn2.conflict_line) match {
       case Some(pt) => Some(Conflict(
-        turn1, new Line(turn1.conflict_line.start, pt).length,
-        turn2, new Line(turn2.conflict_line.start, pt).length
+        turn1, Line(turn1.conflict_line.start, pt).length,
+        turn2, Line(turn2.conflict_line.start, pt).length
       ))
       // if same destination lane and doesnt conflict normally by the line, force collision at end
       case None if turn1.to == turn2.to => Some(Conflict(turn1, turn1.length, turn2, turn2.length))

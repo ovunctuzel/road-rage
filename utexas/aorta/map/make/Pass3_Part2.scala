@@ -43,7 +43,7 @@ class Pass3_Part2(graph: PreGraph3) {
     def make_turn(pair: (Edge, Edge)): Turn = {
       val t = new Turn(
         new TurnID(next_id), pair._1.id, pair._2.id,
-        Array(new Line(pair._1.end_pt, pair._2.start_pt))
+        Array(Line(pair._1.end_pt, pair._2.start_pt))
       )
       graph.turns += t
       t.setup(graph.edges.toArray)

@@ -4,10 +4,9 @@
 
 package utexas.aorta.map
 
-import scala.collection.mutable
 import utexas.aorta.ui.Renderable
 import utexas.aorta.common.{cfg, RNG, Util, MagicSerializable, MagicReader, MagicWriter, EdgeID,
-                            RoadID, Price}
+                            RoadID}
 
 // TODO var lane num due to tarjan pruning. can re-make an edge, now.
 // TODO public road_id, geometry for magic serialization
@@ -15,10 +14,10 @@ class Edge(
   val id: EdgeID, val road_id: RoadID, var lane_num: Int, val geometry: Array[Line]
 ) extends Traversable(geometry) with Renderable with Ordered[Edge]
 {
-  var road: Road = null
-
   //////////////////////////////////////////////////////////////////////////////
-  // Meta
+  // Transient State
+
+  @transient var road: Road = null
 
   def setup(roads: Array[Road]) {
     road = roads(road_id.int)
@@ -69,7 +68,7 @@ class Edge(
   def from = road.from
   def to = road.to
 
-  //////// Geometry. TODO separate somewhere?
+  //////// Geometry
 
   // recall + means v1->v2, and that road's points are stored in that order
   // what's the first line segment we traverse following this lane?

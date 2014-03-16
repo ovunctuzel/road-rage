@@ -84,7 +84,7 @@ object Builder {
       t => new Turn(turns(t.id), edges(t.from.id), edges(t.to.id), t.lines)
     )
     graph.roads = graph.roads.map(r => new Road(
-      roads(r.id), r.dir, r.length, r.name, r.road_type, r.osm_id,
+      roads(r.id), r.dir, r.length, r.name, r.road_type, r.speed_limit, r.osm_id,
       vertices(r.v1.id), vertices(r.v2.id), r.points, houses(r), shops(r)
     ))
     graph.edges = graph.edges.map(old => {

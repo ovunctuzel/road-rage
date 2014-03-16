@@ -7,14 +7,9 @@ package utexas.aorta.map
 import utexas.aorta.common.{MagicSerializable, MagicReader, MagicWriter}
 import utexas.aorta.common.algorithms.Distance
 
-/*
- * A vital note about coordinate systems:
- * - (longitude, latitude) corresponds to (x, y) where y increases upwards
- * - Swing/AWT has y increasing downwards
- * - Thus, Pass 1 immediately converts to y increasing downwards. This removes
- *   the "y inversion" handling from everywhere else.
- */
-
+// (longitude, latitude) corresponds to (x, y)
+// Latitude increases upwards, but swing/awt increases down, so pass 1 of map making handles the y
+// inversion.
 case class Coordinate(x: Double, y: Double) extends Ordered[Coordinate] {
   // Lexicographic
   override def compare(other: Coordinate) = if (x == other.x)

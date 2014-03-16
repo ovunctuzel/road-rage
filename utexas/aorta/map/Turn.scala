@@ -11,13 +11,10 @@ class Turn(val id: TurnID, val from_id: EdgeID, val to_id: EdgeID, val geometry:
   extends Traversable(geometry) with Ordered[Turn]
 {
   //////////////////////////////////////////////////////////////////////////////
-  // State
+  // Transient State
 
   var from: Edge = null
   var to: Edge = null
-
-  //////////////////////////////////////////////////////////////////////////////
-  // Meta
 
   def setup(edges: Array[Edge]) {
     from = edges(from_id.int)

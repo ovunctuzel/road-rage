@@ -16,12 +16,9 @@ import utexas.aorta.sim.intersections.Intersection
 
 class Vertex(val location: Coordinate, val id: VertexID) extends Renderable {
   //////////////////////////////////////////////////////////////////////////////
-  // State
+  // Transient State
 
   val turns = new mutable.ListBuffer[Turn]()
-
-  //////////////////////////////////////////////////////////////////////////////
-  // Deterministic state
 
   // TODO messy to have this dependency here.
   var intersection: Intersection = null

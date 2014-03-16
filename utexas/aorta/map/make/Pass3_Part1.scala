@@ -37,9 +37,9 @@ class PreGraph3(old_graph: PreGraph2) {
     // Always make the positive direction
     val r_pos = new Road(
       new RoadID(road_id_cnt), Direction.POS, Road.road_len(old_edge.points),
-      old_edge.dat.name, old_edge.dat.road_type, old_edge.dat.orig_id,
-      get_vert(old_edge.from).id, get_vert(old_edge.to).id, old_edge.points.toArray, Array(),
-      Array()
+      old_edge.dat.name, old_edge.dat.road_type, speed_limit(old_edge.dat.road_type),
+      old_edge.dat.orig_id, get_vert(old_edge.from).id, get_vert(old_edge.to).id,
+      old_edge.points.toArray, Array(), Array()
     )
     r_pos.setup(vertices.toArray)
     roads :+= r_pos
@@ -59,9 +59,9 @@ class PreGraph3(old_graph: PreGraph2) {
     if (!old_edge.dat.oneway) {
       val r_neg = new Road(
         new RoadID(road_id_cnt), Direction.NEG, Road.road_len(old_edge.points),
-        old_edge.dat.name, old_edge.dat.road_type, old_edge.dat.orig_id,
-        get_vert(old_edge.to).id, get_vert(old_edge.from).id, old_edge.points.reverse.toArray,
-        Array(), Array()
+        old_edge.dat.name, old_edge.dat.road_type, speed_limit(old_edge.dat.road_type),
+        old_edge.dat.orig_id, get_vert(old_edge.to).id, get_vert(old_edge.from).id,
+        old_edge.points.reverse.toArray, Array(), Array()
       )
       r_neg.setup(vertices.toArray)
       roads :+= r_neg
@@ -100,7 +100,7 @@ class PreGraph3(old_graph: PreGraph2) {
     // pre-compute lines constituting the edges
     // the -0.5 lets there be nice lane lines between lanes
     val lines = r.points.zip(r.points.tail).map(
-      tupled((from, to) => new Line(from, to).perp_shift(lane_offset - 0.5))
+      tupled((from, to) => Line(from, to).perp_shift(lane_offset - 0.5))
     )
     // force line segments to meet up on the inside
     /*for (e <- r.all_lanes; (l1, l2) <- e.lines.zip(e.lines.tail)) {
@@ -136,4 +136,33 @@ class PreGraph3(old_graph: PreGraph2) {
     case (None, "service")        => 1   // I don't know what these are supposed to be
     case _                        => 2
   }
+
+  private def speed_limit(road_type: String) = Physics.mph_to_si(road_type match {
+    case "residential"    => 30
+    case "motorway"       => 80
+    // Actually these don't have a speed limit legally...  35 is suggested, but NOBODY does that
+    case "motorway_link"  => 70
+    case "trunk"          => 70
+    case "trunk_link"     => 60
+    case "primary"        => 65
+    case "primary_link"   => 55
+    case "secondary"      => 55
+    case "secondary_link" => 45
+    case "tertiary"       => 45
+    case "tertiary_link"  => 35
+    //case "unclassified"   => 40
+    //case "road"           => 40
+    case "living_street"  => 20
+    // TODO some of these we filter out in Pass 1... cross-ref with that list
+    case "service"        => 10 // This is apparently parking-lots basically, not feeder roads
+    case "services"       => 10
+    //case "track"          => 35
+    // I feel the need.  The need for speed.  Where can we find one of these?
+    //case "raceway"        => 300
+    //case "null"           => 30
+    //case "proposed"       => 35                                                               
+    //case "construction"     => 20                                                             
+
+    case _                => 35 // Generally a safe speed, right?
+  })
 }

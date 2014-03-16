@@ -84,15 +84,6 @@ abstract class Traversable(val lines: Array[Line]) {
 }
 
 class Line(val x1: Double, val y1: Double, val x2: Double, val y2: Double) {
-  //////////////////////////////////////////////////////////////////////////////
-  // Meta
-
-  def this(pt1: Coordinate, pt2: Coordinate) = this(pt1.x, pt1.y, pt2.x, pt2.y)
-  def this(v1: Vertex, v2: Vertex) = this(v1.location, v2.location)
-
-  //////////////////////////////////////////////////////////////////////////////
-  // Queries
-
   // TODO Compute and store it once, since the math isn't free?
   def length = Coordinate.gps_dist_in_meters(
     Graph.world_to_gps(x1, y1), Graph.world_to_gps(x2, y2)
@@ -190,4 +181,6 @@ object Line {
     MagicSerializable.materialize[Line].magic_save(obj, w)
   }
   def do_magic_load(r: MagicReader) = MagicSerializable.materialize[Line].magic_load(r)
+
+  def apply(pt1: Coordinate, pt2: Coordinate) = new Line(pt1.x, pt1.y, pt2.x, pt2.y)
 }

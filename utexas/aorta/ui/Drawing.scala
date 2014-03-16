@@ -295,7 +295,7 @@ object GeomFactory {
     // Shift the lines to match the EdgeLines we draw.
     val pt1 = t.from.lines.last.perp_shift(0.5).shift_back()
     val pt2 = t.to.lines.head.perp_shift(0.5).shift_fwd()
-    return new Line(pt1, pt2)
+    return Line(pt1, pt2)
   }
 
   def turn_tip(line: Line) = arrow(line, line.shift_back(0.75), 3)
