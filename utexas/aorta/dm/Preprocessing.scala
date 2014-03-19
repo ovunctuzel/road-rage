@@ -17,8 +17,14 @@ case class FeatureSummary(feature: Int, min: Double, max: Double, num_bins: Int)
   }
 }
 
+case class DataFixer(summaries: Seq[FeatureSummary], labels: Set[String]) {
+  def transform(raw: RawInstance) = LabeledInstance(
+    raw.label, raw.features.zip(summaries).map(pair => pair._2.transform(pair._1))
+  )
+}
+
 object Preprocessing {
-  def summarize(instances: List[RawInstance], num_bins: Int): Seq[FeatureSummary] = {
+  def summarize(instances: List[RawInstance], num_bins: Int): DataFixer = {
     val mins = Array.fill(instances.head.features.size)(Double.PositiveInfinity)
     val maxs = Array.fill(instances.head.features.size)(Double.NegativeInfinity)
     for (instance <- instances) {
@@ -27,8 +33,12 @@ object Preprocessing {
         maxs(feature) = math.max(maxs(feature), value)
       }
     }
-    return for (
+    // To make max an exclusive value to get the right number of bins, bump up the max a bit.
+    val epsilon = 1e-5
+    val summaries = for (
       feature <- mins.indices
-    ) yield FeatureSummary(feature, mins(feature), maxs(feature), num_bins)
+    ) yield FeatureSummary(feature, mins(feature), maxs(feature) + epsilon, num_bins)
+    val labels = instances.map(_.label).toSet
+    return DataFixer(summaries, labels)
   }
 }

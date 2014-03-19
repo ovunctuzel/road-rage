@@ -55,6 +55,19 @@ class OsmGraph(
     val costs_by_id = costs.map({ case (k, v) => k.id -> v}).toMap
     return graph.roads.map(r => r -> costs_by_id(r.osm_id)).toMap
   }
+
+  def scrape_data(): List[RawInstance] = {
+    // Features: length, number of intersections, popularity, pagerank
+    val popularity = popular_ways()
+    val rank = pagerank()
+    return ways.map(way => {
+      val f1 = lengths(way)
+      val f2 = succs(way).size
+      val f3 = popularity(way)
+      val f4 = rank(way)
+      RawInstance(way.label, List(f1, f2, f3, f4))
+    }).toList
+  }
 }
 case class OsmWay(id: String, label: String)
 

@@ -4,14 +4,22 @@
 
 package utexas.aorta.dm
 
+import utexas.aorta.sim.Simulation
 import utexas.aorta.ui.{GUI, MapCanvas}
 import utexas.aorta.common.Util
 
 object Explorer {
   def main(args: Array[String]) {
-    val canvas = new MapCanvas(Util.process_args(args))
-    setup(canvas)
-    GUI.run(canvas)
+    args.head match {
+      case "gui" => {
+        val canvas = new MapCanvas(Util.process_args(args.tail))
+        setup(canvas)
+        GUI.run(canvas)
+      }
+      case "bayes" => {
+        classify_experiment(Util.process_args(args.tail))
+      }
+    }
   }
 
   private def setup(canvas: MapCanvas) {
@@ -32,5 +40,15 @@ object Explorer {
     )
     Util.log("Creating heatmap for PageRank...")
     canvas.show_heatmap(osm.convert_costs(osm.pagerank), percentile, "pagerank")
+  }
+
+  private def classify_experiment(sim: Simulation) {
+    val bins = 50
+    val osm = OsmGraph.convert(sim.graph)
+    val raw = osm.scrape_data()
+    val fixer = Preprocessing.summarize(raw, bins)
+    val instances = raw.map(r => fixer.transform(r))
+    val bayes = new NaiveBayesClassifier(fixer.labels, bins)
+    bayes.train(instances, Nil)
   }
 }
