@@ -50,5 +50,6 @@ object Explorer {
     val instances = raw.map(r => fixer.transform(r))
     val bayes = new NaiveBayesClassifier(fixer.labels, bins)
     bayes.train(instances, Nil)
+    bayes.summarize(instances)
   }
 }

@@ -7,7 +7,9 @@ package utexas.aorta.dm
 import scala.collection.mutable
 
 // The feature values have been discretized; the possible values are [0, bins)
-case class LabeledInstance(label: String, features: List[Int])
+case class LabeledInstance(label: String, features: List[Int]) {
+  def for_test = UnlabeledInstance(features)
+}
 case class UnlabeledInstance(features: List[Int])
 
 abstract class Classifier(labels: Set[String], bins: Int) {
@@ -60,4 +62,20 @@ class NaiveBayesClassifier(labels: Set[String], bins: Int) extends Classifier(la
     math.log(priors(label)) + instance.features.zipWithIndex.map({
       case (bin, feature) => math.log(features((label, feature, bin)))
     }).sum
+
+  def summarize(tests: List[LabeledInstance]) {
+    println(s"Number of bins = $bins")
+    for ((label, prior) <- priors.toList.sortBy(_._2)) {
+      println(s"$label has a prior of $prior")  // TODO format better
+    }
+    println("")
+
+    var num_correct = 0
+    for (instance <- tests) {
+      if (classify(instance.for_test) == instance.label) {
+        num_correct += 1
+      }
+    }
+    println(s"$num_correct / ${tests.size} correct: accuracy is ${num_correct.toDouble / tests.size}")
+  }
 }
