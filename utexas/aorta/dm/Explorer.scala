@@ -13,16 +13,19 @@ object Explorer {
     args.head match {
       case "gui" => {
         val canvas = new MapCanvas(Util.process_args(args.tail))
-        setup(canvas)
+        setup_gui(canvas)
         GUI.run(canvas)
       }
+      case "scrape" => {
+        scrape_data(Util.process_args(args.tail))
+      }
       case "bayes" => {
-        classify_experiment(Util.process_args(args.tail))
+        classify_experiment(args.tail.head)
       }
     }
   }
 
-  private def setup(canvas: MapCanvas) {
+  private def setup_gui(canvas: MapCanvas) {
     val graph = canvas.sim.graph
     val osm = OsmGraph.convert(graph)
     val percentile = 1.0
@@ -42,10 +45,20 @@ object Explorer {
     canvas.show_heatmap(osm.convert_costs(osm.pagerank), percentile, "pagerank")
   }
 
-  private def classify_experiment(sim: Simulation) {
-    val bins = 50
+  private def scrape_data(sim: Simulation) {
     val osm = OsmGraph.convert(sim.graph)
     val raw = osm.scrape_data()
+    val w = Util.writer("dm_osm_" + sim.graph.basename)
+    w.int(raw.size)
+    raw.foreach(x => x.serialize(w))
+    w.done()
+  }
+
+  private def classify_experiment(data_fn: String) {
+    val r = Util.reader(data_fn)
+    val raw = Range(0, r.int).map(_ => RawInstance.unserialize(r)).toList
+
+    val bins = 50
     val fixer = Preprocessing.summarize(raw, bins)
     val instances = raw.map(r => fixer.transform(r))
     val bayes = new NaiveBayesClassifier(fixer.labels, bins)

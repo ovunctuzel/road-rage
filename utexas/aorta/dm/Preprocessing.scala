@@ -4,7 +4,19 @@
 
 package utexas.aorta.dm
 
-case class RawInstance(label: String, features: List[Double])
+import utexas.aorta.common.{StateWriter, StateReader}
+
+case class RawInstance(label: String, features: List[Double]) {
+  def serialize(w: StateWriter) {
+    w.string(label)
+    w.int(features.size)
+    features.foreach(x => w.double(x))
+  }
+}
+object RawInstance {
+  def unserialize(r: StateReader) = RawInstance(r.string, Range(0, r.int).map(_ => r.double).toList)
+}
+
 // min is inclusive, max is exclusive -- that way, bins are [0, num_bins)
 case class FeatureSummary(feature: Int, min: Double, max: Double, num_bins: Int) {
   def transform(x: Double): Int = {

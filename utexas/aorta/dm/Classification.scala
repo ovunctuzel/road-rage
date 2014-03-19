@@ -65,8 +65,8 @@ class NaiveBayesClassifier(labels: Set[String], bins: Int) extends Classifier(la
 
   def summarize(tests: List[LabeledInstance]) {
     println(s"Number of bins = $bins")
-    for ((label, prior) <- priors.toList.sortBy(_._2)) {
-      println(s"$label has a prior of $prior")  // TODO format better
+    for ((label, prior) <- priors.toList.sortBy(_._2).reverse) {
+      println(f"$label has a prior of ${prior * 100}%.2f%%")
     }
     println("")
 
