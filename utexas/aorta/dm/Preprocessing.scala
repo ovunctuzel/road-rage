@@ -4,18 +4,32 @@
 
 package utexas.aorta.dm
 
+import java.io.{BufferedReader, FileReader, PrintWriter}
+
 import utexas.aorta.common.{StateWriter, StateReader}
 
-case class RawInstance(label: String, features: List[Double]) {
-  def serialize(w: StateWriter) {
-    w.string(label)
-    w.int(features.size)
-    features.foreach(x => w.double(x))
+case class ScrapedData(feature_names: List[String], data: List[RawInstance]) {
+  def save_csv(fn: String) {
+    val out = new PrintWriter(fn)
+    out.println(("label" :: feature_names).mkString(","))
+    for (r <- data) {
+      out.println((r.label :: r.features.map(_.toString)).mkString(","))
+    }
+    out.close()
   }
 }
-object RawInstance {
-  def unserialize(r: StateReader) = RawInstance(r.string, Range(0, r.int).map(_ => r.double).toList)
+object ScrapedData {
+  def read_csv(fn: String): ScrapedData = {
+    val in = new BufferedReader(new FileReader(fn))
+    val features = in.readLine.split(",").tail
+    val data = Stream.continually(in.readLine).takeWhile(_ != null).map(line => {
+      val fields = line.split(",")
+      RawInstance(fields.head, fields.tail.map(_.toDouble).toList)
+    })
+    return ScrapedData(features.toList, data.toList)
+  }
 }
+case class RawInstance(label: String, features: List[Double])
 
 // min is inclusive, max is exclusive -- that way, bins are [0, num_bins)
 case class FeatureSummary(feature: Int, min: Double, max: Double, num_bins: Int) {

@@ -47,20 +47,16 @@ object Explorer {
 
   private def scrape_data(sim: Simulation) {
     val osm = OsmGraph.convert(sim.graph)
-    val raw = osm.scrape_data()
-    val w = Util.writer("dm_osm_" + sim.graph.basename)
-    w.int(raw.size)
-    raw.foreach(x => x.serialize(w))
-    w.done()
+    val scraped = osm.scrape_data()
+    scraped.save_csv("dm_osm_" + sim.graph.basename + ".csv")
   }
 
   private def classify_experiment(data_fn: String) {
-    val r = Util.reader(data_fn)
-    val raw = Range(0, r.int).map(_ => RawInstance.unserialize(r)).toList
+    val scraped = ScrapedData.read_csv(data_fn)
 
     val bins = 5
-    val fixer = Preprocessing.summarize(raw, bins)
-    val instances = raw.map(r => fixer.transform(r))
+    val fixer = Preprocessing.summarize(scraped.data, bins)
+    val instances = scraped.data.map(r => fixer.transform(r))
     val bayes = new NaiveBayesClassifier(fixer.labels, bins)
     bayes.train(instances, Nil)
     bayes.summarize(instances)
