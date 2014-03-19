@@ -44,6 +44,7 @@ class NaiveBayesClassifier(labels: Set[String], bins: Int) extends Classifier(la
     val num_features = training_data.head.features.size
     for (label <- labels) {
       for (feature <- Range(0, num_features)) {
+        // denominator is the same for every feature
         val denominator = Range(0, bins).map(value => feature_counts((label, feature, value))).sum
         for (value <- Range(0, bins)) {
           val key = (label, feature, value)
@@ -77,5 +78,11 @@ class NaiveBayesClassifier(labels: Set[String], bins: Int) extends Classifier(la
       }
     }
     println(s"$num_correct / ${tests.size} correct: accuracy is ${num_correct.toDouble / tests.size}")
+
+    // Temp debugging (a certain instance)...
+    println("")
+    val example = tests.head
+    println(example)
+    println("Classified as " + classify(example.for_test))
   }
 }

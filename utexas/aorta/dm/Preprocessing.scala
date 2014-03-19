@@ -51,6 +51,11 @@ object Preprocessing {
       feature <- mins.indices
     ) yield FeatureSummary(feature, mins(feature), maxs(feature) + epsilon, num_bins)
     val labels = instances.map(_.label).toSet
+    println("Feature summaries:")
+    for (s <- summaries) {
+      println(s"  $s")
+    }
+    println("")
     return DataFixer(summaries, labels)
   }
 }

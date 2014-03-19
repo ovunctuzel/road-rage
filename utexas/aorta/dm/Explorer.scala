@@ -58,7 +58,7 @@ object Explorer {
     val r = Util.reader(data_fn)
     val raw = Range(0, r.int).map(_ => RawInstance.unserialize(r)).toList
 
-    val bins = 50
+    val bins = 5
     val fixer = Preprocessing.summarize(raw, bins)
     val instances = raw.map(r => fixer.transform(r))
     val bayes = new NaiveBayesClassifier(fixer.labels, bins)
