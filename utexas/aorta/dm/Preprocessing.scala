@@ -11,9 +11,9 @@ import utexas.aorta.common.{StateWriter, StateReader}
 case class ScrapedData(feature_names: List[String], data: List[RawInstance]) {
   def save_csv(fn: String) {
     val out = new PrintWriter(fn)
-    out.println(("label" :: feature_names).mkString(","))
+    out.println(("label" :: "osm_id" :: feature_names).mkString(","))
     for (r <- data) {
-      out.println((r.label :: r.features.map(_.toString)).mkString(","))
+      out.println((r.label :: r.osm_id :: r.features.map(_.toString)).mkString(","))
     }
     out.close()
   }
@@ -23,15 +23,15 @@ case class ScrapedData(feature_names: List[String], data: List[RawInstance]) {
 object ScrapedData {
   def read_csv(fn: String): ScrapedData = {
     val in = new BufferedReader(new FileReader(fn))
-    val features = in.readLine.split(",").tail
+    val features = in.readLine.split(",").drop(2)
     val data = Stream.continually(in.readLine).takeWhile(_ != null).map(line => {
       val fields = line.split(",")
-      RawInstance(fields.head, fields.tail.map(_.toDouble).toList)
+      RawInstance(fields(0), fields(1), fields.drop(2).map(_.toDouble).toList)
     })
     return ScrapedData(features.toList, data.toList)
   }
 }
-case class RawInstance(label: String, features: List[Double])
+case class RawInstance(label: String, osm_id: String, features: List[Double])
 
 case class FeatureSummary(feature: Int, interval_maxes: List[Double]) {
   def transform(x: Double): Int = {

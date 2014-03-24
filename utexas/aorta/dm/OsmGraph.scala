@@ -64,7 +64,7 @@ class OsmGraph(
       val f2 = succs(way).size
       val f3 = popularity(way)
       val f4 = rank(way)
-      RawInstance(way.label, List(f1, f2, f3, f4))
+      RawInstance(way.label, way.id, List(f1, f2, f3, f4))
     }).toList
     return ScrapedData(List("length", "num_intersections", "popularity", "pagerank"), data)
   }
