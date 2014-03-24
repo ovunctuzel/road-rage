@@ -9,30 +9,21 @@ import weka.classifiers.Evaluation
 import weka.classifiers.bayes.NaiveBayes
 
 class WekaClassifier(raw: ScrapedData) {
-  private val training_set = build_training_data()
-  private val model = build_model()
+  // Setup
+  private val labels = new FastVector(raw.labels.size)
+  raw.labels.foreach(label => labels.addElement(label))
+  private val attrib_ls = new Attribute("label", labels) :: raw.feature_names.map(new Attribute(_))
+  private val attribs = new FastVector(attrib_ls.size)
+  attrib_ls.foreach(a => attribs.addElement(a))
 
-  private def build_training_data(): Instances = {
-    // Setup
-    val labels = new FastVector(raw.labels.size)
-    raw.labels.foreach(label => labels.addElement(label))
-    val attrib_ls = new Attribute("label", labels) :: raw.feature_names.map(new Attribute(_))
-    val attribs = new FastVector(attrib_ls.size)
-    attrib_ls.foreach(a => attribs.addElement(a))
-
-    // Train
-    val training_set = new Instances("osm_relation", attribs, raw.data.size)
-    training_set.setClassIndex(0)
-    for (instance <- raw.data) {
-      val ex = new Instance(instance.features.size + 1)
-      ex.setValue(attrib_ls.head, instance.label)
-      for ((value, attrib) <- instance.features.zip(attrib_ls.tail)) {
-        ex.setValue(attrib, value)
-      }
-      training_set.add(ex)
-    }
-    return training_set
+  // Train
+  private val training_set = new Instances("osm_relation", attribs, raw.data.size)
+  training_set.setClassIndex(0)
+  for (instance <- raw.data) {
+    training_set.add(convert(instance))
   }
+
+  private val model = build_model()
 
   private def build_model(): NaiveBayes = {
     val model = new NaiveBayes()
@@ -46,15 +37,23 @@ class WekaClassifier(raw: ScrapedData) {
     return model
   }
 
+  private def convert(instance: RawInstance): Instance = {
+    val ex = new Instance(instance.features.size + 1)
+    ex.setValue(attrib_ls.head, instance.label)
+    for ((value, attrib) <- instance.features.zip(attrib_ls.tail)) {
+      ex.setValue(attrib, value)
+    }
+    return ex
+  }
+
   def classify(i: Instance) = raw.labels(model.classifyInstance(i).toInt)
 
   def find_anomalies() {
-    for (idx <- Range(0, training_set.numInstances)) {
-      val i = training_set.instance(idx)
-      val model_label = classify(i)
-      val true_label = i.classAttribute.value(i.classValue.toInt)
-
-      if (model_label != true_label) {
+    for (i <- raw.data) {
+      val ex = convert(i)
+      ex.setDataset(training_set)
+      val model_label = classify(ex)
+      if (i.label != model_label) {
         println(s"Labeled $i as $model_label")
       }
     }
