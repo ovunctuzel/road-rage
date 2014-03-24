@@ -67,6 +67,7 @@ object Explorer {
 
   private def classify_weka(data_fn: String) {
     val scraped = ScrapedData.read_csv(data_fn)
-    new WekaClassifier(scraped)
+    val weka = new WekaClassifier(scraped)
+    weka.find_anomalies()
   }
 }
