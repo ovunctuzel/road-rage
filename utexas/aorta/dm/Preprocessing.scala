@@ -31,15 +31,15 @@ object ScrapedData {
 }
 case class RawInstance(label: String, features: List[Double])
 
-// min is inclusive, max is exclusive -- that way, bins are [0, num_bins)
-case class FeatureSummary(feature: Int, min: Double, max: Double, num_bins: Int) {
+case class FeatureSummary(feature: Int, interval_maxes: List[Double]) {
   def transform(x: Double): Int = {
-    if (x < min || x >= max) {
-      // TODO or just cap... testing instance could exceed what we saw in training
-      throw new IllegalArgumentException(s"$x not in [$min, $max]")
+    for ((max, bin) <- interval_maxes.zipWithIndex) {
+      if (x <= max) {
+        return bin
+      }
     }
-    val normalized = (x - min) / (max - min)
-    return math.floor(normalized * num_bins).toInt
+    // Testing instance could exceed what we saw in training. Cap it.
+    return interval_maxes.size - 1
   }
 }
 
@@ -51,19 +51,13 @@ case class DataFixer(summaries: Seq[FeatureSummary], labels: Set[String]) {
 
 object Preprocessing {
   def summarize(instances: List[RawInstance], num_bins: Int): DataFixer = {
-    val mins = Array.fill(instances.head.features.size)(Double.PositiveInfinity)
-    val maxs = Array.fill(instances.head.features.size)(Double.NegativeInfinity)
-    for (instance <- instances) {
-      for ((value, feature) <- instance.features.zipWithIndex) {
-        mins(feature) = math.min(mins(feature), value)
-        maxs(feature) = math.max(maxs(feature), value)
-      }
-    }
-    // To make max an exclusive value to get the right number of bins, bump up the max a bit.
-    val epsilon = 1e-5
-    val summaries = for (
-      feature <- mins.indices
-    ) yield FeatureSummary(feature, mins(feature), maxs(feature) + epsilon, num_bins)
+    val width = instances.size / num_bins
+    val cutoff_indices = Range(1, num_bins + 1).map(x => math.min(x * width, instances.size - 1))
+
+    val summaries = Range(0, instances.head.features.size).map(feature => {
+      val sorted = instances.map(_.features(feature)).sorted
+      FeatureSummary(feature, cutoff_indices.map(idx => sorted(idx)).toList)
+    })
     val labels = instances.map(_.label).toSet
     println("Feature summaries:")
     for (s <- summaries) {

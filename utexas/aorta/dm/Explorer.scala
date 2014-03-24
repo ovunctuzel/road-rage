@@ -54,7 +54,7 @@ object Explorer {
   private def classify_experiment(data_fn: String) {
     val scraped = ScrapedData.read_csv(data_fn)
 
-    val bins = 5
+    val bins = 50
     val fixer = Preprocessing.summarize(scraped.data, bins)
     val instances = scraped.data.map(r => fixer.transform(r))
     val bayes = new NaiveBayesClassifier(fixer.labels, bins)
