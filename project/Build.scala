@@ -17,7 +17,8 @@ object AortaBuild extends Build {
         "org.scala-lang" % "scala-swing" % scalaVersion.value,
         "org.scala-lang" % "scala-compiler" % scalaVersion.value,
         "org.jfree" % "jfreechart" % "1.0.15",
-        "jline" % "jline" % "2.11"
+        "jline" % "jline" % "2.11",
+        "nz.ac.waikato.cms.weka" % "weka-stable" % "3.6.10"
       )
     )
   )

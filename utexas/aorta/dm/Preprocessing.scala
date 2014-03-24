@@ -17,6 +17,8 @@ case class ScrapedData(feature_names: List[String], data: List[RawInstance]) {
     }
     out.close()
   }
+
+  lazy val labels = data.map(_.label).toSet.toList.sorted
 }
 object ScrapedData {
   def read_csv(fn: String): ScrapedData = {

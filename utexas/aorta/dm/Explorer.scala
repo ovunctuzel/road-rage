@@ -22,6 +22,9 @@ object Explorer {
       case "bayes" => {
         classify_experiment(args.tail.head)
       }
+      case "weka" => {
+        classify_weka(args.tail.head)
+      }
     }
   }
 
@@ -60,5 +63,10 @@ object Explorer {
     val bayes = new NaiveBayesClassifier(fixer.labels, bins)
     bayes.train(instances, Nil)
     bayes.summarize(instances)
+  }
+
+  private def classify_weka(data_fn: String) {
+    val scraped = ScrapedData.read_csv(data_fn)
+    new WekaClassifier(scraped)
   }
 }
