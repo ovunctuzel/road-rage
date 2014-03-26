@@ -9,7 +9,7 @@ import java.awt.Color
 import utexas.aorta.map.{Road, CongestionRouter}
 import utexas.aorta.sim.Simulation
 import utexas.aorta.experiments.ScenarioRoadUsage
-import utexas.aorta.common.Timer
+import utexas.aorta.common.{Timer, Util}
 import utexas.aorta.common.algorithms.PathResult
 
 trait Visualization {
@@ -89,6 +89,20 @@ trait Visualization {
           percentile, s"road usage in $mode (sum of driver priority)"
         )
       }
+      canvas.repaint()
+    }
+  }
+
+  def show_weird_roads() {
+    for (fn <- canvas.prompt_fn("Select a fi/e with IDs of weird OSM ways")) {
+      val layer = "weird OSM ways"
+      state.road_colors.add_layer(layer)
+      val in = Util.reader(fn)
+      val ids = Range(0, in.int).map(_ => in.string).toSet
+      for (r <- canvas.sim.graph.roads if ids(r.osm_id)) {
+        state.road_colors.set(layer, r, Color.GREEN)
+      }
+      state.set_cur_layer(layer)
       canvas.repaint()
     }
   }

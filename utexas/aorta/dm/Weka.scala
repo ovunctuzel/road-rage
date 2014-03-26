@@ -8,6 +8,8 @@ import weka.core.{Attribute, FastVector, Instance, Instances}
 import weka.classifiers.Evaluation
 import weka.classifiers.bayes.NaiveBayes
 
+import utexas.aorta.common.Util
+
 class WekaClassifier(raw: ScrapedData) {
   // Setup
   private val labels = new FastVector(raw.labels.size)
@@ -49,13 +51,18 @@ class WekaClassifier(raw: ScrapedData) {
   def classify(i: Instance) = raw.labels(model.classifyInstance(i).toInt)
 
   def find_anomalies() {
-    for (i <- raw.data) {
+    val out = Util.writer("weird_osm_ids")
+    val ids = raw.data.filter(i => {
       val ex = convert(i)
       ex.setDataset(training_set)
       val model_label = classify(ex)
       if (i.label != model_label) {
         println(s"Labeled $i as $model_label")
       }
-    }
+      i.label != model_label
+    }).map(_.osm_id)
+    out.int(ids.size)
+    ids.foreach(id => out.string(id))
+    out.done()
   }
 }
