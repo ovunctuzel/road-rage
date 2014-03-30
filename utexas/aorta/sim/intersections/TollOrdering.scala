@@ -16,16 +16,13 @@ class TollOrdering[T <: Ordered[T]]() extends IntersectionOrdering[T]() {
       return None
     } else {
       if (choices.head.isInstanceOf[Ticket]) {
-        val tick = choices.head.asInstanceOf[Ticket].a.sim.tick // Messy?
         // This blurs tickets from the same road, but such turns rarely conflict
         return Some(choices.maxBy(
-          t => t.asInstanceOf[Ticket].turn.from.road.road_agent.tollbooth.toll(tick).dollars
+          t => t.asInstanceOf[Ticket].turn.from.road.road_agent.tollbooth.toll
         ))
       } else {
-        // TODO broken for signals -- What tick is it if there may not be agents? :\
-        val tick = 0.0
         return Some(choices.maxBy(p => p.asInstanceOf[Phase].turns.map(_.from.road).toSet.map(
-          (r: Road) => r.road_agent.tollbooth.toll(tick).dollars
+          (r: Road) => r.road_agent.tollbooth.toll
         ).sum))
       }
     }

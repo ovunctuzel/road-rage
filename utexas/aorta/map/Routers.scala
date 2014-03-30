@@ -116,12 +116,11 @@ class SumTollRouter(graph: Graph) extends AbstractPairAstarRouter(graph)
   )
 }
 
-// Score is (price + time * impatience_penalty, time). The time component lets us request quotes
-// properly from tollbooths.
 class TollboothRouter(graph: Graph) extends AbstractPairAstarRouter(graph) {
   // TODO pipe this in better
   private val max_priority = 500.0
   // TODO cache this!
+  // TODO whats the max time now? :\
   private val max_freeflow_time = graph.roads.map(_.freeflow_time).max
 
   private var owner: Agent = null
@@ -130,26 +129,14 @@ class TollboothRouter(graph: Graph) extends AbstractPairAstarRouter(graph) {
     owner = a
   }
 
+  // Score is (utility, 0)
   override def transform(spec: Pathfind) = super.transform(spec).copy(
-    // TODO usually ignore prev, but here, have to know pairs to moves, so grab toll for prev->next
-    // TODO does this make eta offset strangely?
     calc_cost = (prev: Road, next: Road, cost_sofar: (Double, Double)) => {
-      val raw_road_price = prev.road_agent.tollbooth.toll_with_discount(cost_sofar._2, owner).dollars
-      val raw_intersection_price = prev.to.intersection.tollbooth.toll_with_discount(
-        cost_sofar._2 + prev.freeflow_time, owner, prev, next
-      ).dollars
-      val raw_time = prev.freeflow_time
-      val raw_priority = owner.wallet.priority
-
-      val road_price = raw_road_price / max_priority
-      val intersection_price = raw_intersection_price / max_priority
-      val time = raw_time / max_freeflow_time
-      val priority = raw_priority / max_priority
-      // TODO throw in asserts for the range
-      val cost = 0.1 * (1 - priority) * (road_price + intersection_price) + (time * priority)
-      (cost, prev.freeflow_time)
-    },
-    // Seed with the actual time we're starting
-    cost_start = (0, owner.sim.tick)
+      // Utility = 0.1 * (1 - priority) * price + priority * time
+      val price = next.road_agent.tollbooth.toll   // already normalized
+      val time = next.freeflow_time / max_freeflow_time  // TODO
+      val priority = owner.wallet.priority.toDouble / max_priority
+      (0.1 * (1 - priority) * price + priority * time, 0)
+    }
   )
 }

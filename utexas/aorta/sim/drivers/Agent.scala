@@ -6,7 +6,6 @@ package utexas.aorta.sim.drivers
 
 import scala.collection.mutable
 
-import utexas.aorta.contrib.TollBroker
 import utexas.aorta.map.{Edge, Coordinate, Turn, Traversable, Graph, Position, Vertex}
 import utexas.aorta.sim.{Simulation, EV_AgentQuit, AgentMap, EV_Breakpoint}
 import utexas.aorta.sim.intersections.{Intersection, Ticket}
@@ -43,7 +42,6 @@ class Agent(
   private val tickets = new mutable.HashMap[Edge, Ticket]()
 
   val lc = new LaneChangingHandler(this, behavior)  // TODO private
-  val toll_broker = new TollBroker(this)
 
   //////////////////////////////////////////////////////////////////////////////
   // Meta
@@ -123,7 +121,6 @@ class Agent(
           t.vert.intersection.enter(get_ticket(e).get)
           e.queue.free_slot()
           e.road.road_agent.tollbooth.exit(this)
-          toll_broker.exited(e.road)
         }
         case (t: Turn, e: Edge) => {
           val ticket = get_ticket(t.from).get

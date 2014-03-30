@@ -121,7 +121,6 @@ class Simulation(val scenario: Scenario) extends Publisher with AgentManager {
     // steps, we ensure the intersections' temporary state becomes firm.
     for (v <- graph.vertices) {
       v.intersection.policy.react_tick()
-      v.intersection.tollbooth.react()
     }
 
     graph.roads.foreach(r => r.road_agent.react())
@@ -200,9 +199,7 @@ class Simulation(val scenario: Scenario) extends Publisher with AgentManager {
     Util.assert_eq(agents.isEmpty, true)
     for (v <- graph.vertices) {
       v.intersection.policy.verify_done()
-      v.intersection.tollbooth.verify_done()
     }
-    graph.roads.foreach(r => r.road_agent.tollbooth.verify_done())
   }
 
   def savestate(fn: String): String = {

@@ -18,9 +18,7 @@ abstract class RoadAgent(val r: Road, sim: Simulation) {
 
   def congested(): Boolean
   // TODO how often must this be called?
-  def react() {
-    tollbooth.react()
-  }
+  def react() {}
 
   def congested_now = r.lanes.exists(e => e.queue.is_congested)
 

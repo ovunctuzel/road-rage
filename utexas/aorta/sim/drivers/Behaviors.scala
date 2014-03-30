@@ -62,7 +62,6 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
     a.route.react()
     a.lc.decide_lc()
     val accel = max_safe_accel
-    a.toll_broker.react()
     return accel
   }
 
