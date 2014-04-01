@@ -56,7 +56,7 @@ case class Scenario(
       Util.log("Wallets:")
       ScenarioUtil.percentages(agents.map(_.wallet.policy))
       Util.log("Budget ($): " + ScenarioUtil.basic_stats_int(agents.map(_.wallet.budget)))
-      Util.log("Priority: " + ScenarioUtil.basic_stats_int(agents.map(_.wallet.priority)))
+      Util.log("Priority: " + ScenarioUtil.basic_stats(agents.map(_.wallet.priority)))
       Util.log_pop
     }
 
@@ -199,19 +199,21 @@ object MkRoute {
   )
 }
 
-case class MkWallet(policy: WalletType.Value, budget: Int, priority: Int, bid_ahead: Boolean)
+// priority is [0, 1]
+case class MkWallet(policy: WalletType.Value, budget: Int, priority: Double, bid_ahead: Boolean)
   extends Serializable
 {
   def make() = WalletType.make(policy, budget, priority, bid_ahead)
 
   def serialize(w: StateWriter) {
-    w.ints(policy.id, budget, priority)
+    w.ints(policy.id, budget)
+    w.double(priority)
     w.bool(bid_ahead)
   }
 }
 
 object MkWallet {
-  def unserialize(r: StateReader) = MkWallet(WalletType(r.int), r.int, r.int, r.bool)
+  def unserialize(r: StateReader) = MkWallet(WalletType(r.int), r.int, r.double, r.bool)
 }
 
 case class MkIntersection(id: VertexID, policy: IntersectionType.Value,
@@ -318,7 +320,7 @@ object WalletType extends Enumeration {
   type WalletType = Value
   val Static, Freerider, Fair, System = Value
 
-  def make(enum: WalletType.Value, budget: Int, priority: Int, bid_ahead: Boolean) = enum match {
+  def make(enum: WalletType.Value, budget: Int, priority: Double, bid_ahead: Boolean) = enum match {
     case Static => new StaticWallet(budget, priority)
     case Freerider => new FreeriderWallet(priority)
     case Fair => new FairWallet(budget, priority, bid_ahead)

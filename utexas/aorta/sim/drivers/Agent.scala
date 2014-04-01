@@ -307,9 +307,6 @@ class Agent(
     case e: Edge => at :: steps_to(get_ticket(e).get.turn, v)
     case t: Turn => at :: steps_to(t.to, v)
   }
-
-  // Seconds saved per dollar. Just use priority for now.
-  def value_of_time = new ValueOfTime(wallet.priority)
 }
 
 object Agent {

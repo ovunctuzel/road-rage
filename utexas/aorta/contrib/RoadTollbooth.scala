@@ -18,7 +18,7 @@ class RoadTollbooth(road: RoadAgent) {
 
   // A priority 1 driver appears like 100 cars, a priority 0.1 looks like 10, a priority .01 looks
   // like 1
-  private def dx(a: Agent) = (a.wallet.priority.toDouble / 500) * 100
+  private def dx(a: Agent) = a.wallet.priority * 100
 
   def enter(a: Agent) {
     x += dx(a)

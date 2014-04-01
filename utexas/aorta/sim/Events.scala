@@ -49,7 +49,7 @@ final case class EV_TurnStarted(ticket: Ticket) extends Sim_Event
 final case class EV_AgentSpawned(a: Agent) extends Sim_Event
 final case class EV_AgentQuit(
   agent: Agent, birth_tick: Double, start: Road, end: Road, wallet: WalletType.Value,
-  start_budget: Int, end_tick: Double, end_budget: Int, priority: Int
+  start_budget: Int, end_tick: Double, end_budget: Int, priority: Double
 ) extends Sim_Event
 {
   // Note this includes waiting to actually spawn on the first lane

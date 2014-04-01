@@ -103,7 +103,7 @@ case class TripDistanceResult(id: Int, priority: Double, ideal_distance: Double,
 case class TurnDelayResult(mode: String, bin: Double, count: Double)
 case class Crossing(road: Int, entry: Double, exit: Double)
 case class AgentPath(id: Int, priority: Double, ideal_spawn_time: Double, paths: Array[List[Crossing]])
-case class RoadUsage(r: RoadID, mode: String, num_drivers: Int, sum_priority: Int)
+case class RoadUsage(r: RoadID, mode: String, num_drivers: Int, sum_priority: Double)
 
 case class ScenarioTimes(tag: ScenarioTag, modes: Array[String], agents: Array[TripTimeResult])
 case class ScenarioDistances(tag: ScenarioTag, modes: Array[String], agents: Array[TripDistanceResult])
@@ -148,7 +148,7 @@ object Crossing {
 }
 object RoadUsage {
   def apply(fields: Array[String]) = new RoadUsage(
-    new RoadID(fields(0).toInt), fields(1), fields(2).toInt, fields(3).toInt
+    new RoadID(fields(0).toInt), fields(1), fields(2).toInt, fields(3).toDouble
   )
 }
 

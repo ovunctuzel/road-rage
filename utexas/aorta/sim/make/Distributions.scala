@@ -73,9 +73,7 @@ object AgentDistribution {
           RouterType.Congestion, RouterType.Congestion, Array(), rng.choose(ends).id,
           ReroutePolicyType.Never
         ),
-        // For now, force the same budget and priority here, and clean it up
-        // later.
-        MkWallet(rng.choose(wallets), budget, budget, false /* bid_ahead */)
+        MkWallet(rng.choose(wallets), budget, rng.double(0, 1), false /* bid_ahead */)
       )
     }).toArray
   }
@@ -100,9 +98,7 @@ object AgentDistribution {
           RouterType.Congestion, RouterType.Congestion, Array(), rng.choose(ends).id,
           ReroutePolicyType.Never
         ),
-        // For now, force the same budget and priority here, and clean it up
-        // later.
-        MkWallet(rng.choose(wallets), budget, budget, false /* bid_ahead */)
+        MkWallet(rng.choose(wallets), budget, rng.double(0, 1), false /* bid_ahead */)
       )
     }
     return result.toArray

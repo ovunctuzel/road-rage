@@ -197,7 +197,7 @@ class TripPathsMetric(info: MetricInfo) extends SinglePerAgentMetric[mutable.Str
 
 class RoadUsageMetric(info: MetricInfo) extends Metric(info) {
   protected val num_drivers = new mutable.HashMap[Road, Int]()
-  protected val sum_priority = new mutable.HashMap[Road, Int]()
+  protected val sum_priority = new mutable.HashMap[Road, Double]()
   for (r <- info.sim.graph.roads) {
     num_drivers(r) = 0
     sum_priority(r) = 0

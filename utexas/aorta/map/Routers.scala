@@ -94,7 +94,7 @@ class TollThresholdRouter(graph: Graph) extends AbstractPairAstarRouter(graph) w
   private var max_toll: Price = new Price(-1)
 
   override def setup(a: Agent) {
-    max_toll = new Price(a.wallet.priority)
+    max_toll = new Price((a.wallet.priority * 100).toInt)
   }
 
   override def router_type = RouterType.TollThreshold
@@ -117,8 +117,6 @@ class SumTollRouter(graph: Graph) extends AbstractPairAstarRouter(graph)
 }
 
 class TollboothRouter(graph: Graph) extends AbstractPairAstarRouter(graph) {
-  // TODO pipe this in better
-  private val max_priority = 500.0
   // TODO cache this among drivers!
   // TODO whats the max time now? :\
   private val max_freeflow_time = graph.roads.map(_.freeflow_time).max
@@ -135,7 +133,7 @@ class TollboothRouter(graph: Graph) extends AbstractPairAstarRouter(graph) {
       // Utility = 0.1 * (1 - priority) * price + priority * time
       val price = next.road_agent.tollbooth.toll   // already normalized
       val time = owner.sim.latest_delays.delay(next) / max_freeflow_time
-      val priority = owner.wallet.priority.toDouble / max_priority
+      val priority = owner.wallet.priority
       (0.1 * (1 - priority) * price + priority * time, 0)
     }
   )
