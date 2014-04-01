@@ -134,7 +134,7 @@ class TollboothRouter(graph: Graph) extends AbstractPairAstarRouter(graph) {
     calc_cost = (prev: Road, next: Road, cost_sofar: (Double, Double)) => {
       // Utility = 0.1 * (1 - priority) * price + priority * time
       val price = next.road_agent.tollbooth.toll   // already normalized
-      val time = next.freeflow_time / max_freeflow_time  // TODO
+      val time = owner.sim.latest_delays.delay(next) / max_freeflow_time
       val priority = owner.wallet.priority.toDouble / max_priority
       (0.1 * (1 - priority) * price + priority * time, 0)
     }

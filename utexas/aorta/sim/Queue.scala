@@ -180,6 +180,7 @@ class Queue(t: Traversable) extends Serializable {
   def percent_avail = avail_slots.toDouble / capacity.toDouble * 100.0
   def percent_full = 100.0 - percent_avail
   def slots_filled = capacity - avail_slots
+  def isEmpty = agents.isEmpty
 
   // This should be tuned carefully. A queue with only 3 spots isn't really
   // congested if they're all filled.

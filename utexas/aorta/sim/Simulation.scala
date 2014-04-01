@@ -42,6 +42,9 @@ class Simulation(val scenario: Scenario) extends Publisher with AgentManager {
   private lazy val omit = new AgentID(Flags.int("--omit", -1))
   private lazy val should_savestate = Flags.boolean("--savestate", true)
 
+  // TODO I forgot my own pattern for dealing with these simulation-wide singletons. :\
+  val latest_delays = new utexas.aorta.contrib.LatestDelay(this)
+
   //////////////////////////////////////////////////////////////////////////////
   // Meta
 
