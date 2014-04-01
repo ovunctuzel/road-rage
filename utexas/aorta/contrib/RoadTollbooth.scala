@@ -13,9 +13,12 @@ import utexas.aorta.sim.RoadAgent
 
 // Manage reservations to use a road resource during a window of time
 class RoadTollbooth(road: RoadAgent) {
+  // Should be [0, capacity], unless there's trouble
   private var x = 0.0
 
-  private def dx(a: Agent) = (a.wallet.priority.toDouble / 500) * 10
+  // A priority 1 driver appears like 100 cars, a priority 0.1 looks like 10, a priority .01 looks
+  // like 1
+  private def dx(a: Agent) = (a.wallet.priority.toDouble / 500) * 100
 
   def enter(a: Agent) {
     x += dx(a)
@@ -25,9 +28,11 @@ class RoadTollbooth(road: RoadAgent) {
     x -= dx(a)
   }
 
-  // TODO evaluate cost curve at x / road.capacity (which is sum of lanes) and squeeze price to [0,
-  // 1] normally
-  def toll = 42.0
+  // TODO sum or min or average or...?
+  private val capacity = road.r.lanes.map(_.queue.freeflow_capacity).sum
+
+  // x / capacity is [0, 1] normally, so output is [0, 1] normally
+  def toll = math.pow(x / capacity, 2)
 }
 
 class LatestDelay(sim: Simulation) {

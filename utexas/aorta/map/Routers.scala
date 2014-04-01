@@ -119,7 +119,7 @@ class SumTollRouter(graph: Graph) extends AbstractPairAstarRouter(graph)
 class TollboothRouter(graph: Graph) extends AbstractPairAstarRouter(graph) {
   // TODO pipe this in better
   private val max_priority = 500.0
-  // TODO cache this!
+  // TODO cache this among drivers!
   // TODO whats the max time now? :\
   private val max_freeflow_time = graph.roads.map(_.freeflow_time).max
 
