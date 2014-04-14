@@ -90,14 +90,11 @@ class LinkDelayMetric(info: MetricInfo) extends Metric(info) {
   ).toMap
   private val entry_time = new mutable.HashMap[Agent, Double]()
 
-  info.sim.listen(classOf[EV_AgentSpawned], _ match {
-    case EV_AgentSpawned(a) => entry_time(a) = a.sim.tick
-  })
   info.sim.listen(classOf[EV_Transition], _ match {
     // Entering a road
     case EV_Transition(a, from: Turn, to) => entry_time(a) = a.sim.tick
-    // Exiting a road
-    case EV_Transition(a, from: Edge, to: Turn) =>
+    // Exiting a road that we didn't spawn on
+    case EV_Transition(a, from: Edge, to: Turn) if entry_time.contains(a) =>
       add_delay(entry_time(a), a.sim.tick - entry_time(a), from.road)
     case _ =>
   })

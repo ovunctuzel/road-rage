@@ -8,6 +8,12 @@ import utexas.aorta.sim.Simulation
 import utexas.aorta.ui.{GUI, MapCanvas}
 import utexas.aorta.common.Util
 
+import scala.collection.mutable
+import utexas.aorta.experiments.{ExpConfig, SmartExperiment, Metric, MetricInfo}
+import utexas.aorta.sim.EV_Transition
+import utexas.aorta.sim.drivers.Agent
+import utexas.aorta.map.{Edge, Turn}
+
 object Explorer {
   def main(args: Array[String]) {
     args.head match {
@@ -16,14 +22,17 @@ object Explorer {
         setup_gui(canvas)
         GUI.run(canvas)
       }
-      case "scrape" => {
-        scrape_data(Util.process_args(args.tail))
+      case "scrape_osm" => {
+        scrape_osm(Util.process_args(args.tail))
       }
-      case "bayes" => {
-        classify_experiment(args.tail.head)
+      case "bayes_osm" => {
+        classify_bayes_osm(args.tail.head)
       }
-      case "weka" => {
-        classify_weka(args.tail.head)
+      case "weka_osm" => {
+        classify_weka_osm(args.tail.head)
+      }
+      case "scrape_delay" => {
+        scrape_delay(args.tail.head)
       }
     }
   }
@@ -48,13 +57,13 @@ object Explorer {
     canvas.show_heatmap(osm.convert_costs(osm.pagerank), percentile, "pagerank")
   }
 
-  private def scrape_data(sim: Simulation) {
+  private def scrape_osm(sim: Simulation) {
     val osm = OsmGraph.convert(sim.graph)
     val scraped = osm.scrape_data()
     scraped.save_csv("dm_osm_" + sim.graph.basename + ".csv")
   }
 
-  private def classify_experiment(data_fn: String) {
+  private def classify_bayes_osm(data_fn: String) {
     val scraped = ScrapedData.read_csv(data_fn)
 
     val bins = 50
@@ -65,9 +74,68 @@ object Explorer {
     bayes.summarize(instances)
   }
 
-  private def classify_weka(data_fn: String) {
+  private def classify_weka_osm(data_fn: String) {
     val scraped = ScrapedData.read_csv(data_fn)
     val weka = new WekaClassifier(scraped)
     weka.find_anomalies()
+  }
+
+  private def scrape_delay(map_fn: String) {
+    new DelayExperiment(ExpConfig.dm_delay(map_fn)).run_experiment()
+  }
+}
+
+// TODO move to own file?
+class DelayExperiment(config: ExpConfig) extends SmartExperiment(config, "delay") {
+  override def get_metrics(info: MetricInfo) = List(new WayDelayMetric(info))
+
+  override def run() {
+    run_trial(scenario, "delay").head.output(Nil)
+  }
+}
+
+class WayDelayMetric(info: MetricInfo) extends Metric(info) {
+  override def name = "way_delay"
+
+  // key is osm ID
+  private val delay_per_way = new mutable.HashMap[String, Double]().withDefault(_ => 0)
+  // for getting average
+  private val count_per_way = new mutable.HashMap[String, Int]().withDefault(_ => 0)
+
+  private val entry_time = new mutable.HashMap[Agent, Double]()
+
+  info.sim.listen(classOf[EV_Transition], _ match {
+    // Entering a road
+    case EV_Transition(a, from: Turn, to) => entry_time(a) = a.sim.tick
+    // Exiting a road that we didn't spawn on
+    case EV_Transition(a, from: Edge, to: Turn) if entry_time.contains(a) => {
+      delay_per_way(from.road.osm_id) += a.sim.tick - entry_time(a)
+      count_per_way(from.road.osm_id) += 1
+    }
+    case _ =>
+  })
+
+  // Ignore args, just ourself
+  override def output(ls: List[Metric]) {
+    val average_delays = delay_per_way.keys.map(id => delay_per_way(id) / count_per_way(id)).toArray
+    val sorted_delays = average_delays.sorted
+    val n = sorted_delays.size
+    val low_delay_cap = sorted_delays((n * (1.0 / 3)).toInt)
+    val mid_delay_cap = sorted_delays((n * (2.0 / 3)).toInt)
+    println(s"Delay caps: $low_delay_cap, $mid_delay_cap, ${sorted_delays.last}")
+    val instances = delay_per_way.keys.map(id => {
+      val delay = delay_per_way(id) / count_per_way(id)
+      // What percentile is it in?
+      val label =
+        if (delay <= low_delay_cap)
+          "low"
+        else if (delay <= mid_delay_cap)
+          "mid"
+        else
+          "high"
+      RawInstance(label, id, Nil)
+    })
+    val all_data = ScrapedData(Nil, instances.toList)
+    all_data.save_csv("dm_delay_" + info.sim.graph.basename + ".csv")
   }
 }
