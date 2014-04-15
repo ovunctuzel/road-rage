@@ -6,8 +6,10 @@ package utexas.aorta.dm
 
 import scala.collection.mutable
 
+import utexas.aorta.common.Util
+
 // The feature values have been discretized; the possible values are [0, bins)
-case class LabeledInstance(label: String, features: List[Int]) {
+case class LabeledInstance(label: String, osm_id: String, features: List[Int]) {
   def for_test = UnlabeledInstance(features)
 }
 case class UnlabeledInstance(features: List[Int])
@@ -66,6 +68,14 @@ class NaiveBayesClassifier(labels: Set[String], bins: Int) {
       }
     }
     println(s"$num_correct / ${tests.size} correct: accuracy is ${num_correct.toDouble / tests.size}")
+  }
+
+  def find_anomalies(tests: List[LabeledInstance]) {
+    val out = Util.writer("weird_osm_ids")
+    val ids = tests.filter(i => classify(i.for_test) != i.label).map(_.osm_id)
+    out.int(ids.size)
+    ids.foreach(id => out.string(id))
+    out.done()
   }
 
   private def normalize[K](m: Map[K, Int]): Map[K, Double] = {

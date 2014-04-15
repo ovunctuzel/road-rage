@@ -55,7 +55,7 @@ case class FeatureSummary(feature: Int, interval_maxes: List[Double]) {
 
 case class DataFixer(summaries: Seq[FeatureSummary], labels: Set[String]) {
   def transform(raw: RawInstance) = LabeledInstance(
-    raw.label, raw.features.zip(summaries).map(pair => pair._2.transform(pair._1))
+    raw.label, raw.osm_id, raw.features.zip(summaries).map(pair => pair._2.transform(pair._1))
   )
 }
 

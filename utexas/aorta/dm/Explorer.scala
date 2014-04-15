@@ -24,7 +24,6 @@ object Explorer {
       }
       case "scrape_osm" => scrape_osm(Util.process_args(args.tail))
       case "bayes" => classify_bayes(args.tail.head)
-      case "test_bayes" => test_bayes()
       case "weka" => classify_weka(args.tail.head)
       case "scrape_delay" => scrape_delay(args.tail.head)
     }
@@ -65,25 +64,7 @@ object Explorer {
     val bayes = new NaiveBayesClassifier(fixer.labels, bins)
     bayes.train(instances, Nil)
     bayes.summarize(instances)
-  }
-
-  private def test_bayes() {
-    /*val scraped = ScrapedData(List("x", "y"),
-      (Range(0, 50).map(_ => RawInstance("above", "id", List(rng.double(-10, 10), rng.double(1, 10))))
-      ++
-      Range(0, 50).map(_ => RawInstance("below", "id", List(rng.double(-10, 10), rng.double(-10, -1))))
-      ).toList
-    )*/
-
-    val rng = new utexas.aorta.common.RNG()
-    val instances =
-      (Range(0, 50).map(_ => LabeledInstance("above", List(rng.int(0, 3), rng.int(0, 1))))
-      ++
-      Range(0, 50).map(_ => LabeledInstance("below", List(rng.int(0, 3), rng.int(2, 3))))
-      ).toList
-    val bayes = new NaiveBayesClassifier(Set("above", "below"), 4)
-    bayes.train(instances, Nil)
-    bayes.summarize(instances)
+    bayes.find_anomalies(instances)
   }
 
   private def classify_weka(data_fn: String) {
