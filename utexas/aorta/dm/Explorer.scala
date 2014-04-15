@@ -120,14 +120,14 @@ class WayDelayMetric(info: MetricInfo, osm: ScrapedData) extends Metric(info) {
 
   // Ignore args, just ourself
   override def output(ls: List[Metric]) {
-    val average_delays = delay_per_way.keys.map(id => delay_per_way(id) / count_per_way(id)).toArray
-    val sorted_delays = average_delays.sorted
+    val actual_delays = delay_per_way.keys.map(id => id -> delay_per_way(id) / count_per_way(id)).toMap
+    val sorted_delays = actual_delays.values.toArray.sorted
     val n = sorted_delays.size
     val low_delay_cap = sorted_delays((n * (1.0 / 3)).toInt)
     val mid_delay_cap = sorted_delays((n * (2.0 / 3)).toInt)
     println(s"Delay caps: $low_delay_cap, $mid_delay_cap, ${sorted_delays.last}")
-    val instances = delay_per_way.keys.map(id => {
-      val delay = delay_per_way(id) / count_per_way(id)
+    val instances = actual_delays.keys.map(id => {
+      val delay = actual_delays(id)
       // What percentile is it in?
       val label =
         if (delay <= low_delay_cap)
