@@ -9,7 +9,7 @@ import utexas.aorta.ui.{GUI, MapCanvas}
 import utexas.aorta.common.Util
 
 import scala.collection.mutable
-import utexas.aorta.experiments.{ExpConfig, SmartExperiment, Metric, MetricInfo}
+import utexas.aorta.experiments.{ExpConfig, SmartExperiment, Metric, MetricInfo, ScenarioPresets}
 import utexas.aorta.sim.EV_Transition
 import utexas.aorta.sim.drivers.Agent
 import utexas.aorta.map.{Edge, Turn}
@@ -64,7 +64,7 @@ object Explorer {
     val bayes = new NaiveBayesClassifier(fixer.labels, bins)
     bayes.train(instances, Nil)
     bayes.summarize(instances)
-    bayes.find_anomalies(instances)
+    bayes.find_anomalies(instances, data_fn.stripPrefix("dm_osm_").stripSuffix(".csv"))
   }
 
   private def classify_weka(data_fn: String) {
@@ -86,7 +86,7 @@ class DelayExperiment(config: ExpConfig, osm: ScrapedData) extends SmartExperime
   override def get_metrics(info: MetricInfo) = List(new WayDelayMetric(info, osm))
 
   override def run() {
-    run_trial(scenario, "delay").head.output(Nil)
+    run_trial(ScenarioPresets.transform(scenario, "dm_stable"), "delay").head.output(Nil)
   }
 }
 

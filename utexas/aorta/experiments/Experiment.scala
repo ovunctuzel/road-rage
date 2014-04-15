@@ -54,7 +54,7 @@ object ExpConfig {
   //def safe_atx_cloud_test =
     //template.copy(spawn_per_hour = 10000, generations = 3, map_fn = "maps/austin.map")
   def dm_delay(map: String) = template.copy(
-    spawn_per_hour = 800, generations = 1, map_fn = map
+    spawn_per_hour = 15000, generations = 1, map_fn = map
   )
 
   def from_args(args: Array[String]): ExpConfig = {

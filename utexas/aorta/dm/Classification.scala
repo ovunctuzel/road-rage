@@ -70,8 +70,8 @@ class NaiveBayesClassifier(labels: Set[String], bins: Int) {
     println(s"$num_correct / ${tests.size} correct: accuracy is ${num_correct.toDouble / tests.size}")
   }
 
-  def find_anomalies(tests: List[LabeledInstance]) {
-    val out = Util.writer("weird_osm_ids")
+  def find_anomalies(tests: List[LabeledInstance], graph: String) {
+    val out = Util.writer("dm_weirdos_" + graph)
     val ids = tests.filter(i => classify(i.for_test) != i.label).map(_.osm_id)
     out.int(ids.size)
     ids.foreach(id => out.string(id))

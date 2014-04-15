@@ -66,6 +66,17 @@ object ScenarioPresets {
       )))
     )
 
+    // Stable default behavior without anything fancy
+    case "dm_stable" => s.copy(
+      intersections = s.intersections.map(_.copy(
+        policy = IntersectionType.Reservation, ordering = OrderingType.FIFO
+      )),
+      agents = s.agents.map(a => a.copy(route = a.route.copy(
+        orig_router = RouterType.Congestion, rerouter = RouterType.Congestion,
+        reroute_policy = ReroutePolicyType.Never
+      )))
+    )
+
     case _ => throw new IllegalArgumentException(s"Mode $mode doesn't exist")
   }
 }
