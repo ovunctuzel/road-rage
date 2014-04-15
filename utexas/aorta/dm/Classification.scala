@@ -12,23 +12,11 @@ case class LabeledInstance(label: String, features: List[Int]) {
 }
 case class UnlabeledInstance(features: List[Int])
 
-abstract class Classifier(labels: Set[String], bins: Int) {
-  def train(training_data: List[LabeledInstance], validation_data: List[LabeledInstance])
-
-  def classify(instance: UnlabeledInstance): String
-
-  protected def normalize[K](m: Map[K, Int]): Map[K, Double] = {
-    val sum = m.values.sum
-    return m.mapValues(count => count.toDouble / sum)
-  }
-}
-
-class NaiveBayesClassifier(labels: Set[String], bins: Int) extends Classifier(labels, bins) {
+class NaiveBayesClassifier(labels: Set[String], bins: Int) {
   private var priors: Map[String, Double] = Map()
   private val features = new mutable.HashMap[(String, Int, Int), Double]()
 
-  // TODO add different laplace smoothing parameters k, choose the best using validation_data
-  override def train(training_data: List[LabeledInstance], validation_data: List[LabeledInstance]) {
+  def train(training_data: List[LabeledInstance], validation_data: List[LabeledInstance]) {
     // the key is just the label
     val prior_counts = new mutable.HashMap[String, Int]().withDefaultValue(0)
     // the key is (label, feature idx, bin value)
@@ -48,13 +36,14 @@ class NaiveBayesClassifier(labels: Set[String], bins: Int) extends Classifier(la
         val denominator = Range(0, bins).map(value => feature_counts((label, feature, value))).sum
         for (value <- Range(0, bins)) {
           val key = (label, feature, value)
+          // TODO add different laplace smoothing parameters k, choose the best using validation_data
           features(key) = feature_counts(key) / denominator
         }
       }
     }
   }
 
-  override def classify(instance: UnlabeledInstance): String = {
+  def classify(instance: UnlabeledInstance): String = {
     return labels.maxBy(label => posterior(instance, label))
   }
 
@@ -78,11 +67,10 @@ class NaiveBayesClassifier(labels: Set[String], bins: Int) extends Classifier(la
       }
     }
     println(s"$num_correct / ${tests.size} correct: accuracy is ${num_correct.toDouble / tests.size}")
+  }
 
-    // Temp debugging (a certain instance)...
-    println("")
-    val example = tests.head
-    println(example)
-    println("Classified as " + classify(example.for_test))
+  private def normalize[K](m: Map[K, Int]): Map[K, Double] = {
+    val sum = m.values.sum
+    return m.mapValues(count => count.toDouble / sum)
   }
 }

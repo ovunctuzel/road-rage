@@ -25,11 +25,11 @@ object Explorer {
       case "scrape_osm" => {
         scrape_osm(Util.process_args(args.tail))
       }
-      case "bayes_osm" => {
-        classify_bayes_osm(args.tail.head)
+      case "bayes" => {
+        classify_bayes(args.tail.head)
       }
-      case "weka_osm" => {
-        classify_weka_osm(args.tail.head)
+      case "weka" => {
+        classify_weka(args.tail.head)
       }
       case "scrape_delay" => {
         scrape_delay(args.tail.head)
@@ -63,7 +63,7 @@ object Explorer {
     scraped.save_csv("dm_osm_" + sim.graph.basename + ".csv")
   }
 
-  private def classify_bayes_osm(data_fn: String) {
+  private def classify_bayes(data_fn: String) {
     val scraped = ScrapedData.read_csv(data_fn)
 
     val bins = 50
@@ -74,7 +74,7 @@ object Explorer {
     bayes.summarize(instances)
   }
 
-  private def classify_weka_osm(data_fn: String) {
+  private def classify_weka(data_fn: String) {
     val scraped = ScrapedData.read_csv(data_fn)
     val weka = new WekaClassifier(scraped)
     weka.find_anomalies()

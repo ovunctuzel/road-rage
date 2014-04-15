@@ -19,7 +19,7 @@ class WekaClassifier(raw: ScrapedData) {
   attrib_ls.foreach(a => attribs.addElement(a))
 
   // Train
-  private val training_set = new Instances("osm_relation", attribs, raw.data.size)
+  private val training_set = new Instances("aorta_relation", attribs, raw.data.size)
   training_set.setClassIndex(0)
   for (instance <- raw.data) {
     training_set.add(convert(instance))
@@ -57,7 +57,7 @@ class WekaClassifier(raw: ScrapedData) {
       ex.setDataset(training_set)
       val model_label = classify(ex)
       if (i.label != model_label) {
-        println(s"Labeled $i as $model_label")
+        //println(s"Labeled $i as $model_label")
       }
       i.label != model_label
     }).map(_.osm_id)
