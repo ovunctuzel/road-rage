@@ -81,20 +81,23 @@ object Explorer {
   }
 
   private def scrape_delay(map_fn: String) {
-    new DelayExperiment(ExpConfig.dm_delay(map_fn)).run_experiment()
+    val basename = map_fn.split("/").last.split(".map").head
+    new DelayExperiment(
+      ExpConfig.dm_delay(map_fn), ScrapedData.read_csv("dm_osm_" + basename + ".csv")
+    ).run_experiment()
   }
 }
 
 // TODO move to own file?
-class DelayExperiment(config: ExpConfig) extends SmartExperiment(config, "delay") {
-  override def get_metrics(info: MetricInfo) = List(new WayDelayMetric(info))
+class DelayExperiment(config: ExpConfig, osm: ScrapedData) extends SmartExperiment(config, "delay") {
+  override def get_metrics(info: MetricInfo) = List(new WayDelayMetric(info, osm))
 
   override def run() {
     run_trial(scenario, "delay").head.output(Nil)
   }
 }
 
-class WayDelayMetric(info: MetricInfo) extends Metric(info) {
+class WayDelayMetric(info: MetricInfo, osm: ScrapedData) extends Metric(info) {
   override def name = "way_delay"
 
   // key is osm ID
@@ -135,7 +138,7 @@ class WayDelayMetric(info: MetricInfo) extends Metric(info) {
           "high"
       RawInstance(label, id, Nil)
     })
-    val all_data = ScrapedData(Nil, instances.toList)
+    val all_data = ScrapedData.join_delays(ScrapedData(Nil, instances.toList), osm)
     all_data.save_csv("dm_delay_" + info.sim.graph.basename + ".csv")
   }
 }

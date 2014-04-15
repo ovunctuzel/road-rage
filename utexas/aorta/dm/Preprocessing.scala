@@ -30,6 +30,14 @@ object ScrapedData {
     })
     return ScrapedData(features.toList, data.toList)
   }
+
+  // Throws out OSM label
+  def join_delays(delays: ScrapedData, osm: ScrapedData): ScrapedData = {
+    val osm_by_id = osm.data.map(inst => inst.osm_id -> inst).toMap
+    return ScrapedData(osm.feature_names, delays.data.map(
+      inst => inst.copy(features = osm_by_id(inst.osm_id).features)
+    ))
+  }
 }
 case class RawInstance(label: String, osm_id: String, features: List[Double])
 
