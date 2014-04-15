@@ -69,11 +69,11 @@ object Preprocessing {
       FeatureSummary(feature, cutoff_indices.map(idx => sorted(idx)).toList)
     })
     val labels = instances.map(_.label).toSet
-    println("Feature summaries:")
+    /*println("Feature summaries:")
     for (s <- summaries) {
       println(s"  $s")
     }
-    println("")
+    println("")*/
     return DataFixer(summaries, labels)
   }
 }

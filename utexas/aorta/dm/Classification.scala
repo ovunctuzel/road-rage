@@ -36,7 +36,6 @@ class NaiveBayesClassifier(labels: Set[String], bins: Int) {
         val denominator = Range(0, bins).map(value => feature_counts((label, feature, value))).sum
         for (value <- Range(0, bins)) {
           val key = (label, feature, value)
-          // TODO add different laplace smoothing parameters k, choose the best using validation_data
           features(key) = feature_counts(key).toDouble / denominator
         }
       }
