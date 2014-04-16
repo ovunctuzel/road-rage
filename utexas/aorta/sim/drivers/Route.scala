@@ -22,7 +22,7 @@ abstract class Route(val goal: Road, reroute_policy_type: ReroutePolicyType.Valu
 
   protected var owner: Agent = null
   protected var debug_me = false  // TODO just grab from owner?
-  private var reroute_policy: ReroutePolicy = null // TODO is it transient?
+  protected var reroute_policy: ReroutePolicy = null // TODO is it transient?
 
   //////////////////////////////////////////////////////////////////////////////
   // Meta
@@ -85,8 +85,8 @@ object Route {
 // Follow routes prescribed by routers. Only reroute when forced or encouraged to.
 // TODO rerouter only var due to serialization
 class PathRoute(
-  goal: Road, orig_router: Router, private var rerouter: Router, reroute_policy: ReroutePolicyType.Value
-) extends Route(goal, reroute_policy) {
+  goal: Road, orig_router: Router, private var rerouter: Router, reroute_policy_type: ReroutePolicyType.Value
+) extends Route(goal, reroute_policy_type) {
   //////////////////////////////////////////////////////////////////////////////
   // State
 
@@ -146,7 +146,7 @@ class PathRoute(
     // Is the next step reachable?
     val must_reroute = e.next_turns.filter(t => t.to.road == dest).isEmpty
     // This variant only considers long roads capable of being congested, which is risky...
-    // TODO make the client do this?
+    // TODO make the client do this? yes! remove policy from mechanism.
     val should_reroute = dest.road_agent.congested
 
     val turn = if (must_reroute || should_reroute) {
@@ -214,7 +214,7 @@ class PathRoute(
     val slice_before = path.takeWhile(r => r != at.road)
     val old_path = path
     try {
-      path = slice_before ++ rerouter.path(Pathfind(
+      val new_path = slice_before ++ rerouter.path(Pathfind(
           start = at.road,
           goal = goal,
           // Don't hit anything already in our path
@@ -222,9 +222,12 @@ class PathRoute(
           // Let the algorithm pick the best next step
         ).first_succs(at.next_roads.toArray)
       ).path
-      owner.sim.publish(
-        EV_Reroute(owner, path, false, rerouter.router_type, false, old_path), owner
-      )
+      if (reroute_policy.approve_reroute(old_path, new_path)) {
+        path = new_path
+        owner.sim.publish(
+          EV_Reroute(owner, path, false, rerouter.router_type, false, old_path), owner
+        )
+      }
     } catch {
       // Couldn't A* due to constraints, but that's alright
       case e: PathfindingFailedException =>

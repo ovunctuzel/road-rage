@@ -11,7 +11,6 @@ import utexas.aorta.sim.{Simulation, EV_Transition}
 import utexas.aorta.sim.drivers.Agent
 import utexas.aorta.sim.RoadAgent
 
-// Manage reservations to use a road resource during a window of time
 class RoadTollbooth(road: RoadAgent) {
   // Should be [0, capacity], unless there's trouble
   private var x = 0.0
@@ -28,7 +27,7 @@ class RoadTollbooth(road: RoadAgent) {
     x -= dx(a)
   }
 
-  // TODO sum or min or average or...?
+  // TODO sum or min or max or average or...?
   private val capacity = road.r.lanes.map(_.queue.freeflow_capacity).sum
 
   // x / capacity is [0, 1] normally, so output is [0, 1] normally
