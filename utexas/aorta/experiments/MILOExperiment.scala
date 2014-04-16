@@ -4,13 +4,13 @@
 
 package utexas.aorta.experiments
 
-object PhantomTollboothExperiment {
+object MILOExperiment {
   def main(args: Array[String]) {
-    new PhantomTollboothExperiment(ExpConfig.from_args(args)).run_experiment()
+    new MILOExperiment(ExpConfig.from_args(args)).run_experiment()
   }
 }
 
-class PhantomTollboothExperiment(config: ExpConfig) extends SmartExperiment(config, "phantom") {
+class MILOExperiment(config: ExpConfig) extends SmartExperiment(config, "milo") {
   override def get_metrics(info: MetricInfo) = List(
     new TripTimeMetric(info), new TripDistanceMetric(info), new TripPathsMetric(info),
     new RoadUsageMetric(info)
@@ -18,8 +18,9 @@ class PhantomTollboothExperiment(config: ExpConfig) extends SmartExperiment(conf
 
   override def run() {
     output_data(List(
-      run_trial(ScenarioPresets.transform(scenario, "phantom_baseline"), "baseline"),
-      run_trial(ScenarioPresets.transform(scenario, "phantom_tolls"), "tolls")
+      //run_trial(ScenarioPresets.transform(scenario, "milo_today"), "today"),
+      run_trial(ScenarioPresets.transform(scenario, "milo_gps"), "gps"),
+      run_trial(ScenarioPresets.transform(scenario, "milo_milo"), "milo")
     ))
   }
 }

@@ -137,3 +137,16 @@ class TollboothRouter(graph: Graph) extends AbstractPairAstarRouter(graph) {
     }
   )
 }
+
+class LatestEstimateRouter(graph: Graph) extends AbstractPairAstarRouter(graph) {
+  private var owner: Agent = null
+  override def router_type = RouterType.LatestEstimate
+  override def setup(a: Agent) {
+    owner = a
+  }
+
+  override def transform(spec: Pathfind) = super.transform(spec).copy(
+    calc_cost = (prev: Road, next: Road, cost_sofar: (Double, Double)) =>
+      (owner.sim.latest_delays.delay(next), 0)
+  )
+}

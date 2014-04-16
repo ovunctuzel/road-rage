@@ -48,7 +48,7 @@ class NeverReroutePolicy(a: Agent) extends ReroutePolicy(a)
 // Avoid perpetual oscillation by hysteresis
 class RegularlyReroutePolicy(a: Agent) extends ReroutePolicy(a) {
   private var roads_crossed = 1
-  private val reroute_frequency = 3
+  private val reroute_frequency = 15
   private val hysteresis_threshold = 0.7
 
   a.sim.listen(classOf[EV_Transition], a, _ match {
@@ -64,13 +64,14 @@ class RegularlyReroutePolicy(a: Agent) extends ReroutePolicy(a) {
   override def approve_reroute(old_path: List[Road], new_path: List[Road]): Boolean = {
     // Score both paths
     // TODO this is tied to TollboothRouter, make it use the rerouter!
-    val cost_fxn = new TollboothRouter(a.sim.graph).transform(Pathfind()).calc_cost
+    val router = new TollboothRouter(a.sim.graph)
+    router.setup(a)
+    val cost_fxn = router.transform(Pathfind()).calc_cost
     val old_cost = old_path.zip(old_path.tail).map(pair => cost_fxn(pair._1, pair._2, (0, 0))._1).sum
     val new_cost = new_path.zip(old_path.tail).map(pair => cost_fxn(pair._1, pair._2, (0, 0))._1).sum
 
     // Lower is better, less cost per old cost
     val ratio = new_cost / old_cost
-    println(s"$new_cost / $old_cost = $ratio (reroute: ${ratio < hysteresis_threshold})") // TODO debug
     return ratio < hysteresis_threshold
   }
 }
