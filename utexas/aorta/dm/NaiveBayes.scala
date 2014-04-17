@@ -16,9 +16,10 @@ case class UnlabeledInstance(features: List[Int])
 
 class NaiveBayesClassifier(labels: Set[String], bins: Int) {
   private var priors: Map[String, Double] = Map()
+  // the key is (label, feature idx, bin value)
   private val features = new mutable.HashMap[(String, Int, Int), Double]()
 
-  def train(training_data: List[LabeledInstance], validation_data: List[LabeledInstance]) {
+  def train(training_data: List[LabeledInstance]) {
     // the key is just the label
     val prior_counts = new mutable.HashMap[String, Int]().withDefaultValue(0)
     // the key is (label, feature idx, bin value)
@@ -30,11 +31,12 @@ class NaiveBayesClassifier(labels: Set[String], bins: Int) {
         feature_counts((instance.label, feature, bin)) += 1
       }
     }
+
     priors = normalize(prior_counts.toMap)
     val num_features = training_data.head.features.size
     for (label <- labels) {
       for (feature <- Range(0, num_features)) {
-        // denominator is the same for every feature
+        // denominator is the same for every value
         val denominator = Range(0, bins).map(value => feature_counts((label, feature, value))).sum
         for (value <- Range(0, bins)) {
           val key = (label, feature, value)
@@ -53,6 +55,11 @@ class NaiveBayesClassifier(labels: Set[String], bins: Int) {
     math.log(priors(label)) + instance.features.zipWithIndex.map({
       case (bin, feature) => math.log(features((label, feature, bin)))
     }).sum
+
+  private def normalize[K](m: Map[K, Int]): Map[K, Double] = {
+    val sum = m.values.sum
+    return m.mapValues(count => count.toDouble / sum)
+  }
 
   def summarize(tests: List[LabeledInstance]) {
     println(s"Number of bins = $bins")
@@ -76,10 +83,5 @@ class NaiveBayesClassifier(labels: Set[String], bins: Int) {
     out.int(ids.size)
     ids.foreach(id => out.string(id))
     out.done()
-  }
-
-  private def normalize[K](m: Map[K, Int]): Map[K, Double] = {
-    val sum = m.values.sum
-    return m.mapValues(count => count.toDouble / sum)
   }
 }

@@ -62,7 +62,7 @@ object Explorer {
     val fixer = Preprocessing.summarize(scraped.data, bins)
     val instances = scraped.data.map(r => fixer.transform(r))
     val bayes = new NaiveBayesClassifier(fixer.labels, bins)
-    bayes.train(instances, Nil)
+    bayes.train(instances)
     bayes.summarize(instances)
     bayes.find_anomalies(instances, data_fn.stripPrefix("dm_osm_").stripSuffix(".csv"))
   }
