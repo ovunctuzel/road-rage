@@ -11,6 +11,7 @@ import javax.swing.WindowConstants
 import java.io.File
 
 import utexas.aorta.sim.{Simulation, EV_Heartbeat}
+import utexas.aorta.analysis.SimREPL
 import utexas.aorta.common.{Util, cfg}
 
 object StatusBar {
@@ -215,4 +216,12 @@ class GUIDebugger(sim: Simulation) {
       case _ =>
     }
   }})
+}
+
+class GUIREPL(sim: Simulation) extends SimREPL(sim) {
+  override def welcome() {
+    super.welcome()
+    e.interpret("val gui = utexas.aorta.ui.GUI.canvas_2d")
+    println("The GUI is bound to 'gui'.")
+  }
 }

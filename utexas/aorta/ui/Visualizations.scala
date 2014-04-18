@@ -6,7 +6,7 @@ package utexas.aorta.ui
 
 import java.awt.Color
 
-import utexas.aorta.map.{Road, CongestionRouter}
+import utexas.aorta.map.{Road, FreeflowRouter}
 import utexas.aorta.sim.Simulation
 import utexas.aorta.experiments.ScenarioRoadUsage
 import utexas.aorta.common.Timer
@@ -27,7 +27,7 @@ trait Visualization {
     val timer = Timer("Pathfinding")
     // TODO Show each type of route in a different color...
     val colors = List(Color.CYAN, Color.RED, Color.BLUE, Color.GREEN, Color.YELLOW)
-    val routers = List(new CongestionRouter(sim.graph))
+    val routers = List(new FreeflowRouter(sim.graph))
 
     for ((router, color) <- routers.zip(colors)) {
       val route = router.path(from, to).path

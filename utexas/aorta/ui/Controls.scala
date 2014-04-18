@@ -11,7 +11,6 @@ import scala.util.Try
 import java.io.File
 
 import utexas.aorta.sim.Simulation
-import utexas.aorta.analysis.SimREPL
 import utexas.aorta.common.{Util, RoadID, VertexID, EdgeID, cfg}
 
 trait Controls {
@@ -189,7 +188,7 @@ trait Controls {
       // Launch this in a separate thread so the sim can be continued normally
       new Thread {
         override def run() {
-          new SimREPL(sim).run()
+          new GUIREPL(sim).run()
         }
       }.start()
     }

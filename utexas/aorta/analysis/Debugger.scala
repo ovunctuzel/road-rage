@@ -50,6 +50,7 @@ class SimREPL(sim: Simulation) extends REPL {
   override def init() {
     super.init()
     e.bind("sim", "utexas.aorta.sim.Simulation", sim)
+    e.interpret("import utexas.aorta.common._")
   }
 
   override def welcome() {
