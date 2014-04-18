@@ -105,7 +105,9 @@ class WayDelayMetric(info: MetricInfo, osm: ScrapedData) extends Metric(info) {
     case EV_Transition(a, from: Turn, to) => entry_time(a) = a.sim.tick
     // Exiting a road that we didn't spawn on
     case EV_Transition(a, from: Edge, to: Turn) if entry_time.contains(a) => {
-      delay_per_way(from.road.osm_id) += a.sim.tick - entry_time(a)
+      // TODO why +1? when we enter a road, we technically sometime between the previous tick and
+      // now. so just round up a bit.
+      delay_per_way(from.road.osm_id) += (a.sim.tick - entry_time(a)) - from.road.freeflow_time + 1
       count_per_way(from.road.osm_id) += 1
     }
     case _ =>
@@ -118,6 +120,7 @@ class WayDelayMetric(info: MetricInfo, osm: ScrapedData) extends Metric(info) {
     val n = sorted_delays.size
     val low_delay_cap = sorted_delays((n * (1.0 / 3)).toInt)
     val mid_delay_cap = sorted_delays((n * (2.0 / 3)).toInt)
+    println(sorted_delays.toList)
     println(s"Delay caps: $low_delay_cap, $mid_delay_cap, ${sorted_delays.last}")
     val instances = actual_delays.keys.map(id => {
       val delay = actual_delays(id)
