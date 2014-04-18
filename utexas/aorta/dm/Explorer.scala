@@ -24,7 +24,6 @@ object Explorer {
       }
       case "scrape_osm" => scrape_osm(Util.process_args(args.tail))
       case "bayes" => classify_bayes(args.tail.head)
-      case "weka" => classify_weka(args.tail.head)
       case "scrape_delay" => scrape_delay(args.tail.head)
     }
   }
@@ -65,12 +64,6 @@ object Explorer {
     bayes.train(instances)
     bayes.summarize(instances)
     bayes.find_anomalies(instances, data_fn.stripPrefix("dm_osm_").stripSuffix(".csv"))
-  }
-
-  private def classify_weka(data_fn: String) {
-    val scraped = ScrapedData.read_csv(data_fn)
-    val weka = new WekaClassifier(scraped)
-    weka.find_anomalies()
   }
 
   private def scrape_delay(map_fn: String) {
