@@ -32,9 +32,9 @@ object ScrapedData {
   }
 
   // Throws out OSM label
-  def join_delays(delays: ScrapedData, osm: ScrapedData): ScrapedData = {
+  def join(other: ScrapedData, osm: ScrapedData): ScrapedData = {
     val osm_by_id = osm.data.map(inst => inst.osm_id -> inst).toMap
-    return ScrapedData(osm.feature_names, delays.data.map(
+    return ScrapedData(osm.feature_names, other.data.map(
       inst => inst.copy(features = osm_by_id(inst.osm_id).features)
     ))
   }

@@ -95,6 +95,7 @@ class WayDelayMetric(info: MetricInfo, osm: ScrapedData) extends Metric(info) {
 
   // key is osm ID
   private val delay_per_way = new mutable.HashMap[String, Double]().withDefault(_ => 0)
+  private val time_per_way = new mutable.HashMap[String, Double]().withDefault(_ => 0)
   // for getting average
   private val count_per_way = new mutable.HashMap[String, Int]().withDefault(_ => 0)
 
@@ -107,7 +108,9 @@ class WayDelayMetric(info: MetricInfo, osm: ScrapedData) extends Metric(info) {
     case EV_Transition(a, from: Edge, to: Turn) if entry_time.contains(a) => {
       // TODO why +1? when we enter a road, we technically sometime between the previous tick and
       // now. so just round up a bit.
-      delay_per_way(from.road.osm_id) += (a.sim.tick - entry_time(a)) - from.road.freeflow_time + 1
+      val t = a.sim.tick - entry_time(a)
+      delay_per_way(from.road.osm_id) += t - from.road.freeflow_time + 1
+      time_per_way(from.road.osm_id) += t
       count_per_way(from.road.osm_id) += 1
     }
     case _ =>
@@ -115,26 +118,29 @@ class WayDelayMetric(info: MetricInfo, osm: ScrapedData) extends Metric(info) {
 
   // Ignore args, just ourself
   override def output(ls: List[Metric]) {
-    val actual_delays = delay_per_way.keys.map(id => id -> delay_per_way(id) / count_per_way(id)).toMap
-    val sorted_delays = actual_delays.values.toArray.sorted
-    val n = sorted_delays.size
-    val low_delay_cap = sorted_delays((n * (1.0 / 3)).toInt)
-    val mid_delay_cap = sorted_delays((n * (2.0 / 3)).toInt)
-    println(sorted_delays.toList)
-    println(s"Delay caps: $low_delay_cap, $mid_delay_cap, ${sorted_delays.last}")
-    val instances = actual_delays.keys.map(id => {
-      val delay = actual_delays(id)
-      // What percentile is it in?
-      val label =
-        if (delay <= low_delay_cap)
-          "low"
-        else if (delay <= mid_delay_cap)
-          "mid"
-        else
-          "high"
-      RawInstance(label, id, Nil)
-    })
-    val all_data = ScrapedData.join_delays(ScrapedData(Nil, instances.toList), osm)
-    all_data.save_csv("dm_delay_" + info.sim.graph.basename + ".csv")
+    for ((source, out_name) <- List((delay_per_way, "delay"), (time_per_way, "time"))) {
+      val actual = source.keys.map(id => id -> source(id) / count_per_way(id)).toMap
+      val sorted = actual.values.toArray.sorted
+      val n = sorted.size
+      val low_cap = sorted((n * (1.0 / 3)).toInt)
+      val mid_cap = sorted((n * (2.0 / 3)).toInt)
+      println(out_name)
+      //println(sorted.toList)
+      println(s"$out_name caps: $low_cap, $mid_cap, ${sorted.last}")
+      val instances = actual.keys.map(id => {
+        val value = actual(id)
+        // What percentile is it in?
+        val label =
+          if (value <= low_cap)
+            "low"
+          else if (value <= mid_cap)
+            "mid"
+          else
+            "high"
+        RawInstance(label, id, Nil)
+      })
+      val all_data = ScrapedData.join(ScrapedData(Nil, instances.toList), osm)
+      all_data.save_csv(s"dm_${out_name}_${info.sim.graph.basename}.csv")
+    }
   }
 }
