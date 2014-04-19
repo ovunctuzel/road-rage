@@ -23,9 +23,10 @@ object Explorer {
         GUI.run(canvas)
       }
       case "scrape_osm" => scrape_osm(Util.process_args(args.tail))
-      case "bayes" => classify_bayes(args.tail.head, args.tail.tail.headOption)
-      case "cross_bayes" => cross_bayes(args.tail.head, args.tail.tail.head)
-      case "scrape_delay" => scrape_delay(args.tail.head)
+      case "bayes" => classify_bayes(args(1), args.tail.tail.headOption)
+      case "cross_bayes" => cross_bayes(args(1), args(2))
+      case "scrape_delay" => scrape_delay(args(1))
+      case "correlate" => correlate(args(1), args(2))
     }
   }
 
@@ -92,6 +93,25 @@ object Explorer {
     new DelayExperiment(
       ExpConfig.dm_delay(map_fn), ScrapedData.read_csv("dm_osm_" + basename + ".csv")
     ).run_experiment()
+  }
+
+  private def correlate(osm_fn: String, delay_fn: String) {
+    val osm = bayes_prep(osm_fn)
+    val bayes = new NaiveBayesClassifier(osm.map(_.label).toSet, bins)
+    bayes.train(osm)
+    val high_delays = bayes_prep(delay_fn).filter(_.label == "high").map(_.osm_id).toSet
+
+    var normal_counter = 0
+    var fishy_counter = 0
+    for (inst <- osm if high_delays.contains(inst.osm_id)) {
+      val normal = inst.label == bayes.classify(inst.for_test)
+      if (normal) {
+        normal_counter += 1
+      } else {
+        fishy_counter += 1
+      }
+    }
+    println(s"$normal_counter normal, $fishy_counter fishy")
   }
 }
 
