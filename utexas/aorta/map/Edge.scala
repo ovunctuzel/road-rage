@@ -93,6 +93,7 @@ class Edge(
     Util.log("Preds: " + prev_turns)
     Util.log(s"From $from to $to")
     Util.log(s"${road.houses.size} houses, ${road.shops.size} shops")
+    Util.log(road.osm_id + " = osm id")
   }
 
   // For debug only

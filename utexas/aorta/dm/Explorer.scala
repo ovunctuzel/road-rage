@@ -23,7 +23,7 @@ object Explorer {
         GUI.run(canvas)
       }
       case "scrape_osm" => scrape_osm(Util.process_args(args.tail))
-      case "bayes" => classify_bayes(args.tail.head)
+      case "bayes" => classify_bayes(args.tail.head, args.tail.tail.headOption)
       case "scrape_delay" => scrape_delay(args.tail.head)
     }
   }
@@ -54,7 +54,7 @@ object Explorer {
     scraped.save_csv("dm_osm_" + sim.graph.basename + ".csv")
   }
 
-  private def classify_bayes(data_fn: String) {
+  private def classify_bayes(data_fn: String, debug_road: Option[String]) {
     val scraped = ScrapedData.read_csv(data_fn)
 
     val bins = 50
@@ -62,8 +62,15 @@ object Explorer {
     val instances = scraped.data.map(r => fixer.transform(r))
     val bayes = new NaiveBayesClassifier(fixer.labels, bins)
     bayes.train(instances)
-    bayes.summarize(instances)
-    bayes.find_anomalies(instances, data_fn.stripPrefix("dm_osm_").stripSuffix(".csv"))
+    debug_road match {
+      case Some(rd) => {
+        println(rd + " is classified as " + bayes.classify(instances.find(_.osm_id == rd).get.for_test))
+      }
+      case None => {
+        bayes.summarize(instances)
+        bayes.find_anomalies(instances, data_fn.stripPrefix("dm_osm_").stripSuffix(".csv"))
+      }
+    }
   }
 
   private def scrape_delay(map_fn: String) {
