@@ -24,6 +24,7 @@ object Explorer {
       }
       case "scrape_osm" => scrape_osm(Util.process_args(args.tail))
       case "bayes" => classify_bayes(args.tail.head, args.tail.tail.headOption)
+      case "cross_bayes" => cross_bayes(args.tail.head, args.tail.tail.head)
       case "scrape_delay" => scrape_delay(args.tail.head)
     }
   }
@@ -54,13 +55,11 @@ object Explorer {
     scraped.save_csv("dm_osm_" + sim.graph.basename + ".csv")
   }
 
-  private def classify_bayes(data_fn: String, debug_road: Option[String]) {
-    val scraped = ScrapedData.read_csv(data_fn)
+  private val bins = 50
 
-    val bins = 50
-    val fixer = Preprocessing.summarize(scraped.data, bins)
-    val instances = scraped.data.map(r => fixer.transform(r))
-    val bayes = new NaiveBayesClassifier(fixer.labels, bins)
+  private def classify_bayes(data_fn: String, debug_road: Option[String]) {
+    val instances = bayes_prep(data_fn)
+    val bayes = new NaiveBayesClassifier(instances.map(_.label).toSet, bins)
     bayes.train(instances)
     debug_road match {
       case Some(rd) => {
@@ -71,6 +70,21 @@ object Explorer {
         bayes.find_anomalies(instances, data_fn.stripPrefix("dm_osm_").stripSuffix(".csv"))
       }
     }
+  }
+
+  private def cross_bayes(train_fn: String, eval_fn: String) {
+    val train = bayes_prep(train_fn)
+    val eval = bayes_prep(eval_fn)
+
+    val bayes = new NaiveBayesClassifier(train.map(_.label).toSet, bins)
+    bayes.train(train)
+    bayes.summarize(eval)
+  }
+
+  private def bayes_prep(fn: String): List[LabeledInstance] = {
+    val scraped = ScrapedData.read_csv(fn)
+    val fixer = Preprocessing.summarize(scraped.data, bins)
+    return scraped.data.map(r => fixer.transform(r))
   }
 
   private def scrape_delay(map_fn: String) {
