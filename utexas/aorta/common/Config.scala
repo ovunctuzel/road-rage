@@ -14,7 +14,8 @@ object cfg {
     "GREEN" -> Color.GREEN,
     "BLUE" -> Color.BLUE,
     "YELLOW" -> Color.YELLOW,
-    "PURPLE" -> new Color(204, 0, 255)
+    "PURPLE" -> new Color(204, 0, 255),
+    "ORANGE" -> Color.ORANGE
   )
   private val params = load_config()
 
@@ -44,8 +45,9 @@ object cfg {
   val autosave_every = params("autosave_every").toDouble
   val replay_freq = params("replay_freq").toDouble
   val chosen_road_color = color(params("chosen_road_color"))
-  val yield_color= color(params("yield_color"))
-  val aim_color= color(params("aim_color"))
+  val yield_color = color(params("yield_color"))
+  val aim_color = color(params("aim_color"))
+  val batch_color = color(params("batch_color"))
   val dash_center = bool(params("dash_center"))
   val draw_cursor = bool(params("draw_cursor"))
   val draw_lane_arrow = bool(params("draw_lane_arrow"))

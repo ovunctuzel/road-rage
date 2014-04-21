@@ -53,27 +53,21 @@ object ScenarioPresets {
 
     // TODO there are many baselines
     case "milo_today" => s.copy(
-      intersections = s.intersections.map(_.copy(
-        policy = IntersectionType.Reservation, ordering = OrderingType.FIFO
-      )),
+      intersections = s.intersections.map(_.copy(policy = IntersectionType.Batch)),
       agents = s.agents.map(a => a.copy(route = a.route.copy(
         orig_router = RouterType.Freeflow, rerouter = RouterType.Freeflow,
         reroute_policy = ReroutePolicyType.Never
       )))
     )
     case "milo_gps" => s.copy(
-      intersections = s.intersections.map(_.copy(
-        policy = IntersectionType.Reservation, ordering = OrderingType.FIFO
-      )),
+      intersections = s.intersections.map(_.copy(policy = IntersectionType.Batch)),
       agents = s.agents.map(a => a.copy(route = a.route.copy(
         orig_router = RouterType.LatestEstimate, rerouter = RouterType.LatestEstimate,
         reroute_policy = ReroutePolicyType.Never//Regularly
       )))
     )
     case "milo_milo" => s.copy(
-      intersections = s.intersections.map(_.copy(
-        policy = IntersectionType.Reservation, ordering = OrderingType.FIFO
-      )),
+      intersections = s.intersections.map(_.copy(policy = IntersectionType.Batch)),
       agents = s.agents.map(a => a.copy(route = a.route.copy(
         orig_router = RouterType.Tollbooth, rerouter = RouterType.Tollbooth,
         reroute_policy = ReroutePolicyType.Never//Regularly

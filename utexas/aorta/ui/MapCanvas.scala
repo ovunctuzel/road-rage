@@ -118,7 +118,8 @@ class MapCanvas(val sim: Simulation, headless: Boolean = false)
     IntersectionType.Signal -> cfg.signal_color,
     IntersectionType.Reservation -> cfg.reservation_color,
     IntersectionType.Yield -> cfg.yield_color,
-    IntersectionType.AIM -> cfg.aim_color
+    IntersectionType.AIM -> cfg.aim_color,
+    IntersectionType.Batch -> cfg.batch_color
   )
 
   //////////////////////////////////////////////////////////////////////////////

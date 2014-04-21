@@ -274,7 +274,7 @@ object SystemWalletConfig {
 
 object IntersectionType extends Enumeration {
   type IntersectionType = Value
-  val NeverGo, StopSign, Signal, Reservation, Yield, AIM = Value
+  val NeverGo, StopSign, Signal, Reservation, Yield, AIM, Batch = Value
 
   def make(v: Vertex, policy: IntersectionType.Value, ordering: OrderingType.Value,
            sim: Simulation) = policy match
@@ -285,6 +285,7 @@ object IntersectionType extends Enumeration {
     case Reservation => new ReservationPolicy(v, OrderingType.make[Ticket](ordering))
     case Yield => new YieldPolicy(v, OrderingType.make[Ticket](ordering))
     case AIM => new AIMPolicy(v, OrderingType.make[Ticket](ordering))
+    case Batch => new BatchPolicy(v, sim)
   }
 }
 
