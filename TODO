@@ -41,6 +41,7 @@
 
 - rename edges as lanes? policy -> controller? vertex -> junction? agent -> driver? behavior -> pilot?
   route -> navigator?
+- easy: interstate names from OSM
 - hard to have multiple sims due to objects with state: Graph (norm coords), system wallets,
   AgentMap, ReplayDiffScheme, GUI
 - reduce vars and publics and mutable collections
