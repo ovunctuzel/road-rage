@@ -56,27 +56,6 @@ class SignalPolicy(
   // Actions
 
   def react() {
-    // Switch to the next phase
-    if (sim.tick >= end_at && accepted.isEmpty) {
-      overtime_total += sim.tick - end_at
-      // In auctions, we may not have a viable next phase at all...
-      ordering.choose(candidates, request_queue, this) match {
-        case Some(p) => {
-          sim.publish(
-            EV_IntersectionOutcome(policy_type, request_queue.filter(t => !p.has(t.turn)).toList)
-          )
-          current_phase = p
-          phase_order = phase_order.filter(phase => phase != p)
-          phase_order += p
-
-          started_at = sim.tick
-
-          sim.publish(EV_Signal_Change(current_phase.turns.toSet))
-        }
-        case None =>  // shouldn't happen...
-      }
-    }
-
     // Accept new agents into the current phase
     if (!in_overtime) {
       // Because we have to maintain turn invariants as we accept, do a fixpoint
@@ -95,6 +74,27 @@ class SignalPolicy(
             changed = true
           }
         }
+      }
+    }
+
+    // Switch to the next phase as soon as there's no demand for the current
+    if (accepted.isEmpty) {
+      overtime_total += sim.tick - end_at
+      // In auctions, we may not have a viable next phase at all...
+      ordering.choose(candidates, request_queue, this) match {
+        case Some(p) => {
+          sim.publish(
+            EV_IntersectionOutcome(policy_type, request_queue.filter(t => !p.has(t.turn)).toList)
+          )
+          current_phase = p
+          phase_order = phase_order.filter(phase => phase != p)
+          phase_order += p
+
+          started_at = sim.tick
+
+          sim.publish(EV_Signal_Change(current_phase.turns.toSet))
+        }
+        case None =>  // shouldn't happen...
       }
     }
   }
