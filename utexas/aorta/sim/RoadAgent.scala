@@ -6,16 +6,12 @@ package utexas.aorta.sim
 
 import scala.collection.mutable
 
-import utexas.aorta.contrib.RoadTollbooth
 import utexas.aorta.map.{Road, Turn}
 import utexas.aorta.sim.drivers.Agent
 import utexas.aorta.common.{cfg, Util, Price}
 
 // Present information about congestion at the road level
 abstract class RoadAgent(val r: Road, sim: Simulation) {
-  // TODO need to savestate, once we decide what state we really have
-  val tollbooth = new RoadTollbooth(this)
-
   def congested(): Boolean
   // TODO how often must this be called?
   def react() {}

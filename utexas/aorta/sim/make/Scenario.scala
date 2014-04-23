@@ -309,13 +309,12 @@ object RouterType extends Enumeration {
 
 object OrderingType extends Enumeration {
   type OrderingType = Value
-  val FIFO, Auction, Pressure, Toll = Value
+  val FIFO, Auction, Pressure = Value
 
   def make[T <: Ordered[T]](enum: OrderingType.Value) = enum match {
     case FIFO => new FIFO_Ordering[T]()
     case Auction => new AuctionOrdering[T]()
     case Pressure => new PressureOrdering[T]()
-    case Toll => new TollOrdering[T]()
   }
 }
 

@@ -69,7 +69,7 @@ trait Visualization {
   }
 
   def show_tolls(percentile: Double = .99) {
-    val costs = sim.graph.roads.map(r => r -> r.road_agent.tollbooth.toll).toMap
+    val costs = sim.graph.roads.map(r => r -> r.to.intersection.tollbooth.toll).toMap
     show_heatmap(costs, percentile, "tolls")
     canvas.repaint()
   }

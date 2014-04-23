@@ -114,7 +114,7 @@ class PriceChangeReroutePolicy(a: Agent) extends ReroutePolicy(a) {
     var cost = 0.0
     var eta = a.sim.tick
     for (r <- a.route.current_path) {
-      cost += r.road_agent.tollbooth.toll
+      cost += r.to.intersection.tollbooth.toll
       eta += r.freeflow_time
     }
     return cost

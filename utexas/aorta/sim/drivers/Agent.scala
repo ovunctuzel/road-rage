@@ -58,6 +58,7 @@ class Agent(
     if (debug_me) {
       sim.publish(EV_Breakpoint(this))
     }
+    spawn.road.to.intersection.tollbooth.enter(this)
   }
 
   def serialize(w: StateWriter) {
@@ -120,15 +121,15 @@ class Agent(
         case (e: Edge, t: Turn) => {
           t.vert.intersection.enter(get_ticket(e).get)
           e.queue.free_slot()
-          e.road.road_agent.tollbooth.exit(this)
         }
         case (t: Turn, e: Edge) => {
+          t.vert.intersection.tollbooth.exit(this)
           val ticket = get_ticket(t.from).get
           ticket.done_tick = sim.tick
           remove_ticket(ticket)
           ticket.intersection.exit(ticket)
           sim.publish(ticket.stat)
-          e.road.road_agent.tollbooth.enter(this)
+          e.road.to.intersection.tollbooth.enter(this)
         }
       }
 
@@ -164,7 +165,7 @@ class Agent(
       false
     }
     case Act_Done_With_Route() => {
-      at.on.asEdge.road.road_agent.tollbooth.exit(this)
+      at.on.asEdge.road.to.intersection.tollbooth.exit(this)
       //Util.assert_eq(at.on.asInstanceOf[Edge].road, route.goal)
       // Trust behavior, don't abuse this.
       // (Plus, it doesn't hold for RouteAnalyzer vehicles...)

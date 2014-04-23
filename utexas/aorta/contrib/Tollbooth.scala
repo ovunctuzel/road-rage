@@ -8,30 +8,30 @@ import scala.collection.mutable
 
 import utexas.aorta.map.{Road, Turn, Edge}
 import utexas.aorta.sim.{Simulation, EV_Transition}
+import utexas.aorta.sim.intersections.Intersection
 import utexas.aorta.sim.drivers.Agent
 import utexas.aorta.sim.RoadAgent
 
-class RoadTollbooth(road: RoadAgent) {
-  // Should be [0, capacity], unless there's trouble
+class IntersectionTollbooth(intersection: Intersection) {
+  // [0, ???]
   private var x = 0.0
 
   // A priority 1 driver appears like 100 cars, a priority 0.1 looks like 10, a priority .01 looks
   // like 1
   private def dx(a: Agent) = a.wallet.priority * 100
 
+  // enter the road leading up to...
   def enter(a: Agent) {
     x += dx(a)
   }
 
+  // leave the intersection
   def exit(a: Agent) {
     x -= dx(a)
   }
 
-  // TODO sum or min or max or average or...?
-  private val capacity = road.r.lanes.map(_.queue.freeflow_capacity).sum
-
-  // x / capacity is [0, 1] normally, so output is [0, 1] normally
-  def toll = math.pow(x / capacity, 2)
+  // Output is ???
+  def toll = math.pow(x, 2)
 }
 
 class LatestDelay(sim: Simulation) {

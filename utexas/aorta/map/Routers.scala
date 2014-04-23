@@ -130,7 +130,7 @@ class TollboothRouter(graph: Graph) extends AbstractPairAstarRouter(graph) {
   override def transform(spec: Pathfind) = super.transform(spec).copy(
     calc_cost = (prev: Road, next: Road, cost_sofar: (Double, Double)) => {
       // Utility = 0.1 * (1 - priority) * price + priority * time
-      val price = next.road_agent.tollbooth.toll   // already normalized
+      val price = next.to.intersection.tollbooth.toll   // not gonna normalize
       val time = next.freeflow_time / max_actual_time
       val priority = owner.wallet.priority
       (0.0001 * (1 - priority) * price + priority * time, 0)
