@@ -222,7 +222,7 @@ class Agent(
 
   override def toString = "Agent " + id
   override def compare(other: Agent) = id.int.compare(other.id.int)
-  override def tooltip = List(toString, wallet.toString) ++ wallet.tooltip
+  override def tooltip = List(toString, "Priority " + wallet.priority)
   def debug() {
     Util.log("" + this)
     Util.log_push

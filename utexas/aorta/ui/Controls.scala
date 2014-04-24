@@ -117,7 +117,7 @@ trait Controls {
     }
   }
 
-  // Unused letter keys: a b e h j k l m n o q r u v
+  // Unused letter keys: a b e h j k l m n o r u v
   def handle_ev_keypress(key: Any): Unit = key match {
     // TODO this'll be tab someday, i vow!
     case Key.Control => {
@@ -203,6 +203,7 @@ trait Controls {
     }
     case Key.I => AccelerationScheme.enabled = !AccelerationScheme.enabled
     case Key.Y => canvas.show_road_usage()
+    case Key.Q => canvas.show_tolls()
     case _ =>
   }
 
