@@ -16,9 +16,7 @@ class IntersectionTollbooth(intersection: Intersection) {
   // [0, ???]
   private var x = 0.0
 
-  // A priority 1 driver appears like 100 cars, a priority 0.1 looks like 10, a priority .01 looks
-  // like 1
-  private def dx(a: Agent) = a.wallet.priority * 100
+  private def dx(a: Agent) = a.wallet.priority
 
   // enter the road leading up to...
   def enter(a: Agent) {
