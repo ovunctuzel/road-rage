@@ -116,6 +116,10 @@ class SumTollRouter(graph: Graph) extends AbstractPairAstarRouter(graph)
   )
 }
 
+object TollboothRouter {
+  var toll_weight = 0.1
+}
+
 class TollboothRouter(graph: Graph) extends AbstractPairAstarRouter(graph) {
   // TODO cache this among drivers!
   private val max_actual_time = graph.roads.map(_.freeflow_time).max
@@ -133,7 +137,7 @@ class TollboothRouter(graph: Graph) extends AbstractPairAstarRouter(graph) {
       val price = next.to.intersection.tollbooth.toll   // not gonna normalize
       val time = next.freeflow_time / max_actual_time
       val priority = owner.wallet.priority
-      (0.0001 * (1 - priority) * price + priority * time, 0)
+      (TollboothRouter.toll_weight * (1 - priority) * price + priority * time, 0)
     }
   )
 }
