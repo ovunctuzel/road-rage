@@ -41,12 +41,16 @@ trait Controls {
       val dir = s"maps/area_${sim.graph.name}"
       Util.mkdir(dir)
       for (name <- Dialog.showInput(message = "Name this area", initial = "")) {
-        val edges = sim.graph.vertices.filter(
+        /*val edges = sim.graph.vertices.filter(
           v => polygon.contains(v.location.x, v.location.y)).flatMap(v => v.edges
-        ).map(_.id).toArray
+        ).map(_.id).toArray*/
+        val ways = sim.graph.vertices
+          .filter(v => polygon.contains(v.location.x, v.location.y))
+          .flatMap(v => v.roads).map(_.osm_id).toSet
         val w = Util.writer(s"${dir}/${name}")
-        w.int(edges.size)
-        edges.foreach(id => w.int(id.int))
+        w.int(ways.size)
+        ways.foreach(way => w.string(way))
+
         w.done()
         Util.log(s"Area saved to ${dir}/${name}")
       }

@@ -10,7 +10,7 @@ import utexas.aorta.map.Coordinate
 
 import utexas.aorta.common.Util
 
-class Pass1(fn: String) {
+class Pass1(fn: String, whitelist_ways: Option[Set[String]]) {
   val osm = new OsmReader(fn)
 
   private val graph = new PreGraph1()
@@ -51,6 +51,9 @@ class Pass1(fn: String) {
   }
 
   def skip(way: OsmWay): Boolean = {
+    if (whitelist_ways.isDefined && !whitelist_ways.get.contains(way.id)) {
+      return true
+    }
     if (way.tags.getOrElse("name", "").isEmpty && way.road_type == "service") {
       // TODO wacky alleys, driveways, cemetary paths. when they have a name, they're valid.
       return true

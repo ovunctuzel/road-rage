@@ -11,14 +11,11 @@ import scala.collection.mutable
 
 object Builder {
   def main(args: Array[String]) {
-    if (args.size != 1) {
-      throw new Exception("Pass in only a single .osm filename")
-    }
-    convert(args.head)
+    convert(args.head, args.tail.headOption)
   }
 
   // Takes a .osm and returns a .map
-  def convert(input: String): String = {
+  def convert(input: String, whitelist_fn: Option[String]): String = {
     if (!input.endsWith(".osm")) {
       throw new Exception(s"$input must end with .osm")
     }
@@ -26,7 +23,12 @@ object Builder {
     val bldgs = new BuildingScraper()
 
     // Pass 1
-    val pass1 = new Pass1(input)
+    val pass1 = new Pass1(
+      input, whitelist_fn.map(fn => {
+        val r = Util.reader(fn)
+        Range(0, r.int).map(_ => r.string).toSet
+      })
+    )
     bldgs.scrape(pass1.osm)
     val graph1 = pass1.run()
     bldgs.normalize_coords(graph1.fix _)
