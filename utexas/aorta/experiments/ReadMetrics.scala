@@ -77,7 +77,31 @@ case class Summary(
   time: ScenarioTimes, distance: ScenarioDistances, path: ScenarioPaths
 ) {
   def apply(agent: Int) = agents(agent)
+  def quant_scores() {
+    val real_time = time.toss_outliers()
+    val raw_unweighted_sums = modes.zipWithIndex.map({ case (mode, idx) =>
+      mode -> real_time.agents.map(_.times(idx)).sum
+    }).toMap
+    val raw_weighted_sums = modes.zipWithIndex.map({ case (mode, idx) =>
+      mode -> real_time.agents.map(a => a.priority * a.times(idx)).sum
+    }).toMap
+    // TODO these look weird... why're they so similar for tolls, and lower than baseline?
+    val ratio_unweighted_sums = modes.zipWithIndex.map({ case (mode, idx) =>
+      mode -> real_time.agents.map(a => a.times(idx) / a.ideal_time).sum
+    }).toMap
+    val ratio_weighted_sums = modes.zipWithIndex.map({ case (mode, idx) =>
+      mode -> real_time.agents.map(a => a.priority * a.times(idx) / a.ideal_time).sum
+    }).toMap
+    val sums = List(raw_unweighted_sums, raw_weighted_sums, ratio_unweighted_sums, ratio_weighted_sums)
+    // TODO make up a mode for ideal
+
+    println(s"Mode, raw unweighted, raw weighted, ratio unweighted, ratio weighted")
+    for (mode <- modes) {
+      println(mode + ": " + sums.map(group => "%,.0f".format(group(mode))).mkString(" -- "))
+    }
+  }
 }
+
 case class AgentSummary(
   id: Int, ideal_time: Int, ideal_distance: Int, ideal_spawn_time: Double,
   times: Array[Double], distances: Array[Double], paths: Array[List[Crossing]]
@@ -105,7 +129,11 @@ case class Crossing(road: Int, entry: Double, exit: Double)
 case class AgentPath(id: Int, priority: Double, ideal_spawn_time: Double, paths: Array[List[Crossing]])
 case class RoadUsage(r: RoadID, mode: String, num_drivers: Int, sum_priority: Double)
 
-case class ScenarioTimes(tag: ScenarioTag, modes: Array[String], agents: Array[TripTimeResult])
+case class ScenarioTimes(tag: ScenarioTag, modes: Array[String], agents: Array[TripTimeResult]) {
+  def toss_outliers(ratio_cap: Double = 1000) = copy(agents = agents.filter(a =>
+    !a.times.exists(t => t / a.ideal_time > ratio_cap)
+  ))
+}
 case class ScenarioDistances(tag: ScenarioTag, modes: Array[String], agents: Array[TripDistanceResult])
 case class ScenarioTurnDelays(tag: ScenarioTag, delays: Array[TurnDelayResult])
 case class ScenarioPaths(tag: ScenarioTag, modes: Array[String], agents: Array[AgentPath])
