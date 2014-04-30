@@ -16,7 +16,7 @@ object TuneTolls {
 }
 
 class TuneTolls(config: ExpConfig) extends SmartExperiment(config, "tune_tolls") {
-  val toll_weights = List(0.1, 0.01, 0.001, 0.0001, 0.00001, 0, 1)
+  val toll_weights = List(0.1, 0.01, 0.001, 0.0001, 0.00001)
 
   override def get_metrics(info: MetricInfo) = List(
     new TripTimeMetric(info), new TripDistanceMetric(info), new TripPathsMetric(info)
