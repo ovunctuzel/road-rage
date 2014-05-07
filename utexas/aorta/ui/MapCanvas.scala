@@ -14,7 +14,6 @@ import utexas.aorta.sim.{Simulation, EV_Signal_Change, EV_Transition, EV_Reroute
                          EV_Heartbeat, AgentMap}
 import utexas.aorta.sim.make.IntersectionType
 import utexas.aorta.sim.drivers.Agent
-import utexas.aorta.analysis.SimREPL
 
 import utexas.aorta.common.{Util, cfg}
 
@@ -119,7 +118,8 @@ class MapCanvas(val sim: Simulation, headless: Boolean = false)
     IntersectionType.Signal -> cfg.signal_color,
     IntersectionType.Reservation -> cfg.reservation_color,
     IntersectionType.Yield -> cfg.yield_color,
-    IntersectionType.AIM -> cfg.aim_color
+    IntersectionType.AIM -> cfg.aim_color,
+    IntersectionType.Batch -> cfg.batch_color
   )
 
   //////////////////////////////////////////////////////////////////////////////
@@ -145,7 +145,7 @@ class MapCanvas(val sim: Simulation, headless: Boolean = false)
     // Launch this in a separate thread so the sim can be continued normally
     new Thread {
       override def run() {
-        new SimREPL(sim).run()
+        new GUIREPL(sim).run()
       }
     }.start()
   }})

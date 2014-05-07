@@ -6,7 +6,6 @@ package utexas.aorta.sim.drivers
 
 import scala.collection.mutable
 
-import utexas.aorta.contrib.TollBroker
 import utexas.aorta.map.{Edge, Coordinate, Turn, Traversable, Graph, Position, Vertex}
 import utexas.aorta.sim.{Simulation, EV_AgentQuit, AgentMap, EV_Breakpoint}
 import utexas.aorta.sim.intersections.{Intersection, Ticket}
@@ -43,7 +42,6 @@ class Agent(
   private val tickets = new mutable.HashMap[Edge, Ticket]()
 
   val lc = new LaneChangingHandler(this, behavior)  // TODO private
-  val toll_broker = new TollBroker(this)
 
   //////////////////////////////////////////////////////////////////////////////
   // Meta
@@ -122,16 +120,25 @@ class Agent(
         case (e: Edge, t: Turn) => {
           t.vert.intersection.enter(get_ticket(e).get)
           e.queue.free_slot()
-          e.road.road_agent.tollbooth.exit(this)
-          toll_broker.exited(e.road)
         }
         case (t: Turn, e: Edge) => {
+          // First intersection is a freebie
+          if (sim.scenario.agents(id.int).start != t.from.road.id) {
+            t.vert.intersection.tollbooth.exit(this, t)
+          }
           val ticket = get_ticket(t.from).get
           ticket.done_tick = sim.tick
           remove_ticket(ticket)
           ticket.intersection.exit(ticket)
           sim.publish(ticket.stat)
-          e.road.road_agent.tollbooth.enter(this)
+          // TODO messy.
+          // To register for a toll, pick our ideal lane, and the ideal turn from that lane.
+          // It may not end up being true that we take that ideal turn.
+          if (!route.done(e)) {
+            // pick_turn has side-effects, so we try our best to avoid those.
+            val next_turn = route.pick_turn(route.pick_final_lane(e)._1, query_only = true)
+            e.road.to.intersection.tollbooth.enter(this, next_turn)
+          }
         }
       }
 
@@ -167,7 +174,8 @@ class Agent(
       false
     }
     case Act_Done_With_Route() => {
-      at.on.asEdge.road.road_agent.tollbooth.exit(this)
+      // No need to exit from the intersection tollbooth; we wouldn't have registered on the last
+      // road
       //Util.assert_eq(at.on.asInstanceOf[Edge].road, route.goal)
       // Trust behavior, don't abuse this.
       // (Plus, it doesn't hold for RouteAnalyzer vehicles...)
@@ -224,7 +232,7 @@ class Agent(
 
   override def toString = "Agent " + id
   override def compare(other: Agent) = id.int.compare(other.id.int)
-  override def tooltip = List(toString, wallet.toString) ++ wallet.tooltip
+  override def tooltip = List(toString, "Priority " + wallet.priority)
   def debug() {
     Util.log("" + this)
     Util.log_push
@@ -310,9 +318,6 @@ class Agent(
     case e: Edge => at :: steps_to(get_ticket(e).get.turn, v)
     case t: Turn => at :: steps_to(t.to, v)
   }
-
-  // Seconds saved per dollar. Just use priority for now.
-  def value_of_time = new ValueOfTime(wallet.priority)
 }
 
 object Agent {

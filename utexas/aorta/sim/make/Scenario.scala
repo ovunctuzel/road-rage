@@ -56,7 +56,7 @@ case class Scenario(
       Util.log("Wallets:")
       ScenarioUtil.percentages(agents.map(_.wallet.policy))
       Util.log("Budget ($): " + ScenarioUtil.basic_stats_int(agents.map(_.wallet.budget)))
-      Util.log("Priority: " + ScenarioUtil.basic_stats_int(agents.map(_.wallet.priority)))
+      Util.log("Priority: " + ScenarioUtil.basic_stats(agents.map(_.wallet.priority)))
       Util.log_pop
     }
 
@@ -199,19 +199,21 @@ object MkRoute {
   )
 }
 
-case class MkWallet(policy: WalletType.Value, budget: Int, priority: Int, bid_ahead: Boolean)
+// priority is [0, 1]
+case class MkWallet(policy: WalletType.Value, budget: Int, priority: Double, bid_ahead: Boolean)
   extends Serializable
 {
   def make() = WalletType.make(policy, budget, priority, bid_ahead)
 
   def serialize(w: StateWriter) {
-    w.ints(policy.id, budget, priority)
+    w.ints(policy.id, budget)
+    w.double(priority)
     w.bool(bid_ahead)
   }
 }
 
 object MkWallet {
-  def unserialize(r: StateReader) = MkWallet(WalletType(r.int), r.int, r.int, r.bool)
+  def unserialize(r: StateReader) = MkWallet(WalletType(r.int), r.int, r.double, r.bool)
 }
 
 case class MkIntersection(id: VertexID, policy: IntersectionType.Value,
@@ -272,7 +274,7 @@ object SystemWalletConfig {
 
 object IntersectionType extends Enumeration {
   type IntersectionType = Value
-  val NeverGo, StopSign, Signal, Reservation, Yield, AIM = Value
+  val NeverGo, StopSign, Signal, Reservation, Yield, AIM, Batch = Value
 
   def make(v: Vertex, policy: IntersectionType.Value, ordering: OrderingType.Value,
            sim: Simulation) = policy match
@@ -283,34 +285,36 @@ object IntersectionType extends Enumeration {
     case Reservation => new ReservationPolicy(v, OrderingType.make[Ticket](ordering))
     case Yield => new YieldPolicy(v, OrderingType.make[Ticket](ordering))
     case AIM => new AIMPolicy(v, OrderingType.make[Ticket](ordering))
+    case Batch => new BatchPolicy(v, sim)
   }
 }
 
 object RouterType extends Enumeration {
   type RouterType = Value
   // Agents don't use Unusable; it's just for manually-invoked routers.
-  val Congestion, Zone, Fixed, Unusable, DumbToll, TollThreshold, SumToll, Tollbooth = Value
+  val Congestion, Zone, Fixed, Unusable, DumbToll, TollThreshold, SumToll, Tollbooth, Freeflow, LatestEstimate = Value
 
   def make(enum: RouterType.Value, graph: Graph, initial_path: List[Road]) = enum match {
     case Congestion => new CongestionRouter(graph)
+    case Freeflow => new FreeflowRouter(graph)
     //case RouterType.Zone => new ZoneRouter(graph)
     case Fixed => new FixedRouter(graph, initial_path)
     case DumbToll => new DumbTollRouter(graph)
     case TollThreshold => new TollThresholdRouter(graph)
     case SumToll => new SumTollRouter(graph)
     case Tollbooth => new TollboothRouter(graph)
+    case LatestEstimate => new LatestEstimateRouter(graph)
   }
 }
 
 object OrderingType extends Enumeration {
   type OrderingType = Value
-  val FIFO, Auction, Pressure, Toll = Value
+  val FIFO, Auction, Pressure = Value
 
   def make[T <: Ordered[T]](enum: OrderingType.Value) = enum match {
     case FIFO => new FIFO_Ordering[T]()
     case Auction => new AuctionOrdering[T]()
     case Pressure => new PressureOrdering[T]()
-    case Toll => new TollOrdering[T]()
   }
 }
 
@@ -318,7 +322,7 @@ object WalletType extends Enumeration {
   type WalletType = Value
   val Static, Freerider, Fair, System = Value
 
-  def make(enum: WalletType.Value, budget: Int, priority: Int, bid_ahead: Boolean) = enum match {
+  def make(enum: WalletType.Value, budget: Int, priority: Double, bid_ahead: Boolean) = enum match {
     case Static => new StaticWallet(budget, priority)
     case Freerider => new FreeriderWallet(priority)
     case Fair => new FairWallet(budget, priority, bid_ahead)

@@ -9,14 +9,15 @@ import scala.collection.mutable
 import utexas.aorta.map.{Vertex, Turn, Edge}
 import utexas.aorta.sim.{Simulation, EV_TurnApproved, EV_TurnStarted}
 import utexas.aorta.sim.make.{IntersectionType}
-import utexas.aorta.contrib.IntersectionTollbooth
+import utexas.aorta.contrib.{IntersectionTollbooth, PerFlowIntersectionTollbooth}
 
 import utexas.aorta.common.{Util, StateWriter, StateReader, TurnID, Serializable, BatchDuringStep,
                             Price}
 
 // Reason about collisions from conflicting simultaneous turns.
 class Intersection(val v: Vertex, val policy: Policy) {
-  val tollbooth = new IntersectionTollbooth(this)
+  //val tollbooth = new IntersectionTollbooth(this)
+  val tollbooth = new PerFlowIntersectionTollbooth(this)
 
   // Multiple agents can be on the same turn; the corresponding queue will
   // handle collisions. So in fact, we want to track which turns are active...
@@ -65,7 +66,6 @@ class Intersection(val v: Vertex, val policy: Policy) {
       policy.dump_info()
       throw new Exception("Driver entered intersection without accepted ticket")
     }
-    tollbooth.enter(ticket.a, ticket.turn.from.road)
     ticket.a.sim.publish(EV_TurnStarted(ticket))
   }
 
@@ -80,7 +80,6 @@ class Intersection(val v: Vertex, val policy: Policy) {
       }
     }
     policy.handle_exit(ticket)
-    tollbooth.exit(ticket.a, ticket.turn.from.road)
     number_finished += 1
     sum_waiting_times += ticket.how_long_waiting
   }

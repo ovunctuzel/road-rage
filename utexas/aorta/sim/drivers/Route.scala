@@ -22,7 +22,7 @@ abstract class Route(val goal: Road, reroute_policy_type: ReroutePolicyType.Valu
 
   protected var owner: Agent = null
   protected var debug_me = false  // TODO just grab from owner?
-  private var reroute_policy: ReroutePolicy = null // TODO is it transient?
+  protected var reroute_policy: ReroutePolicy = null // TODO is it transient?
 
   //////////////////////////////////////////////////////////////////////////////
   // Meta
@@ -48,8 +48,8 @@ abstract class Route(val goal: Road, reroute_policy_type: ReroutePolicyType.Valu
   // The client tells us they've physically moved
   def transition(from: Traversable, to: Traversable)
   // The client is being forced to pick a turn. If they ask us repeatedly, we
-  // have to always return the same answer.
-  def pick_turn(e: Edge): Turn
+  // have to always return the same answer. Should have no side effects if query_only.
+  def pick_turn(e: Edge, query_only: Boolean = false): Turn
   // Prescribe the final lane on this road to aim for. We should be able to spazz around in
   // our answer here. True if e doesn't already lead to next road, aka, the final lane is more than
   // recommended.
@@ -85,8 +85,8 @@ object Route {
 // Follow routes prescribed by routers. Only reroute when forced or encouraged to.
 // TODO rerouter only var due to serialization
 class PathRoute(
-  goal: Road, orig_router: Router, private var rerouter: Router, reroute_policy: ReroutePolicyType.Value
-) extends Route(goal, reroute_policy) {
+  goal: Road, orig_router: Router, private var rerouter: Router, reroute_policy_type: ReroutePolicyType.Value
+) extends Route(goal, reroute_policy_type) {
   //////////////////////////////////////////////////////////////////////////////
   // State
 
@@ -137,7 +137,7 @@ class PathRoute(
     owner.sim.publish(EV_Transition(owner, from, to), owner)
   }
 
-  def pick_turn(e: Edge): Turn = {
+  def pick_turn(e: Edge, query_only: Boolean): Turn = {
     // Lookahead could be calling us from anywhere. Figure out where we are in the path.
     val (before, slice) = path.span(r => r != e.road)
     Util.assert_eq(slice.nonEmpty, true)
@@ -146,10 +146,10 @@ class PathRoute(
     // Is the next step reachable?
     val must_reroute = e.next_turns.filter(t => t.to.road == dest).isEmpty
     // This variant only considers long roads capable of being congested, which is risky...
-    // TODO make the client do this?
+    // TODO make the client do this? yes! remove policy from mechanism.
     val should_reroute = dest.road_agent.congested
 
-    val turn = if (must_reroute || should_reroute) {
+    val turn = if (!query_only && (must_reroute || should_reroute)) {
       if (must_reroute) {
         mandatory_reroute(e, before)
       } else {
@@ -214,7 +214,7 @@ class PathRoute(
     val slice_before = path.takeWhile(r => r != at.road)
     val old_path = path
     try {
-      path = slice_before ++ rerouter.path(Pathfind(
+      val new_path = slice_before ++ rerouter.path(Pathfind(
           start = at.road,
           goal = goal,
           // Don't hit anything already in our path
@@ -222,9 +222,12 @@ class PathRoute(
           // Let the algorithm pick the best next step
         ).first_succs(at.next_roads.toArray)
       ).path
-      owner.sim.publish(
-        EV_Reroute(owner, path, false, rerouter.router_type, false, old_path), owner
-      )
+      if (reroute_policy.approve_reroute(old_path, new_path)) {
+        path = new_path
+        owner.sim.publish(
+          EV_Reroute(owner, path, false, rerouter.router_type, false, old_path), owner
+        )
+      }
     } catch {
       // Couldn't A* due to constraints, but that's alright
       case e: PathfindingFailedException =>

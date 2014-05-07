@@ -35,7 +35,8 @@ class Edge(
   // Queries
 
   override def compare(other: Edge) = id.int.compare(other.id.int)
-  override def toString = s"Lane ${road.dir}${lane_num} of ${road.name} (E$id, R${road.id})"
+  // TODO arbitrary turn for toll
+  override def toString = s"Lane ${road.dir}${lane_num} of ${road.name} (E$id, R${road.id}) (toll ${to.intersection.tollbooth.toll(next_turns.head)})"
   override def asEdge = this
   override def asTurn = throw new Exception("This is an edge, not a turn")
 

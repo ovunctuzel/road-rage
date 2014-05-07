@@ -49,6 +49,7 @@ class AgentProgressMonitor(sim: Simulation, fn: String) {
 }
 
 // Count how many times agents are rerouting
+// TODO doesnt count how many were done tentatively but then rejected due to hysteresis!
 class RerouteCountMonitor(sim: Simulation) {
   var astar_count = 0
   var unrealizable_count = 0

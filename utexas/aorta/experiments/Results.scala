@@ -75,8 +75,8 @@ trait UsefulAnalytics {
 
   // The top 10 drivers with high priority and poor trip time
   def find_worst_cases(s: ScenarioTimes) = s.agents
-    .map(a => TollboothResult(a.id, a.priority, a.ideal_time, a.times(s.modes.indexOf("tolls"))))
-    .filter(a => a.priority > 400)
+    .map(a => TollboothResult(a.id, a.priority, a.ideal_time, a.times(s.modes.indexOf("milo"))))
+    .filter(a => a.priority > .8)
     .sortBy(a => a.ratio)
     .reverse
     .take(10)

@@ -77,7 +77,31 @@ case class Summary(
   time: ScenarioTimes, distance: ScenarioDistances, path: ScenarioPaths
 ) {
   def apply(agent: Int) = agents(agent)
+  def quant_scores() {
+    val real_time = time.toss_outliers().add_ideal
+    val real_modes = ("ideal" :: modes.toList).toArray
+
+    val raw_unweighted_sums = real_modes.zipWithIndex.map({ case (mode, idx) =>
+      mode -> real_time.agents.map(_.times(idx)).sum
+    }).toMap
+    val raw_weighted_sums = real_modes.zipWithIndex.map({ case (mode, idx) =>
+      mode -> real_time.agents.map(a => a.priority * a.times(idx)).sum
+    }).toMap
+    val ratio_unweighted_sums = real_modes.zipWithIndex.map({ case (mode, idx) =>
+      mode -> real_time.agents.map(a => a.times(idx) / a.ideal_time).sum
+    }).toMap
+    val ratio_weighted_sums = real_modes.zipWithIndex.map({ case (mode, idx) =>
+      mode -> real_time.agents.map(a => a.priority * a.times(idx) / a.ideal_time).sum
+    }).toMap
+    val sums = List(raw_unweighted_sums, raw_weighted_sums, ratio_unweighted_sums, ratio_weighted_sums)
+
+    println(s"Mode, raw unweighted, raw weighted, ratio unweighted, ratio weighted")
+    for (mode <- real_modes) {
+      println(mode + ": " + sums.map(group => "%,.0f".format(group(mode))).mkString(" -- "))
+    }
+  }
 }
+
 case class AgentSummary(
   id: Int, ideal_time: Int, ideal_distance: Int, ideal_spawn_time: Double,
   times: Array[Double], distances: Array[Double], paths: Array[List[Crossing]]
@@ -103,9 +127,18 @@ case class TripDistanceResult(id: Int, priority: Double, ideal_distance: Double,
 case class TurnDelayResult(mode: String, bin: Double, count: Double)
 case class Crossing(road: Int, entry: Double, exit: Double)
 case class AgentPath(id: Int, priority: Double, ideal_spawn_time: Double, paths: Array[List[Crossing]])
-case class RoadUsage(r: RoadID, mode: String, num_drivers: Int, sum_priority: Int)
+case class RoadUsage(r: RoadID, mode: String, num_drivers: Int, sum_priority: Double)
 
-case class ScenarioTimes(tag: ScenarioTag, modes: Array[String], agents: Array[TripTimeResult])
+case class ScenarioTimes(tag: ScenarioTag, modes: Array[String], agents: Array[TripTimeResult]) {
+  def toss_outliers(ratio_cap: Double = 1000) = copy(agents = agents.filter(a =>
+    !a.times.exists(t => t / a.ideal_time > ratio_cap)
+  ))
+  // As the first mode
+  def add_ideal = copy(
+    modes = ("ideal" :: modes.toList).toArray,
+    agents = agents.map(t => t.copy(times = (t.ideal_time :: t.times.toList).toArray))
+  )
+}
 case class ScenarioDistances(tag: ScenarioTag, modes: Array[String], agents: Array[TripDistanceResult])
 case class ScenarioTurnDelays(tag: ScenarioTag, delays: Array[TurnDelayResult])
 case class ScenarioPaths(tag: ScenarioTag, modes: Array[String], agents: Array[AgentPath])
@@ -148,7 +181,7 @@ object Crossing {
 }
 object RoadUsage {
   def apply(fields: Array[String]) = new RoadUsage(
-    new RoadID(fields(0).toInt), fields(1), fields(2).toInt, fields(3).toInt
+    new RoadID(fields(0).toInt), fields(1), fields(2).toInt, fields(3).toDouble
   )
 }
 

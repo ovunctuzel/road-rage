@@ -11,7 +11,6 @@ import scala.util.Try
 import java.io.File
 
 import utexas.aorta.sim.Simulation
-import utexas.aorta.analysis.SimREPL
 import utexas.aorta.common.{Util, RoadID, VertexID, EdgeID, cfg}
 
 trait Controls {
@@ -42,12 +41,16 @@ trait Controls {
       val dir = s"maps/area_${sim.graph.name}"
       Util.mkdir(dir)
       for (name <- Dialog.showInput(message = "Name this area", initial = "")) {
-        val edges = sim.graph.vertices.filter(
+        /*val edges = sim.graph.vertices.filter(
           v => polygon.contains(v.location.x, v.location.y)).flatMap(v => v.edges
-        ).map(_.id).toArray
+        ).map(_.id).toArray*/
+        val ways = sim.graph.vertices
+          .filter(v => polygon.contains(v.location.x, v.location.y))
+          .flatMap(v => v.roads).map(_.osm_id).toSet
         val w = Util.writer(s"${dir}/${name}")
-        w.int(edges.size)
-        edges.foreach(id => w.int(id.int))
+        w.int(ways.size)
+        ways.foreach(way => w.string(way))
+
         w.done()
         Util.log(s"Area saved to ${dir}/${name}")
       }
@@ -118,7 +121,7 @@ trait Controls {
     }
   }
 
-  // Unused letter keys: a b e h j k l m n o q r u v
+  // Unused letter keys: a b e h j k l m n o r u v
   def handle_ev_keypress(key: Any): Unit = key match {
     // TODO this'll be tab someday, i vow!
     case Key.Control => {
@@ -189,7 +192,7 @@ trait Controls {
       // Launch this in a separate thread so the sim can be continued normally
       new Thread {
         override def run() {
-          new SimREPL(sim).run()
+          new GUIREPL(sim).run()
         }
       }.start()
     }
@@ -204,6 +207,7 @@ trait Controls {
     }
     case Key.I => AccelerationScheme.enabled = !AccelerationScheme.enabled
     case Key.Y => canvas.show_road_usage()
+    case Key.Q => canvas.show_tolls()
     case _ =>
   }
 

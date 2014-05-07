@@ -11,6 +11,7 @@ import javax.swing.WindowConstants
 import java.io.File
 
 import utexas.aorta.sim.{Simulation, EV_Heartbeat}
+import utexas.aorta.analysis.SimREPL
 import utexas.aorta.common.{Util, cfg}
 
 object StatusBar {
@@ -106,14 +107,10 @@ object GUI extends SimpleSwingApplication {
 
   override def main(args: Array[String]) {
     val sim = Util.process_args(args)
-    run(new MapCanvas(Util.process_args(args)))
-  }
-
-  def run(canvas: MapCanvas) {
-    canvas_2d = canvas
+    canvas_2d = new MapCanvas(sim)
     // TODO doesnt start drawn correctly!
-    canvas_2d.repaint()
-    super.main(Array())
+    canvas_2d.repaint
+    super.main(args)
   }
 
   def launch_from_headless(canvas: MapCanvas) {
@@ -219,4 +216,12 @@ class GUIDebugger(sim: Simulation) {
       case _ =>
     }
   }})
+}
+
+class GUIREPL(sim: Simulation) extends SimREPL(sim) {
+  override def welcome() {
+    super.welcome()
+    e.interpret("val gui = utexas.aorta.ui.GUI.canvas_2d")
+    println("The GUI is bound to 'gui'.")
+  }
 }

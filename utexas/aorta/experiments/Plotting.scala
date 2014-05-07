@@ -41,10 +41,12 @@ case class ScatterData(
   def select(mode: String) = copy(points_per_mode = Map(mode -> points_per_mode(mode)))
   // Assumes higher is worse, so it does baseline - each mode. In the result, more positive is
   // better.
-  def vs_baseline() = copy(points_per_mode = (points_per_mode - "baseline").mapValues(agents =>
-    agents.zip(points_per_mode("baseline"))
+  def vs_baseline(base: String) = copy(
+    points_per_mode = (points_per_mode - base).mapValues(agents => agents.zip(points_per_mode(base))
       .map(_ match { case (pt, baseline) => (pt._1, baseline._2 - pt._2) })
-  ))
+    ),
+    title = s"$title (relative to $base)"
+  )
 }
 
 trait PlotUtil {

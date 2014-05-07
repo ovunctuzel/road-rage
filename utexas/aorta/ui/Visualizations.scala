@@ -6,9 +6,9 @@ package utexas.aorta.ui
 
 import java.awt.Color
 
-import utexas.aorta.map.{Road, CongestionRouter}
+import utexas.aorta.map.{Road, FreeflowRouter}
 import utexas.aorta.sim.Simulation
-import utexas.aorta.experiments.ScenarioRoadUsage
+import utexas.aorta.experiments.{ScenarioRoadUsage, DistributionData, PlotUtil}
 import utexas.aorta.common.Timer
 import utexas.aorta.common.algorithms.PathResult
 
@@ -27,7 +27,7 @@ trait Visualization {
     val timer = Timer("Pathfinding")
     // TODO Show each type of route in a different color...
     val colors = List(Color.CYAN, Color.RED, Color.BLUE, Color.GREEN, Color.YELLOW)
-    val routers = List(new CongestionRouter(sim.graph))
+    val routers = List(new FreeflowRouter(sim.graph))
 
     for ((router, color) <- routers.zip(colors)) {
       val route = router.path(from, to).path
@@ -44,9 +44,20 @@ trait Visualization {
   }
 
   // percentile is [0, 1]
-  def show_heatmap(costs: Map[Road, Double], percentile: Double, layer: String) {
-    // Exclude the top percent of costs; they're usually super high and throw off the visualization
+  def show_heatmap(
+    costs: Map[Road, Double], percentile: Double, layer: String, show_histogram: Boolean = false
+  ) {
     val sorted_costs = costs.values.toArray.sorted
+
+    if (show_histogram) {
+      // TODO this is particular to show_tolls!
+      val data = DistributionData(Map(layer -> sorted_costs.filter(_ > 0)), layer, layer)
+      new PlotUtil() {
+        show(histogram(data))
+      }
+    }
+
+    // Exclude the top percent of costs; they're usually super high and throw off the visualization
     val max_cost = sorted_costs(math.min(
       sorted_costs.size - 1, (percentile * sorted_costs.size).toInt
     ))
@@ -68,9 +79,10 @@ trait Visualization {
     canvas.repaint()
   }
 
-  def show_tolls(percentile: Double = .99) {
-    val costs = sim.graph.roads.map(r => r -> r.road_agent.tollbooth.toll(sim.tick).dollars).toMap
-    show_heatmap(costs, percentile, "tolls")
+  def show_tolls(percentile: Double = 1) {
+    // TODO arbitrary turn for the toll
+    val costs = sim.graph.roads.map(r => r -> r.to.intersection.tollbooth.toll(r.to.turns.head)).toMap
+    show_heatmap(costs, percentile, "tolls", show_histogram = true)
     canvas.repaint()
   }
 

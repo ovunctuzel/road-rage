@@ -62,7 +62,6 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
     a.route.react()
     a.lc.decide_lc()
     val accel = max_safe_accel
-    a.toll_broker.react()
     return accel
   }
 
@@ -239,6 +238,7 @@ class LookaheadBehavior(a: Agent, route: Route) extends Behavior(a) {
     }
     // Getting impatient? This is a late reaction to gridlock.
     a.get_ticket(e) match {
+      // TODO this is a policy thing!
       case Some(ticket) if ticket.should_cancel => {
         // Try again. The routing should avoid choices that're filled up, hopefully avoiding gridlock.
         route.optional_reroute(e)

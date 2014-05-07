@@ -28,7 +28,7 @@ case class OsmNode(id: String, lon: Double, lat: Double, tags: Map[String, Strin
 
 case class OsmWay(id: String, refs: List[OsmNode], tags: Map[String, String]) extends OsmElement {
   override def points = refs.map(_.coordinate)
-  def name = tags.getOrElse("name", s"NO-NAME (OSM $id)")
+  def name = tags.getOrElse("name", tags.getOrElse("ref", s"NO-NAME (OSM $id)"))
   def road_type = tags.getOrElse("highway", "null")
   def oneway = tags.getOrElse("oneway", "") == "yes" || Pass1.forced_oneways(road_type)
   // TODO fancy "x; y" format... handle eventually

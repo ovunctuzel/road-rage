@@ -12,7 +12,7 @@ import utexas.aorta.sim.intersections.{Ticket, Policy, Phase}
 import utexas.aorta.common.{Util, cfg, StateReader, StateWriter, Serializable}
 
 // Express an agent's preferences of trading between time and cost.
-abstract class Wallet(initial_budget: Int, val priority: Int) extends Serializable {
+abstract class Wallet(initial_budget: Int, val priority: Double) extends Serializable {
   //////////////////////////////////////////////////////////////////////////////
   // Transient state
 
@@ -36,7 +36,8 @@ abstract class Wallet(initial_budget: Int, val priority: Int) extends Serializab
 
   def serialize(w: StateWriter) {
     // TODO initial budget vs current... will it matter?
-    w.ints(wallet_type.id, budget, priority)
+    w.ints(wallet_type.id, budget)
+    w.double(priority)
     w.int(tooltip.size)
     tooltip.foreach(line => w.string(line))
     w.bool(dark_tooltip)
@@ -111,7 +112,7 @@ abstract class Wallet(initial_budget: Int, val priority: Int) extends Serializab
 object Wallet {
   def unserialize(r: StateReader): Wallet = {
     // Subclasses that care about bid_ahead will unserialize it.
-    val wallet = WalletType.make(WalletType(r.int), r.int, r.int, false)
+    val wallet = WalletType.make(WalletType(r.int), r.int, r.double, false)
     wallet.tooltip = Range(0, r.int).map(_ => r.string).toList
     wallet.dark_tooltip = r.bool
     wallet.unserialize(r)
@@ -120,7 +121,7 @@ object Wallet {
 }
 
 // Always bid the full budget, but never lose any money.
-class StaticWallet(initial_budget: Int, p: Int)
+class StaticWallet(initial_budget: Int, p: Double)
   extends Wallet(initial_budget, p)
 {
   //////////////////////////////////////////////////////////////////////////////
@@ -152,7 +153,7 @@ class StaticWallet(initial_budget: Int, p: Int)
 }
 
 // Never participate.
-class FreeriderWallet(p: Int) extends Wallet(0, p) {
+class FreeriderWallet(p: Double) extends Wallet(0, p) {
   //////////////////////////////////////////////////////////////////////////////
   // Queries
 
@@ -165,7 +166,7 @@ class FreeriderWallet(p: Int) extends Wallet(0, p) {
 }
 
 // Bid once per intersection some amount proportional to the rest of the trip.
-class FairWallet(initial_budget: Int, p: Int, initial_bid_ahead: Boolean)
+class FairWallet(initial_budget: Int, p: Double, initial_bid_ahead: Boolean)
   extends Wallet(initial_budget, p)
 {
   //////////////////////////////////////////////////////////////////////////////

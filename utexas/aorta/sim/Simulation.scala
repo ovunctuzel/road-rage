@@ -42,6 +42,9 @@ class Simulation(val scenario: Scenario) extends Publisher with AgentManager {
   private lazy val omit = new AgentID(Flags.int("--omit", -1))
   private lazy val should_savestate = Flags.boolean("--savestate", true)
 
+  // TODO I forgot my own pattern for dealing with these simulation-wide singletons. :\
+  val latest_delays = new utexas.aorta.contrib.LatestDelay(this)
+
   //////////////////////////////////////////////////////////////////////////////
   // Meta
 
@@ -121,7 +124,6 @@ class Simulation(val scenario: Scenario) extends Publisher with AgentManager {
     // steps, we ensure the intersections' temporary state becomes firm.
     for (v <- graph.vertices) {
       v.intersection.policy.react_tick()
-      v.intersection.tollbooth.react()
     }
 
     graph.roads.foreach(r => r.road_agent.react())
@@ -200,9 +202,7 @@ class Simulation(val scenario: Scenario) extends Publisher with AgentManager {
     Util.assert_eq(agents.isEmpty, true)
     for (v <- graph.vertices) {
       v.intersection.policy.verify_done()
-      v.intersection.tollbooth.verify_done()
     }
-    graph.roads.foreach(r => r.road_agent.tollbooth.verify_done())
   }
 
   def savestate(fn: String): String = {
